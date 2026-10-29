@@ -3,7 +3,7 @@
 > Landing at the lunar south pole is parking where the Sun lasts days and Earth disappears for weeks.
 > Ventana Lunar tells you when and where you can.
 
-**NASA Space Apps Challenge 2026** · challenge *CLPS Lunar Mission Browser* · Madrid, 14-15 November 2026.
+**NASA Space Apps Challenge 2026** · challenge *Lunar Landing Site Navigator* · Madrid, 14-15 November 2026.
 
 Pick a south pole landing site and a date range. Ventana Lunar shows, hour by hour, whether a lander there has
 **Sun** (power), **sees Earth** (comms), or **both**: a landing window. It also shows which Deep Space Network antenna

@@ -1,6 +1,6 @@
 # Ventana Lunar
 
-Static web for the **NASA Space Apps Challenge 2026** (challenge: *CLPS Lunar Mission Browser*, Madrid, 14-15 November
+Static web for the **NASA Space Apps Challenge 2026** (challenge: *Lunar Landing Site Navigator*, Madrid, 14-15 November
 2026). For any lunar south pole landing site and any date it answers two questions: will the lander have **Sun**
 (power) and will it **see Earth** (comms)? Where both are yes there is a landing **window**. Extra: which Deep Space
 Network antenna (Goldstone, Canberra, Robledo de Chavela) is listening.

@@ -12,8 +12,9 @@ completa está en el documento «Ventana Lunar · Especificación y roadmap».
 - [x] Despliegue en Dokploy preparado: Dockerfile con nginx (VENT-2)
 - [x] App en Dokploy con dominio y el «hola mundo» publicado en https://nasa.cervilla.es
 - [ ] CI en el pool de runners: PAT del pool con el repo y redespliegue del compose `github-runner`
-- [ ] Registrar al equipo en spaceappschallenge.org (Madrid, reto CLPS Lunar Mission Browser)
-- [ ] Leer el enunciado y la pestaña Resources; anotar los sitios y datasets que sugiere NASA
+- [ ] Registrar al equipo en spaceappschallenge.org (Madrid, reto Lunar Landing Site Navigator)
+- [x] Leer el enunciado oficial (29 oct): el reto es «Lunar Landing Site Navigator»
+- [ ] Pestaña Resources: vacía a 29 oct; NASA dice que añadirá recursos antes del hackathon
 - [ ] Petición de prueba a JPL Horizons (cualquier objeto) para entender el formato
 - [ ] Borrador del pitch y guion del vídeo (70 palabras)
 - [ ] Textura LRO WAC 2K y cara del polo sur en el repo de recursos

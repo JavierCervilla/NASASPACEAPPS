@@ -1,5 +1,7 @@
 # Roadmap · Ventana Lunar
 
+Lienzo vivo, al día con el Dashboard: https://claude.ai/artifact/Sm8QoCwg7DqLbuCSHLPfBg
+
 NASA Space Apps Challenge 2026, Madrid, sábado 14 y domingo 15 de noviembre. Épica `VENT-1`. La especificación
 completa está en el documento «Ventana Lunar · Especificación y roadmap».
 

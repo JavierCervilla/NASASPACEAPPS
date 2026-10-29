@@ -53,6 +53,12 @@ Work here is an AgenticFramework trajectory (`VENT-*`): branch + PR, gates green
 updated in the same PR when something visible changes, architecture diagram in `docs/diagrams/` kept current.
 `ROADMAP.md` and `CHANGELOG.md` are written in Spanish (the human reads them).
 
+**Roadmap canvas** (https://claude.ai/artifact/Sm8QoCwg7DqLbuCSHLPfBg): the live, visual roadmap. It is part of the
+definition of done of every step, together with the Dashboard and the vault: when a trajectory or TODO changes state,
+update the canvas in the same step with the `ArtifactData` tool (`items/*` status and note, `meta/state` cards and
+`updatedAt`; `phases/*` and `milestones/*` when the plan changes). Its data lives in the artifact's database, not in
+this repo; only the owner and editors write it. Its text is Spanish (the human reads it).
+
 <!-- english-gate:start -->
 ## Language
 Write everything technical in English: code, identifiers, comments, tests, commit messages, PR titles and bodies,

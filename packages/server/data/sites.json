@@ -1,0 +1,13 @@
+[
+  {
+    "id": "south-pole-89-5",
+    "name": "Test point 89.5° S",
+    "mission": "None (validation point)",
+    "agency": "Ventana Lunar",
+    "status": "test",
+    "lat": -89.5,
+    "lonEast": 0,
+    "coordinateNote": "Exact by construction: a point half a degree from the south pole on the 0° meridian, used to validate the Horizons pipeline against the known lunar periods.",
+    "sources": [{ "label": "JPL Horizons", "url": "https://ssd.jpl.nasa.gov/horizons/" }]
+  }
+]

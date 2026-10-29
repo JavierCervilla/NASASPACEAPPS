@@ -7,3 +7,4 @@ test-results
 pipeline/.cache
 pipeline/.venv
 docs
+**/.cache

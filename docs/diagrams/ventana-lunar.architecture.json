@@ -1,0 +1,323 @@
+{
+  "schema_version": 1,
+  "diagram_type": "architecture",
+  "meta": {
+    "title": "Ventana Lunar · architecture",
+    "locale": "en",
+    "quality_profile": "showcase",
+    "viewBox": [
+      1200,
+      800
+    ]
+  },
+  "components": [
+    {
+      "id": "horizons",
+      "type": "external",
+      "label": "JPL Horizons API",
+      "sublabel": "NASA/JPL ephemerides",
+      "pos": [
+        40,
+        300
+      ],
+      "size": [
+        140,
+        60
+      ]
+    },
+    {
+      "id": "cache",
+      "type": "database",
+      "label": "Horizons cache",
+      "sublabel": "responses on disk",
+      "pos": [
+        280,
+        110
+      ],
+      "size": [
+        140,
+        60
+      ]
+    },
+    {
+      "id": "pipeline",
+      "type": "backend",
+      "label": "Backend API",
+      "sublabel": "no login, on Dokploy",
+      "pos": [
+        280,
+        300
+      ],
+      "size": [
+        140,
+        60
+      ]
+    },
+    {
+      "id": "data",
+      "type": "database",
+      "label": "Site data",
+      "sublabel": "sites + custom lat/lon",
+      "pos": [
+        520,
+        300
+      ],
+      "size": [
+        140,
+        60
+      ],
+      "tag": "Nov-Dec 2026"
+    },
+    {
+      "id": "actions",
+      "type": "cloud",
+      "label": "Dokploy build",
+      "sublabel": "Dockerfile on push",
+      "pos": [
+        760,
+        300
+      ],
+      "size": [
+        140,
+        60
+      ]
+    },
+    {
+      "id": "pages",
+      "type": "cloud",
+      "label": "nginx container",
+      "sublabel": "Traefik + TLS",
+      "pos": [
+        1000,
+        300
+      ],
+      "size": [
+        140,
+        60
+      ]
+    },
+    {
+      "id": "store",
+      "type": "frontend",
+      "label": "Time store",
+      "sublabel": "site + UTC hour",
+      "pos": [
+        520,
+        490
+      ],
+      "size": [
+        140,
+        60
+      ]
+    },
+    {
+      "id": "calendar",
+      "type": "frontend",
+      "label": "Calendar strip",
+      "sublabel": "pick the hour",
+      "pos": [
+        70,
+        680
+      ],
+      "size": [
+        140,
+        60
+      ],
+      "tag": "MVP"
+    },
+    {
+      "id": "polar",
+      "type": "frontend",
+      "label": "2D polar map",
+      "sublabel": "sun/earth az-el",
+      "pos": [
+        295,
+        680
+      ],
+      "size": [
+        140,
+        60
+      ],
+      "tag": "MVP"
+    },
+    {
+      "id": "sitecard",
+      "type": "frontend",
+      "label": "Site card",
+      "sublabel": "window status",
+      "pos": [
+        520,
+        680
+      ],
+      "size": [
+        140,
+        60
+      ],
+      "tag": "MVP"
+    },
+    {
+      "id": "moon3d",
+      "type": "frontend",
+      "label": "3D Moon globe",
+      "sublabel": "Three.js",
+      "pos": [
+        745,
+        680
+      ],
+      "size": [
+        140,
+        60
+      ],
+      "tag": "luxury"
+    },
+    {
+      "id": "dsn",
+      "type": "frontend",
+      "label": "DSN mini globe",
+      "sublabel": "Moon el at DSN",
+      "pos": [
+        970,
+        680
+      ],
+      "size": [
+        140,
+        60
+      ],
+      "tag": "luxury"
+    }
+  ],
+  "boundaries": [
+    {
+      "kind": "region",
+      "label": "Backend (Dokploy, no login)",
+      "wraps": [
+        "cache",
+        "pipeline",
+        "data"
+      ]
+    },
+    {
+      "kind": "region",
+      "label": "Web delivery (Dokploy)",
+      "wraps": [
+        "actions",
+        "pages"
+      ]
+    },
+    {
+      "kind": "region",
+      "label": "Web app (Astro + React)",
+      "wraps": [
+        "store",
+        "calendar",
+        "polar",
+        "sitecard",
+        "moon3d",
+        "dsn"
+      ]
+    }
+  ],
+  "connections": [
+    {
+      "id": "query-horizons",
+      "from": "horizons",
+      "to": "pipeline",
+      "label": "az/el series",
+      "variant": "emphasis"
+    },
+    {
+      "id": "disk-cache",
+      "from": "pipeline",
+      "to": "cache",
+      "label": "reuse",
+      "variant": "dashed",
+      "labelAt": [
+        350,
+        235
+      ]
+    },
+    {
+      "id": "compute-data",
+      "from": "pipeline",
+      "to": "data",
+      "label": "computes",
+      "variant": "emphasis"
+    },
+    {
+      "id": "fetch-data",
+      "from": "data",
+      "to": "store",
+      "label": "fetch",
+      "variant": "emphasis",
+      "labelDy": 24
+    },
+    {
+      "id": "deploy-pages",
+      "from": "actions",
+      "to": "pages",
+      "label": "deploys",
+      "variant": "emphasis"
+    },
+    {
+      "id": "serve-app",
+      "from": "pages",
+      "to": "store",
+      "label": "serves app"
+    },
+    {
+      "id": "sub-calendar",
+      "from": "store",
+      "to": "calendar"
+    },
+    {
+      "id": "sub-polar",
+      "from": "store",
+      "to": "polar"
+    },
+    {
+      "id": "sub-sitecard",
+      "from": "store",
+      "to": "sitecard"
+    },
+    {
+      "id": "sub-moon3d",
+      "from": "store",
+      "to": "moon3d",
+      "variant": "dashed"
+    },
+    {
+      "id": "sub-dsn",
+      "from": "store",
+      "to": "dsn",
+      "variant": "dashed"
+    }
+  ],
+  "cards": [
+    {
+      "dot": "amber",
+      "title": "Backend",
+      "items": [
+        "Queries JPL Horizons: Sun/Earth az-el per site, Moon el per DSN site",
+        "Curated sites and custom coordinates, no login",
+        "Horizons responses cached on disk for <3 s answers"
+      ]
+    },
+    {
+      "dot": "cyan",
+      "title": "Web delivery",
+      "items": [
+        "Dokploy builds the Docker image from main",
+        "nginx serves the Astro site behind Traefik"
+      ]
+    },
+    {
+      "dot": "emerald",
+      "title": "Web app",
+      "items": [
+        "One Time store (site + UTC hour) fetches site data",
+        "Views subscribe read-only; they never compute ephemerides",
+        "MVP: calendar, polar map, site card; luxury: globes"
+      ]
+    }
+  ]
+}

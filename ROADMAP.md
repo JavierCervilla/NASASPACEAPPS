@@ -21,13 +21,15 @@ completa está en el documento «Ventana Lunar · Especificación y roadmap».
 
 ## MVP
 
-- [ ] Datos: Horizons → `public/data/sites/*.json` con 15 sitios y 2 meses, validado (VENT-3)
+- [ ] Datos: Horizons → `public/data/sites/*.json` con 2 meses, validado; sitios CLPS, Apollo y de otros países (VENT-3)
 - [ ] Store de tiempo, selector de sitio y cinta de calendario (VENT-4)
-- [ ] Ficha del sitio y mapa polar 2D (VENT-5)
+- [ ] Ficha del sitio con el tiempo hasta la puesta de Sol y de Tierra, y mapa polar 2D (VENT-5)
 
 ## Lujo y entrega (código congelado el domingo 15 a las 15:30)
 
+- [ ] Horizonte real con el relieve LOLA (VENT-11)
 - [ ] Globo lunar 3D con la luz siguiendo al slider (VENT-6)
 - [ ] Modo DSN con Goldstone, Canberra y Robledo (VENT-7)
-- [ ] Uno de: comparador, exportar a .ics u horizonte LOLA (VENT-8)
+- [ ] Coordenadas a medida: cualquier lat/lon (VENT-10)
+- [ ] Comparador de sitios o exportar a .ics (VENT-8)
 - [ ] Página del proyecto, vídeo de 30 s y pitch; envío antes de las 20:00 (VENT-9)

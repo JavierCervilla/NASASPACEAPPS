@@ -34,6 +34,40 @@
     }
   },
   {
+    "file": "sun-from-moon-im2-athena-2026-11.json",
+    "params": {
+      "format": "json",
+      "COMMAND": "'10'",
+      "MAKE_EPHEM": "'YES'",
+      "EPHEM_TYPE": "'OBSERVER'",
+      "CENTER": "'coord@301'",
+      "COORD_TYPE": "'GEODETIC'",
+      "SITE_COORD": "'29.2,-84.79,0'",
+      "START_TIME": "'2026-11-01 00:00'",
+      "STOP_TIME": "'2026-11-30 23:00'",
+      "STEP_SIZE": "'1 h'",
+      "QUANTITIES": "'4'",
+      "CSV_FORMAT": "'YES'"
+    }
+  },
+  {
+    "file": "earth-from-moon-im2-athena-2026-11.json",
+    "params": {
+      "format": "json",
+      "COMMAND": "'399'",
+      "MAKE_EPHEM": "'YES'",
+      "EPHEM_TYPE": "'OBSERVER'",
+      "CENTER": "'coord@301'",
+      "COORD_TYPE": "'GEODETIC'",
+      "SITE_COORD": "'29.2,-84.79,0'",
+      "START_TIME": "'2026-11-01 00:00'",
+      "STOP_TIME": "'2026-11-30 23:00'",
+      "STEP_SIZE": "'1 h'",
+      "QUANTITIES": "'4'",
+      "CSV_FORMAT": "'YES'"
+    }
+  },
+  {
     "file": "moon-from-goldstone-2026-11.json",
     "params": {
       "format": "json",
@@ -111,6 +145,40 @@
       "CENTER": "'coord@301'",
       "COORD_TYPE": "'GEODETIC'",
       "SITE_COORD": "'0,-89.5,0'",
+      "START_TIME": "'2026-12-01 00:00'",
+      "STOP_TIME": "'2026-12-31 23:00'",
+      "STEP_SIZE": "'1 h'",
+      "QUANTITIES": "'4'",
+      "CSV_FORMAT": "'YES'"
+    }
+  },
+  {
+    "file": "sun-from-moon-im2-athena-2026-12.json",
+    "params": {
+      "format": "json",
+      "COMMAND": "'10'",
+      "MAKE_EPHEM": "'YES'",
+      "EPHEM_TYPE": "'OBSERVER'",
+      "CENTER": "'coord@301'",
+      "COORD_TYPE": "'GEODETIC'",
+      "SITE_COORD": "'29.2,-84.79,0'",
+      "START_TIME": "'2026-12-01 00:00'",
+      "STOP_TIME": "'2026-12-31 23:00'",
+      "STEP_SIZE": "'1 h'",
+      "QUANTITIES": "'4'",
+      "CSV_FORMAT": "'YES'"
+    }
+  },
+  {
+    "file": "earth-from-moon-im2-athena-2026-12.json",
+    "params": {
+      "format": "json",
+      "COMMAND": "'399'",
+      "MAKE_EPHEM": "'YES'",
+      "EPHEM_TYPE": "'OBSERVER'",
+      "CENTER": "'coord@301'",
+      "COORD_TYPE": "'GEODETIC'",
+      "SITE_COORD": "'29.2,-84.79,0'",
       "START_TIME": "'2026-12-01 00:00'",
       "STOP_TIME": "'2026-12-31 23:00'",
       "STEP_SIZE": "'1 h'",

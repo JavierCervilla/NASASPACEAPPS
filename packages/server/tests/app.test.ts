@@ -71,6 +71,25 @@ describe('GET /api/ephemeris', () => {
     expect(fetch.calls).toHaveLength(0);
   });
 
+  it('rounds the point to the 0.01 degree grid, so nearby points share the cached tables', async () => {
+    const fetch = fixtureFetch();
+    const api = app(fetch);
+    const first = (await (await api.request('/api/ephemeris?lat=-84.7906&lon=29.1957&from=2026-11-01&to=2026-11-01')).json()) as Ephemeris;
+    expect([first.lat, first.lonEast]).toEqual([-84.79, 29.2]);
+    expect(fetch.calls).toHaveLength(5);
+    const second = await api.request('/api/ephemeris?lat=-84.7949&lon=29.2044&from=2026-11-02&to=2026-11-02');
+    expect(second.status).toBe(200);
+    expect(fetch.calls).toHaveLength(5);
+  });
+
+  it('answers 400 outside the supported dates, without calling Horizons', async () => {
+    const fetch = fixtureFetch();
+    const res = await app(fetch).request(`${POINT}&from=2028-01-01&to=2028-01-02`);
+    expect(res.status).toBe(400);
+    expect(await res.json()).toEqual({ error: 'the range must fall between 2026-01-01 and 2027-12-31' });
+    expect(fetch.calls).toHaveLength(0);
+  });
+
   it('answers 502 when Horizons fails', async () => {
     const res = await app(fixedFetch(503, 'Service Unavailable')).request(`${POINT}&from=2026-11-01&to=2026-11-02`);
     expect(res.status).toBe(502);
@@ -87,16 +106,19 @@ describe('GET /api/sites', () => {
 
   it('answers one site, and its ephemeris when given a range', async () => {
     const api = app(fixtureFetch());
-    expect(await (await api.request('/api/sites/south-pole-89-5')).json()).toEqual({ site: SITES[0] });
-    const res = await api.request('/api/sites/south-pole-89-5?from=2026-12-01&to=2026-12-01');
+    const im2 = SITES.find((s) => s.id === 'im2-athena');
+    expect(await (await api.request('/api/sites/im2-athena')).json()).toEqual({ site: im2 });
+    const res = await api.request('/api/sites/im2-athena?from=2026-12-01&to=2026-12-01');
     const body = (await res.json()) as { site: Site; ephemeris: Ephemeris };
-    expect(body.site.id).toBe('south-pole-89-5');
+    expect(body.site).toEqual(im2);
+    // The site keeps its published coordinates; the ephemeris is computed on the API's 0.01 degree grid.
+    expect([body.ephemeris.lat, body.ephemeris.lonEast]).toEqual([-84.79, 29.2]);
     expect(body.ephemeris.hours).toHaveLength(24);
   });
 
   it('answers 404 for an unknown site and 400 for half a range', async () => {
     const api = app(fixtureFetch());
     expect((await api.request('/api/sites/nowhere')).status).toBe(404);
-    expect((await api.request('/api/sites/south-pole-89-5?from=2026-12-01')).status).toBe(400);
+    expect((await api.request('/api/sites/im2-athena?from=2026-12-01')).status).toBe(400);
   });
 });

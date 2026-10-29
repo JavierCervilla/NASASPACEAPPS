@@ -51,11 +51,29 @@ npm run dev          # http://localhost:4321/
 npm run lint && npm run typecheck && npm test && npm run build && npm run e2e
 ```
 
+## API
+
+`packages/server` (Hono), all JSON under `/api`:
+
+| Route | Answers |
+|---|---|
+| `GET /api/health` | `{ ok: true }` |
+| `GET /api/ephemeris?lat&lon&from&to[&at]` | Hourly Sun/Earth/DSN samples, landing windows and metrics for any point. `lon` is east longitude; `from`/`to` are UTC dates (`2026-11-01`) or whole UTC hours (`2026-11-01T05:00:00Z`), at most 92 days |
+| `GET /api/sites` | The 29 curated sites (`packages/server/data/sites.json`), in three groups: `south_pole`, `apollo`, `other` |
+| `GET /api/sites/:id[?from&to&at]` | One site, plus its ephemeris when given a range |
+
+The cache is bounded: the point is rounded to a 0.01° grid (about 300 m on the Moon) and dates must fall between
+2026-01-01 and 2027-12-31 (400 otherwise). Sites with `approximate: true` have no citable coordinate: their point is a
+stand-in (usually the IAU/USGS centre of the named feature), not a landing point, and `coordinateNote` says which. On
+start the server warms the cache for every curated site over 2026-11-01 to 2026-12-31, in the background, 4 Horizons
+requests at a time; `WARM_CACHE=0` skips it.
+
 ## Data sources
 
 - [JPL Horizons API](https://ssd-api.jpl.nasa.gov/doc/horizons.html) (NASA/JPL): Sun and Earth azimuth/elevation from
   each lunar surface site; Moon elevation from each DSN complex.
-- NASA CLPS and Artemis landing sites from the challenge resources.
+- Landing sites: LROC/ASU, NASA, Wagner et al. 2017 and the other sources listed per site in
+  `packages/server/data/sites.json`; stand-in points from the IAU/USGS Gazetteer of Planetary Nomenclature.
 
 ## Credits
 

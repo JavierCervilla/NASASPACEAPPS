@@ -5,6 +5,31 @@ import type { EphemerisRequest } from './ephemeris.ts';
 /** Longest range one request may ask for, in days (a little over a quarter). */
 export const MAX_SPAN_DAYS = 92;
 
+/**
+ * Grid step, in degrees, the point of a request is rounded to before Horizons is asked. Every distinct point is a new
+ * set of Horizons calls and cache files, so without it a visitor could fill the disk by asking for 29.19571, 29.19572
+ * and so on. 0.01 degrees is about 300 m on the Moon (radius 1737.4 km: 1737.4 × π / 180 × 0.01 ≈ 0.30 km), well
+ * below what changes the Sun and Earth elevations the service computes (no local relief) and below the precision of
+ * most published landing coordinates.
+ */
+export const COORDINATE_STEP_DEG = 0.01;
+
+/**
+ * First and last day (UTC, inclusive) the service answers for. Together with the grid above it bounds the cache: a
+ * request outside this window gets 400 instead of new Horizons calls. It covers the hackathon (November 2026) with
+ * margin on both sides.
+ */
+export const SUPPORTED_FIRST_DAY = '2026-01-01';
+export const SUPPORTED_LAST_DAY = '2027-12-31';
+const SUPPORTED_FROM_MS = Date.parse(`${SUPPORTED_FIRST_DAY}T00:00:00Z`);
+const SUPPORTED_TO_MS = Date.parse(`${SUPPORTED_LAST_DAY}T23:00:00Z`);
+
+/** Rounds an angle to the {@link COORDINATE_STEP_DEG} grid (and turns -0 into 0, so it prints as `0`). */
+export function roundToGrid(degrees: number): number {
+  const rounded = Math.round(degrees / COORDINATE_STEP_DEG) / Math.round(1 / COORDINATE_STEP_DEG);
+  return rounded === 0 ? 0 : rounded;
+}
+
 /** A query parameter was missing or out of range; the message says which. */
 export class ParamError extends Error {
   override readonly name = 'ParamError';
@@ -47,17 +72,21 @@ export interface RawEphemerisParams {
 }
 
 /**
- * Validates the parameters of an ephemeris request. `lon` is the east longitude. Without `at`, the reference hour
- * is the current hour when it falls in the range, else the start of the range.
+ * Validates the parameters of an ephemeris request. `lon` is the east longitude. The point is rounded to the
+ * {@link COORDINATE_STEP_DEG} grid and the range must fall inside the supported window. Without `at`, the reference
+ * hour is the current hour when it falls in the range, else the start of the range.
  *
  * @throws ParamError naming the first invalid parameter.
  */
 export function parseEphemerisParams(raw: RawEphemerisParams, nowMs: number): EphemerisRequest {
-  const lat = number('lat', raw.lat, -90, 90);
-  const lonEast = number('lon', raw.lon, -180, 360);
+  const lat = roundToGrid(number('lat', raw.lat, -90, 90));
+  const lonEast = roundToGrid(number('lon', raw.lon, -180, 360));
   const fromMs = hour('from', raw.from, false);
   const toMsValue = hour('to', raw.to, true);
   if (toMsValue < fromMs) throw new ParamError('"to" must not be before "from"');
+  if (fromMs < SUPPORTED_FROM_MS || toMsValue > SUPPORTED_TO_MS) {
+    throw new ParamError(`the range must fall between ${SUPPORTED_FIRST_DAY} and ${SUPPORTED_LAST_DAY}`);
+  }
   if (toMsValue - fromMs > MAX_SPAN_DAYS * 24 * HOUR_MS) {
     throw new ParamError(`the range must not be longer than ${MAX_SPAN_DAYS} days`);
   }

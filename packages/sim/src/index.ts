@@ -5,6 +5,7 @@ export type {
   HourSample,
   RangeMetrics,
   Site,
+  SiteGroup,
   SourceRef,
   TimeBlock,
 } from './site.ts';

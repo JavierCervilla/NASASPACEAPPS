@@ -30,7 +30,8 @@ export interface EphemerisRequest {
 // enough not to hammer a rate-limited service.
 const MAX_PARALLEL_REQUESTS = 4;
 
-async function mapLimited<T, R>(items: readonly T[], limit: number, fn: (item: T) => Promise<R>): Promise<R[]> {
+/** Runs `fn` over `items` with at most `limit` calls in flight, and returns the results in the order of `items`. */
+export async function mapLimited<T, R>(items: readonly T[], limit: number, fn: (item: T) => Promise<R>): Promise<R[]> {
   const results = new Array<R>(items.length);
   let next = 0;
   const worker = async (): Promise<void> => {
@@ -57,6 +58,11 @@ function queriesFor(request: EphemerisRequest, month: MonthSpan): [Table, Horizo
       { target: BODY.moon, centerBody: BODY.earth, point: DSN_SITES[complex], ...span },
     ]),
   ];
+}
+
+/** Every Horizons request {@link computeEphemeris} sends for a request (the cache warm-up sends the same ones). */
+export function ephemerisQueries(request: EphemerisRequest): HorizonsQuery[] {
+  return monthsCovering(request.fromMs, request.toMs).flatMap((month) => queriesFor(request, month).map(([, q]) => q));
 }
 
 /**

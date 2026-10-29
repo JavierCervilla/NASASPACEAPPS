@@ -12,12 +12,19 @@ export interface SourceRef {
   readonly label: string;
   /** Link to the source. */
   readonly url: string;
+  /** What the source says that matters here (for example a different coordinate it gives), when worth noting. */
+  readonly note?: string;
 }
+
+/** Which list a site belongs to: the lunar south pole, the Apollo landings, or other missions. */
+export type SiteGroup = 'south_pole' | 'apollo' | 'other';
 
 /** Metadata of a landing site on the lunar surface. */
 export interface Site {
   /** Stable identifier, URL-safe (used in `/api/sites/:id`). */
   readonly id: string;
+  /** Which list the site belongs to. */
+  readonly group: SiteGroup;
   /** Display name of the site. */
   readonly name: string;
   /** Mission planned for the site. */
@@ -26,10 +33,18 @@ export interface Site {
   readonly agency: string;
   /** Mission status as published by its agency (for example planned, landed). */
   readonly status: string;
+  /** Date the status refers to (landing, planned launch...), as the source gives it: not always a full ISO date. */
+  readonly statusDate: string;
   /** Selenographic latitude in degrees, negative to the south. */
   readonly lat: number;
   /** Selenographic longitude in degrees, positive to the east (the convention JPL Horizons expects). */
   readonly lonEast: number;
+  /**
+   * `true` when no source gives a citable coordinate for the site (Artemis candidate regions and missions that only
+   * name a target feature). Then `lat` and `lonEast` are a stand-in, usually the IAU/USGS centre of the named feature,
+   * and NOT a landing point; `coordinateNote` says which point it is and the UI must show it as approximate.
+   */
+  readonly approximate: boolean;
   /** How precise the coordinates are and where they come from (published, approximate, region centre). */
   readonly coordinateNote: string;
   /** Sources backing the metadata and the coordinates. */

@@ -57,3 +57,36 @@ describe('validation against lunar periods at 89.5 S', () => {
     expect(Math.abs(signedAz(peak.azimuth))).toBeLessThan(10);
   });
 });
+
+// IM-2 Athena's touchdown point as the API asks Horizons for it (on its 0.01 degree grid): 84.79° S, 29.20° E.
+const IM2 = { lat: -84.79, lonEast: 29.2 };
+// Horizons keeps the azimuth within the longitude libration (about ±8 degrees) of its mean; 10 leaves some room.
+const LIBRATION_TOLERANCE_DEG = 10;
+const MEAN_TOLERANCE_DEG = 2;
+
+/** Initial great-circle bearing, in degrees clockwise from north in (-180, 180], from one point to another. */
+function bearingDeg(from: { lat: number; lonEast: number }, to: { lat: number; lonEast: number }): number {
+  const rad = Math.PI / 180;
+  const dLon = (to.lonEast - from.lonEast) * rad;
+  const y = Math.sin(dLon) * Math.cos(to.lat * rad);
+  const x = Math.cos(from.lat * rad) * Math.sin(to.lat * rad) - Math.sin(from.lat * rad) * Math.cos(to.lat * rad) * Math.cos(dLon);
+  return Math.atan2(y, x) / rad;
+}
+
+describe('validation of the longitude sign at IM-2 Athena (84.79 S, 29.20 E)', () => {
+  it('the Earth hangs west of north, towards the sub-Earth point at 0° E', () => {
+    // The geometric fact: the Earth always stays over the sub-Earth point, near 0° N 0° E (the Moon is tidally
+    // locked; libration moves it by a few degrees). From a site at 29.2° E, 0° E lies 29° to the west, so the Earth
+    // sits about 29 degrees west of local north (azimuth near 331). If east and west were flipped anywhere in the
+    // chain, the site would be at 29.2° W and the Earth would hang 29 degrees EAST of north (azimuth near 29): 58
+    // degrees off, far outside the libration. The 89.5 S point on the 0° meridian cannot catch this, since there
+    // the sub-Earth point is due north whichever sign the longitude has.
+    const expected = bearingDeg(IM2, { lat: 0, lonEast: 0 });
+    expect(expected).toBeLessThan(-25);
+    const signedAz = (az: number): number => ((az + 180) % 360) - 180;
+    const azimuths = fixtureRows('earth-from-moon-im2-athena').map((row) => signedAz(row.azimuth));
+    for (const az of azimuths) expect(Math.abs(az - expected)).toBeLessThan(LIBRATION_TOLERANCE_DEG);
+    const mean = azimuths.reduce((sum, az) => sum + az, 0) / azimuths.length;
+    expect(Math.abs(mean - expected)).toBeLessThan(MEAN_TOLERANCE_DEG);
+  });
+});

@@ -1,6 +1,6 @@
 /** The landing sites file: metadata of every site the API knows by id. */
 import { readFile } from 'node:fs/promises';
-import type { Site, SourceRef } from '@ventana/sim';
+import type { Site, SiteGroup, SourceRef } from '@ventana/sim';
 
 /** Default location of the sites file, next to the compiled or source code: `packages/server/data/sites.json`. */
 export const DEFAULT_SITES_FILE = new URL('../data/sites.json', import.meta.url);
@@ -9,9 +9,13 @@ function isString(value: unknown): value is string {
   return typeof value === 'string' && value.trim() !== '';
 }
 
+const GROUPS: readonly SiteGroup[] = ['south_pole', 'apollo', 'other'];
+
 function isSource(value: unknown): value is SourceRef {
   const v = value as Partial<SourceRef> | null;
-  return typeof v === 'object' && v !== null && isString(v.label) && isString(v.url);
+  return (
+    typeof v === 'object' && v !== null && isString(v.label) && isString(v.url) && (v.note === undefined || isString(v.note))
+  );
 }
 
 function checkSite(value: unknown, index: number): Site {
@@ -20,10 +24,12 @@ function checkSite(value: unknown, index: number): Site {
     throw new TypeError(`sites file: entry ${index} has an invalid "${field}"`);
   };
   if (typeof v !== 'object' || v === null) return fail('entry');
-  for (const field of ['id', 'name', 'mission', 'agency', 'status', 'coordinateNote'] as const) {
+  for (const field of ['id', 'name', 'mission', 'agency', 'status', 'statusDate', 'coordinateNote'] as const) {
     if (!isString(v[field])) fail(field);
   }
   if (!/^[a-z0-9-]+$/.test(v.id as string)) fail('id');
+  if (!GROUPS.includes(v.group as SiteGroup)) fail('group');
+  if (typeof v.approximate !== 'boolean') fail('approximate');
   if (typeof v.lat !== 'number' || v.lat < -90 || v.lat > 90) fail('lat');
   if (typeof v.lonEast !== 'number' || v.lonEast < -180 || v.lonEast > 360) fail('lonEast');
   if (!Array.isArray(v.sources) || !v.sources.every(isSource)) fail('sources');

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { ParamError, parseEphemerisParams } from '../src/params.ts';
+import { ParamError, parseEphemerisParams, roundToGrid } from '../src/params.ts';
 
 const NOW = Date.UTC(2026, 10, 14, 9, 41);
 const OK = { lat: '-89.5', lon: '0', from: '2026-11-01', to: '2026-12-31' };
@@ -42,9 +42,29 @@ describe('parseEphemerisParams', () => {
     [{ to: '2026-10-01' }, /before/],
     [{ to: '2027-02-02' }, /92 days/],
     [{ at: 'soon' }, /"at"/],
+    [{ from: '2025-12-31', to: '2026-01-02' }, /between 2026-01-01 and 2027-12-31/],
+    [{ from: '2027-12-31', to: '2028-01-01' }, /between 2026-01-01 and 2027-12-31/],
+    [{ from: '2027-12-31T00:00:00Z', to: '2028-01-01T00:00:00Z' }, /between/],
   ])('rejects %o', (patch, message) => {
     expect(() => parseEphemerisParams({ ...OK, ...patch }, NOW)).toThrow(ParamError);
     expect(() => parseEphemerisParams({ ...OK, ...patch }, NOW)).toThrow(message);
+  });
+
+  it('accepts the first and the last hour of the supported window', () => {
+    const first = parseEphemerisParams({ ...OK, from: '2026-01-01', to: '2026-01-01' }, NOW);
+    expect(first.fromMs).toBe(Date.UTC(2026, 0, 1));
+    const last = parseEphemerisParams({ ...OK, from: '2027-12-31', to: '2027-12-31' }, NOW);
+    expect(last.toMs).toBe(Date.UTC(2027, 11, 31, 23));
+  });
+
+  it('rounds the point to the 0.01 degree grid, so nearby points share one Horizons query', () => {
+    const a = parseEphemerisParams({ ...OK, lat: '-84.7906', lon: '29.1957' }, NOW);
+    const b = parseEphemerisParams({ ...OK, lat: '-84.79499', lon: '29.20444' }, NOW);
+    expect([a.lat, a.lonEast]).toEqual([-84.79, 29.2]);
+    expect([b.lat, b.lonEast]).toEqual([-84.79, 29.2]);
+    expect(roundToGrid(-0.004)).toBe(0);
+    expect(Object.is(roundToGrid(-0.004), -0)).toBe(false);
+    expect(roundToGrid(359.996)).toBe(360);
   });
 
   it('accepts a span of exactly 92 days and the extreme coordinates', () => {

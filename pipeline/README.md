@@ -1,7 +1,7 @@
 # pipeline
 
-Python 3 precompute that turns JPL Horizons ephemerides into the static JSON the web reads. Written during the
-hackathon (14 November 2026); this folder only fixes the contract until then.
+Python 3 precompute that turns JPL Horizons ephemerides into the static JSON the web reads. Until the script lands,
+this folder fixes its contract.
 
 ## Contract (from the spec)
 

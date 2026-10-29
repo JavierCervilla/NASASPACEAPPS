@@ -8,17 +8,10 @@ Network antenna (Goldstone, Canberra, Robledo de Chavela) is listening.
 Spec and roadmap (the source of truth for scope): Claude Docs «Ventana Lunar · Especificación y roadmap». Framework
 epic: `VENT-1` (Dashboard project «Ventana Lunar», prefix `VENT`).
 
-## Hackathon rule: no solution code before 14 November
-
-Space Apps requires the solution to be built during the event, and the submission form asks to declare it. Until the
-hackathon opens, this repo only holds **preparation**: tooling, CI, deploy, design rules, a hello world page. Do **not**
-write before 14 November: the Horizons script for the real sites, the calendar strip, the polar map, the globe, the DSN
-mode. If a task would cross that line, stop and ask.
-
 ## Stack
 
-- **Web**: Astro 7 (static output) + React 19 islands + TypeScript (strictest). Three.js joins on the hackathon day for
-  the globe (luxury 1). No backend, no login, no database: the browser only reads static JSON.
+- **Web**: Astro 7 (static output) + React 19 islands + TypeScript (strictest). Three.js joins with the globe
+  (luxury 1). No backend, no login, no database: the browser only reads static JSON.
 - **Data**: a Python 3 script in `pipeline/` precomputes everything from JPL Horizons into `public/data/` (hackathon
   day). Never call Horizons from the browser.
 - **Deploy**: Dokploy builds the `Dockerfile` (static build served by nginx, `nginx.conf`) from `main`, at the domain

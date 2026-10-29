@@ -28,8 +28,8 @@
     {
       "id": "cache",
       "type": "database",
-      "label": "pipeline/.cache",
-      "sublabel": "disk request cache",
+      "label": "Horizons cache",
+      "sublabel": "responses on disk",
       "pos": [
         280,
         110
@@ -42,8 +42,8 @@
     {
       "id": "pipeline",
       "type": "backend",
-      "label": "pipeline/",
-      "sublabel": "Python 3, cached GETs",
+      "label": "Backend API",
+      "sublabel": "no login, on Dokploy",
       "pos": [
         280,
         300
@@ -56,8 +56,8 @@
     {
       "id": "data",
       "type": "database",
-      "label": "public/data/*.json",
-      "sublabel": "1 per site, hourly",
+      "label": "Site data",
+      "sublabel": "sites + custom lat/lon",
       "pos": [
         520,
         300
@@ -189,7 +189,7 @@
   "boundaries": [
     {
       "kind": "region",
-      "label": "Precompute (Python, offline)",
+      "label": "Backend (Dokploy, no login)",
       "wraps": [
         "cache",
         "pipeline",
@@ -198,7 +198,7 @@
     },
     {
       "kind": "region",
-      "label": "Delivery (Dokploy)",
+      "label": "Web delivery (Dokploy)",
       "wraps": [
         "actions",
         "pages"
@@ -206,7 +206,7 @@
     },
     {
       "kind": "region",
-      "label": "Static web (Astro + React)",
+      "label": "Web app (Astro + React)",
       "wraps": [
         "store",
         "calendar",
@@ -237,18 +237,19 @@
       ]
     },
     {
-      "id": "write-json",
+      "id": "compute-data",
       "from": "pipeline",
       "to": "data",
-      "label": "writes",
+      "label": "computes",
       "variant": "emphasis"
     },
     {
-      "id": "build-site",
+      "id": "fetch-data",
       "from": "data",
-      "to": "actions",
-      "label": "built in",
-      "variant": "emphasis"
+      "to": "store",
+      "label": "fetch",
+      "variant": "emphasis",
+      "labelDy": 24
     },
     {
       "id": "deploy-pages",
@@ -258,11 +259,10 @@
       "variant": "emphasis"
     },
     {
-      "id": "load-json",
+      "id": "serve-app",
       "from": "pages",
       "to": "store",
-      "label": "fetch JSON",
-      "variant": "emphasis"
+      "label": "serves app"
     },
     {
       "id": "sub-calendar",
@@ -295,26 +295,26 @@
   "cards": [
     {
       "dot": "amber",
-      "title": "Precompute",
+      "title": "Backend",
       "items": [
-        "Sun/Earth az-el from lunar sites, Moon el from DSN sites",
-        "One JSON per landing site: sun_el, earth_el, dsn per hour",
-        "Requests cached on disk; runs offline, not in the browser"
+        "Queries JPL Horizons: Sun/Earth az-el per site, Moon el per DSN site",
+        "Curated sites and custom coordinates, no login",
+        "Horizons responses cached on disk for <3 s answers"
       ]
     },
     {
       "dot": "cyan",
-      "title": "Delivery",
+      "title": "Web delivery",
       "items": [
         "Dokploy builds the Docker image from main",
-        "nginx serves the static site behind Traefik"
+        "nginx serves the Astro site behind Traefik"
       ]
     },
     {
       "dot": "emerald",
-      "title": "Static web",
+      "title": "Web app",
       "items": [
-        "One Time store (site + UTC hour) loads the JSON",
+        "One Time store (site + UTC hour) fetches site data",
         "Views subscribe read-only; they never compute ephemerides",
         "MVP: calendar, polar map, site card; luxury: globes"
       ]

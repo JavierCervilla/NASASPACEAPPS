@@ -11,9 +11,10 @@ epic: `VENT-1` (Dashboard project «Ventana Lunar», prefix `VENT`).
 ## Stack
 
 - **Web**: Astro 7 (static output) + React 19 islands + TypeScript (strictest). Three.js joins with the globe
-  (luxury 1). No backend, no login, no database: the browser only reads static JSON.
-- **Data**: a Python 3 script in `pipeline/` precomputes everything from JPL Horizons into `public/data/` (hackathon
-  day). Never call Horizons from the browser.
+  (luxury 1). No login and no user accounts.
+- **Backend** (decided 2026-10-29, to be designed in VENT-10): one service on Dokploy serves all site data, for the
+  curated sites and for custom coordinates. It queries JPL Horizons and caches the responses on disk, because Horizons
+  is slow and rate limited and the spec wants answers in under 3 s. The browser never calls Horizons directly.
 - **Deploy**: Dokploy builds the `Dockerfile` (static build served by nginx, `nginx.conf`) from `main`, at the domain
   root (`SITE_BASE` sets a sub-path if ever needed). Operate it with the framework's `dokploy` skill.
 
@@ -52,6 +53,10 @@ security ladder.
 Work here is an AgenticFramework trajectory (`VENT-*`): branch + PR, gates green, `ROADMAP.md` and `CHANGELOG.md`
 updated in the same PR when something visible changes, architecture diagram in `docs/diagrams/` kept current.
 `ROADMAP.md` and `CHANGELOG.md` are written in Spanish (the human reads them).
+
+**Guardián during the hackathon** (human decision, 2026-10-29): only `verificador` and `seguridad`, launched by hand
+with the round message published by the orchestrator; at most 2 rounds per PR, and a round-2 rejection that is not a
+security finding merges and goes to a fix-forward trajectory. No `qa` or `qa-adversario` until the event is over.
 
 **Roadmap canvas** (https://claude.ai/artifact/Sm8QoCwg7DqLbuCSHLPfBg): the live, visual roadmap. It is part of the
 definition of done of every step, together with the Dashboard and the vault: when a trajectory or TODO changes state,

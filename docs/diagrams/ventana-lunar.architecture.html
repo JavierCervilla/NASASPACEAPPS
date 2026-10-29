@@ -5030,19 +5030,19 @@
         <rect width="100%" height="100%" fill="url(#grid)" />
 
         <!-- Boundaries (behind everything) -->
-        <rect data-graph-role="structural-frame" data-composition-frame-kind="region" data-composition-frame-id="0" data-composition-frame-label="Precompute (Python, offline)" x="250" y="80" width="440" height="300" rx="12" class="c-region" stroke-width="1"/>
+        <rect data-graph-role="structural-frame" data-composition-frame-kind="region" data-composition-frame-id="0" data-composition-frame-label="Backend (Dokploy, no login)" x="250" y="80" width="440" height="300" rx="12" class="c-region" stroke-width="1"/>
 
-        <rect data-graph-role="structural-frame" data-composition-frame-kind="region" data-composition-frame-id="1" data-composition-frame-label="Delivery (Dokploy)" x="730" y="270" width="440" height="110" rx="12" class="c-region" stroke-width="1"/>
+        <rect data-graph-role="structural-frame" data-composition-frame-kind="region" data-composition-frame-id="1" data-composition-frame-label="Web delivery (Dokploy)" x="730" y="270" width="440" height="110" rx="12" class="c-region" stroke-width="1"/>
 
-        <rect data-graph-role="structural-frame" data-composition-frame-kind="region" data-composition-frame-id="2" data-composition-frame-label="Static web (Astro + React)" x="40" y="460" width="1100" height="300" rx="12" class="c-region" stroke-width="1"/>
+        <rect data-graph-role="structural-frame" data-composition-frame-kind="region" data-composition-frame-id="2" data-composition-frame-label="Web app (Astro + React)" x="40" y="460" width="1100" height="300" rx="12" class="c-region" stroke-width="1"/>
 
         <!-- Connection paths (before components for correct z-order) -->
         <path data-edge-from="horizons" data-edge-to="pipeline" data-edge-label="az/el series" data-edge-key="0" data-edge-id="query-horizons" data-composition-points="180,330;280,330" d="M 180 330 L 280 330" class="a-emphasis" stroke-width="1.8" marker-end="url(#arrowhead-emphasis)"/>
         <path data-edge-from="pipeline" data-edge-to="cache" data-edge-label="reuse" data-edge-key="1" data-edge-id="disk-cache" data-composition-points="350,300;350,170" d="M 350 300 L 350 170" class="a-dashed" stroke-width="1.5" marker-end="url(#arrowhead-dashed)"/>
-        <path data-edge-from="pipeline" data-edge-to="data" data-edge-label="writes" data-edge-key="2" data-edge-id="write-json" data-composition-points="420,330;520,330" d="M 420 330 L 520 330" class="a-emphasis" stroke-width="1.8" marker-end="url(#arrowhead-emphasis)"/>
-        <path data-edge-from="data" data-edge-to="actions" data-edge-label="built in" data-edge-key="3" data-edge-id="build-site" data-composition-points="660,330;760,330" d="M 660 330 L 760 330" class="a-emphasis" stroke-width="1.8" marker-end="url(#arrowhead-emphasis)"/>
+        <path data-edge-from="pipeline" data-edge-to="data" data-edge-label="computes" data-edge-key="2" data-edge-id="compute-data" data-composition-points="420,330;520,330" d="M 420 330 L 520 330" class="a-emphasis" stroke-width="1.8" marker-end="url(#arrowhead-emphasis)"/>
+        <path data-edge-from="data" data-edge-to="store" data-edge-label="fetch" data-edge-key="3" data-edge-id="fetch-data" data-composition-points="590,360;590,490" d="M 590 360 L 590 490" class="a-emphasis" stroke-width="1.8" marker-end="url(#arrowhead-emphasis)"/>
         <path data-edge-from="actions" data-edge-to="pages" data-edge-label="deploys" data-edge-key="4" data-edge-id="deploy-pages" data-composition-points="900,323;1000,323" d="M 900 323 L 1000 323" class="a-emphasis" stroke-width="1.8" marker-end="url(#arrowhead-emphasis)"/>
-        <path data-edge-from="pages" data-edge-to="store" data-edge-label="fetch JSON" data-edge-key="5" data-edge-id="load-json" data-composition-points="1000,337;976,337;976,506;660,506" d="M 1000 337 L 984 337 Q 976 337 976 345 L 976 498 Q 976 506 968 506 L 660 506" class="a-emphasis" stroke-width="1.8" marker-end="url(#arrowhead-emphasis)"/>
+        <path data-edge-from="pages" data-edge-to="store" data-edge-label="serves app" data-edge-key="5" data-edge-id="serve-app" data-composition-points="1000,337;976,337;976,506;660,506" d="M 1000 337 L 984 337 Q 976 337 976 345 L 976 498 Q 976 506 968 506 L 660 506" class="a-default" stroke-width="1.5" marker-end="url(#arrowhead)"/>
         <path data-edge-from="store" data-edge-to="calendar" data-edge-key="6" data-edge-id="sub-calendar" data-composition-points="520,513;234,513;234,710;210,710" d="M 520 513 L 242 513 Q 234 513 234 521 L 234 702 Q 234 710 226 710 L 210 710" class="a-default" stroke-width="1.5" marker-end="url(#arrowhead)"/>
         <path data-edge-from="store" data-edge-to="polar" data-edge-key="7" data-edge-id="sub-polar" data-composition-points="520,527;477.5,527;477.5,710;435,710" d="M 520 527 L 485.5 527 Q 477.5 527 477.5 535 L 477.5 702 Q 477.5 710 469.5 710 L 435 710" class="a-default" stroke-width="1.5" marker-end="url(#arrowhead)"/>
         <path data-edge-from="store" data-edge-to="sitecard" data-edge-key="8" data-edge-id="sub-sitecard" data-composition-points="590,550;590,680" d="M 590 550 L 590 680" class="a-default" stroke-width="1.5" marker-end="url(#arrowhead)"/>
@@ -5062,44 +5062,44 @@
         <text data-detail="context" x="110" y="344" class="t-muted" font-size="9" text-anchor="middle">NASA/JPL ephemerides</text>
         </g>
 
-        <g id="node-cache" data-node-id="cache" data-node-label="pipeline/.cache" tabindex="0" role="button" aria-label="Focus pipeline/.cache, disk request cache, Precompute (Python, offline)" aria-pressed="false" data-node-kind="database" data-node-sublabel="disk request cache" data-node-context="Precompute (Python, offline)">
-          <title>pipeline/.cache · disk request cache · Precompute (Python, offline)</title>
+        <g id="node-cache" data-node-id="cache" data-node-label="Horizons cache" tabindex="0" role="button" aria-label="Focus Horizons cache, responses on disk, Backend (Dokploy, no login)" aria-pressed="false" data-node-kind="database" data-node-sublabel="responses on disk" data-node-context="Backend (Dokploy, no login)">
+          <title>Horizons cache · responses on disk · Backend (Dokploy, no login)</title>
           <rect x="280" y="110" width="140" height="60" rx="6" class="c-mask"/>
           <rect x="280" y="110" width="140" height="60" rx="6" class="c-database" stroke-width="1.5"/>
           <g aria-hidden="true" data-semantic-sigil="database" class="semantic-sigil s-database" transform="translate(286 116) scale(0.6875)">
             <ellipse cx="8" cy="4" rx="5" ry="2"/>
             <path d="M3 4v8c0 1.1 2.2 2 5 2s5-.9 5-2V4M3 8c0 1.1 2.2 2 5 2s5-.9 5-2"/>
           </g>
-          <text data-node-label="" data-detail-anchor="" x="350" y="138" class="t-primary" font-size="11" font-weight="600" text-anchor="middle">pipeline/.cache</text>
-        <text data-detail="context" x="350" y="154" class="t-muted" font-size="9" text-anchor="middle">disk request cache</text>
+          <text data-node-label="" data-detail-anchor="" x="350" y="138" class="t-primary" font-size="11" font-weight="600" text-anchor="middle">Horizons cache</text>
+        <text data-detail="context" x="350" y="154" class="t-muted" font-size="9" text-anchor="middle">responses on disk</text>
         </g>
 
-        <g id="node-pipeline" data-node-id="pipeline" data-node-label="pipeline/" tabindex="0" role="button" aria-label="Focus pipeline/, Python 3, cached GETs, Precompute (Python, offline)" aria-pressed="false" data-node-kind="backend" data-node-sublabel="Python 3, cached GETs" data-node-context="Precompute (Python, offline)">
-          <title>pipeline/ · Python 3, cached GETs · Precompute (Python, offline)</title>
+        <g id="node-pipeline" data-node-id="pipeline" data-node-label="Backend API" tabindex="0" role="button" aria-label="Focus Backend API, no login, on Dokploy, Backend (Dokploy, no login)" aria-pressed="false" data-node-kind="backend" data-node-sublabel="no login, on Dokploy" data-node-context="Backend (Dokploy, no login)">
+          <title>Backend API · no login, on Dokploy · Backend (Dokploy, no login)</title>
           <rect x="280" y="300" width="140" height="60" rx="6" class="c-mask"/>
           <rect x="280" y="300" width="140" height="60" rx="6" class="c-backend" stroke-width="1.5"/>
           <g aria-hidden="true" data-semantic-sigil="backend" class="semantic-sigil s-backend" transform="translate(286 306) scale(0.6875)">
             <path d="M6 3 3 8l3 5M10 3l3 5-3 5"/>
           </g>
-          <text data-node-label="" data-detail-anchor="" x="350" y="328" class="t-primary" font-size="11" font-weight="600" text-anchor="middle">pipeline/</text>
-        <text data-detail="context" x="350" y="344" class="t-muted" font-size="9" text-anchor="middle">Python 3, cached GETs</text>
+          <text data-node-label="" data-detail-anchor="" x="350" y="328" class="t-primary" font-size="11" font-weight="600" text-anchor="middle">Backend API</text>
+        <text data-detail="context" x="350" y="344" class="t-muted" font-size="9" text-anchor="middle">no login, on Dokploy</text>
         </g>
 
-        <g id="node-data" data-node-id="data" data-node-label="public/data/*.json" tabindex="0" role="button" aria-label="Focus public/data/*.json, 1 per site, hourly, Precompute (Python, offline)" aria-pressed="false" data-node-kind="database" data-node-sublabel="1 per site, hourly" data-node-tag="Nov-Dec 2026" data-node-context="Precompute (Python, offline)">
-          <title>public/data/*.json · 1 per site, hourly · Precompute (Python, offline) · Nov-Dec 2026</title>
+        <g id="node-data" data-node-id="data" data-node-label="Site data" tabindex="0" role="button" aria-label="Focus Site data, sites + custom lat/lon, Backend (Dokploy, no login)" aria-pressed="false" data-node-kind="database" data-node-sublabel="sites + custom lat/lon" data-node-tag="Nov-Dec 2026" data-node-context="Backend (Dokploy, no login)">
+          <title>Site data · sites + custom lat/lon · Backend (Dokploy, no login) · Nov-Dec 2026</title>
           <rect x="520" y="300" width="140" height="60" rx="6" class="c-mask"/>
           <rect x="520" y="300" width="140" height="60" rx="6" class="c-database" stroke-width="1.5"/>
           <g aria-hidden="true" data-semantic-sigil="database" class="semantic-sigil s-database" transform="translate(526 306) scale(0.6875)">
             <ellipse cx="8" cy="4" rx="5" ry="2"/>
             <path d="M3 4v8c0 1.1 2.2 2 5 2s5-.9 5-2V4M3 8c0 1.1 2.2 2 5 2s5-.9 5-2"/>
           </g>
-          <text data-node-label="" data-detail-anchor="" x="590" y="328" class="t-primary" font-size="11" font-weight="600" text-anchor="middle">public/data/*.json</text>
-        <text data-detail="context" x="590" y="344" class="t-muted" font-size="9" text-anchor="middle">1 per site, hourly</text>
+          <text data-node-label="" data-detail-anchor="" x="590" y="328" class="t-primary" font-size="11" font-weight="600" text-anchor="middle">Site data</text>
+        <text data-detail="context" x="590" y="344" class="t-muted" font-size="9" text-anchor="middle">sites + custom lat/lon</text>
         <text data-detail="fine" x="590" y="352" class="t-database" font-size="7" text-anchor="middle">Nov-Dec 2026</text>
         </g>
 
-        <g id="node-actions" data-node-id="actions" data-node-label="Dokploy build" tabindex="0" role="button" aria-label="Focus Dokploy build, Dockerfile on push, Delivery (Dokploy)" aria-pressed="false" data-node-kind="cloud" data-node-sublabel="Dockerfile on push" data-node-context="Delivery (Dokploy)">
-          <title>Dokploy build · Dockerfile on push · Delivery (Dokploy)</title>
+        <g id="node-actions" data-node-id="actions" data-node-label="Dokploy build" tabindex="0" role="button" aria-label="Focus Dokploy build, Dockerfile on push, Web delivery (Dokploy)" aria-pressed="false" data-node-kind="cloud" data-node-sublabel="Dockerfile on push" data-node-context="Web delivery (Dokploy)">
+          <title>Dokploy build · Dockerfile on push · Web delivery (Dokploy)</title>
           <rect x="760" y="300" width="140" height="60" rx="6" class="c-mask"/>
           <rect x="760" y="300" width="140" height="60" rx="6" class="c-cloud" stroke-width="1.5"/>
           <g aria-hidden="true" data-semantic-sigil="cloud" class="semantic-sigil s-cloud" transform="translate(766 306) scale(0.6875)">
@@ -5109,8 +5109,8 @@
         <text data-detail="context" x="830" y="344" class="t-muted" font-size="9" text-anchor="middle">Dockerfile on push</text>
         </g>
 
-        <g id="node-pages" data-node-id="pages" data-node-label="nginx container" tabindex="0" role="button" aria-label="Focus nginx container, Traefik + TLS, Delivery (Dokploy)" aria-pressed="false" data-node-kind="cloud" data-node-sublabel="Traefik + TLS" data-node-context="Delivery (Dokploy)">
-          <title>nginx container · Traefik + TLS · Delivery (Dokploy)</title>
+        <g id="node-pages" data-node-id="pages" data-node-label="nginx container" tabindex="0" role="button" aria-label="Focus nginx container, Traefik + TLS, Web delivery (Dokploy)" aria-pressed="false" data-node-kind="cloud" data-node-sublabel="Traefik + TLS" data-node-context="Web delivery (Dokploy)">
+          <title>nginx container · Traefik + TLS · Web delivery (Dokploy)</title>
           <rect x="1000" y="300" width="140" height="60" rx="6" class="c-mask"/>
           <rect x="1000" y="300" width="140" height="60" rx="6" class="c-cloud" stroke-width="1.5"/>
           <g aria-hidden="true" data-semantic-sigil="cloud" class="semantic-sigil s-cloud" transform="translate(1006 306) scale(0.6875)">
@@ -5120,8 +5120,8 @@
         <text data-detail="context" x="1070" y="344" class="t-muted" font-size="9" text-anchor="middle">Traefik + TLS</text>
         </g>
 
-        <g id="node-store" data-node-id="store" data-node-label="Time store" tabindex="0" role="button" aria-label="Focus Time store, site + UTC hour, Static web (Astro + React)" aria-pressed="false" data-node-kind="frontend" data-node-sublabel="site + UTC hour" data-node-context="Static web (Astro + React)">
-          <title>Time store · site + UTC hour · Static web (Astro + React)</title>
+        <g id="node-store" data-node-id="store" data-node-label="Time store" tabindex="0" role="button" aria-label="Focus Time store, site + UTC hour, Web app (Astro + React)" aria-pressed="false" data-node-kind="frontend" data-node-sublabel="site + UTC hour" data-node-context="Web app (Astro + React)">
+          <title>Time store · site + UTC hour · Web app (Astro + React)</title>
           <rect x="520" y="490" width="140" height="60" rx="6" class="c-mask"/>
           <rect x="520" y="490" width="140" height="60" rx="6" class="c-frontend" stroke-width="1.5"/>
           <g aria-hidden="true" data-semantic-sigil="frontend" class="semantic-sigil s-frontend" transform="translate(526 496) scale(0.6875)">
@@ -5134,8 +5134,8 @@
         <text data-detail="context" x="590" y="534" class="t-muted" font-size="9" text-anchor="middle">site + UTC hour</text>
         </g>
 
-        <g id="node-calendar" data-node-id="calendar" data-node-label="Calendar strip" tabindex="0" role="button" aria-label="Focus Calendar strip, pick the hour, Static web (Astro + React)" aria-pressed="false" data-node-kind="frontend" data-node-sublabel="pick the hour" data-node-tag="MVP" data-node-context="Static web (Astro + React)">
-          <title>Calendar strip · pick the hour · Static web (Astro + React) · MVP</title>
+        <g id="node-calendar" data-node-id="calendar" data-node-label="Calendar strip" tabindex="0" role="button" aria-label="Focus Calendar strip, pick the hour, Web app (Astro + React)" aria-pressed="false" data-node-kind="frontend" data-node-sublabel="pick the hour" data-node-tag="MVP" data-node-context="Web app (Astro + React)">
+          <title>Calendar strip · pick the hour · Web app (Astro + React) · MVP</title>
           <rect x="70" y="680" width="140" height="60" rx="6" class="c-mask"/>
           <rect x="70" y="680" width="140" height="60" rx="6" class="c-frontend" stroke-width="1.5"/>
           <g aria-hidden="true" data-semantic-sigil="frontend" class="semantic-sigil s-frontend" transform="translate(76 686) scale(0.6875)">
@@ -5149,8 +5149,8 @@
         <text data-detail="fine" x="140" y="732" class="t-frontend" font-size="7" text-anchor="middle">MVP</text>
         </g>
 
-        <g id="node-polar" data-node-id="polar" data-node-label="2D polar map" tabindex="0" role="button" aria-label="Focus 2D polar map, sun/earth az-el, Static web (Astro + React)" aria-pressed="false" data-node-kind="frontend" data-node-sublabel="sun/earth az-el" data-node-tag="MVP" data-node-context="Static web (Astro + React)">
-          <title>2D polar map · sun/earth az-el · Static web (Astro + React) · MVP</title>
+        <g id="node-polar" data-node-id="polar" data-node-label="2D polar map" tabindex="0" role="button" aria-label="Focus 2D polar map, sun/earth az-el, Web app (Astro + React)" aria-pressed="false" data-node-kind="frontend" data-node-sublabel="sun/earth az-el" data-node-tag="MVP" data-node-context="Web app (Astro + React)">
+          <title>2D polar map · sun/earth az-el · Web app (Astro + React) · MVP</title>
           <rect x="295" y="680" width="140" height="60" rx="6" class="c-mask"/>
           <rect x="295" y="680" width="140" height="60" rx="6" class="c-frontend" stroke-width="1.5"/>
           <g aria-hidden="true" data-semantic-sigil="frontend" class="semantic-sigil s-frontend" transform="translate(301 686) scale(0.6875)">
@@ -5164,8 +5164,8 @@
         <text data-detail="fine" x="365" y="732" class="t-frontend" font-size="7" text-anchor="middle">MVP</text>
         </g>
 
-        <g id="node-sitecard" data-node-id="sitecard" data-node-label="Site card" tabindex="0" role="button" aria-label="Focus Site card, window status, Static web (Astro + React)" aria-pressed="false" data-node-kind="frontend" data-node-sublabel="window status" data-node-tag="MVP" data-node-context="Static web (Astro + React)">
-          <title>Site card · window status · Static web (Astro + React) · MVP</title>
+        <g id="node-sitecard" data-node-id="sitecard" data-node-label="Site card" tabindex="0" role="button" aria-label="Focus Site card, window status, Web app (Astro + React)" aria-pressed="false" data-node-kind="frontend" data-node-sublabel="window status" data-node-tag="MVP" data-node-context="Web app (Astro + React)">
+          <title>Site card · window status · Web app (Astro + React) · MVP</title>
           <rect x="520" y="680" width="140" height="60" rx="6" class="c-mask"/>
           <rect x="520" y="680" width="140" height="60" rx="6" class="c-frontend" stroke-width="1.5"/>
           <g aria-hidden="true" data-semantic-sigil="frontend" class="semantic-sigil s-frontend" transform="translate(526 686) scale(0.6875)">
@@ -5179,8 +5179,8 @@
         <text data-detail="fine" x="590" y="732" class="t-frontend" font-size="7" text-anchor="middle">MVP</text>
         </g>
 
-        <g id="node-moon3d" data-node-id="moon3d" data-node-label="3D Moon globe" tabindex="0" role="button" aria-label="Focus 3D Moon globe, Three.js, Static web (Astro + React)" aria-pressed="false" data-node-kind="frontend" data-node-sublabel="Three.js" data-node-tag="luxury" data-node-context="Static web (Astro + React)">
-          <title>3D Moon globe · Three.js · Static web (Astro + React) · luxury</title>
+        <g id="node-moon3d" data-node-id="moon3d" data-node-label="3D Moon globe" tabindex="0" role="button" aria-label="Focus 3D Moon globe, Three.js, Web app (Astro + React)" aria-pressed="false" data-node-kind="frontend" data-node-sublabel="Three.js" data-node-tag="luxury" data-node-context="Web app (Astro + React)">
+          <title>3D Moon globe · Three.js · Web app (Astro + React) · luxury</title>
           <rect x="745" y="680" width="140" height="60" rx="6" class="c-mask"/>
           <rect x="745" y="680" width="140" height="60" rx="6" class="c-frontend" stroke-width="1.5"/>
           <g aria-hidden="true" data-semantic-sigil="frontend" class="semantic-sigil s-frontend" transform="translate(751 686) scale(0.6875)">
@@ -5194,8 +5194,8 @@
         <text data-detail="fine" x="815" y="732" class="t-frontend" font-size="7" text-anchor="middle">luxury</text>
         </g>
 
-        <g id="node-dsn" data-node-id="dsn" data-node-label="DSN mini globe" tabindex="0" role="button" aria-label="Focus DSN mini globe, Moon el at DSN, Static web (Astro + React)" aria-pressed="false" data-node-kind="frontend" data-node-sublabel="Moon el at DSN" data-node-tag="luxury" data-node-context="Static web (Astro + React)">
-          <title>DSN mini globe · Moon el at DSN · Static web (Astro + React) · luxury</title>
+        <g id="node-dsn" data-node-id="dsn" data-node-label="DSN mini globe" tabindex="0" role="button" aria-label="Focus DSN mini globe, Moon el at DSN, Web app (Astro + React)" aria-pressed="false" data-node-kind="frontend" data-node-sublabel="Moon el at DSN" data-node-tag="luxury" data-node-context="Web app (Astro + React)">
+          <title>DSN mini globe · Moon el at DSN · Web app (Astro + React) · luxury</title>
           <rect x="970" y="680" width="140" height="60" rx="6" class="c-mask"/>
           <rect x="970" y="680" width="140" height="60" rx="6" class="c-frontend" stroke-width="1.5"/>
           <g aria-hidden="true" data-semantic-sigil="frontend" class="semantic-sigil s-frontend" transform="translate(976 686) scale(0.6875)">
@@ -5218,21 +5218,21 @@
           <rect x="333" y="225" width="34" height="14" rx="3" class="c-mask"/>
           <text x="350" y="235" class="t-messagebus" font-size="8" text-anchor="middle">reuse</text>
         </g>
-        <g data-detail="context" data-edge-from="pipeline" data-edge-to="data" data-edge-label="writes" data-edge-key="2" data-edge-id="write-json">
-          <rect x="450.6" y="310" width="38.8" height="14" rx="3" class="c-mask"/>
-          <text x="470" y="320" class="t-backend" font-size="8" text-anchor="middle">writes</text>
+        <g data-detail="context" data-edge-from="pipeline" data-edge-to="data" data-edge-label="computes" data-edge-key="2" data-edge-id="compute-data">
+          <rect x="445.8" y="310" width="48.4" height="14" rx="3" class="c-mask"/>
+          <text x="470" y="320" class="t-backend" font-size="8" text-anchor="middle">computes</text>
         </g>
-        <g data-detail="context" data-edge-from="data" data-edge-to="actions" data-edge-label="built in" data-edge-key="3" data-edge-id="build-site">
-          <rect x="685.8" y="310" width="48.4" height="14" rx="3" class="c-mask"/>
-          <text x="710" y="320" class="t-backend" font-size="8" text-anchor="middle">built in</text>
+        <g data-detail="context" data-edge-from="data" data-edge-to="store" data-edge-label="fetch" data-edge-key="3" data-edge-id="fetch-data">
+          <rect x="573" y="364" width="34" height="14" rx="3" class="c-mask"/>
+          <text x="590" y="374" class="t-backend" font-size="8" text-anchor="middle">fetch</text>
         </g>
         <g data-detail="context" data-edge-from="actions" data-edge-to="pages" data-edge-label="deploys" data-edge-key="4" data-edge-id="deploy-pages">
           <rect x="928.2" y="303" width="43.6" height="14" rx="3" class="c-mask"/>
           <text x="950" y="313" class="t-backend" font-size="8" text-anchor="middle">deploys</text>
         </g>
-        <g data-detail="context" data-edge-from="pages" data-edge-to="store" data-edge-label="fetch JSON" data-edge-key="5" data-edge-id="load-json">
+        <g data-detail="context" data-edge-from="pages" data-edge-to="store" data-edge-label="serves app" data-edge-key="5" data-edge-id="serve-app">
           <rect x="947" y="401.5" width="58" height="14" rx="3" class="c-mask"/>
-          <text x="976" y="411.5" class="t-backend" font-size="8" text-anchor="middle">fetch JSON</text>
+          <text x="976" y="411.5" class="t-muted" font-size="8" text-anchor="middle">serves app</text>
         </g>
 
 
@@ -5241,19 +5241,19 @@
 
 
         <!-- Boundary labels (foreground masks keep routes out of titles) -->
-        <g data-graph-role="structural-frame-label" data-composition-frame-id="0" data-composition-frame-kind="region" data-composition-frame-label="Precompute (Python, offline)">
-          <rect data-graph-role="structural-frame-label-mask" x="254" y="90" width="161.2" height="16" rx="3" class="c-mask"/>
-          <text data-boundary-label="" x="258" y="103" class="t-cloud" font-size="9" font-weight="600">Precompute (Python, offline)</text>
+        <g data-graph-role="structural-frame-label" data-composition-frame-id="0" data-composition-frame-kind="region" data-composition-frame-label="Backend (Dokploy, no login)">
+          <rect data-graph-role="structural-frame-label-mask" x="254" y="90" width="155.79999999999998" height="16" rx="3" class="c-mask"/>
+          <text data-boundary-label="" x="258" y="103" class="t-cloud" font-size="9" font-weight="600">Backend (Dokploy, no login)</text>
         </g>
 
-        <g data-graph-role="structural-frame-label" data-composition-frame-id="1" data-composition-frame-kind="region" data-composition-frame-label="Delivery (Dokploy)">
-          <rect data-graph-role="structural-frame-label-mask" x="734" y="280" width="107.2" height="16" rx="3" class="c-mask"/>
-          <text data-boundary-label="" x="738" y="293" class="t-cloud" font-size="9" font-weight="600">Delivery (Dokploy)</text>
+        <g data-graph-role="structural-frame-label" data-composition-frame-id="1" data-composition-frame-kind="region" data-composition-frame-label="Web delivery (Dokploy)">
+          <rect data-graph-role="structural-frame-label-mask" x="734" y="280" width="128.8" height="16" rx="3" class="c-mask"/>
+          <text data-boundary-label="" x="738" y="293" class="t-cloud" font-size="9" font-weight="600">Web delivery (Dokploy)</text>
         </g>
 
-        <g data-graph-role="structural-frame-label" data-composition-frame-id="2" data-composition-frame-kind="region" data-composition-frame-label="Static web (Astro + React)">
-          <rect data-graph-role="structural-frame-label-mask" x="44" y="470" width="150.4" height="16" rx="3" class="c-mask"/>
-          <text data-boundary-label="" x="48" y="483" class="t-cloud" font-size="9" font-weight="600">Static web (Astro + React)</text>
+        <g data-graph-role="structural-frame-label" data-composition-frame-id="2" data-composition-frame-kind="region" data-composition-frame-label="Web app (Astro + React)">
+          <rect data-graph-role="structural-frame-label-mask" x="44" y="470" width="134.2" height="16" rx="3" class="c-mask"/>
+          <text data-boundary-label="" x="48" y="483" class="t-cloud" font-size="9" font-weight="600">Web app (Astro + React)</text>
         </g>
 
         <!-- Legend -->
@@ -5447,33 +5447,33 @@
       <div class="card">
         <div class="card-header">
           <div class="card-dot amber"></div>
-          <h3>Precompute</h3>
+          <h3>Backend</h3>
         </div>
         <ul>
-          <li>&bull; Sun/Earth az-el from lunar sites, Moon el from DSN sites</li>
-          <li>&bull; One JSON per landing site: sun_el, earth_el, dsn per hour</li>
-          <li>&bull; Requests cached on disk; runs offline, not in the browser</li>
+          <li>&bull; Queries JPL Horizons: Sun/Earth az-el per site, Moon el per DSN site</li>
+          <li>&bull; Curated sites and custom coordinates, no login</li>
+          <li>&bull; Horizons responses cached on disk for &lt;3 s answers</li>
         </ul>
       </div>
 
       <div class="card">
         <div class="card-header">
           <div class="card-dot cyan"></div>
-          <h3>Delivery</h3>
+          <h3>Web delivery</h3>
         </div>
         <ul>
           <li>&bull; Dokploy builds the Docker image from main</li>
-          <li>&bull; nginx serves the static site behind Traefik</li>
+          <li>&bull; nginx serves the Astro site behind Traefik</li>
         </ul>
       </div>
 
       <div class="card">
         <div class="card-header">
           <div class="card-dot emerald"></div>
-          <h3>Static web</h3>
+          <h3>Web app</h3>
         </div>
         <ul>
-          <li>&bull; One Time store (site + UTC hour) loads the JSON</li>
+          <li>&bull; One Time store (site + UTC hour) fetches site data</li>
           <li>&bull; Views subscribe read-only; they never compute ephemerides</li>
           <li>&bull; MVP: calendar, polar map, site card; luxury: globes</li>
         </ul>

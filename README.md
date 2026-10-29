@@ -9,7 +9,7 @@ Pick a south pole landing site and a date range. Ventana Lunar shows, hour by ho
 **Sun** (power), **sees Earth** (comms), or **both**: a landing window. It also shows which Deep Space Network antenna
 is listening (Goldstone, Canberra or Robledo de Chavela, Madrid).
 
-**Status:** in development. The tooling, CI and Dokploy deploy are in place; the product is being built on top.
+**Live:** https://nasa.cervilla.es · **Status:** in development. The tooling, CI and Dokploy deploy are in place; the product is being built on top.
 
 ## How it works
 

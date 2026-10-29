@@ -11,7 +11,7 @@ export default defineConfig({
     launchOptions: process.env.PW_CHROMIUM_PATH ? { executablePath: process.env.PW_CHROMIUM_PATH } : {},
   },
   webServer: {
-    command: `npm run preview -- --port ${port} --ignore-lock`,
+    command: `npm run preview -w @ventana/web -- --port ${port} --ignore-lock`,
     url: `http://localhost:${port}${base}/`,
     reuseExistingServer: !process.env.CI,
   },

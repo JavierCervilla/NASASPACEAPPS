@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { HACKATHON_START_UTC, daysUntil } from '../../src/lib/countdown';
+import { HACKATHON_START_UTC, daysUntil } from '../src/lib/countdown';
 
 const DAY = 86_400_000;
 

@@ -30,12 +30,14 @@ JPL Horizons API ──► backend API (Dokploy, cached, no login) ──► sit
 
 | Path | What |
 |---|---|
-| `src/pages/` | Astro pages (one screen) |
-| `src/components/` | React islands (strip, map, globe, card, DSN) |
-| `src/lib/` | Pure TypeScript: store, window logic, formatting (unit-tested) |
-| `src/styles/` | Design tokens and global styles |
-| `pipeline/` | Data contract with JPL Horizons; the backend that implements it lands with VENT-3 and VENT-10 |
-| `tests/unit/`, `tests/e2e/` | Vitest and Playwright |
+| `packages/web/src/pages/` | Astro pages (one screen) |
+| `packages/web/src/components/` | React islands (strip, map, globe, card, DSN) |
+| `packages/web/src/lib/` | Web-only TypeScript: store, formatting (unit-tested) |
+| `packages/web/src/styles/` | Design tokens and global styles |
+| `packages/sim/` | Pure TypeScript shared by web and server: site data contract, window logic (unit-tested) |
+| `packages/server/` | Node API (Hono): JPL Horizons client, disk cache, `/api/*` |
+| `pipeline/` | Data contract with JPL Horizons; `packages/server` implements it (VENT-3, VENT-10) |
+| `packages/*/tests/`, `tests/e2e/` | Vitest (per package) and Playwright |
 | `docs/diagrams/` | Architecture diagram |
 
 ## Develop

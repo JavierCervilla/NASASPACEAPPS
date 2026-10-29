@@ -4,7 +4,7 @@ import tseslint from 'typescript-eslint';
 import antiSlop from './eslint.anti-slop.mjs';
 
 export default [
-  { ignores: ['dist/', '.astro/', 'node_modules/', '.english-gate/', 'playwright-report/', 'test-results/', '.claude/'] },
+  { ignores: ['**/dist/', '**/.astro/', '**/node_modules/', '.english-gate/', 'playwright-report/', 'test-results/', '.claude/'] },
   ...tseslint.configs.recommended,
   ...astro.configs.recommended,
   {
@@ -15,7 +15,7 @@ export default [
   ...antiSlop,
   // Ratchet: the repo starts clean, so the preset's warn-level rules bite from day one (tests and configs stay relaxed).
   {
-    files: ['src/**'],
+    files: ['packages/*/src/**'],
     rules: {
       'sonarjs/no-identical-functions': 'error',
       'sonarjs/no-duplicate-string': ['error', { threshold: 5 }],

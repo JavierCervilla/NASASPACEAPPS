@@ -14,3 +14,10 @@ test('the built site serves the page and hydrates the React island', async ({ pa
   await expect(page.getByTestId('countdown')).toContainText(/days? to launch|weekend is on/);
   expect(errors).toEqual([]);
 });
+
+test('the production build ships no dev tools', async ({ page }) => {
+  await page.goto('./');
+  await expect(page.getByRole('heading', { level: 1 })).toHaveText('Ventana Lunar');
+  // The performance readout (packages/web/src/devtools/) mounts only in dev or PUBLIC_PERF_HUD=1 builds.
+  await expect(page.locator('[data-devtools]')).toHaveCount(0);
+});

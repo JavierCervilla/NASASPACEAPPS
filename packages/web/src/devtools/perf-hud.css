@@ -1,0 +1,95 @@
+/*
+ * The performance readout: a small translucent material floating over the page (apple-design §12), tabular numbers
+ * so the digits do not jitter, and no signal colours (those carry fixed meaning: tokens.css). Dev builds only.
+ */
+.ventana-perf-hud {
+  --hud-error: #ff8a7a;
+
+  position: fixed;
+  top: calc(var(--space-2) + env(safe-area-inset-top, 0px));
+  right: calc(var(--space-2) + env(safe-area-inset-right, 0px));
+  z-index: 50;
+  max-inline-size: min(92vw, 22rem);
+  padding: var(--space-2) var(--space-3);
+  border-radius: calc(var(--radius) * 0.75);
+  background: var(--surface);
+  border: 1px solid var(--surface-edge);
+  backdrop-filter: blur(20px) saturate(160%);
+  box-shadow: 0 0.5rem 1.5rem rgba(0, 0, 0, 0.35);
+  color: var(--text);
+  font-size: 0.6875rem;
+  line-height: 1.4;
+  letter-spacing: 0.01em;
+  font-variant-numeric: tabular-nums;
+  white-space: pre-wrap;
+}
+
+.ventana-perf-hud__readout {
+  all: unset;
+  display: block;
+  cursor: pointer;
+  font-weight: 500;
+  white-space: pre-wrap;
+}
+
+.ventana-perf-hud__readout:focus-visible,
+.ventana-perf-hud__toggle:focus-visible {
+  outline: 2px solid var(--text);
+  outline-offset: 2px;
+}
+
+.ventana-perf-hud__row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-1);
+  margin-top: var(--space-2);
+}
+
+.ventana-perf-hud__toggle {
+  flex: 1 1 auto;
+  padding: var(--space-1) var(--space-2);
+  border-radius: 999px;
+  border: 1px solid var(--surface-edge);
+  background: transparent;
+  color: var(--text-muted);
+  font: inherit;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.ventana-perf-hud__toggle[aria-pressed='true'] {
+  background: var(--text);
+  color: var(--bg);
+}
+
+.ventana-perf-hud__trail {
+  margin-top: var(--space-2);
+  max-block-size: 30vh;
+  overflow: auto;
+  color: var(--text-muted);
+}
+
+.ventana-perf-hud__errors {
+  color: var(--hud-error);
+}
+
+.ventana-perf-hud__errors:not(:empty) {
+  margin-top: var(--space-2);
+}
+
+/* Feedback on press, not on release. */
+@media (prefers-reduced-motion: no-preference) {
+  .ventana-perf-hud__toggle {
+    transition: transform var(--dur-press) ease-out;
+  }
+
+  .ventana-perf-hud__toggle:active {
+    transform: scale(0.97);
+  }
+}
+
+@media (prefers-reduced-transparency: reduce) {
+  .ventana-perf-hud {
+    backdrop-filter: none;
+  }
+}

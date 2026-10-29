@@ -1,0 +1,44 @@
+/*
+ * Design tokens. The four signal colours carry fixed meaning across every view (spec: "three colours with fixed
+ * meaning and an always-visible legend"): never reuse them for decoration.
+ */
+:root {
+  color-scheme: dark;
+
+  --bg: #07080b;
+  --surface: rgba(28, 30, 36, 0.62);
+  --surface-edge: rgba(255, 255, 255, 0.08);
+  --text: #f2f2f4;
+  --text-muted: #9a9ca6;
+
+  --signal-sun: #f5c542;
+  --signal-earth: #4a9cff;
+  --signal-window: #3ddc84;
+  --signal-none: #3a3c44;
+
+  /* Springs follow apple-design defaults: critically damped, response 0.3-0.4 s. */
+  --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
+  --dur-press: 100ms;
+  --dur-enter: 400ms;
+
+  --space-1: 0.25rem;
+  --space-2: 0.5rem;
+  --space-3: 1rem;
+  --space-4: 1.5rem;
+  --space-5: 2.5rem;
+  --radius: 1rem;
+}
+
+@media (prefers-contrast: more) {
+  :root {
+    --surface: #15161b;
+    --surface-edge: rgba(255, 255, 255, 0.5);
+    --text-muted: #c9cad1;
+  }
+}
+
+@media (prefers-reduced-transparency: reduce) {
+  :root {
+    --surface: #15161b;
+  }
+}

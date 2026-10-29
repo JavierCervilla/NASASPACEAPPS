@@ -1,0 +1,20 @@
+{
+  "exclude": [],
+  "interface": [
+    "CHANGELOG.md",
+    "ROADMAP.md"
+  ],
+  "vendored": [
+    ".claude/skills/apple-design/**",
+    ".claude/skills/security-gate/**",
+    ".claude/hooks/**",
+    "eslint.anti-slop.mjs"
+  ],
+  "properNouns": [
+    "Ventana Lunar",
+    "Robledo de Chavela",
+    "Robledo"
+  ],
+  "blockingSince": "2026-10-29T22:01:47Z",
+  "local": "block"
+}

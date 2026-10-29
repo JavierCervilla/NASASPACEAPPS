@@ -1,0 +1,89 @@
+---
+import Countdown from '../components/Countdown';
+import Base from '../layouts/Base.astro';
+
+// Placeholder until the hackathon: the product itself is built on 14-15 November 2026, as the challenge rules require.
+const legend = [
+  { label: 'Sun', token: 'var(--signal-sun)' },
+  { label: 'Earth', token: 'var(--signal-earth)' },
+  { label: 'Both: landing window', token: 'var(--signal-window)' },
+];
+---
+
+<Base
+  title="Ventana Lunar"
+  description="When can you land at the lunar south pole? NASA Space Apps Challenge 2026, Madrid."
+>
+  <main class="stage">
+    <p class="caption enter">NASA Space Apps Challenge 2026 · Madrid</p>
+    <h1 class="display enter">Ventana Lunar</h1>
+    <p class="lede enter">When can you land at the lunar south pole?</p>
+    <section class="card enter" aria-label="Status">
+      <Countdown client:load renderedAt={Date.now()} />
+      <ul class="legend" aria-label="Colour legend">
+        {
+          legend.map(({ label, token }) => (
+            <li>
+              <span class="swatch" style={`--swatch: ${token}`} aria-hidden="true" />
+              {label}
+            </li>
+          ))
+        }
+      </ul>
+    </section>
+  </main>
+</Base>
+
+<style>
+  .stage {
+    max-width: 40rem;
+    margin: 0 auto;
+    padding: clamp(var(--space-5), 18vh, 10rem) var(--space-3) var(--space-5);
+    display: grid;
+    gap: var(--space-3);
+  }
+
+  .card {
+    margin-top: var(--space-4);
+    padding: var(--space-4);
+    border-radius: var(--radius);
+    background: var(--surface);
+    border: 1px solid var(--surface-edge);
+    backdrop-filter: blur(20px) saturate(160%);
+    display: grid;
+    gap: var(--space-3);
+  }
+
+  .card :global(.countdown) {
+    margin: 0;
+    font-size: 1.25rem;
+    line-height: 1.3;
+    letter-spacing: -0.01em;
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .legend {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-2) var(--space-4);
+    font-size: 0.875rem;
+    color: var(--text-muted);
+  }
+
+  .legend li {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-2);
+  }
+
+  .swatch {
+    inline-size: 0.75rem;
+    block-size: 0.75rem;
+    border-radius: 50%;
+    background: var(--swatch);
+  }
+</style>

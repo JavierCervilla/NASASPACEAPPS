@@ -1,0 +1,323 @@
+{
+  "schema_version": 1,
+  "diagram_type": "architecture",
+  "meta": {
+    "title": "Ventana Lunar · architecture",
+    "locale": "en",
+    "quality_profile": "showcase",
+    "viewBox": [
+      1200,
+      800
+    ]
+  },
+  "components": [
+    {
+      "id": "horizons",
+      "type": "external",
+      "label": "JPL Horizons API",
+      "sublabel": "NASA/JPL ephemerides",
+      "pos": [
+        40,
+        300
+      ],
+      "size": [
+        140,
+        60
+      ]
+    },
+    {
+      "id": "cache",
+      "type": "database",
+      "label": "pipeline/.cache",
+      "sublabel": "disk request cache",
+      "pos": [
+        280,
+        110
+      ],
+      "size": [
+        140,
+        60
+      ]
+    },
+    {
+      "id": "pipeline",
+      "type": "backend",
+      "label": "pipeline/",
+      "sublabel": "Python 3, cached GETs",
+      "pos": [
+        280,
+        300
+      ],
+      "size": [
+        140,
+        60
+      ]
+    },
+    {
+      "id": "data",
+      "type": "database",
+      "label": "public/data/*.json",
+      "sublabel": "1 per site, hourly",
+      "pos": [
+        520,
+        300
+      ],
+      "size": [
+        140,
+        60
+      ],
+      "tag": "Nov-Dec 2026"
+    },
+    {
+      "id": "actions",
+      "type": "cloud",
+      "label": "GitHub Actions",
+      "sublabel": "build + deploy",
+      "pos": [
+        760,
+        300
+      ],
+      "size": [
+        140,
+        60
+      ]
+    },
+    {
+      "id": "pages",
+      "type": "cloud",
+      "label": "GitHub Pages",
+      "sublabel": "base /NASASPACEAPPS",
+      "pos": [
+        1000,
+        300
+      ],
+      "size": [
+        140,
+        60
+      ]
+    },
+    {
+      "id": "store",
+      "type": "frontend",
+      "label": "Time store",
+      "sublabel": "site + UTC hour",
+      "pos": [
+        520,
+        490
+      ],
+      "size": [
+        140,
+        60
+      ]
+    },
+    {
+      "id": "calendar",
+      "type": "frontend",
+      "label": "Calendar strip",
+      "sublabel": "pick the hour",
+      "pos": [
+        70,
+        680
+      ],
+      "size": [
+        140,
+        60
+      ],
+      "tag": "MVP"
+    },
+    {
+      "id": "polar",
+      "type": "frontend",
+      "label": "2D polar map",
+      "sublabel": "sun/earth az-el",
+      "pos": [
+        295,
+        680
+      ],
+      "size": [
+        140,
+        60
+      ],
+      "tag": "MVP"
+    },
+    {
+      "id": "sitecard",
+      "type": "frontend",
+      "label": "Site card",
+      "sublabel": "window status",
+      "pos": [
+        520,
+        680
+      ],
+      "size": [
+        140,
+        60
+      ],
+      "tag": "MVP"
+    },
+    {
+      "id": "moon3d",
+      "type": "frontend",
+      "label": "3D Moon globe",
+      "sublabel": "Three.js",
+      "pos": [
+        745,
+        680
+      ],
+      "size": [
+        140,
+        60
+      ],
+      "tag": "luxury"
+    },
+    {
+      "id": "dsn",
+      "type": "frontend",
+      "label": "DSN mini globe",
+      "sublabel": "Moon el at DSN",
+      "pos": [
+        970,
+        680
+      ],
+      "size": [
+        140,
+        60
+      ],
+      "tag": "luxury"
+    }
+  ],
+  "boundaries": [
+    {
+      "kind": "region",
+      "label": "Precompute (Python, offline)",
+      "wraps": [
+        "cache",
+        "pipeline",
+        "data"
+      ]
+    },
+    {
+      "kind": "region",
+      "label": "Delivery (GitHub)",
+      "wraps": [
+        "actions",
+        "pages"
+      ]
+    },
+    {
+      "kind": "region",
+      "label": "Static web (Astro + React)",
+      "wraps": [
+        "store",
+        "calendar",
+        "polar",
+        "sitecard",
+        "moon3d",
+        "dsn"
+      ]
+    }
+  ],
+  "connections": [
+    {
+      "id": "query-horizons",
+      "from": "horizons",
+      "to": "pipeline",
+      "label": "az/el series",
+      "variant": "emphasis"
+    },
+    {
+      "id": "disk-cache",
+      "from": "pipeline",
+      "to": "cache",
+      "label": "reuse",
+      "variant": "dashed",
+      "labelAt": [
+        350,
+        235
+      ]
+    },
+    {
+      "id": "write-json",
+      "from": "pipeline",
+      "to": "data",
+      "label": "writes",
+      "variant": "emphasis"
+    },
+    {
+      "id": "build-site",
+      "from": "data",
+      "to": "actions",
+      "label": "built in",
+      "variant": "emphasis"
+    },
+    {
+      "id": "deploy-pages",
+      "from": "actions",
+      "to": "pages",
+      "label": "deploys",
+      "variant": "emphasis"
+    },
+    {
+      "id": "load-json",
+      "from": "pages",
+      "to": "store",
+      "label": "fetch JSON",
+      "variant": "emphasis"
+    },
+    {
+      "id": "sub-calendar",
+      "from": "store",
+      "to": "calendar"
+    },
+    {
+      "id": "sub-polar",
+      "from": "store",
+      "to": "polar"
+    },
+    {
+      "id": "sub-sitecard",
+      "from": "store",
+      "to": "sitecard"
+    },
+    {
+      "id": "sub-moon3d",
+      "from": "store",
+      "to": "moon3d",
+      "variant": "dashed"
+    },
+    {
+      "id": "sub-dsn",
+      "from": "store",
+      "to": "dsn",
+      "variant": "dashed"
+    }
+  ],
+  "cards": [
+    {
+      "dot": "amber",
+      "title": "Precompute",
+      "items": [
+        "Sun/Earth az-el from lunar sites, Moon el from DSN sites",
+        "One JSON per landing site: sun_el, earth_el, dsn per hour",
+        "Requests cached on disk; runs offline, not in the browser"
+      ]
+    },
+    {
+      "dot": "cyan",
+      "title": "Delivery",
+      "items": [
+        "GitHub Actions builds the Astro site with the JSON",
+        "GitHub Pages serves it statically; no backend"
+      ]
+    },
+    {
+      "dot": "emerald",
+      "title": "Static web",
+      "items": [
+        "One Time store (site + UTC hour) loads the JSON",
+        "Views subscribe read-only; they never compute ephemerides",
+        "MVP: calendar, polar map, site card; luxury: globes"
+      ]
+    }
+  ]
+}

@@ -71,8 +71,8 @@
     {
       "id": "actions",
       "type": "cloud",
-      "label": "GitHub Actions",
-      "sublabel": "build + deploy",
+      "label": "Dokploy build",
+      "sublabel": "Dockerfile on push",
       "pos": [
         760,
         300
@@ -85,8 +85,8 @@
     {
       "id": "pages",
       "type": "cloud",
-      "label": "GitHub Pages",
-      "sublabel": "base /NASASPACEAPPS",
+      "label": "nginx container",
+      "sublabel": "Traefik + TLS",
       "pos": [
         1000,
         300
@@ -198,7 +198,7 @@
     },
     {
       "kind": "region",
-      "label": "Delivery (GitHub)",
+      "label": "Delivery (Dokploy)",
       "wraps": [
         "actions",
         "pages"
@@ -306,8 +306,8 @@
       "dot": "cyan",
       "title": "Delivery",
       "items": [
-        "GitHub Actions builds the Astro site with the JSON",
-        "GitHub Pages serves it statically; no backend"
+        "Dokploy builds the Docker image from main",
+        "nginx serves the static site behind Traefik"
       ]
     },
     {

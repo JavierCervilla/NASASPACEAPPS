@@ -9,8 +9,9 @@ Solo se prepara: las normas prohíben escribir el código de la solución antes 
 
 - [x] Repo con Astro + React + TypeScript, página «hola mundo» con el diseño `apple-design` (VENT-2)
 - [x] CI: lint, tipos, tests unitarios, build, smoke e2e, gate de idioma y escalera de seguridad (VENT-2)
-- [x] Despliegue a GitHub Pages preparado (VENT-2)
-- [ ] Activar GitHub Pages (Settings → Pages → «GitHub Actions») y comprobar el «hola mundo» publicado
+- [x] Despliegue en Dokploy preparado: Dockerfile con nginx (VENT-2)
+- [ ] App en Dokploy con dominio y el «hola mundo» publicado
+- [ ] CI en el pool de runners: PAT del pool con el repo y redespliegue del compose `github-runner`
 - [ ] Registrar al equipo en spaceappschallenge.org (Madrid, reto CLPS Lunar Mission Browser)
 - [ ] Leer el enunciado y la pestaña Resources; anotar los sitios y datasets que sugiere NASA
 - [ ] Petición de prueba a JPL Horizons (cualquier objeto) para entender el formato

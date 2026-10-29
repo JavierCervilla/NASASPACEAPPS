@@ -42,11 +42,12 @@ JPL Horizons API ──► pipeline/ (Python, run once, cached) ──► public
 
 ## Develop
 
-Requires Node 22 (`.nvmrc`) and, for the pipeline, Python 3.
+Requires Node 22 (`.nvmrc`) and, for the pipeline, Python 3. Production is the `Dockerfile` (static build served by
+nginx) deployed on Dokploy.
 
 ```sh
 npm install
-npm run dev          # http://localhost:4321/NASASPACEAPPS/
+npm run dev          # http://localhost:4321/
 npm run lint && npm run typecheck && npm test && npm run build && npm run e2e
 ```
 

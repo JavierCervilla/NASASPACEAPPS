@@ -1,6 +1,6 @@
 import { defineConfig } from '@playwright/test';
 
-const base = process.env.SITE_BASE ?? '/NASASPACEAPPS';
+const base = (process.env.SITE_BASE ?? '/').replace(/\/$/, '');
 const port = 4321;
 
 export default defineConfig({

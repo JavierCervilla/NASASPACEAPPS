@@ -21,8 +21,8 @@ mode. If a task would cross that line, stop and ask.
   the globe (luxury 1). No backend, no login, no database: the browser only reads static JSON.
 - **Data**: a Python 3 script in `pipeline/` precomputes everything from JPL Horizons into `public/data/` (hackathon
   day). Never call Horizons from the browser.
-- **Deploy**: GitHub Pages from `main` (`.github/workflows/deploy.yml`), base path `/NASASPACEAPPS`
-  (`SITE_BASE` overrides it).
+- **Deploy**: Dokploy builds the `Dockerfile` (static build served by nginx, `nginx.conf`) from `main`, at the domain
+  root (`SITE_BASE` sets a sub-path if ever needed). Operate it with the framework's `dokploy` skill.
 
 ## Design: follow the `apple-design` skill
 
@@ -43,7 +43,7 @@ Every visible change follows `.claude/skills/apple-design/SKILL.md` (vendored fr
 
 | Command | What |
 |---|---|
-| `npm run dev` | Dev server at `http://localhost:4321/NASASPACEAPPS/` |
+| `npm run dev` | Dev server at `http://localhost:4321/` |
 | `npm run lint` | ESLint + the anti-slop preset (`eslint.anti-slop.mjs`) |
 | `npm run typecheck` | `astro check` |
 | `npm test` | Vitest unit tests (`tests/unit/`) |

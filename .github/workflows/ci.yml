@@ -29,7 +29,8 @@ jobs:
       - run: npm run typecheck
       - run: npm test
       - run: npm run build
-      - run: npx playwright install --with-deps chromium
+      # The runner pool's image already ships Chromium's system deps and forbids sudo; GitHub-hosted runners need them.
+      - run: npx playwright install ${{ !vars.CI_RUNNER && '--with-deps' || '' }} chromium
       - run: npm run e2e
         env:
           CI: "true"

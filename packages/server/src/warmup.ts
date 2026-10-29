@@ -16,7 +16,8 @@ export const WARM_FROM = '2026-11-01';
 export const WARM_TO = '2026-12-31';
 
 // Horizons calls in flight at once during the warm-up: the same courtesy limit as one visitor request.
-const WARM_CONCURRENCY = 4;
+// Two at a time: four made Horizons answer 503 to part of the warm-up in production (2026-10-29).
+const WARM_CONCURRENCY = 2;
 
 /** What the warm-up needs; `log` receives one line per failed request and the final summary. */
 export interface WarmUpDeps {

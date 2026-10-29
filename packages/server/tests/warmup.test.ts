@@ -50,7 +50,7 @@ describe('warmCache', () => {
     expect(fetch.calls).toHaveLength(10);
   });
 
-  it('keeps at most 4 Horizons requests in flight', async () => {
+  it('keeps at most 2 Horizons requests in flight', async () => {
     const served = fixtureFetch();
     let inFlight = 0;
     let peak = 0;
@@ -63,13 +63,13 @@ describe('warmCache', () => {
     };
     const result = await warmCache({ horizons: createHorizonsClient({ fetch, cacheDir }), sites: SITES, log: () => undefined });
     expect(result.requests).toBeGreaterThan(4);
-    expect(peak).toBe(4);
+    expect(peak).toBe(2);
   });
 
   it('logs failures and resolves instead of throwing', async () => {
     const lines: string[] = [];
     const result = await warmCache({
-      horizons: createHorizonsClient({ fetch: fixedFetch(503, 'Service Unavailable'), cacheDir }),
+      horizons: createHorizonsClient({ fetch: fixedFetch(503, 'Service Unavailable'), cacheDir, sleep: async () => undefined }),
       sites: SITES.slice(0, 3),
       log: (line) => lines.push(line),
     });

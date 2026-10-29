@@ -36,6 +36,8 @@ export interface HorizonsClientOptions {
   readonly fetch: FetchLike;
   readonly cacheDir: string;
   readonly baseUrl?: string;
+  /** Waits between retries; tests pass one that returns at once. */
+  readonly sleep?: (ms: number) => Promise<void>;
 }
 
 /** Reads observer tables from Horizons, through the disk cache. */
@@ -45,6 +47,15 @@ export interface HorizonsClient {
   /** The raw JSON body of one request, as Horizons sent it (used to record test fixtures). */
   raw(query: HorizonsQuery): Promise<string>;
 }
+
+/**
+ * Waits before each retry of a transient failure (a dropped connection, HTTP 429, 502, 503, 504). Horizons answered 503
+ * to part of a warm-up that sent four requests at once (production, 2026-10-29); spacing the retries lets it recover.
+ */
+export const HORIZONS_RETRY_DELAYS_MS: readonly number[] = [1000, 3000, 8000];
+const TRANSIENT_STATUS = new Set([429, 502, 503, 504]);
+
+const realSleep = (ms: number): Promise<void> => new Promise((resolve) => setTimeout(resolve, ms));
 
 // Longest excerpt of a Horizons error text copied into an error message.
 const MAX_ERROR_EXCERPT = 300;
@@ -103,15 +114,30 @@ export function createHorizonsClient(options: HorizonsClientOptions): HorizonsCl
   // Requests already on their way, so concurrent callers of the same query share one Horizons call.
   const inFlight = new Map<string, Promise<string>>();
 
+  const sleep = options.sleep ?? realSleep;
+
+  /** One request, retried while the failure is transient. Returns the last response, ok or not. */
+  async function fetchWithRetry(url: string): Promise<{ status: number; ok: boolean; body: string }> {
+    for (let attempt = 0; ; attempt++) {
+      let failure: HorizonsError | null = null;
+      try {
+        const response = await options.fetch(url);
+        const body = await response.text();
+        if (response.ok || !TRANSIENT_STATUS.has(response.status)) return { status: response.status, ok: response.ok, body };
+        failure = new HorizonsError('http', `Horizons answered HTTP ${response.status}: ${excerpt(body)}`);
+      } catch (error) {
+        failure = new HorizonsError('http', `Horizons request failed: ${(error as Error).message}`);
+      }
+      const wait = HORIZONS_RETRY_DELAYS_MS[attempt];
+      if (wait === undefined) throw failure;
+      await sleep(wait);
+    }
+  }
+
   async function download(params: Record<string, string>, path: string): Promise<string> {
     const url = `${baseUrl}?${new URLSearchParams(params).toString()}`;
-    let response: Awaited<ReturnType<FetchLike>>;
-    try {
-      response = await options.fetch(url);
-    } catch (error) {
-      throw new HorizonsError('http', `Horizons request failed: ${(error as Error).message}`);
-    }
-    const body = await response.text();
+    const response = await fetchWithRetry(url);
+    const body = response.body;
     if (!response.ok) {
       // Horizons explains a rejected request in the JSON body; keep that text when it is there.
       let detail = excerpt(body);

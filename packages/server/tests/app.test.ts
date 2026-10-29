@@ -18,7 +18,7 @@ beforeEach(async () => {
 });
 
 function app(fetch: FetchLike) {
-  return createApp({ horizons: createHorizonsClient({ fetch, cacheDir }), sites: SITES, now: () => NOW });
+  return createApp({ horizons: createHorizonsClient({ fetch, cacheDir, sleep: async () => undefined }), sites: SITES, now: () => NOW });
 }
 
 describe('GET /api/health', () => {

@@ -3,7 +3,7 @@
  * TypeScript). ESLint has no built-in rule for this.
  *
  * Counted: every function declaration, a module-scope `const x = () => ...` or `const x = function ...`, every class
- * method, and every method of an object literal that sits at module scope or is returned by a module-scope function
+ * method or class property holding a function, and every method of an object literal that sits at module scope or is returned by a module-scope function
  * (a factory). Not counted: inline callbacks, such as the arguments of `map`, `then` or `new Promise`, because they
  * are expressions, not named units of the module.
  */
@@ -68,6 +68,9 @@ export default {
       },
       MethodDefinition(node) {
         counted.push(node);
+      },
+      PropertyDefinition(node) {
+        if (isFunctionNode(node.value)) counted.push(node);
       },
       Property(node) {
         if (node.parent.type === 'ObjectExpression' && isObjectMethod(node) && isCountedObject(node.parent)) {

@@ -53,7 +53,7 @@ The code follows Clean Code, and the size limits are enforced by lint:
   comments), `max-len` 80 columns for code and comments (URLs, strings, template literals and regular expressions
   exempt), `max-params` 4 (pass an options object for more), at most 5 named functions per file (the local rule
   `eslint-rules/max-functions-per-file.mjs`, tested next to it), and `sonarjs/cognitive-complexity` 15. Tests are
-  exempt from the per-function, functions-per-file and line-length limits. Do not disable a limit inline: if one
+  exempt from all of these size limits (they apply to `packages/*/src/**` only). Do not disable a limit inline: if one
   forces something clearly worse, raise it with the human.
 - **Leave it cleaner**: every change leaves the code at least as clean as it found it.
 
@@ -79,9 +79,12 @@ Work here is an AgenticFramework trajectory (`VENT-*`): branch + PR, gates green
 updated in the same PR when something visible changes, architecture diagram in `docs/diagrams/` kept current.
 `ROADMAP.md` and `CHANGELOG.md` are written in Spanish (the human reads them).
 
-**Guardián during the hackathon** (human decision, 2026-10-29): only `verificador` and `seguridad`, launched by hand
+**Guardián during the hackathon** (human decision, 2026-10-29): `verificador` and `seguridad`, launched by hand
 with the round message published by the orchestrator; only a security finding blocks the merge, and everything else
-merges and goes to a fix-forward trajectory. No `qa` or `qa-adversario` until the event is over.
+merges and goes to a fix-forward trajectory. QA (human decision, 2026-10-30): `qa` runs on every trajectory that
+touches the interface (ephemeral staging, Playwright walkthroughs, screenshots), and `qa-adversario` only at three
+milestones: the draggable pin (VENT-10), the MVP close (globe + DSN) and before launch. Neither blocks: findings go
+to fix forward, and every break the adversary reproduces stays as a permanent test.
 
 **Roadmap canvas** (https://claude.ai/artifact/Sm8QoCwg7DqLbuCSHLPfBg): the live, visual roadmap. It is part of the
 definition of done of every step, together with the Dashboard and the vault: when a trajectory or TODO changes state,

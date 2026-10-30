@@ -67,6 +67,18 @@ tester.run('max-functions-per-file', rule, {
       errors: tooMany(3),
     },
     {
+      name: 'class properties holding functions',
+      code: 'class A { a = () => 1; b = function () {}; c = () => 3; d = 4; }',
+      options,
+      errors: tooMany(3),
+    },
+    {
+      name: 'the default maximum is five, so six fail',
+      code: 'function a() {}\nfunction b() {}\nfunction c() {}\n'
+        + 'function d() {}\nfunction e() {}\nfunction f() {}',
+      errors: [{ messageId: 'tooMany', data: { count: 6, max: 5 } }],
+    },
+    {
       name: 'object-literal methods at module scope',
       code: 'export default { a() {}, b: () => 1, c: function () {} };',
       options,

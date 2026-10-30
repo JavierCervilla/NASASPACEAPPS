@@ -23,29 +23,6 @@
  *             :::.. .  .               SPDX-License-Identifier: MIT
  */
 
-/*
- *   _   _       _                         _ _
- *  | | | |_ __ (_)_   _____ _ __ ___  ___| | | ___
- *  | | | | '_ \| \ \ / / _ \ '__/ __|/ _ \ | |/ _ \
- *  | |_| | | | | |\ V /  __/ |  \__ \  __/ | |  __/
- *   \___/|_| |_|_| \_/ \___|_|  |___/\___|_|_|\___|
- *
- *             =++==--::.
- *         %%%%##**++=--:..  .
- *      ##**#%@%%#***+=--::.   .
- *    #**=+*#*#**#++++=-:::.. .  .
- *   #++-====*@%+*++==--::...   .  .    Ventana Lunar
- *  #+=-=--++==+===-+==--:..   .  .  .  Sun, Earth and landing
- * #----====-------=-=---:..  .  .  .   windows at the lunar
- * #+---+=====--=---==-::..     .  .  . south pole
- * #*----==---==-=-=-:-....    .  .  .
- * *#----===+*===--:-::...    .  .  .   Built for the NASA Space
- *  *----=*-+*%*+=-:::....   .  .  .    Apps Challenge 2026,
- *   *------=+*=--:::-:::.. .  .  .     Madrid. Not endorsed
- *    %*===-=-==--==-:::.  .  .  .      by NASA.
- *      *+:--+:--::::::.  .  .  .
- *         -=:::...:..   .  .           (c) 2026 Universelle
-
 /**
  * The callout's DOM: one card for both layouts (globe.css draws it as the
  * image card on a desktop and as the compact card on a phone) and the

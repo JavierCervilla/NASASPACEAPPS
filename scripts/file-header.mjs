@@ -29,6 +29,7 @@
 // could touch a file outside the repo.
 //   node scripts/file-header.mjs --write    add or refresh the header
 //   node scripts/file-header.mjs --check    exit 1 listing the files without it
+//                                           or with a stray copy below it
 //   node scripts/file-header.mjs --staged   the same check, staged files only
 // The transformation lives in pure functions so the tests can drive it; the
 // CLI at the bottom only reads git and the disk.
@@ -120,10 +121,46 @@ function existingHeaderLength(lines, style) {
   return lines.slice(0, end).some((line) => line.includes(HEADER_MARKER)) ? end : 0;
 }
 
+// A comment line's text without its comment prefix, so a copy of the header
+// is recognised whatever its indentation or comment style.
+function bannerText(line) {
+  return line.trim().replace(/^(\/\*|\*\/|\*|#)/, '').trim();
+}
+
+// A comment line with no text of its own: `/*`, ` *`, ` */` or `#`.
+function isCommentSkeleton(line) {
+  return line.trim() !== '' && bannerText(line) === '';
+}
+
+/**
+ * `lines` without any copy of the header, whole or partial, that a botched
+ * edit left behind: each run of comment lines holding at least one line of
+ * the template, with one blank line kept where it stood.
+ * @param {string[]} lines the code below the leading header
+ * @param {string} body the template text
+ * @returns {string[]}
+ */
+function withoutStrayBanners(lines, body) {
+  const banner = new Set(body.split('\n').map((line) => line.trim()).filter(Boolean));
+  const isBanner = (line) => banner.has(bannerText(line));
+  const inRun = (line) => isBanner(line) || isCommentSkeleton(line);
+  const out = [...lines];
+  for (let hit = out.findIndex(isBanner); hit !== -1; hit = out.findIndex(isBanner)) {
+    let start = hit;
+    let end = hit + 1;
+    while (start > 0 && inRun(out[start - 1])) start -= 1;
+    while (end < out.length && inRun(out[end])) end += 1;
+    out.splice(start, end - start);
+    if (out[start]?.trim() === '' && (start === 0 || out[start - 1].trim() === '')) out.splice(start, 1);
+  }
+  return out;
+}
+
 /**
  * The source with the current header in place: added after any shebang or
  * encoding line (inside the frontmatter for Astro, which gets one if it has
- * none), replacing an outdated copy, with one blank line before the code.
+ * none), replacing an outdated copy and dropping any stray copy left further
+ * down, with one blank line before the code.
  * Applying it twice gives the same text.
  * @param {string} source
  * @param {string} path
@@ -135,7 +172,7 @@ export function applyHeader(source, path, body) {
   const lines = source.split('\n');
   const keep = prefixLength(lines, style, path);
   let rest = lines.slice(keep);
-  rest = rest.slice(existingHeaderLength(rest, style));
+  rest = withoutStrayBanners(rest.slice(existingHeaderLength(rest, style)), body);
   while (rest.length > 0 && rest[0].trim() === '') rest.shift();
   const head = lines.slice(0, keep);
   if (style === 'astro' && keep === 0) {
@@ -215,9 +252,12 @@ function gitPaths(args) {
 
 function report(missing) {
   if (missing.length === 0) return 0;
-  console.error(`file-header: ${missing.length} code file(s) lack the header from scripts/file-header.txt:`);
+  console.error(
+    `file-header: ${missing.length} code file(s) lack the header from scripts/file-header.txt`
+      + ' or carry a stray copy of it:',
+  );
   for (const path of missing) console.error(`  ${path}`);
-  console.error('Run `npm run headers` to add it.');
+  console.error('Run `npm run headers` to fix them.');
   return 1;
 }
 

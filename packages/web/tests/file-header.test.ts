@@ -122,6 +122,43 @@ describe('applyHeader', () => {
   });
 });
 
+describe('stray copies of the header', () => {
+  const doc = '/** Doc. */\nexport {};\n';
+  // The real template, so the fragments match what a botched edit leaves.
+  const body = readFileSync(TEMPLATE, 'utf8');
+  const header = renderHeader(body, 'block');
+  // A second copy cut before its SPDX line and its closing `*/`.
+  const truncated = header.split('\n').slice(0, -2).join('\n');
+  const broken = `${header}\n\n${truncated}\n\n${doc}`;
+
+  it('fails the check on a truncated duplicate below the header', () => {
+    expect(hasCurrentHeader(broken, 'a.ts', body)).toBe(false);
+    expect(missingHeaders(['a.ts'], () => broken, body)).toEqual(['a.ts']);
+  });
+
+  it('repairs a truncated duplicate into a single header', () => {
+    expect(applyHeader(broken, 'a.ts', body)).toBe(`${header}\n\n${doc}`);
+  });
+
+  it('removes a whole or partial copy further down the file', () => {
+    const fragment = header.split('\n').slice(5, 9).join('\n');
+    const source = `${header}\n\n${doc}\n${fragment}\nconst a = 1;\n\n${header}\n`;
+    expect(applyHeader(source, 'a.ts', body)).toBe(`${header}\n\n${doc}\nconst a = 1;\n`);
+  });
+
+  it('removes a stray copy in hash comments', () => {
+    const hash = renderHeader(body, 'hash');
+    const source = `${hash}\n\n${hash.split('\n').slice(0, 7).join('\n')}\nimport os\n`;
+    expect(applyHeader(source, 'a.py', body)).toBe(`${hash}\n\nimport os\n`);
+  });
+
+  it('still passes a correct file', () => {
+    const ok = applyHeader(doc, 'a.ts', body);
+    expect(ok).toBe(`${header}\n\n${doc}`);
+    expect(hasCurrentHeader(ok, 'a.ts', body)).toBe(true);
+  });
+});
+
 describe('missingHeaders', () => {
   it('lists the code files without the exact current header', () => {
     const files: Record<string, string> = {
@@ -242,6 +279,23 @@ describe('the CLI on a git repo', () => {
     writeFileSync(join(dir, '1:x.ts'), 'export const c = 3;\n');
     expect(cli(dir, '--write').status).toBe(0);
     git(dir, 'add', '-A');
+    expect(cli(dir, '--staged').status).toBe(0);
+  });
+
+  it('fails --check and --staged on a truncated duplicate header, then --write repairs it', () => {
+    const dir = repoWithNewFile();
+    const header = renderHeader(readFileSync(TEMPLATE, 'utf8'), 'block');
+    const truncated = header.split('\n').slice(0, -2).join('\n');
+    writeFileSync(join(dir, 'new.ts'), `${header}\n\n${truncated}\n\n/** Doc. */\nexport {};\n`);
+    git(dir, 'add', 'new.ts');
+    const check = cli(dir, '--check');
+    expect(check.status).toBe(1);
+    expect(check.stderr).toContain('new.ts');
+    expect(cli(dir, '--staged').status).toBe(1);
+    expect(cli(dir, '--write').status).toBe(0);
+    expect(readFileSync(join(dir, 'new.ts'), 'utf8')).toBe(`${header}\n\n/** Doc. */\nexport {};\n`);
+    expect(cli(dir, '--check').status).toBe(0);
+    git(dir, 'add', 'new.ts');
     expect(cli(dir, '--staged').status).toBe(0);
   });
 

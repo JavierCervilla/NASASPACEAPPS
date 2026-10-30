@@ -31,6 +31,26 @@ new one.
   map on the high quality tier and the 1K map on the others, and fetches the 4K and 8K maps only as the zoom needs them
   (`packages/web/src/globe/texture-lod.ts`).
 
+## South polar map
+
+| File | Size | sha256 |
+|---|---|---|
+| `packages/web/public/textures/moon-south-polar-2k.jpg` | 2048 x 2048, 758 130 bytes | `70750b08551aa209004b3cdc4feba2a734351f88ec501ee86fb6d0f6df5f7285` |
+
+- **Source**: the 8K colour mosaic above, `lroc_color_poles_8k.tif` (same URL and sha256), the most detail the kit
+  has between 80° S and 90° S (about 23 source rows per degree of latitude).
+- **What it is**: the south pole down to 80° S in polar stereographic projection, as the polar map view draws it
+  (`packages/web/src/lib/polar-projection.ts`): the pole at the centre, 80° S on the rim, 0° E at the top and 90° E
+  on the right. Black outside the rim, which the page clips to a disk.
+- **Licence**: NASA, public domain, with the same NASA SVS credit as the colour map.
+- **How it was made**: `python3 packages/web/scripts/moon_textures.py polar lroc_color_poles_8k.tif
+  packages/web/public/textures/moon-south-polar-2k.jpg` (Pillow and NumPy): each pixel samples the mosaic
+  bilinearly; the colour is cut to 35 % and the tone stretched (1st to 99th percentile to 14-66 % of the byte scale),
+  because the Hapke-normalised mosaic is flat and bright and would glare from the dark page; progressive JPEG at
+  quality 85.
+- **Known limit**: within about 2° of the pole the source is smeared along meridians (the «poles» fill), so the map
+  shows faint radial streaks around Shackleton. No relief shading: the colour mosaic carries none.
+
 ## Moon relief (normal map)
 
 | File | Size | sha256 |

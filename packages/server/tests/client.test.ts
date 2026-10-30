@@ -145,6 +145,20 @@ describe('createHorizonsClient', () => {
     expect(waits).toEqual([2000, Math.max(...HORIZONS_RETRY_DELAYS_MS), HORIZONS_RETRY_DELAYS_MS[2]]);
   });
 
+  it('never waits less than the fixed delay when a 429 asks for 0 or 1 s', async () => {
+    const good = fixtureFetch();
+    const retryAfter = ['0', '1'];
+    const fetch = async (url: string) => {
+      if (retryAfter.length === 0) return good(url);
+      const value = retryAfter.shift() ?? null;
+      const headers = { get: (name: string) => (name.toLowerCase() === 'retry-after' ? value : null) };
+      return { ok: false, status: 429, headers, text: async () => 'Too Many Requests' };
+    };
+    const waits: number[] = [];
+    await createHorizonsClient({ fetch, cacheDir, sleep: async (ms) => void waits.push(ms) }).rows(SUN_NOVEMBER);
+    expect(waits).toEqual(HORIZONS_RETRY_DELAYS_MS.slice(0, 2));
+  });
+
   it('keeps the fixed delays when a 503 carries Retry-After', async () => {
     const good = fixtureFetch();
     let busy = 1;

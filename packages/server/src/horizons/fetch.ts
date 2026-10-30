@@ -75,7 +75,8 @@ async function attempt(
 
 /**
  * One request, retried while the failure is transient: after the fixed
- * delays, or as long as a 429's Retry-After asks, up to the longest delay.
+ * delays, or as long as a 429's Retry-After asks (never less than the fixed
+ * delay, never more than the longest).
  * Returns the last response, ok or not.
  */
 async function fetchWithRetry(
@@ -88,7 +89,12 @@ async function fetchWithRetry(
     const wait = HORIZONS_RETRY_DELAYS_MS[retry];
     if (wait === undefined) throw outcome.error;
     const asked = outcome.retryAfterMs;
-    const delay = asked === null ? wait : Math.min(asked, MAX_RETRY_DELAY_MS);
+    // A Retry-After of 0 or 1 s would hammer a rate-limited Horizons: never
+    // wait less than the fixed delay of this retry.
+    const delay =
+      asked === null
+        ? wait
+        : Math.max(wait, Math.min(asked, MAX_RETRY_DELAY_MS));
     await options.sleep(delay);
   }
 }

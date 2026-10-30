@@ -14,15 +14,18 @@ const STALE_TEMP_MS = 60_000;
 export class PointsStore {
   private readonly dir: string;
   private readonly maxBytes: number;
+  private readonly now: () => number;
   // Initialised by a scan of the directory on first use (which also sweeps the
   // stale temporary files), then kept in memory.
   private size: Promise<number> | null = null;
   // Evictions run one at a time, so two of them never count the same file.
   private evicting: Promise<void> = Promise.resolve();
 
-  constructor(dir: string, maxBytes: number) {
+  /** `now` is the clock of the stale-temp cutoff; tests inject a fake one. */
+  constructor(dir: string, maxBytes: number, now: () => number = Date.now) {
     this.dir = dir;
     this.maxBytes = maxBytes;
+    this.now = now;
   }
 
   /**
@@ -42,7 +45,7 @@ export class PointsStore {
   }
 
   private currentSize(): Promise<number> {
-    this.size ??= sweepStaleTemp(this.dir, Date.now() - STALE_TEMP_MS)
+    this.size ??= sweepStaleTemp(this.dir, this.now() - STALE_TEMP_MS)
       .then(() => listPointFiles(this.dir))
       .then(totalBytes);
     return this.size;

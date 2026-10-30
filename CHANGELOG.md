@@ -17,6 +17,7 @@
   nginx corre sin privilegios y no dice su versión.
 - La API envía cabeceras de seguridad, no deja cachear sus errores y respeta la espera que pide JPL Horizons; una
   respuesta «ocupado» ya no gasta el cupo de la IP.
+- La web pide al navegador que la abra siempre por HTTPS (HSTS, un año, también en los subdominios).
 - Imágenes Docker fijadas por digest, acciones del CI fijadas por commit y descargas verificadas con su checksum.
 
 ### Cambiado

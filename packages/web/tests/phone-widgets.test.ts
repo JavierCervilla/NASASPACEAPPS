@@ -2,7 +2,7 @@ import { describe, expect, it, vi } from 'vitest';
 import { bodyWidget, EARTH, SUN } from '../src/phone/body-widget';
 import { dsnWidget } from '../src/phone/dsn-widget';
 import { formatAtLeast, formatCoords, formatDuration, formatElevation, formatShare } from '../src/phone/format';
-import { monthRange } from '../src/phone/month-range';
+import { widgetRange, type WidgetRange } from '../src/phone/widget-range';
 import { nowState, nowWidget } from '../src/phone/now-widget';
 import { hoursUrl, parseHours } from '../src/phone/site-hours';
 import { sampleAt, siteWidgets } from '../src/phone/site-widgets';
@@ -19,8 +19,8 @@ describe('formats', () => {
   });
 
   it('writes an open end as «at least»', () => {
-    expect(formatAtLeast(173)).toBe('7 d +');
-    expect(formatAtLeast(5)).toBe('5 h +');
+    expect(formatAtLeast(173)).toBe('at least 7 d');
+    expect(formatAtLeast(5)).toBe('at least 5 h');
   });
 
   it('writes elevations above and below the horizon', () => {
@@ -71,7 +71,7 @@ describe('bodyWidget', () => {
   it('says «at least» when the body outlasts the range', () => {
     const hours = hoursOf(174, { sunEl: () => 5, earthEl: () => 10.6 });
     const widget = bodyWidget(EARTH, hours, hours[0]!);
-    expect(widget).toEqual({ label: 'Earthset in', value: '7 d +', detail: 'Earth 10.6° up' });
+    expect(widget).toEqual({ label: 'Earthset in', value: 'at least 7 d', detail: 'Earth 10.6° up' });
   });
 
   it('uses the Earth threshold of 3°, not the horizon', () => {
@@ -94,52 +94,104 @@ describe('dsnWidget', () => {
 
   it('says so when no complex listens for the rest of the range', () => {
     const hours = hoursOf(5, { sunEl: () => 5, earthEl: () => 5 });
-    expect(dsnWidget(hours, hours[0]!)).toEqual({ value: 'No antenna', detail: 'None this month' });
+    expect(dsnWidget(hours, hours[0]!)).toEqual({ value: 'No antenna', detail: 'None for at least 5 h' });
+  });
+
+  it('says «at least» when the complex outlasts the range', () => {
+    const hours = hoursOf(5, { sunEl: () => 5, earthEl: () => 5, dsn: () => 'goldstone' });
+    expect(dsnWidget(hours, hours[0]!)).toEqual({ value: 'Goldstone', detail: 'California · at least 5 h left' });
   });
 });
 
 describe('siteWidgets', () => {
   const hours = hoursOf(48, { sunEl: upUntil(24), earthEl: () => 10, dsn: () => 'canberra' });
+  /** A range over the 48 hours, its month the first 24 and its horizon from `at` to the end. */
+  const rangeAt = (at: number): WidgetRange => ({
+    from: hourAt(0),
+    to: hourAt(47),
+    at: hourAt(at),
+    monthEnd: hourAt(23),
+    horizonEnd: hourAt(47),
+    month: 'November',
+  });
 
   it('builds the four widgets at the reference hour', () => {
-    const widgets = siteWidgets(hours, hourAt(20), 'November');
-    expect(widgets?.now).toEqual({ state: 'window', title: 'Landing window', detail: '50 % of November' });
+    const widgets = siteWidgets(hours, rangeAt(20));
+    expect(widgets?.now).toEqual({ state: 'window', title: 'Landing window', detail: '100 % of November' });
     expect(widgets?.sun.value).toBe('4 h');
-    expect(widgets?.earth.value).toBe('1 d +');
+    expect(widgets?.earth.value).toBe('at least 1 d');
     expect(widgets?.dsn.value).toBe('Canberra');
   });
 
+  it('counts the share over the month only and the countdowns over the horizon only', () => {
+    const widgets = siteWidgets(hours, { ...rangeAt(20), monthEnd: hourAt(47), horizonEnd: hourAt(22) });
+    expect(widgets?.now.detail).toBe('50 % of November');
+    expect(widgets?.earth.value).toBe('at least 3 h');
+  });
+
   it('is null when no sample covers the hour', () => {
-    expect(siteWidgets(hours, hourAt(60), 'November')).toBeNull();
+    expect(siteWidgets(hours, { ...rangeAt(60), horizonEnd: hourAt(70) })).toBeNull();
     expect(sampleAt([], hourAt(0))).toBeNull();
   });
 });
 
-describe('monthRange', () => {
-  it('asks for the current UTC month, at the current hour', () => {
-    expect(monthRange(Date.parse('2026-11-23T18:42:00Z'))).toEqual({
-      from: '2026-11-01',
-      to: '2026-11-30',
-      at: '2026-11-23T18:00:00Z',
-      month: 'November',
+describe('widgetRange', () => {
+  it('joins the UTC month to a 30-day horizon from the current hour', () => {
+    expect(widgetRange(Date.parse('2026-10-30T10:42:00Z'))).toEqual({
+      from: '2026-10-01T00:00:00Z',
+      to: '2026-11-29T10:00:00Z',
+      at: '2026-10-30T10:00:00Z',
+      monthEnd: '2026-10-31T23:00:00Z',
+      horizonEnd: '2026-11-29T10:00:00Z',
+      month: 'October',
     });
   });
 
-  it('holds the month inside the API window (2026 and 2027)', () => {
-    const before = monthRange(Date.parse('2025-06-10T00:00:00Z'));
-    expect(before).toMatchObject({ from: '2026-01-01', at: '2026-01-01T00:00:00Z', month: 'January' });
-    const after = monthRange(Date.parse('2028-03-10T00:00:00Z'));
-    expect(after).toMatchObject({ to: '2027-12-31', at: '2027-12-31T23:00:00Z', month: 'December' });
+  it('asks to the end of the month when the horizon ends first', () => {
+    expect(widgetRange(Date.parse('2026-01-01T00:00:00Z'))).toMatchObject({
+      to: '2026-01-31T23:00:00Z',
+      horizonEnd: '2026-01-31T00:00:00Z',
+    });
+  });
+
+  it('holds the horizon inside the data window', () => {
+    expect(widgetRange(Date.parse('2027-12-20T05:00:00Z'))).toMatchObject({
+      to: '2027-12-31T23:00:00Z',
+      horizonEnd: '2027-12-31T23:00:00Z',
+      month: 'December',
+    });
+  });
+
+  it('has no range outside the data window (2026 and 2027)', () => {
+    expect(widgetRange(Date.parse('2025-12-31T23:59:59Z'))).toBeNull();
+    expect(widgetRange(Date.parse('2028-01-01T00:00:00Z'))).toBeNull();
+    expect(widgetRange(Date.parse('2027-12-31T23:59:59Z'))?.at).toBe('2027-12-31T23:00:00Z');
+  });
+
+  it('never asks for more than the API allows (92 days)', () => {
+    for (let ms = Date.parse('2026-01-01T00:00:00Z'); ms < Date.parse('2028-01-01T00:00:00Z'); ms += 7 * 3_600_000) {
+      const range = widgetRange(ms);
+      if (!range) throw new Error(`no range at ${ms}`);
+      expect(Date.parse(range.to) - Date.parse(range.from)).toBeLessThanOrEqual(92 * 24 * 3_600_000);
+    }
   });
 });
 
 describe('site hours', () => {
-  const range = monthRange(Date.parse('2026-11-23T18:00:00Z'));
+  const range = widgetRange(Date.parse('2026-11-23T18:00:00Z'));
+  if (!range) throw new Error('no range');
 
-  it('asks the site route for the month and the hour', () => {
+  it('asks the site route for the range and the hour', () => {
     expect(hoursUrl('/api/v1/sites', 'im2-athena', range)).toBe(
-      '/api/v1/sites/im2-athena?from=2026-11-01&to=2026-11-30&at=2026-11-23T18%3A00%3A00Z',
+      '/api/v1/sites/im2-athena?from=2026-11-01T00%3A00%3A00Z&to=2026-12-23T18%3A00%3A00Z&at=2026-11-23T18%3A00%3A00Z',
     );
+  });
+
+  it('refuses to build a URL for an id outside the allowlist', () => {
+    for (const id of ['..', '.', 'a/b', 'A', '-x', 'x'.repeat(65), '%2e%2e']) {
+      expect(() => hoursUrl('/api/v1/sites', id, range)).toThrow('not a site id');
+    }
+    expect(hoursUrl('/s', 'x'.repeat(64), range)).toContain(`/s/${'x'.repeat(64)}?`);
   });
 
   it('reads the hours of an API body and rejects a malformed one', () => {

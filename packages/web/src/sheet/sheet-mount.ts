@@ -19,6 +19,8 @@ export interface SheetMountOptions {
   readonly onDetent: (detent: DetentName) => void;
   /** Each frame, how far open past half the sheet is (0 to 1). */
   readonly onOpenness: (value: number) => void;
+  /** Each frame, the sheet's top edge in px from the viewport's top. */
+  readonly onEdge: (top: number) => void;
   /** Whether a press may drag the sheet (not inside a scrolling list). */
   readonly canDrag: (event: PointerEvent) => boolean;
 }
@@ -28,16 +30,17 @@ export interface MountedSheet {
   readonly dispose: () => void;
 }
 
-/** The frame loop that springs the sheet and draws it. */
+/** The frame loop that springs the sheet, draws it and reports it. */
 function sheetLoop(
   el: HTMLElement,
   state: SheetState,
-  onOpenness: (value: number) => void,
+  report: Pick<SheetMountOptions, 'onOpenness' | 'onEdge'>,
 ): Loop {
   return createLoop((dt) => {
     const moving = stepSheet(state, dt);
     placeSheet(el, state.axis.value);
-    onOpenness(openness(state.detents, state.axis.value));
+    report.onOpenness(openness(state.detents, state.axis.value));
+    report.onEdge(state.axis.value);
     return moving;
   });
 }
@@ -49,7 +52,7 @@ export function mountSheet(
 ): MountedSheet {
   const heightPx = (): number => window.innerHeight;
   const state = createSheetState(detentsFor(heightPx()), options.start);
-  const loop = sheetLoop(el, state, options.onOpenness);
+  const loop = sheetLoop(el, state, options);
   const invalidate = (): void => loop.invalidate();
   const { reducedMotion, onDetent } = options;
   const deps = { heightPx, reducedMotion, invalidate, onDetent };

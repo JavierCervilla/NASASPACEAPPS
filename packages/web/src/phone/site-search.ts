@@ -1,9 +1,22 @@
 /**
- * The site picker's search and region filter. Pure, so it is tested without
- * a page.
+ * The site picker's search and region filter: a query searches every
+ * region; with no query the region control filters. Pure, so it is tested
+ * without a page.
  */
 import type { SiteGroup } from '@ventana/sim';
 import type { PhoneSite } from './phone-site';
+
+/** The regions, in the order and with the names the picker shows. */
+export const REGIONS: readonly (readonly [SiteGroup, string])[] = [
+  ['south_pole', 'South pole'],
+  ['apollo', 'Apollo'],
+  ['other', 'Other'],
+];
+
+/** The region's name: «South pole», «Apollo» or «Other». */
+export function regionName(group: SiteGroup): string {
+  return REGIONS.find(([g]) => g === group)?.[1] ?? group;
+}
 
 export interface SiteFilter {
   /** Free text, matched against the site name and the mission. */
@@ -25,12 +38,16 @@ export function matchesQuery(site: PhoneSite, query: string): boolean {
   );
 }
 
-/** The sites of the filter's region that match its query, in order. */
+/**
+ * The sites that match the filter's query in any region, in order; with
+ * an empty query, the sites of the filter's region.
+ */
 export function filterSites(
   sites: readonly PhoneSite[],
   filter: SiteFilter,
 ): PhoneSite[] {
-  return sites.filter(
-    (site) => site.group === filter.group && matchesQuery(site, filter.query),
-  );
+  if (foldText(filter.query) !== '') {
+    return sites.filter((site) => matchesQuery(site, filter.query));
+  }
+  return sites.filter((site) => site.group === filter.group);
 }

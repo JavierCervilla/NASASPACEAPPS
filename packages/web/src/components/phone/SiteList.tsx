@@ -9,6 +9,7 @@ import {
   splitName,
   type PhoneSite,
 } from '../../phone/phone-site';
+import { regionName } from '../../phone/site-search';
 import type { NowState } from '../../phone/widget-types';
 
 interface RowProps {
@@ -17,6 +18,8 @@ interface RowProps {
   /** The selected site's state right now, when known. */
   readonly state: NowState | null;
   readonly onPick: (id: string) => void;
+  /** Whether the row names its region (a search spans every region). */
+  readonly withRegion: boolean;
 }
 
 function Check() {
@@ -27,8 +30,11 @@ function Check() {
   );
 }
 
-function SiteRow({ site, selected, state, onPick }: RowProps) {
+function SiteRow(props: RowProps) {
+  const { site, selected, state, onPick } = props;
   const kind = site.approximate ? 'zone' : 'exact';
+  const region = props.withRegion ? regionName(site.group) : '';
+  const detail = rowDetail(site, selected ? state : null, region);
   return (
     <li>
       <button
@@ -40,7 +46,7 @@ function SiteRow({ site, selected, state, onPick }: RowProps) {
         <span className="site-symbol" data-kind={kind} data-state={(selected && state) || undefined} />
         <span className="site-row__text">
           <span className="site-row__title">{splitName(site.name).title}</span>
-          <span className="site-row__detail">{rowDetail(site, selected ? state : null)}</span>
+          <span className="site-row__detail">{detail}</span>
         </span>
         {selected ? <Check /> : null}
       </button>
@@ -53,9 +59,11 @@ interface Props {
   readonly selectedId: string;
   readonly state: NowState | null;
   readonly onPick: (id: string) => void;
+  readonly withRegion: boolean;
 }
 
-export function SiteList({ sites, selectedId, state, onPick }: Props) {
+export function SiteList(props: Props) {
+  const { sites, selectedId, state, onPick, withRegion } = props;
   if (sites.length === 0) {
     return <p className="site-list-empty">No sites match.</p>;
   }
@@ -68,6 +76,7 @@ export function SiteList({ sites, selectedId, state, onPick }: Props) {
           selected={site.id === selectedId}
           state={state}
           onPick={onPick}
+          withRegion={withRegion}
         />
       ))}
     </ul>

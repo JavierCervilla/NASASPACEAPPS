@@ -37,7 +37,11 @@ function listening(
 function waiting(hours: readonly HourSample[], now: HourSample): DsnWidget {
   const nowMs = toMs(now.t);
   const next = hours.find((s) => s.dsn !== null && toMs(s.t) > nowMs);
-  if (!next?.dsn) return { value: 'No antenna', detail: 'None this month' };
+  if (!next?.dsn) {
+    const last = hours.at(-1)?.t ?? now.t;
+    const span = formatAtLeast(hoursBetween(now.t, last) + 1);
+    return { value: 'No antenna', detail: `None for ${span}` };
+  }
   const [name] = COMPLEXES[next.dsn];
   const wait = formatDuration(hoursBetween(now.t, next.t));
   return { value: 'No antenna', detail: `${name} in ~${wait}` };

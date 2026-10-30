@@ -1,21 +1,16 @@
 /**
  * The site picker that fills the sheet (validated canvas «Phone · site
- * picker sheet»): a search over names and missions, a South pole / Apollo
- * / Other control, and the list.
+ * picker sheet»): a search over names and missions in every region, a
+ * South pole / Apollo / Other control that filters when there is no
+ * search, and the list.
  */
 import type { SiteGroup } from '@ventana/sim';
 import { useState } from 'react';
 import type { PhoneSite } from '../../phone/phone-site';
-import { filterSites } from '../../phone/site-search';
+import { filterSites, foldText, REGIONS } from '../../phone/site-search';
 import type { NowState } from '../../phone/widget-types';
 import { Icon } from './Icon';
 import { SiteList } from './SiteList';
-
-const REGIONS: readonly [SiteGroup, string][] = [
-  ['south_pole', 'South pole'],
-  ['apollo', 'Apollo'],
-  ['other', 'Other'],
-];
 
 interface Props {
   readonly sites: readonly PhoneSite[];
@@ -40,14 +35,16 @@ function Search(props: { value: string; onChange: (v: string) => void }) {
   );
 }
 
+/** The region control; while a search spans every region it is off. */
 function Regions(props: {
   value: SiteGroup;
+  off: boolean;
   onChange: (g: SiteGroup) => void;
 }) {
   return (
     <div className="segmented" role="group" aria-label="Region">
       {REGIONS.map(([group, label]) => (
-        <button key={group} type="button" aria-pressed={group === props.value} onClick={() => props.onChange(group)}>
+        <button key={group} type="button" disabled={props.off} aria-pressed={!props.off && group === props.value} onClick={() => props.onChange(group)}>
           {label}
         </button>
       ))}
@@ -59,6 +56,7 @@ export function SitePicker({ sites, selected, state, onPick, onDone }: Props) {
   const [query, setQuery] = useState('');
   const [group, setGroup] = useState<SiteGroup>(selected.group);
   const shown = filterSites(sites, { query, group });
+  const searching = foldText(query) !== '';
   return (
     <div className="picker">
       <div className="picker__head">
@@ -66,12 +64,13 @@ export function SitePicker({ sites, selected, state, onPick, onDone }: Props) {
         <button type="button" className="picker__done" onClick={onDone}>Done</button>
       </div>
       <Search value={query} onChange={setQuery} />
-      <Regions value={group} onChange={setGroup} />
+      <Regions value={group} off={searching} onChange={setGroup} />
       <SiteList
         sites={shown}
         selectedId={selected.id}
         state={state}
         onPick={onPick}
+        withRegion={searching}
       />
     </div>
   );

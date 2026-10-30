@@ -1,7 +1,8 @@
 /**
  * The four widgets of the selected site (validated canvas «Phone · globe +
  * widgets»): right now, sunset, earthset and the listening DSN antenna.
- * Skeletons while the API answers; an honest error when it does not.
+ * Skeletons while the API answers; an honest error when it does not, and
+ * an honest state when the current hour is outside the data window.
  */
 import type { ReactNode } from 'react';
 import type { WidgetsResult } from '../../phone/widgets-loader';
@@ -50,6 +51,15 @@ function Failure({ onRetry }: { readonly onRetry: () => void }) {
   );
 }
 
+/** The current hour has no data: said plainly, never clamped data. */
+function Outside() {
+  return (
+    <p className="widgets-outside" role="status">
+      Outside the data window (2026–2027)
+    </p>
+  );
+}
+
 interface Props {
   readonly result: WidgetsResult;
   readonly onRetry: () => void;
@@ -58,6 +68,7 @@ interface Props {
 export function Widgets({ result, onRetry }: Props) {
   if (result.kind === 'loading') return <Skeletons />;
   if (result.kind === 'error') return <Failure onRetry={onRetry} />;
+  if (result.kind === 'outside') return <Outside />;
   const { now, sun, earth, dsn } = result.widgets;
   const label = (
     <>

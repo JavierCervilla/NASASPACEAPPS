@@ -51,6 +51,43 @@ describe('bindSheetDrag', () => {
     expect(sheet.click().stopPropagation).toHaveBeenCalledOnce();
   });
 
+  it('turns a press into a drag at 6 px, not at 5', () => {
+    const sheet = fakeSheet();
+    const t = target();
+    bindSheetDrag(sheet.el, t, () => true);
+    sheet.fire('pointerdown', 500, 0);
+    sheet.fire('pointermove', 505, 10);
+    expect(t.grab).not.toHaveBeenCalled();
+    sheet.fire('pointermove', 506, 20);
+    expect(t.grab).toHaveBeenCalledOnce();
+  });
+
+  it('a drag that ends in pointercancel does not swallow the next tap', () => {
+    const sheet = fakeSheet();
+    const t = target();
+    let draggable = true;
+    bindSheetDrag(sheet.el, t, () => draggable);
+    sheet.fire('pointerdown', 500, 0);
+    sheet.fire('pointermove', 450, 16);
+    sheet.fire('pointercancel', 450, 32);
+    expect(t.release).toHaveBeenCalledOnce();
+    // The next tap lands inside the scrolling list, where the sheet does not drag.
+    draggable = false;
+    sheet.fire('pointerdown', 300, 100);
+    sheet.fire('pointerup', 300, 120);
+    expect(sheet.click().stopPropagation).not.toHaveBeenCalled();
+  });
+
+  it('a drag that ends in pointerup still swallows only its own click', () => {
+    const sheet = fakeSheet();
+    bindSheetDrag(sheet.el, target(), () => true);
+    sheet.fire('pointerdown', 500, 0);
+    sheet.fire('pointermove', 450, 16);
+    sheet.fire('pointerup', 450, 32);
+    expect(sheet.click().stopPropagation).toHaveBeenCalledOnce();
+    expect(sheet.click().stopPropagation).not.toHaveBeenCalled();
+  });
+
   it('ignores presses where the page says the sheet must not drag', () => {
     const sheet = fakeSheet();
     const t = target();

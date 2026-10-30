@@ -1,8 +1,9 @@
 /**
  * The phone's glass top bar: the title, how to move the Moon, and the site
- * pill (a status dot and the short name) that opens the site picker.
+ * pill (a status dot, the short name and what tells it apart) that opens
+ * the site picker.
  */
-import { shortName, type PhoneSite } from '../../phone/phone-site';
+import { siteLabels, type PhoneSite } from '../../phone/phone-site';
 import type { NowState } from '../../phone/widget-types';
 import { Icon } from './Icon';
 
@@ -13,24 +14,40 @@ interface Props {
   readonly onOpenPicker: () => void;
 }
 
-export function PhoneBar({ site, state, onOpenPicker }: Props) {
-  const name = shortName(site);
+/**
+ * The pill: two lines, so co-located sites (IM-2 and the Mons Mouton zone)
+ * never read the same.
+ */
+function SitePill({ site, state, onOpenPicker }: Props) {
+  const { pill, pillDetail } = siteLabels(site);
+  const name = pillDetail ? `${pill}, ${pillDetail}` : pill;
+  return (
+    <button
+      type="button"
+      className="site-pill"
+      aria-label={`Change site, now ${name}`}
+      onClick={onOpenPicker}
+    >
+      <span className="signal-dot" data-state={state ?? 'loading'} />
+      <span className="site-pill__names">
+        <span className="site-pill__name">{pill}</span>
+        {pillDetail ? (
+          <span className="site-pill__detail">{pillDetail}</span>
+        ) : null}
+      </span>
+      <Icon name="chevron" />
+    </button>
+  );
+}
+
+export function PhoneBar(props: Props) {
   return (
     <header className="phone-bar">
       <div className="phone-bar__titles">
         <h1 className="phone-bar__title">Ventana Lunar</h1>
         <p className="phone-bar__hint">Drag the Moon · pinch to zoom</p>
       </div>
-      <button
-        type="button"
-        className="site-pill"
-        aria-label={`Change site, now ${name}`}
-        onClick={onOpenPicker}
-      >
-        <span className="signal-dot" data-state={state ?? 'loading'} />
-        <span className="site-pill__name">{name}</span>
-        <Icon name="chevron" />
-      </button>
+      <SitePill {...props} />
     </header>
   );
 }

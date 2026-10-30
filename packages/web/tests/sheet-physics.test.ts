@@ -2,7 +2,7 @@ import { describe, expect, it, vi } from 'vitest';
 import { stepDampedSpring } from '../src/sheet/damped-spring';
 import { SheetMotion } from '../src/sheet/sheet-motion';
 import { detentsFor, nearestDetent, releaseDetent, rubberBand, unRubberBand } from '../src/sheet/sheet-physics';
-import { createSheetState, dragSheet, grabSheet, settleSheet, stepSheet, type SheetState } from '../src/sheet/sheet-state';
+import { createSheetState, dragSheet, FLICK_MIN_PX_S, grabSheet, settleSheet, stepSheet, type SheetState } from '../src/sheet/sheet-state';
 import { grabberLabel, nextDetent, openness } from '../src/sheet/sheet-view';
 
 // The e2e and canvas phone: 390x844.
@@ -50,11 +50,21 @@ describe('momentum projection', () => {
     // At 330 px the nearest detent is half, but a firm upward flick goes to full.
     expect(releaseDetent(DETENTS, 330, -800)).toBe('full');
   });
+
+  it('decelerates at 0.995: a firm flick from peek crosses one detent, where 0.998 would cross two', () => {
+    // 0.995 projects -1500 px/s by 298.5 px (to 409.5, half); 0.998 would project 748.5 px (to -40.5, full).
+    expect(releaseDetent(DETENTS, DETENTS.peek, -1500)).toBe('half');
+  });
 });
 
 describe('rubber band', () => {
   it('follows 1:1 between the ends', () => {
     expect(rubberBand(400, BOUNDS, HEIGHT)).toBe(400);
+  });
+
+  it('uses the 0.55 stiffness: 100 px past full shows 51.6 px past it', () => {
+    // 96 - (100 * 844 * 0.55) / (844 + 0.55 * 100)
+    expect(rubberBand(DETENTS.full - 100, BOUNDS, HEIGHT)).toBeCloseTo(44.364849833, 6);
   });
 
   it('resists more the further past an end the finger goes', () => {
@@ -135,6 +145,25 @@ describe('sheet state', () => {
     expect(state.axis.value).toBe(caught + 10);
   });
 
+  it('keeps the shown position when a sheet caught past an end is grabbed', () => {
+    const state = createSheetState(DETENTS, 'full');
+    state.axis.value = DETENTS.full - 20;
+    grabSheet(state, HEIGHT);
+    dragSheet(state, 0, HEIGHT);
+    expect(state.axis.value).toBeCloseTo(DETENTS.full - 20, 6);
+  });
+
+  it('bounces from exactly 300 px/s, in either direction', () => {
+    expect(FLICK_MIN_PX_S).toBe(300);
+    const damping = (vy: number): number => {
+      const state = createSheetState(DETENTS, 'half');
+      settleSheet(state, 'full', vy, false);
+      return state.damping;
+    };
+    expect([damping(299), damping(-299)]).toEqual([1, 1]);
+    expect([damping(300), damping(-300)]).toEqual([0.8, 0.8]);
+  });
+
   it('jumps without a spring under reduced motion', () => {
     const state = createSheetState(DETENTS, 'half');
     settleSheet(state, 'full', -1500, true);
@@ -156,6 +185,7 @@ describe('SheetMotion', () => {
     motion.grab();
     motion.drag(-150);
     motion.release(-1200);
+    expect(state.axis.velocity).toBe(-1200);
     expect(state.detent).toBe('full');
     expect(deps.onDetent).toHaveBeenCalledWith('full');
     expect(deps.invalidate).toHaveBeenCalled();

@@ -27,18 +27,22 @@ class SheetGesture {
   private press: { id: number; y: number } | null = null;
   private lastY = 0;
   private tracker = new VelocityTracker();
-  dragging = false;
+  private dragging = false;
+  /** The click that follows a drag's pointerup belongs to the drag. */
+  swallowClick = false;
 
   constructor(
     private readonly el: HTMLElement,
     private readonly target: SheetDragTarget,
   ) {}
 
-  down(event: PointerEvent): void {
-    if (this.press || !event.isPrimary || event.button !== 0) return;
+  /** Every press clears the click flag, even one that may not drag. */
+  down(event: PointerEvent, allowed: boolean): void {
+    this.swallowClick = false;
+    if (!allowed || this.press) return;
+    if (!event.isPrimary || event.button !== 0) return;
     this.press = { id: event.pointerId, y: event.clientY };
     this.lastY = event.clientY;
-    this.dragging = false;
     this.tracker = new VelocityTracker();
     this.tracker.add(0, event.clientY, event.timeStamp);
   }
@@ -58,12 +62,18 @@ class SheetGesture {
     this.tracker.add(0, event.clientY, event.timeStamp);
   }
 
-  up(event: PointerEvent): void {
+  /**
+   * The press ends: a drag settles. Only a pointerup is followed by a
+   * click to swallow; a pointercancel (`cancelled`) has none.
+   */
+  up(event: PointerEvent, cancelled: boolean): void {
     if (!this.press || event.pointerId !== this.press.id) return;
     this.press = null;
     if (this.dragging) {
       this.target.release(this.tracker.velocity(event.timeStamp).y);
     }
+    this.swallowClick = this.dragging && !cancelled;
+    this.dragging = false;
   }
 }
 
@@ -79,14 +89,14 @@ export function bindSheetDrag(
 ): () => void {
   const gesture = new SheetGesture(el, target);
   const listeners: [PointerType, (event: PointerEvent) => void][] = [
-    ['pointerdown', (e) => (canDrag(e) ? gesture.down(e) : undefined)],
+    ['pointerdown', (e) => gesture.down(e, canDrag(e))],
     ['pointermove', (e) => gesture.move(e)],
-    ['pointerup', (e) => gesture.up(e)],
-    ['pointercancel', (e) => gesture.up(e)],
+    ['pointerup', (e) => gesture.up(e, false)],
+    ['pointercancel', (e) => gesture.up(e, true)],
   ];
   const swallow = (event: Event): void => {
-    if (gesture.dragging) event.stopPropagation();
-    gesture.dragging = false;
+    if (gesture.swallowClick) event.stopPropagation();
+    gesture.swallowClick = false;
   };
   for (const [type, fn] of listeners) el.addEventListener(type, fn);
   el.addEventListener('click', swallow, true);

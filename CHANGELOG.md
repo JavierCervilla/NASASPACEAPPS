@@ -16,6 +16,14 @@
   las tarjetas; la zona de Mons Mouton que el globo tapa ya se puede elegir desde la lista. Con el ahorro de datos
   activado, el globo no se descarga hasta pulsar «Load the 3D globe». Funciona en claro y oscuro (el cielo sigue negro),
   con menos transparencia y con más contraste.
+- Ajustes del móvil tras la revisión (VENT-23): las cuentas atrás miran 30 días hacia delante desde la hora actual y ya
+  no se cortan a fin de mes (el % sigue siendo del mes natural); los valores abiertos se leen «at least 7 d»; fuera de
+  2026–2027 la hoja lo dice («Outside the data window (2026–2027)») en vez de enseñar datos de otra fecha; y las
+  tarjetas se recalculan al cambiar la hora y al volver a la pestaña. El buscador del selector busca en todas las
+  regiones y dice la región de cada resultado. La píldora y el título distinguen IM-2 de la zona Artemis de Mons Mouton
+  con una segunda línea. La etiqueta del globo no se queda debajo de la hoja (sube o se oculta con su marcador). El asa
+  de la hoja tiene 44 px de alto para el dedo, y un arrastre cancelado ya no se come el siguiente toque. El verde de
+  «Right now» en modo claro sube a 5,1:1 de contraste.
 - Globo lunar 3D (Three.js) en escritorio: la Luna con el mosaico de color LROC de NASA, iluminada por el Sol en su
   posición real (el terminador coincide con JPL Horizons con menos de 0,2° de error) y vista desde encima del polo sur.
   Se gira arrastrando, con las flechas del teclado o con inercia tras un gesto rápido (sin inercia si el sistema pide
@@ -35,6 +43,8 @@
   Spector.js. La build de producción comprueba que no llega a la web publicada.
 
 ### Seguridad
+- El móvil solo acepta identificadores de sitio con letras minúsculas, cifras y guiones (hasta 64), antes de construir
+  una URL, limita la longitud de cada hora de la respuesta y rechaza respuestas de más de 2 MB.
 - La web envía cabeceras de seguridad en todas sus rutas, con una política de contenido (CSP) calculada en cada build;
   nginx corre sin privilegios y no dice su versión.
 - La API envía cabeceras de seguridad, no deja cachear sus errores y respeta la espera que pide JPL Horizons; una

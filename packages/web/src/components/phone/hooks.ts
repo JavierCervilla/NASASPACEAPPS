@@ -10,6 +10,7 @@ import {
   type RefObject,
 } from 'react';
 import { isPhoneViewport, PHONE_QUERY } from '../../lib/viewport';
+import { browserHourClock, watchHour } from '../../phone/hour-clock';
 import type { Selection, SiteStore } from '../../phone/site-store';
 import {
   LOADING,
@@ -49,8 +50,10 @@ export function useSelection(store: SiteStore): Selection {
 }
 
 /**
- * The widgets of site `id` for this month, loading on each new site; a
- * retry asks again.
+ * The widgets of site `id` for the current hour, loading on each new site
+ * and again when the hour changes (at its top, or when a hidden page comes
+ * back later), so a page left open never shows a stale hour; a retry asks
+ * again.
  */
 export function useSiteWidgets(id: string, sitesUrl: string) {
   const [attempt, setAttempt] = useState(0);
@@ -58,6 +61,10 @@ export function useSiteWidgets(id: string, sitesUrl: string) {
     key: string;
     value: WidgetsResult;
   } | null>(null);
+  useEffect(() => {
+    const next = (): void => setAttempt((n) => n + 1);
+    return watchHour(browserHourClock(), next);
+  }, []);
   const key = `${id}#${attempt}`;
   useEffect(() => {
     let live = true;

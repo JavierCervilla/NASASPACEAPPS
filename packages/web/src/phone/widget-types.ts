@@ -15,7 +15,7 @@ export interface NowWidget {
 export interface BodyWidget {
   /** «Sunset in», «Sunrise in», «Earthset in» or «Earthrise in». */
   readonly label: string;
-  /** «7 d 1 h», or «7 d +» when it outlasts the range. */
+  /** «7 d 1 h», or «at least 7 d» when it outlasts the range. */
   readonly value: string;
   /** «Sun 6.4° up». */
   readonly detail: string;

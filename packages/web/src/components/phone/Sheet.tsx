@@ -15,6 +15,8 @@ interface Props {
   readonly onDetent: (detent: DetentName) => void;
   /** Each frame, how far open past half the sheet is (0 to 1). */
   readonly onOpenness: (value: number) => void;
+  /** Each frame, the sheet's top edge in px from the viewport's top. */
+  readonly onEdge: (top: number) => void;
   readonly children: ReactNode;
 }
 
@@ -40,9 +42,10 @@ function useMountedSheet(
       latest.current.onDetent(detent);
     };
     const onOpenness = (v: number): void => latest.current.onOpenness(v);
+    const onEdge = (top: number): void => latest.current.onEdge(top);
     const start = reported.current;
     sheet.current = mountSheet(node, {
-      start, reducedMotion, onDetent, onOpenness, canDrag,
+      start, reducedMotion, onDetent, onOpenness, onEdge, canDrag,
     });
     return sheet.current.dispose;
   }, [el, latest, reported]);

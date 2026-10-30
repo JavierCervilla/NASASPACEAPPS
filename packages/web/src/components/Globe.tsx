@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { startGlobe, type GlobeStatus } from '../globe/boot';
 import { describeSun } from '../globe/describe';
+import type { WatchedValue } from '../lib/watched-value';
 import { prefersSaveData } from '../lib/viewport';
 import type { SiteStore } from '../phone/site-store';
 
@@ -19,6 +20,8 @@ interface Props {
   readonly base: string;
   /** The selected site, shared with the phone sheet. */
   readonly store: SiteStore;
+  /** The phone sheet's top edge, px from the viewport's top; null: none. */
+  readonly sheetEdge: WatchedValue<number | null>;
 }
 
 const reducedMotion = (): boolean => matchMedia(REDUCED_MOTION).matches;
@@ -27,7 +30,7 @@ const reducedMotion = (): boolean => matchMedia(REDUCED_MOTION).matches;
  * Starts the scene in the viewport after hydration (or waits for the
  * visitor under Save-Data); its status, and how to load it on request.
  */
-function useGlobe({ sitesUrl, base, store }: Props) {
+function useGlobe({ sitesUrl, base, store, sheetEdge }: Props) {
   const host = useRef<HTMLDivElement>(null);
   const loader = useRef<() => void>(() => undefined);
   const [status, setStatus] = useState<GlobeStatus | null>(null);
@@ -35,12 +38,12 @@ function useGlobe({ sitesUrl, base, store }: Props) {
     const el = host.current;
     if (!el) return undefined;
     const warn = (message: string): void => console.warn(message);
-    const options = { atMs: Date.now(), base, sitesUrl, store };
+    const options = { atMs: Date.now(), base, sitesUrl, store, sheetEdge };
     const deps = { ...options, reducedMotion, warn };
     const start = startGlobe(el, deps, setStatus, prefersSaveData());
     loader.current = start.load;
     return start.dispose;
-  }, [sitesUrl, base, store]);
+  }, [sitesUrl, base, store, sheetEdge]);
   const load = (): void => loader.current();
   return { host, status, load };
 }

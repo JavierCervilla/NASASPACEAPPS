@@ -3,9 +3,11 @@
  * (site summary with widgets, or the site picker) and the floating tab
  * bar. Rendered only below the phone breakpoint.
  */
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
+import type { WatchedValue } from '../../lib/watched-value';
 import type { PhoneSite } from '../../phone/phone-site';
 import type { SiteStore } from '../../phone/site-store';
+import { unlistedSite } from '../../phone/unlisted-site';
 import type { DetentName } from '../../sheet/sheet-physics';
 import {
   usePhone,
@@ -23,12 +25,19 @@ interface Props {
   readonly sites: readonly PhoneSite[];
   readonly store: SiteStore;
   readonly sitesUrl: string;
+  /** Where the sheet's top edge is, for the globe's label; null: none. */
+  readonly sheetEdge: WatchedValue<number | null>;
 }
 
-/** The selected site (or the first), its widgets and the sheet's detent. */
+/**
+ * The selected site, its widgets and the sheet's detent. A selected id the
+ * build-time list lacks gets a neutral site with that id, never another
+ * site's name over this one's widgets.
+ */
 function usePhoneState({ sites, store, sitesUrl }: Props) {
   const selection = useSelection(store);
-  const site = sites.find((s) => s.id === selection.id) ?? sites[0];
+  const site =
+    sites.find((s) => s.id === selection.id) ?? unlistedSite(selection.id);
   const widgets = useSiteWidgets(selection.id, sitesUrl);
   const [detent, setDetent] = useState<DetentName>('half');
   const { result } = widgets;
@@ -49,7 +58,6 @@ type PhoneState = ReturnType<typeof usePhoneState>;
 function SheetBody(props: { phone: PhoneState; sites: Props['sites'] }) {
   const { phone, sites } = props;
   const { site, state, widgets } = phone;
-  if (!site) return null;
   if (phone.detent === 'full') {
     return (
       <SitePicker
@@ -69,7 +77,8 @@ function PhoneUi(props: Props) {
   const phone = usePhoneState(props);
   const [scrim, dim] = useScrim();
   const { site, state, detent } = phone;
-  if (!site) return null;
+  const { sheetEdge } = props;
+  useEffect(() => () => sheetEdge.set(null), [sheetEdge]);
   const picking = detent === 'full';
   const label = picking ? 'Choose a site' : 'Site summary';
   return (
@@ -81,6 +90,7 @@ function PhoneUi(props: Props) {
         detent={detent}
         onDetent={phone.setDetent}
         onOpenness={dim}
+        onEdge={sheetEdge.set}
       >
         <SheetBody phone={phone} sites={props.sites} />
       </Sheet>

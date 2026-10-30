@@ -5476,7 +5476,7 @@
           <li>&bull; One Time store (site + UTC hour) fetches site data</li>
           <li>&bull; Views subscribe read-only; they never compute ephemerides</li>
           <li>&bull; MVP: calendar, polar map, site card; luxury: globes</li>
-          <li>&bull; Built: the 3D globe (lazy-loaded) and the phone sheet, sharing a site store; the sheet reads one site&#39;s month from the API</li>
+          <li>&bull; Built: the 3D globe (lazy-loaded) and the phone sheet, sharing a site store; the sheet reads one site&#39;s month and its next 30 days from the API in one request, and refreshes each hour</li>
         </ul>
       </div>
     </div>

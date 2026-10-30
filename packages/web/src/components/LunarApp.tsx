@@ -1,9 +1,11 @@
 /**
  * The page's one island: the globe section and, on phones, the shell over
  * it. Both share one selection store, created here and passed down, so the
- * globe and the sheet always agree on the site.
+ * globe and the sheet always agree on the site, and the sheet's top edge,
+ * so the globe keeps its label above the sheet.
  */
 import { useState } from 'react';
+import { createWatchedValue } from '../lib/watched-value';
 import type { PhoneSite } from '../phone/phone-site';
 import { createSiteStore } from '../phone/site-store';
 import Globe from './Globe';
@@ -35,13 +37,15 @@ function Layers() {
 
 export default function LunarApp({ sitesUrl, base, selectedId, sites }: Props) {
   const [store] = useState(() => createSiteStore(selectedId));
+  const [sheetEdge] = useState(() => createWatchedValue<number | null>(null));
+  const shared = { sitesUrl, store, sheetEdge };
   return (
     <>
       <section className="globe" aria-label="Lunar globe">
-        <Globe sitesUrl={sitesUrl} base={base} store={store} />
+        <Globe base={base} {...shared} />
         <Layers />
       </section>
-      <PhoneShell sites={sites} store={store} sitesUrl={sitesUrl} />
+      <PhoneShell sites={sites} {...shared} />
     </>
   );
 }

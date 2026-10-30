@@ -12,12 +12,13 @@ export function formatDuration(hours: number): string {
 }
 
 /**
- * At least this long: «7 d +» (the range ends first). Under a day it
- * keeps the hours: «5 h +».
+ * At least this long, when the range ends first: «at least 7 d». Under a
+ * day it keeps the hours: «at least 5 h».
  */
 export function formatAtLeast(hours: number): string {
   const days = Math.floor(hours / HOURS_PER_DAY);
-  return days === 0 ? `${Math.max(0, hours)} h +` : `${days} d +`;
+  const span = days === 0 ? `${Math.max(0, hours)} h` : `${days} d`;
+  return `at least ${span}`;
 }
 
 /** «Sun 6.4° up» or «Earth 2.0° below». */

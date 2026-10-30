@@ -1,6 +1,10 @@
-/** The sheet at peek and half: the site's name, coordinates and widgets. */
+/**
+ * The sheet at peek and half: the site's name with what tells it apart
+ * (IM-2 and the Mons Mouton zone share a place), its coordinates and the
+ * widgets.
+ */
 import { formatCoords } from '../../phone/format';
-import { splitName, type PhoneSite } from '../../phone/phone-site';
+import { siteLabels, type PhoneSite } from '../../phone/phone-site';
 import type { WidgetsResult } from '../../phone/widgets-loader';
 import { Widgets } from './Widgets';
 
@@ -10,14 +14,30 @@ interface Props {
   readonly onRetry: () => void;
 }
 
+/** «84.79° S, 29.20° E», or nothing for a site without coordinates. */
+function Coords({ site }: { readonly site: PhoneSite }) {
+  if (!Number.isFinite(site.lat) || !Number.isFinite(site.lonEast)) {
+    return null;
+  }
+  return (
+    <span className="summary__coords">
+      {formatCoords(site.lat, site.lonEast)}
+    </span>
+  );
+}
+
 export function SiteSummary({ site, result, onRetry }: Props) {
+  const { title, subtitle } = siteLabels(site);
   return (
     <div className="summary">
       <div className="summary__head">
-        <h2 className="summary__name">{splitName(site.name).title}</h2>
-        <span className="summary__coords">
-          {formatCoords(site.lat, site.lonEast)}
-        </span>
+        <h2 className="summary__name">{title}</h2>
+        <p className="summary__meta">
+          {subtitle === title ? null : (
+            <span className="summary__subtitle">{subtitle}</span>
+          )}
+          <Coords site={site} />
+        </p>
       </div>
       <Widgets result={result} onRetry={onRetry} />
     </div>

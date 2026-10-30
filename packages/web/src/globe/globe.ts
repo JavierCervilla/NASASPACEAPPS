@@ -5,6 +5,7 @@
  */
 import { subSolarPoint } from '@ventana/sim';
 import { isPhoneViewport } from '../lib/viewport';
+import type { WatchedValue } from '../lib/watched-value';
 import type { SiteStore } from '../phone/site-store';
 import { attachDevTools } from './dev-hook';
 import { bindDrag } from './drag';
@@ -20,7 +21,7 @@ import { createOrbit, type Orbit } from './orbit';
 import { bindPinch } from './pinch';
 import { pinchControls, pointerControls } from './pointer-controls';
 import { pickQuality, textureUrl } from './quality-pick';
-import { bindSelection } from './selection';
+import { bindSelection, type SelectionParts } from './selection';
 import { loadSites } from './sites-client';
 import { createStage, disposeStage, resizeStage, type Stage } from './stage';
 
@@ -32,6 +33,8 @@ export interface GlobeOptions {
   readonly sitesUrl: string;
   /** The selected site, shared with the phone sheet. */
   readonly store: SiteStore;
+  /** The phone sheet's top edge, px from the viewport's top; null: none. */
+  readonly sheetEdge: WatchedValue<number | null>;
   readonly reducedMotion: () => boolean;
   readonly warn: (message: string) => void;
 }
@@ -75,13 +78,34 @@ function bindInput(
   ];
 }
 
-/** Loads the API sites into the markers; follows the shared selection. */
-function bindSites(
-  options: GlobeOptions,
+/**
+ * Keeps the site label above the phone sheet: the visible part of the globe
+ * ends at the sheet's top edge, moved into the host's coordinates.
+ */
+function bindSheetEdge(
+  host: HTMLElement,
   markers: MarkerLayer,
-  orbit: Orbit,
-  invalidate: () => void,
+  edge: WatchedValue<number | null>,
 ): () => void {
+  const clip = (): void => {
+    const top = edge.get();
+    const bottom = top === null ? Number.POSITIVE_INFINITY : top;
+    markers.label.clip(bottom - host.getBoundingClientRect().top);
+  };
+  clip();
+  return edge.subscribe(clip);
+}
+
+/**
+ * Binds the markers to the page: loads the API sites into them, follows
+ * the shared selection and keeps the label above the phone sheet.
+ */
+function bindSites(
+  host: HTMLElement,
+  options: GlobeOptions,
+  globe: Pick<SelectionParts, 'markers' | 'orbit' | 'invalidate'>,
+): () => void {
+  const { markers, orbit, invalidate } = globe;
   let sites: readonly GlobeSite[] = [];
   const get = globalThis.fetch.bind(globalThis);
   void loadSites({ fetch: get, url: options.sitesUrl, warn: options.warn })
@@ -91,7 +115,12 @@ function bindSites(
     });
   const { store, reducedMotion } = options;
   const parts = { store, markers, orbit, invalidate, reducedMotion };
-  return bindSelection(parts, () => sites);
+  const unbindSelection = bindSelection(parts, () => sites);
+  const unbindEdge = bindSheetEdge(host, markers, options.sheetEdge);
+  return () => {
+    unbindSelection();
+    unbindEdge();
+  };
 }
 
 /**
@@ -114,7 +143,7 @@ export function mountGlobe(host: HTMLElement, options: GlobeOptions) {
     warn: options.warn,
   });
   const input = bindInput(host, orbit, loop, options.reducedMotion);
-  const sites = bindSites(options, markers, orbit, invalidate);
+  const sites = bindSites(host, options, { markers, orbit, invalidate });
   const unbind = [watchHost(host, stage, loop), ...input, sites];
   void attachDevTools(stage.renderer, moon.textureBytes);
   return () => {

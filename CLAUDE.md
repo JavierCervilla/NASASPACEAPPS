@@ -83,8 +83,9 @@ updated in the same PR when something visible changes, architecture diagram in `
 with the round message published by the orchestrator; only a security finding blocks the merge, and everything else
 merges and goes to a fix-forward trajectory. QA (human decision, 2026-10-30): `qa` runs on every trajectory that
 touches the interface (ephemeral staging, Playwright walkthroughs, screenshots), and `qa-adversario` only at three
-milestones: the draggable pin (VENT-10), the MVP close (globe + DSN) and before launch. Neither blocks: findings go
-to fix forward, and every break the adversary reproduces stays as a permanent test.
+milestones: the draggable pin (VENT-10), the MVP close (globe + DSN) and before launch. `qa` findings go to fix
+forward. At those milestones a break that `qa-adversario` reproduces in a red test blocks the merge until it is fixed,
+and its test then stays as a permanent gate.
 
 **Roadmap canvas** (https://claude.ai/artifact/Sm8QoCwg7DqLbuCSHLPfBg): the live, visual roadmap. It is part of the
 definition of done of every step, together with the Dashboard and the vault: when a trajectory or TODO changes state,

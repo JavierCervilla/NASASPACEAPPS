@@ -147,14 +147,34 @@
   margin: 0;
 }
 
+/*
+ * On a desktop the name and the point may take a second line, broken only
+ * between words: the point's coordinates hold together (callout-content.ts
+ * joins them with no-break spaces) and the lines are balanced.
+ */
+.globe-callout__place,
+.globe-callout__point {
+  text-wrap: balance;
+}
+
+/* One line, the ellipsis only a safety net: the mission row here, and every
+ * text row of the phone's compact card. */
 .globe-callout__mission {
   overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Each row holds the desktop's wording and the phone's shorter one. */
+.globe-callout__narrow {
+  display: none;
+}
+
+.globe-callout__mission {
   font-size: 0.6875rem;
   font-weight: 600;
   letter-spacing: 0.02em;
   text-transform: uppercase;
-  text-overflow: ellipsis;
-  white-space: nowrap;
   color: var(--text-muted);
 }
 
@@ -293,8 +313,23 @@
   }
 
   .globe-callout__body {
+    flex: 1;
     justify-content: center;
     padding: 0;
+  }
+
+  .globe-callout__body p {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .globe-callout__wide {
+    display: none;
+  }
+
+  .globe-callout__narrow {
+    display: inline;
   }
 
   .globe-callout__place {

@@ -41,8 +41,9 @@ export interface CalloutDom {
 }
 
 type TextPart =
-  | 'badge' | 'caption' | 'mission' | 'place' | 'point' | 'pill'
-  | 'sunLabel' | 'sunValue' | 'earthLabel' | 'earthValue';
+  | 'badge' | 'caption' | 'mission' | 'missionShort' | 'place' | 'point'
+  | 'pointShort' | 'pill' | 'sunLabel' | 'sunValue' | 'earthLabel'
+  | 'earthValue';
 
 /** The thumbnails' pixel size (site_thumbs.py), so no layout shift. */
 const THUMB_PX = '320';
@@ -65,6 +66,15 @@ function tile(parent: HTMLElement, tone: string): [HTMLElement, HTMLElement] {
   return [label, part(box, 'b', 'tile-value')];
 }
 
+/**
+ * A row with the desktop's wording and the phone's, one shown per layout
+ * by callout.css, so the text never waits on script for the width.
+ */
+function row(parent: HTMLElement, name: string): [HTMLElement, HTMLElement] {
+  const line = part(parent, 'p', name);
+  return [part(line, 'span', 'wide'), part(line, 'span', 'narrow')];
+}
+
 /** Builds the card and its leader, hidden until placed. */
 export function calloutDom(): CalloutDom {
   const card = document.createElement('div');
@@ -77,19 +87,19 @@ export function calloutDom(): CalloutDom {
   const [badge, caption] = [part(media, 'span', 'badge'), part(media, 'span', 'caption')];
   part(card, 'span', 'glyph').setAttribute('aria-hidden', 'true');
   const body = part(card, 'div', 'body');
-  const [mission, place] = [part(body, 'p', 'mission'), part(body, 'p', 'place')];
-  const [point, pill] = [part(body, 'p', 'point'), part(body, 'span', 'pill')];
-  const tiles = part(body, 'div', 'tiles');
+  const [mission, missionShort] = row(body, 'mission');
+  const place = part(body, 'p', 'place');
+  const [point, pointShort] = row(body, 'point');
+  const [pill, tiles] = [part(body, 'span', 'pill'), part(body, 'div', 'tiles')];
   const [sunLabel, sunValue] = tile(tiles, 'sun');
   const [earthLabel, earthValue] = tile(tiles, 'earth');
   const leader = document.createElement('span');
   leader.className = 'globe-callout-leader';
   leader.setAttribute('aria-hidden', 'true');
-  const text = {
-    badge, caption, mission, place, point, pill,
+  return { card, leader, img, text: {
+    badge, caption, mission, missionShort, place, point, pointShort, pill,
     sunLabel, sunValue, earthLabel, earthValue,
-  };
-  return { card, leader, img, text };
+  } };
 }
 
 /** Writes `content` into the card. */
@@ -105,7 +115,9 @@ export function renderCallout(dom: CalloutDom, content: CalloutContent): void {
   img.alt = image?.alt ?? '';
   const words = {
     badge: state?.badge ?? '', caption: image?.caption ?? '',
-    mission: content.mission, place: content.place, point: content.point,
+    mission: content.mission, missionShort: content.missionShort,
+    place: content.place,
+    point: content.point, pointShort: content.pointShort,
     pill: state?.pill ?? '',
     sunLabel: bodies?.sun.label ?? '', sunValue: bodies?.sun.value ?? '',
     earthLabel: bodies?.earth.label ?? '', earthValue: bodies?.earth.value ?? '',

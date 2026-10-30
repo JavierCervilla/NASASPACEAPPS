@@ -36,6 +36,8 @@ const IM1 = '[data-site-id="im1-odysseus"]';
 const IM2 = '[data-site-id="im2-athena"]';
 const callout = (page: Page) => page.locator('.globe-callout');
 const part = (page: Page, name: string) => callout(page).locator(`.globe-callout__${name}`);
+/** A row's wording for one layout: `wide` on a desktop, `narrow` on a phone. */
+const wording = (page: Page, name: string, layout: 'wide' | 'narrow') => part(page, name).locator(`.globe-callout__${layout}`);
 
 async function open(page: Page): Promise<void> {
   await page.emulateMedia({ reducedMotion: 'reduce', colorScheme: 'dark' });
@@ -78,9 +80,11 @@ test.describe('desktop, 1440x900', () => {
     expect((await image.boundingBox())?.height).toBe(150);
     await expect(part(page, 'badge')).toHaveText('Landing window now');
     await expect(part(page, 'caption')).toHaveText('LOLA · 30 km');
-    await expect(part(page, 'mission')).toHaveText('IM-2 Athena · landed 6 Mar 2025');
+    await expect(wording(page, 'mission', 'wide')).toHaveText('IM-2 Athena · landed 6 Mar 2025');
+    await expect(wording(page, 'mission', 'narrow')).toBeHidden();
     await expect(part(page, 'place')).toHaveText('Mons Mouton');
-    await expect(part(page, 'point')).toHaveText('84.79° S, 29.20° E · exact touchdown');
+    await expect(wording(page, 'point', 'wide')).toHaveText('84.79° S, 29.20° E · exact touchdown');
+    await expect(wording(page, 'point', 'narrow')).toBeHidden();
     await expect(part(page, 'tiles')).toHaveText('Sunset in7 d 1 hEarthset in7 d 10 h');
     // Only the selected site's thumbnail is fetched.
     expect(requested.filter((url) => url.includes('/thumbs/'))).toEqual([expect.stringMatching(/\/thumbs\/im2-athena\.jpg$/)]);
@@ -148,6 +152,65 @@ test.describe('desktop, 1440x900', () => {
     await expect(part(page, 'pill')).toBeVisible();
   });
 });
+
+test.describe('desktop, 1440x900, a long point', () => {
+  test.use({ viewport: { width: 1440, height: 900 } });
+
+  test('wraps the point only before its precision, never inside the coordinates', async ({ page }) => {
+    await open(page);
+    const point = wording(page, 'point', 'wide');
+    const lines = await point.evaluate((el) => {
+      el.textContent = '89.67°\u00a0S,\u00a0129.78°\u00a0E\u00a0· approximate zone, not a landing point';
+      const range = document.createRange();
+      range.selectNodeContents(el);
+      const text = el.textContent;
+      // The text of each line box, from the range of every character.
+      const tops = new Map<number, string>();
+      for (let i = 0; i < text.length; i += 1) {
+        range.setStart(el.firstChild!, i);
+        range.setEnd(el.firstChild!, i + 1);
+        const top = Math.round(range.getBoundingClientRect().top);
+        tops.set(top, (tops.get(top) ?? '') + text[i]);
+      }
+      return [...tops.values()].map((line) => line.replaceAll('\u00a0', ' ').trim());
+    });
+    expect(lines.length).toBeGreaterThan(1);
+    expect(lines[0]!.startsWith('89.67° S, 129.78° E ·')).toBe(true);
+  });
+});
+
+/** The rows of the phone's compact card, each one line box and not clipped. */
+async function phoneRows(page: Page): Promise<{ name: string; lines: number; clipped: boolean }[]> {
+  return callout(page).evaluate((card) =>
+    ['mission', 'place', 'point', 'pill'].map((name) => {
+      const row = card.querySelector<HTMLElement>(`.globe-callout__${name}`)!;
+      const range = document.createRange();
+      range.selectNodeContents(row);
+      const tops = new Set([...range.getClientRects()].filter((r) => r.width > 0).map((r) => Math.round(r.top)));
+      return { name, lines: tops.size, clipped: row.scrollWidth > row.clientWidth };
+    }),
+  );
+}
+
+for (const [width, height] of [[390, 844], [360, 780]] as const) {
+  test.describe(`phone, ${width}x${height}, one line per row`, () => {
+    test.use({ viewport: { width, height }, hasTouch: true, isMobile: true });
+
+    test('the compact callout shows each of its text rows on one line, IM-2 in full', async ({ page }) => {
+      await open(page);
+      await page.getByRole('navigation', { name: 'Views' }).getByRole('button', { name: 'Globe' }).click();
+      await expect(callout(page)).toBeVisible();
+      await expect(wording(page, 'mission', 'narrow')).toHaveText('IM-2 Athena · 6 Mar 2025');
+      await expect(wording(page, 'mission', 'wide')).toBeHidden();
+      await expect(part(page, 'place')).toHaveText('Mons Mouton');
+      await expect(wording(page, 'point', 'narrow')).toHaveText('84.79° S · 29.20° E');
+      await expect(wording(page, 'point', 'wide')).toBeHidden();
+      for (const row of await phoneRows(page)) {
+        expect(row, row.name).toMatchObject({ lines: 1, clipped: false });
+      }
+    });
+  });
+}
 
 test.describe('phone, 390x844', () => {
   test.use({ viewport: { width: 390, height: 844 }, hasTouch: true, isMobile: true });

@@ -86,7 +86,19 @@ describe('callout content', () => {
     expect(im2.name).toBe('Mons Mouton (IM-2 Athena)');
     expect(im2.mission).toBe('IM-2 Athena · landed 6 Mar 2025');
     expect(im2.place).toBe('Mons Mouton');
-    expect(im2.point).toBe('84.79° S, 29.20° E · exact touchdown');
+    // No-break spaces hold the coordinates and the dot together.
+    expect(im2.point).toBe('84.79°\u00a0S,\u00a029.20°\u00a0E\u00a0· exact touchdown');
+    expect(im2.point.replaceAll('\u00a0', ' ')).toBe('84.79° S, 29.20° E · exact touchdown');
+  });
+
+  it('gives the phone shorter lines: the landing date without «landed», the coordinates alone', () => {
+    const im2 = content(IM2, READY, 150);
+    expect(im2.missionShort).toBe('IM-2 Athena · 6 Mar 2025');
+    expect(im2.pointShort).toBe('84.79° S · 29.20° E');
+    const planned = content({ ...IM2, status: 'planned', statusDate: 'NET 2027' }, READY, 150);
+    expect(planned.missionShort).toBe(planned.mission);
+    const unknown = content({ ...IM2, lat: Number.NaN }, READY, 150);
+    expect([unknown.point, unknown.pointShort]).toEqual(['Coordinates not in this build', 'Coordinates not in this build']);
   });
 
   it.each([

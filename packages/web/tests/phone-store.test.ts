@@ -1,0 +1,41 @@
+import { describe, expect, it, vi } from 'vitest';
+import { createSiteStore } from '../src/phone/site-store';
+
+describe('createSiteStore', () => {
+  it('starts on the given site', () => {
+    expect(createSiteStore('im2-athena').get().id).toBe('im2-athena');
+  });
+
+  it('tells its listeners who picked the new site', () => {
+    const store = createSiteStore('im2-athena');
+    const listener = vi.fn();
+    store.subscribe(listener);
+    store.select('apollo11', 'list');
+    expect(listener).toHaveBeenCalledOnce();
+    expect(store.get()).toEqual({ id: 'apollo11', origin: 'list' });
+  });
+
+  it('stays quiet when the same site is picked again', () => {
+    const store = createSiteStore('im2-athena');
+    const listener = vi.fn();
+    store.subscribe(listener);
+    store.select('im2-athena', 'globe');
+    expect(listener).not.toHaveBeenCalled();
+  });
+
+  it('stops calling a listener once it unsubscribes', () => {
+    const store = createSiteStore('im2-athena');
+    const listener = vi.fn();
+    const unsubscribe = store.subscribe(listener);
+    unsubscribe();
+    store.select('apollo11', 'globe');
+    expect(listener).not.toHaveBeenCalled();
+  });
+
+  it('keeps separate stores apart: no shared module state', () => {
+    const a = createSiteStore('im2-athena');
+    const b = createSiteStore('im2-athena');
+    a.select('apollo11', 'list');
+    expect(b.get().id).toBe('im2-athena');
+  });
+});

@@ -30,3 +30,24 @@ export function pointerControls(orbit: Orbit, deps: ControlDeps): DragTarget {
     },
   };
 }
+
+/**
+ * The orbit distance after the fingers spread by `ratio` (2 = twice as far
+ * apart): the altitude above the surface shrinks by the same ratio.
+ */
+export function pinchDistance(distance: number, ratio: number): number {
+  return 1 + (distance - 1) / ratio;
+}
+
+/** The pinch handler for `orbit`: the zoom tracks the fingers 1:1. */
+export function pinchControls(
+  orbit: Orbit,
+  deps: ControlDeps,
+): (ratio: number) => void {
+  return (ratio) => {
+    const from = orbit.distance.target;
+    const distance = pinchDistance(from, ratio) - from;
+    moveOrbit(orbit, { latDeg: 0, lonEastDeg: 0, distance }, true);
+    deps.invalidate();
+  };
+}

@@ -34,8 +34,11 @@ Every visible change follows `.claude/skills/apple-design/SKILL.md` (vendored fr
   them for decoration.
 - System font; tracking and leading change with size. Springs critically damped by default. Honour
   `prefers-reduced-motion`, `prefers-reduced-transparency` and `prefers-contrast`.
-- Must run on a laptop without a dedicated GPU (globe: 64-segment sphere, 2K texture). Mobile: the strip goes vertical
-  and the globe hides.
+- Must run on a laptop without a dedicated GPU (globe: 64-segment sphere, 2K texture). Phones (below 768 px): the globe
+  fills the screen at the low or medium tier (1K texture, pixel ratio capped), one finger turns it and two pinch; a glass
+  top bar holds the title and the site pill, a draggable bottom sheet (peek, half with four widgets, full with the site
+  picker) follows apple-design's sheet physics, and a floating tab bar switches views. Under Save-Data the globe waits
+  for a «Load the 3D globe» button.
 - UI text is **English** (the global jury is international): this project's exception to the Language rule below. The local pitch is in Spanish and does not live here.
 
 ## Clean Code

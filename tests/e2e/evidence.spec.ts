@@ -1,16 +1,21 @@
 /**
- * QA evidence, not a check: screenshots of the globe at 1440x900 in dark and light mode and of the phone view at
- * 390x844, saved under production/qa/evidence/ with the capture date. It runs only on request, so a normal e2e run
- * writes nothing:
+ * QA evidence, not a check: screenshots of the globe at 1440x900 in dark and light mode and of the phone at 390x844
+ * (the sheet at half in dark and light, and the site picker), saved under production/qa/evidence/ with the capture
+ * date. It runs only on request, so a normal e2e run writes nothing:
  *
  *   CAPTURE_EVIDENCE=1 npm run e2e -- evidence.spec.ts
+ *
+ * `-g phone` or `-g globe` captures one set only.
  */
-import { readFileSync } from 'node:fs';
-import { expect, test } from '@playwright/test';
+import { expect, test, type Page } from '@playwright/test';
+import { SITES, stubApi } from './api-stub';
 
-const SITES = JSON.parse(readFileSync(new URL('../../packages/server/data/sites.json', import.meta.url), 'utf8')) as unknown[];
 const OUT = new URL('../../production/qa/evidence/', import.meta.url);
 const DATE = new Date().toISOString().slice(0, 10);
+
+/** Two frames after the texture decodes, so the screenshot shows the map, not the grey placeholder. */
+const settle = (page: Page) =>
+  page.evaluate(() => new Promise((done) => requestAnimationFrame(() => requestAnimationFrame(done))));
 
 test.describe('globe evidence', () => {
   test.skip(!process.env.CAPTURE_EVIDENCE, 'captures only with CAPTURE_EVIDENCE=1');
@@ -26,8 +31,7 @@ test.describe('globe evidence', () => {
       await page.goto('./?quality=high');
       await texture;
       await expect(page.locator('.globe-label')).toBeVisible();
-      // Two frames after the texture decodes, so the screenshot shows the map, not the grey placeholder.
-      await page.evaluate(() => new Promise((done) => requestAnimationFrame(() => requestAnimationFrame(done))));
+      await settle(page);
       await page.screenshot({ path: new URL(`${DATE}-vent-6-globe-${scheme}.png`, OUT).pathname });
     });
   }
@@ -35,11 +39,31 @@ test.describe('globe evidence', () => {
 
 test.describe('phone evidence', () => {
   test.skip(!process.env.CAPTURE_EVIDENCE, 'captures only with CAPTURE_EVIDENCE=1');
-  test.use({ viewport: { width: 390, height: 844 }, hasTouch: true, isMobile: true });
+  test.use({ viewport: { width: 390, height: 844 }, hasTouch: true, isMobile: true, deviceScaleFactor: 2 });
 
-  test('phone view', async ({ page }) => {
+  async function openPhone(page: Page, scheme: 'dark' | 'light'): Promise<void> {
+    await page.emulateMedia({ colorScheme: scheme, reducedMotion: 'reduce' });
+    await page.clock.setFixedTime(new Date('2026-11-23T18:00:00Z'));
+    await stubApi(page);
+    const texture = page.waitForResponse(/\/textures\/moon-lroc-/);
     await page.goto('./');
-    await expect(page.locator('.sites-mobile')).toBeVisible();
-    await page.screenshot({ path: new URL(`${DATE}-vent-6-mobile.png`, OUT).pathname });
+    await texture;
+    await expect(page.locator('.widget')).toHaveCount(4);
+    await settle(page);
+  }
+
+  for (const scheme of ['dark', 'light'] as const) {
+    test(`phone, sheet at half, ${scheme} mode`, async ({ page }) => {
+      await openPhone(page, scheme);
+      await page.screenshot({ path: new URL(`${DATE}-vent-23-phone-${scheme}.png`, OUT).pathname });
+    });
+  }
+
+  test('phone, site picker open', async ({ page }) => {
+    await openPhone(page, 'dark');
+    await page.getByRole('button', { name: 'Change site, now IM-2' }).click();
+    await expect(page.getByRole('heading', { name: 'Landing sites' })).toBeVisible();
+    await settle(page);
+    await page.screenshot({ path: new URL(`${DATE}-vent-23-phone-picker.png`, OUT).pathname });
   });
 });

@@ -25,7 +25,9 @@
 
 /**
  * The page's one island: the globe section and, around it, the desktop
- * calendar strip and site button or, on phones, the shell over it. They
+ * polar map, site card, calendar strip and site button or, on phones, the
+ * shell over it. The header's tabs switch the desktop view (the globe
+ * hides while the polar map shows; phones always keep the globe). They
  * share what is created here and passed down: one selection store, so
  * the globe and the views always agree on the site; one instant with its
  * player and one cache of the API's hours, so the globe's Sun, the
@@ -39,11 +41,14 @@ import { createTimeStore } from '../calendar/time-store';
 import { createWatchedValue } from '../lib/watched-value';
 import { browserHourClock } from '../phone/hour-clock';
 import { cachedHours } from '../phone/hours-cache';
-import type { PhoneSite } from '../phone/phone-site';
+import type { CardSite } from '../card/site-facts';
 import { createSiteStore } from '../phone/site-store';
 import type { CalendarParts } from './calendar/hooks';
 import { DesktopShell } from './desktop/DesktopShell';
+import { useView } from './desktop/use-view';
 import Globe from './Globe';
+import { Layers } from './Layers';
+import { usePhone } from './phone/hooks';
 import { PhoneShell } from './phone/PhoneShell';
 
 interface Props {
@@ -53,22 +58,12 @@ interface Props {
   readonly base: string;
   /** The site selected at start. */
   readonly selectedId: string;
-  /** The curated sites, for the phone's site picker. */
-  readonly sites: readonly PhoneSite[];
+  /** The curated sites, for the site pickers, the map and the card. */
+  readonly sites: readonly CardSite[];
 }
 
-function Layers() {
-  return (
-    <aside className="globe-layers" aria-label="Layers">
-      <h2>Layers</h2>
-      <ul>
-        <li><span className="layer-key layer-key--exact" aria-hidden="true"></span>Landing sites</li>
-        <li><span className="layer-key layer-key--zone" aria-hidden="true"></span>Approximate zones</li>
-        <li className="soon"><span className="layer-key layer-key--rover" aria-hidden="true"></span>Ghost rovers (soon)</li>
-      </ul>
-    </aside>
-  );
-}
+/** The header's view tabs (pages/index.astro). */
+const VIEW_NAV = 'nav[aria-label="View"]';
 
 /**
  * The shared instant (live on the browser's clock, which it follows once
@@ -93,14 +88,16 @@ export default function LunarApp({ sitesUrl, base, selectedId, sites }: Props) {
   const [store] = useState(() => createSiteStore(selectedId));
   const [sheetEdge] = useState(() => createWatchedValue<number | null>(null));
   const parts = useCalendarParts(sitesUrl);
+  const view = useView(VIEW_NAV);
+  const offView = !usePhone() && view !== 'globe';
   const globe = { base, sitesUrl, store, sheetEdge, time: parts.time };
   return (
     <>
-      <section className="globe" aria-label="Lunar globe">
+      <section className="globe" aria-label="Lunar globe" hidden={offView}>
         <Globe {...globe} />
         <Layers />
       </section>
-      <DesktopShell sites={sites} store={store} parts={parts} />
+      <DesktopShell {...{ sites, store, parts, base, view }} />
       <PhoneShell {...{ sites, store, sheetEdge, parts }} />
     </>
   );

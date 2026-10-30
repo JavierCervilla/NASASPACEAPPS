@@ -3,6 +3,14 @@
 Every third-party image, model or sound the site ships, with its source, licence and checksum. Add a row before using a
 new one.
 
+## Texture build
+
+The texture scripts run with the hash-pinned `packages/web/scripts/requirements.txt` (Pillow 13.0.0, NumPy 2.5.4),
+installed as CI does: `pip install --require-hashes --only-binary :all: -r packages/web/scripts/requirements.txt`. The
+shipped files were first made with Pillow 12.3. On 2026-10-30 every texture on this page (colour 1K to 8K, the south
+polar map and the three normal maps) was rebuilt with Pillow 13.0.0 from the sources listed here and came out
+byte-identical, so the sha256 values in these tables hold for both versions.
+
 ## Moon colour map
 
 | File | Size | sha256 |
@@ -25,7 +33,7 @@ new one.
 - **Licence**: NASA, public domain. Credit: NASA's Scientific Visualization Studio (visualizer Ernie Wright, USRA;
   scientist Noah Petro, NASA/GSFC), as the page asks.
 - **How it was made**: browsers do not decode TIFF, so the source was converted to progressive JPEG at quality 85 with
-  Pillow 12.3 (`Image.convert('RGB').save(..., quality=85, optimize=True, progressive=True)`); the 1K file is the same
+  Pillow (`Image.convert('RGB').save(..., quality=85, optimize=True, progressive=True)`); the 1K file is the same
   image resized with Lanczos. The 4K and 8K files are their own sources converted the same way (quality 85; the 8K file
   stays under 6 MB at that quality), with `packages/web/scripts/moon_textures.py colour`. The globe opens with the 2K
   map on the high quality tier and the 1K map on the others, and fetches the 4K and 8K maps only as the zoom needs them

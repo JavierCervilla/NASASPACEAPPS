@@ -32,7 +32,11 @@ Three jobs, all offline so the browser never computes them:
   polar    The same LROC colour TIFF reprojected to a polar stereographic
            image of the south pole down to 80° S, for the polar map view.
 
-Regenerate (sources in ASSETS.md; Pillow and NumPy, no other dependency):
+Regenerate (sources in ASSETS.md; Pillow and NumPy, no other dependency,
+hash-pinned in requirements.txt next to this file):
+
+  pip install --require-hashes --only-binary :all: \
+      -r packages/web/scripts/requirements.txt
 
   python3 packages/web/scripts/moon_textures.py colour \
       lroc_color_poles_4k.tif packages/web/public/textures/moon-lroc-4k.jpg

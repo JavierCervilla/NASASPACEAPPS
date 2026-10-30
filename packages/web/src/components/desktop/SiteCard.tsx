@@ -31,7 +31,7 @@
  * window and longest night, with where the figures come from. Grey
  * blocks while the month loads, an honest error with «Try again», and an
  * honest state outside the data window. On a short screen the card
- * scrolls, focusable, and fades at each edge that hides more.
+ * scrolls, focusable only then, and fades at each edge that hides more.
  */
 import { siteLabels } from '../../phone/phone-site';
 import type { BodyWidget } from '../../phone/widget-types';
@@ -95,15 +95,17 @@ function Figures({ model }: { readonly model: CardModel }) {
 
 export function SiteCard({ site, model, onRetry }: Props) {
   const [scroller, edges] = useScrollEdges<HTMLDivElement>();
+  // Focusable only while it overflows, so the keyboard can scroll it on a
+  // short screen; on a tall one it would be an empty tab stop.
+  const scrolls = edges.top || edges.bottom;
   return (
     <aside className="site-card" aria-label="Site card">
-      {/* Focusable, so the keyboard can scroll it on a short screen. */}
       <div
         className="site-card__scroll"
         ref={scroller}
-        role="group"
-        aria-label="Site details"
-        tabIndex={0}
+        role={scrolls ? 'group' : undefined}
+        aria-label={scrolls ? 'Site details' : undefined}
+        tabIndex={scrolls ? 0 : undefined}
         data-fade-top={edges.top}
         data-fade-bottom={edges.bottom}
       >

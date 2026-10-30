@@ -90,6 +90,16 @@ test.describe('desktop site card and polar map, 1440x900', () => {
     await expect(tile(page, /^Earthset in$/)).toContainText('7 d 9 h');
   });
 
+  test('the card fits, so its scroll box is no tab stop and no group', async ({ page }) => {
+    await open(page);
+    await expect(card(page).getByText('Longest night')).toBeAttached();
+    const box = card(page).locator('.site-card__scroll');
+    expect(await box.evaluate((el) => el.scrollHeight > el.clientHeight)).toBe(false);
+    await expect(box).not.toHaveAttribute('tabindex');
+    await expect(box).not.toHaveAttribute('role');
+    await expect(card(page).getByRole('group', { name: 'Site details' })).toHaveCount(0);
+  });
+
   test('the card says when the data cannot load, with «Try again»', async ({ page }) => {
     await open(page, 500);
     await expect(card(page).getByRole('alert')).toContainText('could not load');
@@ -207,8 +217,9 @@ for (const [width, height] of [[1280, 720], [1024, 768]] as const) {
       await open(page);
       await expect(card(page).getByText('Longest night')).toBeAttached();
       const box = scroller(page);
-      await expect(box).toHaveAttribute('tabindex', '0');
+      // Only an overflowing box is a tab stop, named as a group.
       expect(await box.evaluate((el) => el.scrollHeight > el.clientHeight)).toBe(true);
+      await expect(box).toHaveAttribute('tabindex', '0');
       await expect(box).toHaveAttribute('data-fade-bottom', 'true');
       await expect(box).toHaveAttribute('data-fade-top', 'false');
       expect(await box.evaluate((el) => getComputedStyle(el).maskImage)).toMatch(/calc\(100% - 56px\)/);

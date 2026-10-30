@@ -24,14 +24,14 @@ completa está en el documento «Ventana Lunar · Especificación y roadmap».
 - [x] Datos: API en `/api/v1` con JPL Horizons y caché acotada (cualquier punto, fechas de 2026 y 2027), validada con
   los periodos lunares y el signo de la longitud; 29 sitios (polo sur, Apolo y otros países), los 12 sin coordenada citable marcados como
   aproximados (VENT-3)
-- [ ] Store de tiempo, selector de sitio y cinta de calendario (VENT-4)
+- [x] Store de tiempo, selector de sitio y cinta de calendario (VENT-4)
 - [ ] Ficha del sitio con el tiempo hasta la puesta de Sol y de Tierra, y mapa polar 2D (VENT-5)
 
 ## Lujo y entrega (código congelado el domingo 15 a las 15:30)
 
 - [ ] Horizonte real con el relieve LOLA (VENT-11)
-- [x] Globo lunar 3D con el terminador del Sol real y los sitios de la API (VENT-6); la luz seguirá al slider cuando
-  llegue la cinta de calendario (VENT-4)
+- [x] Globo lunar 3D con el terminador del Sol real y los sitios de la API (VENT-6); la luz sigue al instante elegido
+  en la cinta de calendario (VENT-4)
 - [x] Versión móvil: globo, hoja inferior con cuatro tarjetas (ventana, Sol, Tierra, antena DSN) y selector de sitios
   (VENT-23)
 - [x] Detalle del globo al acercar (texturas 4K y 8K según el zoom y el equipo), relieve LOLA en el globo y hoja del

@@ -243,7 +243,8 @@ test.describe('phone, 390x844', () => {
       await expect(tabs(page).getByRole('button', { name: 'Globe' })).toHaveAttribute('aria-current', 'true');
       await tabs(page).getByRole('button', { name: 'Sites' }).click();
       await expect(page.getByRole('heading', { name: 'Landing sites' })).toBeVisible();
-      expect(await sheetTop(page)).toBe(FULL_TOP);
+      // The picker is visible while the spring is still carrying the sheet up.
+      await expect.poll(() => sheetTop(page)).toBe(FULL_TOP);
     });
 
     test('Done in the picker closes it', async ({ page }) => {

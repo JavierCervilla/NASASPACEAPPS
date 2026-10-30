@@ -62,12 +62,18 @@ the same length on the ground.
 """
 
 import argparse
+import warnings
 from pathlib import Path
 
 import numpy as np
 from PIL import Image
 
-Image.MAX_IMAGE_PIXELS = None
+# The largest source this script reads is the 8K LROC mosaic, 8192 x 4096
+# (ldem_16.tif is 5760 x 2880; ASSETS.md). The cap leaves a quarter more,
+# and `open_source` makes Pillow refuse anything above it instead of only
+# warning, so a forged header cannot make it allocate gigabytes.
+LARGEST_SOURCE_PIXELS = 8192 * 4096
+Image.MAX_IMAGE_PIXELS = LARGEST_SOURCE_PIXELS * 5 // 4
 
 MOON_RADIUS_KM = 1737.4
 POLAR_CAP_DEG = 70.0
@@ -94,8 +100,15 @@ def save_jpeg(image, path, quality, chroma=True):
     image.save(path, "JPEG", **options)
 
 
+def open_source(path):
+    """Opens a source image, refusing one larger than the pixel cap."""
+    with warnings.catch_warnings():
+        warnings.simplefilter("error", Image.DecompressionBombWarning)
+        return Image.open(path)
+
+
 def colour(args):
-    image = Image.open(args.source).convert("RGB")
+    image = open_source(args.source).convert("RGB")
     save_jpeg(image, args.out, args.quality)
 
 
@@ -240,7 +253,7 @@ def stretch(rgb, inside):
 
 
 def polar(args):
-    rgb = np.asarray(Image.open(args.source).convert("RGB"), dtype=np.float32)
+    rgb = np.asarray(open_source(args.source).convert("RGB"), dtype=np.float32)
     lat, lon, inside = polar_grid(args.size)
     bands = [sample(rgb[:, :, band], lat, lon) for band in range(3)]
     out = stretch(np.stack(bands, axis=-1), inside) * inside[:, :, None]
@@ -250,7 +263,7 @@ def polar(args):
 
 
 def normals(args):
-    dem = np.asarray(Image.open(args.source), dtype=np.float32)
+    dem = np.asarray(open_source(args.source), dtype=np.float32)
     for width in args.sizes:
         image = normal_map(dem, width, args.exaggeration)
         out = Path(args.out_dir) / f"moon-lola-normal-{width // 1024}k.jpg"

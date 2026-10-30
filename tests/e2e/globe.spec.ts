@@ -203,6 +203,31 @@ test.describe('desktop, 1440x900', () => {
   });
 });
 
+for (const [width, height] of [[1440, 900], [1280, 720], [1024, 768]] as const) {
+  test(`at 200 % text, ${width}x${height}, the Layers key stays clear of the site label (QA)`, async ({ page }) => {
+    await page.setViewportSize({ width, height });
+    await page.clock.setFixedTime(new Date('2026-11-23T18:00:00Z'));
+    await stubApi(page);
+    await page.goto('./');
+    await expect(page.locator('.globe-label')).toBeVisible();
+    await page.evaluate(() => {
+      document.documentElement.style.fontSize = '200%';
+    });
+    const label = page.locator('.globe-label');
+    // By class: a role query skips a hidden key and would wait for it.
+    const layers = page.locator('.globe-layers');
+    // The label follows its marker as the view settles at the new size.
+    await expect
+      .poll(async () => {
+        const [a, b] = [await label.boundingBox(), await layers.boundingBox()];
+        // A hidden key cannot cover the label.
+        if (!a || !b) return Boolean(a);
+        return a.x >= b.x + b.width || b.x >= a.x + a.width || a.y >= b.y + b.height || b.y >= a.y + a.height;
+      })
+      .toBe(true);
+  });
+}
+
 test.describe('desktop texture detail, 1440x900', () => {
   test.use({ viewport: { width: 1440, height: 900 } });
   // Headless Chromium draws with SwiftShader, which the tier detection rates low (stops at 4K): force the high tier a

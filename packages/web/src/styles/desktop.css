@@ -62,6 +62,40 @@
   gap: 12px;
   overflow-y: auto;
   overscroll-behavior: contain;
+  border-radius: 18px;
+  /*
+   * Scroll edge effect (apple-design §12): the edge that hides more
+   * content fades, so a cut-off card says it scrolls. The mask stays put
+   * while the content scrolls under it.
+   */
+  --fade-top: 0px;
+  --fade-bottom: 0px;
+  mask-image: linear-gradient(
+    to bottom,
+    transparent 0,
+    #000 var(--fade-top),
+    #000 calc(100% - var(--fade-bottom)),
+    transparent 100%
+  );
+}
+
+.site-card__scroll[data-fade-top='true'] {
+  --fade-top: 40px;
+}
+
+.site-card__scroll[data-fade-bottom='true'] {
+  --fade-bottom: 56px;
+}
+
+/* The mask would clip a ring on the scroll box: the card wears it. */
+.site-card__scroll:focus-visible {
+  outline: none;
+}
+
+.site-card:has(> .site-card__scroll:focus-visible) {
+  border-radius: 18px;
+  outline: 2px solid var(--text);
+  outline-offset: 2px;
 }
 
 .card-block {
@@ -228,6 +262,7 @@
   .site-card__scroll {
     position: static;
     overflow: visible;
+    mask-image: none;
   }
 }
 

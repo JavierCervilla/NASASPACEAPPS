@@ -16,7 +16,11 @@
   elegirlo con el teclado, queda seleccionado y la ficha, la cinta y el globo lo siguen; el sitio elegido lleva el
   color de su estado en ese instante. Si dos sitios están muy juntos gana el punto más cercano al clic. Cambiar de
   pestaña conserva el sitio y la hora, y el botón Atrás vuelve a la vista anterior. Un sitio más al norte (Apolo 11,
-  por ejemplo) no sale en el mapa: el mapa lo dice y la ficha lo sigue mostrando.
+  por ejemplo) no sale en el mapa: el mapa lo dice en una nota junto al disco y la ficha lo sigue mostrando. Todo
+  sitio del mapa se identifica sin pasar el ratón: si su nombre no cabe, lleva un número y la leyenda «Numbered
+  sites» lo nombra; un alunizaje exacto conserva su etiqueta frente a una zona pegada a él; varios sitios en un mismo
+  punto se leen «Nobile · 3 sites». En una pantalla baja la ficha se desplaza, se difumina en el borde que esconde
+  más y se puede recorrer con el teclado; con el texto al 200 % la leyenda «Layers» del globo no tapa la etiqueta.
 - Store de tiempo, cinta de calendario y selector de sitio (VENT-4, lienzos validados «Globe view» y «Phone ·
   calendar»): toda la página sigue un mismo instante. Por defecto es «ahora» y avanza con el reloj; se puede elegir otra
   hora, reproducir el mes (unos 12 s por mes, se para al final del mes o con Pausa) y volver con «Now». La luz del Sol

@@ -29,17 +29,24 @@
  * with its grid and the landing sites on it. Picking a site selects it
  * in the shared store, so the card, the strip and the globe follow; where
  * targets overlap, a click goes to the nearest dot, as on the globe. A
- * site north of 80° S is not drawn: a note says so, and the card still
- * shows it.
+ * site north of 80° S is not drawn: a note beside the disk says so, and
+ * the card still shows it.
  */
 import { useMemo, type MouseEvent } from 'react';
 import { pickedSite } from '../../globe/marker-hit';
 import { siteLabels, type PhoneSite } from '../../phone/phone-site';
 import type { NowState } from '../../phone/widget-types';
-import { toPx, visibleLabels } from '../../polar/label-layout';
-import { markerOf, polarMarkers } from '../../polar/polar-markers';
+import { numberBadges, type Badge } from '../../polar/badge-layout';
+import { visibleLabels, type Side } from '../../polar/label-layout';
+import { toPx } from '../../polar/layout-geometry';
+import {
+  markerOf,
+  polarMarkers,
+  type PolarMarker,
+} from '../../polar/polar-markers';
 import { Layers } from '../Layers';
 import { Graticule } from './Graticule';
+import { PolarKey } from './PolarKey';
 import { PolarMarkers } from './PolarMarkers';
 import { useWidth } from './use-width';
 
@@ -62,11 +69,23 @@ function OffMap({ site }: { readonly site: PhoneSite }) {
   );
 }
 
+/** The labels that show, and the numbers of the rest, on a disk `size` wide. */
+function layout(
+  markers: readonly PolarMarker[],
+  size: number,
+  chosen: string | null,
+): { labels: Map<string, Side>; badges: Badge[] } {
+  const labels = visibleLabels(markers, size, chosen);
+  // Unmeasured, every dot sits at 0: no badge until the disk has a size.
+  const badges = size > 0 ? numberBadges(markers, size, labels, chosen) : [];
+  return { labels, badges };
+}
+
 export function PolarMap({ sites, site, state, base, onPick }: Props) {
   const markers = useMemo(() => polarMarkers(sites), [sites]);
   const [disk, size] = useWidth<HTMLDivElement>();
   const chosen = markerOf(markers, site.id)?.id ?? null;
-  const labels = visibleLabels(markers, size, chosen);
+  const { labels, badges } = layout(markers, size, chosen);
   const click = (event: MouseEvent<HTMLDivElement>): void => {
     const placed = markers.map(({ id, at }) => ({ id, at: toPx(at, size) }));
     const root = event.currentTarget;
@@ -79,10 +98,11 @@ export function PolarMap({ sites, site, state, base, onPick }: Props) {
       <div className="polar__disk" ref={disk} onClick={click}>
         <img className="polar__image" src={src} alt="" decoding="async" />
         <Graticule />
-        <PolarMarkers {...{ markers, chosen, state, labels }} />
+        <PolarMarkers {...{ markers, chosen, state, labels, badges }} />
       </div>
       {chosen === null ? <OffMap site={site} /> : null}
       <Layers />
+      <PolarKey badges={badges} />
     </section>
   );
 }

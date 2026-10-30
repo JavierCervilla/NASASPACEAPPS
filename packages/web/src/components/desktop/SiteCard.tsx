@@ -30,7 +30,8 @@
  * instant with each body's elevation; and the month's shares, longest
  * window and longest night, with where the figures come from. Grey
  * blocks while the month loads, an honest error with «Try again», and an
- * honest state outside the data window.
+ * honest state outside the data window. On a short screen the card
+ * scrolls, focusable, and fades at each edge that hides more.
  */
 import { siteLabels } from '../../phone/phone-site';
 import type { BodyWidget } from '../../phone/widget-types';
@@ -41,6 +42,7 @@ import {
 } from '../../card/site-facts';
 import type { CardModel } from '../../card/site-card';
 import { CardStatus } from './CardStatus';
+import { useScrollEdges } from './use-scroll-edges';
 
 interface Props {
   readonly site: CardSite;
@@ -92,9 +94,19 @@ function Figures({ model }: { readonly model: CardModel }) {
 }
 
 export function SiteCard({ site, model, onRetry }: Props) {
+  const [scroller, edges] = useScrollEdges<HTMLDivElement>();
   return (
     <aside className="site-card" aria-label="Site card">
-      <div className="site-card__scroll">
+      {/* Focusable, so the keyboard can scroll it on a short screen. */}
+      <div
+        className="site-card__scroll"
+        ref={scroller}
+        role="group"
+        aria-label="Site details"
+        tabIndex={0}
+        data-fade-top={edges.top}
+        data-fade-bottom={edges.bottom}
+      >
         <CardHead site={site} />
         <Figures model={model} />
         <CardStatus kind={model.kind} onRetry={onRetry} />

@@ -28,9 +28,12 @@
  * technology, with 44 px targets, a solid dot for an exact point and a
  * dashed ring for an approximate zone. The selected one takes its state's
  * colour at the selected instant (the legend's); the labels that fit show
- * beside their dots (polar/label-layout.ts).
+ * beside their dots (polar/label-layout.ts), and the others wear a number
+ * the map's key names (polar/badge-layout.ts).
  */
 import { markerKind, markerLabel } from '../../globe/markers';
+import type { Badge } from '../../polar/badge-layout';
+import type { Side } from '../../polar/label-layout';
 import type { PolarMarker } from '../../polar/polar-markers';
 import type { NowState } from '../../phone/widget-types';
 
@@ -39,8 +42,10 @@ interface Props {
   /** The selected marker's id, if the selected site is on the map. */
   readonly chosen: string | null;
   readonly state: NowState | null;
-  /** The ids whose labels show. */
-  readonly labels: ReadonlySet<string>;
+  /** The ids whose labels show, with the side of the dot each sits on. */
+  readonly labels: ReadonlyMap<string, Side>;
+  /** The numbers of the markers without a label. */
+  readonly badges: readonly Badge[];
 }
 
 const placeOf = ({ at }: PolarMarker) => ({
@@ -68,21 +73,50 @@ function MarkerButton({ marker, selected, state }: MarkerProps) {
   );
 }
 
-function MarkerLabel({ marker, selected }: Omit<MarkerProps, 'state'>) {
-  return (
-    <span
-      className="polar-label"
-      data-selected={selected}
-      style={placeOf(marker)}
-      aria-hidden="true"
-    >
-      {marker.label}
-    </span>
-  );
+type LabelProps = Pick<Props, 'markers' | 'labels' | 'chosen'>;
+
+function MarkerLabels({ markers, labels, chosen }: LabelProps) {
+  return markers.map((marker) => {
+    const side = labels.get(marker.id);
+    return side ? (
+      <span
+        key={marker.id}
+        className="polar-label"
+        data-selected={marker.id === chosen}
+        data-side={side}
+        style={placeOf(marker)}
+        aria-hidden="true"
+        data-site-id={marker.id}
+      >
+        {marker.label}
+      </span>
+    ) : null;
+  });
 }
 
-export function PolarMarkers({ markers, chosen, state, labels }: Props) {
-  const shown = markers.filter(({ id }) => labels.has(id));
+type BadgeProps = Pick<Props, 'markers' | 'badges'>;
+
+function MarkerBadges({ markers, badges }: BadgeProps) {
+  const byId = new Map(markers.map((marker) => [marker.id, marker]));
+  return badges.map(({ id, n, corner, reach }) => {
+    const marker = byId.get(id);
+    return marker ? (
+      <span
+        key={id}
+        className={`polar-badge polar-badge--${corner}`}
+        data-reach={reach}
+        style={placeOf(marker)}
+        aria-hidden="true"
+        data-site-id={id}
+      >
+        {n}
+      </span>
+    ) : null;
+  });
+}
+
+export function PolarMarkers(props: Props) {
+  const { markers, chosen, state, labels, badges } = props;
   return (
     <>
       {markers.map((marker) => (
@@ -93,13 +127,8 @@ export function PolarMarkers({ markers, chosen, state, labels }: Props) {
           state={state}
         />
       ))}
-      {shown.map((marker) => (
-        <MarkerLabel
-          key={marker.id}
-          marker={marker}
-          selected={marker.id === chosen}
-        />
-      ))}
+      <MarkerLabels markers={markers} labels={labels} chosen={chosen} />
+      <MarkerBadges markers={markers} badges={badges} />
     </>
   );
 }

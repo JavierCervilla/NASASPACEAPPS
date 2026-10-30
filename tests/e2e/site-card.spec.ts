@@ -183,3 +183,124 @@ test.describe('desktop site card and polar map, 1440x900', () => {
     await expect(tab(page, 'Globe')).toHaveAttribute('aria-current', 'page');
   });
 });
+
+type Box = { x: number; y: number; width: number; height: number };
+const intersects = (a: Box, b: Box): boolean =>
+  a.x < b.x + b.width && b.x < a.x + a.width && a.y < b.y + b.height && b.y < a.y + a.height;
+/** The page boxes of every element `selector` matches. */
+const boxesOf = (page: Page, selector: string): Promise<(Box & { text: string; id: string })[]> =>
+  page.locator(selector).evaluateAll((els) =>
+    els.map((el) => {
+      const { x, y, width, height } = el.getBoundingClientRect();
+      return { x, y, width, height, text: el.textContent ?? '', id: (el as HTMLElement).dataset['siteId'] ?? '' };
+    }),
+  );
+/** The box a marker's dot keeps clear: 7 px around the centre of its 44 px button. */
+const dotOf = (button: Box): Box => ({ x: button.x + button.width / 2 - 7, y: button.y + button.height / 2 - 7, width: 14, height: 14 });
+
+for (const [width, height] of [[1280, 720], [1024, 768]] as const) {
+  test.describe(`site card on a short screen, ${width}x${height} (QA)`, () => {
+    test.use({ viewport: { width, height } });
+    const scroller = (page: Page) => card(page).getByRole('group', { name: 'Site details' });
+
+    test('the cut-off card fades at the edge that hides more, and the keyboard scrolls it', async ({ page }) => {
+      await open(page);
+      await expect(card(page).getByText('Longest night')).toBeAttached();
+      const box = scroller(page);
+      await expect(box).toHaveAttribute('tabindex', '0');
+      expect(await box.evaluate((el) => el.scrollHeight > el.clientHeight)).toBe(true);
+      await expect(box).toHaveAttribute('data-fade-bottom', 'true');
+      await expect(box).toHaveAttribute('data-fade-top', 'false');
+      expect(await box.evaluate((el) => getComputedStyle(el).maskImage)).toMatch(/calc\(100% - 56px\)/);
+      // Tab from the header's last control reaches it, and the ring shows on the card.
+      await box.focus();
+      await expect(box).toBeFocused();
+      expect(await card(page).evaluate((el) => getComputedStyle(el).outlineStyle)).toBe('solid');
+      await page.keyboard.press('End');
+      await expect(box).toHaveAttribute('data-fade-top', 'true');
+      await expect(box).toHaveAttribute('data-fade-bottom', 'false');
+      await expect(card(page).getByText(/^November 2026 · JPL Horizons/)).toBeInViewport();
+    });
+
+    test('the page the server sends carries no style attribute (CSP style-src-attr none)', async ({ page }) => {
+      const html = await (await page.request.get('./')).text();
+      expect(html).toContain('site-card__scroll');
+      expect(html).not.toMatch(/\sstyle="/);
+    });
+  });
+}
+
+test.describe('polar map labels, 1440x900 (QA)', () => {
+  test.use({ viewport: { width: 1440, height: 900 } });
+
+  async function pick(page: Page, name: RegExp): Promise<void> {
+    await map(page).getByRole('button', { name }).focus();
+    await page.keyboard.press('Enter');
+  }
+
+  test('a landed site keeps its label over a zone on its dot, selected or not', async ({ page }) => {
+    await open(page);
+    await openPolarMap(page);
+    await pick(page, /^Haworth/);
+    const labels = await boxesOf(page, '.polar-label');
+    expect(labels.map(({ text }) => text)).toContain('IM-2');
+    expect(labels.map(({ text }) => text).filter((text) => /Mons Mouton|\+\d/.test(text))).toEqual([]);
+  });
+
+  test('a merged marker reads «<place> · N sites» and its button keeps every name', async ({ page }) => {
+    await open(page);
+    await openPolarMap(page);
+    await expect(map(page).locator('.polar-label', { hasText: 'Nobile · 3 sites' })).toBeVisible();
+    const nobile = map(page).getByRole('button', { name: /^Nobile region near Mons Mouton \(Griffin-1, FLIP rover\); Nobile Rim 1/ });
+    await expect(nobile).toHaveAttribute('aria-label', /Nobile Rim 2 \(Artemis candidate region\), approximate zone$/);
+  });
+
+  test('every marker has a label or a number, the key names each number, and nothing overlaps', async ({ page }) => {
+    await open(page);
+    await openPolarMap(page);
+    const buttons = await boxesOf(page, '.polar-marker');
+    const badges = await boxesOf(page, '.polar-badge');
+    const named = await boxesOf(page, '.polar-label, .polar-badge');
+    expect(buttons).toHaveLength(11);
+    for (const { id } of buttons) expect(named.some((one) => one.id === id), id).toBe(true);
+    expect(badges.length).toBeGreaterThan(0);
+    const rows = await map(page).locator('.polar-key li').allTextContents();
+    expect(rows).toEqual(badges.map(({ text }) => expect.stringMatching(new RegExp(`^${text}\\D`))));
+    expect(rows.join(' ')).toContain("Chang'e-7");
+    expect(rows.join(' ')).toContain('Shackleton connecting ridge');
+    const key = (await map(page).locator('.polar-key').boundingBox())!;
+    for (const [i, a] of named.entries()) {
+      for (const b of named.slice(i + 1)) expect(intersects(a, b), `${a.text} over ${b.text}`).toBe(false);
+      expect(intersects(a, key), `the key over ${a.text}`).toBe(false);
+    }
+    for (const button of buttons) expect(intersects(dotOf(button), key)).toBe(false);
+  });
+
+  test('the selected IM-2 label starts clear of its enlarged dot and ring', async ({ page }) => {
+    await open(page);
+    await openPolarMap(page);
+    const dot = (await map(page).locator('[data-site-id="im2-athena"].polar-marker').boundingBox())!;
+    const label = (await map(page).locator('.polar-label', { hasText: /^IM-2$/ }).boundingBox())!;
+    // 14 px dot with a 4 px ring: 11 px from the centre.
+    expect(label.x).toBeGreaterThanOrEqual(dot.x + dot.width / 2 + 11 + 4);
+  });
+});
+
+for (const [width, height] of [[1440, 900], [1024, 768]] as const) {
+  test(`at ${width}x${height} the off-map note stays clear of IM-1 and the 0° tick (QA)`, async ({ page }) => {
+    await page.setViewportSize({ width, height });
+    await open(page);
+    await openPolarMap(page);
+    await page.getByRole('button', { name: /^Change site, now/ }).click();
+    const dialog = page.getByRole('dialog', { name: 'Choose a site' });
+    await dialog.getByRole('searchbox', { name: 'Search a site or mission' }).fill('apollo 11');
+    await dialog.getByRole('button', { name: /^Mare Tranquillitatis/ }).click();
+    const note = (await map(page).getByRole('status').boundingBox())!;
+    const im1 = (await map(page).getByRole('button', { name: /IM-1 Odysseus/ }).boundingBox())!;
+    const tick = (await map(page).locator('.graticule-label--top').boundingBox())!;
+    const im1Label = await boxesOf(page, '.polar-label');
+    expect(intersects(note, dotOf(im1))).toBe(false);
+    expect(intersects(note, tick)).toBe(false);
+    for (const label of im1Label) expect(intersects(note, label), label.text).toBe(false);
+  });
+}

@@ -54,6 +54,13 @@ jobs:
       # of ours.
       - name: Ruff (packages/web/scripts)
         run: pipx run --spec "ruff==0.16.8" ruff check packages/web/scripts
+      # The polar map image must face the way the web's projection does, and the pixel cap must hold. Grid maths and
+      # headers only: no source TIFF. Pinned like ruff.
+      - name: Texture script tests (packages/web/scripts)
+        run: |
+          python3 -m venv "$RUNNER_TEMP/py"
+          "$RUNNER_TEMP/py/bin/pip" install --quiet "numpy==2.5.3" "pillow==12.3.0"
+          "$RUNNER_TEMP/py/bin/python" -m unittest discover -s packages/web/scripts -p "test_*.py"
 
   security:
     name: Guardián · security ladder (secrets + SAST + deps)

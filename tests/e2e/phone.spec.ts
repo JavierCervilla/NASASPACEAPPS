@@ -1,4 +1,29 @@
-import { expect, test, type Page } from '@playwright/test';
+/*
+ *   _   _       _                         _ _
+ *  | | | |_ __ (_)_   _____ _ __ ___  ___| | | ___
+ *  | | | | '_ \| \ \ / / _ \ '__/ __|/ _ \ | |/ _ \
+ *  | |_| | | | | |\ V /  __/ |  \__ \  __/ | |  __/
+ *   \___/|_| |_|_| \_/ \___|_|  |___/\___|_|_|\___|
+ *
+ *             =++==--::.
+ *         %%%%##**++=--:..  .
+ *      ##**#%@%%#***+=--::.   .
+ *    #**=+*#*#**#++++=-:::.. .  .
+ *   #++-====*@%+*++==--::...   .  .    Ventana Lunar
+ *  #+=-=--++==+===-+==--:..   .  .  .  Sun, Earth and landing
+ * #----====-------=-=---:..  .  .  .   windows at the lunar
+ * #+---+=====--=---==-::..     .  .  . south pole
+ * #*----==---==-=-=-:-....    .  .  .
+ * *#----===+*===--:-::...    .  .  .   Built for the NASA Space
+ *  *----=*-+*%*+=-:::....   .  .  .    Apps Challenge 2026,
+ *   *------=+*=--:::-:::.. .  .  .     Madrid. Not endorsed
+ *    %*===-=-==--==-:::.  .  .  .      by NASA.
+ *      *+:--+:--::::::.  .  .  .
+ *         -=:::...:..   .  .           (c) 2026 Universelle
+ *             :::.. .  .               SPDX-License-Identifier: MIT
+ */
+
+import { expect, test, type Locator, type Page } from '@playwright/test';
 import { stubApi } from './api-stub';
 
 // Requests only the globe makes: its chunk (Three.js inside) and the Moon texture.
@@ -12,6 +37,21 @@ const FULL_TOP = 96;
 const PEEK_TOP = 844 - 156;
 // Closed, the edge rests 56 px below the screen, past the reach of the sheet's shadow.
 const CLOSED_TOP = 844 + 56;
+
+/** The element's box once two reads 200 ms apart agree. */
+async function settledBox(locator: Locator): Promise<{ x: number; y: number } | null> {
+  let last = JSON.stringify(await locator.boundingBox());
+  await expect
+    .poll(async () => {
+      await locator.page().waitForTimeout(200);
+      const now = JSON.stringify(await locator.boundingBox());
+      const same = now === last;
+      last = now;
+      return same;
+    })
+    .toBe(true);
+  return JSON.parse(last) as { x: number; y: number } | null;
+}
 
 async function open(page: Page): Promise<void> {
   await page.clock.setFixedTime(NOW);
@@ -300,7 +340,9 @@ test.describe('phone, 390x844', () => {
       await open(page);
       const marker = page.locator('[data-site-id="im2-athena"]');
       await expect(marker).toBeVisible();
-      const before = await marker.boundingBox();
+      await expect.poll(() => sheetTop(page)).toBe(HALF_TOP);
+      // Measure only once the globe has placed the marker: on a slow runner the first frame can still be moving it.
+      const before = await settledBox(marker);
       await tabs(page).getByRole('button', { name: 'Globe' }).click();
       await expectClosed(page);
       // The frame slides 145 px down; the marker follows it.

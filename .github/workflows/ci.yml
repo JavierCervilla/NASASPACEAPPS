@@ -47,6 +47,9 @@ jobs:
           check-latest: true
       - run: node .claude/skills/security-gate/scripts/check-unicode-safety.mjs
       - run: node .claude/skills/security-gate/scripts/check-agent-config.mjs
+      # Every tracked code file carries the project header (scripts/file-header.txt); `git ls-files` covers new files.
+      - name: File headers
+        run: node scripts/file-header.mjs --check
       # The texture pipeline's Python. Pinned: a new ruff release can add rules and turn a green PR red with no change
       # of ours.
       - name: Ruff (packages/web/scripts)

@@ -3,6 +3,10 @@
 ## [Sin publicar]
 
 ### Añadido
+- Licencia MIT (VENT-26): el código es de Universelle (© 2026) bajo licencia MIT, con el texto en `LICENSE`. Cada
+  fichero de código lleva la misma cabecera: el logotipo de Universelle y una Luna en ASCII dibujada a partir de
+  nuestro propio mapa LROC, con el nombre del proyecto, el reto y la licencia. `npm run headers` la pone y el CI falla
+  si un fichero de código no la tiene. No usa el logotipo de NASA: su uso está restringido.
 - El globo gana detalle al acercarse (VENT-24): al hacer zoom descarga el mapa de color LROC en 4K y, de cerca, en 8K,
   sin parpadeo al cambiar y sin pasar de lo que el equipo necesita (el móvil se queda en 4K, el 8K es para escritorios
   potentes y con el ahorro de datos no se descarga nada más que el mapa inicial). Las texturas se filtran mejor de

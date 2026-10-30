@@ -127,6 +127,37 @@ describe('createHorizonsClient', () => {
     expect(waits).toEqual(HORIZONS_RETRY_DELAYS_MS.slice(0, 2));
   });
 
+  it('waits as long as a rate-limited Horizons (429) asks, up to the longest delay', async () => {
+    const good = fixtureFetch();
+    const retryAfter = ['2', '120', null];
+    const fetch = async (url: string) => {
+      if (retryAfter.length === 0) return good(url);
+      const value = retryAfter.shift() ?? null;
+      const headers = { get: (name: string) => (name.toLowerCase() === 'retry-after' ? value : null) };
+      return { ok: false, status: 429, headers, text: async () => 'Too Many Requests' };
+    };
+    const waits: number[] = [];
+    const sleep = async (ms: number) => {
+      waits.push(ms);
+    };
+    expect(await createHorizonsClient({ fetch, cacheDir, sleep }).rows(SUN_NOVEMBER)).toHaveLength(720);
+    // Two seconds as asked, 120 s capped at the longest delay, and the fixed delay without the header.
+    expect(waits).toEqual([2000, Math.max(...HORIZONS_RETRY_DELAYS_MS), HORIZONS_RETRY_DELAYS_MS[2]]);
+  });
+
+  it('keeps the fixed delays when a 503 carries Retry-After', async () => {
+    const good = fixtureFetch();
+    let busy = 1;
+    const fetch = async (url: string) => {
+      if (busy-- <= 0) return good(url);
+      const headers = { get: () => '5' };
+      return { ok: false, status: 503, headers, text: async () => 'Service Unavailable' };
+    };
+    const waits: number[] = [];
+    await createHorizonsClient({ fetch, cacheDir, sleep: async (ms) => void waits.push(ms) }).rows(SUN_NOVEMBER);
+    expect(waits).toEqual([HORIZONS_RETRY_DELAYS_MS[0]]);
+  });
+
   it('gives up after the last retry and reports the last error', async () => {
     const fetch = fixedFetch(503, '<html>Service Unavailable</html>');
     const client = createHorizonsClient({ fetch, cacheDir, sleep: noSleep });
@@ -207,6 +238,30 @@ describe('cache layout', () => {
   });
 });
 
+describe('stale temporary files', () => {
+  it('sweeps the ones left by a crash on the first scan of points/, and does not count them', async () => {
+    const sun = await fixtureBody(SUN_NOVEMBER);
+    const points = join(cacheDir, 'points');
+    await mkdir(points, { recursive: true });
+    const stale = join(points, `${'2'.repeat(64)}.json.1.tmp`);
+    const fresh = join(points, `${'3'.repeat(64)}.json.1.tmp`);
+    // Far bigger than the cap: counted, it would make the next write evict.
+    await writeFile(stale, 'x'.repeat(Buffer.byteLength(sun) * 10), 'utf8');
+    await writeFile(fresh, 'x', 'utf8');
+    const old = Date.now() / 1000 - 3600;
+    await utimes(stale, old, old);
+    const neighbour = join(points, fileOf(EARTH_NOVEMBER));
+    await writeFile(neighbour, 'earth', 'utf8');
+    await utimes(neighbour, old, old);
+
+    const client = createHorizonsClient({ fetch: fixtureFetch(), cacheDir, maxPointsBytes: Buffer.byteLength(sun) * 2 });
+    await client.raw(SUN_NOVEMBER);
+    expect((await readdir(points)).sort()).toEqual(
+      [fileOf(EARTH_NOVEMBER), fileOf(SUN_NOVEMBER), `${'3'.repeat(64)}.json.1.tmp`].sort(),
+    );
+  });
+});
+
 describe('download limit', () => {
   it('refuses a cache miss at once with kind busy when the waiting queue is full', async () => {
     const fetch = gatedFetch();
@@ -222,9 +277,12 @@ describe('download limit', () => {
     const [secondQueued, onSecond] = queued();
     const second = client.raw(EARTH_NOVEMBER, { onMiss: onSecond });
     await secondQueued;
-    const third = await client.raw(SUN_DECEMBER).catch((e: unknown) => e);
+    let thirdMissed = false;
+    const third = await client.raw(SUN_DECEMBER, { onMiss: () => void (thirdMissed = true) }).catch((e: unknown) => e);
     expect(third).toBeInstanceOf(HorizonsError);
     expect((third as HorizonsError).kind).toBe('busy');
+    // A miss refused as busy is not counted against the caller.
+    expect(thirdMissed).toBe(false);
     fetch.release();
     await Promise.all([first, second]);
     expect(fetch.calls).toHaveLength(2);

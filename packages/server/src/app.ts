@@ -1,6 +1,7 @@
 /** The HTTP API: route wiring and the mapping of errors to HTTP answers. */
 import type { Site } from '@ventana/sim';
 import { Hono, type Context } from 'hono';
+import { apiHeaders } from './api-headers.ts';
 import { clientIp } from './client-ip.ts';
 import { computeEphemeris, type EphemerisRequest } from './ephemeris.ts';
 import { HorizonsError, type HorizonsClient } from './horizons/client.ts';
@@ -147,6 +148,7 @@ export function createApp(deps: AppDeps): Hono {
   // One limiter per app, shared by every route (and every version) that may
   // call Horizons.
   const missLimiter = deps.missLimiter ?? createMissLimiter({ now: deps.now });
+  app.use('/api/*', apiHeaders());
   app.route('/api/v1', createV1({ ...deps, missLimiter }));
   return app;
 }

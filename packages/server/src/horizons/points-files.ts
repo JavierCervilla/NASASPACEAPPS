@@ -1,4 +1,7 @@
-/** Listing and eviction of the files in the byte-capped `points/` directory. */
+/**
+ * Listing and eviction of the files in the byte-capped `points/` directory,
+ * and the sweep of the temporary files a crash leaves in it.
+ */
 import { readdir, stat, unlink } from 'node:fs/promises';
 import { join } from 'node:path';
 import { nullIfMissing } from './files.ts';
@@ -24,6 +27,25 @@ export async function listPointFiles(dir: string): Promise<PointFile[]> {
       .map((name) => describe(join(dir, name))),
   );
   return files.filter((file) => file !== null);
+}
+
+/**
+ * Deletes the `*.tmp` files in `dir` last written before `cutoffMs` (ms since
+ * the epoch): a write that crashed between the temporary file and its rename.
+ * A younger one may still be on its way to its rename, so it stays.
+ */
+export async function sweepStaleTemp(
+  dir: string,
+  cutoffMs: number,
+): Promise<void> {
+  const names = (await nullIfMissing(readdir(dir))) ?? [];
+  const temps = names.filter((name) => name.endsWith('.tmp'));
+  const files = await Promise.all(
+    temps.map((name) => describe(join(dir, name))),
+  );
+  for (const file of files) {
+    if (file && file.mtimeMs < cutoffMs) await nullIfMissing(unlink(file.path));
+  }
 }
 
 /** The bytes the files take together. */

@@ -159,7 +159,7 @@
       "id": "moon3d",
       "type": "frontend",
       "label": "3D Moon globe",
-      "sublabel": "Three.js, real Sun",
+      "sublabel": "real Sun, site callout",
       "pos": [
         745,
         680
@@ -316,7 +316,7 @@
         "One time store (live, scrub or play) and one site store, shared by every view",
         "Views subscribe read-only; they never compute ephemerides",
         "MVP: calendar, polar map, site card; luxury: globes",
-        "Built: the 3D globe (lazy-loaded, its Sun follows the instant), the calendar strip, the site card, the polar map (header tabs by hash, keep the site and the instant) and the phone sheet with its calendar; one request per site and month (the month and its next 30 days), cached in the page"
+        "Built: the 3D globe (lazy-loaded, its Sun follows the instant, the selected site's callout with a LOLA relief thumbnail rendered at build time), the calendar strip, the site card, the polar map (header tabs by hash, keep the site and the instant) and the phone sheet with its calendar; one request per site and month (the month and its next 30 days), cached in the page"
       ]
     }
   ]

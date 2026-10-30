@@ -3,6 +3,20 @@
 ## [Sin publicar]
 
 ### Añadido
+- Tarjeta del sitio sobre el globo (VENT-29, lienzos validados «Globe · site callout B, image card» para escritorio y
+  «… A, compact» para el móvil): la etiqueta del sitio elegido pasa a ser una tarjeta de cristal unida a su punto por una
+  línea fina. En escritorio lleva arriba una vista del terreno desde la órbita con el estado del instante («Landing
+  window now», «Sun only», «Earth only» o «Neither», en sus colores) y el ancho que abarca («LOLA · 30 km»); debajo, la
+  misión y la fecha, el nombre del lugar, las coordenadas y su precisión, y cuánto falta para la puesta de Sol y de
+  Tierra. En el móvil es compacta: la miniatura a la izquierda y, al lado, la misión, el lugar, las coordenadas y una
+  píldora con el estado y el tiempo que le queda («Landing window · 7 d 1 h left»). Sigue al punto al girar el globo,
+  se coloca dentro de la parte visible sin tapar la leyenda «Layers», la barra superior, las pestañas ni la hoja, cambia
+  de lado cuando no cabe y se oculta cuando el punto pasa detrás del borde de la Luna o bajo la hoja. Cambia con el
+  deslizador, dice lo mismo que la ficha y las tarjetas del móvil, y deja pasar los clics a los puntos que tenga debajo.
+  Las vistas del terreno son relieve sombreado con el Sol bajo del modelo de elevación LOLA del polo sur (NASA, 20 m por
+  píxel), una por punto al sur de 80° S (Haworth, que es un cráter de 51 km, con 62 km de ancho); un script las rehace
+  descargando solo las filas que necesita, y `ASSETS.md` registra la fuente, el proceso y cada fichero. Los sitios más
+  al norte van sin imagen.
 - Ficha del sitio y mapa polar (VENT-5, lienzos validados «Globe view» y «Polar map»): en escritorio, a la derecha del
   globo, una ficha con la misión, la agencia y la fecha de alunizaje, el nombre del sitio, sus coordenadas y si el
   punto es exacto o una zona aproximada; dos recuadros grandes con cuánto falta para que se ponga (o salga) el Sol y

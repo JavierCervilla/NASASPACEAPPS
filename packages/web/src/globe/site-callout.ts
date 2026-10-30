@@ -30,33 +30,33 @@
  * leader to the marker. It hides with its marker: behind the limb or
  * under the sheet. Each frame only writes two transforms: the sizes it
  * places with are measured when they change (callout-watch.ts), never in
- * the frame.
+ * the frame. It remembers the side it sits on and holds keep-clear hides
+ * and shows for a moment, so a marker moving along a boundary does not
+ * make the card jump or blink frame after frame (VENT-31).
  */
-import type { Box, Point } from '../callout/box';
+import type { Point } from '../callout/box';
+import { placeInput, type CalloutLayout } from '../callout/callout-area';
 import type { CalloutContent } from '../callout/callout-content';
 import { calloutDom, renderCallout, type CalloutDom } from '../callout/callout-dom';
-import { placeCallout } from '../callout/callout-place';
+import { placeCallout, type CalloutSide } from '../callout/callout-place';
+import { CalloutVisibility } from '../callout/callout-visibility';
 
-/** Room the card keeps from the visible area's edges. */
-const EDGE_GAP_PX = 8;
+export type { CalloutLayout } from '../callout/callout-area';
 
-/** What the placement needs from the page, measured off the frame. */
-export interface CalloutLayout {
-  /** The host's size, px. */
-  readonly width: number;
-  readonly height: number;
-  /** The visible area's bottom, px from the host's top; no sheet: none. */
-  readonly bottom: number;
-  /** The card's own size, px. */
-  readonly size: { readonly width: number; readonly height: number };
-  /** What the card must not cover, px in the host. */
-  readonly avoid: readonly Box[];
+/** The time the callout's hold reads, and how it asks for a frame. */
+export interface CalloutClock {
+  /** ms, monotonic. */
+  readonly now: () => number;
+  /** Asks for another frame while a held change waits. */
+  readonly wake: () => void;
 }
 
 export class SiteCallout {
   readonly dom: CalloutDom = calloutDom();
   private at: Point | null = null;
-  private shown = false;
+  private content: CalloutContent | null = null;
+  private side: CalloutSide | null = null;
+  private readonly visibility = new CalloutVisibility();
   private layoutNow: CalloutLayout = {
     width: 0,
     height: 0,
@@ -65,9 +65,21 @@ export class SiteCallout {
     avoid: [],
   };
 
+  /** Without a `clock`, the page's clock and no frames asked for. */
+  constructor(
+    private readonly clock: CalloutClock = {
+      now: () => performance.now(),
+      wake: () => undefined,
+    },
+  ) {}
+
   /** Shows `content` (the selected site at the instant); null: nothing. */
   show(content: CalloutContent | null): void {
-    this.shown = content !== null;
+    if (content?.id !== this.content?.id) {
+      this.visibility.reset();
+      this.side = null;
+    }
+    this.content = content;
     if (content) renderCallout(this.dom, content);
     this.draw();
   }
@@ -86,19 +98,18 @@ export class SiteCallout {
 
   private draw(): void {
     const { card, leader } = this.dom;
-    const { width, height, bottom, size, avoid } = this.layoutNow;
-    const area = {
-      left: EDGE_GAP_PX,
-      top: EDGE_GAP_PX,
-      right: width - EDGE_GAP_PX,
-      bottom: Math.min(height, bottom) - EDGE_GAP_PX,
-    };
-    const at = this.shown ? this.at : null;
-    const place = at && placeCallout({ at, size, area, avoid });
-    card.dataset['shown'] = String(Boolean(place));
+    const input = placeInput(this.layoutNow, this.content ? this.at : null);
+    const place = input && placeCallout(input, this.side);
+    const wish = !input ? 'gone' : place ? 'show' : 'blocked';
+    const { shown, waiting } = this.visibility.next(wish, this.clock.now());
+    if (waiting) this.clock.wake();
+    card.dataset['shown'] = String(shown);
     leader.dataset['shown'] = card.dataset['shown'];
-    if (!place) return;
-    const { box, leader: line } = place;
+    // Shown while a hide holds: the card stays where it last was.
+    if (!shown || !place) return;
+    const { box, leader: line, side } = place;
+    this.side = side;
+    card.dataset['side'] = side;
     card.style.transform = `translate3d(${box.left}px, ${box.top}px, 0)`;
     leader.style.width = `${line.length}px`;
     leader.style.transform =

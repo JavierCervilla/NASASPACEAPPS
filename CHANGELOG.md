@@ -130,3 +130,10 @@
   vuelve con la cinta de calendario (VENT-4).
 - El código cumple la Norma de 42 adaptada a TypeScript (funciones de 25 líneas, 80 columnas, 5 funciones por fichero),
   comprobada en el lint.
+
+### Corregido
+- La tarjeta del sitio sobre el globo ya no parpadea al arrastrar el globo con el zoom cerca (VENT-31, visto en Brave
+  para Android con IM-1): cuando dos lados quedaban casi igual de bien, la tarjeta saltaba de uno a otro en cada
+  fotograma y parecía estar en dos sitios. Ahora se queda en su lado mientras ese lado no tape nada y solo cambia si
+  otro le ahorra al menos 24 px de desplazamiento; y cuando la oculta o la vuelve a mostrar la regla de no tapar la
+  barra de pestañas, la leyenda u otra pieza, el cambio espera a que dure 100 ms. Al elegir otro sitio empieza de cero.

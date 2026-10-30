@@ -38,6 +38,25 @@ Every visible change follows `.claude/skills/apple-design/SKILL.md` (vendored fr
   and the globe hides.
 - UI text is **English** (the global jury is international): this project's exception to the Language rule below. The local pitch is in Spanish and does not live here.
 
+## Clean Code
+
+The code follows Clean Code, and the size limits are enforced by lint:
+
+- **Single responsibility per module**: one reason to change per file. Split by responsibility with clear names,
+  never mechanically to fit a limit.
+- **Small functions with intention-revealing names**: a reader knows what a function does from its name.
+- **Dependencies injected, no hidden globals**: clocks, `fetch`, the file system roots and limits come in as
+  parameters or options, so every unit is testable on its own.
+- **No dead code, and no comments that restate the code**: comments explain why, not what.
+- **Enforced limits**, from the 42 school Norm adapted to TypeScript, as ESLint errors on `packages/*/src/**` in
+  `eslint.config.mjs`: `max-lines` 200 per file and `max-lines-per-function` 25 (both skipping blank lines and
+  comments), `max-len` 80 columns for code and comments (URLs, strings, template literals and regular expressions
+  exempt), `max-params` 4 (pass an options object for more), at most 5 named functions per file (the local rule
+  `eslint-rules/max-functions-per-file.mjs`, tested next to it), and `sonarjs/cognitive-complexity` 15. Tests are
+  exempt from the per-function, functions-per-file and line-length limits. Do not disable a limit inline: if one
+  forces something clearly worse, raise it with the human.
+- **Leave it cleaner**: every change leaves the code at least as clean as it found it.
+
 ## Commands
 
 | Command | What |

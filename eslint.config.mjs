@@ -2,6 +2,7 @@ import astro from 'eslint-plugin-astro';
 import reactHooks from 'eslint-plugin-react-hooks';
 import tseslint from 'typescript-eslint';
 import antiSlop from './eslint.anti-slop.mjs';
+import maxFunctionsPerFile from './eslint-rules/max-functions-per-file.mjs';
 
 export default [
   { ignores: ['**/dist/', '**/.astro/', '**/node_modules/', '.english-gate/', 'playwright-report/', 'test-results/', '.claude/'] },
@@ -21,6 +22,29 @@ export default [
       'sonarjs/no-duplicate-string': ['error', { threshold: 5 }],
       'sonarjs/cognitive-complexity': ['error', 15],
       'import/no-cycle': ['error', { maxDepth: 6 }],
+    },
+  },
+  // Clean Code limits (VENT-20): the 42 Norm, adapted to TypeScript, for production code only. Tests are exempt:
+  // a describe block is long by nature, and a test file holds many small cases.
+  {
+    files: ['packages/*/src/**'],
+    plugins: { local: { rules: { 'max-functions-per-file': maxFunctionsPerFile } } },
+    rules: {
+      'max-lines': ['error', { max: 200, skipBlankLines: true, skipComments: true }],
+      'max-lines-per-function': ['error', { max: 25, skipBlankLines: true, skipComments: true }],
+      'max-len': [
+        'error',
+        {
+          code: 80,
+          comments: 80,
+          ignoreUrls: true,
+          ignoreStrings: true,
+          ignoreTemplateLiterals: true,
+          ignoreRegExpLiterals: true,
+        },
+      ],
+      'max-params': ['error', 4],
+      'local/max-functions-per-file': ['error', { max: 5 }],
     },
   },
 ];

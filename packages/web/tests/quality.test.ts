@@ -18,6 +18,33 @@ describe('quality tiers', () => {
     expect(detectTier(LAPTOP, '?quality=ultra')).toBe('high');
   });
 
+  it('starts a desktop with fewer than 4 cores at medium', () => {
+    expect(detectTier({ ...LAPTOP, cores: 3 })).toBe('medium');
+    expect(detectTier({ ...LAPTOP, cores: 4 })).toBe('high');
+  });
+
+  it('starts a phone with a capable GPU at medium', () => {
+    const phone = { coarsePointer: true, cores: 4 };
+    expect(detectTier({ ...phone, gpu: 'Apple GPU' })).toBe('medium');
+    expect(detectTier({ ...phone, gpu: 'Adreno (TM) 740' })).toBe('medium');
+  });
+
+  it('starts a weak phone at low, or at medium with 8 cores', () => {
+    const weak = { gpu: 'Mali-G52 MC2', coarsePointer: true };
+    expect(detectTier({ ...weak, cores: 7 })).toBe('low');
+    expect(detectTier({ ...weak, cores: 8 })).toBe('medium');
+  });
+
+  it('forces a tier only with a whole tier word in the hash', () => {
+    expect(detectTier(LAPTOP, '', '#stats-lowish')).toBe('high');
+  });
+
+  it('turns antialiasing on only at high', () => {
+    expect(settingsFor('low').antialias).toBe(false);
+    expect(settingsFor('medium').antialias).toBe(false);
+    expect(settingsFor('high').antialias).toBe(true);
+  });
+
   it('caps the pixel ratio lower on lower tiers', () => {
     expect(settingsFor('low').maxPixelRatio).toBeLessThan(settingsFor('high').maxPixelRatio);
   });

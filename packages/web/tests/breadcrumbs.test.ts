@@ -1,7 +1,7 @@
-import { describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import { Breadcrumbs } from '../src/devtools/breadcrumbs';
 import { watchContext } from '../src/devtools/context-watch';
-import type { TrailStorage } from '../src/devtools/trail-storage';
+import { defaultStorage, readTrail, type TrailStorage } from '../src/devtools/trail-storage';
 
 function memoryStorage(): TrailStorage & { data: Map<string, string> } {
   const data = new Map<string, string>();
@@ -28,6 +28,21 @@ describe('breadcrumbs', () => {
     expect(crumbs.current).toEqual(['0.0s b', '0.0s c']);
   });
 
+  it('keeps 30 steps by default', () => {
+    const crumbs = new Breadcrumbs({ storage: null, now: () => 0 });
+    for (let step = 1; step <= 31; step += 1) crumbs.mark(`step ${step}`);
+    expect(crumbs.current).toHaveLength(30);
+    expect(crumbs.current[0]).toBe('0.0s step 2');
+  });
+
+  it('clears the stored trail when a session starts, even with no marks', () => {
+    const storage = memoryStorage();
+    storage.setItem('ventana.devtools.breadcrumbs', JSON.stringify(['0.0s old']));
+    const quiet = new Breadcrumbs({ storage, now: () => 0 });
+    expect(quiet.previous).toEqual(['0.0s old']);
+    expect(new Breadcrumbs({ storage, now: () => 0 }).previous).toEqual([]);
+  });
+
   it('never throws when storage is broken or holds garbage', () => {
     const broken: TrailStorage = {
       getItem: () => '{not json',
@@ -49,5 +64,28 @@ describe('breadcrumbs', () => {
     canvas.dispatchEvent(new Event('webglcontextrestored'));
     expect(events).toEqual(['lost', 'restored']);
     expect(crumbs.current).toEqual(['0.0s context lost', '0.0s context restored']);
+  });
+});
+
+describe('trail storage', () => {
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
+  function holding(value: string): TrailStorage {
+    return { getItem: () => value, setItem: () => undefined };
+  }
+
+  it('reads valid JSON that is not an array as no trail', () => {
+    expect(readTrail(holding('{"a":1}'), 'key')).toEqual([]);
+  });
+
+  it('reads the entries of a stored array as strings', () => {
+    expect(readTrail(holding('[1,2]'), 'key')).toEqual(['1', '2']);
+  });
+
+  it('has no default storage where the page has none', () => {
+    vi.stubGlobal('localStorage', undefined);
+    expect(defaultStorage()).toBeNull();
   });
 });

@@ -1,0 +1,102 @@
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { Breadcrumbs } from '../src/devtools/breadcrumbs';
+import { DevTools } from '../src/devtools/dev-tools';
+import { PerfHud, type PerfHudOptions } from '../src/devtools/perf-hud';
+import { installFakeDom, type FakeElement } from './fake-dom';
+
+// One frame as long as the meter's window, so every sample is a reading.
+const FULL_WINDOW = 0.5;
+
+let body: FakeElement;
+beforeEach(() => {
+  body = installFakeDom();
+});
+afterEach(() => {
+  vi.unstubAllGlobals();
+});
+
+function hud(options: Partial<PerfHudOptions> = {}): PerfHud {
+  return new PerfHud({
+    tier: 'high',
+    gpu: 'Test GPU',
+    flags: { tier: null, spector: false },
+    previous: [],
+    current: () => [],
+    ...options,
+  });
+}
+
+function panel(): FakeElement {
+  const [aside] = body.children;
+  if (!aside) throw new Error('no panel on the page');
+  return aside;
+}
+
+function readoutButton(): FakeElement {
+  const button = panel().all().find((element) => element.tagName === 'BUTTON');
+  if (!button) throw new Error('no readout button');
+  return button;
+}
+
+/** The element a readout button attribute points at by id. */
+function target(attribute: string): FakeElement {
+  const id = readoutButton().getAttribute(attribute) ?? '';
+  const element = panel().byId(id);
+  if (!id || !element) throw new Error(`${attribute} points at nothing`);
+  return element;
+}
+
+describe('perf hud on the page', () => {
+  it('shows only the newest 6 lines of this session trail', () => {
+    const trail = Array.from({ length: 10 }, (_, i) => `step-${i + 1}`);
+    hud({ current: () => trail }).sample(FULL_WINDOW, null);
+    const lines = (target('aria-describedby').textContent ?? '').split('\n');
+    const live = lines.slice(lines.indexOf('This session:') + 1);
+    expect(live).toEqual(trail.slice(-6));
+  });
+
+  it('keeps the newest 600 characters of the errors', () => {
+    const view = hud();
+    view.error('a'.repeat(700));
+    view.error('the end');
+    const errors = panel().all().find((element) => element.getAttribute('role') === 'status');
+    expect(errors?.textContent).toHaveLength(600);
+    expect(errors?.textContent?.endsWith('\nthe end')).toBe(true);
+  });
+
+  it('names the readout button briefly and describes it with the live numbers', () => {
+    hud().sample(FULL_WINDOW, null);
+    const button = readoutButton();
+    expect(button.getAttribute('aria-label')).toBe('Performance readout');
+    expect(target('aria-describedby').textContent).toMatch(/^2 fps · 500\.0 ms/);
+  });
+
+  it('says which region the readout button folds, and folds it', () => {
+    hud().sample(FULL_WINDOW, null);
+    const details = target('aria-controls');
+    expect(details.hidden).toBe(false);
+    readoutButton().click();
+    expect(details.hidden).toBe(true);
+    expect(readoutButton().getAttribute('aria-expanded')).toBe('false');
+    expect(target('aria-describedby').textContent).toBe('2 fps · 500.0 ms · slowest 500 ms');
+  });
+
+  it('starts folded when asked, as on a phone', () => {
+    hud({ folded: true }).sample(FULL_WINDOW, null);
+    expect(target('aria-controls').hidden).toBe(true);
+    expect(readoutButton().getAttribute('aria-expanded')).toBe('false');
+    expect(target('aria-describedby').textContent).not.toContain('\n');
+  });
+
+  it('starts open by default', () => {
+    hud();
+    expect(target('aria-controls').hidden).toBe(false);
+    expect(readoutButton().getAttribute('aria-expanded')).toBe('true');
+  });
+
+  it('passes the folded start from the dev tools to the panel', () => {
+    const crumbs = new Breadcrumbs({ storage: null, now: () => 0 });
+    new DevTools({ tier: 'low', gpu: '', hash: '', crumbs, folded: true });
+    expect(target('aria-controls').hidden).toBe(true);
+  });
+});

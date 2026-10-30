@@ -35,6 +35,29 @@ describe('perf hud', () => {
     expect(meter.sample(0.1)).toBeNull();
   });
 
+  it('starts the slowest frame over after a reading', () => {
+    const meter = new FrameMeter(0.5);
+    expect(meter.sample(0.5)?.worstMs).toBeCloseTo(500);
+    expect(meter.sample(0.25)).toBeNull();
+    expect(meter.sample(0.25)?.worstMs).toBeCloseTo(250);
+  });
+
+  it('reads a window that ends exactly on its length', () => {
+    const meter = new FrameMeter(0.5);
+    expect(meter.sample(0.25)).toBeNull();
+    expect(meter.sample(0.25)).not.toBeNull();
+  });
+
+  it('turns Spector on only for the whole word', () => {
+    expect(parseDebugHash('#stats-nospector').spector).toBe(false);
+  });
+
+  it('writes nothing forced as the bare stats hash', () => {
+    const hash = debugHash({ tier: null, spector: false });
+    expect(hash).toBe('stats');
+    expect(parseDebugHash(`#${hash}`)).toEqual({ tier: null, spector: false });
+  });
+
   it('shows fps, draw calls, triangles, texture memory and the GPU', () => {
     const text = readout(
       { fps: 59.6, frameMs: 16.78, worstMs: 33.2 },

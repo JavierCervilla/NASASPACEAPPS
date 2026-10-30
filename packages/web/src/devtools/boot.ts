@@ -13,6 +13,13 @@ import { detectTier, deviceHints } from '../lib/quality';
 
 export { threeAdapter } from './renderer';
 
+/**
+ * A phone or a narrow window, where the open readout would cover the page's
+ * header: the panel starts folded there (and perf-hud.css anchors it at the
+ * bottom on narrow screens).
+ */
+const COMPACT_SCREEN = '(pointer: coarse), (max-width: 480px)';
+
 let started: Promise<DevTools> | null = null;
 
 export function devTools(): Promise<DevTools> {
@@ -28,7 +35,8 @@ async function start(): Promise<DevTools> {
   probe?.getExtension('WEBGL_lose_context')?.loseContext();
   const { search, hash } = window.location;
   const tier = detectTier(device, search, hash);
-  const tools = await DevTools.start({ tier, gpu: device.gpu, hash });
+  const folded = matchMedia(COMPACT_SCREEN).matches;
+  const tools = await DevTools.start({ tier, gpu: device.gpu, hash, folded });
   tools.run();
   return tools;
 }

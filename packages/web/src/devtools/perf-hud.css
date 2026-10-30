@@ -77,6 +77,21 @@
   margin-top: var(--space-2);
 }
 
+/*
+ * On a phone the header and title sit at the top, so the readout moves to the bottom, where it covers the least (it
+ * also starts folded there: boot.ts).
+ */
+@media (max-width: 480px) {
+  .ventana-perf-hud {
+    top: auto;
+    bottom: calc(var(--space-2) + env(safe-area-inset-bottom, 0px));
+  }
+
+  .ventana-perf-hud__trail {
+    max-block-size: 20vh;
+  }
+}
+
 /* Feedback on press, not on release. */
 @media (prefers-reduced-motion: no-preference) {
   .ventana-perf-hud__toggle {

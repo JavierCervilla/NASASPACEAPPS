@@ -1,5 +1,5 @@
-# Direct dependencies of the texture scripts (moon_textures.py, header_moon.py)
-# and their tests. requirements.txt is compiled from this file with hashes;
-# see its header for the command.
+# Direct dependencies of the texture scripts (moon_textures.py, header_moon.py,
+# site_thumbs.py) and their tests. requirements.txt is compiled from this file
+# with hashes; see its header for the command.
 numpy==2.5.4
 pillow==13.0.0

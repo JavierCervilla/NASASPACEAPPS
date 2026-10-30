@@ -1,0 +1,58 @@
+{
+  "artemis-de-gerlache-rim-2": {
+    "file": "artemis-de-gerlache-rim-2.jpg",
+    "frameKm": 30.0
+  },
+  "artemis-haworth": {
+    "file": "artemis-haworth.jpg",
+    "frameKm": 62.0
+  },
+  "artemis-malapert-massif": {
+    "file": "artemis-malapert-massif.jpg",
+    "frameKm": 30.0
+  },
+  "artemis-mons-mouton": {
+    "file": "artemis-mons-mouton-plateau.jpg",
+    "frameKm": 30.0
+  },
+  "artemis-mons-mouton-plateau": {
+    "file": "artemis-mons-mouton-plateau.jpg",
+    "frameKm": 30.0
+  },
+  "artemis-nobile-rim-1": {
+    "file": "griffin1-nobile.jpg",
+    "frameKm": 30.0
+  },
+  "artemis-nobile-rim-2": {
+    "file": "griffin1-nobile.jpg",
+    "frameKm": 30.0
+  },
+  "artemis-peak-near-cabeus-b": {
+    "file": "artemis-peak-near-cabeus-b.jpg",
+    "frameKm": 30.0
+  },
+  "artemis-slater-plain": {
+    "file": "artemis-slater-plain.jpg",
+    "frameKm": 30.0
+  },
+  "bluemoon-mk1-pathfinder": {
+    "file": "bluemoon-mk1-pathfinder.jpg",
+    "frameKm": 30.0
+  },
+  "change7-target": {
+    "file": "change7-target.jpg",
+    "frameKm": 30.0
+  },
+  "griffin1-nobile": {
+    "file": "griffin1-nobile.jpg",
+    "frameKm": 30.0
+  },
+  "im1-odysseus": {
+    "file": "im1-odysseus.jpg",
+    "frameKm": 30.0
+  },
+  "im2-athena": {
+    "file": "im2-athena.jpg",
+    "frameKm": 30.0
+  }
+}

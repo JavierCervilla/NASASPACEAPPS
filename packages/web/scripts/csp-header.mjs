@@ -4,7 +4,7 @@
 // The web Dockerfile runs it after `astro build` and nginx includes its output in every location.
 //   node packages/web/scripts/csp-header.mjs packages/web/dist > csp.conf
 import { createHash } from 'node:crypto';
-import { readdirSync, readFileSync, statSync } from 'node:fs';
+import { readdirSync, readFileSync, realpathSync, statSync } from 'node:fs';
 import { join } from 'node:path';
 import { pathToFileURL } from 'node:url';
 
@@ -68,7 +68,10 @@ export function cspHeaderLine(dist) {
   return `add_header Content-Security-Policy "${policyFor(html)}" always;`;
 }
 
-if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
+// Compare real paths: Node resolves symlinks in import.meta.url, so a run
+// through a symlink would otherwise skip the CLI and exit 0 with no policy.
+const entry = process.argv[1] ? realpathSync(process.argv[1]) : null;
+if (entry && import.meta.url === pathToFileURL(entry).href) {
   try {
     console.log(cspHeaderLine(process.argv[2]));
   } catch (error) {

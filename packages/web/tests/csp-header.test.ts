@@ -1,6 +1,6 @@
 import { spawnSync } from 'node:child_process';
 import { createHash } from 'node:crypto';
-import { mkdirSync, mkdtempSync, writeFileSync } from 'node:fs';
+import { mkdirSync, mkdtempSync, symlinkSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -33,6 +33,15 @@ describe('csp-header', () => {
     const run = runCli(dist);
     expect(run.status).not.toBe(0);
     expect(run.stdout).toBe('');
+  });
+
+  it('still prints the policy when run through a symlink', () => {
+    page('index.html', '<p>hi</p>');
+    const link = join(mkdtempSync(join(tmpdir(), 'csp-link-')), 'link.mjs');
+    symlinkSync(SCRIPT, link);
+    const run = spawnSync(process.execPath, [link, dist], { encoding: 'utf8' });
+    expect(run.status).toBe(0);
+    expect(run.stdout).toMatch(/^add_header Content-Security-Policy /);
   });
 
   it('reports a missing directory with its own message, not an ENOENT stack', () => {

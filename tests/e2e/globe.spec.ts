@@ -38,6 +38,7 @@ const SITES = JSON.parse(readFileSync(new URL('../../packages/server/data/sites.
 const POINTS = new Map<string, typeof SITES>();
 for (const site of SITES) POINTS.set(`${site.lat},${site.lonEast}`, [...(POINTS.get(`${site.lat},${site.lonEast}`) ?? []), site]);
 const ZONE_POINTS = [...POINTS.values()].filter((group) => group.every((s) => s.approximate));
+const IM1 = '[data-site-id="im1-odysseus"]';
 const IM2 = '[data-site-id="im2-athena"]';
 // A merged zone (Griffin-1 and Nobile Rims 1 and 2) whose ring falls inside IM-2's hit box at the opening view.
 const NOBILE = '[data-site-id="griffin1-nobile"]';
@@ -45,6 +46,28 @@ const NOBILE = '[data-site-id="griffin1-nobile"]';
 const GLOBE_ASSET = /\/_astro\/globe\.[^/]*\.js$|\/textures\/moon-lroc-/;
 // Chromium's own line for a failed request; the page cannot silence it, so the unreachable-API test allows it.
 const NETWORK_LINE = /^Failed to load resource/;
+
+/** The centre of a marker's box, where its dot is drawn, in page px, once the globe has stopped turning. */
+async function centreOf(page: Page, selector: string): Promise<{ x: number; y: number }> {
+  const read = () => page.locator(selector).evaluate((el) => (el as HTMLElement).style.transform);
+  let last = await read();
+  await expect
+    .poll(async () => {
+      await page.waitForTimeout(150);
+      const now = await read();
+      const still = now === last && now !== '';
+      last = now;
+      return still;
+    })
+    .toBe(true);
+  const box = await page.locator(selector).boundingBox();
+  return { x: box!.x + box!.width / 2, y: box!.y + box!.height / 2 };
+}
+
+/** The site whose button is on top at `at`: the one the browser hit-tests, before any routing. */
+function siteUnder(page: Page, at: { x: number; y: number }): Promise<string | undefined> {
+  return page.evaluate(({ x, y }) => (document.elementFromPoint(x, y) as HTMLElement | null)?.dataset['siteId'], at);
+}
 
 function collectConsole(page: Page): { errors: string[]; warnings: string[] } {
   const log = { errors: [] as string[], warnings: [] as string[] };
@@ -89,35 +112,44 @@ test.describe('desktop, 1440x900', () => {
   });
 
   test('selecting a site names it in the label, which sits on its marker', async ({ page }) => {
-    await stubApi(page);
-    await page.goto('./');
-    const im1 = page.getByRole('button', { name: /Malapert A region \(IM-1 Odysseus\)/ });
-    // Under the calendar strip the globe is smaller and IM-2's 44 px box covers IM-1's centre: the button is pressed.
-    await im1.press('Enter');
-    await expect(page.locator('.globe-label')).toHaveText('Malapert A region (IM-1 Odysseus)');
-    const transform = (selector: string) => page.locator(selector).evaluate((el) => (el as HTMLElement).style.transform);
-    await expect.poll(() => transform('.globe-label')).toBe(await transform('[data-site-id="im1-odysseus"]'));
-    expect(await transform('.globe-label')).toMatch(/^translate3d\(/);
-  });
-
-  test('IM-2 is what sits under its own centre, and a mouse click there selects it', async ({ page }) => {
     await page.emulateMedia({ reducedMotion: 'reduce' });
     await stubApi(page);
     await page.goto('./');
-    await expect(page.locator(IM2)).toHaveAttribute('style', /translate3d/);
-    await page.getByRole('button', { name: /Malapert A region \(IM-1 Odysseus\)/ }).press('Enter');
-    // With the calendar strip under it the globe is shorter, and at the opening zoom the selected IM-1's 44 px box
-    // (stacked on top) reaches over IM-2's centre: one step in sets them apart, as on the taller globe before.
-    await page.getByRole('application', { name: 'The Moon, seen over its south pole' }).focus();
-    await page.keyboard.press('+');
+    await expect(page.locator(IM1)).toHaveAttribute('style', /translate3d/);
+    const at = await centreOf(page, IM1);
+    await page.mouse.click(at.x, at.y);
+    await expect(page.locator('.globe-label')).toHaveText('Malapert A region (IM-1 Odysseus)');
+    const transform = (selector: string) => page.locator(selector).evaluate((el) => (el as HTMLElement).style.transform);
+    // The globe turns to the picked site: compare where both are now, frame after frame.
+    await expect.poll(async () => (await transform('.globe-label')) === (await transform(IM1))).toBe(true);
+    expect(await transform('.globe-label')).toMatch(/^translate3d\(/);
+  });
+
+  test('at the opening zoom a mouse click on either close dot selects that dot, whichever box is on top', async ({ page }) => {
+    await page.emulateMedia({ reducedMotion: 'reduce' });
+    await stubApi(page);
+    await page.goto('./');
+    await expect(page.locator(IM1)).toHaveAttribute('style', /translate3d/);
+    // Under the calendar strip the opening globe is small: IM-1 and IM-2 sit closer than a 44 px box, so the box of
+    // the selected IM-2 (stacked on top) covers IM-1's dot. The click still goes to the dot nearest the pointer.
+    const im1 = await centreOf(page, IM1);
+    expect(await siteUnder(page, im1)).toBe('im2-athena');
+    await page.mouse.click(im1.x, im1.y);
+    await expect(page.locator(IM1)).toHaveAttribute('aria-pressed', 'true');
     await expect(page.locator(IM2)).toHaveAttribute('aria-pressed', 'false');
-    const box = await page.locator(IM2).boundingBox();
-    const centre = { x: box!.x + box!.width / 2, y: box!.y + box!.height / 2 };
-    const hit = await page.evaluate(({ x, y }) => (document.elementFromPoint(x, y) as HTMLElement | null)?.dataset['siteId'], centre);
-    expect(hit).toBe('im2-athena');
-    await page.mouse.click(centre.x, centre.y);
+    // Now IM-1 is selected and on top, and its box covers IM-2's dot: the click on IM-2 still selects IM-2.
+    const im2 = await centreOf(page, IM2);
+    expect(await siteUnder(page, im2)).toBe('im1-odysseus');
+    await page.mouse.click(im2.x, im2.y);
     await expect(page.locator(IM2)).toHaveAttribute('aria-pressed', 'true');
     await expect(page.locator('.globe-label')).toHaveText('Mons Mouton (IM-2 Athena)');
+  });
+
+  test('the keyboard selects a marker whose dot another box covers', async ({ page }) => {
+    await stubApi(page);
+    await page.goto('./');
+    await page.getByRole('button', { name: /Malapert A region \(IM-1 Odysseus\)/ }).press('Enter');
+    await expect(page.locator(IM1)).toHaveAttribute('aria-pressed', 'true');
   });
 
   test('a zone ring under another marker stays in the DOM, hidden, and shows on zoom', async ({ page }) => {

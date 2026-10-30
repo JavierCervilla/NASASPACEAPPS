@@ -25,18 +25,19 @@
 
 /**
  * The desktop calendar strip under the globe (validated canvas «Globe
- * view»): the month with its arrows, the legend, the Sun, Earth and window
- * bars from the API's hourly data, the instant line and the day ticks,
- * then Play, the date and a slider over the month's hours (arrows move an
- * hour, Page Up and Page Down a day).
+ * view»): the month with its arrows, the date with «Now», the legend, the
+ * Sun, Earth and window bars from the API's hourly data, the instant line
+ * and the day ticks, then Play and a slider over the month's hours (arrows
+ * move an hour, Page Up and Page Down a day). The slider's track spans the
+ * bars' column, so its thumb sits on the instant line.
  */
 import { monthLabel } from '../../calendar/instant-format';
 import { dayTicks } from '../../calendar/month';
-import { instantPct } from '../../calendar/month-strip';
+import { instantPct, type MonthStrip } from '../../calendar/month-strip';
 import type { Calendar, CalendarParts } from './hooks';
-import { MonthArrows, SignalBar } from './parts';
+import { MonthArrows, NoWindowNote, SignalBar } from './parts';
 import { StripStatus } from './StripStatus';
-import { TimeSlider } from './TimeSlider';
+import { StripClock, TimeSlider } from './TimeSlider';
 
 interface Props {
   readonly parts: CalendarParts;
@@ -71,17 +72,27 @@ function Bars({ calendar, atMs }: { calendar: Calendar; atMs: number }) {
     ['window', 'Window', strip.window, strip.windowPct],
   ] as const;
   return (
-    <div className="strip__bars">
+    <>
       {rows.map(([tone, label, segments, pct]) => (
         <div key={tone} className="strip__row" role="img" aria-label={`${label}: ${share(pct)}`}>
           <span className="strip__label" aria-hidden="true">{label}</span>
           <SignalBar tone={tone} segments={segments} axis="horizontal">
-            {tone === 'window' ? <span className="instant-line" style={{ left: `${instantPct(atMs)}%` }} /> : null}
+            {tone === 'window' ? <WindowMarks strip={strip} atMs={atMs} /> : null}
           </SignalBar>
         </div>
       ))}
       <DayTicks atMs={atMs} />
-    </div>
+    </>
+  );
+}
+
+/** On the window bar: the instant line, and a note if it never opens. */
+function WindowMarks({ strip, atMs }: { strip: MonthStrip; atMs: number }) {
+  return (
+    <>
+      <NoWindowNote strip={strip} className="signal-bar__note" />
+      <span className="instant-line" style={{ left: `${instantPct(atMs)}%` }} />
+    </>
   );
 }
 
@@ -106,10 +117,13 @@ export function CalendarStrip({ parts, calendar }: Props) {
         <MonthArrows parts={parts} atMs={atMs}>
           <h2 className="strip__month">{monthLabel(atMs)}</h2>
         </MonthArrows>
+        <StripClock parts={parts} calendar={calendar} />
         <Legend />
       </div>
-      <Bars calendar={calendar} atMs={atMs} />
-      <TimeSlider parts={parts} calendar={calendar} />
+      <div className="strip__grid">
+        <Bars calendar={calendar} atMs={atMs} />
+        <TimeSlider parts={parts} calendar={calendar} />
+      </div>
     </section>
   );
 }

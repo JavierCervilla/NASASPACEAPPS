@@ -24,10 +24,11 @@
  */
 
 /**
- * The desktop strip's controls (validated canvas «Globe view»): Play, the
- * date, a slider over the month's hours and «Now». The slider is a native
- * range, so the arrows move an hour and Home and End reach the month's
- * ends; Page Up and Page Down move a day, which browsers do not agree on.
+ * The desktop strip's controls (validated canvas «Globe view»): Play and
+ * a slider over the month's hours, under the bars, and the date with
+ * «Now» in the strip's head. The slider is a native range, so the arrows
+ * move an hour and Home and End reach the month's ends; Page Up and Page
+ * Down move a day, which browsers do not agree on.
  */
 import type { KeyboardEvent } from 'react';
 import { hourKeyDelta } from '../../calendar/hour-input';
@@ -53,20 +54,31 @@ function dayKeys(time: TimeStore, atMs: number) {
   };
 }
 
+/** The selected date and «Now», in the strip's head. */
+export function StripClock({ parts, calendar }: Props) {
+  const { state } = calendar;
+  if (!state) return null;
+  return (
+    <div className="strip__clock">
+      <span className="strip__date">{formatInstant(state.atMs)}</span>
+      <NowButton parts={parts} live={state.live} />
+    </div>
+  );
+}
+
+/** Play in the labels' column, the slider in the bars' column. */
 export function TimeSlider({ parts, calendar }: Props) {
   const { state, playing } = calendar;
   if (!state) return null;
-  const { atMs, live } = state;
-  const when = formatInstant(atMs);
+  const { atMs } = state;
   return (
-    <div className="strip__controls">
+    <>
       <PlayButton parts={parts} playing={playing} />
-      <span className="strip__date">{when}</span>
       <input
         type="range"
         className="strip__slider"
         aria-label="Selected hour"
-        aria-valuetext={when}
+        aria-valuetext={formatInstant(atMs)}
         min={0}
         max={monthHours(atMs) - 1}
         step={1}
@@ -74,7 +86,6 @@ export function TimeSlider({ parts, calendar }: Props) {
         onChange={(e) => moveToHour(parts.time, atMs, Number(e.target.value))}
         onKeyDown={dayKeys(parts.time, atMs)}
       />
-      <NowButton parts={parts} live={live} />
-    </div>
+    </>
   );
 }

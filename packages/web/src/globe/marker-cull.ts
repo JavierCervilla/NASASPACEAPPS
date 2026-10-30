@@ -53,7 +53,8 @@ function rank(candidate: Candidate): number {
   return candidate.zone ? 2 : 1;
 }
 
-function covers(box: ScreenPoint, point: ScreenPoint): boolean {
+/** Whether `point` falls inside the hit box of a marker at `box`. */
+export function covers(box: ScreenPoint, point: ScreenPoint): boolean {
   return (
     Math.abs(point.x - box.x) < HIT_HALF_PX &&
     Math.abs(point.y - box.y) < HIT_HALF_PX

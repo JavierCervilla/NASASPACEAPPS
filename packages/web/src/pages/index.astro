@@ -137,8 +137,12 @@ const views = [
     background: var(--fill);
   }
 
+  /* A 44 px tall target (apple-design). */
   .views > * {
-    padding: 9px 16px;
+    display: flex;
+    align-items: center;
+    min-height: 44px;
+    padding: 0 16px;
     border-radius: 8px;
     font-size: 0.875rem;
     font-weight: 600;

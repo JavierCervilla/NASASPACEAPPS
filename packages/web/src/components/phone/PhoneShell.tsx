@@ -83,8 +83,9 @@ type PhoneState = ReturnType<typeof usePhoneState>;
 const SHEET_LABELS = { sites: 'Choose a site', calendar: 'Calendar' };
 
 /**
- * The sheet's props, and the tab bar's element, where a drag up opens the
- * closed sheet. On unmount the globe is told there is no sheet any more.
+ * The sheet's props; the tab bar's element, where a drag up opens the
+ * closed sheet; and the top bar's, which the full sheet stays under. On
+ * unmount the globe is told there is no sheet any more.
  */
 function useSheetWiring(
   phone: PhoneState,
@@ -92,6 +93,7 @@ function useSheetWiring(
   dim: (value: number) => void,
 ) {
   const tabs = useRef<HTMLElement>(null);
+  const bar = useRef<HTMLElement>(null);
   useEffect(() => () => sheetEdge.set(null), [sheetEdge]);
   const atFull = phone.detent === 'full';
   const sheet = {
@@ -101,8 +103,9 @@ function useSheetWiring(
     onOpenness: dim,
     onEdge: sheetEdge.set,
     edge: tabs,
+    bar,
   };
-  return { tabs, current: atFull ? phone.view : 'globe', sheet } as const;
+  return { tabs, bar, current: atFull ? phone.view : 'globe', sheet } as const;
 }
 
 /**
@@ -133,7 +136,8 @@ function SheetBody(props: { phone: PhoneState } & Props) {
 function PhoneUi(props: Props) {
   const phone = usePhoneState(props);
   const [scrim, dim] = useScrim();
-  const { tabs, current, sheet } = useSheetWiring(phone, props.sheetEdge, dim);
+  const wiring = useSheetWiring(phone, props.sheetEdge, dim);
+  const { tabs, bar, current, sheet } = wiring;
   const tabActions = {
     onGlobe: phone.close,
     onCalendar: phone.calendar,
@@ -143,7 +147,7 @@ function PhoneUi(props: Props) {
   return (
     <div className="phone">
       <div ref={scrim} className="phone-scrim" aria-hidden="true" />
-      <PhoneBar site={site} state={state} onOpenPicker={phone.open} />
+      <PhoneBar ref={bar} site={site} state={state} onOpenPicker={phone.open} />
       <Sheet {...sheet}>
         <SheetBody phone={phone} {...props} />
       </Sheet>

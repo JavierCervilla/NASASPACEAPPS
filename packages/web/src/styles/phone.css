@@ -256,7 +256,8 @@
   display: flex;
   flex-direction: column;
   gap: 12px;
-  height: calc(100dvh - 96px + var(--sheet-overscroll));
+  /* --sheet-full-top: the full detent, under the top bar (src/sheet/). */
+  height: calc(100dvh - var(--sheet-full-top, 96px) + var(--sheet-overscroll));
   padding: 0 16px calc(var(--sheet-overscroll) + 96px);
   border-radius: 28px 28px 0 0;
   background: var(--phone-sheet);

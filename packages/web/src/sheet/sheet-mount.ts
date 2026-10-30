@@ -26,13 +26,19 @@
 /**
  * Mounts the sheet's physics on its element: the state, the frame loop
  * that draws it, the drag gestures (on the sheet, and on the edge that
- * opens it when closed) and the viewport resize.
+ * opens it when closed), the viewport resize and the top bar's height,
+ * which the full sheet stays under.
  */
 import { createLoop, type Loop } from '../globe/loop';
 import { bindSheetDrag } from './sheet-drag';
 import { edgeDragTarget } from './sheet-edge-drag';
 import { SheetMotion } from './sheet-motion';
-import { detentsFor, type DetentName } from './sheet-physics';
+import {
+  detentsFor,
+  SHEET_LAYOUT,
+  type DetentName,
+  type SheetLayout,
+} from './sheet-physics';
 import {
   createSheetState,
   stepSheet,
@@ -52,7 +58,12 @@ export interface SheetMountOptions {
   readonly canDrag: (event: PointerEvent) => boolean;
   /** Where a drag up opens the closed sheet (the tab bar); null: none. */
   readonly edge: HTMLElement | null;
+  /** The top bar the full sheet stays under; null: the canvas's gap. */
+  readonly bar: HTMLElement | null;
 }
+
+/** Room the full sheet keeps under the top bar. */
+const BAR_GAP_PX = 12;
 
 export interface MountedSheet {
   readonly motion: SheetMotion;
@@ -98,27 +109,62 @@ function bindDrags(el: HTMLElement, parts: DragParts): () => void {
   };
 }
 
+/**
+ * The canvas's layout, with the full sheet `BAR_GAP_PX` under `bar`'s
+ * bottom edge when the bar outgrows the canvas's (large text).
+ */
+function layoutUnder(bar: HTMLElement | null): SheetLayout {
+  const bottom = bar ? bar.getBoundingClientRect().bottom : 0;
+  const fullGapPx = Math.max(SHEET_LAYOUT.fullGapPx, bottom + BAR_GAP_PX);
+  return { ...SHEET_LAYOUT, fullGapPx };
+}
+
+/**
+ * Moves the sheet to its detent again when the viewport resizes, or when
+ * the bar's height moves the full detent; returns the unwatch function.
+ */
+function watchLayout(
+  bar: HTMLElement | null,
+  state: SheetState,
+  motion: SheetMotion,
+) {
+  const resize = (): void => motion.moveTo(state.detent);
+  const fullMoved = (): boolean =>
+    layoutUnder(bar).fullGapPx !== state.detents.full;
+  const barResized = (): void => {
+    if (fullMoved()) resize();
+  };
+  const observer = new ResizeObserver(barResized);
+  if (bar) observer.observe(bar);
+  window.addEventListener('resize', resize);
+  return (): void => {
+    observer.disconnect();
+    window.removeEventListener('resize', resize);
+  };
+}
+
 /** Starts the sheet on `el` at `options.start`; returns its handle. */
 export function mountSheet(
   el: HTMLElement,
   options: SheetMountOptions,
 ): MountedSheet {
   const heightPx = (): number => window.innerHeight;
-  const state = createSheetState(detentsFor(heightPx()), options.start);
+  const layout = (): SheetLayout => layoutUnder(options.bar);
+  const detents = detentsFor(heightPx(), layout());
+  const state = createSheetState(detents, options.start);
   const loop = sheetLoop(el, state, options);
   const invalidate = (): void => loop.invalidate();
   const { reducedMotion, onDetent } = options;
-  const deps = { heightPx, reducedMotion, invalidate, onDetent };
+  const deps = { heightPx, layout, reducedMotion, invalidate, onDetent };
   const motion = new SheetMotion(state, deps);
   const unbind = bindDrags(el, { state, motion, options });
-  const resize = (): void => motion.moveTo(state.detent);
-  window.addEventListener('resize', resize);
+  const unwatch = watchLayout(options.bar, state, motion);
   placeSheet(el, state.axis.value, state.detents);
   invalidate();
   const dispose = (): void => {
     loop.stop();
     unbind();
-    window.removeEventListener('resize', resize);
+    unwatch();
   };
   return { motion, dispose };
 }

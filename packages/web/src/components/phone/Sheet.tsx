@@ -45,6 +45,8 @@ interface Props {
   readonly onEdge: (top: number) => void;
   /** Where a drag up opens the closed sheet (the tab bar). */
   readonly edge: RefObject<HTMLElement | null>;
+  /** The top bar the full sheet stays under. */
+  readonly bar: RefObject<HTMLElement | null>;
   readonly children: ReactNode;
 }
 
@@ -73,8 +75,9 @@ function useMountedSheet(
     const onEdge = (top: number): void => latest.current.onEdge(top);
     const start = reported.current;
     const edge = latest.current.edge.current;
+    const bar = latest.current.bar.current;
     sheet.current = mountSheet(node, {
-      start, reducedMotion, onDetent, onOpenness, onEdge, canDrag, edge,
+      start, reducedMotion, onDetent, onOpenness, onEdge, canDrag, edge, bar,
     });
     return sheet.current.dispose;
   }, [el, latest, reported]);

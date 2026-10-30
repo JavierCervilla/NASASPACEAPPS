@@ -25,11 +25,12 @@
 
 /**
  * Pieces both calendar views share (validated canvases «Globe view» and
- * «Phone · calendar»): a signal bar, the month with its arrows, Play and
- * «Now». Touch targets are 44 px.
+ * «Phone · calendar»): a signal bar, the month with its arrows, Play,
+ * «Now» and the note for a month without a window. Touch targets are
+ * 44 px.
  */
 import type { ReactNode } from 'react';
-import type { Segment } from '../../calendar/month-strip';
+import type { MonthStrip, Segment } from '../../calendar/month-strip';
 import { canShiftMonth, moveMonths } from '../../calendar/time-actions';
 import type { CalendarParts } from './hooks';
 
@@ -117,4 +118,13 @@ export function NowButton(props: { parts: CalendarParts; live: boolean }) {
       Now
     </button>
   );
+}
+
+/** «No landing window this month», for a loaded month with none. */
+export function NoWindowNote(props: {
+  strip: MonthStrip | null;
+  className: string;
+}) {
+  if (!props.strip || props.strip.window.length > 0) return null;
+  return <p className={props.className}>No landing window this month</p>;
 }

@@ -44,9 +44,16 @@ import { hourOfMonth, moveToHour } from '../../calendar/time-actions';
 import { NOW_TITLES } from '../../phone/now-widget';
 import { siteLabels, type PhoneSite } from '../../phone/phone-site';
 import type { NowState } from '../../phone/widget-types';
+import type { HoursResult } from '../../phone/widgets-loader';
 import { hourDrag } from './hour-drag';
 import { useCalendar, type CalendarParts } from './hooks';
-import { MonthArrows, NowButton, PlayButton, SignalBar } from './parts';
+import {
+  MonthArrows,
+  NoWindowNote,
+  NowButton,
+  PlayButton,
+  SignalBar,
+} from './parts';
 import { StripStatus } from './StripStatus';
 
 interface Props {
@@ -56,7 +63,10 @@ interface Props {
   readonly state: NowState | null;
 }
 
-/** «Sun 59 %», «Earth 58 %» and «Window 47 %» of the month. */
+/**
+ * «Sun 59 %», «Earth 58 %» and «Window 47 %» of the month, and a note
+ * when the month has no window at all.
+ */
 function Shares({ strip }: { readonly strip: MonthStrip | null }) {
   const shares = [
     ['sun', 'Sun', strip?.sunPct],
@@ -64,13 +74,16 @@ function Shares({ strip }: { readonly strip: MonthStrip | null }) {
     ['window', 'Window', strip?.windowPct],
   ] as const;
   return (
-    <ul className="calendar__shares" aria-label="Share of the month">
-      {shares.map(([tone, label, pct]) => (
-        <li key={tone} data-tone={tone}>
-          {label} <b>{pct === undefined ? '–' : `${Math.round(pct)} %`}</b>
-        </li>
-      ))}
-    </ul>
+    <>
+      <ul className="calendar__shares" aria-label="Share of the month">
+        {shares.map(([tone, label, pct]) => (
+          <li key={tone} data-tone={tone}>
+            {label} <b>{pct === undefined ? '–' : `${Math.round(pct)} %`}</b>
+          </li>
+        ))}
+      </ul>
+      <NoWindowNote strip={strip} className="calendar__note" />
+    </>
   );
 }
 
@@ -122,6 +135,8 @@ function Columns({ parts, strip, atMs }: ColumnsProps) {
 }
 
 interface ControlsProps extends Props {
+  /** The month's hours: no state while they load means no data. */
+  readonly result: HoursResult;
   readonly atMs: number;
   readonly live: boolean;
   readonly playing: boolean;
@@ -132,7 +147,13 @@ const HINT = 'drag the strip to move in time';
 /** Play, the date with the state at that hour, and «Now». */
 function Controls(props: ControlsProps) {
   const { parts, state, atMs, live, playing } = props;
-  const line = state ? `${NOW_TITLES[state]} · ${HINT}` : `Drag the strip to move in time`;
+  // No state: the hour's data is on its way, or there is none.
+  const idle = props.result.kind === 'loading'
+    ? 'Drag the strip to move in time'
+    : 'No data for this hour';
+  const line = state ? NOW_TITLES[state] : idle;
+  // The hint goes first when large text leaves no room (calendar.css).
+  const hint = state ? <span className="calendar__hint"> · {HINT}</span> : null;
   return (
     <div className="calendar__controls">
       <PlayButton parts={parts} playing={playing} />
@@ -140,6 +161,7 @@ function Controls(props: ControlsProps) {
         <span className="calendar__date">{formatInstant(atMs)}</span>
         <span className="calendar__state" data-tone={state ?? undefined}>
           {line}
+          {hint}
         </span>
       </div>
       <NowButton parts={parts} live={live} />
@@ -150,7 +172,7 @@ function Controls(props: ControlsProps) {
 export function CalendarSheet(props: Props) {
   const { parts, site } = props;
   const calendar = useCalendar(parts, site.id);
-  const { state: time, strip, playing } = calendar;
+  const { state: time, strip, playing, result } = calendar;
   if (!time) return null;
   const { pill, pillDetail } = siteLabels(site);
   return (
@@ -167,7 +189,7 @@ export function CalendarSheet(props: Props) {
       ) : (
         <StripStatus calendar={calendar} />
       )}
-      <Controls {...props} {...time} playing={playing} />
+      <Controls {...props} {...time} playing={playing} result={result} />
     </div>
   );
 }

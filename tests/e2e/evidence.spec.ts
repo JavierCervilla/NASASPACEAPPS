@@ -25,9 +25,9 @@
 
 /**
  * QA evidence, not a check: screenshots of the globe at 1440x900 in dark and light mode, a close-up of the south pole
- * terminator before and after the sharper maps and the LOLA relief, the desktop calendar strip and header site picker,
- * and of the phone at 390x844 (the sheet at half in dark and light, the site picker, the sheet at peek, the sheet
- * closed, also zoomed in, and the calendar), saved under
+ * terminator before and after the sharper maps and the LOLA relief, the desktop calendar strip (also at 1280x720) and
+ * header site picker, and of the phone at 390x844 (the sheet at half in dark and light, the site picker, the sheet at
+ * peek, the sheet closed, also zoomed in, and the calendar, also at 200 % text), saved under
  * production/qa/evidence/ with the capture date. It runs only on request, so a normal e2e run writes nothing:
  *
  *   CAPTURE_EVIDENCE=1 npm run e2e -- evidence.spec.ts
@@ -83,6 +83,12 @@ test.describe('calendar evidence', () => {
   test('calendar strip under the globe, dark mode', async ({ page }) => {
     await openDesktop(page);
     await page.screenshot({ path: new URL(`${DATE}-vent-4-calendar-strip-dark.png`, OUT).pathname });
+  });
+
+  test('calendar strip under the globe, 1280x720, dark mode', async ({ page }) => {
+    await page.setViewportSize({ width: 1280, height: 720 });
+    await openDesktop(page);
+    await page.screenshot({ path: new URL(`${DATE}-vent-4-calendar-strip-1280x720-dark.png`, OUT).pathname });
   });
 
   test('calendar, header site picker open, dark mode', async ({ page }) => {
@@ -181,6 +187,24 @@ test.describe('phone evidence', () => {
     await expect(page.getByRole('heading', { name: 'November 2026' })).toBeVisible();
     await settle(page);
     await page.screenshot({ path: new URL(`${DATE}-vent-4-phone-calendar-dark.png`, OUT).pathname });
+  });
+
+  test('phone, calendar, 200 % text, light mode', async ({ page }) => {
+    await openPhone(page, 'light');
+    await page.getByRole('navigation', { name: 'Views' }).getByRole('button', { name: 'Calendar', exact: true }).click();
+    await expect(page.getByRole('heading', { name: 'November 2026' })).toBeVisible();
+    await page.evaluate(() => {
+      document.documentElement.style.fontSize = '200%';
+    });
+    // The full sheet moves down under the grown bar.
+    const edges = () =>
+      page.evaluate(() => {
+        const bar = document.querySelector('.phone-bar')?.getBoundingClientRect().bottom ?? 0;
+        return (document.querySelector('.sheet')?.getBoundingClientRect().top ?? 0) >= bar;
+      });
+    await expect.poll(edges).toBe(true);
+    await settle(page);
+    await page.screenshot({ path: new URL(`${DATE}-vent-4-phone-calendar-text-200.png`, OUT).pathname });
   });
 
   test('phone, site picker open', async ({ page }) => {

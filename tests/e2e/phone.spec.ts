@@ -271,6 +271,65 @@ test.describe('phone, 390x844', () => {
     await expect(page.locator('.calendar__state')).toContainText('Landing window');
   });
 
+  test('at 200 % text the full sheet stays under the grown top bar, and the day labels never pile up (QA F2)', async ({
+    page,
+  }) => {
+    await open(page);
+    await tabs(page).getByRole('button', { name: 'Calendar', exact: true }).click();
+    await expect.poll(() => sheetTop(page)).toBe(FULL_TOP);
+    await page.evaluate(() => {
+      document.documentElement.style.fontSize = '200%';
+    });
+    const bottomOf = async (locator: Locator) => {
+      const box = await locator.boundingBox();
+      return (box?.y ?? 0) + (box?.height ?? 0);
+    };
+    const bar = page.locator('.phone-bar');
+    await expect.poll(async () => (await sheetTop(page)) >= (await bottomOf(bar))).toBe(true);
+    await settledBox(page.locator('.sheet'));
+    const barBottom = await bottomOf(bar);
+    for (const name of ['Previous month', 'Next month']) {
+      expect((await page.getByRole('button', { name }).boundingBox())?.y).toBeGreaterThanOrEqual(barBottom);
+    }
+    expect((await page.getByRole('heading', { name: 'November 2026' }).boundingBox())?.y).toBeGreaterThanOrEqual(barBottom);
+    const labels = await page.locator('.columns__days span').evaluateAll((spans) =>
+      spans
+        .filter((el) => getComputedStyle(el).display !== 'none')
+        .map((el) => [el.getBoundingClientRect().top, el.getBoundingClientRect().bottom] as const),
+    );
+    expect(labels.length).toBeGreaterThan(0);
+    // The columns keep room to drag in; what does not fit scrolls, so «Now» comes out from under the tab bar.
+    expect((await page.locator('.columns').boundingBox())?.height).toBeGreaterThanOrEqual(160);
+    await page.locator('.calendar').evaluate((el) => el.scrollTo(0, el.scrollHeight));
+    const nowBox = await page.getByRole('button', { name: 'Now', exact: true }).boundingBox();
+    expect((nowBox?.y ?? 0) + (nowBox?.height ?? 0)).toBeLessThanOrEqual((await tabs(page).boundingBox())?.y ?? 0);
+    for (let i = 1; i < labels.length; i += 1) expect(labels[i]![0]).toBeGreaterThanOrEqual(labels[i - 1]![1]);
+  });
+
+  test('a month without data shows no signal: «No data for this hour» and a neutral dot (QA F5)', async ({ page }) => {
+    await open(page);
+    await tabs(page).getByRole('button', { name: 'Calendar', exact: true }).click();
+    const line = page.locator('.calendar__state');
+    await expect(line).toContainText('Landing window');
+    // The recorded IM-2 hours start on 1 November: October has none, though its request reaches into November.
+    await page.getByRole('button', { name: 'Previous month' }).click();
+    await expect(page.getByRole('heading', { name: 'October 2026' })).toBeVisible();
+    await expect(line).toHaveText('No data for this hour');
+    await expect(line).not.toHaveAttribute('data-tone');
+    const dot = page.locator('.site-pill .signal-dot');
+    expect(['window', 'sun', 'earth', 'none']).not.toContain(await dot.getAttribute('data-state'));
+  });
+
+  test('a month with no window at all says so in the calendar (QA F6)', async ({ page }) => {
+    await open(page);
+    await tabs(page).getByRole('button', { name: 'Sites' }).click();
+    await page.getByRole('button', { name: 'Apollo', exact: true }).click();
+    await page.getByRole('list', { name: 'Sites' }).getByRole('button', { name: /^Mare Tranquillitatis/ }).click();
+    await tabs(page).getByRole('button', { name: 'Calendar', exact: true }).click();
+    await expect(page.getByRole('list', { name: 'Share of the month' })).toContainText('Window 0 %');
+    await expect(page.getByText('No landing window this month')).toBeVisible();
+  });
+
   test('dragging in the columns moves the instant, and «Now» brings it back', async ({ page }) => {
     await open(page);
     await tabs(page).getByRole('button', { name: 'Calendar', exact: true }).click();

@@ -29,20 +29,29 @@
  * the rolling horizon; the month's window share (`computeRangeMetrics` in
  * `@ventana/sim`) reads the calendar month only.
  */
-import { computeRangeMetrics, toMs, type HourSample } from '@ventana/sim';
+import {
+  computeRangeMetrics,
+  HOUR_MS,
+  toMs,
+  type HourSample,
+} from '@ventana/sim';
 import { bodyWidget, EARTH, SUN } from './body-widget';
 import { dsnWidget } from './dsn-widget';
 import { nowWidget } from './now-widget';
 import type { WidgetRange } from './widget-range';
 import type { SiteWidgets } from './widget-types';
 
-/** The sample of the hour `at`: the first at or after it, or null. */
+/**
+ * The sample of the hour `at`, or null when the hours hold none for it: a
+ * later hour (the next month's first) never stands in for it.
+ */
 export function sampleAt(
   hours: readonly HourSample[],
   at: string,
 ): HourSample | null {
   const atMs = toMs(at);
-  return hours.find((sample) => toMs(sample.t) >= atMs) ?? null;
+  const inHour = (ms: number): boolean => ms >= atMs && ms < atMs + HOUR_MS;
+  return hours.find((sample) => inHour(toMs(sample.t))) ?? null;
 }
 
 /** The samples from `first` to `last`, both ISO and inclusive. */

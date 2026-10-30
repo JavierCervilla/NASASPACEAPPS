@@ -26,7 +26,7 @@
 import { describe, expect, it, vi } from 'vitest';
 import { stepDampedSpring } from '../src/sheet/damped-spring';
 import { SheetMotion } from '../src/sheet/sheet-motion';
-import { detentsFor, nearestDetent, releaseDetent, rubberBand, unRubberBand } from '../src/sheet/sheet-physics';
+import { detentsFor, nearestDetent, releaseDetent, rubberBand, SHEET_LAYOUT, unRubberBand } from '../src/sheet/sheet-physics';
 import { createSheetState, dragSheet, FLICK_MIN_PX_S, grabSheet, settleSheet, stepSheet, type SheetState } from '../src/sheet/sheet-state';
 import { grabberLabel, nextDetent, openness, reveal } from '../src/sheet/sheet-view';
 
@@ -222,6 +222,15 @@ describe('SheetMotion', () => {
     deps.heightPx = () => 700;
     motion.moveTo('peek');
     expect(state.axis.value).toBe(700 - 156);
+  });
+
+  it('puts the full detent under a top bar grown by large text (QA F2)', () => {
+    const { state, deps } = motionOn(true);
+    const tallBar = { ...SHEET_LAYOUT, fullGapPx: 252 };
+    const withBar = new SheetMotion(state, { ...deps, layout: () => tallBar });
+    withBar.moveTo('full');
+    expect(state.detents.full).toBe(252);
+    expect(state.axis.value).toBe(252);
   });
 });
 

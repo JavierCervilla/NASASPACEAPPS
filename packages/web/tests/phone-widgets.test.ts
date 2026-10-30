@@ -164,6 +164,12 @@ describe('siteWidgets', () => {
     expect(siteWidgets(hours, { ...rangeAt(60), horizonEnd: hourAt(70) })).toBeNull();
     expect(sampleAt([], hourAt(0))).toBeNull();
   });
+
+  it('is null when the hours start after the hour: a later sample never stands in (QA F5)', () => {
+    const later = hours.slice(30);
+    expect(sampleAt(later, hourAt(20))).toBeNull();
+    expect(siteWidgets(later, rangeAt(20))).toBeNull();
+  });
 });
 
 describe('widgetRange', () => {

@@ -34,7 +34,7 @@ describe('warmCache', () => {
     expect(lines).toEqual(['warm-up: 10 of 10 Horizons tables cached']);
 
     const api = createApp({ horizons, sites: IM2, now: () => 0 });
-    const res = await api.request(`/api/sites/im2-athena?from=${WARM_FROM}&to=${WARM_TO}`);
+    const res = await api.request(`/api/v1/sites/im2-athena?from=${WARM_FROM}&to=${WARM_TO}`);
     expect(res.status).toBe(200);
     expect(fetch.calls).toHaveLength(10);
   });

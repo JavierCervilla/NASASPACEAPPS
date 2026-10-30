@@ -43,7 +43,7 @@ Every visible change follows `.claude/skills/apple-design/SKILL.md` (vendored fr
 | Command | What |
 |---|---|
 | `npm run dev` | Web dev server at `http://localhost:4321/` |
-| `npm run server` | API server (`packages/server`, after `npm run build`) at `http://localhost:3000/api/health` |
+| `npm run server` | API server (`packages/server`, after `npm run build`) at `http://localhost:3000/api/v1/health` |
 | `npm run lint` | ESLint + the anti-slop preset (`eslint.anti-slop.mjs`) over every package |
 | `npm run typecheck` | `astro check` for the web, `tsc` for sim, server and the root configs and e2e |
 | `npm test` | Vitest unit tests of every package (`packages/*/tests/`) |

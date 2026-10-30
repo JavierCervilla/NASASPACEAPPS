@@ -35,7 +35,7 @@ JPL Horizons API ──► backend API (Dokploy, cached, no login) ──► sit
 | `packages/web/src/lib/` | Web-only TypeScript: store, formatting (unit-tested) |
 | `packages/web/src/styles/` | Design tokens and global styles |
 | `packages/sim/` | Pure TypeScript shared by web and server: site data contract, window logic (unit-tested) |
-| `packages/server/` | Node API (Hono): JPL Horizons client, disk cache, `/api/*` |
+| `packages/server/` | Node API (Hono): JPL Horizons client, disk cache, `/api/v1/*` |
 | `pipeline/` | Data contract with JPL Horizons; `packages/server` implements it (VENT-3, VENT-10) |
 | `packages/*/tests/`, `tests/e2e/` | Vitest (per package) and Playwright |
 | `docs/diagrams/` | Architecture diagram |
@@ -53,14 +53,14 @@ npm run lint && npm run typecheck && npm test && npm run build && npm run e2e
 
 ## API
 
-`packages/server` (Hono), all JSON under `/api`:
+`packages/server` (Hono), all JSON under `/api/v1` (a future version can sit next to it):
 
 | Route | Answers |
 |---|---|
-| `GET /api/health` | `{ ok: true }` |
-| `GET /api/ephemeris?lat&lon&from&to[&at]` | Hourly Sun/Earth/DSN samples, landing windows and metrics for any point. `lon` is east longitude; `from`/`to` are UTC dates (`2026-11-01`) or whole UTC hours (`2026-11-01T05:00:00Z`), at most 92 days |
-| `GET /api/sites` | The 29 curated sites (`packages/server/data/sites.json`), in three groups: `south_pole`, `apollo`, `other` |
-| `GET /api/sites/:id[?from&to&at]` | One site, plus its ephemeris when given a range |
+| `GET /api/v1/health` | `{ ok: true }` |
+| `GET /api/v1/ephemeris?lat&lon&from&to[&at]` | Hourly Sun/Earth/DSN samples, landing windows and metrics for any point. `lon` is east longitude; `from`/`to` are UTC dates (`2026-11-01`) or whole UTC hours (`2026-11-01T05:00:00Z`), at most 92 days |
+| `GET /api/v1/sites` | The 29 curated sites (`packages/server/data/sites.json`), in three groups: `south_pole`, `apollo`, `other` |
+| `GET /api/v1/sites/:id[?from&to&at]` | One site, plus its ephemeris when given a range |
 
 The point is rounded to a 0.01° grid (about 300 m on the Moon), so nearby points share their Horizons tables, and dates
 must fall between 2026-01-01 and 2027-12-31 (400 otherwise). The Horizons tables of the curated sites and of the DSN

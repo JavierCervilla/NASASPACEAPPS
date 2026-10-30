@@ -18,7 +18,7 @@ import { roundToGrid } from '../src/params.ts';
 const OUT_DIR = new URL('../../sim/tests/fixtures/horizons/', import.meta.url);
 const TEST_POINT = { lat: -89.5, lonEast: 0, altKm: 0 };
 // IM-2 Athena's touchdown point (-84.7906, 29.1957 E, LROC), on the API's 0.01 degree grid as the service asks for it,
-// so these files also answer the server's /api/sites/im2-athena tests. Used for the longitude-sign check.
+// so these files also answer the server's /api/v1/sites/im2-athena tests. Used for the longitude-sign check.
 const IM2_POINT = { lat: roundToGrid(-84.7906), lonEast: roundToGrid(29.1957), altKm: 0 };
 const FROM_MS = Date.UTC(2026, 10, 1);
 const TO_MS = Date.UTC(2026, 11, 31, 23);

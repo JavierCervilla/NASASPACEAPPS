@@ -157,25 +157,35 @@ async function ephemerisResponse(c: Context, deps: AppDeps, limiter: MissLimiter
   }
 }
 
-/** Builds the HTTP API. Routes live under `/api` because the web and the API share one domain. */
-export function createApp(deps: AppDeps): Hono {
-  const app = new Hono();
-  // One limiter per app, shared by every route that may call Horizons.
-  const limiter = deps.missLimiter ?? createMissLimiter({ now: deps.now });
-  app.get('/api/health', (c) => c.json({ ok: true }));
+/** Version 1 of the API: every route, mounted by {@link createApp} under `/api/v1`. */
+function createV1(deps: AppDeps, limiter: MissLimiter): Hono {
+  const v1 = new Hono();
+  v1.get('/health', (c) => c.json({ ok: true }));
 
   // Any point: lat and lon (east longitude) in degrees, from and to as UTC dates or whole hours, optional at.
-  app.get('/api/ephemeris', (c) => ephemerisResponse(c, deps, limiter, c.req.query()));
+  v1.get('/ephemeris', (c) => ephemerisResponse(c, deps, limiter, c.req.query()));
 
-  app.get('/api/sites', (c) => c.json({ sites: deps.sites }));
+  v1.get('/sites', (c) => c.json({ sites: deps.sites }));
 
   // One site; with from and to it also carries the site's ephemeris for that range.
-  app.get('/api/sites/:id', (c) => {
+  v1.get('/sites/:id', (c) => {
     const site = deps.sites.find((s) => s.id === c.req.param('id'));
     if (!site) return c.json({ error: 'unknown site' }, HTTP_NOT_FOUND);
     const { from, to, at } = c.req.query();
     if (from === undefined && to === undefined) return c.json({ site });
     return ephemerisResponse(c, deps, limiter, { lat: String(site.lat), lon: String(site.lonEast), from, to, at }, { site });
   });
+  return v1;
+}
+
+/**
+ * Builds the HTTP API. Routes live under `/api` because the web and the API share one domain, and under a version
+ * prefix (`/api/v1`) so a future version can be mounted next to it. There are no unversioned aliases.
+ */
+export function createApp(deps: AppDeps): Hono {
+  const app = new Hono();
+  // One limiter per app, shared by every route (and every version) that may call Horizons.
+  const limiter = deps.missLimiter ?? createMissLimiter({ now: deps.now });
+  app.route('/api/v1', createV1(deps, limiter));
   return app;
 }

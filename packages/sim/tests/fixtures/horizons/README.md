@@ -24,7 +24,7 @@ calendar month, for November and December 2026 (`2026-11-01 00:00` to `2026-12-3
 
 The IM-2 Athena files were **added** on 2026-10-29 for the longitude-sign check (`validation.test.ts`): a curated site
 with a non-zero east longitude. The point is IM-2's touchdown (-84.7906, 29.1957 E, LROC) on the API's 0.01 degree
-grid, exactly as the service asks for it, so the same files also answer the server's `/api/sites/im2-athena` tests.
+grid, exactly as the service asks for it, so the same files also answer the server's `/api/v1/sites/im2-athena` tests.
 Recording needs the network, and only recording does: in this cloud container Node reaches Horizons through the
 proxy with `NODE_USE_ENV_PROXY=1 node packages/server/scripts/record-fixtures.ts`. The script re-records every file;
 the earlier ones came back identical except for the request stamp line, so they were left as committed.

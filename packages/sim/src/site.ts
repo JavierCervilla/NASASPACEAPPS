@@ -21,7 +21,7 @@ export type SiteGroup = 'south_pole' | 'apollo' | 'other';
 
 /** Metadata of a landing site on the lunar surface. */
 export interface Site {
-  /** Stable identifier, URL-safe (used in `/api/sites/:id`). */
+  /** Stable identifier, URL-safe (used in `/api/v1/sites/:id`). */
   readonly id: string;
   /** Which list the site belongs to. */
   readonly group: SiteGroup;

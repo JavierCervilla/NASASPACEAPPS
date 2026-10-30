@@ -10,7 +10,7 @@ import { fixedFetch, fixtureFetch } from './fake-horizons.ts';
 
 const NOW = Date.UTC(2026, 10, 14, 9, 30);
 const SITES: Site[] = await loadSites(DEFAULT_SITES_FILE);
-const POINT = '/api/ephemeris?lat=-89.5&lon=0';
+const POINT = '/api/v1/ephemeris?lat=-89.5&lon=0';
 
 let cacheDir: string;
 beforeEach(async () => {
@@ -23,17 +23,22 @@ function app(fetch: FetchLike, extra: { client?: Partial<HorizonsClientOptions>;
 }
 
 const NOV_1 = '&from=2026-11-01&to=2026-11-01';
-const ATHENA = '/api/ephemeris?lat=-84.79&lon=29.2';
+const ATHENA = '/api/v1/ephemeris?lat=-84.79&lon=29.2';
 
-describe('GET /api/health', () => {
+describe('GET /api/v1/health', () => {
   it('answers ok', async () => {
-    const res = await app(fixtureFetch()).request('/api/health');
+    const res = await app(fixtureFetch()).request('/api/v1/health');
     expect(res.status).toBe(200);
     expect(await res.json()).toEqual({ ok: true });
   });
+
+  it('has no unversioned alias', async () => {
+    const api = app(fixtureFetch());
+    for (const path of ['/api/health', '/api/sites', '/api/ephemeris']) expect((await api.request(path)).status).toBe(404);
+  });
 });
 
-describe('GET /api/ephemeris', () => {
+describe('GET /api/v1/ephemeris', () => {
   it('answers the hours, windows and metrics of a point', async () => {
     const res = await app(fixtureFetch()).request(`${POINT}&from=2026-11-01&to=2026-12-31`);
     expect(res.status).toBe(200);
@@ -71,17 +76,17 @@ describe('GET /api/ephemeris', () => {
     const res = await app(fetch).request(`${POINT}&from=2026-11-01&to=2027-03-01`);
     expect(res.status).toBe(400);
     expect(await res.json()).toEqual({ error: 'the range must not be longer than 92 days' });
-    expect((await app(fetch).request('/api/ephemeris?lat=x')).status).toBe(400);
+    expect((await app(fetch).request('/api/v1/ephemeris?lat=x')).status).toBe(400);
     expect(fetch.calls).toHaveLength(0);
   });
 
   it('rounds the point to the 0.01 degree grid, so nearby points share the cached tables', async () => {
     const fetch = fixtureFetch();
     const api = app(fetch);
-    const first = (await (await api.request('/api/ephemeris?lat=-84.7906&lon=29.1957&from=2026-11-01&to=2026-11-01')).json()) as Ephemeris;
+    const first = (await (await api.request('/api/v1/ephemeris?lat=-84.7906&lon=29.1957&from=2026-11-01&to=2026-11-01')).json()) as Ephemeris;
     expect([first.lat, first.lonEast]).toEqual([-84.79, 29.2]);
     expect(fetch.calls).toHaveLength(5);
-    const second = await api.request('/api/ephemeris?lat=-84.7949&lon=29.2044&from=2026-11-02&to=2026-11-02');
+    const second = await api.request('/api/v1/ephemeris?lat=-84.7949&lon=29.2044&from=2026-11-02&to=2026-11-02');
     expect(second.status).toBe(200);
     expect(fetch.calls).toHaveLength(5);
   });
@@ -156,10 +161,10 @@ describe('Horizons protection', () => {
 
   it('caches the DSN tables and the tables of curated sites in pinned/, any other point in points/', async () => {
     const api = app(fixtureFetch());
-    expect((await api.request(`/api/sites/im2-athena?from=2026-11-01&to=2026-11-01`)).status).toBe(200);
+    expect((await api.request(`/api/v1/sites/im2-athena?from=2026-11-01&to=2026-11-01`)).status).toBe(200);
     expect(await readdir(join(cacheDir, 'pinned'))).toHaveLength(5);
     // A custom request on the rounded point of a curated site is pinned too.
-    expect((await api.request(`/api/ephemeris?lat=-84.7906&lon=29.1957&from=2026-12-01&to=2026-12-01`)).status).toBe(200);
+    expect((await api.request(`/api/v1/ephemeris?lat=-84.7906&lon=29.1957&from=2026-12-01&to=2026-12-01`)).status).toBe(200);
     expect(await readdir(join(cacheDir, 'pinned'))).toHaveLength(10);
     expect((await api.request(`${POINT}${NOV_1}`)).status).toBe(200);
     expect(await readdir(join(cacheDir, 'points'))).toHaveLength(2);
@@ -191,9 +196,9 @@ describe('createMissLimiter', () => {
   });
 });
 
-describe('GET /api/sites', () => {
+describe('GET /api/v1/sites', () => {
   it('lists the sites of the sites file', async () => {
-    const res = await app(fixtureFetch()).request('/api/sites');
+    const res = await app(fixtureFetch()).request('/api/v1/sites');
     expect(res.status).toBe(200);
     expect(await res.json()).toEqual({ sites: SITES });
   });
@@ -201,8 +206,8 @@ describe('GET /api/sites', () => {
   it('answers one site, and its ephemeris when given a range', async () => {
     const api = app(fixtureFetch());
     const im2 = SITES.find((s) => s.id === 'im2-athena');
-    expect(await (await api.request('/api/sites/im2-athena')).json()).toEqual({ site: im2 });
-    const res = await api.request('/api/sites/im2-athena?from=2026-12-01&to=2026-12-01');
+    expect(await (await api.request('/api/v1/sites/im2-athena')).json()).toEqual({ site: im2 });
+    const res = await api.request('/api/v1/sites/im2-athena?from=2026-12-01&to=2026-12-01');
     const body = (await res.json()) as { site: Site; ephemeris: Ephemeris };
     expect(body.site).toEqual(im2);
     // The site keeps its published coordinates; the ephemeris is computed on the API's 0.01 degree grid.
@@ -212,7 +217,7 @@ describe('GET /api/sites', () => {
 
   it('answers 404 for an unknown site and 400 for half a range', async () => {
     const api = app(fixtureFetch());
-    expect((await api.request('/api/sites/nowhere')).status).toBe(404);
-    expect((await api.request('/api/sites/im2-athena?from=2026-12-01')).status).toBe(400);
+    expect((await api.request('/api/v1/sites/nowhere')).status).toBe(404);
+    expect((await api.request('/api/v1/sites/im2-athena?from=2026-12-01')).status).toBe(400);
   });
 });

@@ -29,7 +29,8 @@ describe('warmCache', () => {
     const result = await warmCache({ horizons, sites: IM2, log: (line) => lines.push(line) });
     // Sun and Earth from the site plus the three DSN complexes, for two months.
     expect(result).toEqual({ requests: 10, failed: 0 });
-    expect(await readdir(cacheDir)).toHaveLength(10);
+    // Every table the warm-up fetches belongs to a curated site or is a DSN table: all of them are pinned.
+    expect(await readdir(join(cacheDir, 'pinned'))).toHaveLength(10);
     expect(lines).toEqual(['warm-up: 10 of 10 Horizons tables cached']);
 
     const api = createApp({ horizons, sites: IM2, now: () => 0 });

@@ -11,7 +11,7 @@ import {
   type Ephemeris,
   type HorizonsRow,
 } from '@ventana/sim';
-import type { HorizonsClient } from './horizons/client.ts';
+import type { HorizonsCallOptions, HorizonsClient } from './horizons/client.ts';
 import { HORIZONS_API_URL } from './horizons/client.ts';
 import { BODY, DSN_COMPLEXES, DSN_SITES, monthsCovering, type HorizonsQuery, type MonthSpan } from './horizons/query.ts';
 
@@ -65,16 +65,29 @@ export function ephemerisQueries(request: EphemerisRequest): HorizonsQuery[] {
   return monthsCovering(request.fromMs, request.toMs).flatMap((month) => queriesFor(request, month).map(([, q]) => q));
 }
 
+/** How {@link computeEphemeris} calls the client. */
+export interface EphemerisCallOptions {
+  /** Passed to every client call: runs before each cache miss is downloaded, and throws to refuse it. */
+  readonly onMiss?: () => void;
+  /** The point is a curated site's: cache its tables as pinned. The DSN tables do not depend on the point and are always pinned. */
+  readonly pinnedPoint?: boolean;
+}
+
 /**
  * The ephemeris of one point. Horizons is asked for whole calendar months (shared cache entries) and the rows are
  * sliced to the requested range here.
  */
-export async function computeEphemeris(client: HorizonsClient, request: EphemerisRequest): Promise<Ephemeris> {
+export async function computeEphemeris(
+  client: HorizonsClient,
+  request: EphemerisRequest,
+  options: EphemerisCallOptions = {},
+): Promise<Ephemeris> {
   const jobs = monthsCovering(request.fromMs, request.toMs).flatMap((month) => queriesFor(request, month));
-  const tables = await mapLimited(jobs, MAX_PARALLEL_REQUESTS, async ([table, query]) => ({
-    table,
-    rows: await client.rows(query),
-  }));
+  const tables = await mapLimited(jobs, MAX_PARALLEL_REQUESTS, async ([table, query]) => {
+    const pinned = options.pinnedPoint === true || (table !== 'sun' && table !== 'earth');
+    const call: HorizonsCallOptions = options.onMiss ? { onMiss: options.onMiss, pinned } : { pinned };
+    return { table, rows: await client.rows(query, call) };
+  });
   const inRange = (row: HorizonsRow): boolean => {
     const ms = toMs(row.t);
     return ms >= request.fromMs && ms <= request.toMs;

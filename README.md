@@ -62,10 +62,16 @@ npm run lint && npm run typecheck && npm test && npm run build && npm run e2e
 | `GET /api/sites` | The 29 curated sites (`packages/server/data/sites.json`), in three groups: `south_pole`, `apollo`, `other` |
 | `GET /api/sites/:id[?from&to&at]` | One site, plus its ephemeris when given a range |
 
-The cache is bounded: the point is rounded to a 0.01° grid (about 300 m on the Moon) and dates must fall between
-2026-01-01 and 2027-12-31 (400 otherwise). Sites with `approximate: true` have no citable coordinate: their point is a
+The point is rounded to a 0.01° grid (about 300 m on the Moon), so nearby points share their Horizons tables, and dates
+must fall between 2026-01-01 and 2027-12-31 (400 otherwise). The Horizons tables of the curated sites and of the DSN
+complexes are kept for good in `pinned/` under `HORIZONS_CACHE_DIR`; any other point goes to `points/`, capped at
+`HORIZONS_POINTS_CACHE_MB` (default 512) with the least recently used tables evicted first. Tables cached directly in
+`HORIZONS_CACHE_DIR` by older versions are still read, never written. At most 2 Horizons downloads run at once for the
+whole server and 32 wait; past that the API answers 503 with `Retry-After`. Each client IP may cause 30 Horizons
+downloads (new points or months) per 10 minutes; past that it gets 429 with `Retry-After`, while cached answers keep
+coming. Each Horizons call times out after 20 s. Sites with `approximate: true` have no citable coordinate: their point is a
 stand-in (usually the IAU/USGS centre of the named feature), not a landing point, and `coordinateNote` says which. On
-start the server warms the cache for every curated site over 2026-11-01 to 2026-12-31, in the background, 4 Horizons
+start the server warms the cache for every curated site over 2026-11-01 to 2026-12-31, in the background, 2 Horizons
 requests at a time; `WARM_CACHE=0` skips it.
 
 ## Data sources

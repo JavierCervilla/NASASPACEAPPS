@@ -1,4 +1,4 @@
-import { mkdtemp, readdir, readFile } from 'node:fs/promises';
+import { mkdir, mkdtemp, readdir, readFile, stat, utimes, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { beforeEach, describe, expect, it } from 'vitest';
@@ -20,7 +20,33 @@ const SUN_NOVEMBER: HorizonsQuery = {
   stop: '2026-11-30 23:00',
 };
 
+const EARTH_NOVEMBER: HorizonsQuery = { ...SUN_NOVEMBER, target: BODY.earth };
+const SUN_DECEMBER: HorizonsQuery = { ...SUN_NOVEMBER, start: '2026-12-01 00:00', stop: '2026-12-31 23:00' };
+
 const noSleep = async (): Promise<void> => undefined;
+
+const fileOf = (query: HorizonsQuery): string => `${cacheKey(toHorizonsParams(query))}.json`;
+
+/** A fetch that holds every request until `release()`, then serves the fixtures. */
+function gatedFetch() {
+  const served = fixtureFetch();
+  let open: () => void = () => undefined;
+  const gate = new Promise<void>((resolve) => {
+    open = resolve;
+  });
+  const fake = async (url: string) => {
+    calls.push(url);
+    await gate;
+    return served(url);
+  };
+  const calls: string[] = [];
+  return Object.assign(fake, { calls, release: () => open() });
+}
+
+async function fixtureBody(query: HorizonsQuery): Promise<string> {
+  const dir = await mkdtemp(join(tmpdir(), 'horizons-body-'));
+  return createHorizonsClient({ fetch: fixtureFetch(), cacheDir: dir }).raw(query);
+}
 
 let cacheDir: string;
 beforeEach(async () => {
@@ -43,7 +69,7 @@ describe('createHorizonsClient', () => {
     const again = await createHorizonsClient({ fetch, cacheDir }).rows(SUN_NOVEMBER);
     expect(again).toHaveLength(720);
     expect(fetch.calls).toHaveLength(1);
-    expect(await readdir(cacheDir)).toEqual([`${cacheKey(toHorizonsParams(SUN_NOVEMBER))}.json`]);
+    expect(await readdir(join(cacheDir, 'points'))).toEqual([fileOf(SUN_NOVEMBER)]);
   });
 
   it('shares one call between concurrent identical requests', async () => {
@@ -116,8 +142,150 @@ describe('createHorizonsClient', () => {
 
   it('returns the raw body as Horizons sent it', async () => {
     const raw = await createHorizonsClient({ fetch: fixtureFetch(), cacheDir }).raw(SUN_NOVEMBER);
-    const file = join(cacheDir, `${cacheKey(toHorizonsParams(SUN_NOVEMBER))}.json`);
+    const file = join(cacheDir, 'points', fileOf(SUN_NOVEMBER));
     expect(await readFile(file, 'utf8')).toBe(raw);
+  });
+});
+
+describe('cache layout', () => {
+  it('writes a pinned table to pinned/ and any other to points/, never to the legacy root', async () => {
+    const client = createHorizonsClient({ fetch: fixtureFetch(), cacheDir });
+    await client.raw(SUN_NOVEMBER, { pinned: true });
+    await client.raw(EARTH_NOVEMBER);
+    expect(await readdir(join(cacheDir, 'pinned'))).toEqual([fileOf(SUN_NOVEMBER)]);
+    expect(await readdir(join(cacheDir, 'points'))).toEqual([fileOf(EARTH_NOVEMBER)]);
+    expect((await readdir(cacheDir)).sort()).toEqual(['pinned', 'points']);
+  });
+
+  it('still reads a table from the legacy root, without calling Horizons or copying it', async () => {
+    const body = await fixtureBody(SUN_NOVEMBER);
+    await writeFile(join(cacheDir, fileOf(SUN_NOVEMBER)), body, 'utf8');
+    const fetch = fixtureFetch();
+    expect(await createHorizonsClient({ fetch, cacheDir }).raw(SUN_NOVEMBER, { pinned: true })).toBe(body);
+    expect(fetch.calls).toHaveLength(0);
+    expect(await readdir(cacheDir)).toEqual([fileOf(SUN_NOVEMBER)]);
+  });
+
+  it('reads pinned/ first, then points/, then the legacy root', async () => {
+    const body = await fixtureBody(SUN_NOVEMBER);
+    await mkdir(join(cacheDir, 'pinned'), { recursive: true });
+    await mkdir(join(cacheDir, 'points'), { recursive: true });
+    await writeFile(join(cacheDir, 'pinned', fileOf(SUN_NOVEMBER)), body, 'utf8');
+    await writeFile(join(cacheDir, 'points', fileOf(SUN_NOVEMBER)), 'points', 'utf8');
+    await writeFile(join(cacheDir, fileOf(SUN_NOVEMBER)), 'legacy', 'utf8');
+    await writeFile(join(cacheDir, 'points', fileOf(EARTH_NOVEMBER)), 'points', 'utf8');
+    await writeFile(join(cacheDir, fileOf(EARTH_NOVEMBER)), 'legacy', 'utf8');
+    const client = createHorizonsClient({ fetch: fixtureFetch(), cacheDir });
+    expect(await client.raw(SUN_NOVEMBER)).toBe(body);
+    expect(await client.raw(EARTH_NOVEMBER)).toBe('points');
+  });
+
+  it('evicts the least recently used points/ tables once the byte cap is passed, and never a pinned one', async () => {
+    const sun = await fixtureBody(SUN_NOVEMBER);
+    const size = Buffer.byteLength(sun);
+    const points = join(cacheDir, 'points');
+    await mkdir(points, { recursive: true });
+    await mkdir(join(cacheDir, 'pinned'), { recursive: true });
+    const old = join(points, `${'0'.repeat(64)}.json`);
+    await writeFile(old, 'x'.repeat(size), 'utf8');
+    await writeFile(join(points, fileOf(SUN_NOVEMBER)), sun, 'utf8');
+    await writeFile(join(cacheDir, 'pinned', `${'1'.repeat(64)}.json`), 'x'.repeat(size * 10), 'utf8');
+    const now = Date.now() / 1000;
+    await utimes(old, now - 300, now - 300);
+    await utimes(join(points, fileOf(SUN_NOVEMBER)), now - 600, now - 600);
+
+    const fetch = fixtureFetch();
+    // Room for two tables of this size: the third one written evicts the oldest.
+    const client = createHorizonsClient({ fetch, cacheDir, maxPointsBytes: size * 2 + 1000 });
+    // A hit refreshes the mtime, so the Sun table, written first, is now the most recently used.
+    await client.raw(SUN_NOVEMBER);
+    expect((await stat(join(points, fileOf(SUN_NOVEMBER)))).mtimeMs).toBeGreaterThan((now - 60) * 1000);
+    await client.raw(EARTH_NOVEMBER);
+    expect((await readdir(points)).sort()).toEqual([fileOf(EARTH_NOVEMBER), fileOf(SUN_NOVEMBER)].sort());
+    expect(await readdir(join(cacheDir, 'pinned'))).toHaveLength(1);
+    expect(fetch.calls).toHaveLength(1);
+  });
+});
+
+describe('download limit', () => {
+  it('refuses a cache miss at once with kind busy when the waiting queue is full', async () => {
+    const fetch = gatedFetch();
+    const client = createHorizonsClient({ fetch, cacheDir, maxConcurrentDownloads: 1, maxQueuedDownloads: 1 });
+    // onMiss runs right before the download is queued, so awaiting it orders the three calls.
+    const queued = (): [Promise<void>, () => void] => {
+      let signal: () => void = () => undefined;
+      return [new Promise<void>((resolve) => (signal = resolve)), () => signal()];
+    };
+    const [firstQueued, onFirst] = queued();
+    const first = client.raw(SUN_NOVEMBER, { onMiss: onFirst });
+    await firstQueued;
+    const [secondQueued, onSecond] = queued();
+    const second = client.raw(EARTH_NOVEMBER, { onMiss: onSecond });
+    await secondQueued;
+    const third = await client.raw(SUN_DECEMBER).catch((e: unknown) => e);
+    expect(third).toBeInstanceOf(HorizonsError);
+    expect((third as HorizonsError).kind).toBe('busy');
+    fetch.release();
+    await Promise.all([first, second]);
+    expect(fetch.calls).toHaveLength(2);
+  });
+
+  it('keeps at most maxConcurrentDownloads in flight, shared by every caller', async () => {
+    const served = fixtureFetch();
+    let inFlight = 0;
+    let peak = 0;
+    const fetch = async (url: string) => {
+      inFlight += 1;
+      peak = Math.max(peak, inFlight);
+      await new Promise((resolve) => setTimeout(resolve, 1));
+      inFlight -= 1;
+      return served(url);
+    };
+    const client = createHorizonsClient({ fetch, cacheDir });
+    await Promise.all([SUN_NOVEMBER, EARTH_NOVEMBER, SUN_DECEMBER].map((q) => client.raw(q)));
+    expect(peak).toBe(2);
+  });
+
+  it('never makes a cache hit or an in-flight duplicate wait in the queue', async () => {
+    const fetch = gatedFetch();
+    await mkdir(join(cacheDir, 'pinned'), { recursive: true });
+    await writeFile(join(cacheDir, 'pinned', fileOf(EARTH_NOVEMBER)), await fixtureBody(EARTH_NOVEMBER), 'utf8');
+    const client = createHorizonsClient({ fetch, cacheDir, maxConcurrentDownloads: 1, maxQueuedDownloads: 0 });
+    let missed: () => void = () => undefined;
+    const queued = new Promise<void>((resolve) => (missed = resolve));
+    const first = client.raw(SUN_NOVEMBER, { onMiss: () => missed() });
+    await queued;
+    const duplicate = client.raw(SUN_NOVEMBER);
+    expect(await client.raw(EARTH_NOVEMBER)).toMatch(/\$\$SOE/);
+    fetch.release();
+    expect(await duplicate).toBe(await first);
+    expect(fetch.calls).toHaveLength(1);
+  });
+});
+
+describe('onMiss', () => {
+  it('is called once per download, before it, and not for a hit or an in-flight duplicate', async () => {
+    const fetch = fixtureFetch();
+    const client = createHorizonsClient({ fetch, cacheDir });
+    let misses = 0;
+    const onMiss = () => {
+      expect(fetch.calls).toHaveLength(0);
+      misses += 1;
+    };
+    await Promise.all([client.raw(SUN_NOVEMBER, { onMiss }), client.raw(SUN_NOVEMBER, { onMiss })]);
+    await client.raw(SUN_NOVEMBER, { onMiss });
+    expect(misses).toBe(1);
+  });
+
+  it('refuses the download when it throws', async () => {
+    const fetch = fixtureFetch();
+    const refuse = () => {
+      throw new Error('over the limit');
+    };
+    await expect(createHorizonsClient({ fetch, cacheDir }).rows(SUN_NOVEMBER, { onMiss: refuse })).rejects.toThrow(
+      'over the limit',
+    );
+    expect(fetch.calls).toHaveLength(0);
   });
 });
 

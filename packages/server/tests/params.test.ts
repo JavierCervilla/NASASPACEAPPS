@@ -26,6 +26,12 @@ describe('parseEphemerisParams', () => {
     expect(request.atMs).toBe(Date.UTC(2026, 10, 1, 12));
   });
 
+  it('rejects a reference hour outside the range', () => {
+    expect(() => parseEphemerisParams({ ...OK, at: '2026-10-31T23:00:00Z' }, NOW)).toThrow(/"at" must fall between "from" and "to"/);
+    expect(() => parseEphemerisParams({ ...OK, at: '2027-01-01' }, NOW)).toThrow(ParamError);
+    expect(parseEphemerisParams({ ...OK, at: '2026-12-31T23:00:00Z' }, NOW).atMs).toBe(Date.UTC(2026, 11, 31, 23));
+  });
+
   it('uses the start of the range as reference when now is outside it', () => {
     expect(parseEphemerisParams(OK, Date.UTC(2027, 0, 5)).atMs).toBe(Date.UTC(2026, 10, 1));
   });

@@ -6,18 +6,18 @@ import type { EphemerisRequest } from './ephemeris.ts';
 export const MAX_SPAN_DAYS = 92;
 
 /**
- * Grid step, in degrees, the point of a request is rounded to before Horizons is asked. Every distinct point is a new
- * set of Horizons calls and cache files, so without it a visitor could fill the disk by asking for 29.19571, 29.19572
- * and so on. 0.01 degrees is about 300 m on the Moon (radius 1737.4 km: 1737.4 × π / 180 × 0.01 ≈ 0.30 km), well
+ * Grid step, in degrees, the point of a request is rounded to before Horizons is asked, so nearby points share their
+ * Horizons calls and cache files. It does not bound the cache on its own (the grid still has millions of points): the
+ * disk is bounded by the byte cap of the client's `points/` cache, and the Horizons calls by its download queue and the
+ * per-IP miss limit in `app.ts`. 0.01 degrees is about 300 m on the Moon (radius 1737.4 km: 1737.4 × π / 180 × 0.01 ≈ 0.30 km), well
  * below what changes the Sun and Earth elevations the service computes (no local relief) and below the precision of
  * most published landing coordinates.
  */
 export const COORDINATE_STEP_DEG = 0.01;
 
 /**
- * First and last day (UTC, inclusive) the service answers for. Together with the grid above it bounds the cache: a
- * request outside this window gets 400 instead of new Horizons calls. It covers the hackathon (November 2026) with
- * margin on both sides.
+ * First and last day (UTC, inclusive) the service answers for: a request outside this window gets 400 instead of new
+ * Horizons calls. It covers the hackathon (November 2026) with margin on both sides.
  */
 export const SUPPORTED_FIRST_DAY = '2026-01-01';
 export const SUPPORTED_LAST_DAY = '2027-12-31';
@@ -73,8 +73,9 @@ export interface RawEphemerisParams {
 
 /**
  * Validates the parameters of an ephemeris request. `lon` is the east longitude. The point is rounded to the
- * {@link COORDINATE_STEP_DEG} grid and the range must fall inside the supported window. Without `at`, the reference
- * hour is the current hour when it falls in the range, else the start of the range.
+ * {@link COORDINATE_STEP_DEG} grid and the range must fall inside the supported window. `at`, when given, must fall
+ * inside the range; without it, the reference hour is the current hour when it falls in the range, else the start of
+ * the range.
  *
  * @throws ParamError naming the first invalid parameter.
  */
@@ -96,6 +97,7 @@ export function parseEphemerisParams(raw: RawEphemerisParams, nowMs: number): Ep
     atMs = nowHour >= fromMs && nowHour <= toMsValue ? nowHour : fromMs;
   } else {
     atMs = hour('at', raw.at, false);
+    if (atMs < fromMs || atMs > toMsValue) throw new ParamError('"at" must fall between "from" and "to"');
   }
   return { lat, lonEast, fromMs, toMs: toMsValue, atMs };
 }

@@ -52,7 +52,8 @@ export async function warmCache(deps: WarmUpDeps): Promise<WarmUpResult> {
   }
   const outcomes = await mapLimited([...unique.values()], WARM_CONCURRENCY, async (query) => {
     try {
-      await deps.horizons.rows(query);
+      // Every table here is a DSN table or belongs to a curated site, so all of them are pinned.
+      await deps.horizons.rows(query, { pinned: true });
       return true;
     } catch (error) {
       deps.log(`warm-up: ${query.target} from ${query.point.lat},${query.point.lonEast} ${query.start}: ${(error as Error).message}`);

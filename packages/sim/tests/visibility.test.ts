@@ -10,6 +10,13 @@ import {
 } from '../src/visibility.ts';
 
 describe('visibility thresholds', () => {
+  it('pins the spec thresholds: Sun above 0 degrees, Earth above 3 degrees', () => {
+    expect(SUN_MIN_ELEVATION_DEG).toBe(0);
+    expect(EARTH_MIN_ELEVATION_DEG).toBe(3);
+    expect(hasSun({ sunEl: -0.01 })).toBe(false);
+    expect(hasEarth({ earthEl: 2.99 })).toBe(false);
+  });
+
   it('needs the Sun strictly above 0 degrees', () => {
     expect(hasSun({ sunEl: SUN_MIN_ELEVATION_DEG })).toBe(false);
     expect(hasSun({ sunEl: 0.01 })).toBe(true);

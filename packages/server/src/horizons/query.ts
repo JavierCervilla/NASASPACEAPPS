@@ -1,19 +1,26 @@
 /**
- * What to ask JPL Horizons: one observer table for one target seen from one point, over one calendar month.
+ * What to ask JPL Horizons: one observer table for one target seen from one
+ * point, over one calendar month.
  */
 import type { DsnComplex } from '@ventana/sim';
 
 /** Horizons body codes used by the service. */
 export const BODY = { sun: '10', earth: '399', moon: '301' } as const;
 
-/** A point on a body's surface: geodetic latitude and east longitude in degrees, altitude in km. */
+/**
+ * A point on a body's surface: geodetic latitude and east longitude in degrees,
+ * altitude in km.
+ */
 export interface SurfacePoint {
   readonly lat: number;
   readonly lonEast: number;
   readonly altKm: number;
 }
 
-/** One observer-table request: `target` seen from `point` on `centerBody`, hourly from `start` to `stop`. */
+/**
+ * One observer-table request: `target` seen from `point` on `centerBody`,
+ * hourly from `start` to `stop`.
+ */
 export interface HorizonsQuery {
   readonly target: string;
   readonly centerBody: string;
@@ -25,10 +32,12 @@ export interface HorizonsQuery {
 }
 
 /**
- * The 70 m antenna of each Deep Space Network complex (DSS 14, DSS 43, DSS 63), WGS 84 geodetic coordinates from
- * DSN Telecommunications Link Design Handbook 810-005, module 301 rev. N «Coverage and Geometry», Table 5
- * (https://deepspace.jpl.nasa.gov/dsndocs/810-005/301/301N.pdf), converted from degrees-minutes-seconds:
- * DSS 14 35°25'33.24" N 243°06'37.66" E, DSS 43 35°24'08.73" S 148°58'52.56" E, DSS 63 40°25'52.36" N 355°45'07.17" E.
+ * The 70 m antenna of each Deep Space Network complex (DSS 14, DSS 43, DSS 63),
+ * WGS 84 geodetic coordinates from DSN Telecommunications Link Design Handbook
+ * 810-005, module 301 rev. N «Coverage and Geometry», Table 5
+ * (https://deepspace.jpl.nasa.gov/dsndocs/810-005/301/301N.pdf), converted from
+ * degrees-minutes-seconds: DSS 14 35°25'33.24" N 243°06'37.66" E, DSS 43
+ * 35°24'08.73" S 148°58'52.56" E, DSS 63 40°25'52.36" N 355°45'07.17" E.
  */
 export const DSN_SITES: Readonly<Record<DsnComplex, SurfacePoint>> = {
   goldstone: { lat: 35.425901, lonEast: -116.889538, altKm: 1.001 },
@@ -43,13 +52,19 @@ function formatAngle(value: number): string {
   return String(Number(value.toFixed(6)));
 }
 
-/** Normalises an east longitude to [0, 360) so that equivalent points share one cache entry. */
+/**
+ * Normalises an east longitude to [0, 360) so that equivalent points share one
+ * cache entry.
+ */
 export function normaliseLonEast(lonEast: number): number {
   const lon = ((lonEast % 360) + 360) % 360;
   return Object.is(lon, -0) ? 0 : lon;
 }
 
-/** The Horizons API query string parameters of a request, values already quoted as Horizons expects. */
+/**
+ * The Horizons API query string parameters of a request, values already quoted
+ * as Horizons expects.
+ */
 export function toHorizonsParams(query: HorizonsQuery): Record<string, string> {
   const { point } = query;
   return {
@@ -68,7 +83,10 @@ export function toHorizonsParams(query: HorizonsQuery): Record<string, string> {
   };
 }
 
-/** A whole calendar month in UTC: its first and last hour as Horizons times, and its first instant in ms. */
+/**
+ * A whole calendar month in UTC: its first and last hour as Horizons times, and
+ * its first instant in ms.
+ */
 export interface MonthSpan {
   readonly startMs: number;
   readonly start: string;
@@ -78,8 +96,9 @@ export interface MonthSpan {
 const pad = (n: number): string => String(n).padStart(2, '0');
 
 /**
- * The calendar months that cover `[fromMs, toMs]`. The service always asks Horizons for whole months and slices the
- * rows locally, so overlapping ranges and every site's DSN tables share cache entries.
+ * The calendar months that cover `[fromMs, toMs]`. The service always asks
+ * Horizons for whole months and slices the rows locally, so overlapping ranges
+ * and every site's DSN tables share cache entries.
  */
 export function monthsCovering(fromMs: number, toMs: number): MonthSpan[] {
   const months: MonthSpan[] = [];

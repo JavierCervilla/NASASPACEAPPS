@@ -51,7 +51,8 @@
   display: flex;
   flex-direction: column;
   width: 16.5rem;
-  max-width: calc(100% - 16px);
+  /* Never wider than most of the globe, whatever the text size. */
+  max-width: min(calc(100% - 16px), 62cqw);
   overflow: hidden;
   border-radius: 22px;
   background: var(--surface);
@@ -83,11 +84,20 @@
   display: none;
 }
 
+.globe-callout__media {
+  background: var(--card-skeleton);
+}
+
 .globe-callout__image {
   display: block;
   width: 100%;
   height: 100%;
   object-fit: cover;
+}
+
+/* A new site's image waits for its file: the old one never lingers. */
+.globe-callout[data-image-ready='false'] .globe-callout__image {
+  visibility: hidden;
 }
 
 .globe-callout__shade {
@@ -157,12 +167,14 @@
   text-wrap: balance;
 }
 
-/* One line, the ellipsis only a safety net: the mission row here, and every
- * text row of the phone's compact card. */
+/* At most two lines, so a long mission keeps its date; the ellipsis is only
+ * a safety net. The phone's compact card keeps every row on one line. */
 .globe-callout__mission {
+  display: -webkit-box;
   overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
 }
 
 /* Each row holds the desktop's wording and the phone's shorter one. */
@@ -263,9 +275,65 @@
   box-shadow: 0 0 0 1px rgba(242, 242, 244, 0.5);
 }
 
-/* Until the month's hours load there is no state to show. */
-.globe-callout[data-state='unknown'] :is(.globe-callout__badge, .globe-callout__pill, .globe-callout__tiles) {
+/* Outside the data window there is no state to show. */
+.globe-callout[data-hours='outside'] :is(.globe-callout__badge, .globe-callout__pill, .globe-callout__tiles),
+.globe-callout[data-hours='ready'][data-state='unknown'] :is(.globe-callout__badge, .globe-callout__pill, .globe-callout__tiles) {
   display: none;
+}
+
+/*
+ * While the month's hours are on their way: the state and the countdowns
+ * as empty skeletons in the cards' skeleton colour, so the card does not
+ * jump when they arrive.
+ */
+.globe-callout[data-hours='pending'] :is(.globe-callout__badge, .globe-callout__pill) {
+  min-width: 8.5rem;
+  min-height: 1.35em;
+  background: var(--card-skeleton);
+}
+
+.globe-callout[data-hours='pending'] :is(.globe-callout__badge, .globe-callout__pill)::before {
+  visibility: hidden;
+}
+
+.globe-callout[data-hours='pending'] .globe-callout__tile {
+  min-height: 3.2em;
+  background: var(--card-skeleton);
+}
+
+/* When they fail: one neutral pill, no state colour, no countdowns. */
+.globe-callout[data-hours='error'] :is(.globe-callout__badge, .globe-callout__pill) {
+  color: var(--text-secondary);
+}
+
+.globe-callout[data-hours='error'] :is(.globe-callout__badge, .globe-callout__pill)::before {
+  display: none;
+}
+
+.globe-callout[data-hours='error'] .globe-callout__pill {
+  background: var(--fill);
+}
+
+.globe-callout[data-hours='error'] .globe-callout__tiles {
+  display: none;
+}
+
+/*
+ * A globe too short for the image card at this text size (a laptop at
+ * 200 % text): the card drops the image and the countdowns and shows the
+ * state as its pill with the time left, as the compact card does, so
+ * nothing is clipped and the globe stays in view. In rem, so it follows
+ * the text size.
+ */
+@container callout-host (max-height: 22rem) {
+  .globe-callout .globe-callout__media,
+  .globe-callout .globe-callout__tiles {
+    display: none;
+  }
+
+  .globe-callout[data-image='yes'] .globe-callout__pill {
+    display: inline-flex;
+  }
 }
 
 @media (max-width: 767.98px) {
@@ -273,6 +341,7 @@
     flex-direction: row;
     gap: 12px;
     width: 19.5rem;
+    max-width: calc(100% - 16px);
     padding: 10px;
     border-radius: 20px;
     box-shadow:
@@ -319,6 +388,7 @@
   }
 
   .globe-callout__body p {
+    display: block;
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;

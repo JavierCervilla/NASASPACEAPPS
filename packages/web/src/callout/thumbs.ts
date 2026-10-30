@@ -26,14 +26,18 @@
 /**
  * The orbital thumbnail of a site, from the manifest that
  * packages/web/scripts/site_thumbs.py writes next to this file: a site in
- * it has a LOLA relief image under public/thumbs; any other (north of
- * 80° S, or one the API added since the build) has none.
+ * it has a LOLA relief image under public/thumbs, at 320 px and at 640 px
+ * for 2x screens; any other (north of 80° S, or one the API added since
+ * the build) has none.
  */
 import manifest from './thumbs.json';
 
-/** One manifest entry: the file under public/thumbs and its frame. */
+/** One manifest entry: its files under public/thumbs and its frame. */
 export interface ThumbEntry {
+  /** 320 x 320. */
   readonly file: string;
+  /** 640 x 640, the same frame. */
+  readonly file2x: string;
   /** Width of ground the image shows, in km. */
   readonly frameKm: number;
 }
@@ -41,6 +45,8 @@ export interface ThumbEntry {
 /** A site's image, ready for an `<img>`. */
 export interface Thumb {
   readonly src: string;
+  /** Both widths, so a 2x screen fetches only the 640 px file. */
+  readonly srcset: string;
   readonly alt: string;
   /** «LOLA · 30 km». */
   readonly caption: string;
@@ -60,8 +66,10 @@ export function thumbOf(
 ): Thumb | null {
   const entry = Object.hasOwn(entries, id) ? entries[id] : undefined;
   if (!entry) return null;
+  const dir = `${base.replace(/\/?$/, '/')}thumbs/`;
   return {
-    src: `${base.replace(/\/?$/, '/')}thumbs/${entry.file}`,
+    src: `${dir}${entry.file}`,
+    srcset: `${dir}${entry.file} 320w, ${dir}${entry.file2x} 640w`,
     alt: `${place} from orbit, LOLA relief`,
     caption: `LOLA · ${entry.frameKm} km`,
   };

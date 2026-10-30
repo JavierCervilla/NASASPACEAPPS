@@ -28,8 +28,12 @@
  * site callout»): above and to the right, its near edge a short leader
  * away; flipped left, then below, then both, when that side runs out of
  * the visible area or covers something the page keeps clear (the Layers
- * key, the phone's top bar and tab bar). When no side fits, the one that
- * spills least, slid inside the area. Pure.
+ * key, the phone's top bar and tab bar). Each side is judged as it would
+ * be drawn, slid inside the area: a side that covers any of them is out,
+ * and of the rest the one that had to slide least wins. No card while the
+ * marker is outside the area, under something the page keeps clear, or
+ * where every side would cover one of them (just below the tab bar).
+ * Pure.
  */
 import { clampInto, holds, overflow, overlap, type Box, type Point } from './box';
 
@@ -86,9 +90,18 @@ function cardBox(input: PlaceInput, side: Side): Box {
   return { left, top, right: left + size.width, bottom: top + size.height };
 }
 
-function cost(input: PlaceInput, box: Box): number {
+/** How a side ranks: what it covers, then how far it had to slide. */
+interface Rank {
+  readonly box: Box;
+  readonly covered: number;
+  readonly spilled: number;
+}
+
+function rank(input: PlaceInput, side: Side): Rank {
+  const raw = cardBox(input, side);
+  const box = clampInto(raw, input.area);
   const covered = input.avoid.reduce((sum, b) => sum + overlap(box, b), 0);
-  return overflow(box, input.area) + covered;
+  return { box, covered, spilled: overflow(raw, input.area) };
 }
 
 /**
@@ -116,14 +129,18 @@ function leaderTo(at: Point, box: Box): Leader {
 
 /**
  * The card's box and its leader for a marker at `input.at`; null when
- * the marker is outside the visible area (under the phone sheet).
+ * the marker is outside the visible area (under the phone sheet), under
+ * something the card must not cover (the phone's tab bar), or where no
+ * side keeps clear of all of them.
  */
 export function placeCallout(input: PlaceInput): CalloutPlace | null {
-  if (!holds(input.area, input.at)) return null;
-  const boxes = SIDES.map((side) => cardBox(input, side));
-  const costs = boxes.map((box) => cost(input, box));
-  const best = costs.indexOf(Math.min(...costs));
-  const first = cardBox(input, SIDES[0]);
-  const box = clampInto(boxes[best] ?? first, input.area);
-  return { box, leader: leaderTo(input.at, box) };
+  const { at, area, avoid } = input;
+  if (!holds(area, at) || avoid.some((b) => holds(b, at))) return null;
+  const ranks = SIDES.map((side) => rank(input, side));
+  const { box, covered } = ranks.reduce((a, b) => {
+    if (a.covered !== b.covered) return a.covered < b.covered ? a : b;
+    return a.spilled <= b.spilled ? a : b;
+  });
+  if (covered > 0) return null;
+  return { box, leader: leaderTo(at, box) };
 }

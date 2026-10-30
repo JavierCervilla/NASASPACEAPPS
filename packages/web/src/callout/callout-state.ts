@@ -27,7 +27,8 @@
  * Which of the four signal states holds at the selected hour, and how long
  * it lasts: the callout's pill. The state is the «Right now» widget's own
  * (`nowState`) and the time left the countdowns' own (`timeLeft`), on the
- * same rolling horizon, so the callout and the widgets never disagree.
+ * same rolling horizon, so the callout and the widgets never disagree;
+ * and, while there is no state, whether the hours are coming or failed.
  * Pure.
  */
 import { timeLeft } from '../phone/body-widget';
@@ -44,6 +45,24 @@ export interface CalloutState {
   readonly badge: string;
   /** With the time left (phone): «Landing window · 7 d left». */
   readonly pill: string;
+}
+
+/**
+ * Where the site's hours stand: still on their way (or the clock not yet
+ * running), in, failed, or outside the data window.
+ */
+export type CalloutHours = 'pending' | 'ready' | 'error' | 'outside';
+
+/** The pill when the hours failed: neutral, no state colour. */
+export const UNAVAILABLE = 'Data unavailable';
+
+/** Where `hours` stand for a callout at `atMs`. */
+export function calloutHours(
+  hours: HoursResult,
+  atMs: number | null,
+): CalloutHours {
+  if (atMs === null || hours.kind === 'loading') return 'pending';
+  return hours.kind;
 }
 
 /** The legend's names of the four states. */

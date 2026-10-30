@@ -27,10 +27,13 @@
  * The callout's DOM: one card for both layouts (globe.css draws it as the
  * image card on a desktop and as the compact card on a phone) and the
  * leader line to its marker. Built once; a new site or instant only
- * rewrites its text and, for a new site, its image. The card is a named
- * group, not a control: no focus stop, no pointer events.
+ * rewrites its text and, for a new site, its image (callout-image.ts).
+ * The card is a named group, not a control: no focus stop, no pointer
+ * events.
  */
 import type { CalloutContent } from './callout-content';
+import { prepareImage, showImage } from './callout-image';
+import { UNAVAILABLE } from './callout-state';
 
 /** The parts of the card that change with the content. */
 export interface CalloutDom {
@@ -44,9 +47,6 @@ type TextPart =
   | 'badge' | 'caption' | 'mission' | 'missionShort' | 'place' | 'point'
   | 'pointShort' | 'pill' | 'sunLabel' | 'sunValue' | 'earthLabel'
   | 'earthValue';
-
-/** The thumbnails' pixel size (site_thumbs.py), so no layout shift. */
-const THUMB_PX = '320';
 
 function part<K extends keyof HTMLElementTagNameMap>(
   parent: HTMLElement,
@@ -82,7 +82,7 @@ export function calloutDom(): CalloutDom {
   card.setAttribute('role', 'group');
   const media = part(card, 'div', 'media');
   const img = part(media, 'img', 'image');
-  Object.assign(img, { decoding: 'async', width: THUMB_PX, height: THUMB_PX });
+  prepareImage(card, img);
   part(media, 'span', 'shade').setAttribute('aria-hidden', 'true');
   const [badge, caption] = [part(media, 'span', 'badge'), part(media, 'span', 'caption')];
   part(card, 'span', 'glyph').setAttribute('aria-hidden', 'true');
@@ -108,17 +108,16 @@ export function renderCallout(dom: CalloutDom, content: CalloutContent): void {
   const { image, state, bodies } = content;
   card.setAttribute('aria-label', content.name);
   card.dataset['site'] = content.id;
-  card.dataset['image'] = image ? 'yes' : 'none';
   card.dataset['state'] = state?.kind ?? 'unknown';
-  if (image && img.getAttribute('src') !== image.src) img.src = image.src;
-  if (!image) img.removeAttribute('src');
-  img.alt = image?.alt ?? '';
+  card.dataset['hours'] = content.hours;
+  showImage(card, img, image);
+  const notice = content.hours === 'error' ? UNAVAILABLE : '';
   const words = {
-    badge: state?.badge ?? '', caption: image?.caption ?? '',
+    badge: state?.badge ?? notice, caption: image?.caption ?? '',
     mission: content.mission, missionShort: content.missionShort,
     place: content.place,
     point: content.point, pointShort: content.pointShort,
-    pill: state?.pill ?? '',
+    pill: state?.pill ?? notice,
     sunLabel: bodies?.sun.label ?? '', sunValue: bodies?.sun.value ?? '',
     earthLabel: bodies?.earth.label ?? '', earthValue: bodies?.earth.value ?? '',
   };

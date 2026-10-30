@@ -98,6 +98,8 @@
   position: absolute;
   inset: 0;
   pointer-events: none;
+  /* Sized by the globe, never by its content: the callout queries it. */
+  container: callout-host / size;
 }
 
 /*
@@ -160,6 +162,35 @@
   --size: 12px;
   opacity: 1;
   box-shadow: 0 0 0 4px rgba(255, 255, 255, 0.28);
+}
+
+/*
+ * Once its state is known, the selected marker takes the state's colour
+ * with a halo of it (canvas «Globe · site callout B»), the same colour as
+ * the callout's badge: the legend's meaning, never decoration.
+ */
+.globe-markers:has(> .globe-callout[data-state='window']) { --halo: var(--signal-window); }
+.globe-markers:has(> .globe-callout[data-state='sun']) { --halo: var(--signal-sun); }
+.globe-markers:has(> .globe-callout[data-state='earth']) { --halo: var(--signal-earth); }
+.globe-markers:has(> .globe-callout[data-state='none']) { --halo: var(--signal-none); }
+
+.globe-markers:has(> .globe-callout:not([data-state='unknown'])) .globe-marker[aria-pressed='true']::after {
+  border-color: var(--halo);
+  box-shadow:
+    0 0 0 5px color-mix(in srgb, var(--halo) 28%, transparent),
+    inset 0 0 0 1.5px rgba(7, 8, 11, 0.9);
+}
+
+/* A zone keeps its dashed ring, in the state's colour; a point is filled. */
+.globe-markers:has(> .globe-callout:not([data-state='unknown'])) .globe-marker--exact[aria-pressed='true']::after {
+  background: var(--halo);
+}
+
+/* «Neither» is a dark grey: a light ring keeps it visible on the Moon. */
+.globe-markers:has(> .globe-callout[data-state='none']) .globe-marker[aria-pressed='true']::after {
+  box-shadow:
+    0 0 0 1.5px rgba(242, 242, 244, 0.6),
+    0 0 0 5px rgba(242, 242, 244, 0.18);
 }
 
 .globe-marker:focus-visible {

@@ -25,14 +25,17 @@
 
 /** The globe's site callout (src/callout/*): its content per state, its placement and flips, and the no-image case. */
 import type { HourSample } from '@ventana/sim';
+import { readFileSync } from 'node:fs';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { clampInto, overlap } from '../src/callout/box';
 import { calloutContent } from '../src/callout/callout-content';
 import { placeCallout, type PlaceInput } from '../src/callout/callout-place';
+import { missionLines } from '../src/callout/mission-line';
 import { thumbOf } from '../src/callout/thumbs';
 import type { CardSite } from '../src/card/site-facts';
 import { SiteCallout } from '../src/globe/site-callout';
 import type { HoursResult } from '../src/phone/widgets-loader';
+import { siteLabels } from '../src/phone/phone-site';
 import { FakeElement } from './fake-dom';
 
 const HOUR = 3_600_000;
@@ -123,9 +126,18 @@ describe('callout content', () => {
     expect(content(IM2, READY, null)).toMatchObject({ state: null, bodies: null, place: 'Mons Mouton' });
   });
 
+  it('tells pending hours from failed ones: a clock not yet running and a loading month are pending', () => {
+    expect(content(IM2, { kind: 'loading' }, 150).hours).toBe('pending');
+    expect(content(IM2, READY, null).hours).toBe('pending');
+    expect(content(IM2, { kind: 'error' }, 150).hours).toBe('error');
+    expect(content(IM2, { kind: 'outside' }, 150).hours).toBe('outside');
+    expect(content(IM2, READY, 150).hours).toBe('ready');
+  });
+
   it('shows the LOLA thumbnail of a south pole site, with its frame and an alt text', () => {
     expect(content(IM2, READY, 150).image).toEqual({
       src: '/thumbs/im2-athena.jpg',
+      srcset: '/thumbs/im2-athena.jpg 320w, /thumbs/im2-athena@2x.jpg 640w',
       alt: 'Mons Mouton from orbit, LOLA relief',
       caption: 'LOLA · 30 km',
     });
@@ -140,6 +152,43 @@ describe('callout content', () => {
     expect(thumbOf('artemis-mons-mouton', 'Mons Mouton', '/')?.src).toBe('/thumbs/artemis-mons-mouton-plateau.jpg');
     expect(thumbOf('artemis-haworth', 'Haworth', '/')?.caption).toBe('LOLA · 62 km');
     expect(thumbOf('im2-athena', 'Mons Mouton', '/ventana')?.src).toBe('/ventana/thumbs/im2-athena.jpg');
+  });
+});
+
+/** Every curated site, as the page gets it from the server's list. */
+const SITES: Required<CardSite>[] = JSON.parse(
+  readFileSync(new URL('../../server/data/sites.json', import.meta.url), 'utf8'),
+);
+
+describe('callout mission line', () => {
+  /** Mission lines longer than this no longer read at a glance (two lines of the desktop card). */
+  const MAX_CHARS = 60;
+  const lines = SITES.map((site) => ({ id: site.id, ...missionLines(site, siteLabels(site).subtitle) }));
+
+  it.each(lines.flatMap(({ id, wide, short }) => [[id, 'wide', wide], [id, 'short', short]]))(
+    '%s (%s): «%s» says each thing once, at a sane length',
+    (_id, _form, line) => {
+      const segments = line.split(' · ');
+      expect(segments.every(Boolean)).toBe(true);
+      for (const [i, segment] of segments.entries()) {
+        const others = segments.filter((_, j) => j !== i).map((s) => s.toLowerCase());
+        expect(others.some((other) => other.includes(segment.toLowerCase())), segment).toBe(false);
+      }
+      const years = line.match(/\b\d{4}\b/g) ?? [];
+      expect(new Set(years).size).toBe(years.length);
+      expect(line.length).toBeLessThanOrEqual(MAX_CHARS);
+    },
+  );
+
+  it.each([
+    ['artemis-haworth', 'Artemis candidate region · landing planned 2028', 'Artemis candidate region · landing planned 2028'],
+    ['artemis-slater-plain', 'Artemis candidate region · landing planned 2028', 'Artemis candidate region · landing planned 2028'],
+    ['change7-target', "Chang'e-7 target · planned · 2027 (launch NET)", "Chang'e-7 target · planned · 2027 (launch NET)"],
+    ['im2-athena', 'IM-2 Athena · landed 6 Mar 2025', 'IM-2 Athena · 6 Mar 2025'],
+    ['luna25-target', 'north of Boguslawsky · crashed 19 Aug 2023', 'north of Boguslawsky · crashed 19 Aug 2023'],
+    ['ispace-m2-resilience', 'ispace M2 Resilience, crashed · 5 Jun 2025', 'ispace M2 Resilience, crashed · 5 Jun 2025'],
+  ])('%s reads «%s» on a desktop and «%s» on a phone', (id, wide, short) => {
+    expect(lines.find((line) => line.id === id)).toMatchObject({ wide, short });
   });
 });
 
@@ -175,6 +224,43 @@ describe('callout placement', () => {
     expect(placed && overlap(placed.box, layers)).toBe(0);
   });
 
+  it('judges each side as drawn, slid inside the area: a side whose slid card would cover a key loses', () => {
+    // A short globe (1280 x 720): the card above the marker spills off the top and slides down. Up-right slid down
+    // lands on the key at its right; up-left slid down clears it. Unslid, both sides clear the key and tie.
+    const area = { left: 8, top: 8, right: 882, bottom: 350 };
+    const size = { width: 264, height: 307 };
+    const key = { left: 440, top: 275, right: 860, bottom: 339 };
+    const placed = placeCallout({ at: { x: 415, y: 210 }, size, area, avoid: [key] });
+    expect(placed && overlap(placed.box, key)).toBe(0);
+    expect(placed?.box).toEqual({ left: 115, top: 8, right: 379, bottom: 315 });
+    // Without the key the canvas's first side wins, slid down the same way.
+    expect(placeCallout({ at: { x: 415, y: 210 }, size, area, avoid: [] })?.box).toEqual({ left: 451, top: 8, right: 715, bottom: 315 });
+  });
+
+  it('prefers a side that has to slide over one that fits but covers something', () => {
+    const area = { left: 8, top: 8, right: 992, bottom: 592 };
+    // Up-right fits unslid but covers a strip; down-right spills off the bottom, slides up and covers nothing.
+    const strip = { left: 536, top: 116, right: 800, bottom: 200 };
+    const speck = { left: 220, top: 300, right: 230, bottom: 310 };
+    const placed = placeCallout({ at: { x: 500, y: 400 }, size: SIZE, area, avoid: [strip, speck] });
+    const covered = (box: NonNullable<typeof placed>['box']) => overlap(box, strip) + overlap(box, speck);
+    expect(placed && covered(placed.box)).toBeLessThan(264 * 84);
+  });
+
+  it('hides while its marker is under something the card must not cover, as the phone tab bar', () => {
+    const tabs = { left: 52, top: 760, right: 337, bottom: 821 };
+    const phone = { left: 8, top: 8, right: 382, bottom: 836 };
+    const at = { x: 157, y: 778 };
+    expect(placeCallout({ at, size: { width: 312, height: 127 }, area: phone, avoid: [tabs] })).toBeNull();
+    expect(placeCallout({ at: { x: 157, y: 755 }, size: { width: 312, height: 127 }, area: phone, avoid: [tabs] })?.box.bottom).toBe(751);
+  });
+
+  it('hides where every side would cover something: just below the tab bar, every card lands on it', () => {
+    const tabs = { left: 52, top: 760, right: 337, bottom: 821 };
+    const phone = { left: 8, top: 8, right: 382, bottom: 836 };
+    expect(placeCallout({ at: { x: 160, y: 832 }, size: { width: 312, height: 109 }, area: phone, avoid: [tabs] })).toBeNull();
+  });
+
   it('stays inside a phone-sized area when no side fits: the side that spills least, slid in, above the marker', () => {
     const phone = { left: 8, top: 8, right: 382, bottom: 700 };
     const placed = placeCallout({ at: { x: 195, y: 400 }, size: { width: 312, height: 104 }, area: phone, avoid: [] });
@@ -199,10 +285,25 @@ describe('callout placement', () => {
 /** A fake element with the inline style the callout writes its transforms to. */
 class StyledElement extends FakeElement {
   readonly style: Record<string, string> = {};
-  src = '';
+  private readonly handlers = new Map<string, () => void>();
   alt = '';
+  sizes = '';
+  srcset = '';
+  get src(): string {
+    return this.getAttribute('src') ?? '';
+  }
+  set src(value: string) {
+    this.setAttribute('src', value);
+  }
   removeAttribute(name: string): void {
     this.attributes.delete(name);
+  }
+  override addEventListener(type: string, listener: () => void): void {
+    this.handlers.set(type, listener);
+  }
+  /** Runs the listener of `type`, as the browser does when the image loads. */
+  fire(type: string): void {
+    this.handlers.get(type)?.();
   }
 }
 
@@ -228,6 +329,36 @@ describe('SiteCallout', () => {
     expect(card.dataset['shown']).toBe('false');
     callout.layout({ bottom: Number.POSITIVE_INFINITY });
     expect(card.dataset['shown']).toBe('true');
+  });
+
+  it('marks pending hours for a skeleton, and says «Data unavailable», neutral, when they fail', () => {
+    const { callout, card } = mount();
+    callout.show(content(IM2, { kind: 'loading' }, 150));
+    expect([card.dataset['hours'], card.dataset['state']]).toEqual(['pending', 'unknown']);
+    expect(callout.dom.text.pill.textContent).toBe('');
+    callout.show(content(IM2, { kind: 'error' }, 150));
+    expect([card.dataset['hours'], card.dataset['state']]).toEqual(['error', 'unknown']);
+    expect(callout.dom.text.pill.textContent).toBe('Data unavailable');
+    expect(callout.dom.text.badge.textContent).toBe('Data unavailable');
+    callout.show(content(IM2, READY, 150));
+    expect(callout.dom.text.pill.textContent).toBe('Landing window · 2 d 2 h left');
+  });
+
+  it('hides the old image when the site changes until the new one has loaded, with a 2x file for 2x screens', () => {
+    const { callout, card } = mount();
+    const img = callout.dom.img as unknown as StyledElement;
+    callout.show(content(IM2, READY, 150));
+    expect(card.dataset['imageReady']).toBe('false');
+    expect(img.srcset).toBe('/thumbs/im2-athena.jpg 320w, /thumbs/im2-athena@2x.jpg 640w');
+    expect(img.sizes).toBe('(max-width: 767.98px) 84px, 16.5rem');
+    img.fire('load');
+    expect(card.dataset['imageReady']).toBe('true');
+    // A new instant for the same site keeps the loaded image.
+    callout.show(content(IM2, READY, 250));
+    expect(card.dataset['imageReady']).toBe('true');
+    callout.show(content({ ...IM2, id: 'im1-odysseus', name: 'Malapert A region (IM-1 Odysseus)' }, READY, 150));
+    expect(card.dataset['imageReady']).toBe('false');
+    expect(img.src).toBe('/thumbs/im1-odysseus.jpg');
   });
 
   it('hides with no marker to follow (behind the limb) and marks a site without an image', () => {

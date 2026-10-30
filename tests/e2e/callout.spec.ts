@@ -76,7 +76,8 @@ test.describe('desktop, 1440x900', () => {
     const image = group.getByRole('img', { name: 'Mons Mouton from orbit, LOLA relief' });
     await expect(image).toHaveAttribute('src', '/thumbs/im2-athena.jpg');
     await expect(image).toHaveAttribute('decoding', 'async');
-    await expect.poll(() => image.evaluate((img) => (img as HTMLImageElement).naturalWidth)).toBe(320);
+    // A 1x screen picks the 320 px file from the srcset.
+    await expect.poll(() => image.evaluate((img) => (img as HTMLImageElement).complete && (img as HTMLImageElement).currentSrc)).toMatch(/\/thumbs\/im2-athena\.jpg$/);
     expect((await image.boundingBox())?.height).toBe(150);
     await expect(part(page, 'badge')).toHaveText('Landing window now');
     await expect(part(page, 'caption')).toHaveText('LOLA · 30 km');
@@ -234,5 +235,197 @@ test.describe('phone, 390x844', () => {
     expect(card.x + card.width).toBeLessThanOrEqual(390);
     expect(card.y).toBeGreaterThanOrEqual(bar.y + bar.height);
     expect(card.y + card.height).toBeLessThanOrEqual(tabs.y);
+  });
+});
+
+/** The area two page boxes share, in px². */
+function shared(a: { x: number; y: number; width: number; height: number }, b: typeof a): number {
+  const width = Math.min(a.x + a.width, b.x + b.width) - Math.max(a.x, b.x);
+  const height = Math.min(a.y + a.height, b.y + b.height) - Math.max(a.y, b.y);
+  return width > 0 && height > 0 ? width * height : 0;
+}
+
+/** How much of `selector` the shown callout covers, in px²; 0 while it is hidden. */
+async function coveredBy(page: Page, selector: string): Promise<number> {
+  if ((await callout(page).getAttribute('data-shown')) !== 'true') return 0;
+  const [card, other] = [await callout(page).boundingBox(), await page.locator(selector).boundingBox()];
+  return card && other ? shared(card, other) : 0;
+}
+
+/** The globe turned and zoomed through the moves that once slid the card onto the Layers key at 1280x720. */
+const SWEEP = [
+  ...Array<string>(6).fill('ArrowLeft'),
+  ...Array<string>(4).fill('+'),
+  ...Array<string>(10).fill('ArrowRight'),
+  ...Array<string>(5).fill('ArrowUp'),
+  ...Array<string>(8).fill('ArrowDown'),
+  ...Array<string>(6).fill('ArrowRight'),
+];
+
+test.describe('desktop, 1280x720', () => {
+  test.use({ viewport: { width: 1280, height: 720 } });
+
+  test('never covers the Layers key as the globe turns, even when the card has to slide down', async ({ page }) => {
+    await open(page);
+    await page.getByRole('application', { name: 'The Moon, seen over its south pole' }).focus();
+    for (const [step, key] of SWEEP.entries()) {
+      await page.keyboard.press(key);
+      await settledCentre(page, IM2).catch(() => undefined);
+      expect(await coveredBy(page, '.globe-layers'), `after move ${step} (${key})`).toBe(0);
+    }
+  });
+
+  test('the selected marker takes its state colour and a halo of it, and keeps its clicks', async ({ page }) => {
+    await open(page);
+    const dot = (selector: string) => page.locator(selector).evaluate((el) => getComputedStyle(el, '::after').backgroundColor);
+    await expect.poll(() => dot(IM2)).toBe('rgb(61, 220, 132)');
+    // The halo: the same colour at 28 %, 5 px around the dot.
+    expect(await page.locator(IM2).evaluate((el) => getComputedStyle(el, '::after').boxShadow)).toContain('0.862745 0.517647 / 0.28) 0px 0px 0px 5px');
+    await page.getByRole('slider').first().fill('200');
+    await expect(callout(page)).toHaveAttribute('data-state', 'none');
+    await expect.poll(() => dot(IM2)).toBe('rgb(58, 60, 68)');
+    const im1 = await settledCentre(page, IM1);
+    await page.mouse.click(im1.x, im1.y);
+    await expect(page.locator(IM1)).toHaveAttribute('aria-pressed', 'true');
+    // The old marker goes back to plain white.
+    await expect.poll(() => dot(IM2)).toBe('rgb(242, 242, 244)');
+  });
+
+  test('at 200 % text the card drops its image and countdowns, stays inside the globe, and clips nothing', async ({ page }) => {
+    await open(page);
+    await page.addStyleTag({ content: 'html { font-size: 200%; }' });
+    await expect(part(page, 'media')).toBeHidden();
+    await expect(part(page, 'tiles')).toBeHidden();
+    await expect(part(page, 'pill')).toHaveText('Landing window · 7 d 1 h left');
+    await settledCentre(page, IM2);
+    await expect(callout(page)).toBeVisible();
+    expect(await coveredBy(page, '.globe-layers')).toBe(0);
+    const host = (await page.locator('.globe-markers').boundingBox())!;
+    const card = (await callout(page).boundingBox())!;
+    expect(card.x).toBeGreaterThanOrEqual(host.x);
+    expect(card.y).toBeGreaterThanOrEqual(host.y);
+    expect(card.x + card.width).toBeLessThanOrEqual(host.x + host.width);
+    expect(card.y + card.height).toBeLessThanOrEqual(host.y + host.height);
+    expect(card.width).toBeLessThanOrEqual(host.width * 0.62 + 1);
+    const clipped = await callout(page).evaluate((el) =>
+      [el as HTMLElement, ...el.querySelectorAll<HTMLElement>('*')]
+        .filter((node) => node.offsetParent !== null || node === el)
+        .filter((node) => node.scrollWidth > node.clientWidth + 1 || node.scrollHeight > node.clientHeight + 1)
+        .map((node) => node.className),
+    );
+    expect(clipped).toEqual([]);
+  });
+
+  test('the longest mission line wraps to at most two lines and keeps its date', async ({ page }) => {
+    await open(page);
+    await page.getByRole('button', { name: /^Change site, now/ }).click();
+    const dialog = page.getByRole('dialog', { name: 'Choose a site' });
+    await dialog.getByRole('searchbox', { name: 'Search a site or mission' }).fill('blue moon');
+    await dialog.getByRole('button', { name: /^Shackleton connecting ridge/ }).click();
+    const mission = wording(page, 'mission', 'wide');
+    await expect(mission).toHaveText('Blue Moon MK1 Pathfinder · planned · NET Q1 2027 (launch)');
+    const row = part(page, 'mission');
+    const lines = await mission.evaluate((el) => new Set([...el.getClientRects()].map((r) => Math.round(r.top))).size);
+    expect(lines).toBeGreaterThan(0);
+    expect(lines).toBeLessThanOrEqual(2);
+    expect(await row.evaluate((el) => el.scrollHeight <= el.clientHeight + 1)).toBe(true);
+  });
+});
+
+test.describe('desktop, 1440x900, the month still loading or failed', () => {
+  test.use({ viewport: { width: 1440, height: 900 } });
+
+  async function openWith(page: Page, options: Parameters<typeof stubApi>[1]): Promise<void> {
+    await page.emulateMedia({ reducedMotion: 'reduce', colorScheme: 'dark' });
+    await page.clock.setFixedTime(NOW);
+    await stubApi(page, options);
+    await page.goto('./');
+  }
+
+  test('while the hours are on their way the state and the countdowns are skeletons', async ({ page }) => {
+    let release = (): void => undefined;
+    await openWith(page, { hold: new Promise<void>((resolve) => (release = resolve)) });
+    await expect(callout(page)).toHaveAttribute('data-hours', 'pending');
+    await expect(part(page, 'badge')).toBeVisible();
+    await expect(part(page, 'badge')).toHaveText('');
+    await expect(part(page, 'tile').first()).toBeVisible();
+    const skeleton = await page.evaluate(() => getComputedStyle(document.documentElement).getPropertyValue('--card-skeleton').trim());
+    const [r, g, b] = [1, 3, 5].map((i) => parseInt(skeleton.slice(i, i + 2), 16));
+    expect(await part(page, 'badge').evaluate((el) => getComputedStyle(el).backgroundColor)).toBe(`rgb(${r}, ${g}, ${b})`);
+    release();
+    await expect(callout(page)).toHaveAttribute('data-hours', 'ready');
+    await expect(part(page, 'badge')).toHaveText('Landing window now');
+  });
+
+  test('when the API fails the card says «Data unavailable», neutral, without countdowns', async ({ page }) => {
+    await openWith(page, { status: 503 });
+    await expect(callout(page)).toHaveAttribute('data-hours', 'error');
+    await expect(part(page, 'badge')).toHaveText('Data unavailable');
+    await expect(part(page, 'tiles')).toBeHidden();
+  });
+
+  test('a new site hides the old image until its own has loaded', async ({ page }) => {
+    let release = (): void => undefined;
+    const held = new Promise<void>((resolve) => (release = resolve));
+    await page.route('**/thumbs/im1-odysseus*', async (route) => {
+      await held;
+      await route.fallback();
+    });
+    await open(page);
+    await expect(callout(page)).toHaveAttribute('data-image-ready', 'true');
+    await page.getByRole('button', { name: /^Malapert A region \(IM-1 Odysseus\)/ }).press('Enter');
+    await expect(callout(page)).toHaveAttribute('aria-label', 'Malapert A region (IM-1 Odysseus)');
+    await expect(callout(page)).toHaveAttribute('data-image-ready', 'false');
+    await expect(part(page, 'image')).toHaveCSS('visibility', 'hidden');
+    release();
+    await expect(callout(page)).toHaveAttribute('data-image-ready', 'true');
+    await expect(part(page, 'image')).toHaveCSS('visibility', 'visible');
+  });
+});
+
+// The file a 2x screen needs for the drawn width: 264 px x 2 on a desktop, 84 px x 2 on a phone.
+for (const [name, viewport, isMobile, file, width] of [
+  ['desktop', { width: 1440, height: 900 }, false, 'im2-athena@2x.jpg', 640],
+  ['phone', { width: 390, height: 844 }, true, 'im2-athena.jpg', 320],
+] as const) {
+  test.describe(`${name} at 2x`, () => {
+    test.use({ viewport, deviceScaleFactor: 2, isMobile, hasTouch: isMobile });
+
+    test(`fetches one thumbnail, ${file}, the one its drawn size needs`, async ({ page }) => {
+      const requested: string[] = [];
+      page.on('request', (request) => requested.push(request.url()));
+      await open(page);
+      if (isMobile) await page.getByRole('navigation', { name: 'Views' }).getByRole('button', { name: 'Globe' }).click();
+      const image = part(page, 'image');
+      await expect.poll(() => image.evaluate((img) => (img as HTMLImageElement).complete && (img as HTMLImageElement).currentSrc)).toMatch(new RegExp(`/thumbs/${file.replace('.', '\\.')}$`));
+      expect(await image.evaluate((img) => (img as HTMLImageElement).naturalWidth * devicePixelRatio)).toBeGreaterThanOrEqual(width === 640 ? 528 : 168);
+      await page.waitForLoadState('networkidle');
+      expect(requested.filter((url) => url.includes('/thumbs/'))).toEqual([expect.stringMatching(new RegExp(`/thumbs/${file.replace('.', '\\.')}$`))]);
+    });
+  });
+}
+
+test.describe('phone, 390x844, behind the tab bar', () => {
+  test.use({ viewport: { width: 390, height: 844 }, hasTouch: true, isMobile: true });
+
+  test('the callout never covers the top bar or the tab bar, and hides while IM-2 is under the tab bar', async ({ page }) => {
+    await open(page);
+    await page.getByRole('navigation', { name: 'Views' }).getByRole('button', { name: 'Globe' }).click();
+    await page.getByRole('application', { name: 'The Moon, seen over its south pole' }).focus();
+    let underTabs = 0;
+    for (const [step, key] of [...SWEEP.slice(0, 20), 'ArrowUp', 'ArrowUp', 'ArrowDown', 'ArrowDown'].entries()) {
+      await page.keyboard.press(key);
+      const marker = await settledCentre(page, IM2).catch(() => null);
+      expect(await coveredBy(page, '.tab-bar'), `tab bar, move ${step}`).toBe(0);
+      expect(await coveredBy(page, '.phone-bar'), `top bar, move ${step}`).toBe(0);
+      const tabs = (await page.locator('.tab-bar').boundingBox())!;
+      const inside = marker && shared({ ...marker, width: 1, height: 1 }, tabs) > 0;
+      if (inside) {
+        underTabs += 1;
+        await expect(callout(page)).toBeHidden();
+      }
+    }
+    // The walk does take IM-2 under the tab bar.
+    expect(underTabs).toBeGreaterThan(0);
   });
 });

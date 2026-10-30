@@ -27,22 +27,25 @@
  * What the globe's callout says about the selected site at the selected
  * instant: the mission and its date, the place, its point and how exact
  * it is, the state pill, the two countdowns and the orbital image. The
- * wording is the site card's (`missionLine`, `pointLine`, `siteLabels`)
- * and the countdowns are the widgets' (`widgetsAt`), so the callout never
- * disagrees with them. The phone's compact card gets shorter mission and
- * point lines, each one line at 360 px. Pure.
+ * wording is the site card's (`pointLine`, `siteLabels`; the mission line,
+ * said once, is mission-line.ts's) and the countdowns are the widgets'
+ * (`widgetsAt`), so the callout never disagrees with them. The phone's
+ * compact card gets shorter mission and point lines, each one line at
+ * 360 px. Pure.
  */
 import type { CardSite } from '../card/site-facts';
-import {
-  formatStatusDate,
-  missionLine,
-  pointLine,
-} from '../card/site-facts';
+import { pointLine } from '../card/site-facts';
 import { formatCoords } from '../phone/format';
 import { siteLabels } from '../phone/phone-site';
 import type { BodyWidget } from '../phone/widget-types';
 import { widgetsAt, type HoursResult } from '../phone/widgets-loader';
-import { calloutState, type CalloutState } from './callout-state';
+import {
+  calloutHours,
+  calloutState,
+  type CalloutHours,
+  type CalloutState,
+} from './callout-state';
+import { missionLines } from './mission-line';
 import { thumbOf, type Thumb } from './thumbs';
 
 /** The Sun's and the Earth's countdowns. */
@@ -73,6 +76,8 @@ export interface CalloutContent {
   readonly image: Thumb | null;
   /** Null until the hours load, or outside the data window. */
   readonly state: CalloutState | null;
+  /** Whether the hours are pending, in, failed or outside the window. */
+  readonly hours: CalloutHours;
   /** The «Sunset in» and «Earthset in» countdowns, when known. */
   readonly bodies: CalloutBodies | null;
 }
@@ -85,13 +90,6 @@ export interface CalloutInput {
   readonly atMs: number | null;
   /** The site's base path, for the image. */
   readonly base: string;
-}
-
-/** The mission line without «landed»: a landing's date speaks for it. */
-function shortMissionLine(site: CardSite, lead: string): string {
-  const date = formatStatusDate(site.statusDate ?? '');
-  if (site.status !== 'landed' || !date) return missionLine(site, lead);
-  return [lead, date].filter(Boolean).join(' · ');
 }
 
 /** The point's coordinates alone, «84.79° S · 29.20° E». */
@@ -119,16 +117,18 @@ export function calloutContent(input: CalloutInput): CalloutContent {
   const { title, subtitle } = siteLabels(site);
   const widgets = atMs === null ? null : widgetsAt(hours, atMs);
   const ready = widgets?.kind === 'ready' ? widgets.widgets : null;
+  const mission = missionLines(site, subtitle);
   return {
     id: site.id,
     name: site.name,
-    mission: missionLine(site, subtitle),
-    missionShort: shortMissionLine(site, subtitle),
+    mission: mission.wide,
+    missionShort: mission.short,
     place: title,
     point: widePointLine(site),
     pointShort: shortPointLine(site),
     image: thumbOf(site.id, title, base),
     state: calloutState(hours, atMs),
+    hours: calloutHours(hours, atMs),
     bodies: ready && { sun: ready.sun, earth: ready.earth },
   };
 }

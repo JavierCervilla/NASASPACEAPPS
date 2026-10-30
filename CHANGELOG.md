@@ -3,6 +3,15 @@
 ## [Sin publicar]
 
 ### Añadido
+- Globo lunar 3D (Three.js) en escritorio: la Luna con el mosaico de color LROC de NASA, iluminada por el Sol en su
+  posición real (el terminador coincide con JPL Horizons con menos de 0,2° de error) y vista desde encima del polo sur.
+  Se gira arrastrando, con las flechas del teclado o con inercia tras un gesto rápido (sin inercia si el sistema pide
+  menos movimiento), y se acerca con la rueda o el pellizco. Los sitios llegan de la API: punto sólido para un alunizaje
+  exacto y anillo punteado para una zona aproximada; al elegir uno, una etiqueta muestra su nombre. Los sitios que
+  comparten coordenadas se agrupan en un solo marcador, y un anillo que taparía otro marcador se oculta hasta que se
+  acerca la vista, de modo que cada punto visible se puede pulsar. En el móvil el globo no aparece ni se descarga: en su
+  lugar, una nota indica que el globo está en pantallas grandes y se listan los sitios por nombre.
+- Modo claro de la página, que sigue la preferencia del dispositivo (el cielo lunar sigue negro).
 - API de datos (`/api/v1/sites`, `/api/v1/sites/:id` y `/api/v1/ephemeris` para cualquier punto de la Luna): Sol, Tierra, ventanas de alunizaje y antena de la DSN hora a hora, calculados con JPL Horizons y guardados en caché. 29 sitios con sus fuentes; 12 de ellos marcados como zona aproximada.
 - Proyecto en Astro + React con una página provisional en modo oscuro: el nombre, la pregunta «When can you land at the
   lunar south pole?», los días que faltan para el hackathon y la leyenda de los tres colores (Sol, Tierra, ventana).
@@ -22,5 +31,8 @@
 - Imágenes Docker fijadas por digest, acciones del CI fijadas por commit y descargas verificadas con su checksum.
 
 ### Cambiado
+- La página provisional da paso a la pantalla principal del lienzo: cabecera con el título, la pregunta y el selector de
+  vista (solo «Globe» por ahora) y el globo. La cuenta atrás y la leyenda provisional salen; la leyenda de colores
+  vuelve con la cinta de calendario (VENT-4).
 - El código cumple la Norma de 42 adaptada a TypeScript (funciones de 25 líneas, 80 columnas, 5 funciones por fichero),
   comprobada en el lint.

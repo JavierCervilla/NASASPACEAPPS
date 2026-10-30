@@ -1,0 +1,83 @@
+/**
+ * Drag to rotate, with Pointer Events. A press only becomes a drag past a
+ * few pixels (apple-design's hysteresis), so a click on a site marker stays a
+ * click; from then on the pointer is captured and the globe follows it 1:1.
+ */
+import { VelocityTracker } from './velocity';
+
+type PointerType =
+  | 'pointerdown'
+  | 'pointermove'
+  | 'pointerup'
+  | 'pointercancel';
+
+/** Pixels the pointer moves before a press becomes a drag. */
+const DRAG_THRESHOLD_PX = 4;
+
+/** What the globe does with a drag; deltas and velocities are in px. */
+export interface DragTarget {
+  drag(dxPx: number, dyPx: number): void;
+  release(vxPx: number, vyPx: number): void;
+}
+
+class DragGesture {
+  private start: { x: number; y: number; id: number } | null = null;
+  private last = { x: 0, y: 0 };
+  private dragging = false;
+  private tracker = new VelocityTracker();
+
+  constructor(
+    private readonly el: HTMLElement,
+    private readonly target: DragTarget,
+  ) {}
+
+  down(event: PointerEvent): void {
+    if (event.button !== 0 || this.start) return;
+    this.start = { x: event.clientX, y: event.clientY, id: event.pointerId };
+    this.last = { x: event.clientX, y: event.clientY };
+    this.dragging = false;
+    this.tracker = new VelocityTracker();
+    this.tracker.add(event.clientX, event.clientY, event.timeStamp);
+  }
+
+  move(event: PointerEvent): void {
+    const { start } = this;
+    if (!start || event.pointerId !== start.id) return;
+    const moved = Math.hypot(event.clientX - start.x, event.clientY - start.y);
+    if (!this.dragging && moved < DRAG_THRESHOLD_PX) return;
+    if (!this.dragging) {
+      this.dragging = true;
+      this.el.setPointerCapture(event.pointerId);
+    }
+    this.target.drag(event.clientX - this.last.x, event.clientY - this.last.y);
+    this.last = { x: event.clientX, y: event.clientY };
+    this.tracker.add(event.clientX, event.clientY, event.timeStamp);
+  }
+
+  up(event: PointerEvent): void {
+    if (!this.start || event.pointerId !== this.start.id) return;
+    if (this.dragging) {
+      const v = this.tracker.velocity(event.timeStamp);
+      this.target.release(v.x, v.y);
+    }
+    this.start = null;
+    this.dragging = false;
+  }
+}
+
+/** Listens for drags on `el`; returns the unbind function. */
+export function bindDrag(el: HTMLElement, target: DragTarget): () => void {
+  const gesture = new DragGesture(el, target);
+  const listeners: [PointerType, (event: PointerEvent) => void][] = [
+    ['pointerdown', (e) => gesture.down(e)],
+    ['pointermove', (e) => gesture.move(e)],
+    ['pointerup', (e) => gesture.up(e)],
+    ['pointercancel', (e) => gesture.up(e)],
+  ];
+  for (const [type, fn] of listeners) el.addEventListener(type, fn);
+  return () => {
+    for (const [type, fn] of listeners) {
+      el.removeEventListener(type, fn);
+    }
+  };
+}

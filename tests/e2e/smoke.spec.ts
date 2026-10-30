@@ -6,12 +6,11 @@ test('the built site serves the page and hydrates the React island', async ({ pa
   await page.goto('./');
   await expect(page.getByRole('heading', { level: 1 })).toHaveText('Ventana Lunar');
 
-  // The countdown text is already in the server-rendered HTML, so it proves nothing about hydration.
+  // The globe island's markup is already in the server-rendered HTML, so it proves nothing about hydration.
   // Astro removes the island's `ssr` attribute only once React has hydrated it.
-  const island = page.locator('astro-island:has([data-testid="countdown"])');
+  const island = page.locator('astro-island:has(.globe-viewport)');
   await expect(island).toHaveCount(1);
   await expect(island).not.toHaveAttribute('ssr');
-  await expect(page.getByTestId('countdown')).toContainText(/days? to launch|weekend is on/);
   expect(errors).toEqual([]);
 });
 

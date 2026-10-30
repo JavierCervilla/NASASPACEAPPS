@@ -236,5 +236,20 @@
       "QUANTITIES": "'4'",
       "CSV_FORMAT": "'YES'"
     }
+  },
+  {
+    "file": "moon-subsolar-from-geocentre-2026-11-12.json",
+    "params": {
+      "format": "json",
+      "COMMAND": "'301'",
+      "MAKE_EPHEM": "'YES'",
+      "EPHEM_TYPE": "'OBSERVER'",
+      "CENTER": "'500@399'",
+      "START_TIME": "'2026-11-01 00:00'",
+      "STOP_TIME": "'2026-12-31 00:00'",
+      "STEP_SIZE": "'1 d'",
+      "QUANTITIES": "'15'",
+      "CSV_FORMAT": "'YES'"
+    }
   }
 ]

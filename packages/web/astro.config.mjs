@@ -9,4 +9,11 @@ export default defineConfig({
   base,
   output: 'static',
   integrations: [react()],
+  vite: {
+    build: {
+      // The globe chunk (Three.js, about 540 kB minified, 135 kB gzip) is
+      // over Vite's 500 kB default; it loads lazily, on desktop only.
+      chunkSizeWarningLimit: 600,
+    },
+  },
 });

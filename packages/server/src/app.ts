@@ -32,7 +32,7 @@ export interface AppDeps {
   readonly sites: readonly Site[];
   /**
    * The custom-point cache, whose tracked size and cap /health reports (the
-   * size is 0 until the first custom point is written since start).
+   * size comes from the scan the server runs at start).
    */
   readonly pointsCache: PointsUsageSource;
   /** Current time in ms since the epoch. */

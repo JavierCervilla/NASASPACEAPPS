@@ -58,7 +58,7 @@ npm run lint && npm run typecheck && npm test && npm run build && npm run e2e
 
 | Route | Answers |
 |---|---|
-| `GET /api/v1/health` | `{ ok: true, cache: { pointsBytes, pointsCapBytes } }`: the custom-point cache's tracked size and cap, for a disk alarm. The size is 0 until the first custom point is written after a start (health never scans the directory) |
+| `GET /api/v1/health` | `{ ok: true, cache: { pointsBytes, pointsCapBytes } }`: the custom-point cache's tracked size and cap, for a disk alarm. The server sizes the cache once at start; health itself never scans the directory, and a failed scan reads as 0 |
 | `GET /api/v1/ephemeris?lat&lon&from&to[&at]` | Hourly Sun/Earth/DSN samples, landing windows and metrics for any point. `lon` is east longitude; `from`/`to` are UTC dates (`2026-11-01`) or whole UTC hours (`2026-11-01T05:00:00Z`), at most 92 days |
 | `GET /api/v1/sites` | The 29 curated sites (`packages/server/data/sites.json`), in three groups: `south_pole`, `apollo`, `other` |
 | `GET /api/v1/sites/:id[?from&to&at]` | One site, plus its ephemeris when given a range |

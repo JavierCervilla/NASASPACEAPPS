@@ -1,4 +1,4 @@
-import { mkdtemp, readdir, utimes, writeFile } from 'node:fs/promises';
+import { mkdir, mkdtemp, readdir, rm, utimes, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { beforeEach, describe, expect, it } from 'vitest';
@@ -35,6 +35,19 @@ describe('PointsStore', () => {
     expect(await store.usage()).toEqual({ pointsBytes: 0, pointsCapBytes: 4096 });
     // No scan ran, so the stale file is still there.
     expect(await readdir(dir)).toEqual(['crashed.tmp']);
+  });
+
+  it('reads a failed scan as 0 bytes and scans again on the next call', async () => {
+    const points = join(dir, 'points');
+    await writeFile(points, 'x', 'utf8');
+    const store = new PointsStore(points, 4096, () => NOW_MS);
+    await expect(store.ready()).rejects.toThrow();
+    expect(await store.usage()).toEqual({ pointsBytes: 0, pointsCapBytes: 4096 });
+    // Once the directory is fixed, the next call scans it again.
+    await rm(points);
+    await mkdir(points);
+    await writeFile(join(points, 'a.json'), 'abc', 'utf8');
+    await expect(store.ready()).resolves.toBe(3);
   });
 
   it('reports the tracked size once a file is added', async () => {

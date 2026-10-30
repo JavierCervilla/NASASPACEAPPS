@@ -44,19 +44,26 @@ export class PointsStore implements PointsUsageSource {
    * call it before writing a file, so the scan does not count it.
    */
   ready(): Promise<number> {
+    // A failed scan is forgotten, so the next call tries again instead of
+    // keeping the rejection for the life of the process.
     this.size ??= sweepStaleTemp(this.dir, this.now() - STALE_TEMP_MS)
       .then(() => listPointFiles(this.dir))
-      .then(totalBytes);
+      .then(totalBytes)
+      .catch((error: unknown) => {
+        this.size = null;
+        throw error;
+      });
     return this.size;
   }
 
   /**
    * The tracked size and the cap. Never scans the directory: before the first
-   * scan (started by the first write of a custom point) the size is 0, and a
-   * scan already running is awaited rather than repeated.
+   * scan (the server starts one at boot) the size is 0, a scan already
+   * running is awaited rather than repeated, and a failed scan reads as 0,
+   * so a broken directory never fails the health answer.
    */
   async usage(): Promise<PointsUsage> {
-    const pointsBytes = this.size === null ? 0 : await this.size;
+    const pointsBytes = this.size === null ? 0 : await this.size.catch(() => 0);
     return { pointsBytes, pointsCapBytes: this.maxBytes };
   }
 

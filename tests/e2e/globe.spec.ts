@@ -25,6 +25,7 @@
 
 import { readFileSync } from 'node:fs';
 import { expect, test, type Page } from '@playwright/test';
+import { stubApi } from './api-stub';
 
 // The real site list, as the API serves it (`{ sites }`), for the runs that stub the API.
 const SITES = JSON.parse(readFileSync(new URL('../../packages/server/data/sites.json', import.meta.url), 'utf8')) as {
@@ -59,7 +60,7 @@ test.describe('desktop, 1440x900', () => {
   test.use({ viewport: { width: 1440, height: 900 } });
 
   test('draws the globe with the API sites and logs no errors', async ({ page }) => {
-    await page.route('**/api/v1/sites', (route) => route.fulfill({ json: { sites: SITES } }));
+    await stubApi(page);
     const log = collectConsole(page);
     const requested: string[] = [];
     page.on('request', (r) => requested.push(r.url()));
@@ -88,10 +89,11 @@ test.describe('desktop, 1440x900', () => {
   });
 
   test('selecting a site names it in the label, which sits on its marker', async ({ page }) => {
-    await page.route('**/api/v1/sites', (route) => route.fulfill({ json: { sites: SITES } }));
+    await stubApi(page);
     await page.goto('./');
     const im1 = page.getByRole('button', { name: /Malapert A region \(IM-1 Odysseus\)/ });
-    await im1.click();
+    // Under the calendar strip the globe is smaller and IM-2's 44 px box covers IM-1's centre: the button is pressed.
+    await im1.press('Enter');
     await expect(page.locator('.globe-label')).toHaveText('Malapert A region (IM-1 Odysseus)');
     const transform = (selector: string) => page.locator(selector).evaluate((el) => (el as HTMLElement).style.transform);
     await expect.poll(() => transform('.globe-label')).toBe(await transform('[data-site-id="im1-odysseus"]'));
@@ -99,10 +101,15 @@ test.describe('desktop, 1440x900', () => {
   });
 
   test('IM-2 is what sits under its own centre, and a mouse click there selects it', async ({ page }) => {
-    await page.route('**/api/v1/sites', (route) => route.fulfill({ json: { sites: SITES } }));
+    await page.emulateMedia({ reducedMotion: 'reduce' });
+    await stubApi(page);
     await page.goto('./');
     await expect(page.locator(IM2)).toHaveAttribute('style', /translate3d/);
-    await page.getByRole('button', { name: /Malapert A region \(IM-1 Odysseus\)/ }).click();
+    await page.getByRole('button', { name: /Malapert A region \(IM-1 Odysseus\)/ }).press('Enter');
+    // With the calendar strip under it the globe is shorter, and at the opening zoom the selected IM-1's 44 px box
+    // (stacked on top) reaches over IM-2's centre: one step in sets them apart, as on the taller globe before.
+    await page.getByRole('application', { name: 'The Moon, seen over its south pole' }).focus();
+    await page.keyboard.press('+');
     await expect(page.locator(IM2)).toHaveAttribute('aria-pressed', 'false');
     const box = await page.locator(IM2).boundingBox();
     const centre = { x: box!.x + box!.width / 2, y: box!.y + box!.height / 2 };
@@ -115,7 +122,7 @@ test.describe('desktop, 1440x900', () => {
 
   test('a zone ring under another marker stays in the DOM, hidden, and shows on zoom', async ({ page }) => {
     await page.emulateMedia({ reducedMotion: 'reduce' });
-    await page.route('**/api/v1/sites', (route) => route.fulfill({ json: { sites: SITES } }));
+    await stubApi(page);
     await page.goto('./');
     await expect(page.locator(IM2)).toHaveAttribute('style', /translate3d/);
     await expect(page.locator(NOBILE)).toHaveCount(1);
@@ -127,9 +134,9 @@ test.describe('desktop, 1440x900', () => {
   });
 
   test('a marker is a 44 px touch target around the same small dot', async ({ page }) => {
-    await page.route('**/api/v1/sites', (route) => route.fulfill({ json: { sites: SITES } }));
+    await stubApi(page);
     await page.goto('./');
-    await page.getByRole('button', { name: /Malapert A region \(IM-1 Odysseus\)/ }).click();
+    await page.getByRole('button', { name: /Malapert A region \(IM-1 Odysseus\)/ }).press('Enter');
     const marker = page.locator(IM2);
     await expect(marker).toHaveAttribute('aria-pressed', 'false');
     const box = await marker.boundingBox();
@@ -142,7 +149,7 @@ test.describe('desktop, 1440x900', () => {
 
   test('the viewport is focusable and turns with the arrow keys', async ({ page }) => {
     await page.emulateMedia({ reducedMotion: 'reduce' });
-    await page.route('**/api/v1/sites', (route) => route.fulfill({ json: { sites: SITES } }));
+    await stubApi(page);
     await page.goto('./');
     await expect(page.locator(IM2)).toHaveAttribute('style', /translate3d/);
     const before = await page.locator(IM2).evaluate((el) => (el as HTMLElement).style.transform);
@@ -180,7 +187,7 @@ test.describe('desktop texture detail, 1440x900', () => {
   }
 
   test('zooming in fetches the 4K map and its relief, and logs no errors', async ({ page }) => {
-    await page.route('**/api/v1/sites', (route) => route.fulfill({ json: { sites: SITES } }));
+    await stubApi(page);
     const log = collectConsole(page);
     const requested: string[] = [];
     page.on('request', (r) => requested.push(r.url()));
@@ -199,7 +206,7 @@ test.describe('desktop texture detail, 1440x900', () => {
 
   test('under Save-Data, zooming in never fetches more than the start map', async ({ page }) => {
     await page.addInitScript(() => Object.defineProperty(navigator, 'connection', { value: { saveData: true } }));
-    await page.route('**/api/v1/sites', (route) => route.fulfill({ json: { sites: SITES } }));
+    await stubApi(page);
     const log = collectConsole(page);
     const requested: string[] = [];
     page.on('request', (r) => requested.push(r.url()));

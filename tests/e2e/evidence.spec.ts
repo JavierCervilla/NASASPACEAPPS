@@ -25,13 +25,14 @@
 
 /**
  * QA evidence, not a check: screenshots of the globe at 1440x900 in dark and light mode, a close-up of the south pole
- * terminator before and after the sharper maps and the LOLA relief, and of the phone at 390x844 (the sheet at half in
- * dark and light, the site picker, the sheet at peek, and the sheet closed, also zoomed in), saved under
+ * terminator before and after the sharper maps and the LOLA relief, the desktop calendar strip and header site picker,
+ * and of the phone at 390x844 (the sheet at half in dark and light, the site picker, the sheet at peek, the sheet
+ * closed, also zoomed in, and the calendar), saved under
  * production/qa/evidence/ with the capture date. It runs only on request, so a normal e2e run writes nothing:
  *
  *   CAPTURE_EVIDENCE=1 npm run e2e -- evidence.spec.ts
  *
- * `-g phone` or `-g globe` captures one set only.
+ * `-g phone`, `-g globe` or `-g calendar` captures one set only.
  */
 import { expect, test, type Page } from '@playwright/test';
 import { SITES, stubApi } from './api-stub';
@@ -61,6 +62,36 @@ test.describe('globe evidence', () => {
       await page.screenshot({ path: new URL(`${DATE}-vent-6-globe-${scheme}.png`, OUT).pathname });
     });
   }
+});
+
+test.describe('calendar evidence', () => {
+  test.skip(!process.env.CAPTURE_EVIDENCE, 'captures only with CAPTURE_EVIDENCE=1');
+  test.use({ viewport: { width: 1440, height: 900 } });
+
+  async function openDesktop(page: Page): Promise<void> {
+    await page.emulateMedia({ colorScheme: 'dark', reducedMotion: 'reduce' });
+    await page.clock.setFixedTime(new Date('2026-11-23T18:00:00Z'));
+    await stubApi(page);
+    const texture = page.waitForResponse(/\/textures\/moon-lroc-/);
+    await page.goto('./?quality=high');
+    await texture;
+    await expect(page.getByRole('img', { name: /^Window:/ })).toBeVisible();
+    await expect(page.locator('.globe-label')).toBeVisible();
+    await settle(page);
+  }
+
+  test('calendar strip under the globe, dark mode', async ({ page }) => {
+    await openDesktop(page);
+    await page.screenshot({ path: new URL(`${DATE}-vent-4-calendar-strip-dark.png`, OUT).pathname });
+  });
+
+  test('calendar, header site picker open, dark mode', async ({ page }) => {
+    await openDesktop(page);
+    await page.getByRole('button', { name: /^Change site, now/ }).click();
+    await expect(page.getByRole('dialog', { name: 'Choose a site' })).toBeVisible();
+    await settle(page);
+    await page.screenshot({ path: new URL(`${DATE}-vent-4-site-picker-dark.png`, OUT).pathname });
+  });
 });
 
 test.describe('relief evidence', () => {
@@ -142,6 +173,14 @@ test.describe('phone evidence', () => {
     await expect(page.getByRole('button', { name: /^Sheet collapsed/ })).toBeVisible();
     await settle(page);
     await page.screenshot({ path: new URL(`${DATE}-vent-24-phone-peek.png`, OUT).pathname });
+  });
+
+  test('phone, calendar', async ({ page }) => {
+    await openPhone(page, 'dark');
+    await page.getByRole('navigation', { name: 'Views' }).getByRole('button', { name: 'Calendar', exact: true }).click();
+    await expect(page.getByRole('heading', { name: 'November 2026' })).toBeVisible();
+    await settle(page);
+    await page.screenshot({ path: new URL(`${DATE}-vent-4-phone-calendar-dark.png`, OUT).pathname });
   });
 
   test('phone, site picker open', async ({ page }) => {

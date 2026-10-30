@@ -51,6 +51,12 @@ const server = serve({ fetch: app.fetch, port }, (info) => {
 });
 process.on('SIGTERM', () => server.close());
 
+// Size points/ once at start, in the background, so the health answer reports
+// the real cache size from boot instead of 0 until the first custom point.
+void horizons.points.ready().catch((error: unknown) => {
+  console.error(`points cache: first scan failed: ${(error as Error).message}`);
+});
+
 if (process.env['WARM_CACHE'] !== '0') {
   // In the background: the server answers from the first moment, and a visitor
   // who asks before the warm-up reaches their site shares its in-flight

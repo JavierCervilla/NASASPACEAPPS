@@ -104,8 +104,11 @@ export interface HorizonsClient {
 
 /** The client {@link createHorizonsClient} builds, with its points cache. */
 export type CachedHorizonsClient = HorizonsClient & {
-  /** The custom-point cache, for its usage; pass it to the API's health. */
-  readonly points: PointsUsageSource;
+  /**
+   * The custom-point cache: pass it to the API's health; `ready()` sizes it
+   * (once, memoised) so the server can do that at start.
+   */
+  readonly points: PointsUsageSource & { ready(): Promise<number> };
 };
 
 /**

@@ -25,6 +25,7 @@
 
 import { useEffect, useRef, useState } from 'react';
 import type { TimeStore } from '../calendar/time-store';
+import type { CalloutContent } from '../callout/callout-content';
 import { startGlobe, type GlobeStatus } from '../globe/boot';
 import { describeSun } from '../globe/describe';
 import type { WatchedValue } from '../lib/watched-value';
@@ -38,6 +39,9 @@ const MARKERS =
   'Landing sites are buttons: a solid dot is an exact touchdown, a dashed ring an approximate zone.';
 const HOW_TO = `Drag or use the arrow keys to turn the Moon; plus and minus zoom. ${MARKERS}`;
 const NO_WEBGL = 'The 3D globe needs WebGL, which this browser does not offer.';
+// What the site callout keeps clear of: the Layers key on a desktop, the
+// top bar and the floating tab bar on a phone.
+const CALLOUT_AVOID = '.globe-layers, .phone-bar, .tab-bar';
 const DEFERRED = 'Your browser asks to save data, so the 3D globe waits.';
 
 interface Props {
@@ -51,6 +55,8 @@ interface Props {
   readonly sheetEdge: WatchedValue<number | null>;
   /** The selected instant: its Sun lights the globe. */
   readonly time: TimeStore;
+  /** What the selected site's callout says. */
+  readonly callout: WatchedValue<CalloutContent | null>;
 }
 
 const reducedMotion = (): boolean => matchMedia(REDUCED_MOTION).matches;
@@ -59,7 +65,8 @@ const reducedMotion = (): boolean => matchMedia(REDUCED_MOTION).matches;
  * Starts the scene in the viewport after hydration (or waits for the
  * visitor under Save-Data); its status, and how to load it on request.
  */
-function useGlobe({ sitesUrl, base, store, sheetEdge, time }: Props) {
+function useGlobe(props: Props) {
+  const { sitesUrl, base, store, sheetEdge, time, callout } = props;
   const host = useRef<HTMLDivElement>(null);
   const loader = useRef<() => void>(() => undefined);
   const [status, setStatus] = useState<GlobeStatus | null>(null);
@@ -67,13 +74,16 @@ function useGlobe({ sitesUrl, base, store, sheetEdge, time }: Props) {
     const el = host.current;
     if (!el) return undefined;
     const warn = (message: string): void => console.warn(message);
-    const options = { time, base, sitesUrl, store, sheetEdge };
+    const avoid = (): Element[] => [
+      ...document.querySelectorAll(CALLOUT_AVOID),
+    ];
+    const options = { time, base, sitesUrl, store, sheetEdge, callout };
     const saveData = prefersSaveData();
-    const deps = { ...options, saveData, reducedMotion, warn };
+    const deps = { ...options, saveData, reducedMotion, warn, avoid };
     const start = startGlobe(el, deps, setStatus, saveData);
     loader.current = start.load;
     return start.dispose;
-  }, [sitesUrl, base, store, sheetEdge, time]);
+  }, [sitesUrl, base, store, sheetEdge, time, callout]);
   const load = (): void => loader.current();
   return { host, status, load };
 }

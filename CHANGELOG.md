@@ -3,6 +3,28 @@
 ## [Sin publicar]
 
 ### Añadido
+- Tarjeta del sitio sobre el globo (VENT-29, lienzos validados «Globe · site callout B, image card» para escritorio y
+  «… A, compact» para el móvil): la etiqueta del sitio elegido pasa a ser una tarjeta de cristal unida a su punto por una
+  línea fina. En escritorio lleva arriba una vista del terreno desde la órbita con el estado del instante («Landing
+  window now», «Sun only», «Earth only» o «Neither», en sus colores) y el ancho que abarca («LOLA · 30 km»); debajo, la
+  misión y la fecha, el nombre del lugar, las coordenadas y su precisión, y cuánto falta para la puesta de Sol y de
+  Tierra. En el móvil es compacta: la miniatura a la izquierda y, al lado, la misión con su fecha (sin «landed»: «IM-2
+  Athena · 6 Mar 2025»), el lugar, solo las coordenadas («84.79° S · 29.20° E»; el estilo del punto ya dice si es exacto)
+  y una píldora con el estado y el tiempo que le queda («Landing window · 7 d 1 h left»), cada cosa en una línea. La
+  línea de la misión dice cada dato una vez («Artemis candidate region · landing planned 2028», «Chang'e-7 target ·
+  planned · 2027 (launch NET)»); en escritorio ocupa como mucho dos líneas. Sigue al punto al girar el globo, se coloca
+  dentro de la parte visible sin tapar nunca la leyenda «Layers», la barra superior ni las pestañas (cambia de lado; si
+  ningún lado queda libre, o el punto está debajo de una de ellas, se oculta) y se oculta también cuando el punto pasa
+  detrás del borde de la Luna o bajo la hoja. Cambia con el deslizador, dice lo mismo que la ficha y las tarjetas del
+  móvil, y deja pasar los clics a los puntos que tenga debajo. Mientras llegan los datos del mes, el estado y las
+  cuentas atrás se ven como huecos grises; si la API falla, una píldora neutra dice «Data unavailable». Al cambiar de
+  sitio la imagen anterior no se queda: el hueco espera a la nueva. El punto elegido toma el color de su estado con un
+  halo del mismo color. Con el texto al 200 % la tarjeta deja la imagen y las cuentas atrás y muestra la píldora, para
+  que nada quede cortado ni tape el globo. Las vistas del terreno son relieve sombreado con el Sol bajo del modelo de
+  elevación LOLA del polo sur (NASA, 20 m por píxel), una por punto al sur de 80° S (Haworth, que es un cráter de 51 km,
+  con 62 km de ancho), a 320 px y a 640 px para pantallas retina (cada dispositivo descarga solo la suya, y solo la del
+  sitio elegido); un script las rehace descargando solo las filas que necesita, y `ASSETS.md` registra la fuente, el
+  proceso y cada fichero. Los sitios más al norte van sin imagen.
 - Ficha del sitio y mapa polar (VENT-5, lienzos validados «Globe view» y «Polar map»): en escritorio, a la derecha del
   globo, una ficha con la misión, la agencia y la fecha de alunizaje, el nombre del sitio, sus coordenadas y si el
   punto es exacto o una zona aproximada; dos recuadros grandes con cuánto falta para que se ponga (o salga) el Sol y
@@ -101,6 +123,8 @@
 - Imágenes Docker fijadas por digest, acciones del CI fijadas por commit y descargas verificadas con su checksum.
 
 ### Cambiado
+- El objetivo de Chang'e-7 se llama ahora «Shackleton crater area» en vez de «Shackleton rim»: no hay coordenada
+  publicada del punto de aterrizaje en el borde, y el punto que se muestra es el centro del cráter (VENT-29).
 - La página provisional da paso a la pantalla principal del lienzo: cabecera con el título, la pregunta y el selector de
   vista (solo «Globe» por ahora) y el globo. La cuenta atrás y la leyenda provisional salen; la leyenda de colores
   vuelve con la cinta de calendario (VENT-4).

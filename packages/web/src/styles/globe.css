@@ -25,8 +25,8 @@
 
 /*
  * The lunar globe section (VENT-6): the dark sky, the WebGL viewport, the
- * site markers and their label (created by src/globe/marker-layer.ts), and
- * the Layers legend. Below 768px (PHONE_QUERY in src/lib/viewport.ts) the
+ * site markers (created by src/globe/marker-layer.ts) and the Layers
+ * legend; the site callout is in styles/callout.css. Below 768px (PHONE_QUERY in src/lib/viewport.ts) the
  * section fills the screen behind the phone shell (styles/phone.css).
  */
 /* It gives up height first, so the calendar strip fits a 720 px tall laptop screen. */
@@ -98,6 +98,8 @@
   position: absolute;
   inset: 0;
   pointer-events: none;
+  /* Sized by the globe, never by its content: the callout queries it. */
+  container: callout-host / size;
 }
 
 /*
@@ -162,29 +164,38 @@
   box-shadow: 0 0 0 4px rgba(255, 255, 255, 0.28);
 }
 
+/*
+ * Once its state is known, the selected marker takes the state's colour
+ * with a halo of it (canvas «Globe · site callout B»), the same colour as
+ * the callout's badge: the legend's meaning, never decoration.
+ */
+.globe-markers:has(> .globe-callout[data-state='window']) { --halo: var(--signal-window); }
+.globe-markers:has(> .globe-callout[data-state='sun']) { --halo: var(--signal-sun); }
+.globe-markers:has(> .globe-callout[data-state='earth']) { --halo: var(--signal-earth); }
+.globe-markers:has(> .globe-callout[data-state='none']) { --halo: var(--signal-none); }
+
+.globe-markers:has(> .globe-callout:not([data-state='unknown'])) .globe-marker[aria-pressed='true']::after {
+  border-color: var(--halo);
+  box-shadow:
+    0 0 0 5px color-mix(in srgb, var(--halo) 28%, transparent),
+    inset 0 0 0 1.5px rgba(7, 8, 11, 0.9);
+}
+
+/* A zone keeps its dashed ring, in the state's colour; a point is filled. */
+.globe-markers:has(> .globe-callout:not([data-state='unknown'])) .globe-marker--exact[aria-pressed='true']::after {
+  background: var(--halo);
+}
+
+/* «Neither» is a dark grey: a light ring keeps it visible on the Moon. */
+.globe-markers:has(> .globe-callout[data-state='none']) .globe-marker[aria-pressed='true']::after {
+  box-shadow:
+    0 0 0 1.5px rgba(242, 242, 244, 0.6),
+    0 0 0 5px rgba(242, 242, 244, 0.18);
+}
+
 .globe-marker:focus-visible {
   outline: 2px solid var(--marker);
   outline-offset: 0;
-}
-
-.globe-label {
-  position: absolute;
-  top: 0;
-  left: 0;
-  margin: 10px 0 0 12px;
-  padding: 6px 10px;
-  border-radius: 10px;
-  border: 1px solid var(--glass-label-edge);
-  background: var(--glass-label);
-  color: var(--glass-label-text);
-  backdrop-filter: blur(12px);
-  font-size: 0.8125rem;
-  line-height: 1.3;
-  font-weight: 600;
-  letter-spacing: -0.005em;
-  white-space: nowrap;
-  pointer-events: none;
-  z-index: 4;
 }
 
 .globe-layers {
@@ -232,7 +243,7 @@
 
 /*
  * A view narrow for its text (200 % text, a narrow window) stacks the
- * key, so it stays in its corner, clear of the site label over the globe.
+ * key, so it stays in its corner, clear of the site callout over the globe.
  * The em is the view's own, so it grows with the text.
  */
 @container (max-width: 52em) {
@@ -244,7 +255,7 @@
 
 /*
  * Too small for both (200 % text in a narrow window): the key gives way,
- * as the site label is the one that says which site is selected.
+ * as the site callout is the one that says which site is selected.
  */
 @container (max-width: 24em) {
   .globe-layers {
@@ -271,21 +282,14 @@
   border: 1.5px solid var(--text-muted);
 }
 
-/* Near the right edge the label sits on the marker's left instead. */
-.globe-label--flip {
-  translate: calc(-100% - 24px) 0;
-}
-
 @media (prefers-contrast: more) {
-  .globe-layers,
-  .globe-label {
+  .globe-layers {
     border: 1px solid var(--surface-edge);
   }
 }
 
 @media (prefers-reduced-transparency: reduce) {
-  .globe-layers,
-  .globe-label {
+  .globe-layers {
     backdrop-filter: none;
   }
 }

@@ -29,10 +29,12 @@
  * asks for it (boot.ts).
  */
 import type { TimeStore } from '../calendar/time-store';
+import type { CalloutContent } from '../callout/callout-content';
 import { isPhoneViewport } from '../lib/viewport';
 import type { WatchedValue } from '../lib/watched-value';
 import type { SiteStore } from '../phone/site-store';
 import { attachDevTools } from './dev-hook';
+import { watchCallout } from './callout-watch';
 import { bindDrag } from './drag';
 import { drawFrame } from './frame';
 import { SOUTH_POLE_VIEW } from './framing';
@@ -62,6 +64,10 @@ export interface GlobeOptions {
   readonly store: SiteStore;
   /** The phone sheet's top edge, px from the viewport's top; null: none. */
   readonly sheetEdge: WatchedValue<number | null>;
+  /** What the selected site's callout says, kept by the page. */
+  readonly callout: WatchedValue<CalloutContent | null>;
+  /** The page's elements the callout must not cover. */
+  readonly avoid: () => readonly Element[];
   /** The browser asks to save data: the globe keeps its start map. */
   readonly saveData: boolean;
   readonly reducedMotion: () => boolean;
@@ -108,9 +114,28 @@ function bindInput(
   ];
 }
 
+/** Shows the page's callout content and keeps the callout measured. */
+function bindCallout(
+  host: HTMLElement,
+  options: Pick<GlobeOptions, 'callout' | 'avoid'>,
+  markers: MarkerLayer,
+  invalidate: () => void,
+): () => void {
+  const { callout } = markers;
+  const show = (): void => {
+    callout.show(options.callout.get());
+    invalidate();
+  };
+  show();
+  const unsubscribe = options.callout.subscribe(show);
+  const { avoid } = options;
+  const unwatch = watchCallout({ host, callout, avoid, invalidate });
+  return () => [unsubscribe, unwatch].forEach((unbind) => unbind());
+}
+
 /**
  * Binds the markers to the page: loads the API sites into them, follows
- * the shared selection and keeps the label above the phone sheet.
+ * the shared selection and shows the callout, above the phone sheet.
  */
 function bindSites(
   host: HTMLElement,
@@ -131,9 +156,9 @@ function bindSites(
   const unbindSelection = bindSelection(parts, () => sites);
   const edgeParts = { camera, markers, invalidate };
   const unbindEdge = bindSheetEdge(host, edgeParts, options.sheetEdge);
+  const unbindCallout = bindCallout(host, options, markers, invalidate);
   return () => {
-    unbindSelection();
-    unbindEdge();
+    [unbindSelection, unbindEdge, unbindCallout].forEach((fn) => fn());
   };
 }
 

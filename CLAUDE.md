@@ -44,7 +44,12 @@ Every visible change follows `.claude/skills/apple-design/SKILL.md` (vendored fr
   desktop); the hours come from one cached request per site and month (`src/phone/hours-cache.ts`). On desktop
   the site card sits beside the view and the header tabs switch the view by hash (`#globe`, `#polar-map`,
   `src/lib/view-tabs.ts`): the polar map is a south polar stereographic disk from 80° S
-  (`src/lib/polar-projection.ts`, image from `scripts/moon_textures.py polar`). Under Save-Data
+  (`src/lib/polar-projection.ts`, image from `scripts/moon_textures.py polar`). The selected site's callout rides its
+  marker on the globe (`src/callout/`, `src/globe/site-callout.ts`): the image card on desktop, the compact card on
+  phones, with a LOLA relief thumbnail for sites south of 80° S (320 px, and 640 px through `srcset` for 2x screens;
+  rendered offline by `scripts/site_thumbs.py` and committed, manifest `src/callout/thumbs.json`); it takes no pointer
+  events, never covers the Layers key, the top bar or the tab bar (it hides when it cannot), and the frame loop only
+  writes its transform. Under Save-Data
   the globe waits for a «Load the 3D globe» button and never loads more than its start map.
 - UI text is **English** (the global jury is international): this project's exception to the Language rule below. The local pitch is in Spanish and does not live here.
 

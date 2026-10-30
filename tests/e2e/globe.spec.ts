@@ -92,8 +92,8 @@ test.describe('desktop, 1440x900', () => {
     await expect(globe.locator('canvas')).toHaveCount(1);
     await expect(globe.locator('.globe-marker')).toHaveCount(POINTS.size);
     await expect(globe.locator('.globe-marker--zone')).toHaveCount(ZONE_POINTS.length);
-    await expect(globe.locator('.globe-label')).toHaveText('Mons Mouton (IM-2 Athena)');
-    await expect(globe.locator('.globe-label')).toBeVisible();
+    await expect(globe.locator('.globe-callout')).toHaveAttribute('aria-label', 'Mons Mouton (IM-2 Athena)');
+    await expect(globe.locator('.globe-callout')).toBeVisible();
     expect(log.errors).toEqual([]);
     // The phone Save-Data test (phone.spec.ts) looks for these same requests: here they must happen.
     expect(requested.filter((url) => GLOBE_ASSET.test(url))).toHaveLength(2);
@@ -111,18 +111,20 @@ test.describe('desktop, 1440x900', () => {
     expect(log.errors.filter((e) => !NETWORK_LINE.test(e))).toEqual([]);
   });
 
-  test('selecting a site names it in the label, which sits on its marker', async ({ page }) => {
+  test('selecting a site names it in the callout, whose leader starts on its marker', async ({ page }) => {
     await page.emulateMedia({ reducedMotion: 'reduce' });
     await stubApi(page);
     await page.goto('./');
     await expect(page.locator(IM1)).toHaveAttribute('style', /translate3d/);
     const at = await centreOf(page, IM1);
     await page.mouse.click(at.x, at.y);
-    await expect(page.locator('.globe-label')).toHaveText('Malapert A region (IM-1 Odysseus)');
+    await expect(page.locator('.globe-callout')).toHaveAttribute('aria-label', 'Malapert A region (IM-1 Odysseus)');
     const transform = (selector: string) => page.locator(selector).evaluate((el) => (el as HTMLElement).style.transform);
     // The globe turns to the picked site: compare where both are now, frame after frame.
-    await expect.poll(async () => (await transform('.globe-label')) === (await transform(IM1))).toBe(true);
-    expect(await transform('.globe-label')).toMatch(/^translate3d\(/);
+    await expect
+      .poll(async () => (await transform('.globe-callout-leader')).startsWith(`${await transform(IM1)} rotate(`))
+      .toBe(true);
+    expect(await transform(IM1)).toMatch(/^translate3d\(/);
   });
 
   test('at the opening zoom a mouse click on either close dot selects that dot, whichever box is on top', async ({ page }) => {
@@ -142,7 +144,7 @@ test.describe('desktop, 1440x900', () => {
     expect(await siteUnder(page, im2)).toBe('im1-odysseus');
     await page.mouse.click(im2.x, im2.y);
     await expect(page.locator(IM2)).toHaveAttribute('aria-pressed', 'true');
-    await expect(page.locator('.globe-label')).toHaveText('Mons Mouton (IM-2 Athena)');
+    await expect(page.locator('.globe-callout')).toHaveAttribute('aria-label', 'Mons Mouton (IM-2 Athena)');
   });
 
   test('the keyboard selects a marker whose dot another box covers', async ({ page }) => {
@@ -204,19 +206,19 @@ test.describe('desktop, 1440x900', () => {
 });
 
 for (const [width, height] of [[1440, 900], [1280, 720], [1024, 768]] as const) {
-  test(`at 200 % text, ${width}x${height}, the Layers key stays clear of the site label (QA)`, async ({ page }) => {
+  test(`at 200 % text, ${width}x${height}, the Layers key stays clear of the site callout (QA)`, async ({ page }) => {
     await page.setViewportSize({ width, height });
     await page.clock.setFixedTime(new Date('2026-11-23T18:00:00Z'));
     await stubApi(page);
     await page.goto('./');
-    await expect(page.locator('.globe-label')).toBeVisible();
+    await expect(page.locator('.globe-callout')).toBeVisible();
     await page.evaluate(() => {
       document.documentElement.style.fontSize = '200%';
     });
-    const label = page.locator('.globe-label');
+    const label = page.locator('.globe-callout');
     // By class: a role query skips a hidden key and would wait for it.
     const layers = page.locator('.globe-layers');
-    // The label follows its marker as the view settles at the new size.
+    // The callout follows its marker as the view settles at the new size.
     await expect
       .poll(async () => {
         const [a, b] = [await label.boundingBox(), await layers.boundingBox()];

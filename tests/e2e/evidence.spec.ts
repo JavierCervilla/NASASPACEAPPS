@@ -58,7 +58,7 @@ test.describe('globe evidence', () => {
       // a desktop GPU gets.
       await page.goto('./?quality=high');
       await texture;
-      await expect(page.locator('.globe-label')).toBeVisible();
+      await expect(page.locator('.globe-callout')).toBeVisible();
       await settle(page);
       await page.screenshot({ path: new URL(`${DATE}-vent-6-globe-${scheme}.png`, OUT).pathname });
     });
@@ -77,7 +77,7 @@ test.describe('calendar evidence', () => {
     await page.goto('./?quality=high');
     await texture;
     await expect(page.getByRole('img', { name: /^Window:/ })).toBeVisible();
-    await expect(page.locator('.globe-label')).toBeVisible();
+    await expect(page.locator('.globe-callout')).toBeVisible();
     await settle(page);
   }
 
@@ -113,7 +113,7 @@ test.describe('site card evidence', () => {
     await page.goto('./?quality=high');
     await texture;
     await expect(page.getByRole('complementary', { name: 'Site card' }).getByText('Longest night')).toBeVisible();
-    await expect(page.locator('.globe-label')).toBeVisible();
+    await expect(page.locator('.globe-callout')).toBeVisible();
     await settle(page);
   }
 
@@ -265,5 +265,45 @@ test.describe('phone evidence', () => {
     await expect(page.getByRole('heading', { name: 'Landing sites' })).toBeVisible();
     await settle(page);
     await page.screenshot({ path: new URL(`${DATE}-vent-23-phone-picker.png`, OUT).pathname });
+  });
+});
+
+test.describe('callout evidence', () => {
+  test.skip(!process.env.CAPTURE_EVIDENCE, 'captures only with CAPTURE_EVIDENCE=1');
+
+  /** The canvas's date and IM-2's real hours, the globe's texture decoded and the callout's thumbnail painted. */
+  async function openCallout(page: Page, phone: boolean): Promise<void> {
+    await page.emulateMedia({ colorScheme: 'dark', reducedMotion: 'reduce' });
+    await page.clock.setFixedTime(new Date('2026-11-23T18:00:00Z'));
+    await stubApi(page);
+    const texture = page.waitForResponse(/\/textures\/moon-lroc-/);
+    await page.goto(phone ? './' : './?quality=high');
+    await texture;
+    if (phone) {
+      await page.getByRole('navigation', { name: 'Views' }).getByRole('button', { name: 'Globe' }).click();
+      await expect(page.locator('.sheet')).toHaveAttribute('inert', '');
+    }
+    await expect(page.locator('.globe-callout')).toHaveAttribute('data-state', 'window');
+    await page.locator('.globe-callout__image').evaluate((img: HTMLImageElement) => img.decode());
+    await page.waitForTimeout(600);
+    await settle(page);
+  }
+
+  test.describe('desktop', () => {
+    test.use({ viewport: { width: 1440, height: 900 } });
+
+    test('globe callout, image card, dark mode', async ({ page }) => {
+      await openCallout(page, false);
+      await page.screenshot({ path: new URL(`${DATE}-vent-29-callout-desktop-dark.png`, OUT).pathname });
+    });
+  });
+
+  test.describe('phone', () => {
+    test.use({ viewport: { width: 390, height: 844 }, hasTouch: true, isMobile: true, deviceScaleFactor: 2 });
+
+    test('globe callout, compact card, sheet closed, dark mode', async ({ page }) => {
+      await openCallout(page, true);
+      await page.screenshot({ path: new URL(`${DATE}-vent-29-callout-phone-dark.png`, OUT).pathname });
+    });
   });
 });

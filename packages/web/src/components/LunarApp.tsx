@@ -32,7 +32,8 @@
  * the globe and the views always agree on the site; one instant with its
  * player and one cache of the API's hours, so the globe's Sun, the
  * widgets and the calendar show the same time; and the sheet's top edge,
- * so the globe keeps its label above the sheet.
+ * so the globe keeps its callout above the sheet; and what the selected
+ * site's callout on the globe says.
  */
 import { useEffect, useState } from 'react';
 import { followClock } from '../calendar/follow-clock';
@@ -47,6 +48,7 @@ import type { CalendarParts } from './calendar/hooks';
 import { DesktopShell } from './desktop/DesktopShell';
 import { useView } from './desktop/use-view';
 import Globe from './Globe';
+import { useCalloutFeed } from './use-callout-feed';
 import { Layers } from './Layers';
 import { usePhone } from './phone/hooks';
 import { PhoneShell } from './phone/PhoneShell';
@@ -90,7 +92,9 @@ export default function LunarApp({ sitesUrl, base, selectedId, sites }: Props) {
   const parts = useCalendarParts(sitesUrl);
   const view = useView(VIEW_NAV);
   const offView = !usePhone() && view !== 'globe';
-  const globe = { base, sitesUrl, store, sheetEdge, time: parts.time };
+  const callout = useCalloutFeed({ sites, store, parts, base });
+  const time = parts.time;
+  const globe = { base, sitesUrl, store, sheetEdge, time, callout };
   return (
     <>
       <section className="globe" aria-label="Lunar globe" hidden={offView}>

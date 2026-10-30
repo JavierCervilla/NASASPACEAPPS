@@ -107,7 +107,7 @@ test.describe('phone, 390x844', () => {
     await expect(widgets.nth(2)).toContainText('Earth 10.6° up');
     await expect(widgets.nth(3)).toContainText('Robledo');
     await expect.poll(() => sheetTop(page)).toBe(HALF_TOP);
-    await expect(page.locator('.globe-label')).toHaveText('Mons Mouton (IM-2 Athena)');
+    await expect(page.locator('.globe-callout')).toHaveAttribute('aria-label', 'Mons Mouton (IM-2 Athena)');
   });
 
   test('dragging the sheet up reaches the site picker', async ({ page }) => {
@@ -135,10 +135,10 @@ test.describe('phone, 390x844', () => {
     expect(Math.round((bar?.y ?? 0) + 2.5 - HALF_TOP)).toBe(12);
   });
 
-  test('the globe label stays above the sheet, and hides when the sheet covers its marker', async ({ page }) => {
+  test('the globe callout stays above the sheet, and hides when the sheet covers its marker', async ({ page }) => {
     await page.emulateMedia({ reducedMotion: 'reduce' });
     await open(page);
-    const label = page.locator('.globe-label');
+    const label = page.locator('.globe-callout');
     await expect(label).toBeVisible();
     const box = await label.boundingBox();
     expect((box?.y ?? 0) + (box?.height ?? 0)).toBeLessThanOrEqual(HALF_TOP);
@@ -194,7 +194,7 @@ test.describe('phone, 390x844', () => {
     await expect(page.locator('.widget').first()).toContainText('No window');
     await expect(page.locator('.widget').nth(3)).toContainText('No antenna');
     await expect(page.locator('[data-site-id="apollo11"]')).toHaveAttribute('aria-pressed', 'true');
-    await expect(page.locator('.globe-label')).toHaveText('Mare Tranquillitatis (Tranquility Base) (Apollo 11)');
+    await expect(page.locator('.globe-callout')).toHaveAttribute('aria-label', 'Mare Tranquillitatis (Tranquility Base) (Apollo 11)');
     await expect.poll(() => sheetTop(page)).toBe(HALF_TOP);
   });
 

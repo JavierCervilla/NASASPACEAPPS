@@ -3,6 +3,7 @@
   "private": true,
   "type": "module",
   "version": "0.0.0",
+  "license": "MIT",
   "scripts": {
     "build": "tsc -b tsconfig.build.json",
     "start": "node --conditions=ventana-compiled dist/main.js",

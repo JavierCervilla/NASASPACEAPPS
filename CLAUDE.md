@@ -62,6 +62,15 @@ The code follows Clean Code, and the size limits are enforced by lint:
   forces something clearly worse, raise it with the human.
 - **Leave it cleaner**: every change leaves the code at least as clean as it found it.
 
+## File header and licence
+
+The code is MIT-licensed (`LICENSE`, © 2026 Universelle). Every code file, new ones included (.ts .tsx .js .mjs .cjs
+.astro .css .py .sh, outside `.claude/`, `.english-gate/` and vendored files), starts with the project header from
+`scripts/file-header.txt`: after a shebang or a Python encoding line if there is one, inside the frontmatter for
+`.astro`. Create the file, then run `npm run headers` (or write the header yourself). CI fails on a tracked code file
+without it (`npm run headers:check`), and `node scripts/file-header.mjs --staged` checks the staged files before a
+commit. The Moon in the header is drawn by `packages/web/scripts/header_moon.py` (see `ASSETS.md`).
+
 ## Commands
 
 | Command | What |
@@ -73,6 +82,7 @@ The code follows Clean Code, and the size limits are enforced by lint:
 | `npm test` | Vitest unit tests of every package (`packages/*/tests/`) |
 | `npm run build` | Static web into `packages/web/dist/`, compiled server into `packages/server/dist/` |
 | `npm run e2e` | Playwright smoke against the built web (`tests/e2e/`); in a cloud container set `PW_CHROMIUM_PATH=/opt/pw-browsers/chromium-*/chrome-linux64/chrome` |
+| `npm run headers` | Adds or refreshes the file header on every code file; `npm run headers:check` is the CI check |
 | `bash .claude/skills/security-gate/scripts/security-gate.sh --strict .` | Security ladder (gitleaks, semgrep, osv-scanner, npm audit) |
 
 Before delivering: lint, typecheck, unit tests, build and e2e green; CI runs the same plus the English gate and the

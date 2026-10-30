@@ -55,3 +55,13 @@ new one.
 - **Known limit**: within about 3° of the south pole the source itself is smeared along meridians (the LOLA grid is
   resampled to latitude and longitude there), so close in, the relief around Shackleton shows faint radial streaks. A
   fix would rebuild the polar cap from LOLA's polar stereographic grids (`LDEM_875S`, PDS), which are not in this kit.
+
+## File header Moon (ASCII art)
+
+- **Where**: the Moon drawn in `scripts/file-header.txt`, the header every code file carries (`npm run headers`).
+- **Source**: our own `packages/web/public/textures/moon-lroc-2k.jpg` (the colour map above), so the same NASA SVS
+  credit applies. No NASA logo or insignia is used: their use is restricted.
+- **How it was made**: `python3 packages/web/scripts/header_moon.py packages/web/public/textures/moon-lroc-2k.jpg`
+  (Pillow and NumPy). Its defaults are the values the header was made with (36 x 16 characters, the view tilted 30°
+  towards the south, the sun 60° to the left, the ramp ` .:-=+*#%@`), and its output is the template's Moon block
+  exactly, with trailing spaces stripped.

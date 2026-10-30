@@ -24,14 +24,16 @@
  */
 
 // Puts the project header (scripts/file-header.txt) at the top of every code
-// file git tracks, or checks that it is there.
+// file git tracks or would track (new files not yet added), or checks that it
+// is there. Symlinks are skipped: they are not code, and writing through one
+// could touch a file outside the repo.
 //   node scripts/file-header.mjs --write    add or refresh the header
 //   node scripts/file-header.mjs --check    exit 1 listing the files without it
 //   node scripts/file-header.mjs --staged   the same check, staged files only
 // The transformation lives in pure functions so the tests can drive it; the
 // CLI at the bottom only reads git and the disk.
 import { execFileSync } from 'node:child_process';
-import { readFileSync, realpathSync, writeFileSync } from 'node:fs';
+import { lstatSync, readFileSync, realpathSync, writeFileSync } from 'node:fs';
 import { pathToFileURL } from 'node:url';
 
 /** The code files that carry the header, by extension. */
@@ -168,6 +170,41 @@ export function missingHeaders(paths, read, body) {
   return paths.filter((path) => isHeaderTarget(path) && !hasCurrentHeader(read(path), path, body));
 }
 
+/**
+ * The code files among `paths`, once each and sorted, keeping only those
+ * `isRegularFile` accepts (not symlinks, not missing).
+ * @param {string[]} paths repo-relative
+ * @param {(path: string) => boolean} isRegularFile
+ * @returns {string[]}
+ */
+export function selectCodeFiles(paths, isRegularFile) {
+  const unique = [...new Set(paths)].sort();
+  return unique.filter((path) => isHeaderTarget(path) && isRegularFile(path));
+}
+
+// Regular files only: a symlink is 120000 and a submodule 160000.
+const REGULAR_MODES = ['100644', '100755'];
+const STAGED_STATUSES = ['A', 'M', 'T'];
+
+/**
+ * The staged code files with their blob ids, from the output of
+ * `git diff --cached --raw -z --no-abbrev --no-renames`: added, modified or
+ * retyped entries whose new version is a regular file.
+ * @param {string} raw
+ * @returns {{ path: string, blob: string }[]}
+ */
+export function parseStagedRaw(raw) {
+  const fields = raw.split('\0');
+  const staged = [];
+  for (let i = 0; i + 1 < fields.length; i += 2) {
+    const [, dstMode, , blob, status] = fields[i].replace(/^:/, '').split(' ');
+    const path = fields[i + 1];
+    if (!STAGED_STATUSES.includes(status?.[0] ?? '')) continue;
+    if (REGULAR_MODES.includes(dstMode) && isHeaderTarget(path)) staged.push({ path, blob });
+  }
+  return staged;
+}
+
 function git(args) {
   return execFileSync('git', args, { encoding: 'utf8', maxBuffer: 64 * 1024 * 1024 });
 }
@@ -184,18 +221,31 @@ function report(missing) {
   return 1;
 }
 
+function isRegularFile(path) {
+  return lstatSync(path, { throwIfNoEntry: false })?.isFile() ?? false;
+}
+
+function checkStaged(body) {
+  const raw = git(['diff', '--cached', '--raw', '-z', '--no-abbrev', '--no-renames']);
+  const staged = parseStagedRaw(raw);
+  const blobs = new Map(staged.map(({ path, blob }) => [path, blob]));
+  const read = (path) => git(['cat-file', 'blob', blobs.get(path)]);
+  return report(missingHeaders([...blobs.keys()], read, body));
+}
+
 function run(mode) {
   const root = git(['rev-parse', '--show-toplevel']).trim();
   process.chdir(root);
   const body = readFileSync('scripts/file-header.txt', 'utf8');
-  if (mode === '--staged') {
-    const staged = gitPaths(['diff', '--cached', '--name-only', '-z', '--diff-filter=ACMR']);
-    return report(missingHeaders(staged, (path) => git(['show', `:${path}`]), body));
-  }
-  const tracked = gitPaths(['ls-files', '-z']).filter(isHeaderTarget);
+  if (mode === '--staged') return checkStaged(body);
+  const listed = [
+    ...gitPaths(['ls-files', '-z']),
+    ...gitPaths(['ls-files', '--others', '--exclude-standard', '-z']),
+  ];
+  const files = selectCodeFiles(listed, isRegularFile);
   const read = (path) => readFileSync(path, 'utf8');
-  if (mode === '--check') return report(missingHeaders(tracked, read, body));
-  for (const path of missingHeaders(tracked, read, body)) {
+  if (mode === '--check') return report(missingHeaders(files, read, body));
+  for (const path of missingHeaders(files, read, body)) {
     writeFileSync(path, applyHeader(read(path), path, body));
     console.log(`file-header: ${path}`);
   }

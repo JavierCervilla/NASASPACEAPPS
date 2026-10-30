@@ -67,9 +67,10 @@ The code follows Clean Code, and the size limits are enforced by lint:
 The code is MIT-licensed (`LICENSE`, © 2026 Universelle). Every code file, new ones included (.ts .tsx .js .mjs .cjs
 .astro .css .py .sh, outside `.claude/`, `.english-gate/` and vendored files), starts with the project header from
 `scripts/file-header.txt`: after a shebang or a Python encoding line if there is one, inside the frontmatter for
-`.astro`. Create the file, then run `npm run headers` (or write the header yourself). CI fails on a tracked code file
-without it (`npm run headers:check`), and `node scripts/file-header.mjs --staged` checks the staged files before a
-commit. The Moon in the header is drawn by `packages/web/scripts/header_moon.py` (see `ASSETS.md`).
+`.astro`. Create the file, then run `npm run headers` (or write the header yourself): it covers tracked files and new
+ones not yet added (git-ignored files and symlinks are skipped). CI fails on a code file without it
+(`npm run headers:check`), and `node scripts/file-header.mjs --staged` checks the staged files before a commit. The
+Moon in the header is drawn by `packages/web/scripts/header_moon.py` (see `ASSETS.md`).
 
 ## Commands
 

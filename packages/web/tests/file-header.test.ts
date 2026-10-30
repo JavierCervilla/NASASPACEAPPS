@@ -24,7 +24,7 @@
  */
 
 import { spawnSync } from 'node:child_process';
-import { copyFileSync, mkdirSync, mkdtempSync, readFileSync, writeFileSync } from 'node:fs';
+import { copyFileSync, mkdirSync, mkdtempSync, readFileSync, symlinkSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -34,7 +34,9 @@ import {
   hasCurrentHeader,
   isHeaderTarget,
   missingHeaders,
+  parseStagedRaw,
   renderHeader,
+  selectCodeFiles,
 } from '../../../scripts/file-header.mjs';
 
 const SCRIPT = fileURLToPath(new URL('../../../scripts/file-header.mjs', import.meta.url));
@@ -137,6 +139,45 @@ describe('missingHeaders', () => {
     }
     expect(isHeaderTarget('packages/web/src/a.tsx')).toBe(true);
   });
+
+  it.each(['.ts', '.tsx', '.js', '.mjs', '.cjs', '.astro', '.css', '.py', '.sh'])('selects %s files', (ext) => {
+    expect(isHeaderTarget(`packages/web/src/a${ext}`)).toBe(true);
+  });
+
+  it.each(['.json', '.md', '.html'])('does not select %s files', (ext) => {
+    expect(isHeaderTarget(`packages/web/src/a${ext}`)).toBe(false);
+  });
+});
+
+describe('selectCodeFiles', () => {
+  it('keeps each code file once, sorted, and drops what is not a regular file', () => {
+    const regular = new Set(['b.ts', 'a.css', 'c.md']);
+    const paths = ['b.ts', 'link.ts', 'a.css', 'b.ts', 'c.md'];
+    expect(selectCodeFiles(paths, (path) => regular.has(path))).toEqual(['a.css', 'b.ts']);
+  });
+});
+
+describe('parseStagedRaw', () => {
+  const zero = '0'.repeat(40);
+  const blob = 'a'.repeat(40);
+  const entry = (src: string, dst: string, status: string, path: string) =>
+    `:${src} ${dst} ${zero} ${blob} ${status}\0${path}\0`;
+
+  it('keeps added, modified and retyped regular files with their blob ids', () => {
+    const raw = entry('000000', '100644', 'A', '1:x.ts') + entry('100644', '100755', 'M', 'run.sh')
+      + entry('120000', '100644', 'T', 'was-link.ts');
+    expect(parseStagedRaw(raw)).toEqual([
+      { path: '1:x.ts', blob },
+      { path: 'run.sh', blob },
+      { path: 'was-link.ts', blob },
+    ]);
+  });
+
+  it('drops symlinks, submodules, deletions and files that are not code', () => {
+    const raw = entry('000000', '120000', 'A', 'evil.ts') + entry('000000', '160000', 'A', 'sub.ts')
+      + entry('100644', '000000', 'D', 'gone.ts') + entry('000000', '100644', 'A', 'notes.md');
+    expect(parseStagedRaw(raw)).toEqual([]);
+  });
 });
 
 describe('the CLI on a git repo', () => {
@@ -164,6 +205,43 @@ describe('the CLI on a git repo', () => {
     expect(readFileSync(join(dir, 'new.ts'), 'utf8')).toContain('SPDX-License-Identifier: MIT');
     expect(cli(dir, '--check').status).toBe(0);
     git(dir, 'add', 'new.ts');
+    expect(cli(dir, '--staged').status).toBe(0);
+  });
+
+  it('skips a tracked symlink: --write leaves its target outside the repo untouched', () => {
+    const dir = repoWithNewFile();
+    const outside = join(mkdtempSync(join(tmpdir(), 'file-header-outside-')), 'outside.ts');
+    writeFileSync(outside, 'export const secret = 1;\n');
+    symlinkSync(outside, join(dir, 'evil.ts'));
+    git(dir, 'add', 'evil.ts');
+    expect(cli(dir, '--write').status).toBe(0);
+    expect(readFileSync(outside, 'utf8')).toBe('export const secret = 1;\n');
+    expect(cli(dir, '--check').status).toBe(0);
+  });
+
+  it('fails --check on a new untracked file and adds the header with --write', () => {
+    const dir = repoWithNewFile();
+    expect(cli(dir, '--write').status).toBe(0);
+    writeFileSync(join(dir, 'untracked.ts'), 'export const b = 2;\n');
+    const check = cli(dir, '--check');
+    expect(check.status).toBe(1);
+    expect(check.stderr).toContain('untracked.ts');
+    expect(cli(dir, '--write').status).toBe(0);
+    expect(readFileSync(join(dir, 'untracked.ts'), 'utf8')).toContain('SPDX-License-Identifier: MIT');
+    expect(cli(dir, '--check').status).toBe(0);
+  });
+
+  it('--staged reads the index, not the working tree', () => {
+    const dir = repoWithNewFile();
+    expect(cli(dir, '--write').status).toBe(0);
+    expect(cli(dir, '--staged').status).toBe(1);
+  });
+
+  it('--staged reads a file whose name looks like a stage spec', () => {
+    const dir = repoWithNewFile();
+    writeFileSync(join(dir, '1:x.ts'), 'export const c = 3;\n');
+    expect(cli(dir, '--write').status).toBe(0);
+    git(dir, 'add', '-A');
     expect(cli(dir, '--staged').status).toBe(0);
   });
 

@@ -41,7 +41,10 @@ Every visible change follows `.claude/skills/apple-design/SKILL.md` (vendored fr
   sheet (closed, peek, half with four widgets, full with the site picker or the calendar) follows apple-design's sheet
   physics, and a floating tab bar switches views. One shared instant (`src/calendar/time-store.ts`: live on the clock by
   default, scrubbed or played) drives the globe's Sun, the widgets and the calendar (the strip under the globe on
-  desktop); the hours come from one cached request per site and month (`src/phone/hours-cache.ts`). Under Save-Data
+  desktop); the hours come from one cached request per site and month (`src/phone/hours-cache.ts`). On desktop
+  the site card sits beside the view and the header tabs switch the view by hash (`#globe`, `#polar-map`,
+  `src/lib/view-tabs.ts`): the polar map is a south polar stereographic disk from 80° S
+  (`src/lib/polar-projection.ts`, image from `scripts/moon_textures.py polar`). Under Save-Data
   the globe waits for a «Load the 3D globe» button and never loads more than its start map.
 - UI text is **English** (the global jury is international): this project's exception to the Language rule below. The local pitch is in Spanish and does not live here.
 

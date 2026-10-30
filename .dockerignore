@@ -4,7 +4,8 @@
 .git
 playwright-report
 test-results
-pipeline/.cache
-pipeline/.venv
 docs
 **/.cache
+.env
+.env.*
+.claude

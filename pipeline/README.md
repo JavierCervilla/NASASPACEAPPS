@@ -1,7 +1,8 @@
 # pipeline
 
-The data contract with JPL Horizons. The backend (one service on Dokploy, no login) implements it and serves the
-result to the web; until it lands, this folder fixes the contract.
+The original data contract with JPL Horizons, kept as the record of what the spec asked for. The backend landed in
+`packages/server` (VENT-3), which owns the backend design from now on: VENT-10 (custom coordinates) and any later
+change of the contract go there, and its README section «API» documents the routes under `/api/v1`.
 
 ## Contract (from the spec)
 

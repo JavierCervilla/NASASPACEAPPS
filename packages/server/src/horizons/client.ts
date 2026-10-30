@@ -21,12 +21,14 @@ import {
   type HorizonsFetchOptions,
 } from './fetch.ts';
 import { InFlight } from './in-flight.ts';
+import type { PointsUsageSource } from './points-store.ts';
 import { toHorizonsParams, type HorizonsQuery } from './query.ts';
 import { parseRows } from './response-body.ts';
 
 export { HorizonsError, type HorizonsErrorKind } from './errors.ts';
 export { HORIZONS_RETRY_DELAYS_MS, type FetchLike } from './fetch.ts';
 export { horizonsResultText } from './response-body.ts';
+export type { PointsUsage, PointsUsageSource } from './points-store.ts';
 
 /** Production endpoint of the Horizons API. */
 export const HORIZONS_API_URL = 'https://ssd.jpl.nasa.gov/api/horizons.api';
@@ -100,6 +102,15 @@ export interface HorizonsClient {
   raw(query: HorizonsQuery, call?: HorizonsCallOptions): Promise<string>;
 }
 
+/** The client {@link createHorizonsClient} builds, with its points cache. */
+export type CachedHorizonsClient = HorizonsClient & {
+  /**
+   * The custom-point cache: pass it to the API's health; `ready()` sizes it
+   * (once, memoised) so the server can do that at start.
+   */
+  readonly points: PointsUsageSource & { ready(): Promise<number> };
+};
+
 /**
  * A stable key for a set of parameters: the SHA-256 of the sorted
  * `name=value` pairs.
@@ -139,7 +150,7 @@ function createParts(options: HorizonsClientOptions) {
  */
 export function createHorizonsClient(
   options: HorizonsClientOptions,
-): HorizonsClient {
+): CachedHorizonsClient {
   const { fetchOptions, queue, cache, inFlight } = createParts(options);
   async function raw(query: HorizonsQuery, call: HorizonsCallOptions = {}) {
     const params = toHorizonsParams(query);
@@ -157,5 +168,6 @@ export function createHorizonsClient(
   return {
     raw,
     rows: async (query, call) => parseRows(await raw(query, call)),
+    points: cache.points,
   };
 }

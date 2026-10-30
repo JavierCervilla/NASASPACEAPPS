@@ -11,7 +11,8 @@ COPY packages/server/package.json packages/server/
 RUN npm ci
 COPY . .
 RUN npm run build -w @ventana/web \
-  && node packages/web/scripts/csp-header.mjs packages/web/dist > /app/csp.conf
+  && node packages/web/scripts/csp-header.mjs packages/web/dist > /app/csp.conf \
+  && grep -q 'Content-Security-Policy' /app/csp.conf
 
 # Same nginx release as before, built to run as an unprivileged user (uid 101) on port 8080.
 FROM nginxinc/nginx-unprivileged:1.30.6-alpine@sha256:f5116ed4606f3eb015dd4a8e28cb9b351476dc0ad4bc6e9f93b19cec130cdf03

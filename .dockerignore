@@ -8,4 +8,6 @@ docs
 **/.cache
 .env
 .env.*
+**/.env
+**/.env.*
 .claude

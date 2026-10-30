@@ -1,4 +1,4 @@
-import { mkdtemp, readdir } from 'node:fs/promises';
+import { mkdtemp, readdir, stat } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import type { Ephemeris, Site } from '@ventana/sim';
@@ -20,17 +20,35 @@ beforeEach(async () => {
 
 function app(fetch: FetchLike, extra: { client?: Partial<HorizonsClientOptions>; missLimiter?: MissLimiter } = {}) {
   const horizons = createHorizonsClient({ fetch, cacheDir, sleep: async () => undefined, ...extra.client });
-  return createApp({ horizons, sites: SITES, now: () => NOW, ...(extra.missLimiter ? { missLimiter: extra.missLimiter } : {}) });
+  return createApp({ horizons, pointsCache: horizons.points, sites: SITES, now: () => NOW, ...(extra.missLimiter ? { missLimiter: extra.missLimiter } : {}) });
 }
 
 const NOV_1 = '&from=2026-11-01&to=2026-11-01';
 const ATHENA = '/api/v1/ephemeris?lat=-84.79&lon=29.2';
 
 describe('GET /api/v1/health', () => {
-  it('answers ok', async () => {
-    const res = await app(fixtureFetch()).request('/api/v1/health');
+  it('answers ok with the points cache at 0 bytes before its first scan', async () => {
+    const res = await app(fixtureFetch(), { client: { maxPointsBytes: 4096 } }).request('/api/v1/health');
     expect(res.status).toBe(200);
-    expect(await res.json()).toEqual({ ok: true });
+    expect(await res.json()).toEqual({ ok: true, cache: { pointsBytes: 0, pointsCapBytes: 4096 } });
+  });
+
+  it('reports the bytes of the custom-point tables, and only those numbers', async () => {
+    const api = app(fixtureFetch(), { client: { maxPointsBytes: 64 * 1024 * 1024 } });
+    expect((await api.request(`${POINT}${NOV_1}`)).status).toBe(200);
+    const dir = join(cacheDir, 'points');
+    const files = await readdir(dir);
+    const sizes = await Promise.all(files.map(async (name) => (await stat(join(dir, name))).size));
+    const body = (await (await api.request('/api/v1/health')).json()) as { cache: { pointsBytes: number } };
+    expect(body).toEqual({ ok: true, cache: { pointsBytes: sizes.reduce((a, b) => a + b, 0), pointsCapBytes: 64 * 1024 * 1024 } });
+    expect(body.cache.pointsBytes).toBeGreaterThan(0);
+  });
+
+  it('copies only the two numbers from the injected store, never a path', async () => {
+    const horizons = createHorizonsClient({ fetch: fixtureFetch(), cacheDir });
+    const pointsCache = { usage: async () => ({ pointsBytes: 7, pointsCapBytes: 9, dir: '/var/cache/horizons/points' }) };
+    const res = await createApp({ horizons, pointsCache, sites: SITES, now: () => NOW }).request('/api/v1/health');
+    expect(await res.json()).toEqual({ ok: true, cache: { pointsBytes: 7, pointsCapBytes: 9 } });
   });
 
   it('has no unversioned alias', async () => {

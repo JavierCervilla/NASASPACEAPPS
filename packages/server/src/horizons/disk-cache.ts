@@ -25,7 +25,8 @@ export class DiskCache {
   private readonly root: string;
   private readonly pinnedDir: string;
   private readonly pointsDir: string;
-  private readonly points: PointsStore;
+  /** The byte-capped `points/`, also read by the health route. */
+  readonly points: PointsStore;
 
   constructor(root: string, maxPointsBytes: number) {
     this.root = root;

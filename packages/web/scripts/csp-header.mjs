@@ -4,8 +4,9 @@
 // The web Dockerfile runs it after `astro build` and nginx includes its output in every location.
 //   node packages/web/scripts/csp-header.mjs packages/web/dist > csp.conf
 import { createHash } from 'node:crypto';
-import { readdirSync, readFileSync } from 'node:fs';
+import { readdirSync, readFileSync, realpathSync, statSync } from 'node:fs';
 import { join } from 'node:path';
+import { pathToFileURL } from 'node:url';
 
 const INLINE_SCRIPT = /<script(?![^>]*\ssrc=)[^>]*>([\s\S]*?)<\/script>/gi;
 const STYLE_ELEMENT = /<style[^>]*>([\s\S]*?)<\/style>/gi;
@@ -27,28 +28,54 @@ function hashes(html, pattern, decode) {
   });
 }
 
-const dist = process.argv[2];
-const pages = dist ? htmlFiles(dist) : [];
-if (pages.length === 0) {
-  // Fail closed: an image without its policy must not build.
-  console.error(`csp-header: no HTML under "${dist ?? ''}"`);
-  process.exit(1);
+/**
+ * The Content-Security-Policy for the given HTML: its inline scripts, style elements and style attributes allowed by
+ * hash, everything else held to 'self' or 'none'.
+ * @param {string} html
+ * @returns {string}
+ */
+export function policyFor(html) {
+  const unique = (list) => [...new Set(list)].join(' ');
+  const scripts = unique(hashes(html, INLINE_SCRIPT, false));
+  const styles = unique(hashes(html, STYLE_ELEMENT, false));
+  const attributes = unique(hashes(html, STYLE_ATTRIBUTE, true));
+  return [
+    "default-src 'self'",
+    `script-src 'self' ${scripts}`.trim(),
+    `style-src 'self' ${styles}`.trim(),
+    attributes ? `style-src-attr 'unsafe-hashes' ${attributes}` : "style-src-attr 'none'",
+    "img-src 'self' data:",
+    "object-src 'none'",
+    "base-uri 'self'",
+    "form-action 'self'",
+    "frame-ancestors 'none'",
+  ].join('; ');
 }
-const html = pages.map((file) => readFileSync(file, 'utf8')).join('\n');
-const unique = (list) => [...new Set(list)].join(' ');
-const scripts = unique(hashes(html, INLINE_SCRIPT, false));
-const styles = unique(hashes(html, STYLE_ELEMENT, false));
-const attributes = unique(hashes(html, STYLE_ATTRIBUTE, true));
 
-const policy = [
-  "default-src 'self'",
-  `script-src 'self' ${scripts}`.trim(),
-  `style-src 'self' ${styles}`.trim(),
-  attributes ? `style-src-attr 'unsafe-hashes' ${attributes}` : "style-src-attr 'none'",
-  "img-src 'self' data:",
-  "object-src 'none'",
-  "base-uri 'self'",
-  "form-action 'self'",
-  "frame-ancestors 'none'",
-].join('; ');
-console.log(`add_header Content-Security-Policy "${policy}" always;`);
+/**
+ * The nginx `add_header Content-Security-Policy` line for the built site in `dist`.
+ * @param {string | undefined} dist
+ * @returns {string}
+ * @throws {Error} with a `csp-header:` message when `dist` is missing or holds no HTML: fail closed, an image without
+ *   its policy must not build.
+ */
+export function cspHeaderLine(dist) {
+  const isDir = dist ? statSync(dist, { throwIfNoEntry: false })?.isDirectory() : false;
+  if (!isDir) throw new Error(`csp-header: build directory "${dist ?? ''}" is missing or not a directory`);
+  const pages = htmlFiles(dist);
+  if (pages.length === 0) throw new Error(`csp-header: no HTML under "${dist}"`);
+  const html = pages.map((file) => readFileSync(file, 'utf8')).join('\n');
+  return `add_header Content-Security-Policy "${policyFor(html)}" always;`;
+}
+
+// Compare real paths: Node resolves symlinks in import.meta.url, so a run
+// through a symlink would otherwise skip the CLI and exit 0 with no policy.
+const entry = process.argv[1] ? realpathSync(process.argv[1]) : null;
+if (entry && import.meta.url === pathToFileURL(entry).href) {
+  try {
+    console.log(cspHeaderLine(process.argv[2]));
+  } catch (error) {
+    console.error(error instanceof Error ? error.message : String(error));
+    process.exit(1);
+  }
+}

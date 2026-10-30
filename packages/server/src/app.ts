@@ -4,7 +4,11 @@ import { Hono, type Context } from 'hono';
 import { apiHeaders } from './api-headers.ts';
 import { clientIp } from './client-ip.ts';
 import { computeEphemeris, type EphemerisRequest } from './ephemeris.ts';
-import { HorizonsError, type HorizonsClient } from './horizons/client.ts';
+import {
+  HorizonsError,
+  type HorizonsClient,
+  type PointsUsageSource,
+} from './horizons/client.ts';
 import {
   MissLimitError,
   createMissLimiter,
@@ -26,6 +30,11 @@ export interface AppDeps {
   readonly horizons: HorizonsClient;
   /** The landing sites the API knows by id. */
   readonly sites: readonly Site[];
+  /**
+   * The custom-point cache, whose tracked size and cap /health reports (the
+   * size comes from the scan the server runs at start).
+   */
+  readonly pointsCache: PointsUsageSource;
   /** Current time in ms since the epoch. */
   readonly now: () => number;
   /**
@@ -117,7 +126,13 @@ async function ephemerisResponse(
  */
 function createV1(deps: RouteDeps): Hono {
   const v1 = new Hono();
-  v1.get('/health', (c) => c.json({ ok: true }));
+  // The cache numbers feed an alarm on the volume, which Dokploy cannot size.
+  // Only the two numbers are copied: no paths reach the answer.
+  v1.get('/health', async (c) => {
+    const usage = await deps.pointsCache.usage();
+    const { pointsBytes, pointsCapBytes } = usage;
+    return c.json({ ok: true, cache: { pointsBytes, pointsCapBytes } });
+  });
 
   // Any point: lat and lon (east longitude) in degrees, from and to as UTC
   // dates or whole hours, optional at.

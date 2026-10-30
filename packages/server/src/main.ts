@@ -40,11 +40,22 @@ const horizons = createHorizonsClient({
   maxPointsBytes: pointsCacheBytes(process.env['HORIZONS_POINTS_CACHE_MB']),
 });
 const sites = await loadSites(process.env['SITES_FILE'] ?? DEFAULT_SITES_FILE);
-const app = createApp({ horizons, sites, now: Date.now });
+const app = createApp({
+  horizons,
+  pointsCache: horizons.points,
+  sites,
+  now: Date.now,
+});
 const server = serve({ fetch: app.fetch, port }, (info) => {
   process.stdout.write(`server listening on port ${info.port}\n`);
 });
 process.on('SIGTERM', () => server.close());
+
+// Size points/ once at start, in the background, so the health answer reports
+// the real cache size from boot instead of 0 until the first custom point.
+void horizons.points.ready().catch((error: unknown) => {
+  console.error(`points cache: first scan failed: ${(error as Error).message}`);
+});
 
 if (process.env['WARM_CACHE'] !== '0') {
   // In the background: the server answers from the first moment, and a visitor

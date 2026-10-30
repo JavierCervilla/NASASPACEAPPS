@@ -17,6 +17,8 @@ RUN npm run build -w @ventana/server
 FROM node:22.23.4-alpine@sha256:fe4f6d74e20370acb04ad889077d14d0f64a9c8ea6a42bc60cddf1e844699914
 # Mount a persistent volume at HORIZONS_CACHE_DIR: every cached Horizons answer saves a slow call on the next deploy.
 ENV NODE_ENV=production PORT=3000 HORIZONS_CACHE_DIR=/var/cache/horizons
+# Hard cap on the custom-point tables in /var/cache/horizons/points; the pinned tables (about 10 MB) do not count.
+ENV HORIZONS_POINTS_CACHE_MB=512
 WORKDIR /app
 COPY package.json package-lock.json ./
 COPY packages/sim/package.json packages/sim/

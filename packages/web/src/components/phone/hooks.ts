@@ -27,21 +27,12 @@
  * React hooks of the phone shell: the breakpoint, the shared selection and
  * the selected site's widgets.
  */
-import {
-  useEffect,
-  useRef,
-  useState,
-  useSyncExternalStore,
-  type RefObject,
-} from 'react';
+import { useRef, useSyncExternalStore, type RefObject } from 'react';
 import { isPhoneViewport, PHONE_QUERY } from '../../lib/viewport';
-import { browserHourClock, watchHour } from '../../phone/hour-clock';
+import type { HoursLoader } from '../../phone/hours-cache';
 import type { Selection, SiteStore } from '../../phone/site-store';
-import {
-  LOADING,
-  loadWidgets,
-  type WidgetsResult,
-} from '../../phone/widgets-loader';
+import { LOADING, widgetsAt } from '../../phone/widgets-loader';
+import { useMonthHours } from '../calendar/hooks';
 
 const subscribePhone = (onChange: () => void): (() => void) => {
   const media = matchMedia(PHONE_QUERY);
@@ -75,32 +66,17 @@ export function useSelection(store: SiteStore): Selection {
 }
 
 /**
- * The widgets of site `id` for the current hour, loading on each new site
- * and again when the hour changes (at its top, or when a hidden page comes
- * back later), so a page left open never shows a stale hour; a retry asks
- * again.
+ * The widgets of site `id` at the hour of `atMs` (null: not known yet),
+ * and the month's hours they come from. A new hour of the same month is
+ * worked out from the hours already loaded: playing time never waits for
+ * the API; a retry asks again.
  */
-export function useSiteWidgets(id: string, sitesUrl: string) {
-  const [attempt, setAttempt] = useState(0);
-  const [result, setResult] = useState<{
-    key: string;
-    value: WidgetsResult;
-  } | null>(null);
-  useEffect(() => {
-    const next = (): void => setAttempt((n) => n + 1);
-    return watchHour(browserHourClock(), next);
-  }, []);
-  const key = `${id}#${attempt}`;
-  useEffect(() => {
-    let live = true;
-    const source = { fetch: globalThis.fetch.bind(globalThis), sitesUrl };
-    void loadWidgets(source, id, Date.now()).then((value) => {
-      if (live) setResult({ key, value });
-    });
-    return () => {
-      live = false;
-    };
-  }, [id, sitesUrl, key]);
-  const retry = (): void => setAttempt((n) => n + 1);
-  return { result: result?.key === key ? result.value : LOADING, retry };
+export function useSiteWidgets(
+  load: HoursLoader,
+  id: string,
+  atMs: number | null,
+) {
+  const { result: hours, retry } = useMonthHours(load, id, atMs);
+  const result = atMs === null ? LOADING : widgetsAt(hours, atMs);
+  return { result, hours, retry };
 }

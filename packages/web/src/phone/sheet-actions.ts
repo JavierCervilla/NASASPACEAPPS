@@ -25,12 +25,15 @@
 
 /**
  * What the phone's controls do to the sheet (validated canvas «Phone ·
- * sheet closed»): the site pill and Sites open the picker at full; Globe
- * and the picker's Done close the sheet, leaving only the Moon, the top
- * bar and the tab bar; a site picked from the list shows its summary at
- * half.
+ * sheet closed» and «Phone · calendar»): the site pill and Sites open the
+ * picker at full; Calendar opens the calendar at full; Globe and the
+ * picker's Done close the sheet, leaving only the Moon, the top bar and
+ * the tab bar; a site picked from the list shows its summary at half.
  */
 import type { DetentName } from '../sheet/sheet-physics';
+
+/** What fills the sheet at full: the site picker or the calendar. */
+export type SheetView = 'sites' | 'calendar';
 
 export interface SheetActions {
   /** Globe, or Done: the sheet leaves the screen. */
@@ -39,15 +42,23 @@ export interface SheetActions {
   readonly open: () => void;
   /** A site from the list: selected, and its summary at half. */
   readonly pick: (id: string) => void;
+  /** Calendar: the calendar at full. */
+  readonly calendar: () => void;
 }
 
 export function sheetActions(
   setDetent: (detent: DetentName) => void,
   select: (id: string) => void,
+  setView: (view: SheetView) => void,
 ): SheetActions {
+  const show = (view: SheetView): void => {
+    setView(view);
+    setDetent('full');
+  };
   return {
     close: () => setDetent('closed'),
-    open: () => setDetent('full'),
+    open: () => show('sites'),
+    calendar: () => show('calendar'),
     pick: (id) => {
       select(id);
       setDetent('half');

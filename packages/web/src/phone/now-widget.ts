@@ -28,7 +28,8 @@ import { hasEarth, hasSun, type HourSample } from '@ventana/sim';
 import { formatShare } from './format';
 import type { NowState, NowWidget } from './widget-types';
 
-const TITLES: Readonly<Record<NowState, string>> = {
+/** What each state is called on the widget and the calendar. */
+export const NOW_TITLES: Readonly<Record<NowState, string>> = {
   window: 'Landing window',
   sun: 'Sun only',
   earth: 'Earth only',
@@ -53,5 +54,6 @@ export function nowWidget(
   month: string,
 ): NowWidget {
   const state = nowState(sample);
-  return { state, title: TITLES[state], detail: formatShare(windowPct, month) };
+  const detail = formatShare(windowPct, month);
+  return { state, title: NOW_TITLES[state], detail };
 }

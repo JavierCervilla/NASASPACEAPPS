@@ -28,6 +28,7 @@
  * loads with a dynamic import, so Three.js downloads only once the page
  * asks for it (boot.ts).
  */
+import type { TimeStore } from '../calendar/time-store';
 import { isPhoneViewport } from '../lib/viewport';
 import type { WatchedValue } from '../lib/watched-value';
 import type { SiteStore } from '../phone/site-store';
@@ -49,10 +50,11 @@ import { bindSheetEdge, frameInset } from './sheet-edge';
 import { bindSelection, type SelectionParts } from './selection';
 import { loadSites } from './sites-client';
 import { createStage, disposeStage, resizeStage, type Stage } from './stage';
+import { bindSun } from './sun-light';
 
 export interface GlobeOptions {
-  /** The instant whose Sun lights the globe, Unix ms. */
-  readonly atMs: number;
+  /** The selected instant: its Sun lights the globe. */
+  readonly time: Pick<TimeStore, 'get' | 'subscribe'>;
   /** The site's base path (`import.meta.env.BASE_URL`). */
   readonly base: string;
   readonly sitesUrl: string;
@@ -155,7 +157,8 @@ export function mountGlobe(host: HTMLElement, options: GlobeOptions) {
   const { camera } = stage;
   const globeParts = { markers, orbit, invalidate, camera };
   const sites = bindSites(host, options, globeParts);
-  const unbind = [watchHost(host, stage, loop), ...input, sites];
+  const sun = bindSun(stage.scene, options.time, invalidate);
+  const unbind = [watchHost(host, stage, loop), ...input, sites, sun];
   void attachDevTools(stage.renderer, moon.textureBytes);
   return () => {
     loop.stop();

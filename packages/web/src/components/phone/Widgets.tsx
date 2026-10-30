@@ -25,7 +25,8 @@
 
 /**
  * The four widgets of the selected site (validated canvas «Phone · globe +
- * widgets»): right now, sunset, earthset and the listening DSN antenna.
+ * widgets»): right now (or at the chosen instant), sunset, earthset and
+ * the listening DSN antenna.
  * Skeletons while the API answers; an honest error when it does not, and
  * an honest state when the current hour is outside the data window.
  */
@@ -88,9 +89,11 @@ function Outside() {
 interface Props {
   readonly result: WidgetsResult;
   readonly onRetry: () => void;
+  /** The chosen instant, «Mon 23 Nov · 18:00 UTC»; null: live, now. */
+  readonly when: string | null;
 }
 
-export function Widgets({ result, onRetry }: Props) {
+export function Widgets({ result, onRetry, when }: Props) {
   if (result.kind === 'loading') return <Skeletons />;
   if (result.kind === 'error') return <Failure onRetry={onRetry} />;
   if (result.kind === 'outside') return <Outside />;
@@ -98,12 +101,13 @@ export function Widgets({ result, onRetry }: Props) {
   const label = (
     <>
       <span className="signal-dot" data-state={now.state} />
-      Right now
+      {when ?? 'Right now'}
     </>
   );
   const listening = { ...dsn, label: 'Listening on Earth' };
+  const name = when ? `This site at ${when}` : 'This site now';
   return (
-    <ul className="widgets" aria-label="This site now">
+    <ul className="widgets" aria-label={name}>
       <Card widget={{ ...now, label, value: now.title }} tone={now.state} />
       <Card widget={sun} tone="sun" big />
       <Card widget={earth} tone="earth" big />

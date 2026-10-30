@@ -32,7 +32,7 @@ import type { GlobeOptions } from './globe';
 
 /** How the start went: drawing, no WebGL, or waiting to be asked. */
 export type GlobeStatus =
-  | { readonly kind: 'ready'; readonly atMs: number }
+  | { readonly kind: 'ready' }
   | { readonly kind: 'unavailable' }
   | { readonly kind: 'deferred' };
 
@@ -58,7 +58,7 @@ async function mount(
   try {
     const { mountGlobe } = await import('./globe');
     const dispose = cancelled() ? null : mountGlobe(host, options);
-    return { dispose, status: { kind: 'ready', atMs: options.atMs } };
+    return { dispose, status: { kind: 'ready' } };
   } catch (error) {
     options.warn(`Ventana Lunar: the 3D globe could not start (${String(error)}).`);
     return { dispose: null, status: { kind: 'unavailable' } };

@@ -31,7 +31,13 @@ import { widgetRange, type WidgetRange } from '../src/phone/widget-range';
 import { nowState, nowWidget } from '../src/phone/now-widget';
 import { hoursUrl, parseHours } from '../src/phone/site-hours';
 import { sampleAt, siteWidgets } from '../src/phone/site-widgets';
-import { loadWidgets } from '../src/phone/widgets-loader';
+import { cachedHours } from '../src/phone/hours-cache';
+import { loadMonthHours, widgetsAt } from '../src/phone/widgets-loader';
+
+/** The widgets at `nowMs`, loaded through a fresh cache. */
+async function loadWidgets(source: { fetch: typeof fetch; sitesUrl: string }, id: string, nowMs: number) {
+  return widgetsAt(await loadMonthHours(cachedHours(source), id, nowMs), nowMs);
+}
 import { hourAt, hoursOf, upUntil } from './phone-factories';
 
 const sample = (sunEl: number, earthEl: number) => ({ sunEl, earthEl });
@@ -161,10 +167,10 @@ describe('siteWidgets', () => {
 });
 
 describe('widgetRange', () => {
-  it('joins the UTC month to a 30-day horizon from the current hour', () => {
+  it('asks for the UTC month and the 30 days after it; the horizon runs 30 days from the hour', () => {
     expect(widgetRange(Date.parse('2026-10-30T10:42:00Z'))).toEqual({
       from: '2026-10-01T00:00:00Z',
-      to: '2026-11-29T10:00:00Z',
+      to: '2026-11-30T23:00:00Z',
       at: '2026-10-30T10:00:00Z',
       monthEnd: '2026-10-31T23:00:00Z',
       horizonEnd: '2026-11-29T10:00:00Z',
@@ -172,9 +178,9 @@ describe('widgetRange', () => {
     });
   });
 
-  it('asks to the end of the month when the horizon ends first', () => {
+  it('asks for the same range at every hour of the month', () => {
     expect(widgetRange(Date.parse('2026-01-01T00:00:00Z'))).toMatchObject({
-      to: '2026-01-31T23:00:00Z',
+      to: '2026-03-02T23:00:00Z',
       horizonEnd: '2026-01-31T00:00:00Z',
     });
   });
@@ -206,9 +212,9 @@ describe('site hours', () => {
   const range = widgetRange(Date.parse('2026-11-23T18:00:00Z'));
   if (!range) throw new Error('no range');
 
-  it('asks the site route for the range and the hour', () => {
+  it('asks the site route for the month, with its first hour as the reference', () => {
     expect(hoursUrl('/api/v1/sites', 'im2-athena', range)).toBe(
-      '/api/v1/sites/im2-athena?from=2026-11-01T00%3A00%3A00Z&to=2026-12-23T18%3A00%3A00Z&at=2026-11-23T18%3A00%3A00Z',
+      '/api/v1/sites/im2-athena?from=2026-11-01T00%3A00%3A00Z&to=2026-12-30T23%3A00%3A00Z&at=2026-11-01T00%3A00%3A00Z',
     );
   });
 

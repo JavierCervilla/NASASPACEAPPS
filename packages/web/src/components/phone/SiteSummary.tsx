@@ -37,6 +37,8 @@ interface Props {
   readonly site: PhoneSite;
   readonly result: WidgetsResult;
   readonly onRetry: () => void;
+  /** The chosen instant, written out; null: live. */
+  readonly when: string | null;
 }
 
 /** «84.79° S, 29.20° E», or nothing for a site without coordinates. */
@@ -51,7 +53,7 @@ function Coords({ site }: { readonly site: PhoneSite }) {
   );
 }
 
-export function SiteSummary({ site, result, onRetry }: Props) {
+export function SiteSummary({ site, result, onRetry, when }: Props) {
   const { title, subtitle } = siteLabels(site);
   return (
     <div className="summary">
@@ -64,7 +66,7 @@ export function SiteSummary({ site, result, onRetry }: Props) {
           <Coords site={site} />
         </p>
       </div>
-      <Widgets result={result} onRetry={onRetry} />
+      <Widgets result={result} onRetry={onRetry} when={when} />
     </div>
   );
 }

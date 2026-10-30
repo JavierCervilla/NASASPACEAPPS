@@ -25,9 +25,11 @@
 
 /**
  * The sheet's detent as React state, starting where the session left it
- * and kept for the session on every change (phone/sheet-memory.ts).
+ * and kept for the session on every change (phone/sheet-memory.ts), and
+ * what fills it at full.
  */
 import { useState } from 'react';
+import type { SheetView } from '../../phone/sheet-actions';
 import {
   readSheetDetent,
   saveSheetDetent,
@@ -42,4 +44,19 @@ export function useSheetDetent(): [DetentName, (d: DetentName) => void] {
     setDetent(next);
   };
   return [detent, choose];
+}
+
+/**
+ * The detent and the view at full. Leaving full, by a drag or a control,
+ * goes back to the picker: dragging the sheet up always finds the sites,
+ * and the calendar is one tap on Calendar.
+ */
+export function useSheetPanel() {
+  const [detent, setDetent] = useSheetDetent();
+  const [view, setView] = useState<SheetView>('sites');
+  const settle = (next: DetentName): void => {
+    if (next !== 'full') setView('sites');
+    setDetent(next);
+  };
+  return { detent, view, setDetent: settle, setView };
 }

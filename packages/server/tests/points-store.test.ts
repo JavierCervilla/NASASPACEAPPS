@@ -28,4 +28,21 @@ describe('PointsStore', () => {
     await new PointsStore(dir, 1_000_000, () => NOW_MS).ready();
     expect(await readdir(dir)).toEqual(['writing.tmp']);
   });
+
+  it('reports 0 bytes and its cap before the first scan, without scanning', async () => {
+    await temp('crashed', STALE_TEMP_MS + 1000);
+    const store = new PointsStore(dir, 4096, () => NOW_MS);
+    expect(await store.usage()).toEqual({ pointsBytes: 0, pointsCapBytes: 4096 });
+    // No scan ran, so the stale file is still there.
+    expect(await readdir(dir)).toEqual(['crashed.tmp']);
+  });
+
+  it('reports the tracked size once a file is added', async () => {
+    const store = new PointsStore(dir, 4096, () => NOW_MS);
+    await store.ready();
+    const path = join(dir, 'a.json');
+    await writeFile(path, 'x'.repeat(300), 'utf8');
+    await store.added(path, 300);
+    expect(await store.usage()).toEqual({ pointsBytes: 300, pointsCapBytes: 4096 });
+  });
 });

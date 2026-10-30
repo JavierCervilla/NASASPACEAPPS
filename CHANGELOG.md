@@ -8,6 +8,7 @@
   lunar south pole?», los días que faltan para el hackathon y la leyenda de los tres colores (Sol, Tierra, ventana).
 - Integración continua con lint, tipos, tests, build, prueba en navegador, gate de idioma y escalera de seguridad.
 - Despliegue en Dokploy: imagen Docker con nginx que sirve la web estática.
+- `/api/v1/health` informa del tamaño de la caché de puntos personalizados y de su límite, para poner una alarma de disco.
 - Guía de diseño `apple-design` incluida en el repo para que toda la interfaz la siga.
 - Kit de depuración solo para desarrollo: panel de rendimiento, rastro de la sesión anterior, niveles de calidad y
   Spector.js. La build de producción comprueba que no llega a la web publicada.

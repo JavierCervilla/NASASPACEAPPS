@@ -10,8 +10,19 @@ import {
 // write takes milliseconds.
 const STALE_TEMP_MS = 60_000;
 
+/** How full `points/` is, for the health answer: two numbers, no paths. */
+export interface PointsUsage {
+  readonly pointsBytes: number;
+  readonly pointsCapBytes: number;
+}
+
+/** What the health route reads from the store. */
+export interface PointsUsageSource {
+  usage(): Promise<PointsUsage>;
+}
+
 /** Tracks the size of `points/` and evicts the least recently used files. */
-export class PointsStore {
+export class PointsStore implements PointsUsageSource {
   private readonly dir: string;
   private readonly maxBytes: number;
   private readonly now: () => number;
@@ -29,30 +40,36 @@ export class PointsStore {
   }
 
   /**
-   * Scans the directory if it was not scanned yet; call it before writing a
-   * file, so the scan does not count it.
+   * Scans the directory if it was not scanned yet, and gives the tracked size;
+   * call it before writing a file, so the scan does not count it.
    */
-  async ready(): Promise<void> {
-    await this.currentSize();
-  }
-
-  /** Counts a file just written, and evicts the oldest others past the cap. */
-  async added(path: string, bytes: number): Promise<void> {
-    const before = await this.currentSize();
-    this.size = Promise.resolve(before + bytes);
-    this.evicting = this.evicting.then(() => this.evict(path));
-    await this.evicting;
-  }
-
-  private currentSize(): Promise<number> {
+  ready(): Promise<number> {
     this.size ??= sweepStaleTemp(this.dir, this.now() - STALE_TEMP_MS)
       .then(() => listPointFiles(this.dir))
       .then(totalBytes);
     return this.size;
   }
 
+  /**
+   * The tracked size and the cap. Never scans the directory: before the first
+   * scan (started by the first write of a custom point) the size is 0, and a
+   * scan already running is awaited rather than repeated.
+   */
+  async usage(): Promise<PointsUsage> {
+    const pointsBytes = this.size === null ? 0 : await this.size;
+    return { pointsBytes, pointsCapBytes: this.maxBytes };
+  }
+
+  /** Counts a file just written, and evicts the oldest others past the cap. */
+  async added(path: string, bytes: number): Promise<void> {
+    const before = await this.ready();
+    this.size = Promise.resolve(before + bytes);
+    this.evicting = this.evicting.then(() => this.evict(path));
+    await this.evicting;
+  }
+
   private async evict(keep: string): Promise<void> {
-    const total = await this.currentSize();
+    const total = await this.ready();
     if (total <= this.maxBytes) return;
     const { dir, maxBytes } = this;
     const left = await evictLeastRecent({ dir, keep, total, maxBytes });

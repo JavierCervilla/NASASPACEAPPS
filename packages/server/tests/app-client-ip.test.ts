@@ -19,7 +19,7 @@ describe('client IP', () => {
   it('is worked out once, and only for a cache miss', async () => {
     const cacheDir = await mkdtemp(join(tmpdir(), 'horizons-ip-'));
     const horizons = createHorizonsClient({ fetch: fixtureFetch(), cacheDir });
-    const api = createApp({ horizons, sites: [], now: () => 0 });
+    const api = createApp({ horizons, pointsCache: horizons.points, sites: [], now: () => 0 });
     expect((await api.request(POINT)).status).toBe(200);
     // One month of one point: five tables, five misses, one client.
     expect(vi.mocked(clientIp)).toHaveBeenCalledTimes(1);

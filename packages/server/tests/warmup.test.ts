@@ -33,7 +33,7 @@ describe('warmCache', () => {
     expect(await readdir(join(cacheDir, 'pinned'))).toHaveLength(10);
     expect(lines).toEqual(['warm-up: 10 of 10 Horizons tables cached']);
 
-    const api = createApp({ horizons, sites: IM2, now: () => 0 });
+    const api = createApp({ horizons, pointsCache: horizons.points, sites: IM2, now: () => 0 });
     const res = await api.request(`/api/v1/sites/im2-athena?from=${WARM_FROM}&to=${WARM_TO}`);
     expect(res.status).toBe(200);
     expect(fetch.calls).toHaveLength(10);

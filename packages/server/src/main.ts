@@ -40,7 +40,12 @@ const horizons = createHorizonsClient({
   maxPointsBytes: pointsCacheBytes(process.env['HORIZONS_POINTS_CACHE_MB']),
 });
 const sites = await loadSites(process.env['SITES_FILE'] ?? DEFAULT_SITES_FILE);
-const app = createApp({ horizons, sites, now: Date.now });
+const app = createApp({
+  horizons,
+  pointsCache: horizons.points,
+  sites,
+  now: Date.now,
+});
 const server = serve({ fetch: app.fetch, port }, (info) => {
   process.stdout.write(`server listening on port ${info.port}\n`);
 });

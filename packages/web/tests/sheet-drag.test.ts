@@ -24,6 +24,21 @@ function fakeSheet() {
 const target = () => ({ grab: vi.fn(), drag: vi.fn(), release: vi.fn() });
 
 describe('bindSheetDrag', () => {
+  it('follows a press on the document when asked, as the tab bar edge does', () => {
+    const bar = fakeSheet();
+    const doc = fakeSheet();
+    const t = target();
+    bindSheetDrag(bar.el, t, () => true, doc.el);
+    bar.fire('pointerdown', 780, 0);
+    // The finger leaves the small bar at once: its moves reach the document, not the bar.
+    doc.fire('pointermove', 760, 16);
+    doc.fire('pointermove', 700, 32);
+    doc.fire('pointerup', 700, 40);
+    expect(t.grab).toHaveBeenCalledOnce();
+    expect(t.drag.mock.calls).toEqual([[-20], [-60]]);
+    expect(t.release).toHaveBeenCalledOnce();
+  });
+
   it('leaves a tap alone: no grab, no release, the click goes through', () => {
     const sheet = fakeSheet();
     const t = target();

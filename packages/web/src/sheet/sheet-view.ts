@@ -4,14 +4,19 @@
  */
 import type { DetentName, Detents } from './sheet-physics';
 
-/** The order the grabber button cycles through. */
+/**
+ * The order the grabber button cycles through. Closed is not in it: a
+ * closed sheet hides its grabber, and the Globe tab closes it instead.
+ */
 const NEXT: Readonly<Record<DetentName, DetentName>> = {
+  closed: 'half',
   peek: 'half',
   half: 'full',
   full: 'peek',
 };
 
 const SPOKEN: Readonly<Record<DetentName, string>> = {
+  closed: 'closed',
   peek: 'collapsed',
   half: 'half height',
   full: 'full height',

@@ -47,7 +47,7 @@ export function createSheetState(
 export function grabSheet(state: SheetState, dimension: number): void {
   const { axis } = state;
   Object.assign(axis, { target: axis.value, velocity: 0 });
-  const bounds = { min: state.detents.full, max: state.detents.peek };
+  const bounds = { min: state.detents.full, max: state.detents.closed };
   state.finger = unRubberBand(axis.value, bounds, dimension);
 }
 
@@ -58,7 +58,7 @@ export function dragSheet(
   dimension: number,
 ): void {
   state.finger += dy;
-  const bounds = { min: state.detents.full, max: state.detents.peek };
+  const bounds = { min: state.detents.full, max: state.detents.closed };
   const y = rubberBand(state.finger, bounds, dimension);
   Object.assign(state.axis, { value: y, target: y, velocity: 0 });
 }

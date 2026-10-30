@@ -34,6 +34,8 @@ completa está en el documento «Ventana Lunar · Especificación y roadmap».
   llegue la cinta de calendario (VENT-4)
 - [x] Versión móvil: globo, hoja inferior con cuatro tarjetas (ventana, Sol, Tierra, antena DSN) y selector de sitios
   (VENT-23)
+- [x] Detalle del globo al acercar (texturas 4K y 8K según el zoom y el equipo), relieve LOLA en el globo y hoja del
+  móvil que se cierra para dejar solo la Luna (VENT-24)
 - [ ] Modo DSN con Goldstone, Canberra y Robledo (VENT-7)
 - [ ] Coordenadas a medida: cualquier lat/lon (VENT-10)
 - [ ] Comparador de sitios o exportar a .ics (VENT-8)

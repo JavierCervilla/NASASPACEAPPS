@@ -124,3 +124,54 @@ test.describe('desktop, 1440x900', () => {
     await expect(page.locator('.sheet')).toHaveCount(0);
   });
 });
+
+test.describe('desktop texture detail, 1440x900', () => {
+  test.use({ viewport: { width: 1440, height: 900 } });
+  // Headless Chromium draws with SwiftShader, which the tier detection rates low (stops at 2K): force the high tier a
+  // desktop GPU gets.
+  const HIGH = './?quality=high';
+  const MAP_4K = /\/textures\/moon-lroc-4k\.jpg$/;
+  const MAP_8K = /\/textures\/moon-lroc-8k\.jpg$/;
+
+  /** Two zoom steps from the opening view (5 Moon radii) reach 3.2 radii: past the 4K threshold, short of 8K. */
+  async function zoomToMedium(page: Page): Promise<void> {
+    await page.getByRole('application', { name: 'The Moon, seen over its south pole' }).focus();
+    await page.keyboard.press('+');
+    await page.keyboard.press('+');
+  }
+
+  test('zooming in fetches the 4K map and its relief, and logs no errors', async ({ page }) => {
+    await page.route('**/api/v1/sites', (route) => route.fulfill({ json: { sites: SITES } }));
+    const log = collectConsole(page);
+    const requested: string[] = [];
+    page.on('request', (r) => requested.push(r.url()));
+    const start = page.waitForResponse(/\/textures\/moon-lola-normal-2k\.jpg$/);
+    await page.goto(HIGH);
+    await start;
+    expect(requested.filter((url) => MAP_4K.test(url))).toEqual([]);
+    const map4k = page.waitForResponse(MAP_4K);
+    const relief4k = page.waitForResponse(/\/textures\/moon-lola-normal-4k\.jpg$/);
+    await zoomToMedium(page);
+    expect((await map4k).ok()).toBe(true);
+    expect((await relief4k).ok()).toBe(true);
+    expect(requested.filter((url) => MAP_8K.test(url))).toEqual([]);
+    expect(log.errors).toEqual([]);
+  });
+
+  test('under Save-Data, zooming in never fetches more than the start map', async ({ page }) => {
+    await page.addInitScript(() => Object.defineProperty(navigator, 'connection', { value: { saveData: true } }));
+    await page.route('**/api/v1/sites', (route) => route.fulfill({ json: { sites: SITES } }));
+    const log = collectConsole(page);
+    const requested: string[] = [];
+    page.on('request', (r) => requested.push(r.url()));
+    await page.goto(HIGH);
+    const start = page.waitForResponse(/\/textures\/moon-lroc-2k\.jpg$/);
+    await page.getByRole('button', { name: 'Load the 3D globe' }).click();
+    await start;
+    await zoomToMedium(page);
+    for (let press = 0; press < 6; press += 1) await page.keyboard.press('+');
+    await page.waitForLoadState('networkidle');
+    expect(requested.filter((url) => MAP_4K.test(url) || MAP_8K.test(url) || /normal-4k/.test(url))).toEqual([]);
+    expect(log.errors).toEqual([]);
+  });
+});

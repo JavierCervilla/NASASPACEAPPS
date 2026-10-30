@@ -1,7 +1,8 @@
 /**
- * QA evidence, not a check: screenshots of the globe at 1440x900 in dark and light mode and of the phone at 390x844
- * (the sheet at half in dark and light, and the site picker), saved under production/qa/evidence/ with the capture
- * date. It runs only on request, so a normal e2e run writes nothing:
+ * QA evidence, not a check: screenshots of the globe at 1440x900 in dark and light mode, a close-up of the south pole
+ * terminator before and after the sharper maps and the LOLA relief, and of the phone at 390x844 (the sheet at half in
+ * dark and light, the site picker, and the sheet closed), saved under production/qa/evidence/ with the capture date. It
+ * runs only on request, so a normal e2e run writes nothing:
  *
  *   CAPTURE_EVIDENCE=1 npm run e2e -- evidence.spec.ts
  *
@@ -37,6 +38,36 @@ test.describe('globe evidence', () => {
   }
 });
 
+test.describe('relief evidence', () => {
+  test.skip(!process.env.CAPTURE_EVIDENCE, 'captures only with CAPTURE_EVIDENCE=1');
+  test.use({ viewport: { width: 1440, height: 900 } });
+
+  // From the opening view: 60° east and 30° further south, then zoomed to the orbit's closest distance, where the
+  // terminator crosses the south polar region on the canvas's date.
+  const TURN = [...Array(6).fill('ArrowRight'), ...Array(3).fill('ArrowDown'), ...Array(9).fill('+')] as string[];
+
+  for (const stage of ['before', 'after'] as const) {
+    test(`south pole terminator, zoomed in, ${stage}`, async ({ page }) => {
+      await page.emulateMedia({ colorScheme: 'dark', reducedMotion: 'reduce' });
+      await page.clock.setFixedTime(new Date('2026-11-23T18:00:00Z'));
+      await page.route('**/api/v1/sites', (route) => route.fulfill({ json: { sites: SITES } }));
+      // «Before» is the globe as VENT-6 shipped it: the 2K map alone, no sharper map and no relief.
+      if (stage === 'before') await page.route(/moon-lroc-[48]k|moon-lola-normal/, (route) => route.abort());
+      const start = page.waitForResponse(/\/textures\/moon-lroc-2k/);
+      await page.goto('./?quality=high');
+      await start;
+      await page.getByRole('application', { name: 'The Moon, seen over its south pole' }).focus();
+      const sharpest = stage === 'after' ? page.waitForResponse(/\/textures\/moon-lroc-8k/) : null;
+      for (const key of TURN) await page.keyboard.press(key);
+      await sharpest;
+      // The swap uploads the map before it shows: give it a moment, then two frames.
+      await page.waitForTimeout(1500);
+      await settle(page);
+      await page.screenshot({ path: new URL(`${DATE}-vent-24-terminator-${stage}.png`, OUT).pathname });
+    });
+  }
+});
+
 test.describe('phone evidence', () => {
   test.skip(!process.env.CAPTURE_EVIDENCE, 'captures only with CAPTURE_EVIDENCE=1');
   test.use({ viewport: { width: 390, height: 844 }, hasTouch: true, isMobile: true, deviceScaleFactor: 2 });
@@ -58,6 +89,14 @@ test.describe('phone evidence', () => {
       await page.screenshot({ path: new URL(`${DATE}-vent-23-phone-${scheme}.png`, OUT).pathname });
     });
   }
+
+  test('phone, sheet closed', async ({ page }) => {
+    await openPhone(page, 'dark');
+    await page.getByRole('navigation', { name: 'Views' }).getByRole('button', { name: 'Globe' }).click();
+    await expect(page.locator('.sheet')).toHaveAttribute('inert', '');
+    await settle(page);
+    await page.screenshot({ path: new URL(`${DATE}-vent-24-phone-closed.png`, OUT).pathname });
+  });
 
   test('phone, site picker open', async ({ page }) => {
     await openPhone(page, 'dark');

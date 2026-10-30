@@ -3,7 +3,6 @@
  * loads with a dynamic import, so Three.js downloads only once the page
  * asks for it (boot.ts).
  */
-import { subSolarPoint } from '@ventana/sim';
 import { isPhoneViewport } from '../lib/viewport';
 import type { WatchedValue } from '../lib/watched-value';
 import type { SiteStore } from '../phone/site-store';
@@ -20,7 +19,8 @@ import { addMoon } from './moon';
 import { createOrbit, type Orbit } from './orbit';
 import { bindPinch } from './pinch';
 import { pinchControls, pointerControls } from './pointer-controls';
-import { pickQuality, textureUrl } from './quality-pick';
+import { pickQuality } from './quality-pick';
+import { bindSheetEdge } from './sheet-edge';
 import { bindSelection, type SelectionParts } from './selection';
 import { loadSites } from './sites-client';
 import { createStage, disposeStage, resizeStage, type Stage } from './stage';
@@ -35,6 +35,8 @@ export interface GlobeOptions {
   readonly store: SiteStore;
   /** The phone sheet's top edge, px from the viewport's top; null: none. */
   readonly sheetEdge: WatchedValue<number | null>;
+  /** The browser asks to save data: the globe keeps its start map. */
+  readonly saveData: boolean;
   readonly reducedMotion: () => boolean;
   readonly warn: (message: string) => void;
 }
@@ -79,24 +81,6 @@ function bindInput(
 }
 
 /**
- * Keeps the site label above the phone sheet: the visible part of the globe
- * ends at the sheet's top edge, moved into the host's coordinates.
- */
-function bindSheetEdge(
-  host: HTMLElement,
-  markers: MarkerLayer,
-  edge: WatchedValue<number | null>,
-): () => void {
-  const clip = (): void => {
-    const top = edge.get();
-    const bottom = top === null ? Number.POSITIVE_INFINITY : top;
-    markers.label.clip(bottom - host.getBoundingClientRect().top);
-  };
-  clip();
-  return edge.subscribe(clip);
-}
-
-/**
  * Binds the markers to the page: loads the API sites into them, follows
  * the shared selection and keeps the label above the phone sheet.
  */
@@ -135,13 +119,10 @@ export function mountGlobe(host: HTMLElement, options: GlobeOptions) {
   const { store } = options;
   const pick = (id: string): void => store.select(id, 'globe');
   const markers = new MarkerLayer(host, store.get().id, invalidate, pick);
-  const loop = createLoop((dt) => drawFrame({ stage, orbit, markers }, dt));
-  const moon = addMoon(stage.scene, {
-    textureUrl: textureUrl(quality, options.base),
-    sun: subSolarPoint(options.atMs),
-    onChange: invalidate,
-    warn: options.warn,
-  });
+  const tier = quality.tier;
+  const moon = addMoon(stage, { ...options, tier, onChange: invalidate });
+  const parts = { stage, orbit, markers, moon };
+  const loop = createLoop((dt) => drawFrame(parts, dt));
   const input = bindInput(host, orbit, loop, options.reducedMotion);
   const sites = bindSites(host, options, { markers, orbit, invalidate });
   const unbind = [watchHost(host, stage, loop), ...input, sites];

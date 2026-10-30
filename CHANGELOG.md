@@ -3,6 +3,24 @@
 ## [Sin publicar]
 
 ### Añadido
+- Ficha del sitio y mapa polar (VENT-5, lienzos validados «Globe view» y «Polar map»): en escritorio, a la derecha del
+  globo, una ficha con la misión, la agencia y la fecha de alunizaje, el nombre del sitio, sus coordenadas y si el
+  punto es exacto o una zona aproximada; dos recuadros grandes con cuánto falta para que se ponga (o salga) el Sol y
+  la Tierra en el instante elegido, con su altura; y, del mes que se ve, las horas con Sol, con Tierra y con ventana de
+  alunizaje, la ventana más larga y la noche más larga, con la fuente de los datos. Usa los mismos cálculos que las
+  tarjetas del móvil y la cinta, así que nunca discrepan; al mover el deslizador cambia con él; mientras carga enseña
+  bloques grises, si falla dice «Try again» y fuera de 2026-2027 lo dice. En pantallas estrechas va debajo del globo.
+  La pestaña «Polar map» cambia el globo por un mapa del polo sur hasta 80° S: el mosaico de color LROC de NASA
+  reproyectado en estereográfica polar (0° arriba, 90° E a la derecha), con meridianos cada 30°, el paralelo de 85° S
+  discontinuo y todos los sitios al sur de 80° S (punto: alunizaje exacto; anillo: zona aproximada). Al pulsar uno, o
+  elegirlo con el teclado, queda seleccionado y la ficha, la cinta y el globo lo siguen; el sitio elegido lleva el
+  color de su estado en ese instante. Si dos sitios están muy juntos gana el punto más cercano al clic. Cambiar de
+  pestaña conserva el sitio y la hora, y el botón Atrás vuelve a la vista anterior. Un sitio más al norte (Apolo 11,
+  por ejemplo) no sale en el mapa: el mapa lo dice en una nota junto al disco y la ficha lo sigue mostrando. Todo
+  sitio del mapa se identifica sin pasar el ratón: si su nombre no cabe, lleva un número y la leyenda «Numbered
+  sites» lo nombra; un alunizaje exacto conserva su etiqueta frente a una zona pegada a él; varios sitios en un mismo
+  punto se leen «Nobile · 3 sites». En una pantalla baja la ficha se desplaza, se difumina en el borde que esconde
+  más y se puede recorrer con el teclado; con el texto al 200 % la leyenda «Layers» del globo no tapa la etiqueta.
 - Store de tiempo, cinta de calendario y selector de sitio (VENT-4, lienzos validados «Globe view» y «Phone ·
   calendar»): toda la página sigue un mismo instante. Por defecto es «ahora» y avanza con el reloj; se puede elegir otra
   hora, reproducir el mes (unos 12 s por mes, se para al final del mes o con Pausa) y volver con «Now». La luz del Sol

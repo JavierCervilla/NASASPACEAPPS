@@ -37,6 +37,7 @@
   border-radius: 18px;
   background: var(--sky);
   overflow: hidden;
+  container-type: inline-size;
 }
 
 @media (prefers-color-scheme: light) {
@@ -227,6 +228,28 @@
 
 .globe-layers .soon {
   color: var(--text-muted);
+}
+
+/*
+ * A view narrow for its text (200 % text, a narrow window) stacks the
+ * key, so it stays in its corner, clear of the site label over the globe.
+ * The em is the view's own, so it grows with the text.
+ */
+@container (max-width: 52em) {
+  .globe-layers ul {
+    flex-direction: column;
+    gap: 6px;
+  }
+}
+
+/*
+ * Too small for both (200 % text in a narrow window): the key gives way,
+ * as the site label is the one that says which site is selected.
+ */
+@container (max-width: 24em) {
+  .globe-layers {
+    display: none;
+  }
 }
 
 .layer-key {

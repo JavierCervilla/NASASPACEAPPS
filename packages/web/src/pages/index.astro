@@ -27,23 +27,29 @@
 import curated from '../../../server/data/sites.json';
 import LunarApp from '../components/LunarApp';
 import Base from '../layouts/Base.astro';
-import { toPhoneSite, type PhoneSite } from '../phone/phone-site';
+import { toCardSite, type CardSite } from '../card/site-facts';
+import { VIEW_HASH } from '../lib/view-tabs';
 import '../styles/globe.css';
 import '../styles/phone.css';
 import '../styles/calendar.css';
+import '../styles/desktop.css';
+import '../styles/polar.css';
 
 // Same origin in production: the API sits behind the same domain.
 const sitesUrl = `${import.meta.env.BASE_URL.replace(/\/$/, '')}/api/v1/sites`;
 
-// The phone's site picker reads the curated list the API serves, built in.
-const sites: PhoneSite[] = (curated as PhoneSite[]).map(toPhoneSite);
+// The site pickers, the polar map and the site card read the curated list
+// the API serves, built in.
+const full = curated as Required<CardSite>[];
+const sites: CardSite[] = full.map(toCardSite);
 
-// Only the globe exists yet; the other two views are later trajectories.
+// The globe and the polar map switch by hash (lib/view-tabs.ts); the
+// island marks the current one. Horizon is a later trajectory.
 const views = [
-  { label: 'Globe', current: true },
-  { label: 'Polar map', current: false },
-  { label: 'Horizon', current: false },
-];
+  { label: 'Globe', view: 'globe', current: true },
+  { label: 'Polar map', view: 'polar', current: false },
+  { label: 'Horizon', view: null, current: false },
+] as const;
 ---
 
 <Base
@@ -60,9 +66,13 @@ const views = [
       <div id="site-slot" class="site-slot"></div>
       <nav aria-label="View" class="views">
         {
-          views.map(({ label, current }) =>
-            current ? (
-              <a href="./" aria-current="page">
+          views.map(({ label, view, current }) =>
+            view ? (
+              <a
+                href={VIEW_HASH[view]}
+                data-view={view}
+                aria-current={current ? 'page' : undefined}
+              >
                 {label}
               </a>
             ) : (
@@ -168,6 +178,34 @@ const views = [
     flex-direction: column;
     gap: 16px;
     padding: 16px 24px 20px;
+  }
+
+  /*
+   * Desktop: the view (globe or polar map) with the site card to its
+   * right and the calendar strip under both (validated canvas «Globe
+   * view»); the areas are named in desktop.css.
+   */
+  @media (min-width: 768px) {
+    .stage {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) 320px;
+      grid-template-rows: minmax(320px, 1fr) auto;
+      grid-template-areas:
+        'view card'
+        'strip strip';
+    }
+  }
+
+  /* Narrow desktops: the card wraps under the view, the page scrolls. */
+  @media (min-width: 768px) and (max-width: 1023.98px) {
+    .stage {
+      grid-template-columns: minmax(0, 1fr);
+      grid-template-rows: minmax(360px, 1fr) auto auto;
+      grid-template-areas:
+        'view'
+        'card'
+        'strip';
+    }
   }
 
   /* Holds the site button's height before the island fills it. */

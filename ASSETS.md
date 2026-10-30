@@ -3,6 +3,14 @@
 Every third-party image, model or sound the site ships, with its source, licence and checksum. Add a row before using a
 new one.
 
+## Texture build
+
+The texture scripts run with the hash-pinned `packages/web/scripts/requirements.txt` (Pillow 13.0.0, NumPy 2.5.4),
+installed as CI does: `pip install --require-hashes --only-binary :all: -r packages/web/scripts/requirements.txt`. The
+shipped files were first made with Pillow 12.3. On 2026-10-30 every texture on this page (colour 1K to 8K, the south
+polar map and the three normal maps) was rebuilt with Pillow 13.0.0 from the sources listed here and came out
+byte-identical, so the sha256 values in these tables hold for both versions.
+
 ## Moon colour map
 
 | File | Size | sha256 |
@@ -25,11 +33,31 @@ new one.
 - **Licence**: NASA, public domain. Credit: NASA's Scientific Visualization Studio (visualizer Ernie Wright, USRA;
   scientist Noah Petro, NASA/GSFC), as the page asks.
 - **How it was made**: browsers do not decode TIFF, so the source was converted to progressive JPEG at quality 85 with
-  Pillow 12.3 (`Image.convert('RGB').save(..., quality=85, optimize=True, progressive=True)`); the 1K file is the same
+  Pillow (`Image.convert('RGB').save(..., quality=85, optimize=True, progressive=True)`); the 1K file is the same
   image resized with Lanczos. The 4K and 8K files are their own sources converted the same way (quality 85; the 8K file
   stays under 6 MB at that quality), with `packages/web/scripts/moon_textures.py colour`. The globe opens with the 2K
   map on the high quality tier and the 1K map on the others, and fetches the 4K and 8K maps only as the zoom needs them
   (`packages/web/src/globe/texture-lod.ts`).
+
+## South polar map
+
+| File | Size | sha256 |
+|---|---|---|
+| `packages/web/public/textures/moon-south-polar-2k.jpg` | 2048 x 2048, 758 130 bytes | `70750b08551aa209004b3cdc4feba2a734351f88ec501ee86fb6d0f6df5f7285` |
+
+- **Source**: the 8K colour mosaic above, `lroc_color_poles_8k.tif` (same URL and sha256), the most detail the kit
+  has between 80° S and 90° S (about 23 source rows per degree of latitude).
+- **What it is**: the south pole down to 80° S in polar stereographic projection, as the polar map view draws it
+  (`packages/web/src/lib/polar-projection.ts`): the pole at the centre, 80° S on the rim, 0° E at the top and 90° E
+  on the right. Black outside the rim, which the page clips to a disk.
+- **Licence**: NASA, public domain, with the same NASA SVS credit as the colour map.
+- **How it was made**: `python3 packages/web/scripts/moon_textures.py polar lroc_color_poles_8k.tif
+  packages/web/public/textures/moon-south-polar-2k.jpg` (Pillow and NumPy): each pixel samples the mosaic
+  bilinearly; the colour is cut to 35 % and the tone stretched (1st to 99th percentile to 14-66 % of the byte scale),
+  because the Hapke-normalised mosaic is flat and bright and would glare from the dark page; progressive JPEG at
+  quality 85.
+- **Known limit**: within about 2° of the pole the source is smeared along meridians (the «poles» fill), so the map
+  shows faint radial streaks around Shackleton. No relief shading: the colour mosaic carries none.
 
 ## Moon relief (normal map)
 

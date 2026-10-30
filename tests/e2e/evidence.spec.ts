@@ -26,13 +26,14 @@
 /**
  * QA evidence, not a check: screenshots of the globe at 1440x900 in dark and light mode, a close-up of the south pole
  * terminator before and after the sharper maps and the LOLA relief, the desktop calendar strip (also at 1280x720) and
- * header site picker, and of the phone at 390x844 (the sheet at half in dark and light, the site picker, the sheet at
- * peek, the sheet closed, also zoomed in, and the calendar, also at 200 % text), saved under
- * production/qa/evidence/ with the capture date. It runs only on request, so a normal e2e run writes nothing:
+ * header site picker, the site card beside the globe (also at 1280x720, where it scrolls and fades at its edge) and
+ * the polar map with it (also with IM-2 not selected, where crowded markers wear numbers its key names), and of the
+ * phone at 390x844 (the sheet at half in dark and light, the site picker, the sheet at peek, the sheet closed, also
+ * zoomed in, and the calendar, also at 200 % text), saved under production/qa/evidence/ with the capture date. It runs only on request, so a normal e2e run writes nothing:
  *
  *   CAPTURE_EVIDENCE=1 npm run e2e -- evidence.spec.ts
  *
- * `-g phone`, `-g globe` or `-g calendar` captures one set only.
+ * `-g phone`, `-g globe`, `-g calendar` or `-g "site card"` captures one set only.
  */
 import { expect, test, type Page } from '@playwright/test';
 import { SITES, stubApi } from './api-stub';
@@ -97,6 +98,57 @@ test.describe('calendar evidence', () => {
     await expect(page.getByRole('dialog', { name: 'Choose a site' })).toBeVisible();
     await settle(page);
     await page.screenshot({ path: new URL(`${DATE}-vent-4-site-picker-dark.png`, OUT).pathname });
+  });
+});
+
+test.describe('site card evidence', () => {
+  test.skip(!process.env.CAPTURE_EVIDENCE, 'captures only with CAPTURE_EVIDENCE=1');
+  test.use({ viewport: { width: 1440, height: 900 } });
+
+  async function openCard(page: Page): Promise<void> {
+    await page.emulateMedia({ colorScheme: 'dark', reducedMotion: 'reduce' });
+    await page.clock.setFixedTime(new Date('2026-11-23T18:00:00Z'));
+    await stubApi(page);
+    const texture = page.waitForResponse(/\/textures\/moon-lroc-/);
+    await page.goto('./?quality=high');
+    await texture;
+    await expect(page.getByRole('complementary', { name: 'Site card' }).getByText('Longest night')).toBeVisible();
+    await expect(page.locator('.globe-label')).toBeVisible();
+    await settle(page);
+  }
+
+  test('site card beside the globe, dark mode', async ({ page }) => {
+    await openCard(page);
+    await page.screenshot({ path: new URL(`${DATE}-vent-5-site-card-globe-dark.png`, OUT).pathname });
+  });
+
+  test('polar map with the site card, dark mode', async ({ page }) => {
+    await openCard(page);
+    await page.getByRole('navigation', { name: 'View' }).getByRole('link', { name: 'Polar map' }).click();
+    const image = page.locator('img.polar__image');
+    // The image decodes off the main thread: wait until it can paint.
+    await image.evaluate((img: HTMLImageElement) => img.decode());
+    await settle(page);
+    await page.screenshot({ path: new URL(`${DATE}-vent-5-polar-map-dark.png`, OUT).pathname });
+  });
+
+  test('polar map, numbered sites and their key, Haworth selected, dark mode', async ({ page }) => {
+    await openCard(page);
+    await page.getByRole('navigation', { name: 'View' }).getByRole('link', { name: 'Polar map' }).click();
+    const image = page.locator('img.polar__image');
+    await image.evaluate((img: HTMLImageElement) => img.decode());
+    await page.getByRole('button', { name: /^Haworth/ }).click();
+    await page.mouse.move(0, 0);
+    await expect(page.locator('.polar-key li').first()).toBeVisible();
+    await settle(page);
+    await page.screenshot({ path: new URL(`${DATE}-vent-5-polar-map-numbered-dark.png`, OUT).pathname });
+  });
+
+  test('site card at 1280x720, scrolling with its edge fade, dark mode', async ({ page }) => {
+    await page.setViewportSize({ width: 1280, height: 720 });
+    await openCard(page);
+    await expect(page.getByRole('group', { name: 'Site details' })).toHaveAttribute('data-fade-bottom', 'true');
+    await page.screenshot({ path: new URL(`${DATE}-vent-5-site-card-1280x720-fade-dark.png`, OUT).pathname });
   });
 });
 

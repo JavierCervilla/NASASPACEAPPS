@@ -39,8 +39,8 @@ import {
   toIso,
   type HourSample,
 } from '@ventana/sim';
-import { samplesWithin } from '../phone/site-widgets';
-import { monthEndMs, monthHours, monthStartMs } from './month';
+import { monthHours, monthStartMs } from './month';
+import { monthSamples } from './month-samples';
 import { hourOfMonth } from './time-actions';
 
 /** A run of hours, as % of the month from its first hour. */
@@ -85,7 +85,7 @@ export function monthStrip(
   atMs: number,
 ): MonthStrip | null {
   const first = toIso(monthStartMs(atMs));
-  const samples = samplesWithin(hours, first, toIso(monthEndMs(atMs)));
+  const samples = monthSamples(hours, atMs);
   if (samples.length === 0) return null;
   const month = { first, hours: monthHours(atMs) };
   const of = (holds: (sample: HourSample) => boolean): Segment[] =>

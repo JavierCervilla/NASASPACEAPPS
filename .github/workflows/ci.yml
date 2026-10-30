@@ -53,7 +53,22 @@ jobs:
       # The texture pipeline's Python. Pinned: a new ruff release can add rules and turn a green PR red with no change
       # of ours.
       - name: Ruff (packages/web/scripts)
-        run: pipx run --spec "ruff==0.16.8" ruff check packages/web/scripts
+        run: |
+          pipx run --spec "ruff==0.16.8" ruff check packages/web/scripts
+          pipx run --spec "ruff==0.16.8" ruff format --check packages/web/scripts
+      # The Python the texture scripts' requirements.txt is compiled for (its header has the command).
+      - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6.3.0
+        with:
+          python-version: "3.13"
+      # The polar map image must face the way the web's projection does, and the pixel cap must hold. Grid maths and
+      # headers only: no source TIFF. The deps come from requirements.txt, hash-pinned and wheels only, so no sdist
+      # build runs and the security ladder's osv-scanner sees the same pins.
+      - name: Texture script tests (packages/web/scripts)
+        run: |
+          python -m venv "$RUNNER_TEMP/py"
+          "$RUNNER_TEMP/py/bin/pip" install --quiet --require-hashes --only-binary :all: \
+            -r packages/web/scripts/requirements.txt
+          "$RUNNER_TEMP/py/bin/python" -m unittest discover -s packages/web/scripts -p "test_*.py"
 
   security:
     name: Guardián · security ladder (secrets + SAST + deps)

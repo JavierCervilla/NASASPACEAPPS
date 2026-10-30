@@ -25,7 +25,7 @@ completa está en el documento «Ventana Lunar · Especificación y roadmap».
   los periodos lunares y el signo de la longitud; 29 sitios (polo sur, Apolo y otros países), los 12 sin coordenada citable marcados como
   aproximados (VENT-3)
 - [x] Store de tiempo, selector de sitio y cinta de calendario (VENT-4)
-- [ ] Ficha del sitio con el tiempo hasta la puesta de Sol y de Tierra, y mapa polar 2D (VENT-5)
+- [x] Ficha del sitio con el tiempo hasta la puesta de Sol y de Tierra, y mapa polar 2D (VENT-5)
 
 ## Lujo y entrega (código congelado el domingo 15 a las 15:30)
 

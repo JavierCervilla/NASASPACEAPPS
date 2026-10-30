@@ -25,6 +25,7 @@
  */
 
 import curated from '../../../server/data/sites.json';
+import GlassFilter from '../components/GlassFilter.astro';
 import LunarApp from '../components/LunarApp';
 import Base from '../layouts/Base.astro';
 import { toCardSite, type CardSite } from '../card/site-facts';
@@ -57,6 +58,7 @@ const views = [
   title="Ventana Lunar"
   description="When can you land at the lunar south pole? NASA Space Apps Challenge 2026, Madrid."
 >
+  <GlassFilter />
   <div class="page">
     <header class="bar">
       <div class="titles">

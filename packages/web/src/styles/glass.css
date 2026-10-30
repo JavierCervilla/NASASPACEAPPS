@@ -1,0 +1,91 @@
+/*
+ *   _   _       _                         _ _
+ *  | | | |_ __ (_)_   _____ _ __ ___  ___| | | ___
+ *  | | | | '_ \| \ \ / / _ \ '__/ __|/ _ \ | |/ _ \
+ *  | |_| | | | | |\ V /  __/ |  \__ \  __/ | |  __/
+ *   \___/|_| |_|_| \_/ \___|_|  |___/\___|_|_|\___|
+ *
+ *             =++==--::.
+ *         %%%%##**++=--:..  .
+ *      ##**#%@%%#***+=--::.   .
+ *    #**=+*#*#**#++++=-:::.. .  .
+ *   #++-====*@%+*++==--::...   .  .    Ventana Lunar
+ *  #+=-=--++==+===-+==--:..   .  .  .  Sun, Earth and landing
+ * #----====-------=-=---:..  .  .  .   windows at the lunar
+ * #+---+=====--=---==-::..     .  .  . south pole
+ * #*----==---==-=-=-:-....    .  .  .
+ * *#----===+*===--:-::...    .  .  .   Built for the NASA Space
+ *  *----=*-+*%*+=-:::....   .  .  .    Apps Challenge 2026,
+ *   *------=+*=--:::-:::.. .  .  .     Madrid. Not endorsed
+ *    %*===-=-==--==-:::.  .  .  .      by NASA.
+ *      *+:--+:--::::::.  .  .  .
+ *         -=:::...:..   .  .           (c) 2026 Universelle
+ *             :::.. .  .               SPDX-License-Identifier: MIT
+ */
+
+/*
+ * Liquid glass (VENT-27, approved prototype VENT-16): where the glass
+ * gate (src/glass/) sets data-glass="liquid" on the root, the floating
+ * surfaces refract the globe under them and catch light on their rim.
+ * Frosted, the default, is each surface's own blur and stays as it was.
+ * The pill inside the phone's top bar takes the rim only: a second
+ * refracting layer on glass would stack translucency (apple-design §12).
+ */
+
+/* The filter's SVG: in the page, never in the layout. */
+.glass-defs {
+  position: absolute;
+  width: 0;
+  height: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+:root[data-glass='liquid'] :is(
+    .bar,
+    .phone-bar,
+    .tab-bar,
+    .site-popover,
+    .globe-layers,
+    .globe-callout,
+    .strip,
+    .card-block
+  ) {
+  background: var(--glass-liquid-tint);
+  backdrop-filter: var(--glass-liquid-filter);
+}
+
+/* The sheet holds the most text: it keeps its heavier tint. */
+:root[data-glass='liquid'] .sheet {
+  backdrop-filter: var(--glass-liquid-filter);
+  box-shadow: var(--phone-sheet-edge), var(--glass-liquid-rim);
+}
+
+:root[data-glass='liquid'] :is(.bar, .globe-layers, .site-pill) {
+  box-shadow: var(--glass-liquid-rim);
+}
+
+:root[data-glass='liquid'] :is(.phone-bar, .tab-bar) {
+  box-shadow: var(--phone-bar-edge), var(--glass-liquid-rim);
+}
+
+:root[data-glass='liquid'] .site-popover {
+  box-shadow: var(--popover-shadow), var(--glass-liquid-rim);
+}
+
+:root[data-glass='liquid'] .globe-callout {
+  box-shadow:
+    0 22px 54px rgba(0, 0, 0, 0.55),
+    var(--glass-liquid-rim);
+}
+
+/* Dark mode lifts the desktop panels with no shadow (--strip-edge: none). */
+:root[data-glass='liquid'] :is(.strip, .card-block) {
+  box-shadow: var(--glass-liquid-rim);
+}
+
+@media (prefers-color-scheme: light) {
+  :root[data-glass='liquid'] :is(.strip, .card-block) {
+    box-shadow: var(--strip-edge), var(--glass-liquid-rim);
+  }
+}

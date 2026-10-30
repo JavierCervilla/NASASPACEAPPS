@@ -57,6 +57,17 @@
   --map-panel: #0c0d11;
 
   /*
+   * Liquid glass (VENT-27, src/glass/): the floating surfaces refract what
+   * lies under them through the page's SVG filter (#glass-liquid), with a
+   * lighter blur than the frosted glass and a bright rim where light
+   * catches the edge. Only where the glass gate sets data-glass="liquid".
+   */
+  --glass-liquid-filter: url('#glass-liquid') blur(8px) saturate(180%);
+  --glass-liquid-tint: rgba(24, 26, 32, 0.58);
+  --glass-liquid-rim: inset 0 1px 0 rgba(255, 255, 255, 0.26),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.1);
+
+  /*
    * The lunar sky stays black in both themes, and the site markers drawn on
    * the Moon stay light: they sit on the globe, not on the page.
    */
@@ -115,6 +126,9 @@
     --strip-edge: 0 8px 30px rgba(0, 0, 0, 0.12);
     --card: #ffffff;
     --card-skeleton: #e5e5ea;
+    --glass-liquid-tint: rgba(255, 255, 255, 0.84);
+    --glass-liquid-rim: inset 0 1px 0 rgba(255, 255, 255, 0.95),
+      inset 0 0 0 1px rgba(0, 0, 0, 0.08);
 
     --sky: radial-gradient(120% 90% at 50% 40%, #151821 0%, #07080b 70%);
     --marker: #ffffff;

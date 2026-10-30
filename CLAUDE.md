@@ -51,6 +51,14 @@ Every visible change follows `.claude/skills/apple-design/SKILL.md` (vendored fr
   events, never covers the Layers key, the top bar or the tab bar (it hides when it cannot), and the frame loop only
   writes its transform. Under Save-Data
   the globe waits for a «Load the 3D globe» button and never loads more than its start map.
+- Glass: the floating surfaces (phone top bar, sheet, tab bar, site pill and callout; desktop header, site popover,
+  Layers key, calendar strip, site card and callout) wear Liquid glass (refraction through the inline SVG filter
+  `#glass-liquid` in `src/components/GlassFilter.astro`, `--glass-liquid-*` tokens, `src/styles/glass.css`) or the
+  frosted blur. The glass gate (`src/glass/`) sets `data-glass="liquid|frosted"` on the root: Liquid only on Chromium
+  with `backdrop-filter: url()` (Safari and Firefox parse it but do not draw it), at the medium or high tier, without
+  reduced transparency, more contrast or Save-Data, and while a 2 s frame probe holds the tier's budget (timed at load
+  and again from the first press, since an idle page redraws nothing under the glass); a slow probe switches to frosted
+  live and for the session. `?glass=liquid|frosted` forces a mode.
 - UI text is **English** (the global jury is international): this project's exception to the Language rule below. The local pitch is in Spanish and does not live here.
 
 ## Clean Code

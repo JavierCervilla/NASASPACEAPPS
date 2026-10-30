@@ -17,7 +17,7 @@ completa está en el documento «Ventana Lunar · Especificación y roadmap».
 - [ ] Pestaña Resources: vacía a 29 oct; NASA dice que añadirá recursos antes del hackathon
 - [ ] Petición de prueba a JPL Horizons (cualquier objeto) para entender el formato
 - [ ] Borrador del pitch y guion del vídeo (70 palabras)
-- [ ] Textura LRO WAC 2K y cara del polo sur en el repo de recursos
+- [x] Textura LRO WAC 2K (y 1K para equipos modestos) en el repo, con su fuente y su sha256 en `ASSETS.md` (VENT-6)
 
 ## MVP
 
@@ -30,7 +30,8 @@ completa está en el documento «Ventana Lunar · Especificación y roadmap».
 ## Lujo y entrega (código congelado el domingo 15 a las 15:30)
 
 - [ ] Horizonte real con el relieve LOLA (VENT-11)
-- [ ] Globo lunar 3D con la luz siguiendo al slider (VENT-6)
+- [x] Globo lunar 3D con el terminador del Sol real y los sitios de la API (VENT-6); la luz seguirá al slider cuando
+  llegue la cinta de calendario (VENT-4)
 - [ ] Modo DSN con Goldstone, Canberra y Robledo (VENT-7)
 - [ ] Coordenadas a medida: cualquier lat/lon (VENT-10)
 - [ ] Comparador de sitios o exportar a .ics (VENT-8)

@@ -29,6 +29,15 @@ Recording needs the network, and only recording does: in this cloud container No
 proxy with `NODE_USE_ENV_PROXY=1 node packages/server/scripts/record-fixtures.ts`. The script re-records every file;
 the earlier ones came back identical except for the request stamp line, so they were left as committed.
 
+**Sub-solar point** (added 2026-10-30, VENT-6): `moon-subsolar-from-geocentre-2026-11-12.json` is the Moon (`301`)
+seen from the geocentre (`500@399`), `QUANTITIES='15'` (the Sun's sub-longitude and sub-latitude on the target,
+east-positive, ME frame), daily from 2026-11-01 to 2026-12-31. It checks the closed-form model in
+`packages/sim/src/sun.ts` (`sun.test.ts`). The service never sends this query, so it has its own script:
+
+```sh
+NODE_USE_ENV_PROXY=1 node packages/server/scripts/record-subsolar-fixture.ts
+```
+
 `manifest.json` maps each file to the exact query parameters that produced it; the server tests use it to answer a
 fake `fetch`.
 

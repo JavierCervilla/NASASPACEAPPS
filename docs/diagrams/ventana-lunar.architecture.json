@@ -159,7 +159,7 @@
       "id": "moon3d",
       "type": "frontend",
       "label": "3D Moon globe",
-      "sublabel": "Three.js",
+      "sublabel": "Three.js, real Sun",
       "pos": [
         745,
         680
@@ -168,7 +168,7 @@
         140,
         60
       ],
-      "tag": "luxury"
+      "tag": "built"
     },
     {
       "id": "dsn",
@@ -316,7 +316,8 @@
       "items": [
         "One Time store (site + UTC hour) fetches site data",
         "Views subscribe read-only; they never compute ephemerides",
-        "MVP: calendar, polar map, site card; luxury: globes"
+        "MVP: calendar, polar map, site card; luxury: globes",
+        "Built: the 3D globe, lazy-loaded on desktop; it reads the sites API directly until the store lands"
       ]
     }
   ]

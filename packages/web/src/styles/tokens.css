@@ -10,6 +10,22 @@
   --surface-edge: rgba(255, 255, 255, 0.08);
   --text: #f2f2f4;
   --text-muted: #9a9ca6;
+  --text-secondary: #c7c8ce;
+
+  /* Header bar, segmented control, and the glass label over the globe. */
+  --chrome: rgba(18, 19, 24, 0.72);
+  --fill: rgba(120, 120, 128, 0.24);
+  --fill-selected: #2c2c2e;
+  --fill-selected-shadow: none;
+  --glass-label: rgba(18, 19, 24, 0.8);
+  --glass-label-text: #f2f2f4;
+
+  /*
+   * The lunar sky stays black in both themes, and the site markers drawn on
+   * the Moon stay light: they sit on the globe, not on the page.
+   */
+  --sky: radial-gradient(120% 90% at 50% 40%, #11131a 0%, #07080b 70%);
+  --marker: #f2f2f4;
 
   --signal-sun: #f5c542;
   --signal-earth: #4a9cff;
@@ -29,6 +45,30 @@
   --radius: 1rem;
 }
 
+/* Light mode follows the device setting (validated canvas «Globe view · light»). */
+@media (prefers-color-scheme: light) {
+  :root {
+    color-scheme: light;
+
+    --bg: #f2f2f7;
+    --surface: rgba(255, 255, 255, 0.86);
+    --surface-edge: rgba(0, 0, 0, 0.08);
+    --text: #1c1c1e;
+    --text-muted: #6c6c70;
+    --text-secondary: #3a3a3c;
+
+    --chrome: rgba(242, 242, 247, 0.78);
+    --fill: rgba(120, 120, 128, 0.12);
+    --fill-selected: #ffffff;
+    --fill-selected-shadow: 0 1px 3px rgba(0, 0, 0, 0.12);
+    --glass-label: rgba(255, 255, 255, 0.86);
+    --glass-label-text: #1c1c1e;
+
+    --sky: radial-gradient(120% 90% at 50% 40%, #151821 0%, #07080b 70%);
+    --marker: #ffffff;
+  }
+}
+
 @media (prefers-contrast: more) {
   :root {
     --surface: #15161b;
@@ -40,5 +80,23 @@
 @media (prefers-reduced-transparency: reduce) {
   :root {
     --surface: #15161b;
+    --chrome: #101116;
+    --glass-label: #15161b;
+  }
+}
+
+@media (prefers-color-scheme: light) and (prefers-contrast: more) {
+  :root {
+    --surface: #ffffff;
+    --surface-edge: rgba(0, 0, 0, 0.6);
+    --text-muted: #3a3a3c;
+  }
+}
+
+@media (prefers-color-scheme: light) and (prefers-reduced-transparency: reduce) {
+  :root {
+    --surface: #ffffff;
+    --chrome: #f2f2f7;
+    --glass-label: #ffffff;
   }
 }

@@ -26,3 +26,4 @@ export { buildHourSamples, type SampleInputs } from './samples.ts';
 export { groupBlocks, longestBlock } from './blocks.ts';
 export { computeRangeMetrics, hoursUntilLost, nextBlock } from './metrics.ts';
 export { HOUR_MS, addHours, hoursBetween, toIso, toMs } from './time.ts';
+export { subSolarPoint, wrapDeg, type SelenographicPoint } from './sun.ts';

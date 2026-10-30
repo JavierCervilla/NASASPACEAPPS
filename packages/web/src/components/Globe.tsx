@@ -24,11 +24,13 @@
  */
 
 import { useEffect, useRef, useState } from 'react';
+import type { TimeStore } from '../calendar/time-store';
 import { startGlobe, type GlobeStatus } from '../globe/boot';
 import { describeSun } from '../globe/describe';
 import type { WatchedValue } from '../lib/watched-value';
 import { prefersSaveData } from '../lib/viewport';
 import type { SiteStore } from '../phone/site-store';
+import { useTime } from './calendar/hooks';
 
 const REDUCED_MOTION = '(prefers-reduced-motion: reduce)';
 const HELP_ID = 'globe-help';
@@ -47,6 +49,8 @@ interface Props {
   readonly store: SiteStore;
   /** The phone sheet's top edge, px from the viewport's top; null: none. */
   readonly sheetEdge: WatchedValue<number | null>;
+  /** The selected instant: its Sun lights the globe. */
+  readonly time: TimeStore;
 }
 
 const reducedMotion = (): boolean => matchMedia(REDUCED_MOTION).matches;
@@ -55,7 +59,7 @@ const reducedMotion = (): boolean => matchMedia(REDUCED_MOTION).matches;
  * Starts the scene in the viewport after hydration (or waits for the
  * visitor under Save-Data); its status, and how to load it on request.
  */
-function useGlobe({ sitesUrl, base, store, sheetEdge }: Props) {
+function useGlobe({ sitesUrl, base, store, sheetEdge, time }: Props) {
   const host = useRef<HTMLDivElement>(null);
   const loader = useRef<() => void>(() => undefined);
   const [status, setStatus] = useState<GlobeStatus | null>(null);
@@ -63,22 +67,26 @@ function useGlobe({ sitesUrl, base, store, sheetEdge }: Props) {
     const el = host.current;
     if (!el) return undefined;
     const warn = (message: string): void => console.warn(message);
-    const options = { atMs: Date.now(), base, sitesUrl, store, sheetEdge };
+    const options = { time, base, sitesUrl, store, sheetEdge };
     const saveData = prefersSaveData();
     const deps = { ...options, saveData, reducedMotion, warn };
     const start = startGlobe(el, deps, setStatus, saveData);
     loader.current = start.load;
     return start.dispose;
-  }, [sitesUrl, base, store, sheetEdge]);
+  }, [sitesUrl, base, store, sheetEdge, time]);
   const load = (): void => loader.current();
   return { host, status, load };
 }
 
-/** The text alternative: how to use the globe, or why it is not there. */
-function helpText(status: GlobeStatus | null): string {
+/**
+ * The text alternative: how to use the globe and where its Sun stands at
+ * the instant `atMs`, or why it is not there.
+ */
+function helpText(status: GlobeStatus | null, atMs: number | null): string {
   if (status?.kind === 'unavailable') return NO_WEBGL;
   if (status?.kind === 'deferred') return DEFERRED;
-  const sun = status?.kind === 'ready' ? ` ${describeSun(status.atMs)}` : '';
+  const lit = status?.kind === 'ready' && atMs !== null;
+  const sun = lit ? ` ${describeSun(atMs)}` : '';
   return `${HOW_TO}${sun}`;
 }
 
@@ -98,6 +106,7 @@ function LoadButton({ onLoad }: { readonly onLoad: () => void }) {
  */
 export default function Globe(props: Props) {
   const { host, status, load } = useGlobe(props);
+  const atMs = useTime(props.time)?.atMs ?? null;
   // The scene owns the viewport's children (canvas, markers), so React
   // renders nothing inside it; the text alternative is its sibling.
   const kind = status?.kind ?? 'idle';
@@ -114,7 +123,7 @@ export default function Globe(props: Props) {
         aria-describedby={HELP_ID}
       />
       <p id={HELP_ID} className="globe-help" data-status={kind}>
-        {helpText(status)}
+        {helpText(status, atMs)}
       </p>
       {kind === 'deferred' ? <LoadButton onLoad={load} /> : null}
     </>

@@ -1,0 +1,625 @@
+/*
+ *   _   _       _                         _ _
+ *  | | | |_ __ (_)_   _____ _ __ ___  ___| | | ___
+ *  | | | | '_ \| \ \ / / _ \ '__/ __|/ _ \ | |/ _ \
+ *  | |_| | | | | |\ V /  __/ |  \__ \  __/ | |  __/
+ *   \___/|_| |_|_| \_/ \___|_|  |___/\___|_|_|\___|
+ *
+ *             =++==--::.
+ *         %%%%##**++=--:..  .
+ *      ##**#%@%%#***+=--::.   .
+ *    #**=+*#*#**#++++=-:::.. .  .
+ *   #++-====*@%+*++==--::...   .  .    Ventana Lunar
+ *  #+=-=--++==+===-+==--:..   .  .  .  Sun, Earth and landing
+ * #----====-------=-=---:..  .  .  .   windows at the lunar
+ * #+---+=====--=---==-::..     .  .  . south pole
+ * #*----==---==-=-=-:-....    .  .  .
+ * *#----===+*===--:-::...    .  .  .   Built for the NASA Space
+ *  *----=*-+*%*+=-:::....   .  .  .    Apps Challenge 2026,
+ *   *------=+*=--:::-:::.. .  .  .     Madrid. Not endorsed
+ *    %*===-=-==--==-:::.  .  .  .      by NASA.
+ *      *+:--+:--::::::.  .  .  .
+ *         -=:::...:..   .  .           (c) 2026 Universelle
+ *             :::.. .  .               SPDX-License-Identifier: MIT
+ */
+
+/*
+ * The calendar (VENT-4, validated canvases «Globe view» and «Phone ·
+ * calendar»): the desktop strip under the globe, the phone's calendar in
+ * the sheet at full, the pieces they share, and the desktop header's site
+ * button with its popover. The bars use the four signal colours and
+ * nothing else does. No transitions follow the instant: it moves 1:1
+ * with the finger, the keys or Play.
+ */
+/* Shared pieces */
+
+.signal-bar {
+  position: relative;
+  border-radius: 4px;
+  background: var(--signal-none);
+  overflow: hidden;
+}
+
+.signal-bar__on {
+  position: absolute;
+}
+
+.signal-bar[data-axis='horizontal'] .signal-bar__on {
+  top: 0;
+  bottom: 0;
+}
+
+.signal-bar[data-axis='vertical'] .signal-bar__on {
+  left: 0;
+  right: 0;
+}
+
+.signal-bar[data-tone='sun'] .signal-bar__on { background: var(--signal-sun); }
+.signal-bar[data-tone='earth'] .signal-bar__on { background: var(--signal-earth); }
+.signal-bar[data-tone='window'] .signal-bar__on { background: var(--signal-window); }
+
+.month-arrows {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.round-button,
+.play-button {
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  font: inherit;
+  cursor: pointer;
+}
+
+.round-button {
+  background: var(--fill);
+  color: var(--text);
+}
+
+.round-button:disabled {
+  color: var(--text-muted);
+  opacity: 0.5;
+  cursor: default;
+}
+
+.play-button {
+  background: var(--text);
+  color: var(--bg);
+}
+
+.now-button {
+  flex: none;
+  min-height: 44px;
+  padding: 0 12px;
+  border: 0;
+  border-radius: 12px;
+  background: var(--fill);
+  color: var(--text);
+  font: inherit;
+  font-size: 0.875rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.now-button:disabled {
+  color: var(--text-muted);
+  cursor: default;
+}
+
+:is(.round-button, .play-button, .now-button, .site-button):focus-visible,
+.columns:focus-visible {
+  outline: 2px solid var(--text);
+  outline-offset: 2px;
+}
+
+/* Press feedback, instant on the press (apple-design §1). */
+@media (prefers-reduced-motion: no-preference) {
+  :is(.round-button, .play-button, .now-button, .site-button):active {
+    transform: scale(0.97);
+    transition: transform var(--dur-press) ease-out;
+  }
+}
+
+.strip-status {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-height: 64px;
+  margin: 0;
+  font-size: 0.875rem;
+  color: var(--text-secondary);
+}
+
+.strip-status p {
+  margin: 0;
+}
+
+.strip-status button {
+  min-height: 44px;
+  padding: 0 16px;
+  border: 0;
+  border-radius: 12px;
+  background: var(--fill);
+  color: var(--text);
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.strip-status--loading {
+  border-radius: 4px;
+  background: var(--signal-none);
+}
+
+/* Desktop strip under the globe */
+
+.strip {
+  display: flex;
+  flex: none;
+  flex-direction: column;
+  gap: 10px;
+  min-height: 190px;
+  padding: 16px 18px;
+  border-radius: 18px;
+  background: var(--strip);
+  box-shadow: var(--strip-edge);
+  color: var(--text);
+  letter-spacing: -0.01em;
+}
+
+.strip__head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 20px;
+}
+
+.strip__month {
+  min-width: 9.5rem;
+  margin: 0;
+  font-size: 0.9375rem;
+  line-height: 1.3;
+  font-weight: 600;
+  text-align: center;
+}
+
+.strip__clock {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.strip__legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 14px;
+  margin: 0 0 0 auto;
+  padding: 0;
+  list-style: none;
+  font-size: 0.8125rem;
+  color: var(--text-secondary);
+}
+
+.strip__legend li {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.legend-key {
+  width: 10px;
+  height: 10px;
+  border-radius: 3px;
+}
+
+.legend-key[data-tone='sun'] { background: var(--signal-sun); }
+.legend-key[data-tone='earth'] { background: var(--signal-earth); }
+.legend-key[data-tone='window'] { background: var(--signal-window); }
+.legend-key[data-tone='none'] { background: var(--signal-none); }
+
+/*
+ * Labels and Play in the first column, as wide as the widest of them (it
+ * grows with the text); the bars, the day ticks and the slider share the
+ * second, so the slider's thumb sits on the instant line.
+ */
+.strip__grid {
+  display: grid;
+  grid-template-columns: max-content minmax(0, 1fr);
+  gap: 6px 12px;
+  align-items: center;
+}
+
+.strip__grid > .strip-status {
+  grid-column: 1 / -1;
+}
+
+.strip__row {
+  display: contents;
+}
+
+.strip__label {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+}
+
+.strip__row .signal-bar {
+  height: 14px;
+}
+
+.strip__row .signal-bar[data-tone='window'] {
+  display: grid;
+  place-items: center;
+  height: auto;
+  min-height: 22px;
+}
+
+.signal-bar__note {
+  position: relative;
+  margin: 0;
+  font-size: 0.75rem;
+  line-height: 1.2;
+  color: var(--on-signal-none);
+}
+
+.instant-line {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 2px;
+  margin-left: -1px;
+  background: var(--text);
+}
+
+/* As tall as its text, so large text never runs into the slider. */
+.strip__days {
+  grid-column: 2;
+  position: relative;
+  height: 1.4em;
+  font-size: 0.75rem;
+  line-height: 1.4;
+  color: var(--text-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.strip__days span {
+  position: absolute;
+}
+
+.strip__date {
+  font-size: 0.875rem;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+/*
+ * The track reaches half a thumb past the bars on each side: the thumb's
+ * centre runs from the bars' first hour to their last, under the line.
+ */
+.strip__slider {
+  --thumb: 16px;
+  grid-column: 2;
+  width: calc(100% + var(--thumb));
+  min-width: 0;
+  min-height: 44px;
+  margin: 0 calc(var(--thumb) / -2);
+  accent-color: var(--text);
+  cursor: pointer;
+}
+
+/* Desktop header: the site button and its popover */
+
+.site-button {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 44px;
+  padding: 8px 16px;
+  border: 0;
+  border-radius: 12px;
+  background: var(--fill);
+  color: var(--text);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.site-button .signal-dot {
+  width: 8px;
+  height: 8px;
+}
+
+.site-button__name {
+  font-size: 0.9375rem;
+  font-weight: 600;
+  letter-spacing: -0.012em;
+  white-space: nowrap;
+}
+
+.site-button__place {
+  font-size: 0.8125rem;
+  color: var(--text-muted);
+  white-space: nowrap;
+}
+
+.site-button svg {
+  color: var(--text-muted);
+}
+
+.site-popover {
+  position: fixed;
+  inset: auto;
+  top: var(--top, 72px);
+  left: var(--left, 24px);
+  width: 360px;
+  max-height: min(560px, calc(100dvh - var(--top, 72px) - 24px));
+  margin: 0;
+  padding: 16px;
+  border: 0;
+  border-radius: 18px;
+  background: var(--phone-sheet);
+  box-shadow: var(--popover-shadow);
+  backdrop-filter: blur(24px) saturate(180%);
+  color: var(--text);
+  overflow: hidden;
+  transform-origin: top left;
+}
+
+.site-popover:popover-open {
+  display: flex;
+  flex-direction: column;
+}
+
+/* It grows from the button that opened it (apple-design §7). */
+@media (prefers-reduced-motion: no-preference) {
+  .site-popover:popover-open {
+    animation: popover-in var(--dur-enter) var(--ease-out);
+  }
+}
+
+@keyframes popover-in {
+  from {
+    opacity: 0;
+    transform: scale(0.96);
+  }
+}
+
+/* Phone calendar, in the sheet at full */
+
+/*
+ * Large text can make the calendar taller than the sheet: the columns keep
+ * room to drag in, and the rest scrolls (wheel, keys, focus) instead of
+ * hiding under the tab bar. A finger still drags the sheet, as before.
+ */
+.calendar {
+  container-type: inline-size;
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 12px;
+  min-height: 0;
+  padding-top: 8px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  touch-action: none;
+}
+
+/* Under about 130 % text a phone's width holds the hint; above, it goes. */
+@container (max-width: 17em) {
+  .calendar__hint {
+    display: none;
+  }
+}
+
+.calendar .month-arrows {
+  justify-content: space-between;
+}
+
+.calendar .round-button {
+  background: var(--phone-field);
+}
+
+.calendar__title {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1px;
+}
+
+.calendar__title h2 {
+  margin: 0;
+  font-size: 1.25rem;
+  line-height: 1.2;
+  font-weight: 700;
+  letter-spacing: -0.025em;
+}
+
+.calendar__title p {
+  margin: 0;
+  font-size: 0.8125rem;
+  color: var(--text-muted);
+}
+
+.calendar__shares {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  font-size: 0.75rem;
+  text-align: center;
+}
+
+.calendar__shares li {
+  padding: 6px 0;
+  border-radius: 10px;
+  background: var(--phone-card);
+}
+
+.calendar__shares li[data-tone='sun'] { color: var(--signal-sun-ink); }
+.calendar__shares li[data-tone='earth'] { color: var(--signal-earth-ink); }
+.calendar__shares li[data-tone='window'] { color: var(--signal-window-ink); }
+
+.calendar__shares b {
+  color: var(--text);
+  font-variant-numeric: tabular-nums;
+}
+
+.calendar .strip-status {
+  flex: 1;
+}
+
+.calendar__note {
+  margin: 0;
+  font-size: 0.8125rem;
+  text-align: center;
+  color: var(--text-secondary);
+}
+
+.columns {
+  position: relative;
+  display: grid;
+  flex: 1 0 auto;
+  grid-template-columns: 28px repeat(3, minmax(0, 1fr));
+  gap: 8px;
+  min-height: 160px;
+  touch-action: none;
+  cursor: ns-resize;
+}
+
+.columns .signal-bar {
+  border-radius: 8px;
+}
+
+.columns__days {
+  position: relative;
+  container-type: size;
+  font-size: 0.6875rem;
+  line-height: 1.2;
+  color: var(--text-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.columns__days span {
+  position: absolute;
+}
+
+/*
+ * The ticks are a week apart: when the column is too short for a line per
+ * week (large text, a short sheet), every other one goes, and then all but
+ * the first, so the labels never pile up.
+ */
+@container (max-height: 7em) {
+  .columns__days span:nth-child(even) {
+    display: none;
+  }
+}
+
+@container (max-height: 3.5em) {
+  .columns__days span:not(:first-child) {
+    display: none;
+  }
+}
+
+.columns__line {
+  position: absolute;
+  left: 30px;
+  right: 0;
+  height: 2px;
+  margin-top: -1px;
+  border-radius: 1px;
+  background: var(--text);
+  pointer-events: none;
+}
+
+.columns__chip {
+  position: absolute;
+  right: -4px;
+  top: -12px;
+  padding: 4px 8px;
+  border-radius: 9px;
+  background: var(--text);
+  color: var(--bg);
+  font-size: 0.6875rem;
+  line-height: 1;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.calendar__controls {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 12px;
+  border-radius: 16px;
+  background: var(--phone-card);
+}
+
+.calendar__when {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 1px;
+  min-width: 0;
+}
+
+.calendar__date {
+  font-size: 0.9375rem;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+.calendar__state {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+}
+
+.calendar__state[data-tone='window'] { color: var(--signal-window-ink); }
+.calendar__state[data-tone='sun'] { color: var(--signal-sun-ink); }
+.calendar__state[data-tone='earth'] { color: var(--signal-earth-ink); }
+
+.calendar .now-button {
+  background: var(--phone-field);
+}
+
+/* Desktop only, and the phone's sheet only on phones. */
+@media (max-width: 767.98px) {
+  .strip {
+    display: none;
+  }
+}
+
+/* Accessibility preferences (apple-design §14). */
+
+@media (prefers-reduced-transparency: reduce) {
+  .site-popover {
+    background: var(--strip);
+    backdrop-filter: none;
+  }
+}
+
+@media (prefers-contrast: more) {
+  .strip,
+  .site-popover,
+  .site-button,
+  .calendar__controls,
+  .calendar__shares li {
+    border: 1px solid var(--surface-edge);
+  }
+
+  .strip__label,
+  .strip__days,
+  .calendar__state,
+  .site-button__place {
+    color: var(--text-secondary);
+  }
+}

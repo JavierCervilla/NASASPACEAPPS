@@ -100,7 +100,7 @@
       "id": "store",
       "type": "frontend",
       "label": "Time store",
-      "sublabel": "site + UTC hour",
+      "sublabel": "live, scrub or play",
       "pos": [
         520,
         490
@@ -123,7 +123,7 @@
         140,
         60
       ],
-      "tag": "MVP"
+      "tag": "built"
     },
     {
       "id": "polar",
@@ -282,8 +282,7 @@
     {
       "id": "sub-moon3d",
       "from": "store",
-      "to": "moon3d",
-      "variant": "dashed"
+      "to": "moon3d"
     },
     {
       "id": "sub-dsn",
@@ -314,10 +313,10 @@
       "dot": "emerald",
       "title": "Web app",
       "items": [
-        "One Time store (site + UTC hour) fetches site data",
+        "One time store (live, scrub or play) and one site store, shared by every view",
         "Views subscribe read-only; they never compute ephemerides",
         "MVP: calendar, polar map, site card; luxury: globes",
-        "Built: the 3D globe (lazy-loaded) and the phone sheet, sharing a site store; the sheet reads one site's month and its next 30 days from the API in one request, and refreshes each hour"
+        "Built: the 3D globe (lazy-loaded, its Sun follows the instant), the calendar strip and the phone sheet with its calendar; one request per site and month (the month and its next 30 days), cached in the page"
       ]
     }
   ]

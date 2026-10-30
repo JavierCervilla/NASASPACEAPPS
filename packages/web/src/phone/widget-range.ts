@@ -24,18 +24,24 @@
  */
 
 /**
- * The range the phone widgets ask the API for, in one request: the current
- * UTC month (for the month's window share) joined to a rolling horizon from
- * the current hour to 30 days later (for «Right now», the countdowns and
- * the DSN antenna), so a countdown never collapses at the end of a month.
- * Outside the API's data window there is no range: the sheet says so.
+ * The range the phone widgets and the calendar ask the API for, in one
+ * request per site and month: the UTC month (for its bars and shares)
+ * and the 30 days after it, so the rolling horizon of any hour of the
+ * month (for the widget at that hour, the countdowns and the DSN antenna)
+ * is in the same answer, and a countdown never collapses at the end of a
+ * month. Outside the API's data window there is no range: the sheet says
+ * so.
  */
 import { HOUR_MS, toIso } from '@ventana/sim';
 
 export interface WidgetRange {
   /** The request's first hour, ISO 8601 UTC: the month's first hour. */
   readonly from: string;
-  /** The request's last hour: the later of the month's and the horizon's. */
+  /**
+   * The request's last hour: 30 days after the month's, held inside the
+   * window. It does not depend on the hour, so every hour of the month
+   * shares the request.
+   */
   readonly to: string;
   /** The current hour, ISO 8601 UTC: where the horizon starts. */
   readonly at: string;
@@ -52,7 +58,8 @@ export const HORIZON_HOURS = 30 * 24;
 /** The API's window (packages/server/src/params.ts), first and last hour. */
 const FIRST_HOUR_MS = Date.UTC(2026, 0, 1);
 const LAST_HOUR_MS = Date.UTC(2028, 0, 1) - HOUR_MS;
-const MONTHS = [
+/** The English month names, January first. */
+export const MONTHS = [
   'January', 'February', 'March', 'April', 'May', 'June', 'July',
   'August', 'September', 'October', 'November', 'December',
 ];
@@ -68,13 +75,14 @@ export function widgetRange(nowMs: number): WidgetRange | null {
   const [year, month] = [now.getUTCFullYear(), now.getUTCMonth()];
   const fromMs = Date.UTC(year, month, 1);
   const monthEndMs = Date.UTC(year, month + 1, 1) - HOUR_MS;
-  const horizonMs = Math.min(atMs + HORIZON_HOURS * HOUR_MS, LAST_HOUR_MS);
+  const ahead = (ms: number): number =>
+    Math.min(ms + HORIZON_HOURS * HOUR_MS, LAST_HOUR_MS);
   return {
     from: toIso(fromMs),
-    to: toIso(Math.max(monthEndMs, horizonMs)),
+    to: toIso(ahead(monthEndMs)),
     at: toIso(atMs),
     monthEnd: toIso(monthEndMs),
-    horizonEnd: toIso(horizonMs),
+    horizonEnd: toIso(ahead(atMs)),
     month: MONTHS[month] ?? '',
   };
 }

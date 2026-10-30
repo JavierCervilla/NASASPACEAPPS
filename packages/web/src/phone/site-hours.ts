@@ -71,17 +71,22 @@ export function parseHours(body: unknown): HourSample[] | null {
   }));
 }
 
+/** The part of a range a request carries. */
+export type HoursRange = Pick<WidgetRange, 'from' | 'to'>;
+
 /**
- * The URL of a site's hours for `range`.
+ * The URL of a site's hours for `range`. Its reference hour (`at`) is the
+ * range's first, so the URL is the same for every hour of a month and
+ * the answer can be shared; the widgets pick their hour themselves.
  *
  * @throws Error when `id` is not a site id, before any URL is built.
  */
-export function hoursUrl(sitesUrl: string, id: string, range: WidgetRange) {
+export function hoursUrl(sitesUrl: string, id: string, range: HoursRange) {
   if (!isSiteId(id)) throw new Error('not a site id');
   const query = new URLSearchParams({
     from: range.from,
     to: range.to,
-    at: range.at,
+    at: range.from,
   });
   return `${sitesUrl}/${encodeURIComponent(id)}?${query.toString()}`;
 }
@@ -90,7 +95,7 @@ export function hoursUrl(sitesUrl: string, id: string, range: WidgetRange) {
 export async function loadSiteHours(
   source: HoursSource,
   id: string,
-  range: WidgetRange,
+  range: HoursRange,
 ): Promise<HourSample[]> {
   const response = await source.fetch(hoursUrl(source.sitesUrl, id, range), {
     headers: { accept: 'application/json' },

@@ -118,7 +118,8 @@ describe('sheet actions', () => {
   const setUp = () => {
     const setDetent = vi.fn();
     const select = vi.fn();
-    return { setDetent, select, actions: sheetActions(setDetent, select) };
+    const setView = vi.fn();
+    return { setDetent, select, setView, actions: sheetActions(setDetent, select, setView) };
   };
 
   it('Globe and Done close the sheet', () => {
@@ -128,8 +129,16 @@ describe('sheet actions', () => {
   });
 
   it('the pill and Sites open the picker at full', () => {
-    const { setDetent, actions } = setUp();
+    const { setDetent, setView, actions } = setUp();
     actions.open();
+    expect(setView).toHaveBeenLastCalledWith('sites');
+    expect(setDetent).toHaveBeenLastCalledWith('full');
+  });
+
+  it('Calendar opens the calendar at full', () => {
+    const { setDetent, setView, actions } = setUp();
+    actions.calendar();
+    expect(setView).toHaveBeenLastCalledWith('calendar');
     expect(setDetent).toHaveBeenLastCalledWith('full');
   });
 

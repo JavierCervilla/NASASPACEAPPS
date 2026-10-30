@@ -27,7 +27,12 @@
  * The sheet's gestures and moves on top of its state: what a drag, a
  * release or a button does, with the clock and the viewport injected.
  */
-import { detentsFor, releaseDetent, type DetentName } from './sheet-physics';
+import {
+  detentsFor,
+  releaseDetent,
+  type DetentName,
+  type SheetLayout,
+} from './sheet-physics';
 import {
   dragSheet,
   grabSheet,
@@ -38,6 +43,11 @@ import {
 export interface SheetMotionDeps {
   /** The viewport's height in px, read at each move (it can change). */
   readonly heightPx: () => number;
+  /**
+   * The detents' layout, read at each move: the full sheet stays under
+   * the top bar, which grows with large text. Default: the canvas's.
+   */
+  readonly layout?: () => SheetLayout;
   /** Read at each move, so a change of the setting applies at once. */
   readonly reducedMotion: () => boolean;
   /** Asks the frame loop for a frame. */
@@ -75,7 +85,8 @@ export class SheetMotion {
    * current detents (so it also answers a resize).
    */
   moveTo(detent: DetentName, vy = 0): void {
-    this.state.detents = detentsFor(this.deps.heightPx());
+    const layout = this.deps.layout?.();
+    this.state.detents = detentsFor(this.deps.heightPx(), layout);
     settleSheet(this.state, detent, vy, this.deps.reducedMotion());
     this.deps.onDetent(detent);
     this.deps.invalidate();

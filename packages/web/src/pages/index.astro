@@ -30,6 +30,7 @@ import Base from '../layouts/Base.astro';
 import { toPhoneSite, type PhoneSite } from '../phone/phone-site';
 import '../styles/globe.css';
 import '../styles/phone.css';
+import '../styles/calendar.css';
 
 // Same origin in production: the API sits behind the same domain.
 const sitesUrl = `${import.meta.env.BASE_URL.replace(/\/$/, '')}/api/v1/sites`;
@@ -55,6 +56,8 @@ const views = [
         <h1 class="title">Ventana Lunar</h1>
         <p class="subtitle">When can you land at the lunar south pole?</p>
       </div>
+      <!-- The island puts the site button here once it runs. -->
+      <div id="site-slot" class="site-slot"></div>
       <nav aria-label="View" class="views">
         {
           views.map(({ label, current }) =>
@@ -134,8 +137,12 @@ const views = [
     background: var(--fill);
   }
 
+  /* A 44 px tall target (apple-design). */
   .views > * {
-    padding: 9px 16px;
+    display: flex;
+    align-items: center;
+    min-height: 44px;
+    padding: 0 16px;
     border-radius: 8px;
     font-size: 0.875rem;
     font-weight: 600;
@@ -154,10 +161,18 @@ const views = [
     cursor: default;
   }
 
+  /* The globe, with the calendar strip under it. */
   .stage {
     flex: 1;
     display: flex;
-    padding: 16px 24px;
+    flex-direction: column;
+    gap: 16px;
+    padding: 16px 24px 20px;
+  }
+
+  /* Holds the site button's height before the island fills it. */
+  .site-slot {
+    min-height: 44px;
   }
 
   @media (prefers-reduced-transparency: reduce) {

@@ -25,24 +25,19 @@
 
 /**
  * The Moon: a 64-segment sphere wearing the LROC colour mosaic and the LOLA
- * relief as an object-space normal map (see ASSETS.md), lit by one
- * directional light from the real Sun and a faint ambient term so the
- * night side keeps its shape; the relief never lights the night side
+ * relief as an object-space normal map (see ASSETS.md), lit by the real
+ * Sun (sun-light.ts); the relief never lights the night side
  * (night-side.ts). Sharper maps arrive as the camera closes in
  * (texture-lod.ts, texture-swap.ts).
  */
 import {
-  AmbientLight,
-  DirectionalLight,
   Mesh,
   MeshLambertMaterial,
   ObjectSpaceNormalMap,
   SphereGeometry,
   type Texture,
 } from 'three';
-import { subSolarPoint, type SelenographicPoint } from '@ventana/sim';
 import type { Tier } from '../lib/quality';
-import { sunDirection } from './geo';
 import { moonTextureDeps } from './moon-textures';
 import { keepNightDark } from './night-side';
 import type { Stage } from './stage';
@@ -52,9 +47,6 @@ import { TextureSwap } from './texture-swap';
 
 /** Widthwise and heightwise segments of the sphere (spec: 64). */
 const SEGMENTS = 64;
-/** Sunlight, and the faint fill that stands in for earthshine. */
-const SUN_INTENSITY = 3.2;
-const FILL_INTENSITY = 0.05;
 
 /** Grey until the first map arrives; the relief is an object-space map. */
 const BARE_MOON = { color: 0x8c8a85, normalMapType: ObjectSpaceNormalMap };
@@ -73,13 +65,11 @@ export interface MoonOptions {
   readonly tier: Tier;
   /** Under Save-Data the start map is the only one. */
   readonly saveData: boolean;
-  /** The instant whose Sun lights the Moon, Unix ms. */
-  readonly atMs: number;
   readonly onChange: () => void;
   readonly warn: (message: string) => void;
 }
 
-/** Adds the Moon and its lights to the stage's scene. */
+/** Adds the Moon to the stage's scene. */
 export function addMoon(stage: Stage, options: MoonOptions): Moon {
   const geometry = new SphereGeometry(1, SEGMENTS, SEGMENTS);
   const material = new MeshLambertMaterial(BARE_MOON);
@@ -92,8 +82,7 @@ export function addMoon(stage: Stage, options: MoonOptions): Moon {
     warn: options.warn,
   });
   swap.want(startLevel(options.tier));
-  const lights = sunLights(subSolarPoint(options.atMs));
-  stage.scene.add(new Mesh(geometry, material), ...lights);
+  stage.scene.add(new Mesh(geometry, material));
   return {
     textureBytes: () => textureBytes(material.map, material.normalMap),
     track: (d) => swap.want(wantedLevel(d, { ...options, maxTextureSize })),
@@ -103,11 +92,4 @@ export function addMoon(stage: Stage, options: MoonOptions): Moon {
       material.dispose();
     },
   };
-}
-
-function sunLights(sun: SelenographicPoint): [DirectionalLight, AmbientLight] {
-  const light = new DirectionalLight(0xffffff, SUN_INTENSITY);
-  const { x, y, z } = sunDirection(sun);
-  light.position.set(x, y, z).multiplyScalar(10);
-  return [light, new AmbientLight(0xffffff, FILL_INTENSITY)];
 }

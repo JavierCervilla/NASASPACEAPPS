@@ -25,7 +25,14 @@
 
 import { HOUR_MS, type HourSample } from '@ventana/sim';
 import { describe, expect, it, vi } from 'vitest';
-import { loadWidgets } from '../src/phone/widgets-loader';
+import { cachedHours } from '../src/phone/hours-cache';
+import type { HoursSource } from '../src/phone/site-hours';
+import { loadMonthHours, widgetsAt } from '../src/phone/widgets-loader';
+
+/** The widgets at `nowMs`, through a fresh cache: what the sheet shows once the month has loaded. */
+async function loadWidgets(source: HoursSource, id: string, nowMs: number) {
+  return widgetsAt(await loadMonthHours(cachedHours(source), id, nowMs), nowMs);
+}
 
 const SITES_URL = '/api/v1/sites';
 const toIso = (ms: number): string => new Date(ms).toISOString().replace('.000Z', 'Z');
@@ -80,14 +87,14 @@ describe('loadWidgets, rolling horizon', () => {
     expect(result.widgets.now.detail).toBe('50 % of November');
   });
 
-  it('asks once, from the first hour of the month to 30 days after this hour', async () => {
+  it('asks once, from the first hour of the month to 30 days after its last', async () => {
     const api = fakeApi(sky);
     await loadWidgets(api.source, 'im2-athena', Date.parse('2026-10-30T10:42:00Z'));
     expect(api.fetch).toHaveBeenCalledOnce();
     const params = api.urls[0]?.searchParams;
     expect(params?.get('from')).toBe('2026-10-01T00:00:00Z');
-    expect(params?.get('to')).toBe(toIso(Date.parse('2026-10-30T10:00:00Z') + 30 * 24 * HOUR_MS));
-    expect(params?.get('at')).toBe('2026-10-30T10:00:00Z');
+    expect(params?.get('to')).toBe(toIso(Date.parse('2026-10-31T23:00:00Z') + 30 * 24 * HOUR_MS));
+    expect(params?.get('at')).toBe('2026-10-01T00:00:00Z');
   });
 
   it('says how long at least when the Sun outlasts the data window', async () => {
@@ -146,5 +153,41 @@ describe('loadWidgets, hardening', () => {
     const hours = validHours('2026-11-23T18:00:00.000000000000Z');
     const fetch = vi.fn(async () => new Response(JSON.stringify({ ephemeris: { hours } })));
     expect(await loadWidgets({ fetch, sitesUrl: SITES_URL }, 'im2-athena', NOW)).toEqual({ kind: 'error' });
+  });
+});
+
+describe('cachedHours', () => {
+  const sky = () => ({ sunEl: 5, earthEl: 10 });
+
+  it('asks once for every hour of a month: playing time does not call the API again', async () => {
+    const api = fakeApi(sky);
+    const load = cachedHours(api.source);
+    for (const at of ['2026-11-01T00:00:00Z', '2026-11-15T09:00:00Z', '2026-11-30T23:00:00Z']) {
+      const hours = await loadMonthHours(load, 'im2-athena', Date.parse(at));
+      expect(widgetsAt(hours, Date.parse(at)).kind).toBe('ready');
+    }
+    expect(api.fetch).toHaveBeenCalledOnce();
+    await loadMonthHours(load, 'im2-athena', Date.parse('2026-12-01T00:00:00Z'));
+    await loadMonthHours(load, 'apollo11', Date.parse('2026-11-01T00:00:00Z'));
+    expect(api.fetch).toHaveBeenCalledTimes(3);
+  });
+
+  it('drops a failed answer, so a retry asks again', async () => {
+    const fetch = vi.fn(async () => new Response('', { status: 503 }));
+    const load = cachedHours({ fetch, sitesUrl: SITES_URL });
+    const at = Date.parse('2026-11-23T18:00:00Z');
+    expect(await loadMonthHours(load, 'im2-athena', at)).toEqual({ kind: 'error' });
+    expect(await loadMonthHours(load, 'im2-athena', at)).toEqual({ kind: 'error' });
+    expect(fetch).toHaveBeenCalledTimes(2);
+  });
+
+  it('keeps at most the given number of answers, dropping the oldest', async () => {
+    const api = fakeApi(sky);
+    const load = cachedHours(api.source, 1);
+    const [nov, dec] = [Date.parse('2026-11-05T00:00:00Z'), Date.parse('2026-12-05T00:00:00Z')];
+    await loadMonthHours(load, 'im2-athena', nov);
+    await loadMonthHours(load, 'im2-athena', dec);
+    await loadMonthHours(load, 'im2-athena', nov);
+    expect(api.fetch).toHaveBeenCalledTimes(3);
   });
 });

@@ -243,14 +243,149 @@ test.describe('phone, 390x844', () => {
     await expect(sunset).not.toContainText('7 d 1 h');
   });
 
-  test('Calendar and Horizon say soon and do nothing', async ({ page }) => {
+  test('Horizon says soon and does nothing', async ({ page }) => {
     await open(page);
-    const calendar = page.getByRole('navigation', { name: 'Views' }).getByRole('button', { name: 'Calendar (soon)' });
-    await expect(calendar).toHaveAttribute('aria-disabled', 'true');
+    const horizon = tabs(page).getByRole('button', { name: 'Horizon (soon)' });
+    await expect(horizon).toHaveAttribute('aria-disabled', 'true');
     // Playwright treats aria-disabled as disabled and would wait: the tap is forced, as a finger would.
-    await calendar.click({ force: true });
+    await horizon.click({ force: true });
     await expect(page.locator('.widget')).toHaveCount(4);
     await expect.poll(() => sheetTop(page)).toBe(HALF_TOP);
+    await expect(tabs(page).getByRole('button', { name: 'Calendar', exact: true })).not.toHaveAttribute('aria-disabled');
+  });
+
+  test('Calendar opens the calendar at full: the month, its shares and the instant', async ({ page }) => {
+    await open(page);
+    await tabs(page).getByRole('button', { name: 'Calendar', exact: true }).click();
+    await expect(page.getByRole('heading', { name: 'November 2026' })).toBeVisible();
+    await expect.poll(() => sheetTop(page)).toBe(FULL_TOP);
+    await expect(tabs(page).getByRole('button', { name: 'Calendar', exact: true })).toHaveAttribute('aria-current', 'true');
+    await expect(page.locator('.sheet')).toHaveAttribute('aria-label', 'Calendar');
+    // Real JPL Horizons data for IM-2 in November 2026.
+    const shares = page.getByRole('list', { name: 'Share of the month' });
+    await expect(shares).toContainText('Sun 59 %');
+    await expect(shares).toContainText('Earth 58 %');
+    await expect(shares).toContainText('Window 48 %');
+    const slider = page.getByRole('slider', { name: 'Selected hour' });
+    await expect(slider).toHaveAttribute('aria-valuetext', 'Mon 23 Nov · 18:00 UTC');
+    await expect(page.locator('.calendar__state')).toContainText('Landing window');
+  });
+
+  test('at 200 % text the full sheet stays under the grown top bar, and the day labels never pile up (QA F2)', async ({
+    page,
+  }) => {
+    await open(page);
+    await tabs(page).getByRole('button', { name: 'Calendar', exact: true }).click();
+    await expect.poll(() => sheetTop(page)).toBe(FULL_TOP);
+    await page.evaluate(() => {
+      document.documentElement.style.fontSize = '200%';
+    });
+    const bottomOf = async (locator: Locator) => {
+      const box = await locator.boundingBox();
+      return (box?.y ?? 0) + (box?.height ?? 0);
+    };
+    const bar = page.locator('.phone-bar');
+    await expect.poll(async () => (await sheetTop(page)) >= (await bottomOf(bar))).toBe(true);
+    await settledBox(page.locator('.sheet'));
+    const barBottom = await bottomOf(bar);
+    for (const name of ['Previous month', 'Next month']) {
+      expect((await page.getByRole('button', { name }).boundingBox())?.y).toBeGreaterThanOrEqual(barBottom);
+    }
+    expect((await page.getByRole('heading', { name: 'November 2026' }).boundingBox())?.y).toBeGreaterThanOrEqual(barBottom);
+    const labels = await page.locator('.columns__days span').evaluateAll((spans) =>
+      spans
+        .filter((el) => getComputedStyle(el).display !== 'none')
+        .map((el) => [el.getBoundingClientRect().top, el.getBoundingClientRect().bottom] as const),
+    );
+    expect(labels.length).toBeGreaterThan(0);
+    // The columns keep room to drag in; what does not fit scrolls, so «Now» comes out from under the tab bar.
+    expect((await page.locator('.columns').boundingBox())?.height).toBeGreaterThanOrEqual(160);
+    await page.locator('.calendar').evaluate((el) => el.scrollTo(0, el.scrollHeight));
+    const nowBox = await page.getByRole('button', { name: 'Now', exact: true }).boundingBox();
+    expect((nowBox?.y ?? 0) + (nowBox?.height ?? 0)).toBeLessThanOrEqual((await tabs(page).boundingBox())?.y ?? 0);
+    for (let i = 1; i < labels.length; i += 1) expect(labels[i]![0]).toBeGreaterThanOrEqual(labels[i - 1]![1]);
+  });
+
+  test('a month without data shows no signal: «No data for this hour» and a neutral dot (QA F5)', async ({ page }) => {
+    await open(page);
+    await tabs(page).getByRole('button', { name: 'Calendar', exact: true }).click();
+    const line = page.locator('.calendar__state');
+    await expect(line).toContainText('Landing window');
+    // The recorded IM-2 hours start on 1 November: October has none, though its request reaches into November.
+    await page.getByRole('button', { name: 'Previous month' }).click();
+    await expect(page.getByRole('heading', { name: 'October 2026' })).toBeVisible();
+    await expect(line).toHaveText('No data for this hour');
+    await expect(line).not.toHaveAttribute('data-tone');
+    const dot = page.locator('.site-pill .signal-dot');
+    expect(['window', 'sun', 'earth', 'none']).not.toContain(await dot.getAttribute('data-state'));
+  });
+
+  test('a month with no window at all says so in the calendar (QA F6)', async ({ page }) => {
+    await open(page);
+    await tabs(page).getByRole('button', { name: 'Sites' }).click();
+    await page.getByRole('button', { name: 'Apollo', exact: true }).click();
+    await page.getByRole('list', { name: 'Sites' }).getByRole('button', { name: /^Mare Tranquillitatis/ }).click();
+    await tabs(page).getByRole('button', { name: 'Calendar', exact: true }).click();
+    await expect(page.getByRole('list', { name: 'Share of the month' })).toContainText('Window 0 %');
+    await expect(page.getByText('No landing window this month')).toBeVisible();
+  });
+
+  test('dragging in the columns moves the instant, and «Now» brings it back', async ({ page }) => {
+    await open(page);
+    await tabs(page).getByRole('button', { name: 'Calendar', exact: true }).click();
+    const slider = page.getByRole('slider', { name: 'Selected hour' });
+    await expect.poll(() => sheetTop(page)).toBe(FULL_TOP);
+    const box = await slider.boundingBox();
+    if (!box) throw new Error('no columns');
+    const x = box.x + box.width / 2;
+    await page.mouse.move(x, box.y + box.height * 0.8);
+    await page.mouse.down();
+    await page.mouse.move(x, box.y + box.height * 0.3, { steps: 6 });
+    // Past the top: the drag keeps the pointer, and the hour holds at the month's first.
+    await page.mouse.move(x, box.y - 30, { steps: 6 });
+    await page.mouse.up();
+    // The top of the columns is the first hour of the month; the sheet stayed where it was.
+    await expect(page.locator('.calendar__date')).toHaveText('Sun 1 Nov · 00:00 UTC');
+    await expect(slider).toHaveAttribute('aria-valuenow', '0');
+    expect(await sheetTop(page)).toBe(FULL_TOP);
+    const now = page.getByRole('button', { name: 'Now', exact: true });
+    await now.click();
+    await expect(page.locator('.calendar__date')).toHaveText('Mon 23 Nov · 18:00 UTC');
+    await expect(now).toBeDisabled();
+  });
+
+  test('the columns move an hour with the arrows and a day with the page keys', async ({ page }) => {
+    await open(page);
+    await tabs(page).getByRole('button', { name: 'Calendar', exact: true }).click();
+    const slider = page.getByRole('slider', { name: 'Selected hour' });
+    await slider.focus();
+    await page.keyboard.press('ArrowDown');
+    await expect(slider).toHaveAttribute('aria-valuetext', 'Mon 23 Nov · 19:00 UTC');
+    await page.keyboard.press('PageUp');
+    await expect(slider).toHaveAttribute('aria-valuetext', 'Sun 22 Nov · 19:00 UTC');
+  });
+
+  test('the widgets follow the chosen instant, and Globe closes the calendar', async ({ page }) => {
+    await page.emulateMedia({ reducedMotion: 'reduce' });
+    await open(page);
+    await tabs(page).getByRole('button', { name: 'Calendar', exact: true }).click();
+    await page.getByRole('button', { name: 'Previous month' }).click();
+    await expect(page.getByRole('heading', { name: 'October 2026' })).toBeVisible();
+    await page.getByRole('button', { name: 'Next month' }).click();
+    const slider = page.getByRole('slider', { name: 'Selected hour' });
+    await slider.focus();
+    await page.keyboard.press('ArrowDown');
+    await page.keyboard.press('End');
+    await expect(slider).toHaveAttribute('aria-valuetext', 'Mon 30 Nov · 23:00 UTC');
+    await page.keyboard.press('Home');
+    await expect(slider).toHaveAttribute('aria-valuetext', 'Sun 1 Nov · 00:00 UTC');
+    await page.keyboard.press('ArrowDown');
+    await tabs(page).getByRole('button', { name: 'Globe' }).click();
+    await expectClosed(page);
+    await dragUpFromTabBar(page);
+    const widgets = page.getByRole('list', { name: 'This site at Sun 1 Nov · 01:00 UTC' });
+    await expect(widgets).toBeVisible();
+    await expect(widgets.getByRole('listitem').nth(0)).toContainText('Sun 1 Nov · 01:00 UTC');
   });
 
   test('with Save-Data, no Three.js chunk loads until the button is pressed', async ({ page }) => {

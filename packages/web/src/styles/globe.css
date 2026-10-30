@@ -29,10 +29,11 @@
  * the Layers legend. Below 768px (PHONE_QUERY in src/lib/viewport.ts) the
  * section fills the screen behind the phone shell (styles/phone.css).
  */
+/* It gives up height first, so the calendar strip fits a 720 px tall laptop screen. */
 .globe {
   position: relative;
   flex: 1;
-  min-height: 520px;
+  min-height: 320px;
   border-radius: 18px;
   background: var(--sky);
   overflow: hidden;

@@ -28,13 +28,15 @@
  * addon): each is a real button, so it is focusable, announced and clickable,
  * and it keeps the same pixel size at every zoom. Markers behind the limb are
  * hidden, which also takes them out of the tab order, and so are zone rings
- * that would cover another marker (marker-cull.ts). Sites that share a
- * point share one marker. The glass label of the selected site rides next to
- * its marker.
+ * that would cover another marker (marker-cull.ts). Where two boxes
+ * overlap, a click goes to the dot nearest the pointer (marker-hit.ts).
+ * Sites that share a point share one marker. The glass label of the
+ * selected site rides next to its marker.
  */
 import { isFacing, latLonToVector, type Vec3 } from './geo';
 import { markerButton } from './marker-button';
 import { cullZones } from './marker-cull';
+import { pickedSite, type PlacedMarker } from './marker-hit';
 import { mergeColocated, type GlobeSite, type MarkerSite } from './markers';
 import { SiteLabel } from './site-label';
 
@@ -50,6 +52,8 @@ interface Marker {
 export class MarkerLayer {
   private markers: Marker[] = [];
   private selected: string | null;
+  /** The markers shown at the last frame, where a click is routed. */
+  private placed: PlacedMarker[] = [];
   private readonly root = document.createElement('div');
   /** The selected site's label; the page clips it above the sheet. */
   readonly label = new SiteLabel();
@@ -67,7 +71,7 @@ export class MarkerLayer {
     this.selected = selected;
     this.root.className = 'globe-markers';
     this.root.addEventListener('click', (event) => {
-      const id = (event.target as HTMLElement).dataset['siteId'];
+      const id = pickedSite(event, this.root, this.placed);
       if (id) onPick(id);
     });
     this.root.append(this.label.el);
@@ -118,6 +122,7 @@ export class MarkerLayer {
     for (const { marker, at } of shown) {
       marker.el.style.transform = `translate3d(${at.x}px, ${at.y}px, 0)`;
     }
+    this.placed = shown.map(({ marker, at }) => ({ id: marker.site.id, at }));
     const labelAt = shown.find(({ selected }) => selected)?.at ?? null;
     this.label.follow(labelAt, this.root.clientWidth);
   }

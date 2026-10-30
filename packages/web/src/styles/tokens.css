@@ -46,6 +46,10 @@
   --glass-label: rgba(58, 60, 68, 0.8);
   --glass-label-edge: rgba(255, 255, 255, 0.16);
   --glass-label-text: #f2f2f4;
+  /* The desktop calendar strip's card, the shadow that lifts it, and the site popover's shadow. */
+  --strip: #101116;
+  --strip-edge: none;
+  --popover-shadow: 0 20px 50px rgba(0, 0, 0, 0.45);
 
   /*
    * The lunar sky stays black in both themes, and the site markers drawn on
@@ -58,6 +62,8 @@
   --signal-earth: #4a9cff;
   --signal-window: #3ddc84;
   --signal-none: #3a3c44;
+  /* Text on a «neither» bar, which stays dark in both themes. */
+  --on-signal-none: #e5e5ea;
   /*
    * The same three meanings as text on the phone's glass cards: as bright
    * as the dots on dark, deeper on the light glass for contrast (validated
@@ -100,6 +106,8 @@
     --glass-label: rgba(255, 255, 255, 0.86);
     --glass-label-edge: rgba(0, 0, 0, 0.08);
     --glass-label-text: #1c1c1e;
+    --strip: #ffffff;
+    --strip-edge: 0 8px 30px rgba(0, 0, 0, 0.12);
 
     --sky: radial-gradient(120% 90% at 50% 40%, #151821 0%, #07080b 70%);
     --marker: #ffffff;

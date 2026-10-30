@@ -3,6 +3,18 @@
 ## [Sin publicar]
 
 ### Añadido
+- Store de tiempo, cinta de calendario y selector de sitio (VENT-4, lienzos validados «Globe view» y «Phone ·
+  calendar»): toda la página sigue un mismo instante. Por defecto es «ahora» y avanza con el reloj; se puede elegir otra
+  hora, reproducir el mes (unos 12 s por mes, se para al final del mes o con Pausa) y volver con «Now». La luz del Sol
+  en el globo, las tarjetas del móvil (también la antena DSN) y el calendario muestran esa hora. En escritorio, bajo el
+  globo, una cinta con el mes y sus flechas, la leyenda, tres barras con datos reales por hora de la API (Sol, Tierra y
+  ventana de alunizaje), la línea del instante, los días, Play, la fecha y un deslizador por las horas del mes (flechas:
+  una hora; Re Pág y Av Pág: un día). En la cabecera, un botón con el sitio elegido abre la lista de sitios con su
+  buscador; al elegir uno el globo gira hasta él. En el móvil, la pestaña «Calendar» (ya sin «soon») abre la hoja
+  entera con el mes, los porcentajes de Sol, Tierra y ventana, tres columnas que se recorren arrastrando el dedo o con
+  el teclado, Play, la fecha y «Now». Las tarjetas dicen a qué hora se refieren cuando no es «ahora». Cada sitio pide
+  a la API una sola vez cada mes (el mes y los 30 días siguientes), así que reproducir o arrastrar no vuelve a pedir
+  datos. Con menos movimiento, Play sigue avanzando pero nada se anima.
 - Licencia MIT (VENT-26): el código es de Universelle (© 2026) bajo licencia MIT, con el texto en `LICENSE`. Cada
   fichero de código lleva la misma cabecera: el logotipo de Universelle y una Luna en ASCII dibujada a partir de
   nuestro propio mapa LROC, con el nombre del proyecto, el reto y la licencia. `npm run headers` la pone y el CI falla

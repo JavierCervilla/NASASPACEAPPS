@@ -28,6 +28,7 @@
  * pill (a status dot, the short name and what tells it apart) that opens
  * the site picker.
  */
+import type { Ref } from 'react';
 import { siteLabels, type PhoneSite } from '../../phone/phone-site';
 import type { NowState } from '../../phone/widget-types';
 import { Icon } from './Icon';
@@ -37,6 +38,8 @@ interface Props {
   /** The site's state right now, once its data has loaded. */
   readonly state: NowState | null;
   readonly onOpenPicker: () => void;
+  /** The bar's element, which the full sheet stays under. */
+  readonly ref?: Ref<HTMLElement>;
 }
 
 /**
@@ -65,9 +68,9 @@ function SitePill({ site, state, onOpenPicker }: Props) {
   );
 }
 
-export function PhoneBar(props: Props) {
+export function PhoneBar({ ref, ...props }: Props) {
   return (
-    <header className="phone-bar">
+    <header ref={ref} className="phone-bar">
       <div className="phone-bar__titles">
         <h1 className="phone-bar__title">Ventana Lunar</h1>
         <p className="phone-bar__hint">Drag the Moon · pinch to zoom</p>

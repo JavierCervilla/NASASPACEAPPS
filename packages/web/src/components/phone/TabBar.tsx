@@ -24,9 +24,10 @@
  */
 
 /**
- * The floating tab bar: Globe, Calendar, Horizon and Sites. Calendar and
- * Horizon say «soon» until their views exist; Sites opens the picker and
- * Globe closes the sheet. Dragging up from it opens a closed sheet.
+ * The floating tab bar: Globe, Calendar, Horizon and Sites. Horizon says
+ * «soon» until its view exists; Calendar opens the calendar, Sites the
+ * picker, and Globe closes the sheet. Dragging up from it opens a closed
+ * sheet.
  */
 import type { Ref } from 'react';
 import { Icon, type IconName } from './Icon';
@@ -34,11 +35,14 @@ import { Icon, type IconName } from './Icon';
 interface Props {
   /** The bar's element, where a drag up opens the closed sheet. */
   readonly ref?: Ref<HTMLElement>;
-  /** Whether the site picker fills the sheet. */
-  readonly picking: boolean;
+  /** The view on screen: the globe, or what fills the sheet at full. */
+  readonly current: TabView;
   readonly onGlobe: () => void;
+  readonly onCalendar: () => void;
   readonly onSites: () => void;
 }
+
+export type TabView = 'globe' | 'calendar' | 'sites';
 
 interface Tab {
   readonly icon: IconName;
@@ -65,13 +69,14 @@ function TabButton({ icon, label, current, onClick }: Tab) {
   );
 }
 
-export function TabBar({ ref, picking, onGlobe, onSites }: Props) {
+export function TabBar(props: Props) {
+  const { ref, current, onGlobe, onCalendar, onSites } = props;
   return (
     <nav ref={ref} className="tab-bar" aria-label="Views">
-      <TabButton icon="globe" label="Globe" current={!picking} onClick={onGlobe} />
-      <TabButton icon="calendar" label="Calendar" />
+      <TabButton icon="globe" label="Globe" current={current === 'globe'} onClick={onGlobe} />
+      <TabButton icon="calendar" label="Calendar" current={current === 'calendar'} onClick={onCalendar} />
       <TabButton icon="horizon" label="Horizon" />
-      <TabButton icon="sites" label="Sites" current={picking} onClick={onSites} />
+      <TabButton icon="sites" label="Sites" current={current === 'sites'} onClick={onSites} />
     </nav>
   );
 }

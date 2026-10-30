@@ -2,7 +2,10 @@
 import { readFile } from 'node:fs/promises';
 import type { Site, SiteGroup, SourceRef } from '@ventana/sim';
 
-/** Default location of the sites file, next to the compiled or source code: `packages/server/data/sites.json`. */
+/**
+ * Default location of the sites file, next to the compiled or source code:
+ * `packages/server/data/sites.json`.
+ */
 export const DEFAULT_SITES_FILE = new URL('../data/sites.json', import.meta.url);
 
 function isString(value: unknown): value is string {
@@ -37,7 +40,8 @@ function checkSite(value: unknown, index: number): Site {
 }
 
 /**
- * Checks the parsed content of a sites file: an array of {@link Site} with unique ids.
+ * Checks the parsed content of a sites file: an array of {@link Site} with
+ * unique ids.
  *
  * @throws TypeError naming the first invalid entry and field.
  */

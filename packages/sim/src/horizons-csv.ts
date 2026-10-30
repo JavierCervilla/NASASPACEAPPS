@@ -1,11 +1,18 @@
 /**
- * Parser of the observer table JPL Horizons prints with `QUANTITIES='4'` and `CSV_FORMAT='YES'`. Pure text work:
- * the server fetches the response, the simulation and its tests read it.
+ * Parser of the observer table JPL Horizons prints with `QUANTITIES='4'` and
+ * `CSV_FORMAT='YES'`. Pure text work: the server fetches the response, the
+ * simulation and its tests read it.
  */
 
-/** One row of a Horizons observer table: where the target sits on the observer's sky at one instant. */
+/**
+ * One row of a Horizons observer table: where the target sits on the observer's
+ * sky at one instant.
+ */
 export interface HorizonsRow {
-  /** Instant of the row, ISO 8601 in UTC without milliseconds (for example `2026-11-01T00:00:00Z`). */
+  /**
+   * Instant of the row, ISO 8601 in UTC without milliseconds (for example
+   * `2026-11-01T00:00:00Z`).
+   */
   readonly t: string;
   /** Apparent azimuth, in degrees clockwise from north. */
   readonly azimuth: number;
@@ -36,10 +43,14 @@ const MONTHS: Readonly<Record<string, string>> = {
   Dec: '12',
 };
 
-// Horizons calendar date, for example `2026-Nov-01 00:00` or `2026-Nov-01 00:00:30`.
+// Horizons calendar date, for example `2026-Nov-01 00:00` or `2026-Nov-01
+// 00:00:30`.
 const DATE_PATTERN = /^(\d{4})-([A-Z][a-z]{2})-(\d{2}) (\d{2}):(\d{2})(?::(\d{2}))?$/;
 
-/** Converts a Horizons calendar date (`2026-Nov-01 00:00`) to ISO 8601 in UTC (`2026-11-01T00:00:00Z`). */
+/**
+ * Converts a Horizons calendar date (`2026-Nov-01 00:00`) to ISO 8601 in UTC
+ * (`2026-11-01T00:00:00Z`).
+ */
 export function horizonsDateToIso(text: string): string {
   const match = DATE_PATTERN.exec(text.trim());
   const month = match ? MONTHS[match[2] ?? ''] : undefined;
@@ -50,7 +61,11 @@ export function horizonsDateToIso(text: string): string {
   return `${year}-${month}-${day}T${hour}:${minute}:${second ?? '00'}Z`;
 }
 
-function parseNumber(text: string | undefined, what: string, line: string): number {
+function parseNumber(
+  text: string | undefined,
+  what: string,
+  line: string,
+): number {
   const value = Number(text?.trim());
   if (text === undefined || text.trim() === '' || !Number.isFinite(value)) {
     throw new HorizonsParseError(`unreadable ${what} in Horizons row: "${line}"`);
@@ -59,11 +74,13 @@ function parseNumber(text: string | undefined, what: string, line: string): numb
 }
 
 /**
- * Reads the rows between `$$SOE` and `$$EOE` of a Horizons `result` text. Each row is
- * `date, solar-presence flag, lunar-presence flag, azimuth, elevation,`; the two flag columns may be blank and are
- * ignored here (visibility is decided from the elevation).
+ * Reads the rows between `$$SOE` and `$$EOE` of a Horizons `result` text. Each
+ * row is `date, solar-presence flag, lunar-presence flag, azimuth, elevation,`;
+ * the two flag columns may be blank and are ignored here (visibility is decided
+ * from the elevation).
  *
- * @throws HorizonsParseError when the markers are missing or a row cannot be read.
+ * @throws HorizonsParseError when the markers are missing or a row cannot be
+ *   read.
  */
 export function parseHorizonsTable(result: string): HorizonsRow[] {
   const start = result.indexOf(START_MARKER);

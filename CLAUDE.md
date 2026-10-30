@@ -38,6 +38,25 @@ Every visible change follows `.claude/skills/apple-design/SKILL.md` (vendored fr
   and the globe hides.
 - UI text is **English** (the global jury is international): this project's exception to the Language rule below. The local pitch is in Spanish and does not live here.
 
+## Clean Code
+
+The code follows Clean Code, and the size limits are enforced by lint:
+
+- **Single responsibility per module**: one reason to change per file. Split by responsibility with clear names,
+  never mechanically to fit a limit.
+- **Small functions with intention-revealing names**: a reader knows what a function does from its name.
+- **Dependencies injected, no hidden globals**: clocks, `fetch`, the file system roots and limits come in as
+  parameters or options, so every unit is testable on its own.
+- **No dead code, and no comments that restate the code**: comments explain why, not what.
+- **Enforced limits**, from the 42 school Norm adapted to TypeScript, as ESLint errors on `packages/*/src/**` in
+  `eslint.config.mjs`: `max-lines` 200 per file and `max-lines-per-function` 25 (both skipping blank lines and
+  comments), `max-len` 80 columns for code and comments (URLs, strings, template literals and regular expressions
+  exempt), `max-params` 4 (pass an options object for more), at most 5 named functions per file (the local rule
+  `eslint-rules/max-functions-per-file.mjs`, tested next to it), and `sonarjs/cognitive-complexity` 15. Tests are
+  exempt from all of these size limits (they apply to `packages/*/src/**` only). Do not disable a limit inline: if one
+  forces something clearly worse, raise it with the human.
+- **Leave it cleaner**: every change leaves the code at least as clean as it found it.
+
 ## Commands
 
 | Command | What |
@@ -60,9 +79,13 @@ Work here is an AgenticFramework trajectory (`VENT-*`): branch + PR, gates green
 updated in the same PR when something visible changes, architecture diagram in `docs/diagrams/` kept current.
 `ROADMAP.md` and `CHANGELOG.md` are written in Spanish (the human reads them).
 
-**Guardián during the hackathon** (human decision, 2026-10-29): only `verificador` and `seguridad`, launched by hand
+**Guardián during the hackathon** (human decision, 2026-10-29): `verificador` and `seguridad`, launched by hand
 with the round message published by the orchestrator; only a security finding blocks the merge, and everything else
-merges and goes to a fix-forward trajectory. No `qa` or `qa-adversario` until the event is over.
+merges and goes to a fix-forward trajectory. QA (human decision, 2026-10-30): `qa` runs on every trajectory that
+touches the interface (ephemeral staging, Playwright walkthroughs, screenshots), and `qa-adversario` only at three
+milestones: the draggable pin (VENT-10), the MVP close (globe + DSN) and before launch. `qa` findings go to fix
+forward. At those milestones a break that `qa-adversario` reproduces in a red test blocks the merge until it is fixed,
+and its test then stays as a permanent gate.
 
 **Roadmap canvas** (https://claude.ai/artifact/Sm8QoCwg7DqLbuCSHLPfBg): the live, visual roadmap. It is part of the
 definition of done of every step, together with the Dashboard and the vault: when a trajectory or TODO changes state,

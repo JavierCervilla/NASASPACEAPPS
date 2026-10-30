@@ -1,0 +1,362 @@
+/*
+ *   _   _       _                         _ _
+ *  | | | |_ __ (_)_   _____ _ __ ___  ___| | | ___
+ *  | | | | '_ \| \ \ / / _ \ '__/ __|/ _ \ | |/ _ \
+ *  | |_| | | | | |\ V /  __/ |  \__ \  __/ | |  __/
+ *   \___/|_| |_|_| \_/ \___|_|  |___/\___|_|_|\___|
+ *
+ *             =++==--::.
+ *         %%%%##**++=--:..  .
+ *      ##**#%@%%#***+=--::.   .
+ *    #**=+*#*#**#++++=-:::.. .  .
+ *   #++-====*@%+*++==--::...   .  .    Ventana Lunar
+ *  #+=-=--++==+===-+==--:..   .  .  .  Sun, Earth and landing
+ * #----====-------=-=---:..  .  .  .   windows at the lunar
+ * #+---+=====--=---==-::..     .  .  . south pole
+ * #*----==---==-=-=-:-....    .  .  .
+ * *#----===+*===--:-::...    .  .  .   Built for the NASA Space
+ *  *----=*-+*%*+=-:::....   .  .  .    Apps Challenge 2026,
+ *   *------=+*=--:::-:::.. .  .  .     Madrid. Not endorsed
+ *    %*===-=-==--==-:::.  .  .  .      by NASA.
+ *      *+:--+:--::::::.  .  .  .
+ *         -=:::...:..   .  .           (c) 2026 Universelle
+ *             :::.. .  .               SPDX-License-Identifier: MIT
+ */
+
+/*
+ *   _   _       _                         _ _
+ *  | | | |_ __ (_)_   _____ _ __ ___  ___| | | ___
+ *  | | | | '_ \| \ \ / / _ \ '__/ __|/ _ \ | |/ _ \
+ *  | |_| | | | | |\ V /  __/ |  \__ \  __/ | |  __/
+ *   \___/|_| |_|_| \_/ \___|_|  |___/\___|_|_|\___|
+ *
+ *             =++==--::.
+ *         %%%%##**++=--:..  .
+ *      ##**#%@%%#***+=--::.   .
+ *    #**=+*#*#**#++++=-:::.. .  .
+ *   #++-====*@%+*++==--::...   .  .    Ventana Lunar
+ *  #+=-=--++==+===-+==--:..   .  .  .  Sun, Earth and landing
+ * #----====-------=-=---:..  .  .  .   windows at the lunar
+ * #+---+=====--=---==-::..     .  .  . south pole
+ * #*----==---==-=-=-:-....    .  .  .
+ * *#----===+*===--:-::...    .  .  .   Built for the NASA Space
+ *  *----=*-+*%*+=-:::....   .  .  .    Apps Challenge 2026,
+ *   *------=+*=--:::-:::.. .  .  .     Madrid. Not endorsed
+ *    %*===-=-==--==-:::.  .  .  .      by NASA.
+ *      *+:--+:--::::::.  .  .  .
+ *         -=:::...:..   .  .           (c) 2026 Universelle
+
+/*
+ * The selected site's callout on the globe (VENT-29, validated canvases
+ * «Globe · site callout B, image card» for desktop and «… A, compact» for
+ * phones), built by src/callout/callout-dom.ts and placed each frame by
+ * src/globe/site-callout.ts through its transform. The same card in two
+ * layouts: from 768px an image header with the state badge, the site and
+ * the two countdowns; below it a thumbnail beside the site and a state
+ * pill with the time left. Frosted glass, as the Layers key. It never
+ * takes the pointer: a marker under it still gets the click.
+ */
+.globe-callout,
+.globe-callout-leader {
+  position: absolute;
+  top: 0;
+  left: 0;
+  pointer-events: none;
+  z-index: 4;
+}
+
+.globe-callout[data-shown='false'],
+.globe-callout-leader[data-shown='false'] {
+  visibility: hidden;
+}
+
+.globe-callout {
+  display: flex;
+  flex-direction: column;
+  width: 16.5rem;
+  max-width: calc(100% - 16px);
+  overflow: hidden;
+  border-radius: 22px;
+  background: var(--surface);
+  color: var(--text);
+  backdrop-filter: blur(24px) saturate(180%);
+  box-shadow:
+    0 22px 54px rgba(0, 0, 0, 0.55),
+    inset 0 0 0 1px var(--surface-edge);
+  letter-spacing: -0.01em;
+}
+
+/* A thin line from the marker's centre to the card's near edge. */
+.globe-callout-leader {
+  height: 1.5px;
+  margin-top: -0.75px;
+  transform-origin: 0 50%;
+  background: var(--marker);
+  opacity: 0.55;
+}
+
+.globe-callout__media {
+  position: relative;
+  height: 150px;
+  flex: none;
+}
+
+.globe-callout[data-image='none'] .globe-callout__media,
+.globe-callout__glyph {
+  display: none;
+}
+
+.globe-callout__image {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.globe-callout__shade {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg, rgba(7, 8, 11, 0) 45%, rgba(7, 8, 11, 0.75) 100%);
+}
+
+.globe-callout__badge,
+.globe-callout__pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 9px;
+  border-radius: 999px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  line-height: 1.35;
+  white-space: nowrap;
+}
+
+.globe-callout__badge {
+  position: absolute;
+  left: 12px;
+  bottom: 10px;
+  background: rgba(7, 8, 11, 0.55);
+  backdrop-filter: blur(10px);
+}
+
+.globe-callout__badge::before,
+.globe-callout__pill::before {
+  content: '';
+  width: 7px;
+  height: 7px;
+  flex: none;
+  border-radius: 50%;
+  background: var(--tone);
+}
+
+.globe-callout__caption {
+  position: absolute;
+  right: 10px;
+  bottom: 10px;
+  font-size: 0.625rem;
+  color: rgba(242, 242, 244, 0.7);
+}
+
+.globe-callout__body {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
+  padding: 12px 14px 14px;
+}
+
+.globe-callout__body p {
+  margin: 0;
+}
+
+.globe-callout__mission {
+  overflow: hidden;
+  font-size: 0.6875rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--text-muted);
+}
+
+.globe-callout__place {
+  font-size: 1.25rem;
+  font-weight: 700;
+  line-height: 1.2;
+  letter-spacing: -0.025em;
+}
+
+.globe-callout__point {
+  font-size: 0.8125rem;
+  color: var(--text-secondary);
+  font-variant-numeric: tabular-nums;
+}
+
+/* On a desktop the pill shows only when there is no image to carry the badge. */
+.globe-callout__pill {
+  display: none;
+  align-self: flex-start;
+  margin-top: 3px;
+  background: color-mix(in srgb, var(--tone) 16%, transparent);
+}
+
+.globe-callout[data-image='none'] .globe-callout__pill {
+  display: inline-flex;
+}
+
+.globe-callout__tiles {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  margin-top: 8px;
+  font-size: 0.75rem;
+}
+
+.globe-callout__tile {
+  display: flex;
+  flex-direction: column;
+  padding: 7px 9px;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.globe-callout__tile-label[data-tone='sun'] {
+  color: var(--signal-sun-ink);
+}
+
+.globe-callout__tile-label[data-tone='earth'] {
+  color: var(--signal-earth-ink);
+}
+
+.globe-callout__tile-value {
+  font-size: 0.875rem;
+  font-variant-numeric: tabular-nums;
+}
+
+/* The state's colour: the legend's, never decoration. */
+.globe-callout { --tone: var(--signal-none); }
+.globe-callout[data-state='window'] { --tone: var(--signal-window); }
+.globe-callout[data-state='sun'] { --tone: var(--signal-sun); }
+.globe-callout[data-state='earth'] { --tone: var(--signal-earth); }
+
+.globe-callout[data-state='window'] :is(.globe-callout__badge, .globe-callout__pill) {
+  color: var(--signal-window-ink);
+}
+
+.globe-callout[data-state='sun'] :is(.globe-callout__badge, .globe-callout__pill) {
+  color: var(--signal-sun-ink);
+}
+
+.globe-callout[data-state='earth'] :is(.globe-callout__badge, .globe-callout__pill) {
+  color: var(--signal-earth-ink);
+}
+
+/* «Neither» reads as plain text, its dot ringed so the dark grey shows. */
+.globe-callout[data-state='none'] .globe-callout__badge {
+  color: var(--on-signal-none);
+}
+
+.globe-callout[data-state='none'] .globe-callout__pill {
+  color: var(--text-secondary);
+}
+
+.globe-callout[data-state='none'] :is(.globe-callout__badge, .globe-callout__pill)::before {
+  box-shadow: 0 0 0 1px rgba(242, 242, 244, 0.5);
+}
+
+/* Until the month's hours load there is no state to show. */
+.globe-callout[data-state='unknown'] :is(.globe-callout__badge, .globe-callout__pill, .globe-callout__tiles) {
+  display: none;
+}
+
+@media (max-width: 767.98px) {
+  .globe-callout {
+    flex-direction: row;
+    gap: 12px;
+    width: 19.5rem;
+    padding: 10px;
+    border-radius: 20px;
+    box-shadow:
+      0 18px 44px rgba(0, 0, 0, 0.5),
+      inset 0 0 0 1px var(--surface-edge),
+      inset 0 1px 0 rgba(255, 255, 255, 0.14);
+  }
+
+  .globe-callout__media,
+  .globe-callout__glyph {
+    width: 84px;
+    height: 84px;
+    flex: none;
+    overflow: hidden;
+    border-radius: 14px;
+  }
+
+  /* No image (north of 80° S): a neutral disc instead of the relief. */
+  .globe-callout[data-image='none'] .globe-callout__glyph {
+    display: grid;
+    place-items: center;
+    background: var(--fill);
+  }
+
+  .globe-callout__glyph::after {
+    content: '';
+    width: 34px;
+    height: 34px;
+    border-radius: 50%;
+    border: 1.5px solid var(--text-muted);
+  }
+
+  .globe-callout__shade,
+  .globe-callout__badge,
+  .globe-callout__caption,
+  .globe-callout__tiles {
+    display: none;
+  }
+
+  .globe-callout__body {
+    justify-content: center;
+    padding: 0;
+  }
+
+  .globe-callout__place {
+    font-size: 1.0625rem;
+    letter-spacing: -0.022em;
+  }
+
+  .globe-callout__point {
+    font-size: 0.75rem;
+  }
+
+  .globe-callout__pill {
+    display: inline-flex;
+  }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .globe-callout {
+    transition: opacity 160ms var(--ease-out);
+  }
+
+  .globe-callout[data-shown='false'] {
+    opacity: 0;
+  }
+}
+
+@media (prefers-contrast: more) {
+  .globe-callout {
+    border: 1px solid var(--surface-edge);
+  }
+}
+
+@media (prefers-reduced-transparency: reduce) {
+  .globe-callout,
+  .globe-callout__badge {
+    backdrop-filter: none;
+  }
+
+  .globe-callout {
+    background: var(--card);
+  }
+}

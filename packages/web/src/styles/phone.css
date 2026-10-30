@@ -90,12 +90,6 @@
   .globe-layers {
     display: none;
   }
-
-  /* A long site name wraps instead of running off a narrow screen. */
-  .globe-label {
-    max-width: 10.5rem;
-    white-space: normal;
-  }
 }
 
 .visually-hidden {

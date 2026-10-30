@@ -187,7 +187,7 @@ test.describe('desktop site card and polar map, 1440x900', () => {
     await tab(page, 'Globe').click();
     await expect(map(page)).toHaveCount(0);
     await expect(page.getByRole('region', { name: 'Lunar globe' }).locator('canvas')).toHaveCount(1);
-    await expect(page.locator('.globe-label')).toHaveText('Malapert A region (IM-1 Odysseus)');
+    await expect(page.locator('.globe-callout')).toHaveAttribute('aria-label', 'Malapert A region (IM-1 Odysseus)');
     await expect(card(page).getByRole('heading', { name: 'IM-1 Odysseus' })).toBeVisible();
     await expect(slider(page)).toHaveValue(value);
     await expect(tab(page, 'Globe')).toHaveAttribute('aria-current', 'page');

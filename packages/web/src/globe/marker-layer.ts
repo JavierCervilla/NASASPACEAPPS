@@ -30,15 +30,15 @@
  * hidden, which also takes them out of the tab order, and so are zone rings
  * that would cover another marker (marker-cull.ts). Where two boxes
  * overlap, a click goes to the dot nearest the pointer (marker-hit.ts).
- * Sites that share a point share one marker. The glass label of the
- * selected site rides next to its marker.
+ * Sites that share a point share one marker. The callout of the
+ * selected site rides next to its marker (site-callout.ts).
  */
 import { isFacing, latLonToVector, type Vec3 } from './geo';
 import { markerButton } from './marker-button';
 import { cullZones } from './marker-cull';
 import { pickedSite, type PlacedMarker } from './marker-hit';
 import { mergeColocated, type GlobeSite, type MarkerSite } from './markers';
-import { SiteLabel } from './site-label';
+import { SiteCallout } from './site-callout';
 
 /** Screen position, in px from the host's top left, of a globe point. */
 export type Projector = (point: Vec3) => { x: number; y: number };
@@ -55,8 +55,8 @@ export class MarkerLayer {
   /** The markers shown at the last frame, where a click is routed. */
   private placed: PlacedMarker[] = [];
   private readonly root = document.createElement('div');
-  /** The selected site's label; the page clips it above the sheet. */
-  readonly label = new SiteLabel();
+  /** The selected site's callout; the page clips it above the sheet. */
+  readonly callout = new SiteCallout();
 
   /**
    * `onPick` hears a tapped marker's site; the selection comes back
@@ -74,7 +74,7 @@ export class MarkerLayer {
       const id = pickedSite(event, this.root, this.placed);
       if (id) onPick(id);
     });
-    this.root.append(this.label.el);
+    this.root.append(this.callout.dom.leader, this.callout.dom.card);
     host.append(this.root);
   }
 
@@ -90,7 +90,7 @@ export class MarkerLayer {
     this.select(this.selected);
   }
 
-  /** Marks the site `id`'s marker as selected and names it in the label. */
+  /** Marks the site `id`'s marker as selected. */
   select(id: string | null): void {
     const chosen = this.markers.find(({ site }) =>
       site.members.some((member) => member.id === id),
@@ -99,11 +99,10 @@ export class MarkerLayer {
     for (const { el, site } of this.markers) {
       el.setAttribute('aria-pressed', String(site === chosen?.site));
     }
-    this.label.name(chosen?.site.name ?? '');
     this.onChange();
   }
 
-  /** Moves every marker and the label to where `project` puts them. */
+  /** Moves every marker and the callout to where `project` puts them. */
   place(project: Projector, eye: Vec3): void {
     const facing = this.markers
       .filter(({ point }) => isFacing(point, eye))
@@ -123,11 +122,11 @@ export class MarkerLayer {
       marker.el.style.transform = `translate3d(${at.x}px, ${at.y}px, 0)`;
     }
     this.placed = shown.map(({ marker, at }) => ({ id: marker.site.id, at }));
-    const labelAt = shown.find(({ selected }) => selected)?.at ?? null;
-    this.label.follow(labelAt, this.root.clientWidth);
+    const calloutAt = shown.find(({ selected }) => selected)?.at ?? null;
+    this.callout.follow(calloutAt);
   }
 
-  /** Takes the markers and the label off the page. */
+  /** Takes the markers and the callout off the page. */
   dispose(): void {
     this.root.remove();
   }

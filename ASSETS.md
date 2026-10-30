@@ -99,20 +99,33 @@ byte-identical, so the sha256 values in these tables hold for both versions.
 | File | Size | sha256 |
 |---|---|---|
 | `packages/web/public/thumbs/im1-odysseus.jpg` | 320 x 320, 28 968 bytes | `59b1c7d5878233779c9b8dfa13033802ebc17d2719982f35588b48863b495a79` |
+| `packages/web/public/thumbs/im1-odysseus@2x.jpg` | 640 x 640, 87 183 bytes | `c37e57e8e795912ab6a6b627124513120ca579f851aaab57a0003f4a7affdc2d` |
 | `packages/web/public/thumbs/im2-athena.jpg` | 320 x 320, 32 904 bytes | `7eedfcc339245c5a489bccd816bb26f22104841d39520e400d0e09f0910e3385` |
+| `packages/web/public/thumbs/im2-athena@2x.jpg` | 640 x 640, 104 661 bytes | `8760f9f0ca06c6b0803aee5c093fc0ab0283b92a9b5bfb3425b0b5ab88f2756f` |
 | `packages/web/public/thumbs/change7-target.jpg` | 320 x 320, 20 413 bytes | `3be191b4c0bb94078ce61b440ae7c812c1fc393dff695d320f0d318bc4ec3a90` |
+| `packages/web/public/thumbs/change7-target@2x.jpg` | 640 x 640, 66 216 bytes | `3e1381a3ccc234489951233a9839b90ded01c62a07cd1088cbf1160740fbb054` |
 | `packages/web/public/thumbs/bluemoon-mk1-pathfinder.jpg` | 320 x 320, 19 448 bytes | `9e41e1961ae68e51f59696a95e1d8e5dbe1e7d40a5ac091f49046122a8519c8a` |
+| `packages/web/public/thumbs/bluemoon-mk1-pathfinder@2x.jpg` | 640 x 640, 63 209 bytes | `d96fa305192cbe7ef2d75d2e88f9c2c7938bccf579d5cc0c6c97c18c6eddcf86` |
 | `packages/web/public/thumbs/griffin1-nobile.jpg` | 320 x 320, 20 102 bytes | `7c641872398440d4522f16926af30993073cf7170a178c741573e9fae7c1153d` |
+| `packages/web/public/thumbs/griffin1-nobile@2x.jpg` | 640 x 640, 61 577 bytes | `a0b178ed5dd618c2b8bfe5e03494611a18fc010be9f00bbc2cbe625b5a3e56d8` |
 | `packages/web/public/thumbs/artemis-peak-near-cabeus-b.jpg` | 320 x 320, 26 170 bytes | `eef5e347b3beeddc141af9f6881dcf58e18b2ccadc1e621fb6c3785c72f63877` |
+| `packages/web/public/thumbs/artemis-peak-near-cabeus-b@2x.jpg` | 640 x 640, 78 605 bytes | `3e451651025e5e1e3eea6a71f26517566c4f575a5682ea5682d1bca05d566c9f` |
 | `packages/web/public/thumbs/artemis-haworth.jpg` | 320 x 320, 25 915 bytes | `5b67eda3f779180ecdf59644abb1b37b1c63097e4bc355504faf25a0ea145fa2` |
+| `packages/web/public/thumbs/artemis-haworth@2x.jpg` | 640 x 640, 91 851 bytes | `7e1d88087a10a5670c1a5728d715cc020abff5730a4fe08d2a3136db8464a2cb` |
 | `packages/web/public/thumbs/artemis-malapert-massif.jpg` | 320 x 320, 20 565 bytes | `7fb6a4c964e18e4212557e51e9bf36dc88cd4f403ab6e052a9c2be06982532c2` |
+| `packages/web/public/thumbs/artemis-malapert-massif@2x.jpg` | 640 x 640, 70 490 bytes | `00c1cbd863f0815fe0594e03336783c51640df722264694daafd61f08b55eb7b` |
 | `packages/web/public/thumbs/artemis-mons-mouton-plateau.jpg` | 320 x 320, 31 547 bytes | `aa3e41b4db7ef26907e9b21e153d2434ecc2eab711a4950b9311faa0ee8856e9` |
+| `packages/web/public/thumbs/artemis-mons-mouton-plateau@2x.jpg` | 640 x 640, 100 124 bytes | `9f69faf795e92fa47bf51a0d854785ba4d8c0877db0f0aeec6e4bde8ecb56e9f` |
 | `packages/web/public/thumbs/artemis-de-gerlache-rim-2.jpg` | 320 x 320, 20 613 bytes | `8aa86c0bff788575291482f9a0908711bdba966c6cb9a92daf115fe32931ad0d` |
+| `packages/web/public/thumbs/artemis-de-gerlache-rim-2@2x.jpg` | 640 x 640, 66 974 bytes | `858ae2a7646c3810bdc59208ee5b8725637d3425f078a7d8b527ce9cd1fbabec` |
 | `packages/web/public/thumbs/artemis-slater-plain.jpg` | 320 x 320, 23 841 bytes | `80d58936c784bb086f4c0424b06259c3553bd4b52d093f33275bbe78ab531243` |
+| `packages/web/public/thumbs/artemis-slater-plain@2x.jpg` | 640 x 640, 76 137 bytes | `10760da5c76c83f4e98a75ea226bc13b1d8ba29748fe7ebcbe7b1e3042e3f0c7` |
 
-Total 270 486 bytes for 11 files. Sites that share a point share the file named after the first of them in the site
+Total 270 486 bytes for the 11 files at 320 x 320 and 867 027 bytes for their 11 twins at 640 x 640 (`@2x`, for
+screens with two device pixels per CSS px); a visitor fetches one file, the selected site's at their screen's density.
+Sites that share a point share the file named after the first of them in the site
 list (Mons Mouton uses Mons Mouton Plateau's; Nobile Rims 1 and 2 use Griffin-1's); the manifest the script writes,
-`packages/web/src/callout/thumbs.json`, maps every site id to its file and frame.
+`packages/web/src/callout/thumbs.json`, maps every site id to its two files and its frame.
 
 - **Source**: the Lunar Orbiter Laser Altimeter (LOLA) south polar gridded elevation, `LDEM_80S_20M` (PDS data set
   `LRO-L-LOLA-4-GDR-V1.0`, product version V2.0), at
@@ -130,7 +143,8 @@ list (Mons Mouton uses Mons Mouton Plateau's; Nobile Rims 1 and 2 use Griffin-1'
   80.13° S, sits off centre); a 5 x 5 median and a 3 x 3 box blur against the ridges bad LOLA tracks leave; Lambert
   shading with the Sun 3° high from the upper left (Haworth: 5° from the left, softer shadows, so its far wall reads)
   and cast shadows traced 12 km towards the Sun on a 40 m grid; the 1st to 99.7th percentile stretched with gamma
-  0.8 to 10-88 % grey, a faint warm tint, Lanczos down to 320 x 320, progressive JPEG at quality 88. Sites north of
+  0.8 to 10-88 % grey, a faint warm tint, Lanczos down to 320 x 320 and, from the same shading, to 640 x 640,
+  progressive JPEG at quality 88. Sites north of
   80° S are outside the DEM and have no thumbnail.
 - **Chunks read** (`SHA256SUMS` in the script's cache; each is lines `N` to `N + 499` of the product):
 

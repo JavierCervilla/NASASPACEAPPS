@@ -25,12 +25,13 @@
 
 Every site south of 80° S gets a 320 x 320 shaded relief of the LOLA DEM
 LDEM_80S_20M (lola_polar.py) around its point, lit by a low Sun
-(hillshade.py), for the site callout on the globe. Sites further north
+(hillshade.py), for the site callout on the globe, and the same frame at
+640 x 640 for 2x screens (`<name>@2x.jpg`). Sites further north
 are outside the DEM and get none. Sites that share a point share one
 file, named after the first of them in the site list.
 
 It also writes the manifest the web reads (src/callout/thumbs.json): for
-each site id, its file and the width of ground it shows. The web knows no
+each site id, its two files and the width of ground it shows. The web knows no
 other rule: a site missing from the manifest has no thumbnail.
 
 Regenerate (sources and checksums in ASSETS.md; Pillow and NumPy,
@@ -58,6 +59,8 @@ CACHE = Path.home() / ".cache" / "ventana-lunar" / "ldem_80s_20m"
 # The DEM's rim: a site north of it is outside the grid.
 SOUTH_OF_DEG = -80.0
 SIZE_PX = 320
+# The 2x file: the same frame for screens with two device pixels per px.
+SIZE_2X_PX = 640
 QUALITY = 88
 DEFAULT_FRAME_KM = 30.0
 # Haworth is a 51 km crater: at 30 km only its floor and one wall show.
@@ -89,6 +92,7 @@ def _override(table, ids, default):
 def _group(point, ids):
     return {
         "file": f"{ids[0]}.jpg",
+        "file2x": f"{ids[0]}@2x.jpg",
         "ids": ids,
         "lat": point[0],
         "lon_east": point[1],
@@ -102,19 +106,25 @@ def manifest(groups):
     entries = {}
     for group in groups:
         for site_id in group["ids"]:
-            frame = group["frame_km"]
-            entries[site_id] = {"file": group["file"], "frameKm": frame}
+            entries[site_id] = {
+                "file": group["file"],
+                "file2x": group["file2x"],
+                "frameKm": group["frame_km"],
+            }
     return dict(sorted(entries.items()))
 
 
 def render(group, cache, out_dir):
-    """Writes one thumbnail; returns its path."""
+    """Writes one site's thumbnail at 1x and 2x; returns their paths."""
     lines, samples = window(group["lat"], group["lon_east"], group["frame_km"])
     heights = cache.heights(lines, samples)
-    image = hillshade(heights, METRES_PER_PIXEL, group["light"], SIZE_PX)
-    path = out_dir / group["file"]
-    image.save(path, "JPEG", quality=QUALITY, optimize=True, progressive=True)
-    return path
+    paths = []
+    for key, size in (("file", SIZE_PX), ("file2x", SIZE_2X_PX)):
+        image = hillshade(heights, METRES_PER_PIXEL, group["light"], size)
+        path = out_dir / group[key]
+        image.save(path, "JPEG", quality=QUALITY, optimize=True, progressive=True)
+        paths.append(path)
+    return paths
 
 
 def main():
@@ -128,9 +138,10 @@ def main():
     cache = StripCache(args.cache)
     args.out_dir.mkdir(parents=True, exist_ok=True)
     for group in groups:
-        data = render(group, cache, args.out_dir).read_bytes()
-        digest = hashlib.sha256(data).hexdigest()
-        print(f"{group['file']}  {len(data)} bytes  sha256 {digest}")
+        for path in render(group, cache, args.out_dir):
+            data = path.read_bytes()
+            digest = hashlib.sha256(data).hexdigest()
+            print(f"{path.name}  {len(data)} bytes  sha256 {digest}")
     text = json.dumps(manifest(groups), indent=2) + "\n"
     args.manifest.write_text(text, encoding="utf-8")
     print(f"DEM chunks: {cache.root / 'SHA256SUMS'}")

@@ -118,6 +118,11 @@ class GroupsTest(unittest.TestCase):
         self.assertEqual(entries["mouton"]["file"], "plateau.jpg")
         self.assertEqual(entries["plateau"]["file"], "plateau.jpg")
 
+    def test_each_entry_names_its_2x_file_next_to_the_1x_one(self):
+        entries = site_thumbs.manifest(self.groups)
+        self.assertEqual(entries["mouton"]["file2x"], "plateau@2x.jpg")
+        self.assertEqual(entries["artemis-haworth"]["file2x"], "artemis-haworth@2x.jpg")
+
     def test_haworth_keeps_its_wide_frame_and_its_own_light(self):
         haworth = self.groups[1]
         self.assertEqual(haworth["frame_km"], 62.0)

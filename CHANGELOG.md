@@ -8,11 +8,15 @@
   potentes y con el ahorro de datos no se descarga nada más que el mapa inicial). Las texturas se filtran mejor de
   lado (filtrado anisótropo). Y la Luna tiene relieve: un mapa de normales sacado de la altimetría LOLA de NASA hace
   que cráteres y macizos proyecten luz y sombra a lo largo del terminador, sobre todo en el polo sur, donde la foto de
-  color apenas tenía detalle.
+  color apenas tenía detalle; la cara nocturna se queda a oscuras, sin bordes de cráter encendidos más allá del
+  terminador. Los equipos modestos también llegan a 4K si su tarjeta gráfica lo admite.
 - La hoja del móvil se puede cerrar (VENT-24, lienzo validado): arrastrándola hacia abajo, con «Globe» o con «Done» en
   el selector queda solo la Luna, centrada entre la barra de arriba y la de pestañas. Se vuelve a abrir con la píldora
   del sitio o con «Sites» (selector) o arrastrando hacia arriba desde la barra de pestañas (media altura). La página
-  recuerda durante la sesión dónde dejaste la hoja. Cerrada, la hoja no se lee ni recibe el foco.
+  recuerda durante la sesión dónde dejaste la hoja. Cerrada, la hoja no se lee ni recibe el foco, y la Luna sigue
+  ocupando toda la pantalla aunque acerques el zoom. Asomada, la hoja enseña solo el nombre y las coordenadas, por
+  encima de la barra de pestañas. Los marcadores del globo se pulsan mejor con el dedo (zona táctil de 44 px) sin
+  verse más grandes.
 - Versión para móvil (VENT-23, lienzo validado): el globo 3D ya se ve en el teléfono, a pantalla completa y con calidad
   ajustada (textura 1K y resolución limitada); se gira con un dedo y se acerca pellizcando. Arriba, una barra de cristal
   con el título y una píldora con el sitio elegido y su estado. Abajo, una hoja que se arrastra con el dedo y se lanza

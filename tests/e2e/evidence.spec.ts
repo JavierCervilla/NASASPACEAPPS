@@ -1,8 +1,8 @@
 /**
  * QA evidence, not a check: screenshots of the globe at 1440x900 in dark and light mode, a close-up of the south pole
  * terminator before and after the sharper maps and the LOLA relief, and of the phone at 390x844 (the sheet at half in
- * dark and light, the site picker, and the sheet closed), saved under production/qa/evidence/ with the capture date. It
- * runs only on request, so a normal e2e run writes nothing:
+ * dark and light, the site picker, the sheet at peek, and the sheet closed, also zoomed in), saved under
+ * production/qa/evidence/ with the capture date. It runs only on request, so a normal e2e run writes nothing:
  *
  *   CAPTURE_EVIDENCE=1 npm run e2e -- evidence.spec.ts
  *
@@ -96,6 +96,27 @@ test.describe('phone evidence', () => {
     await expect(page.locator('.sheet')).toHaveAttribute('inert', '');
     await settle(page);
     await page.screenshot({ path: new URL(`${DATE}-vent-24-phone-closed.png`, OUT).pathname });
+  });
+
+  test('phone, sheet closed, zoomed in', async ({ page }) => {
+    await openPhone(page, 'dark');
+    await page.getByRole('navigation', { name: 'Views' }).getByRole('button', { name: 'Globe' }).click();
+    await expect(page.locator('.sheet')).toHaveAttribute('inert', '');
+    await page.getByRole('application', { name: 'The Moon, seen over its south pole' }).focus();
+    for (let press = 0; press < 9; press += 1) await page.keyboard.press('+');
+    await page.waitForLoadState('networkidle');
+    await page.waitForTimeout(1500);
+    await settle(page);
+    await page.screenshot({ path: new URL(`${DATE}-vent-24-phone-closed-zoomed.png`, OUT).pathname });
+  });
+
+  test('phone, sheet at peek', async ({ page }) => {
+    await openPhone(page, 'dark');
+    await page.getByRole('button', { name: /^Sheet half height/ }).press('Enter');
+    await page.getByRole('button', { name: /^Sheet full height/ }).press('Enter');
+    await expect(page.getByRole('button', { name: /^Sheet collapsed/ })).toBeVisible();
+    await settle(page);
+    await page.screenshot({ path: new URL(`${DATE}-vent-24-phone-peek.png`, OUT).pathname });
   });
 
   test('phone, site picker open', async ({ page }) => {

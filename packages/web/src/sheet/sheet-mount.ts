@@ -42,7 +42,7 @@ function sheetLoop(
 ): Loop {
   return createLoop((dt) => {
     const moving = stepSheet(state, dt);
-    placeSheet(el, state.axis.value);
+    placeSheet(el, state.axis.value, state.detents);
     report.onOpenness(openness(state.detents, state.axis.value));
     report.onEdge(state.axis.value);
     return moving;
@@ -88,7 +88,7 @@ export function mountSheet(
   const unbind = bindDrags(el, { state, motion, options });
   const resize = (): void => motion.moveTo(state.detent);
   window.addEventListener('resize', resize);
-  placeSheet(el, state.axis.value);
+  placeSheet(el, state.axis.value, state.detents);
   invalidate();
   const dispose = (): void => {
     loop.stop();

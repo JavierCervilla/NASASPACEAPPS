@@ -17,9 +17,13 @@ export type LodLevel = 1 | 2 | 4 | 8;
  */
 export const LOD_DISTANCE = { level4: 3.5, level8: 2.2 } as const;
 
-/** The most each tier may load: phones never run the high tier. */
+/**
+ * The most each tier may load: 4K on the low and medium tiers (phones
+ * never run the high tier), so a close look is sharp on every device whose
+ * GPU takes 4K; 8K on the high tier only.
+ */
 const TIER_MAX: Readonly<Record<Tier, LodLevel>> = {
-  low: 2,
+  low: 4,
   medium: 4,
   high: 8,
 };

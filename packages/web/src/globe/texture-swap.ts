@@ -49,7 +49,9 @@ export class TextureSwap<T> {
       const level = this.target as LodLevel;
       const next = await fetchLevel(level, this.held, this.deps);
       if (!next) {
-        this.target = this.held.level;
+        // Give up on the failed level only: a higher one asked for
+        // meanwhile is still wanted, and is fetched next.
+        if (this.target === level) this.target = this.held.level;
       } else if (this.disposed) {
         release(next.maps, this.held.maps, this.deps);
       } else {

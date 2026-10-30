@@ -3,7 +3,7 @@ import { stepDampedSpring } from '../src/sheet/damped-spring';
 import { SheetMotion } from '../src/sheet/sheet-motion';
 import { detentsFor, nearestDetent, releaseDetent, rubberBand, unRubberBand } from '../src/sheet/sheet-physics';
 import { createSheetState, dragSheet, FLICK_MIN_PX_S, grabSheet, settleSheet, stepSheet, type SheetState } from '../src/sheet/sheet-state';
-import { grabberLabel, nextDetent, openness } from '../src/sheet/sheet-view';
+import { grabberLabel, nextDetent, openness, reveal } from '../src/sheet/sheet-view';
 
 // The e2e and canvas phone: 390x844.
 const HEIGHT = 844;
@@ -19,8 +19,8 @@ function run(state: SheetState): number[] {
 }
 
 describe('detents', () => {
-  it('sit where the canvas puts the sheet: full under the bar, half 344 px, peek 136 px, closed off-screen', () => {
-    expect(DETENTS).toEqual({ full: 96, half: 500, peek: 708, closed: 900 });
+  it('sit where the canvas puts the sheet: full under the bar, half 344 px, peek 156 px, closed off-screen', () => {
+    expect(DETENTS).toEqual({ full: 96, half: 500, peek: 688, closed: 900 });
   });
 
   it('never cross on a short viewport', () => {
@@ -196,7 +196,7 @@ describe('SheetMotion', () => {
     const { state, deps, motion } = motionOn(true);
     deps.heightPx = () => 700;
     motion.moveTo('peek');
-    expect(state.axis.value).toBe(700 - 136);
+    expect(state.axis.value).toBe(700 - 156);
   });
 });
 
@@ -211,5 +211,18 @@ describe('sheet view', () => {
     expect(openness(DETENTS, DETENTS.full)).toBe(1);
     expect(openness(DETENTS, DETENTS.peek)).toBe(0);
     expect(openness(DETENTS, (DETENTS.half + DETENTS.full) / 2)).toBeCloseTo(0.5);
+  });
+});
+
+describe('reveal below the summary head', () => {
+  it('shows nothing at peek or lower, where only the head clears the tab bar', () => {
+    expect(reveal(DETENTS, DETENTS.peek)).toBe(0);
+    expect(reveal(DETENTS, DETENTS.closed)).toBe(0);
+  });
+
+  it('shows everything from half up, and fades in between', () => {
+    expect(reveal(DETENTS, DETENTS.half)).toBe(1);
+    expect(reveal(DETENTS, DETENTS.full)).toBe(1);
+    expect(reveal(DETENTS, (DETENTS.half + DETENTS.peek) / 2)).toBeCloseTo(0.5);
   });
 });

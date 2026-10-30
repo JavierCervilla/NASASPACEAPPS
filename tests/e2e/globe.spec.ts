@@ -101,6 +101,20 @@ test.describe('desktop, 1440x900', () => {
     await expect(page.locator(NOBILE)).toBeVisible();
   });
 
+  test('a marker is a 44 px touch target around the same small dot', async ({ page }) => {
+    await page.route('**/api/v1/sites', (route) => route.fulfill({ json: { sites: SITES } }));
+    await page.goto('./');
+    await page.getByRole('button', { name: /Malapert A region \(IM-1 Odysseus\)/ }).click();
+    const marker = page.locator(IM2);
+    await expect(marker).toHaveAttribute('aria-pressed', 'false');
+    const box = await marker.boundingBox();
+    expect(box?.width).toBeGreaterThanOrEqual(44);
+    expect(box?.height).toBeGreaterThanOrEqual(44);
+    // The hit area grew; the dot is still 8 px.
+    const dot = await marker.evaluate((el) => getComputedStyle(el, '::after').width);
+    expect(dot).toBe('8px');
+  });
+
   test('the viewport is focusable and turns with the arrow keys', async ({ page }) => {
     await page.emulateMedia({ reducedMotion: 'reduce' });
     await page.route('**/api/v1/sites', (route) => route.fulfill({ json: { sites: SITES } }));
@@ -127,7 +141,7 @@ test.describe('desktop, 1440x900', () => {
 
 test.describe('desktop texture detail, 1440x900', () => {
   test.use({ viewport: { width: 1440, height: 900 } });
-  // Headless Chromium draws with SwiftShader, which the tier detection rates low (stops at 2K): force the high tier a
+  // Headless Chromium draws with SwiftShader, which the tier detection rates low (stops at 4K): force the high tier a
   // desktop GPU gets.
   const HIGH = './?quality=high';
   const MAP_4K = /\/textures\/moon-lroc-4k\.jpg$/;

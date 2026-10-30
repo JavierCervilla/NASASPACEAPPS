@@ -1,6 +1,6 @@
 /**
  * How the sheet's position reaches the page, and how it is named to
- * assistive technology. Pure apart from writing one style.
+ * assistive technology. Pure apart from writing the sheet's style.
  */
 import type { DetentName, Detents } from './sheet-physics';
 
@@ -43,7 +43,22 @@ export function openness(detents: Detents, y: number): number {
   return Math.min(1, Math.max(0, (detents.half - y) / span));
 }
 
-/** Puts the sheet's top edge `y` px below the top of the viewport. */
-export function placeSheet(el: HTMLElement, y: number): void {
+/**
+ * How much of the content below the summary's head shows, 0 to 1: none
+ * at peek or lower, where only the head clears the tab bar, all of it from
+ * half up, and a fade in between that follows the finger.
+ */
+export function reveal(detents: Detents, y: number): number {
+  const span = detents.peek - detents.half;
+  if (span <= 0) return 1;
+  return Math.min(1, Math.max(0, (detents.peek - y) / span));
+}
+
+/**
+ * Puts the sheet's top edge `y` px below the top of the viewport, and
+ * tells its CSS how much to reveal (`--sheet-reveal`).
+ */
+export function placeSheet(el: HTMLElement, y: number, detents: Detents) {
   el.style.transform = `translate3d(0, ${y}px, 0)`;
+  el.style.setProperty('--sheet-reveal', String(reveal(detents, y)));
 }

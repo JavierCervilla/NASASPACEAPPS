@@ -2,7 +2,8 @@
  * The Moon: a 64-segment sphere wearing the LROC colour mosaic and the LOLA
  * relief as an object-space normal map (see ASSETS.md), lit by one
  * directional light from the real Sun and a faint ambient term so the
- * night side keeps its shape. Sharper maps arrive as the camera closes in
+ * night side keeps its shape; the relief never lights the night side
+ * (night-side.ts). Sharper maps arrive as the camera closes in
  * (texture-lod.ts, texture-swap.ts).
  */
 import {
@@ -18,6 +19,7 @@ import { subSolarPoint, type SelenographicPoint } from '@ventana/sim';
 import type { Tier } from '../lib/quality';
 import { sunDirection } from './geo';
 import { moonTextureDeps } from './moon-textures';
+import { keepNightDark } from './night-side';
 import type { Stage } from './stage';
 import { levelUrls, startLevel, wantedLevel } from './texture-lod';
 import { textureBytes } from './texture-bytes';
@@ -56,6 +58,7 @@ export interface MoonOptions {
 export function addMoon(stage: Stage, options: MoonOptions): Moon {
   const geometry = new SphereGeometry(1, SEGMENTS, SEGMENTS);
   const material = new MeshLambertMaterial(BARE_MOON);
+  keepNightDark(material);
   const { renderer } = stage;
   const { maxTextureSize } = renderer.capabilities;
   const swap = new TextureSwap<Texture>({

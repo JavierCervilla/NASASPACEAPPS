@@ -47,6 +47,10 @@ jobs:
           check-latest: true
       - run: node .claude/skills/security-gate/scripts/check-unicode-safety.mjs
       - run: node .claude/skills/security-gate/scripts/check-agent-config.mjs
+      # The texture pipeline's Python. Pinned: a new ruff release can add rules and turn a green PR red with no change
+      # of ours.
+      - name: Ruff (packages/web/scripts)
+        run: pipx run --spec "ruff==0.16.8" ruff check packages/web/scripts
 
   security:
     name: Guardián · security ladder (secrets + SAST + deps)

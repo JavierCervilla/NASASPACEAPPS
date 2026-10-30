@@ -20,7 +20,7 @@ import { createOrbit, type Orbit } from './orbit';
 import { bindPinch } from './pinch';
 import { pinchControls, pointerControls } from './pointer-controls';
 import { pickQuality } from './quality-pick';
-import { bindSheetEdge } from './sheet-edge';
+import { bindSheetEdge, frameInset } from './sheet-edge';
 import { bindSelection, type SelectionParts } from './selection';
 import { loadSites } from './sites-client';
 import { createStage, disposeStage, resizeStage, type Stage } from './stage';
@@ -69,7 +69,8 @@ function bindInput(
   const deps = {
     invalidate: () => loop.invalidate(),
     reducedMotion,
-    heightPx: () => host.clientHeight,
+    // The Moon is scaled for its frame, not the whole canvas.
+    heightPx: () => host.clientHeight - frameInset(host),
   };
   const keys = keyControls(orbit, deps);
   return [
@@ -87,9 +88,10 @@ function bindInput(
 function bindSites(
   host: HTMLElement,
   options: GlobeOptions,
-  globe: Pick<SelectionParts, 'markers' | 'orbit' | 'invalidate'>,
+  globe: Pick<SelectionParts, 'markers' | 'orbit' | 'invalidate'> &
+    Pick<Stage, 'camera'>,
 ): () => void {
-  const { markers, orbit, invalidate } = globe;
+  const { markers, orbit, invalidate, camera } = globe;
   let sites: readonly GlobeSite[] = [];
   const get = globalThis.fetch.bind(globalThis);
   void loadSites({ fetch: get, url: options.sitesUrl, warn: options.warn })
@@ -100,7 +102,8 @@ function bindSites(
   const { store, reducedMotion } = options;
   const parts = { store, markers, orbit, invalidate, reducedMotion };
   const unbindSelection = bindSelection(parts, () => sites);
-  const unbindEdge = bindSheetEdge(host, markers, options.sheetEdge);
+  const edgeParts = { camera, markers, invalidate };
+  const unbindEdge = bindSheetEdge(host, edgeParts, options.sheetEdge);
   return () => {
     unbindSelection();
     unbindEdge();
@@ -124,7 +127,9 @@ export function mountGlobe(host: HTMLElement, options: GlobeOptions) {
   const parts = { stage, orbit, markers, moon };
   const loop = createLoop((dt) => drawFrame(parts, dt));
   const input = bindInput(host, orbit, loop, options.reducedMotion);
-  const sites = bindSites(host, options, { markers, orbit, invalidate });
+  const { camera } = stage;
+  const globeParts = { markers, orbit, invalidate, camera };
+  const sites = bindSites(host, options, globeParts);
   const unbind = [watchHost(host, stage, loop), ...input, sites];
   void attachDevTools(stage.renderer, moon.textureBytes);
   return () => {

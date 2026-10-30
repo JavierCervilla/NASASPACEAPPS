@@ -34,10 +34,27 @@ describe('texture level of detail', () => {
     expect(wantedLevel(CLOSE_ZOOM, caps('high'))).toBe(8);
   });
 
-  it('stops a phone (medium tier) at 4K, and the low tier at 2K', () => {
+  it('stops a phone (medium or low tier) at 4K when its GPU takes 4K', () => {
     expect(wantedLevel(MEDIUM_ZOOM, caps('medium'))).toBe(4);
     expect(wantedLevel(CLOSE_ZOOM, caps('medium'))).toBe(4);
-    expect(wantedLevel(CLOSE_ZOOM, caps('low'))).toBe(2);
+    expect(wantedLevel(MEDIUM_ZOOM, caps('low'))).toBe(4);
+    expect(wantedLevel(CLOSE_ZOOM, caps('low'))).toBe(4);
+    expect(maxLevel(caps('low', { maxTextureSize: 4096 }))).toBe(4);
+    expect(maxLevel(caps('low', { maxTextureSize: 2048 }))).toBe(2);
+  });
+
+  it('keeps the low tier at its start map under Save-Data', () => {
+    expect(maxLevel(caps('low', { saveData: true }))).toBe(1);
+    expect(wantedLevel(CLOSE_ZOOM, caps('low', { saveData: true }))).toBe(1);
+  });
+
+  // Literal distances, not LOD_DISTANCE: a change of threshold must show up here.
+  it('switches maps at exactly 3.5 and 2.2 Moon radii', () => {
+    expect(wantedLevel(3.5, caps('high'))).toBe(4);
+    expect(wantedLevel(3.51, caps('high'))).toBe(2);
+    expect(wantedLevel(3.51, caps('medium'))).toBe(1);
+    expect(wantedLevel(2.2, caps('high'))).toBe(8);
+    expect(wantedLevel(2.21, caps('high'))).toBe(4);
   });
 
   it('never goes past the start map under Save-Data', () => {
@@ -136,6 +153,27 @@ describe('texture swap', () => {
       'load lola-normal-4k',
       'load lroc-8k',
     ]);
+    expect(swap.shown()).toBe(8);
+  });
+
+  it('never lowers a pending target while a fetch is busy', async () => {
+    const { swap, log, answer } = setUp();
+    swap.want(2);
+    swap.want(8);
+    swap.want(4);
+    await answer();
+    await answer();
+    expect(log.filter((line) => line.startsWith('load lroc'))).toEqual(['load lroc-2k', 'load lroc-8k']);
+    expect(swap.shown()).toBe(8);
+  });
+
+  it('still climbs to a higher target asked for while a lower level failed', async () => {
+    const { swap, log, answer } = setUp(['lroc-2k']);
+    swap.want(2);
+    swap.want(8);
+    await answer();
+    await answer();
+    expect(log).toContain('load lroc-8k');
     expect(swap.shown()).toBe(8);
   });
 

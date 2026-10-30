@@ -16,7 +16,10 @@ export interface SheetLayout {
   readonly fullGapPx: number;
   /** Visible sheet at half: the name and the four widgets. */
   readonly halfPx: number;
-  /** Visible sheet at peek: the name and the coordinates. */
+  /**
+   * Visible sheet at peek: the name and the coordinates, clear of the
+   * floating tab bar (22 px off the bottom, 61 px tall) by 12 px.
+   */
   readonly peekPx: number;
   /**
    * How far below the screen the closed sheet's edge rests: past the
@@ -28,7 +31,7 @@ export interface SheetLayout {
 export const SHEET_LAYOUT: SheetLayout = {
   fullGapPx: 96,
   halfPx: 344,
-  peekPx: 136,
+  peekPx: 156,
   closedPx: 56,
 };
 

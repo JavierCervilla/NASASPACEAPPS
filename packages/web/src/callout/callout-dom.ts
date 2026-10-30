@@ -44,8 +44,8 @@ export interface CalloutDom {
 }
 
 type TextPart =
-  | 'badge' | 'caption' | 'mission' | 'missionShort' | 'place' | 'point'
-  | 'pointShort' | 'pill' | 'sunLabel' | 'sunValue' | 'earthLabel'
+  | 'badge' | 'caption' | 'mission' | 'missionShort' | 'place'
+  | 'placeShort' | 'point' | 'pointShort' | 'pill' | 'sunLabel' | 'sunValue' | 'earthLabel'
   | 'earthValue';
 
 function part<K extends keyof HTMLElementTagNameMap>(
@@ -88,7 +88,7 @@ export function calloutDom(): CalloutDom {
   part(card, 'span', 'glyph').setAttribute('aria-hidden', 'true');
   const body = part(card, 'div', 'body');
   const [mission, missionShort] = row(body, 'mission');
-  const place = part(body, 'p', 'place');
+  const [place, placeShort] = row(body, 'place');
   const [point, pointShort] = row(body, 'point');
   const [pill, tiles] = [part(body, 'span', 'pill'), part(body, 'div', 'tiles')];
   const [sunLabel, sunValue] = tile(tiles, 'sun');
@@ -97,8 +97,8 @@ export function calloutDom(): CalloutDom {
   leader.className = 'globe-callout-leader';
   leader.setAttribute('aria-hidden', 'true');
   return { card, leader, img, text: {
-    badge, caption, mission, missionShort, place, point, pointShort, pill,
-    sunLabel, sunValue, earthLabel, earthValue,
+    badge, caption, mission, missionShort, place, placeShort, point,
+    pointShort, pill, sunLabel, sunValue, earthLabel, earthValue,
   } };
 }
 
@@ -115,7 +115,7 @@ export function renderCallout(dom: CalloutDom, content: CalloutContent): void {
   const words = {
     badge: state?.badge ?? notice, caption: image?.caption ?? '',
     mission: content.mission, missionShort: content.missionShort,
-    place: content.place,
+    place: content.place, placeShort: content.placeShort,
     point: content.point, pointShort: content.pointShort,
     pill: state?.pill ?? notice,
     sunLabel: bodies?.sun.label ?? '', sunValue: bodies?.sun.value ?? '',

@@ -35,6 +35,7 @@ import type { Page, Route } from '@playwright/test';
 export const SITES = JSON.parse(readFileSync(new URL('../../packages/server/data/sites.json', import.meta.url), 'utf8')) as {
   id: string;
   name: string;
+  group: string;
   lat: number;
   lonEast: number;
   approximate: boolean;

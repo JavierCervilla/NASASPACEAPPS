@@ -31,9 +31,11 @@
  * twice for Chang'e-7), so here a status keeps only its head, a date only
  * its last clause, and a segment already said is dropped. A landing or a
  * crash, wherever the status mentions it, is told with its own date. The
- * phone's line drops «landed»: a landing's date speaks for it. Pure.
+ * phone's line is the mission's short name and when (phone-lines.ts), and
+ * drops «landed»: a landing's date speaks for it. Pure.
  */
 import { formatStatusDate, type CardSite } from '../card/site-facts';
+import { phoneMissionLine, phoneMissionName, phoneWhen } from './phone-lines';
 
 /** The desktop's line and the phone's shorter one. */
 export interface MissionLines {
@@ -79,12 +81,14 @@ function joinOnce(segments: readonly string[]): string {
   return kept.join(' · ');
 }
 
-/** The mission lines of `site`, led by `lead`. */
+/** The mission lines of `site`, led by `lead` (its subtitle). */
 export function missionLines(site: CardSite, lead: string): MissionLines {
-  const line = (short: boolean): string => {
-    const event = eventSegment(site, lead, short);
-    const rest = event === null ? plainSegments(site) : [event];
-    return joinOnce([lead, ...rest]);
+  const event = eventSegment(site, lead, false);
+  const rest = event === null ? plainSegments(site) : [event];
+  const name = phoneMissionName(site, lead);
+  const when = eventSegment(site, name, true) ?? phoneWhen(site);
+  return {
+    wide: joinOnce([lead, ...rest]),
+    short: phoneMissionLine(name, when),
   };
-  return { wide: line(false), short: line(true) };
 }

@@ -31,6 +31,7 @@ import { clampInto, overlap } from '../src/callout/box';
 import { calloutContent } from '../src/callout/callout-content';
 import { placeCallout, type PlaceInput } from '../src/callout/callout-place';
 import { missionLines } from '../src/callout/mission-line';
+import { PHONE_MISSION_CHARS, PHONE_PLACE_CHARS, placeShort } from '../src/callout/phone-lines';
 import { thumbOf } from '../src/callout/thumbs';
 import type { CardSite } from '../src/card/site-facts';
 import { SiteCallout } from '../src/globe/site-callout';
@@ -94,12 +95,13 @@ describe('callout content', () => {
     expect(im2.point.replaceAll('\u00a0', ' ')).toBe('84.79° S, 29.20° E · exact touchdown');
   });
 
-  it('gives the phone shorter lines: the landing date without «landed», the coordinates alone', () => {
+  it('gives the phone shorter lines: the mission\'s name and date, the coordinates alone', () => {
     const im2 = content(IM2, READY, 150);
-    expect(im2.missionShort).toBe('IM-2 Athena · 6 Mar 2025');
+    expect(im2.missionShort).toBe('IM-2 · 6 Mar 2025');
+    expect(im2.placeShort).toBe('Mons Mouton');
     expect(im2.pointShort).toBe('84.79° S · 29.20° E');
     const planned = content({ ...IM2, status: 'planned', statusDate: 'NET 2027' }, READY, 150);
-    expect(planned.missionShort).toBe(planned.mission);
+    expect(planned.missionShort).toBe('IM-2 · NET 2027');
     const unknown = content({ ...IM2, lat: Number.NaN }, READY, 150);
     expect([unknown.point, unknown.pointShort]).toEqual(['Coordinates not in this build', 'Coordinates not in this build']);
   });
@@ -181,14 +183,49 @@ describe('callout mission line', () => {
   );
 
   it.each([
-    ['artemis-haworth', 'Artemis candidate region · landing planned 2028', 'Artemis candidate region · landing planned 2028'],
-    ['artemis-slater-plain', 'Artemis candidate region · landing planned 2028', 'Artemis candidate region · landing planned 2028'],
-    ['change7-target', "Chang'e-7 target · planned · 2027 (launch NET)", "Chang'e-7 target · planned · 2027 (launch NET)"],
-    ['im2-athena', 'IM-2 Athena · landed 6 Mar 2025', 'IM-2 Athena · 6 Mar 2025'],
-    ['luna25-target', 'north of Boguslawsky · crashed 19 Aug 2023', 'north of Boguslawsky · crashed 19 Aug 2023'],
-    ['ispace-m2-resilience', 'ispace M2 Resilience, crashed · 5 Jun 2025', 'ispace M2 Resilience, crashed · 5 Jun 2025'],
+    ['artemis-haworth', 'Artemis candidate region · landing planned 2028', 'Artemis · 2028'],
+    ['artemis-slater-plain', 'Artemis candidate region · landing planned 2028', 'Artemis · 2028'],
+    ['change7-target', "Chang'e-7 target · planned · 2027 (launch NET)", "Chang'e-7 · 2027"],
+    ['im2-athena', 'IM-2 Athena · landed 6 Mar 2025', 'IM-2 · 6 Mar 2025'],
+    ['chandrayaan3-vikram', 'Chandrayaan-3 Vikram · landed 23 Aug 2023', 'Chandrayaan-3 · Aug 2023'],
+    ['luna25-target', 'north of Boguslawsky · crashed 19 Aug 2023', 'Luna-25 · crashed Aug 2023'],
+    ['bluemoon-mk1-pathfinder', 'Blue Moon MK1 Pathfinder · planned · NET Q1 2027 (launch)', 'Blue Moon · NET Q1 2027'],
+    ['griffin1-nobile', 'Griffin-1, FLIP rover · planned · landing TBA', 'Griffin-1 · landing TBA'],
+    ['ispace-m2-resilience', 'ispace M2 Resilience, crashed · 5 Jun 2025', 'ispace · crashed Jun 2025'],
   ])('%s reads «%s» on a desktop and «%s» on a phone', (id, wide, short) => {
     expect(lines.find((line) => line.id === id)).toMatchObject({ wide, short });
+  });
+});
+
+describe('phone compact callout lines', () => {
+  // The budgets fit the card's 196 px text column at 360 px and up, measured in Chromium: the widest real mission
+  // line, «Chandrayaan-3 · 23 Aug 2023» (27 characters, so it drops its day), is 185 px; the widest place,
+  // «Mons Mouton Plateau», 174 px.
+  const rows = SITES.map((site) => {
+    const { title, subtitle } = siteLabels(site);
+    return { id: site.id, mission: missionLines(site, subtitle).short, place: placeShort(title) };
+  });
+
+  it.each(rows.map((row) => [row.id, row.mission, row.place] as const))(
+    '%s reads «%s» and «%s» on a phone, each inside its budget',
+    (_id, mission, place) => {
+      expect(mission.length).toBeLessThanOrEqual(PHONE_MISSION_CHARS);
+      expect(place.length).toBeLessThanOrEqual(PHONE_PLACE_CHARS);
+      // Each still says something: a name, and the date when the list gives one.
+      expect(mission.split(' · ').every(Boolean)).toBe(true);
+      expect(place).not.toBe('');
+    },
+  );
+
+  it.each([
+    ['Shackleton connecting ridge', 'Shackleton ridge'],
+    ['Nobile region near Mons Mouton', 'Nobile region'],
+    ['Mare Tranquillitatis (Tranquility Base)', 'Mare Tranquillitatis'],
+    ['Mons Rümker area, Oceanus Procellarum', 'Mons Rümker area'],
+    ['Mons Mouton Plateau', 'Mons Mouton Plateau'],
+    ['Peak near Cabeus B', 'Peak near Cabeus B'],
+  ])('shortens the place «%s» to «%s»', (place, short) => {
+    expect(placeShort(place)).toBe(short);
   });
 });
 
@@ -250,9 +287,18 @@ describe('callout placement', () => {
   it('hides while its marker is under something the card must not cover, as the phone tab bar', () => {
     const tabs = { left: 52, top: 760, right: 337, bottom: 821 };
     const phone = { left: 8, top: 8, right: 382, bottom: 836 };
-    const at = { x: 157, y: 778 };
-    expect(placeCallout({ at, size: { width: 312, height: 127 }, area: phone, avoid: [tabs] })).toBeNull();
-    expect(placeCallout({ at: { x: 157, y: 755 }, size: { width: 312, height: 127 }, area: phone, avoid: [tabs] })?.box.bottom).toBe(751);
+    const size = { width: 312, height: 127 };
+    // Just inside the bar's top edge the card above the marker would clear the bar (its bottom at 758), so only the
+    // marker-under-the-bar rule hides it.
+    expect(placeCallout({ at: { x: 157, y: 762 }, size, area: phone, avoid: [tabs] })).toBeNull();
+    // Just above the bar the card shows, above its marker.
+    expect(placeCallout({ at: { x: 157, y: 755 }, size, area: phone, avoid: [tabs] })?.box.bottom).toBe(751);
+  });
+
+  it('hides deeper under the tab bar too, where every side would also land on it', () => {
+    const tabs = { left: 52, top: 760, right: 337, bottom: 821 };
+    const phone = { left: 8, top: 8, right: 382, bottom: 836 };
+    expect(placeCallout({ at: { x: 157, y: 778 }, size: { width: 312, height: 127 }, area: phone, avoid: [tabs] })).toBeNull();
   });
 
   it('hides where every side would cover something: just below the tab bar, every card lands on it', () => {

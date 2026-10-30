@@ -30,8 +30,9 @@
  * wording is the site card's (`pointLine`, `siteLabels`; the mission line,
  * said once, is mission-line.ts's) and the countdowns are the widgets'
  * (`widgetsAt`), so the callout never disagrees with them. The phone's
- * compact card gets shorter mission and point lines, each one line at
- * 360 px. Pure.
+ * compact card gets shorter mission, place and point lines; for every
+ * curated site each fits whole on one line from 360 px (phone-lines.ts),
+ * and the ellipsis is left only for a site added later. Pure.
  */
 import type { CardSite } from '../card/site-facts';
 import { pointLine } from '../card/site-facts';
@@ -46,6 +47,7 @@ import {
   type CalloutState,
 } from './callout-state';
 import { missionLines } from './mission-line';
+import { placeShort } from './phone-lines';
 import { thumbOf, type Thumb } from './thumbs';
 
 /** The Sun's and the Earth's countdowns. */
@@ -61,10 +63,12 @@ export interface CalloutContent {
   readonly name: string;
   /** «IM-2 Athena · landed 6 Mar 2025». */
   readonly mission: string;
-  /** The phone's: «IM-2 Athena · 6 Mar 2025». */
+  /** The phone's: «IM-2 · 6 Mar 2025». */
   readonly missionShort: string;
   /** «Mons Mouton». */
   readonly place: string;
+  /** The phone's: «Shackleton ridge» for «Shackleton connecting ridge». */
+  readonly placeShort: string;
   /** «84.79° S, 29.20° E · exact touchdown», wrapping only before «exact». */
   readonly point: string;
   /**
@@ -124,6 +128,7 @@ export function calloutContent(input: CalloutInput): CalloutContent {
     mission: mission.wide,
     missionShort: mission.short,
     place: title,
+    placeShort: placeShort(title),
     point: widePointLine(site),
     pointShort: shortPointLine(site),
     image: thumbOf(site.id, title, base),

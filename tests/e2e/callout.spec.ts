@@ -29,7 +29,7 @@
  * 2026 (api-stub.ts), so its state and countdowns read as the site card's.
  */
 import { expect, test, type Page } from '@playwright/test';
-import { stubApi } from './api-stub';
+import { SITES, stubApi } from './api-stub';
 
 const NOW = new Date('2026-11-23T18:00:00Z');
 const IM1 = '[data-site-id="im1-odysseus"]';
@@ -83,7 +83,8 @@ test.describe('desktop, 1440x900', () => {
     await expect(part(page, 'caption')).toHaveText('LOLA · 30 km');
     await expect(wording(page, 'mission', 'wide')).toHaveText('IM-2 Athena · landed 6 Mar 2025');
     await expect(wording(page, 'mission', 'narrow')).toBeHidden();
-    await expect(part(page, 'place')).toHaveText('Mons Mouton');
+    await expect(wording(page, 'place', 'wide')).toHaveText('Mons Mouton');
+    await expect(wording(page, 'place', 'narrow')).toBeHidden();
     await expect(wording(page, 'point', 'wide')).toHaveText('84.79° S, 29.20° E · exact touchdown');
     await expect(wording(page, 'point', 'narrow')).toBeHidden();
     await expect(part(page, 'tiles')).toHaveText('Sunset in7 d 1 hEarthset in7 d 10 h');
@@ -193,6 +194,9 @@ async function phoneRows(page: Page): Promise<{ name: string; lines: number; cli
   );
 }
 
+/** The south pole's sites, as the phone's picker lists them by default. */
+const SOUTH_POLE = SITES.filter((site) => site.group === 'south_pole');
+
 for (const [width, height] of [[390, 844], [360, 780]] as const) {
   test.describe(`phone, ${width}x${height}, one line per row`, () => {
     test.use({ viewport: { width, height }, hasTouch: true, isMobile: true });
@@ -201,13 +205,32 @@ for (const [width, height] of [[390, 844], [360, 780]] as const) {
       await open(page);
       await page.getByRole('navigation', { name: 'Views' }).getByRole('button', { name: 'Globe' }).click();
       await expect(callout(page)).toBeVisible();
-      await expect(wording(page, 'mission', 'narrow')).toHaveText('IM-2 Athena · 6 Mar 2025');
+      await expect(wording(page, 'mission', 'narrow')).toHaveText('IM-2 · 6 Mar 2025');
       await expect(wording(page, 'mission', 'wide')).toBeHidden();
-      await expect(part(page, 'place')).toHaveText('Mons Mouton');
+      await expect(wording(page, 'place', 'narrow')).toHaveText('Mons Mouton');
+      await expect(wording(page, 'place', 'wide')).toBeHidden();
       await expect(wording(page, 'point', 'narrow')).toHaveText('84.79° S · 29.20° E');
       await expect(wording(page, 'point', 'wide')).toBeHidden();
       for (const row of await phoneRows(page)) {
         expect(row, row.name).toMatchObject({ lines: 1, clipped: false });
+      }
+    });
+
+    test('every south pole site fits each row whole: no ellipsis ever triggers', async ({ page }) => {
+      await open(page);
+      const tabs = page.getByRole('navigation', { name: 'Views' });
+      const rows = page.getByRole('list', { name: 'Sites' }).getByRole('button');
+      await tabs.getByRole('button', { name: 'Sites' }).click();
+      await expect(rows).toHaveCount(SOUTH_POLE.length);
+      for (const [i, { name }] of SOUTH_POLE.entries()) {
+        await tabs.getByRole('button', { name: 'Sites' }).click();
+        await rows.nth(i).click();
+        // The picker lists the sites in the list's order; the accessible name keeps the full name.
+        await expect(callout(page)).toHaveAttribute('aria-label', name);
+        await expect(part(page, 'pill')).not.toHaveText('');
+        for (const row of await phoneRows(page)) {
+          expect(row, `${name}: ${row.name}`).toMatchObject({ lines: 1, clipped: false });
+        }
       }
     });
   });

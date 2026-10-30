@@ -1,11 +1,17 @@
 /** One Horizons request over HTTP, retried while the failure is transient. */
 import { HorizonsError, excerpt } from './errors.ts';
 import { horizonsResultText } from './response-body.ts';
+import { retryAfterMs, type HeaderSource } from './retry-after.ts';
 
-/** The subset of `fetch` the client needs, so tests can inject a fake one. */
-export type FetchLike = (
-  url: string,
-) => Promise<Pick<Response, 'ok' | 'status' | 'text'>>;
+/**
+ * The subset of `fetch` the client needs, so tests can inject a fake one.
+ * `headers` is read only for the Retry-After of a 429; a fake may omit it.
+ */
+export type FetchLike = (url: string) => Promise<
+  Pick<Response, 'ok' | 'status' | 'text'> & {
+    readonly headers?: HeaderSource;
+  }
+>;
 
 /**
  * Waits before each retry of a transient failure (a dropped connection, HTTP
@@ -15,6 +21,9 @@ export type FetchLike = (
  */
 export const HORIZONS_RETRY_DELAYS_MS: readonly number[] = [1000, 3000, 8000];
 const TRANSIENT_STATUS = new Set([429, 502, 503, 504]);
+const HTTP_TOO_MANY_REQUESTS = 429;
+// A Retry-After longer than this is cut to it: a visitor is waiting.
+const MAX_RETRY_DELAY_MS = Math.max(...HORIZONS_RETRY_DELAYS_MS);
 
 /** Waits `ms` milliseconds on a real timer. */
 export const realSleep = (ms: number): Promise<void> =>
@@ -33,31 +42,41 @@ export interface HorizonsFetchOptions {
   readonly sleep: (ms: number) => Promise<void>;
 }
 
+/**
+ * A failure worth retrying, and the wait Horizons asked for (a 429's
+ * Retry-After), if any.
+ */
+interface TransientFailure {
+  readonly error: HorizonsError;
+  readonly retryAfterMs: number | null;
+}
+
 /** One attempt: the response, or the transient failure to retry. */
 async function attempt(
   fetch: FetchLike,
   url: string,
-): Promise<FetchedBody | HorizonsError> {
+): Promise<FetchedBody | TransientFailure> {
   try {
     const response = await fetch(url);
     const body = await response.text();
     const { ok, status } = response;
     if (ok || !TRANSIENT_STATUS.has(status)) return { status, ok, body };
-    return new HorizonsError(
-      'http',
-      `Horizons answered HTTP ${status}: ${excerpt(body)}`,
-    );
+    const message = `Horizons answered HTTP ${status}: ${excerpt(body)}`;
+    const asked = status === HTTP_TOO_MANY_REQUESTS;
+    return {
+      error: new HorizonsError('http', message),
+      retryAfterMs: asked ? retryAfterMs(response.headers) : null,
+    };
   } catch (error) {
-    return new HorizonsError(
-      'http',
-      `Horizons request failed: ${(error as Error).message}`,
-    );
+    const message = `Horizons request failed: ${(error as Error).message}`;
+    return { error: new HorizonsError('http', message), retryAfterMs: null };
   }
 }
 
 /**
- * One request, retried while the failure is transient. Returns the last
- * response, ok or not.
+ * One request, retried while the failure is transient: after the fixed
+ * delays, or as long as a 429's Retry-After asks, up to the longest delay.
+ * Returns the last response, ok or not.
  */
 async function fetchWithRetry(
   options: HorizonsFetchOptions,
@@ -65,10 +84,12 @@ async function fetchWithRetry(
 ): Promise<FetchedBody> {
   for (let retry = 0; ; retry++) {
     const outcome = await attempt(options.fetch, url);
-    if (!(outcome instanceof HorizonsError)) return outcome;
+    if ('body' in outcome) return outcome;
     const wait = HORIZONS_RETRY_DELAYS_MS[retry];
-    if (wait === undefined) throw outcome;
-    await options.sleep(wait);
+    if (wait === undefined) throw outcome.error;
+    const asked = outcome.retryAfterMs;
+    const delay = asked === null ? wait : Math.min(asked, MAX_RETRY_DELAY_MS);
+    await options.sleep(delay);
   }
 }
 

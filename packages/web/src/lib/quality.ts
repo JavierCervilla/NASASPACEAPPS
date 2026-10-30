@@ -7,7 +7,8 @@
  *
  * Ported from GAMESTUDIO's Web starter
  * (`studio/engines/web/scaffold/packages/client/src/engine/quality.ts`). It
- * lives outside `devtools/` because the globe reads it in production too.
+ * lives outside `devtools/` because the globe will read it in production too;
+ * today only the dev tools do.
  */
 export type Tier = 'low' | 'medium' | 'high';
 
@@ -31,7 +32,12 @@ export interface QualitySettings {
 
 const SETTINGS: Record<Tier, QualitySettings> = {
   low: { tier: 'low', maxPixelRatio: 1.25, antialias: false, targetFps: 30 },
-  medium: { tier: 'medium', maxPixelRatio: 1.75, antialias: false, targetFps: 45 },
+  medium: {
+    tier: 'medium',
+    maxPixelRatio: 1.75,
+    antialias: false,
+    targetFps: 45,
+  },
   high: { tier: 'high', maxPixelRatio: 2, antialias: true, targetFps: 60 },
 };
 
@@ -47,6 +53,21 @@ export interface DeviceHints {
   readonly coarsePointer: boolean;
   readonly cores: number;
 }
+
+/**
+ * Phone GPUs that hold the medium tier: Apple, Adreno 7xx and 8xx, Mali-G71
+ * and later, Immortalis and Xclipse.
+ */
+const CAPABLE_PHONE_GPU = new RegExp(
+  [
+    'apple gpu',
+    String.raw`adreno \(tm\) (7|8)\d\d`,
+    'mali-g7[1-9]',
+    String.raw`mali-g[89]\d`,
+    'immortalis',
+    'xclipse',
+  ].join('|'),
+);
 
 function isTier(value: string | null | undefined): value is Tier {
   return value === 'low' || value === 'medium' || value === 'high';
@@ -64,7 +85,7 @@ export function detectTier(device: DeviceHints, search = '', hash = ''): Tier {
   const gpu = device.gpu.toLowerCase();
   if (/swiftshader|llvmpipe|software/.test(gpu)) return 'low';
   if (!device.coarsePointer) return device.cores >= 4 ? 'high' : 'medium';
-  if (/apple gpu|adreno \(tm\) (7|8)\d\d|mali-g7[1-9]|mali-g[89]\d|immortalis|xclipse/.test(gpu)) return 'medium';
+  if (CAPABLE_PHONE_GPU.test(gpu)) return 'medium';
   return device.cores >= 8 ? 'medium' : 'low';
 }
 
@@ -92,7 +113,9 @@ export function gpuName(gl: RendererInfoSource | null): string {
 export function deviceHints(gl: RendererInfoSource | null): DeviceHints {
   return {
     gpu: gpuName(gl),
-    coarsePointer: typeof matchMedia === 'function' && matchMedia('(pointer: coarse)').matches,
+    coarsePointer:
+      typeof matchMedia === 'function' &&
+      matchMedia('(pointer: coarse)').matches,
     cores: navigator.hardwareConcurrency ?? 4,
   };
 }

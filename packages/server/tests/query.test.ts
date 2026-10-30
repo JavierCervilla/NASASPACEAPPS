@@ -39,6 +39,19 @@ describe('toHorizonsParams', () => {
   });
 });
 
+describe('toHorizonsParams at a curated site', () => {
+  it('puts IM-2 at its east longitude, then its latitude', () => {
+    const params = toHorizonsParams({
+      target: BODY.sun,
+      centerBody: BODY.moon,
+      point: { lat: -84.79, lonEast: 29.2, altKm: 0 },
+      start: '2026-11-01 00:00',
+      stop: '2026-11-30 23:00',
+    });
+    expect(params['SITE_COORD']).toBe("'29.2,-84.79,0'");
+  });
+});
+
 describe('normaliseLonEast', () => {
   it('maps every longitude to [0, 360)', () => {
     expect(normaliseLonEast(-90)).toBe(270);

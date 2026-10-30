@@ -5,7 +5,12 @@
  */
 import type { Site } from '@ventana/sim';
 import { ephemerisQueries } from './ephemeris-queries.ts';
-import { cacheKey, type HorizonsClient } from './horizons/client.ts';
+import {
+  HorizonsError,
+  cacheKey,
+  type HorizonsClient,
+} from './horizons/client.ts';
+import { realSleep } from './horizons/fetch.ts';
 import { toHorizonsParams, type HorizonsQuery } from './horizons/query.ts';
 import { mapLimited } from './map-limited.ts';
 import { parseEphemerisParams } from './params.ts';
@@ -24,6 +29,13 @@ export const WARM_TO = '2026-12-31';
 const WARM_CONCURRENCY = 2;
 
 /**
+ * Retries of a table the download queue refused as busy (visitors filled it),
+ * and the wait before each: the queue drains in seconds.
+ */
+export const WARM_BUSY_RETRIES = 3;
+export const WARM_BUSY_DELAY_MS = 10_000;
+
+/**
  * What the warm-up needs; `log` receives one line per failed request and the
  * final summary.
  */
@@ -33,6 +45,8 @@ export interface WarmUpDeps {
   readonly log: (line: string) => void;
   readonly from?: string;
   readonly to?: string;
+  /** Waits before retrying a busy table; a test passes one that records. */
+  readonly sleep?: (ms: number) => Promise<void>;
 }
 
 /**
@@ -62,15 +76,36 @@ function uniqueQueries(deps: WarmUpDeps): HorizonsQuery[] {
   return [...unique.values()];
 }
 
+function isBusy(error: unknown): boolean {
+  return error instanceof HorizonsError && error.kind === 'busy';
+}
+
+/** Fetches one table, retrying it while the download queue is busy. */
+async function fetchRetryingBusy(
+  deps: WarmUpDeps,
+  query: HorizonsQuery,
+): Promise<void> {
+  const sleep = deps.sleep ?? realSleep;
+  for (let retry = 0; ; retry++) {
+    try {
+      // Every table here is a DSN table or belongs to a curated site, so all
+      // of them are pinned.
+      await deps.horizons.rows(query, { pinned: true });
+      return;
+    } catch (error) {
+      if (!isBusy(error) || retry >= WARM_BUSY_RETRIES) throw error;
+    }
+    await sleep(WARM_BUSY_DELAY_MS);
+  }
+}
+
 /** Fetches one table into the cache; `false` (and a log line) on failure. */
 async function warmOne(
   deps: WarmUpDeps,
   query: HorizonsQuery,
 ): Promise<boolean> {
   try {
-    // Every table here is a DSN table or belongs to a curated site, so all of
-    // them are pinned.
-    await deps.horizons.rows(query, { pinned: true });
+    await fetchRetryingBusy(deps, query);
     return true;
   } catch (error) {
     const { target, point, start } = query;
@@ -87,8 +122,9 @@ async function warmOne(
  * built exactly as the site route builds them (same rounding, same months), so
  * they land on the cache entries a visitor will read. Requests shared by
  * several sites (the DSN tables, sites with the same stand-in point) are sent
- * once. Never rejects: a failed request is logged and counted, and the visitor
- * who needs it later simply triggers it again.
+ * once. A table refused as busy is retried a few times after a delay. Never
+ * rejects: a failed request is logged and counted, and the visitor who needs
+ * it later simply triggers it again.
  */
 export async function warmCache(deps: WarmUpDeps): Promise<WarmUpResult> {
   const queries = uniqueQueries(deps);

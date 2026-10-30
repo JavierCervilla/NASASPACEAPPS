@@ -32,6 +32,8 @@ export interface DevToolsOptions {
   readonly tier: Tier;
   readonly gpu: string;
   readonly hash: string;
+  /** Starts the on-screen panel folded to its first line. */
+  readonly folded?: boolean;
   /** The trail; a test passes one with in-memory storage. */
   readonly crumbs?: Breadcrumbs;
   /**
@@ -62,6 +64,7 @@ export class DevTools {
           flags: this.flags,
           previous: crumbs.previous,
           current: () => crumbs.current,
+          folded: options.folded === true,
         });
     crumbs.mark(`boot ${options.tier} ${options.gpu}`);
   }

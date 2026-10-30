@@ -140,6 +140,37 @@ describe('Horizons protection', () => {
     expect((await first).status).toBe(200);
   });
 
+  it('does not count against a client the misses it was refused as busy', async () => {
+    let release: () => void = () => undefined;
+    const gate = new Promise<void>((resolve) => {
+      release = resolve;
+    });
+    const served = fixtureFetch();
+    const fetch = async (url: string) => {
+      await gate;
+      return served(url);
+    };
+    // One month of one point is 5 Horizons tables: exactly this client's budget.
+    const limiter = createMissLimiter({ limit: 5, now: () => NOW });
+    let misses = 0;
+    const missLimiter: MissLimiter = {
+      take: (key) => {
+        misses += 1;
+        return limiter.take(key);
+      },
+      size: limiter.size,
+    };
+    const api = app(fetch, { client: { maxConcurrentDownloads: 1, maxQueuedDownloads: 3 }, missLimiter });
+    const first = api.request(`${POINT}${NOV_1}`, { headers: { 'x-forwarded-for': '203.0.113.1' } });
+    // Four parallel jobs: one download running, three waiting, so the queue is full.
+    while (misses < 4) await new Promise((resolve) => setTimeout(resolve, 1));
+    const busy = { headers: { 'x-forwarded-for': '203.0.113.2' } };
+    expect((await api.request(`${ATHENA}&from=2026-12-01&to=2026-12-01`, busy)).status).toBe(503);
+    release();
+    expect((await first).status).toBe(200);
+    expect((await api.request(`${ATHENA}&from=2026-12-01&to=2026-12-01`, busy)).status).toBe(200);
+  });
+
   it('answers 429 with Retry-After once a client IP passes its cache misses, and still serves its cache hits', async () => {
     const clock = { ms: NOW };
     // One month of one point is 5 Horizons tables.
@@ -170,6 +201,32 @@ describe('Horizons protection', () => {
     expect((await api.request(`${POINT}${NOV_1}`)).status).toBe(200);
     expect(await readdir(join(cacheDir, 'points'))).toHaveLength(2);
     expect(await readdir(join(cacheDir, 'pinned'))).toHaveLength(10);
+  });
+});
+
+describe('API headers', () => {
+  const CSP = "default-src 'none'; frame-ancestors 'none'";
+
+  it('sends nosniff and a restrictive CSP on every answer', async () => {
+    const api = app(fixtureFetch());
+    for (const path of ['/api/v1/health', '/api/v1/sites', '/api/v1/sites/nowhere', `${POINT}&from=2026-11-01&to=2027-03-01`]) {
+      const res = await api.request(path);
+      expect(res.headers.get('x-content-type-options')).toBe('nosniff');
+      expect(res.headers.get('content-security-policy')).toBe(CSP);
+    }
+  });
+
+  it('keeps an ephemeris for an hour, and never stores an error', async () => {
+    const api = app(fixtureFetch());
+    expect((await api.request(`${POINT}${NOV_1}`)).headers.get('cache-control')).toBe('public, max-age=3600');
+    for (const path of ['/api/v1/sites/nowhere', '/api/v1/ephemeris?lat=x', '/api/v1/missing']) {
+      const res = await api.request(path);
+      expect(res.status).toBeGreaterThanOrEqual(400);
+      expect(res.headers.get('cache-control')).toBe('no-store');
+    }
+    const failed = await app(fixedFetch(503, 'Service Unavailable')).request(`${POINT}&from=2026-12-01&to=2026-12-01`);
+    expect(failed.status).toBe(502);
+    expect(failed.headers.get('cache-control')).toBe('no-store');
   });
 });
 

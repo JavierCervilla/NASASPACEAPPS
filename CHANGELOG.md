@@ -9,3 +9,16 @@
 - Integración continua con lint, tipos, tests, build, prueba en navegador, gate de idioma y escalera de seguridad.
 - Despliegue en Dokploy: imagen Docker con nginx que sirve la web estática.
 - Guía de diseño `apple-design` incluida en el repo para que toda la interfaz la siga.
+- Kit de depuración solo para desarrollo: panel de rendimiento, rastro de la sesión anterior, niveles de calidad y
+  Spector.js. La build de producción comprueba que no llega a la web publicada.
+
+### Seguridad
+- La web envía cabeceras de seguridad en todas sus rutas, con una política de contenido (CSP) calculada en cada build;
+  nginx corre sin privilegios y no dice su versión.
+- La API envía cabeceras de seguridad, no deja cachear sus errores y respeta la espera que pide JPL Horizons; una
+  respuesta «ocupado» ya no gasta el cupo de la IP.
+- Imágenes Docker fijadas por digest, acciones del CI fijadas por commit y descargas verificadas con su checksum.
+
+### Cambiado
+- El código cumple la Norma de 42 adaptada a TypeScript (funciones de 25 líneas, 80 columnas, 5 funciones por fichero),
+  comprobada en el lint.

@@ -18,12 +18,14 @@ export class DownloadSlots {
 
   /**
    * Runs `task` once a slot is free, and frees the slot when it settles.
+   * `onAdmit` runs once the task has a slot or a place in the waiting list,
+   * before it takes either; throwing from it refuses the task.
    *
    * @throws HorizonsError (`busy`) when every slot is taken and the waiting
-   *   list is full; `task` is not started then.
+   *   list is full; neither `onAdmit` nor `task` runs then.
    */
-  async run<T>(task: () => Promise<T>): Promise<T> {
-    await this.acquire();
+  async run<T>(task: () => Promise<T>, onAdmit?: () => void): Promise<T> {
+    await this.acquire(onAdmit);
     try {
       return await task();
     } finally {
@@ -31,13 +33,15 @@ export class DownloadSlots {
     }
   }
 
-  private async acquire(): Promise<void> {
-    if (this.active < this.maxActive) {
+  private async acquire(onAdmit?: () => void): Promise<void> {
+    const free = this.active < this.maxActive;
+    if (!free && this.waiting.length >= this.maxWaiting) {
+      throw new HorizonsError('busy', 'too many Horizons downloads waiting');
+    }
+    onAdmit?.();
+    if (free) {
       this.active += 1;
       return;
-    }
-    if (this.waiting.length >= this.maxWaiting) {
-      throw new HorizonsError('busy', 'too many Horizons downloads waiting');
     }
     // The releasing download hands its slot over, so `active` does not change.
     await new Promise<void>((resolve) => this.waiting.push(resolve));

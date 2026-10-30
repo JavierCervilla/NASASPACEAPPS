@@ -64,12 +64,18 @@ export class MissLimitError extends Error {
 }
 
 /**
- * The `onMiss` hook that counts a miss for `key` and refuses it with a
- * {@link MissLimitError} once the key is over its limit.
+ * The `onMiss` hook that counts a miss for the key and refuses it with a
+ * {@link MissLimitError} once the key is over its limit. `key` is called on
+ * the first miss only, so a request served from the cache never works it out.
  */
-export function limitMisses(limiter: MissLimiter, key: string): () => void {
+export function limitMisses(
+  limiter: MissLimiter,
+  key: () => string,
+): () => void {
+  let resolved: string | undefined;
   return () => {
-    const wait = limiter.take(key);
+    resolved ??= key();
+    const wait = limiter.take(resolved);
     if (wait > 0) throw new MissLimitError(wait);
   };
 }

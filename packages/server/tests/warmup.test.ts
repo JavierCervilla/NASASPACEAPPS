@@ -4,9 +4,9 @@ import { join } from 'node:path';
 import type { Site } from '@ventana/sim';
 import { beforeEach, describe, expect, it } from 'vitest';
 import { createApp } from '../src/app.ts';
-import { createHorizonsClient } from '../src/horizons/client.ts';
+import { HorizonsError, createHorizonsClient, type HorizonsClient } from '../src/horizons/client.ts';
 import { DEFAULT_SITES_FILE, loadSites } from '../src/sites.ts';
-import { WARM_FROM, WARM_TO, warmCache } from '../src/warmup.ts';
+import { WARM_BUSY_DELAY_MS, WARM_BUSY_RETRIES, WARM_FROM, WARM_TO, warmCache } from '../src/warmup.ts';
 import { fixedFetch, fixtureFetch } from './fake-horizons.ts';
 
 const SITES: Site[] = await loadSites(DEFAULT_SITES_FILE);
@@ -78,5 +78,56 @@ describe('warmCache', () => {
     expect(lines.filter((line) => line.includes('HTTP 503'))).toHaveLength(result.requests);
     expect(lines.at(-1)).toBe(`warm-up: 0 of ${result.requests} Horizons tables cached`);
     expect(await readdir(cacheDir)).toHaveLength(0);
+  });
+
+  it('retries a table refused as busy after a delay', async () => {
+    const real = createHorizonsClient({ fetch: fixtureFetch(), cacheDir });
+    let refusals = 2;
+    const horizons: HorizonsClient = {
+      raw: real.raw,
+      rows: async (query, call) => {
+        if (refusals-- > 0) throw new HorizonsError('busy', 'too many Horizons downloads waiting');
+        return real.rows(query, call);
+      },
+    };
+    const waits: number[] = [];
+    const result = await warmCache({ horizons, sites: IM2, log: () => undefined, sleep: async (ms) => void waits.push(ms) });
+    expect(result).toEqual({ requests: 10, failed: 0 });
+    expect(waits).toEqual([WARM_BUSY_DELAY_MS, WARM_BUSY_DELAY_MS]);
+  });
+
+  it('gives up on a table still busy after the last retry', async () => {
+    let calls = 0;
+    const horizons: HorizonsClient = {
+      raw: async () => '',
+      rows: async () => {
+        calls += 1;
+        throw new HorizonsError('busy', 'too many Horizons downloads waiting');
+      },
+    };
+    const lines: string[] = [];
+    const waits: number[] = [];
+    const result = await warmCache({
+      horizons,
+      sites: IM2,
+      log: (line) => lines.push(line),
+      sleep: async (ms) => void waits.push(ms),
+    });
+    expect(result).toEqual({ requests: 10, failed: 10 });
+    expect(calls).toBe(10 * (WARM_BUSY_RETRIES + 1));
+    expect(waits).toHaveLength(10 * WARM_BUSY_RETRIES);
+    expect(lines.filter((line) => line.includes('too many Horizons downloads waiting'))).toHaveLength(10);
+  });
+
+  it('does not retry a table that failed for another reason', async () => {
+    const waits: number[] = [];
+    const result = await warmCache({
+      horizons: createHorizonsClient({ fetch: fixedFetch(400, '{"error":"bad"}'), cacheDir, sleep: async () => undefined }),
+      sites: IM2,
+      log: () => undefined,
+      sleep: async (ms) => void waits.push(ms),
+    });
+    expect(result.failed).toBe(10);
+    expect(waits).toEqual([]);
   });
 });

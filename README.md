@@ -36,14 +36,15 @@ JPL Horizons API ──► backend API (Dokploy, cached, no login) ──► sit
 | `packages/web/src/styles/` | Design tokens and global styles |
 | `packages/sim/` | Pure TypeScript shared by web and server: site data contract, window logic (unit-tested) |
 | `packages/server/` | Node API (Hono): JPL Horizons client, disk cache, `/api/v1/*` |
-| `pipeline/` | Data contract with JPL Horizons; `packages/server` implements it (VENT-3, VENT-10) |
+| `pipeline/` | The original data contract with JPL Horizons. `packages/server` owns the backend design now: VENT-3 built it there and VENT-10 (custom coordinates) extends it there |
 | `packages/*/tests/`, `tests/e2e/` | Vitest (per package) and Playwright |
 | `docs/diagrams/` | Architecture diagram |
 
 ## Develop
 
-Requires Node 22 (`.nvmrc`) and, for the pipeline, Python 3. Production is the `Dockerfile` (static build served by
-nginx) deployed on Dokploy.
+Requires Node 22 (`.nvmrc`). Production is two Dokploy apps: the root `Dockerfile` (static build served by unprivileged
+nginx on port 8080, with the security headers of `nginx-security-headers.conf`) and `packages/server/Dockerfile` (the
+API on port 3000, routed under `/api` on the same domain).
 
 ```sh
 npm install

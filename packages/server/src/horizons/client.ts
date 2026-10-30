@@ -74,8 +74,9 @@ export interface HorizonsClientOptions {
 /** Options of one call. */
 export interface HorizonsCallOptions {
   /**
-   * Called right before a cache miss is queued for download; throwing
-   * refuses the download (and rejects the call).
+   * Called once a cache miss has a download slot or a place in the queue,
+   * right before it takes it (a miss refused as busy never calls it);
+   * throwing refuses the download (and rejects the call).
    */
   readonly onMiss?: () => void;
   /**
@@ -147,14 +148,11 @@ export function createHorizonsClient(
     if (cached !== null) return cached;
     const download = async (): Promise<string> => {
       const fetchTable = () => fetchObserverTable(fetchOptions, params);
-      const body = await queue.run(fetchTable);
+      const body = await queue.run(fetchTable, call.onMiss);
       await cache.store(key, body, call.pinned === true);
       return body;
     };
-    return inFlight.share(key, () => {
-      call.onMiss?.();
-      return download();
-    });
+    return inFlight.share(key, download);
   }
   return {
     raw,

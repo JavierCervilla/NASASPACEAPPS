@@ -4,7 +4,8 @@
  * previous one's) and uncaught errors, so a page that breaks on a laptop or a
  * phone says why instead of staying black. Buttons reload the page at another
  * quality tier, or with Spector.js (`#stats-spector`) to capture a frame's
- * WebGL calls. A tap on the readout folds it to its first line.
+ * WebGL calls. A tap on the readout folds it to its first line; on a phone it
+ * starts folded (see boot.ts).
  *
  * Never in a production build: Base.astro imports the dev tools only when
  * `import.meta.env.DEV` or `PUBLIC_PERF_HUD=1`.
@@ -18,6 +19,7 @@ import { FrameMeter } from './frame-meter';
 import { appendControls } from './hud-controls';
 import {
   appendPreviousTrail,
+  detailsRegion,
   errorBox,
   hudPanel,
   readoutButton,
@@ -49,13 +51,19 @@ export interface PerfHudOptions {
   readonly previous: readonly string[];
   /** This session's trail, read at each refresh. */
   readonly current: () => readonly string[];
+  /**
+   * Starts folded to the readout's first line, as on a phone, where the open
+   * panel would cover the page.
+   */
+  readonly folded?: boolean;
 }
 
 /** The readout on screen. */
 export class PerfHud implements HudView {
-  private readonly text: HTMLButtonElement;
+  private readonly button: HTMLButtonElement;
+  private readonly text: HTMLElement;
   /** Everything but the readout's text and the errors: hidden while folded. */
-  private readonly details = document.createElement('div');
+  private readonly details = detailsRegion();
   private readonly errors = errorBox();
   private readonly meter = new FrameMeter();
   private readonly options: PerfHudOptions;
@@ -64,12 +72,15 @@ export class PerfHud implements HudView {
 
   constructor(options: PerfHudOptions) {
     this.options = options;
-    this.text = readoutButton(() => this.fold(!this.folded));
+    const { button, text } = readoutButton(() => this.fold(!this.folded));
+    this.button = button;
+    this.text = text;
     appendControls(this.details, options.tier, options.flags);
     appendPreviousTrail(this.details, options.previous);
     const panel = hudPanel();
-    panel.append(this.text, this.details, this.errors);
+    panel.append(button, this.details, this.errors);
     document.body.append(panel);
+    this.fold(options.folded === true);
     window.addEventListener('error', (event) => this.error(event.message));
     window.addEventListener('unhandledrejection', (event) =>
       this.error(String(event.reason)),
@@ -95,7 +106,7 @@ export class PerfHud implements HudView {
   private fold(folded: boolean): void {
     this.folded = folded;
     this.details.hidden = folded;
-    this.text.setAttribute('aria-expanded', String(!folded));
+    this.button.setAttribute('aria-expanded', String(!folded));
     this.show();
   }
 

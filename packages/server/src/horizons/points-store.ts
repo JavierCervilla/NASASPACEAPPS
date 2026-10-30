@@ -1,11 +1,21 @@
 /** The byte-capped `points/` directory: its size and its LRU eviction. */
-import { evictLeastRecent, listPointFiles, totalBytes } from './points-files.ts';
+import {
+  evictLeastRecent,
+  listPointFiles,
+  sweepStaleTemp,
+  totalBytes,
+} from './points-files.ts';
+
+// A temporary file older than this at the first scan was left by a crash: a
+// write takes milliseconds.
+const STALE_TEMP_MS = 60_000;
 
 /** Tracks the size of `points/` and evicts the least recently used files. */
 export class PointsStore {
   private readonly dir: string;
   private readonly maxBytes: number;
-  // Initialised by a scan of the directory on first use, then kept in memory.
+  // Initialised by a scan of the directory on first use (which also sweeps the
+  // stale temporary files), then kept in memory.
   private size: Promise<number> | null = null;
   // Evictions run one at a time, so two of them never count the same file.
   private evicting: Promise<void> = Promise.resolve();
@@ -32,7 +42,9 @@ export class PointsStore {
   }
 
   private currentSize(): Promise<number> {
-    this.size ??= listPointFiles(this.dir).then(totalBytes);
+    this.size ??= sweepStaleTemp(this.dir, Date.now() - STALE_TEMP_MS)
+      .then(() => listPointFiles(this.dir))
+      .then(totalBytes);
     return this.size;
   }
 

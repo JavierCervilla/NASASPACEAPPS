@@ -21,7 +21,9 @@ completa está en el documento «Ventana Lunar · Especificación y roadmap».
 
 ## MVP
 
-- [ ] Datos: Horizons → `public/data/sites/*.json` con 2 meses, validado; sitios CLPS, Apollo y de otros países (VENT-3)
+- [x] Datos: API con JPL Horizons y caché acotada (cualquier punto, fechas de 2026 y 2027), validada con los periodos lunares
+  y el signo de la longitud; 29 sitios (polo sur, Apolo y otros países), los 12 sin coordenada citable marcados como
+  aproximados (VENT-3)
 - [ ] Store de tiempo, selector de sitio y cinta de calendario (VENT-4)
 - [ ] Ficha del sitio con el tiempo hasta la puesta de Sol y de Tierra, y mapa polar 2D (VENT-5)
 

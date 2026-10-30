@@ -1,0 +1,796 @@
+[
+  {
+    "id": "im1-odysseus",
+    "group": "south_pole",
+    "name": "Malapert A region (IM-1 Odysseus)",
+    "mission": "IM-1",
+    "agency": "Intuitive Machines / NASA CLPS",
+    "status": "landed",
+    "statusDate": "2024-02-22",
+    "lat": -80.13,
+    "lonEast": 1.44,
+    "approximate": false,
+    "coordinateNote": "Exact touchdown point (lander resting position, LROC). Frame: not stated on page (LROC products are normally ME).",
+    "sources": [
+      {
+        "label": "LROC/ASU",
+        "url": "https://lroc.im-ldi.com/images/1360"
+      }
+    ]
+  },
+  {
+    "id": "im2-athena",
+    "group": "south_pole",
+    "name": "Mons Mouton (IM-2 Athena)",
+    "mission": "IM-2",
+    "agency": "Intuitive Machines / NASA CLPS",
+    "status": "landed",
+    "statusDate": "2025-03-06",
+    "lat": -84.7906,
+    "lonEast": 29.1957,
+    "approximate": false,
+    "coordinateNote": "Exact touchdown point (lander on its side in a ~20 m crater, LROC). Frame: not stated on page (LROC products are normally ME).",
+    "sources": [
+      {
+        "label": "LROC/ASU",
+        "url": "https://lroc.im-ldi.com/images/1408"
+      },
+      {
+        "label": "LROC/ASU",
+        "url": "https://lroc.im-ldi.com/images/1401",
+        "note": "intended site -84.78, 29.13E"
+      }
+    ]
+  },
+  {
+    "id": "chandrayaan3-vikram",
+    "group": "south_pole",
+    "name": "Statio Shiv Shakti (Chandrayaan-3 Vikram)",
+    "mission": "Chandrayaan-3",
+    "agency": "ISRO",
+    "status": "landed",
+    "statusDate": "2023-08-23",
+    "lat": -69.3741,
+    "lonEast": 32.32,
+    "approximate": false,
+    "coordinateNote": "Landing site as measured by LROC (lander position). Frame: not stated on page (LROC products are normally ME).",
+    "sources": [
+      {
+        "label": "LROC/ASU",
+        "url": "https://lroc.im-ldi.com/images/1314"
+      },
+      {
+        "label": "Wikipedia (last resort)",
+        "url": "https://en.wikipedia.org/wiki/Shiv_Shakti_Point",
+        "note": "69.373 S, 32.319 E"
+      },
+      {
+        "label": "press",
+        "url": "https://spacenews.com/?p=169009",
+        "note": "pre-landing target 69.37 S, 32.35 E"
+      }
+    ]
+  },
+  {
+    "id": "luna25-target",
+    "group": "south_pole",
+    "name": "Luna-25 planned site (north of Boguslawsky)",
+    "mission": "Luna-25",
+    "agency": "Roscosmos / IKI",
+    "status": "planned (failed: crashed 2023-08-19 before landing)",
+    "statusDate": "2023-08-21 (planned landing)",
+    "lat": -69.545,
+    "lonEast": 43.544,
+    "approximate": false,
+    "coordinateNote": "Planned target (center of main landing ellipse). Frame: not stated.",
+    "sources": [
+      {
+        "label": "LROC/ASU",
+        "url": "https://lroc.im-ldi.com/images/1311"
+      },
+      {
+        "label": "Russian Academy (IAA RAS)",
+        "url": "https://iaaras.ru/en/observations/echo/2023moon03",
+        "note": "main site 69.55 S, 43.54 E; reserve 68.77 S, 21.21 E (from search summary, not opened)"
+      }
+    ]
+  },
+  {
+    "id": "change7-target",
+    "group": "south_pole",
+    "name": "Shackleton rim (Chang'e-7 target)",
+    "mission": "Chang'e-7",
+    "agency": "CNSA",
+    "status": "planned (launch slipped from 2026-08 to 2027)",
+    "statusDate": "2027 (launch NET)",
+    "lat": -89.67,
+    "lonEast": 129.78,
+    "approximate": true,
+    "coordinateNote": "Approximate, not a landing point: there is no citable coordinate for this mission target. Official sources only say near the Shackleton rim, with several candidate points kept open. The point shown is the IAU/USGS centre of Shackleton crater.",
+    "sources": [
+      {
+        "label": "press",
+        "url": "https://spacenews.com/china-delays-change-7-lunar-south-pole-landing-mission-launch/",
+        "note": "delay to 2027"
+      },
+      {
+        "label": "press",
+        "url": "https://www.scientificamerican.com/article/chinas-change-7-moonshot-will-seek-water-ice-at-the-lunar-south-pole/",
+        "note": "target Shackleton rim"
+      },
+      {
+        "label": "Wikipedia (last resort)",
+        "url": "https://en.wikipedia.org/wiki/Chang%27e_7",
+        "note": "88.8 S, 123.4 E 'peak near SE ridge of Shackleton', tagged 'citation needed'"
+      },
+      {
+        "label": "IAU/USGS Gazetteer of Planetary Nomenclature (proxy coordinate)",
+        "url": "https://asc-planetarynames-data.s3.us-west-2.amazonaws.com/MOON_nomenclature_center_pts.zip"
+      }
+    ]
+  },
+  {
+    "id": "bluemoon-mk1-pathfinder",
+    "group": "south_pole",
+    "name": "Shackleton connecting ridge (Blue Moon MK1 Pathfinder)",
+    "mission": "Blue Moon Pathfinder Mission 1 (CLPS CT-3)",
+    "agency": "Blue Origin / NASA CLPS",
+    "status": "planned",
+    "statusDate": "NET Q1 2027 (launch)",
+    "lat": -89.684,
+    "lonEast": -163.261,
+    "approximate": true,
+    "coordinateNote": "Approximate, not a landing point: there is no citable coordinate for this mission target. The point shown is where the Shackleton-de Gerlache ridge meets the Shackleton rim, read from an LROC NAC mosaic (196.739 E converted to east longitude).",
+    "sources": [
+      {
+        "label": "Wikipedia (last resort)",
+        "url": "https://en.wikipedia.org/wiki/Blue_Moon_Pathfinder_Mission_1",
+        "note": "Shackleton Connecting Ridge, NET Q1 2027"
+      },
+      {
+        "label": "LROC/ASU",
+        "url": "https://lroc.im-ldi.com/images/1247",
+        "note": "proxy point"
+      }
+    ]
+  },
+  {
+    "id": "griffin1-nobile",
+    "group": "south_pole",
+    "name": "Nobile region near Mons Mouton (Griffin-1, FLIP rover)",
+    "mission": "Griffin Mission One",
+    "agency": "Astrobotic / NASA CLPS (Astrolab FLIP rover)",
+    "status": "planned",
+    "statusDate": "launch Nov 2026 to Jan 2027; landing TBA",
+    "lat": -85.2752,
+    "lonEast": 53.2725,
+    "approximate": true,
+    "coordinateNote": "Approximate, not a landing point: there is no citable coordinate for this mission target. The point shown is the IAU/USGS centre of Nobile crater.",
+    "sources": [
+      {
+        "label": "company",
+        "url": "https://www.astrobotic.com/lunar-delivery/manifest/",
+        "note": "lands at Nobile crater, lunar south pole"
+      },
+      {
+        "label": "Wikipedia (last resort)",
+        "url": "https://en.wikipedia.org/wiki/Griffin_Mission_One",
+        "note": "Nobile region near Mons Mouton; environmental tests completed 2026-10-13"
+      },
+      {
+        "label": "IAU/USGS Gazetteer of Planetary Nomenclature (proxy coordinate)",
+        "url": "https://asc-planetarynames-data.s3.us-west-2.amazonaws.com/MOON_nomenclature_center_pts.zip"
+      }
+    ]
+  },
+  {
+    "id": "artemis-peak-near-cabeus-b",
+    "group": "south_pole",
+    "name": "Peak near Cabeus B (Artemis candidate region)",
+    "mission": "Artemis crewed landing (originally Artemis III; since 2026 the first crewed landing is Artemis IV, 2028)",
+    "agency": "NASA",
+    "status": "candidate region",
+    "statusDate": "list announced 2024-10-28; landing planned 2028",
+    "lat": -82.2587,
+    "lonEast": -54.5846,
+    "approximate": true,
+    "coordinateNote": "Approximate, not a landing point: there is no citable coordinate for this region. NASA publishes names and a map image (regions ~15x15 km), not coordinates. The point shown is the IAU/USGS centre of the named feature 'Cabeus B (satellite crater)'. The region sits on its rim, flank or plain and can be several to tens of km away.",
+    "sources": [
+      {
+        "label": "NASA",
+        "url": "https://www.nasa.gov/news-release/nasa-identifies-candidate-regions-for-landing-next-americans-on-moon/"
+      },
+      {
+        "label": "NASA LPSC 2026 abstract (George et al.)",
+        "url": "https://www.hou.usra.edu/meetings/lpsc2026/pdf/1901.pdf",
+        "note": "9-region list, map image only"
+      },
+      {
+        "label": "press 2026-10-23",
+        "url": "https://spacepolicyonline.com/news/nasa-is-full-steam-ahead-on-artemis-iii-iv-and-v/",
+        "note": "Artemis III = Earth-orbit test 2027; Artemis IV = first landing 2028; south pole still the target"
+      },
+      {
+        "label": "IAU/USGS Gazetteer of Planetary Nomenclature (proxy coordinate)",
+        "url": "https://asc-planetarynames-data.s3.us-west-2.amazonaws.com/MOON_nomenclature_center_pts.zip"
+      }
+    ]
+  },
+  {
+    "id": "artemis-haworth",
+    "group": "south_pole",
+    "name": "Haworth (Artemis candidate region)",
+    "mission": "Artemis crewed landing (originally Artemis III; since 2026 the first crewed landing is Artemis IV, 2028)",
+    "agency": "NASA",
+    "status": "candidate region",
+    "statusDate": "list announced 2024-10-28; landing planned 2028",
+    "lat": -87.45,
+    "lonEast": -5.17,
+    "approximate": true,
+    "coordinateNote": "Approximate, not a landing point: there is no citable coordinate for this region. NASA publishes names and a map image (regions ~15x15 km), not coordinates. The point shown is the IAU/USGS centre of the named feature 'Haworth crater'. The region sits on its rim, flank or plain and can be several to tens of km away.",
+    "sources": [
+      {
+        "label": "NASA",
+        "url": "https://www.nasa.gov/news-release/nasa-identifies-candidate-regions-for-landing-next-americans-on-moon/"
+      },
+      {
+        "label": "NASA LPSC 2026 abstract (George et al.)",
+        "url": "https://www.hou.usra.edu/meetings/lpsc2026/pdf/1901.pdf",
+        "note": "9-region list, map image only"
+      },
+      {
+        "label": "press 2026-10-23",
+        "url": "https://spacepolicyonline.com/news/nasa-is-full-steam-ahead-on-artemis-iii-iv-and-v/",
+        "note": "Artemis III = Earth-orbit test 2027; Artemis IV = first landing 2028; south pole still the target"
+      },
+      {
+        "label": "IAU/USGS Gazetteer of Planetary Nomenclature (proxy coordinate)",
+        "url": "https://asc-planetarynames-data.s3.us-west-2.amazonaws.com/MOON_nomenclature_center_pts.zip"
+      }
+    ]
+  },
+  {
+    "id": "artemis-malapert-massif",
+    "group": "south_pole",
+    "name": "Malapert Massif (Artemis candidate region)",
+    "mission": "Artemis crewed landing (originally Artemis III; since 2026 the first crewed landing is Artemis IV, 2028)",
+    "agency": "NASA",
+    "status": "candidate region",
+    "statusDate": "list announced 2024-10-28; landing planned 2028",
+    "lat": -85.98,
+    "lonEast": -1.67,
+    "approximate": true,
+    "coordinateNote": "Approximate, not a landing point: there is no citable coordinate for this region. NASA publishes names and a map image (regions ~15x15 km), not coordinates. The point shown is the IAU/USGS centre of the named feature 'Mons Malapert'. The region sits on its rim, flank or plain and can be several to tens of km away.",
+    "sources": [
+      {
+        "label": "NASA",
+        "url": "https://www.nasa.gov/news-release/nasa-identifies-candidate-regions-for-landing-next-americans-on-moon/"
+      },
+      {
+        "label": "NASA LPSC 2026 abstract (George et al.)",
+        "url": "https://www.hou.usra.edu/meetings/lpsc2026/pdf/1901.pdf",
+        "note": "9-region list, map image only"
+      },
+      {
+        "label": "press 2026-10-23",
+        "url": "https://spacepolicyonline.com/news/nasa-is-full-steam-ahead-on-artemis-iii-iv-and-v/",
+        "note": "Artemis III = Earth-orbit test 2027; Artemis IV = first landing 2028; south pole still the target"
+      },
+      {
+        "label": "IAU/USGS Gazetteer of Planetary Nomenclature (proxy coordinate)",
+        "url": "https://asc-planetarynames-data.s3.us-west-2.amazonaws.com/MOON_nomenclature_center_pts.zip"
+      }
+    ]
+  },
+  {
+    "id": "artemis-mons-mouton-plateau",
+    "group": "south_pole",
+    "name": "Mons Mouton Plateau (Artemis candidate region)",
+    "mission": "Artemis crewed landing (originally Artemis III; since 2026 the first crewed landing is Artemis IV, 2028)",
+    "agency": "NASA",
+    "status": "candidate region",
+    "statusDate": "list announced 2024-10-28; landing planned 2028",
+    "lat": -84.6,
+    "lonEast": 31.0,
+    "approximate": true,
+    "coordinateNote": "Approximate, not a landing point: there is no citable coordinate for this region. NASA publishes names and a map image (regions ~15x15 km), not coordinates. The point shown is the IAU/USGS centre of the named feature 'Mons Mouton'. The region sits on its rim, flank or plain and can be several to tens of km away.",
+    "sources": [
+      {
+        "label": "NASA",
+        "url": "https://www.nasa.gov/news-release/nasa-identifies-candidate-regions-for-landing-next-americans-on-moon/"
+      },
+      {
+        "label": "NASA LPSC 2026 abstract (George et al.)",
+        "url": "https://www.hou.usra.edu/meetings/lpsc2026/pdf/1901.pdf",
+        "note": "9-region list, map image only"
+      },
+      {
+        "label": "press 2026-10-23",
+        "url": "https://spacepolicyonline.com/news/nasa-is-full-steam-ahead-on-artemis-iii-iv-and-v/",
+        "note": "Artemis III = Earth-orbit test 2027; Artemis IV = first landing 2028; south pole still the target"
+      },
+      {
+        "label": "IAU/USGS Gazetteer of Planetary Nomenclature (proxy coordinate)",
+        "url": "https://asc-planetarynames-data.s3.us-west-2.amazonaws.com/MOON_nomenclature_center_pts.zip"
+      }
+    ]
+  },
+  {
+    "id": "artemis-mons-mouton",
+    "group": "south_pole",
+    "name": "Mons Mouton (Artemis candidate region)",
+    "mission": "Artemis crewed landing (originally Artemis III; since 2026 the first crewed landing is Artemis IV, 2028)",
+    "agency": "NASA",
+    "status": "candidate region",
+    "statusDate": "list announced 2024-10-28; landing planned 2028",
+    "lat": -84.6,
+    "lonEast": 31.0,
+    "approximate": true,
+    "coordinateNote": "Approximate, not a landing point: there is no citable coordinate for this region. NASA publishes names and a map image (regions ~15x15 km), not coordinates. The point shown is the IAU/USGS centre of the named feature 'Mons Mouton'. The region sits on its rim, flank or plain and can be several to tens of km away.",
+    "sources": [
+      {
+        "label": "NASA",
+        "url": "https://www.nasa.gov/news-release/nasa-identifies-candidate-regions-for-landing-next-americans-on-moon/"
+      },
+      {
+        "label": "NASA LPSC 2026 abstract (George et al.)",
+        "url": "https://www.hou.usra.edu/meetings/lpsc2026/pdf/1901.pdf",
+        "note": "9-region list, map image only"
+      },
+      {
+        "label": "press 2026-10-23",
+        "url": "https://spacepolicyonline.com/news/nasa-is-full-steam-ahead-on-artemis-iii-iv-and-v/",
+        "note": "Artemis III = Earth-orbit test 2027; Artemis IV = first landing 2028; south pole still the target"
+      },
+      {
+        "label": "IAU/USGS Gazetteer of Planetary Nomenclature (proxy coordinate)",
+        "url": "https://asc-planetarynames-data.s3.us-west-2.amazonaws.com/MOON_nomenclature_center_pts.zip"
+      }
+    ]
+  },
+  {
+    "id": "artemis-nobile-rim-1",
+    "group": "south_pole",
+    "name": "Nobile Rim 1 (Artemis candidate region)",
+    "mission": "Artemis crewed landing (originally Artemis III; since 2026 the first crewed landing is Artemis IV, 2028)",
+    "agency": "NASA",
+    "status": "candidate region",
+    "statusDate": "list announced 2024-10-28; landing planned 2028",
+    "lat": -85.2752,
+    "lonEast": 53.2725,
+    "approximate": true,
+    "coordinateNote": "Approximate, not a landing point: there is no citable coordinate for this region. NASA publishes names and a map image (regions ~15x15 km), not coordinates. The point shown is the IAU/USGS centre of the named feature 'Nobile crater'. The region sits on its rim, flank or plain and can be several to tens of km away.",
+    "sources": [
+      {
+        "label": "NASA",
+        "url": "https://www.nasa.gov/news-release/nasa-identifies-candidate-regions-for-landing-next-americans-on-moon/"
+      },
+      {
+        "label": "NASA LPSC 2026 abstract (George et al.)",
+        "url": "https://www.hou.usra.edu/meetings/lpsc2026/pdf/1901.pdf",
+        "note": "9-region list, map image only"
+      },
+      {
+        "label": "press 2026-10-23",
+        "url": "https://spacepolicyonline.com/news/nasa-is-full-steam-ahead-on-artemis-iii-iv-and-v/",
+        "note": "Artemis III = Earth-orbit test 2027; Artemis IV = first landing 2028; south pole still the target"
+      },
+      {
+        "label": "IAU/USGS Gazetteer of Planetary Nomenclature (proxy coordinate)",
+        "url": "https://asc-planetarynames-data.s3.us-west-2.amazonaws.com/MOON_nomenclature_center_pts.zip"
+      }
+    ]
+  },
+  {
+    "id": "artemis-nobile-rim-2",
+    "group": "south_pole",
+    "name": "Nobile Rim 2 (Artemis candidate region)",
+    "mission": "Artemis crewed landing (originally Artemis III; since 2026 the first crewed landing is Artemis IV, 2028)",
+    "agency": "NASA",
+    "status": "candidate region",
+    "statusDate": "list announced 2024-10-28; landing planned 2028",
+    "lat": -85.2752,
+    "lonEast": 53.2725,
+    "approximate": true,
+    "coordinateNote": "Approximate, not a landing point: there is no citable coordinate for this region. NASA publishes names and a map image (regions ~15x15 km), not coordinates. The point shown is the IAU/USGS centre of the named feature 'Nobile crater'. The region sits on its rim, flank or plain and can be several to tens of km away.",
+    "sources": [
+      {
+        "label": "NASA",
+        "url": "https://www.nasa.gov/news-release/nasa-identifies-candidate-regions-for-landing-next-americans-on-moon/"
+      },
+      {
+        "label": "NASA LPSC 2026 abstract (George et al.)",
+        "url": "https://www.hou.usra.edu/meetings/lpsc2026/pdf/1901.pdf",
+        "note": "9-region list, map image only"
+      },
+      {
+        "label": "press 2026-10-23",
+        "url": "https://spacepolicyonline.com/news/nasa-is-full-steam-ahead-on-artemis-iii-iv-and-v/",
+        "note": "Artemis III = Earth-orbit test 2027; Artemis IV = first landing 2028; south pole still the target"
+      },
+      {
+        "label": "IAU/USGS Gazetteer of Planetary Nomenclature (proxy coordinate)",
+        "url": "https://asc-planetarynames-data.s3.us-west-2.amazonaws.com/MOON_nomenclature_center_pts.zip"
+      }
+    ]
+  },
+  {
+    "id": "artemis-de-gerlache-rim-2",
+    "group": "south_pole",
+    "name": "de Gerlache Rim 2 (Artemis candidate region)",
+    "mission": "Artemis crewed landing (originally Artemis III; since 2026 the first crewed landing is Artemis IV, 2028)",
+    "agency": "NASA",
+    "status": "candidate region",
+    "statusDate": "list announced 2024-10-28; landing planned 2028",
+    "lat": -88.4849,
+    "lonEast": -88.3447,
+    "approximate": true,
+    "coordinateNote": "Approximate, not a landing point: there is no citable coordinate for this region. NASA publishes names and a map image (regions ~15x15 km), not coordinates. The point shown is the IAU/USGS centre of the named feature 'de Gerlache crater'. The region sits on its rim, flank or plain and can be several to tens of km away.",
+    "sources": [
+      {
+        "label": "NASA",
+        "url": "https://www.nasa.gov/news-release/nasa-identifies-candidate-regions-for-landing-next-americans-on-moon/"
+      },
+      {
+        "label": "NASA LPSC 2026 abstract (George et al.)",
+        "url": "https://www.hou.usra.edu/meetings/lpsc2026/pdf/1901.pdf",
+        "note": "9-region list, map image only"
+      },
+      {
+        "label": "press 2026-10-23",
+        "url": "https://spacepolicyonline.com/news/nasa-is-full-steam-ahead-on-artemis-iii-iv-and-v/",
+        "note": "Artemis III = Earth-orbit test 2027; Artemis IV = first landing 2028; south pole still the target"
+      },
+      {
+        "label": "IAU/USGS Gazetteer of Planetary Nomenclature (proxy coordinate)",
+        "url": "https://asc-planetarynames-data.s3.us-west-2.amazonaws.com/MOON_nomenclature_center_pts.zip"
+      }
+    ]
+  },
+  {
+    "id": "artemis-slater-plain",
+    "group": "south_pole",
+    "name": "Slater Plain (Artemis candidate region)",
+    "mission": "Artemis crewed landing (originally Artemis III; since 2026 the first crewed landing is Artemis IV, 2028)",
+    "agency": "NASA",
+    "status": "candidate region",
+    "statusDate": "list announced 2024-10-28; landing planned 2028",
+    "lat": -88.0792,
+    "lonEast": 111.2881,
+    "approximate": true,
+    "coordinateNote": "Approximate, not a landing point: there is no citable coordinate for this region. NASA publishes names and a map image (regions ~15x15 km), not coordinates. The point shown is the IAU/USGS centre of the named feature 'Slater crater'. The region sits on its rim, flank or plain and can be several to tens of km away.",
+    "sources": [
+      {
+        "label": "NASA",
+        "url": "https://www.nasa.gov/news-release/nasa-identifies-candidate-regions-for-landing-next-americans-on-moon/"
+      },
+      {
+        "label": "NASA LPSC 2026 abstract (George et al.)",
+        "url": "https://www.hou.usra.edu/meetings/lpsc2026/pdf/1901.pdf",
+        "note": "9-region list, map image only"
+      },
+      {
+        "label": "press 2026-10-23",
+        "url": "https://spacepolicyonline.com/news/nasa-is-full-steam-ahead-on-artemis-iii-iv-and-v/",
+        "note": "Artemis III = Earth-orbit test 2027; Artemis IV = first landing 2028; south pole still the target"
+      },
+      {
+        "label": "IAU/USGS Gazetteer of Planetary Nomenclature (proxy coordinate)",
+        "url": "https://asc-planetarynames-data.s3.us-west-2.amazonaws.com/MOON_nomenclature_center_pts.zip"
+      }
+    ]
+  },
+  {
+    "id": "apollo11",
+    "group": "apollo",
+    "name": "Mare Tranquillitatis (Tranquility Base) (Apollo 11)",
+    "mission": "Apollo 11",
+    "agency": "NASA",
+    "status": "landed",
+    "statusDate": "1969-07-20",
+    "lat": 0.67416,
+    "lonEast": 23.47314,
+    "approximate": false,
+    "coordinateNote": "Exact position of the Lunar Module descent stage (LROC NAC, Wagner et al. 2017). Frame: ME (planetocentric Mean Earth/Polar Axis, DE421).",
+    "sources": [
+      {
+        "label": "NASA NSSDCA",
+        "url": "https://nssdc.gsfc.nasa.gov/planetary/lunar/lunar_sites.html"
+      },
+      {
+        "label": "LROC/ASU",
+        "url": "https://lroc.im-ldi.com/images/938"
+      },
+      {
+        "label": "peer-reviewed (Wagner et al., Icarus 283, 2017)",
+        "url": "https://doi.org/10.1016/j.icarus.2016.05.011"
+      }
+    ]
+  },
+  {
+    "id": "apollo12",
+    "group": "apollo",
+    "name": "Oceanus Procellarum (Apollo 12)",
+    "mission": "Apollo 12",
+    "agency": "NASA",
+    "status": "landed",
+    "statusDate": "1969-11-19",
+    "lat": -3.0128,
+    "lonEast": -23.4219,
+    "approximate": false,
+    "coordinateNote": "Exact position of the Lunar Module descent stage (LROC NAC, Wagner et al. 2017). Frame: ME (planetocentric Mean Earth/Polar Axis, DE421).",
+    "sources": [
+      {
+        "label": "NASA NSSDCA",
+        "url": "https://nssdc.gsfc.nasa.gov/planetary/lunar/lunar_sites.html"
+      },
+      {
+        "label": "LROC/ASU",
+        "url": "https://lroc.im-ldi.com/images/938"
+      },
+      {
+        "label": "peer-reviewed (Wagner et al., Icarus 283, 2017)",
+        "url": "https://doi.org/10.1016/j.icarus.2016.05.011"
+      }
+    ]
+  },
+  {
+    "id": "apollo14",
+    "group": "apollo",
+    "name": "Fra Mauro (Apollo 14)",
+    "mission": "Apollo 14",
+    "agency": "NASA",
+    "status": "landed",
+    "statusDate": "1971-02-05",
+    "lat": -3.64589,
+    "lonEast": -17.47194,
+    "approximate": false,
+    "coordinateNote": "Exact position of the Lunar Module descent stage (LROC NAC, Wagner et al. 2017). Frame: ME (planetocentric Mean Earth/Polar Axis, DE421).",
+    "sources": [
+      {
+        "label": "NASA NSSDCA",
+        "url": "https://nssdc.gsfc.nasa.gov/planetary/lunar/lunar_sites.html"
+      },
+      {
+        "label": "LROC/ASU",
+        "url": "https://lroc.im-ldi.com/images/938"
+      },
+      {
+        "label": "peer-reviewed (Wagner et al., Icarus 283, 2017)",
+        "url": "https://doi.org/10.1016/j.icarus.2016.05.011"
+      }
+    ]
+  },
+  {
+    "id": "apollo15",
+    "group": "apollo",
+    "name": "Hadley-Apennine (Apollo 15)",
+    "mission": "Apollo 15",
+    "agency": "NASA",
+    "status": "landed",
+    "statusDate": "1971-07-30",
+    "lat": 26.13239,
+    "lonEast": 3.6333,
+    "approximate": false,
+    "coordinateNote": "Exact position of the Lunar Module descent stage (LROC NAC, Wagner et al. 2017). Frame: ME (planetocentric Mean Earth/Polar Axis, DE421).",
+    "sources": [
+      {
+        "label": "NASA NSSDCA",
+        "url": "https://nssdc.gsfc.nasa.gov/planetary/lunar/lunar_sites.html"
+      },
+      {
+        "label": "LROC/ASU",
+        "url": "https://lroc.im-ldi.com/images/938"
+      },
+      {
+        "label": "peer-reviewed (Wagner et al., Icarus 283, 2017)",
+        "url": "https://doi.org/10.1016/j.icarus.2016.05.011"
+      }
+    ]
+  },
+  {
+    "id": "apollo16",
+    "group": "apollo",
+    "name": "Descartes Highlands (Apollo 16)",
+    "mission": "Apollo 16",
+    "agency": "NASA",
+    "status": "landed",
+    "statusDate": "1972-04-21",
+    "lat": -8.9734,
+    "lonEast": 15.5011,
+    "approximate": false,
+    "coordinateNote": "Exact position of the Lunar Module descent stage (LROC NAC, Wagner et al. 2017). Frame: ME (planetocentric Mean Earth/Polar Axis, DE421).",
+    "sources": [
+      {
+        "label": "NASA NSSDCA",
+        "url": "https://nssdc.gsfc.nasa.gov/planetary/lunar/lunar_sites.html"
+      },
+      {
+        "label": "LROC/ASU",
+        "url": "https://lroc.im-ldi.com/images/938"
+      },
+      {
+        "label": "peer-reviewed (Wagner et al., Icarus 283, 2017)",
+        "url": "https://doi.org/10.1016/j.icarus.2016.05.011"
+      }
+    ]
+  },
+  {
+    "id": "apollo17",
+    "group": "apollo",
+    "name": "Taurus-Littrow (Apollo 17)",
+    "mission": "Apollo 17",
+    "agency": "NASA",
+    "status": "landed",
+    "statusDate": "1972-12-11",
+    "lat": 20.1911,
+    "lonEast": 30.7723,
+    "approximate": false,
+    "coordinateNote": "Exact position of the Lunar Module descent stage (LROC NAC, Wagner et al. 2017). Frame: ME (planetocentric Mean Earth/Polar Axis, DE421).",
+    "sources": [
+      {
+        "label": "NASA NSSDCA",
+        "url": "https://nssdc.gsfc.nasa.gov/planetary/lunar/lunar_sites.html"
+      },
+      {
+        "label": "LROC/ASU",
+        "url": "https://lroc.im-ldi.com/images/938"
+      },
+      {
+        "label": "peer-reviewed (Wagner et al., Icarus 283, 2017)",
+        "url": "https://doi.org/10.1016/j.icarus.2016.05.011"
+      }
+    ]
+  },
+  {
+    "id": "change3",
+    "group": "other",
+    "name": "Mare Imbrium (Chang'e-3)",
+    "mission": "Chang'e-3",
+    "agency": "CNSA",
+    "status": "landed",
+    "statusDate": "2013-12-14",
+    "lat": 44.1214,
+    "lonEast": -19.5117,
+    "approximate": false,
+    "coordinateNote": "Exact lander position (LROC). Frame: ME.",
+    "sources": [
+      {
+        "label": "LROC/ASU",
+        "url": "https://lroc.im-ldi.com/images/938"
+      }
+    ]
+  },
+  {
+    "id": "change4",
+    "group": "other",
+    "name": "Von Kármán crater (Chang'e-4, far side)",
+    "mission": "Chang'e-4",
+    "agency": "CNSA",
+    "status": "landed",
+    "statusDate": "2019-01-03",
+    "lat": -45.4446,
+    "lonEast": 177.5991,
+    "approximate": false,
+    "coordinateNote": "Exact lander position (descent images + Chang'e-2 DEM). Frame: not stated in the snippet read.",
+    "sources": [
+      {
+        "label": "peer-reviewed (Liu et al., Nat. Commun. 2019)",
+        "url": "https://www.nature.com/articles/s41467-019-12278-3"
+      },
+      {
+        "label": "peer-reviewed (Sci. China Inf. Sci. 2019)",
+        "url": "https://doi.org/10.1007/s11432-019-2796-1",
+        "note": "177.588 E, 45.457 S"
+      }
+    ]
+  },
+  {
+    "id": "change5",
+    "group": "other",
+    "name": "Mons Rümker area, Oceanus Procellarum (Chang'e-5)",
+    "mission": "Chang'e-5",
+    "agency": "CNSA",
+    "status": "landed",
+    "statusDate": "2020-12-01",
+    "lat": 43.0576,
+    "lonEast": -51.9161,
+    "approximate": false,
+    "coordinateNote": "Exact lander position (LROC, ±20 m). Frame: not stated on page (LROC products are normally ME).",
+    "sources": [
+      {
+        "label": "LROC/ASU",
+        "url": "https://lroc.im-ldi.com/images/1172"
+      }
+    ]
+  },
+  {
+    "id": "change6",
+    "group": "other",
+    "name": "Apollo basin, far side (Chang'e-6)",
+    "mission": "Chang'e-6",
+    "agency": "CNSA",
+    "status": "landed",
+    "statusDate": "2024-06-01",
+    "lat": -41.6385,
+    "lonEast": -153.9852,
+    "approximate": false,
+    "coordinateNote": "Exact lander position (LROC, ±30 m). Frame: not stated on page (LROC products are normally ME).",
+    "sources": [
+      {
+        "label": "LROC/ASU",
+        "url": "https://lroc.im-ldi.com/images/1374"
+      },
+      {
+        "label": "NASA",
+        "url": "https://www.nasa.gov/centers-and-facilities/goddard/nasas-lro-spots-chinas-change-6-spacecraft-on-lunar-far-side"
+      }
+    ]
+  },
+  {
+    "id": "slim",
+    "group": "other",
+    "name": "Shioli crater (SLIM)",
+    "mission": "SLIM",
+    "agency": "JAXA",
+    "status": "landed",
+    "statusDate": "2024-01-19",
+    "lat": -13.316,
+    "lonEast": 25.251,
+    "approximate": false,
+    "coordinateNote": "Exact lander position (LROC). Frame: not stated on page (LROC products are normally ME).",
+    "sources": [
+      {
+        "label": "LROC/ASU",
+        "url": "https://lroc.im-ldi.com/images/1358"
+      }
+    ]
+  },
+  {
+    "id": "blueghost-m1",
+    "group": "other",
+    "name": "Mons Latreille, Mare Crisium (Blue Ghost Mission 1)",
+    "mission": "Blue Ghost Mission 1",
+    "agency": "Firefly Aerospace / NASA CLPS",
+    "status": "landed",
+    "statusDate": "2025-03-02",
+    "lat": 18.5623,
+    "lonEast": 61.8103,
+    "approximate": false,
+    "coordinateNote": "Exact lander position (LROC). Frame: not stated on page (LROC products are normally ME).",
+    "sources": [
+      {
+        "label": "LROC/ASU",
+        "url": "https://lroc.im-ldi.com/images/1407"
+      },
+      {
+        "label": "NASA",
+        "url": "https://www.nasa.gov/news-release/touchdown-carrying-nasa-science-fireflys-blue-ghost-lands-on-moon/"
+      }
+    ]
+  },
+  {
+    "id": "ispace-m2-resilience",
+    "group": "other",
+    "name": "Mare Frigoris (ispace M2 Resilience, crashed)",
+    "mission": "HAKUTO-R Mission 2 (Resilience)",
+    "agency": "ispace (Japan)",
+    "status": "crashed 2025-06-05 (failed landing)",
+    "statusDate": "2025-06-05",
+    "lat": 60.4445,
+    "lonEast": -4.588,
+    "approximate": false,
+    "coordinateNote": "Impact site (LROC). Frame: not stated on page (LROC products are normally ME).",
+    "sources": [
+      {
+        "label": "LROC/ASU",
+        "url": "https://lroc.im-ldi.com/images/1456"
+      },
+      {
+        "label": "LROC/ASU",
+        "url": "https://lroc.im-ldi.com/images/1412",
+        "note": "target 60.5 N, 355.4 E"
+      }
+    ]
+  }
+]

@@ -10,13 +10,18 @@ epic: `VENT-1` (Dashboard project «Ventana Lunar», prefix `VENT`).
 
 ## Stack
 
-- **Web**: Astro 7 (static output) + React 19 islands + TypeScript (strictest). Three.js joins with the globe
-  (luxury 1). No login and no user accounts.
-- **Backend** (decided 2026-10-29, to be designed in VENT-10): one service on Dokploy serves all site data, for the
+- **Monorepo** (npm workspaces, layout of GAMESTUDIO's Web starter): `packages/web`, `packages/sim` and
+  `packages/server`. Web and server import the same `@ventana/sim` and its data contract types.
+- **Web** (`packages/web`): Astro 7 (static output) + React 19 islands + TypeScript (strictest). Three.js joins with
+  the globe (luxury 1). No login and no user accounts.
+- **Sim** (`packages/sim`): pure TypeScript, no network, disk or DOM: the site data contract and the
+  visibility, window and DSN logic.
+- **Backend** (`packages/server`, Node + Hono; decided 2026-10-29): one service on Dokploy serves all site data, for the
   curated sites and for custom coordinates. It queries JPL Horizons and caches the responses on disk, because Horizons
   is slow and rate limited and the spec wants answers in under 3 s. The browser never calls Horizons directly.
 - **Deploy**: Dokploy builds the `Dockerfile` (static build served by nginx, `nginx.conf`) from `main`, at the domain
-  root (`SITE_BASE` sets a sub-path if ever needed). Operate it with the framework's `dokploy` skill.
+  root (`SITE_BASE` sets a sub-path if ever needed). The API has its own `packages/server/Dockerfile` (built from the
+  repo root, port 3000). Operate it with the framework's `dokploy` skill.
 
 ## Design: follow the `apple-design` skill
 
@@ -24,7 +29,7 @@ Every visible change follows `.claude/skills/apple-design/SKILL.md` (vendored fr
 `.claude/skills/NOTICE.md`). Load it before touching UI. Project-specific rules from the spec on top of it:
 
 - Dark by default (near-black background). One screen, no menus: the jury must understand it in five seconds.
-- Four signal colours with fixed meaning, from `src/styles/tokens.css`, and an always-visible legend: Sun
+- Four signal colours with fixed meaning, from `packages/web/src/styles/tokens.css`, and an always-visible legend: Sun
   (`--signal-sun`), Earth (`--signal-earth`), both = window (`--signal-window`), nothing (`--signal-none`). Never use
   them for decoration.
 - System font; tracking and leading change with size. Springs critically damped by default. Honour
@@ -37,12 +42,13 @@ Every visible change follows `.claude/skills/apple-design/SKILL.md` (vendored fr
 
 | Command | What |
 |---|---|
-| `npm run dev` | Dev server at `http://localhost:4321/` |
-| `npm run lint` | ESLint + the anti-slop preset (`eslint.anti-slop.mjs`) |
-| `npm run typecheck` | `astro check` |
-| `npm test` | Vitest unit tests (`tests/unit/`) |
-| `npm run build` | Static build into `dist/` |
-| `npm run e2e` | Playwright smoke against the built site (`tests/e2e/`); in a cloud container set `PW_CHROMIUM_PATH=/opt/pw-browsers/chromium-*/chrome-linux64/chrome` |
+| `npm run dev` | Web dev server at `http://localhost:4321/` |
+| `npm run server` | API server (`packages/server`, after `npm run build`) at `http://localhost:3000/api/v1/health` |
+| `npm run lint` | ESLint + the anti-slop preset (`eslint.anti-slop.mjs`) over every package |
+| `npm run typecheck` | `astro check` for the web, `tsc` for sim, server and the root configs and e2e |
+| `npm test` | Vitest unit tests of every package (`packages/*/tests/`) |
+| `npm run build` | Static web into `packages/web/dist/`, compiled server into `packages/server/dist/` |
+| `npm run e2e` | Playwright smoke against the built web (`tests/e2e/`); in a cloud container set `PW_CHROMIUM_PATH=/opt/pw-browsers/chromium-*/chrome-linux64/chrome` |
 | `bash .claude/skills/security-gate/scripts/security-gate.sh --strict .` | Security ladder (gitleaks, semgrep, osv-scanner, npm audit) |
 
 Before delivering: lint, typecheck, unit tests, build and e2e green; CI runs the same plus the English gate and the
@@ -55,8 +61,8 @@ updated in the same PR when something visible changes, architecture diagram in `
 `ROADMAP.md` and `CHANGELOG.md` are written in Spanish (the human reads them).
 
 **Guardián during the hackathon** (human decision, 2026-10-29): only `verificador` and `seguridad`, launched by hand
-with the round message published by the orchestrator; at most 2 rounds per PR, and a round-2 rejection that is not a
-security finding merges and goes to a fix-forward trajectory. No `qa` or `qa-adversario` until the event is over.
+with the round message published by the orchestrator; only a security finding blocks the merge, and everything else
+merges and goes to a fix-forward trajectory. No `qa` or `qa-adversario` until the event is over.
 
 **Roadmap canvas** (https://claude.ai/artifact/Sm8QoCwg7DqLbuCSHLPfBg): the live, visual roadmap. It is part of the
 definition of done of every step, together with the Dashboard and the vault: when a trajectory or TODO changes state,

@@ -1,0 +1,16 @@
+{
+  "name": "@ventana/server",
+  "private": true,
+  "type": "module",
+  "version": "0.0.0",
+  "scripts": {
+    "build": "tsc -b tsconfig.build.json",
+    "start": "node --conditions=ventana-compiled dist/main.js",
+    "typecheck": "tsc --noEmit -p ."
+  },
+  "dependencies": {
+    "@hono/node-server": "2.1.5",
+    "@ventana/sim": "*",
+    "hono": "4.13.14"
+  }
+}

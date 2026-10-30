@@ -1,0 +1,9 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "lib": ["ES2023"],
+    // No Node or DOM types: the simulation must not reach the network, the disk or the page.
+    "types": []
+  },
+  "include": ["src"]
+}

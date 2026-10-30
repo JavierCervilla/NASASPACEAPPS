@@ -1,0 +1,16 @@
+{
+  "name": "@ventana/sim",
+  "private": true,
+  "type": "module",
+  "version": "0.0.0",
+  "exports": {
+    ".": {
+      "ventana-compiled": "./dist/index.js",
+      "default": "./src/index.ts"
+    }
+  },
+  "scripts": {
+    "build": "tsc -b tsconfig.build.json",
+    "typecheck": "tsc --noEmit -p . && tsc --noEmit -p tests"
+  }
+}

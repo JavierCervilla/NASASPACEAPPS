@@ -1,4 +1,7 @@
-/** Hour arithmetic on ISO 8601 UTC strings. Deterministic: never reads the clock. */
+/**
+ * Hour arithmetic on ISO 8601 UTC strings. Deterministic: never reads the
+ * clock.
+ */
 
 /** One hour in milliseconds. */
 export const HOUR_MS = 3_600_000;
@@ -10,7 +13,10 @@ export function toMs(iso: string): number {
   return ms;
 }
 
-/** ISO 8601 in UTC without milliseconds (`2026-11-01T00:00:00Z`), the format of every time in the data contract. */
+/**
+ * ISO 8601 in UTC without milliseconds (`2026-11-01T00:00:00Z`), the format of
+ * every time in the data contract.
+ */
 export function toIso(ms: number): string {
   return new Date(ms).toISOString().replace(/\.\d{3}Z$/, 'Z');
 }

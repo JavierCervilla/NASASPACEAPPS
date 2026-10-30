@@ -1,4 +1,7 @@
-/** Public API of `@ventana/sim`: pure TypeScript shared by the web and the server, no network, disk or DOM. */
+/**
+ * Public API of `@ventana/sim`: pure TypeScript shared by the web and the
+ * server, no network, disk or DOM.
+ */
 export type {
   DsnComplex,
   Ephemeris,

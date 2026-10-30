@@ -8,10 +8,14 @@ function subscribe(onTick: () => void): () => void {
   return () => window.clearInterval(id);
 }
 
-// Rounded to the minute so consecutive reads return the same snapshot between ticks.
+// Rounded to the minute so consecutive reads return the same snapshot between
+// ticks.
 const readClock = (): number => Math.floor(Date.now() / MINUTE) * MINUTE;
 
-/** Days left until the hackathon opens. Hydrated island: proves React runs on the deployed static site. */
+/**
+ * Days left until the hackathon opens. Hydrated island: proves React runs on
+ * the deployed static site.
+ */
 export default function Countdown({ renderedAt }: { renderedAt: number }) {
   const now = useSyncExternalStore(subscribe, readClock, () => renderedAt);
   const days = daysUntil(now);

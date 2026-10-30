@@ -1,7 +1,9 @@
 /**
- * The seam between the dev tools and a WebGL renderer. The tools never import a renderer library: whoever owns the
- * renderer hands them a `RendererAdapter`, so the same readout serves Three.js today and could serve CesiumJS later.
- * Without an adapter the readout still shows frame rate, frame time, the trail and errors.
+ * The seam between the dev tools and a WebGL renderer. The tools never import
+ * a renderer library: whoever owns the renderer hands them a
+ * `RendererAdapter`, so the same readout serves Three.js today and could serve
+ * CesiumJS later. Without an adapter the readout still shows frame rate,
+ * frame time, the trail and errors.
  */
 
 /** What a renderer drew in its last frame. */
@@ -21,13 +23,19 @@ export interface RendererAdapter {
   readonly canvas: EventTarget;
   /** The totals of the frame just drawn; called once per page frame. */
   read(): RendererReading;
-  /** Starts the next frame's totals; omit it when the renderer resets them itself. */
+  /** Starts the next frame's totals; omit it if the renderer resets them. */
   reset?(): void;
-  /** Estimated GPU bytes of the textures on screen; it may walk a scene, so it is called only every few frames. */
+  /**
+   * Estimated GPU bytes of the textures on screen; it may walk a scene, so it
+   * is called only every few frames.
+   */
   textureBytes?(): number;
 }
 
-/** The part of a `THREE.WebGLRenderer` the adapter reads, typed by shape so Three.js stays out of this module. */
+/**
+ * The part of a `THREE.WebGLRenderer` the adapter reads, typed by shape so
+ * Three.js stays out of this module.
+ */
 export interface ThreeRendererLike {
   readonly domElement: HTMLCanvasElement;
   readonly info: {
@@ -40,15 +48,19 @@ export interface ThreeRendererLike {
 }
 
 export interface ThreeAdapterOptions {
-  /** Estimated texture bytes of the scene on screen, for the readout's texture line. */
+  /** Estimated texture bytes of the scene on screen, for the readout. */
   readonly textureBytes?: () => number;
 }
 
 /**
- * Adapts a Three.js renderer. It turns off `info.autoReset`, so the counts add up every render call of a frame
- * (a globe with a second pass still reads as one frame), and resets them after each reading.
+ * Adapts a Three.js renderer. It turns off `info.autoReset`, so the counts add
+ * up every render call of a frame (a globe with a second pass still reads as
+ * one frame), and resets them after each reading.
  */
-export function threeAdapter(renderer: ThreeRendererLike, options: ThreeAdapterOptions = {}): RendererAdapter {
+export function threeAdapter(
+  renderer: ThreeRendererLike,
+  options: ThreeAdapterOptions = {},
+): RendererAdapter {
   renderer.info.autoReset = false;
   const adapter: RendererAdapter = {
     canvas: renderer.domElement,
@@ -62,5 +74,6 @@ export function threeAdapter(renderer: ThreeRendererLike, options: ThreeAdapterO
     }),
     reset: () => renderer.info.reset(),
   };
-  return options.textureBytes ? { ...adapter, textureBytes: options.textureBytes } : adapter;
+  const { textureBytes } = options;
+  return textureBytes ? { ...adapter, textureBytes } : adapter;
 }

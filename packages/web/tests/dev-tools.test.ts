@@ -1,7 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import { Breadcrumbs } from '../src/devtools/breadcrumbs';
 import { DevTools } from '../src/devtools/dev-tools';
-import type { HudView, RenderStats } from '../src/devtools/perf-hud';
+import type { HudView } from '../src/devtools/perf-hud';
+import type { RenderStats } from '../src/devtools/readout';
 import { threeAdapter, type RendererAdapter, type ThreeRendererLike } from '../src/devtools/renderer';
 
 interface FakeView extends HudView {

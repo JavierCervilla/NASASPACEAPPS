@@ -23,9 +23,11 @@ const favicon = `${import.meta.env.BASE_URL.replace(/\/$/, '')}/favicon.svg`;
   <body>
     <slot />
     <script>
-      // Dev tools (performance readout, breadcrumbs, Spector.js on request): the dev server, or a build made with
-      // PUBLIC_PERF_HUD=1. In a production build the condition is a constant false and the bundler drops the import;
-      // scripts/check-no-devtools.mjs proves it after every build.
+      // Dev tools (performance readout, breadcrumbs, Spector.js on request):
+      // the dev server, or a build made with PUBLIC_PERF_HUD=1. In a
+      // production build the condition is a constant false and the bundler
+      // drops the import; scripts/check-no-devtools.mjs proves it after
+      // every build.
       if (import.meta.env.DEV || import.meta.env.PUBLIC_PERF_HUD === '1') {
         void import('../devtools/boot').then(({ devTools }) => devTools());
       }

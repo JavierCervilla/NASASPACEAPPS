@@ -1,10 +1,12 @@
 /**
- * Quality tiers. A phone starts at `medium` or `low`, a desktop at `high`, and the address can force one
- * (`?quality=low`, or `#stats-low` where a host passes no query string), which is how the performance readout's
- * buttons restart the page at another tier. The settings are starting values for the globe to tune, not measured
- * limits.
+ * Quality tiers. A phone starts at `medium` or `low`, a desktop at `high`, and
+ * the address can force one (`?quality=low`, or `#stats-low` where a host
+ * passes no query string), which is how the performance readout's buttons
+ * restart the page at another tier. The settings are starting values for the
+ * globe to tune, not measured limits.
  *
- * Ported from GAMESTUDIO's Web starter (`studio/engines/web/scaffold/packages/client/src/engine/quality.ts`). It
+ * Ported from GAMESTUDIO's Web starter
+ * (`studio/engines/web/scaffold/packages/client/src/engine/quality.ts`). It
  * lives outside `devtools/` because the globe reads it in production too.
  */
 export type Tier = 'low' | 'medium' | 'high';
@@ -13,9 +15,15 @@ export const TIERS: readonly Tier[] = ['low', 'medium', 'high'];
 
 export interface QualitySettings {
   readonly tier: Tier;
-  /** Device pixel ratio cap: on a high-density phone, more pixels cost frame time without looking better. */
+  /**
+   * Device pixel ratio cap: on a high-density phone, more pixels cost frame
+   * time without looking better.
+   */
   readonly maxPixelRatio: number;
-  /** Multisampled antialiasing of the canvas (off on weak GPUs: it multiplies the framebuffer's memory). */
+  /**
+   * Multisampled antialiasing of the canvas (off on weak GPUs: it multiplies
+   * the framebuffer's memory).
+   */
   readonly antialias: boolean;
   /** Frame rate the tier aims to hold. */
   readonly targetFps: number;
@@ -44,9 +52,14 @@ function isTier(value: string | null | undefined): value is Tier {
   return value === 'low' || value === 'medium' || value === 'high';
 }
 
-/** Picks a starting tier; `?quality=` in `search` or a tier word in `hash` overrides it. */
+/**
+ * Picks a starting tier; `?quality=` in `search` or a tier word in `hash`
+ * overrides it.
+ */
 export function detectTier(device: DeviceHints, search = '', hash = ''): Tier {
-  const forced = new URLSearchParams(search).get('quality') ?? /(?:^|[#-])(low|medium|high)(?:$|-)/.exec(hash)?.[1];
+  const forced =
+    new URLSearchParams(search).get('quality') ??
+    /(?:^|[#-])(low|medium|high)(?:$|-)/.exec(hash)?.[1];
   if (isTier(forced)) return forced;
   const gpu = device.gpu.toLowerCase();
   if (/swiftshader|llvmpipe|software/.test(gpu)) return 'low';
@@ -58,15 +71,21 @@ export function detectTier(device: DeviceHints, search = '', hash = ''): Tier {
 /** The part of a WebGL context `gpuName` reads. */
 export interface RendererInfoSource {
   readonly RENDERER: number;
-  getExtension(name: 'WEBGL_debug_renderer_info'): { readonly UNMASKED_RENDERER_WEBGL: number } | null;
+  getExtension(
+    name: 'WEBGL_debug_renderer_info',
+  ): { readonly UNMASKED_RENDERER_WEBGL: number } | null;
   getParameter(name: number): unknown;
 }
 
-/** The GPU's name as the browser reports it (unmasked through WEBGL_debug_renderer_info when exposed), or "". */
+/**
+ * The GPU's name as the browser reports it (unmasked through
+ * WEBGL_debug_renderer_info when exposed), or "".
+ */
 export function gpuName(gl: RendererInfoSource | null): string {
   if (!gl) return '';
   const info = gl.getExtension('WEBGL_debug_renderer_info');
-  return String(info ? gl.getParameter(info.UNMASKED_RENDERER_WEBGL) : gl.getParameter(gl.RENDERER));
+  const name = info ? info.UNMASKED_RENDERER_WEBGL : gl.RENDERER;
+  return String(gl.getParameter(name));
 }
 
 /** The browser's hints, read from the page. */

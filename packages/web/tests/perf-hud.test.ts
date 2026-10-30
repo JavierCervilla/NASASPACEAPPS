@@ -1,6 +1,8 @@
 // Ported from GAMESTUDIO's Web starter (studio/engines/web/scaffold/packages/client/tests/perf-hud.test.ts).
 import { describe, expect, it } from 'vitest';
-import { debugHash, FrameMeter, parseDebugHash, readout } from '../src/devtools/perf-hud';
+import { debugHash, parseDebugHash } from '../src/devtools/debug-flags';
+import { FrameMeter } from '../src/devtools/frame-meter';
+import { readout } from '../src/devtools/readout';
 
 describe('perf hud', () => {
   it('reads the tier and Spector from the address hash', () => {

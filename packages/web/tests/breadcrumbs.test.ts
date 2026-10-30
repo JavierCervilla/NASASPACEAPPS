@@ -1,5 +1,7 @@
 import { describe, expect, it } from 'vitest';
-import { Breadcrumbs, watchContext, type TrailStorage } from '../src/devtools/breadcrumbs';
+import { Breadcrumbs } from '../src/devtools/breadcrumbs';
+import { watchContext } from '../src/devtools/context-watch';
+import type { TrailStorage } from '../src/devtools/trail-storage';
 
 function memoryStorage(): TrailStorage & { data: Map<string, string> } {
   const data = new Map<string, string>();

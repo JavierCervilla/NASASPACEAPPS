@@ -8,11 +8,42 @@ const NOW = new Date('2026-11-23T18:00:00Z');
 // Where the sheet's top edge rests at 390x844: half shows 344 px, full sits under the 96 px of the top bar.
 const HALF_TOP = 844 - 344;
 const FULL_TOP = 96;
+// Peek shows 156 px: the name and the coordinates, clear of the tab bar.
+const PEEK_TOP = 844 - 156;
+// Closed, the edge rests 56 px below the screen, past the reach of the sheet's shadow.
+const CLOSED_TOP = 844 + 56;
 
 async function open(page: Page): Promise<void> {
   await page.clock.setFixedTime(NOW);
   await stubApi(page);
   await page.goto('./');
+}
+
+const tabs = (page: Page) => page.getByRole('navigation', { name: 'Views' });
+
+/** A closed sheet is off-screen, inert, and nothing in it takes focus. */
+async function expectClosed(page: Page): Promise<void> {
+  await expect.poll(() => sheetTop(page)).toBe(CLOSED_TOP);
+  await expect(page.locator('.sheet')).toHaveAttribute('inert', '');
+  const focusable = await page.locator('.sheet__grabber').evaluate((el) => {
+    (el as HTMLElement).focus();
+    return document.activeElement === el;
+  });
+  expect(focusable).toBe(false);
+  await expect(page.getByRole('heading', { level: 1 })).toBeVisible();
+  await expect(page.getByRole('button', { name: /^Change site, now/ })).toBeVisible();
+  await expect(tabs(page)).toBeVisible();
+}
+
+/** A finger drag up from the tab bar's top edge, 220 px, as a mouse; held down with `release: false`. */
+async function dragUpFromTabBar(page: Page, { release = true } = {}): Promise<void> {
+  const bar = await tabs(page).boundingBox();
+  const y = (bar?.y ?? 0) + 10;
+  await page.mouse.move(195, y);
+  await page.mouse.down();
+  await page.mouse.move(195, y - 80, { steps: 5 });
+  await page.mouse.move(195, y - 220, { steps: 5 });
+  if (release) await page.mouse.up();
 }
 
 const sheetTop = (page: Page) => page.locator('.sheet').evaluate((el) => Math.round(el.getBoundingClientRect().top));
@@ -89,7 +120,7 @@ test.describe('phone, 390x844', () => {
     // Under reduced motion the sheet lands at once, without a spring.
     expect(await sheetTop(page)).toBe(FULL_TOP);
     await page.getByRole('button', { name: /^Sheet full height/ }).press('Enter');
-    await expect.poll(() => sheetTop(page)).toBe(844 - 136);
+    await expect.poll(() => sheetTop(page)).toBe(PEEK_TOP);
   });
 
   test('search spans every region and names it; with the query cleared the region control filters', async ({ page }) => {
@@ -195,5 +226,115 @@ test.describe('phone, 390x844', () => {
     await expect(page.locator('section.globe canvas')).toHaveCount(1);
     await expect.poll(() => requested.filter((url) => GLOBE_ASSET.test(url)).length).toBe(2);
     await expect(load).toHaveCount(0);
+  });
+
+  test.describe('closing the sheet', () => {
+    test('a drag down from half closes it, and the pill opens the picker', async ({ page }) => {
+      const errors: string[] = [];
+      page.on('pageerror', (e) => errors.push(e.message));
+      page.on('console', (m) => m.type() === 'error' && errors.push(m.text()));
+      await open(page);
+      await expect.poll(() => sheetTop(page)).toBe(HALF_TOP);
+      await page.mouse.move(195, HALF_TOP + 6);
+      await page.mouse.down();
+      await page.mouse.move(195, HALF_TOP + 120, { steps: 6 });
+      await page.mouse.move(195, 840, { steps: 6 });
+      await page.mouse.up();
+      await expectClosed(page);
+      await page.getByRole('button', { name: /^Change site, now/ }).click();
+      await expect(page.getByRole('heading', { name: 'Landing sites' })).toBeVisible();
+      await expect.poll(() => sheetTop(page)).toBe(FULL_TOP);
+      await expect(page.locator('.sheet')).not.toHaveAttribute('inert');
+      expect(errors).toEqual([]);
+    });
+
+    test('Globe closes it, and Sites opens the picker', async ({ page }) => {
+      await page.emulateMedia({ reducedMotion: 'reduce' });
+      await open(page);
+      await tabs(page).getByRole('button', { name: 'Globe' }).click();
+      await expectClosed(page);
+      await expect(tabs(page).getByRole('button', { name: 'Globe' })).toHaveAttribute('aria-current', 'true');
+      await tabs(page).getByRole('button', { name: 'Sites' }).click();
+      await expect(page.getByRole('heading', { name: 'Landing sites' })).toBeVisible();
+      // The picker is visible while the spring is still carrying the sheet up.
+      await expect.poll(() => sheetTop(page)).toBe(FULL_TOP);
+    });
+
+    test('Done in the picker closes it', async ({ page }) => {
+      await page.emulateMedia({ reducedMotion: 'reduce' });
+      await open(page);
+      await page.getByRole('button', { name: /^Change site, now/ }).click();
+      await expect(page.getByRole('heading', { name: 'Landing sites' })).toBeVisible();
+      await page.getByRole('button', { name: 'Done' }).click();
+      await expectClosed(page);
+    });
+
+    test('a drag up from the tab bar opens it at half, and a tap there is still a tap', async ({ page }) => {
+      await open(page);
+      await tabs(page).getByRole('button', { name: 'Globe' }).click();
+      await expectClosed(page);
+      await dragUpFromTabBar(page);
+      await expect.poll(() => sheetTop(page)).toBe(HALF_TOP);
+      await expect(page.locator('.widget')).toHaveCount(4);
+      // The drag did not press the tab under the finger.
+      await expect(page.getByRole('heading', { name: 'Landing sites' })).toHaveCount(0);
+      await tabs(page).getByRole('button', { name: 'Sites' }).click();
+      await expect(page.getByRole('heading', { name: 'Landing sites' })).toBeVisible();
+      await expect.poll(() => sheetTop(page)).toBe(FULL_TOP);
+    });
+
+    test('a drag up from the tab bar does nothing while the sheet is open', async ({ page }) => {
+      await open(page);
+      await expect.poll(() => sheetTop(page)).toBe(HALF_TOP);
+      // Mid-drag, before the release: an edge drag would have carried the sheet up under the finger.
+      await dragUpFromTabBar(page, { release: false });
+      expect(await sheetTop(page)).toBe(HALF_TOP);
+      await page.mouse.up();
+      await page.waitForTimeout(600);
+      expect(await sheetTop(page)).toBe(HALF_TOP);
+      await expect(page.getByRole('heading', { name: 'Landing sites' })).toHaveCount(0);
+    });
+
+    test('closed and zoomed in, the canvas still covers the screen and the Moon sits lower', async ({ page }) => {
+      await page.emulateMedia({ reducedMotion: 'reduce' });
+      await open(page);
+      const marker = page.locator('[data-site-id="im2-athena"]');
+      await expect(marker).toBeVisible();
+      const before = await marker.boundingBox();
+      await tabs(page).getByRole('button', { name: 'Globe' }).click();
+      await expectClosed(page);
+      // The frame slides 145 px down; the marker follows it.
+      await expect.poll(async () => Math.round(((await marker.boundingBox())?.y ?? 0) - (before?.y ?? 0))).toBe(145);
+      await page.getByRole('application', { name: 'The Moon, seen over its south pole' }).focus();
+      for (let press = 0; press < 9; press += 1) await page.keyboard.press('+');
+      await expect(page.locator('section.globe canvas')).toHaveCount(1);
+      expect(await page.locator('section.globe canvas').boundingBox()).toEqual({ x: 0, y: 0, width: 390, height: 844 });
+      await expect(page.locator('.globe-viewport')).not.toHaveAttribute('style', /transform/);
+    });
+
+    test('at peek only the name and the coordinates show, clear of the tab bar', async ({ page }) => {
+      await page.emulateMedia({ reducedMotion: 'reduce' });
+      await open(page);
+      await page.getByRole('button', { name: /^Sheet half height/ }).press('Enter');
+      await page.getByRole('button', { name: /^Sheet full height/ }).press('Enter');
+      await expect.poll(() => sheetTop(page)).toBe(PEEK_TOP);
+      const head = await page.locator('.summary__head').boundingBox();
+      const bar = await tabs(page).boundingBox();
+      expect((head?.y ?? 0) + (head?.height ?? 0)).toBeLessThanOrEqual((bar?.y ?? 0) - 8);
+      const shown = await page.locator('.summary > :not(.summary__head)').evaluateAll((els) =>
+        els.map((el) => getComputedStyle(el).opacity),
+      );
+      expect(shown.length).toBeGreaterThan(0);
+      expect(shown.every((opacity) => opacity === '0')).toBe(true);
+    });
+
+    test('the sheet comes back where the session left it', async ({ page }) => {
+      await page.emulateMedia({ reducedMotion: 'reduce' });
+      await open(page);
+      await tabs(page).getByRole('button', { name: 'Globe' }).click();
+      await expectClosed(page);
+      await page.reload();
+      await expectClosed(page);
+    });
   });
 });

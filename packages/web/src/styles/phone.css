@@ -52,9 +52,10 @@
     box-shadow: none;
   }
 
-  /* The Moon sits in the area above the sheet at half. */
+  /* The canvas covers the screen; the Moon is framed in the area above
+     the sheet at half (src/globe/sheet-edge.ts). */
   .globe-viewport {
-    bottom: 290px;
+    --globe-frame-inset: 290px;
   }
 
   .globe-viewport:focus-visible {
@@ -273,6 +274,12 @@
   display: flex;
   flex-direction: column;
   gap: 12px;
+}
+
+/* Below the head, the summary fades out towards peek, where only the
+   head clears the tab bar (--sheet-reveal: src/sheet/sheet-view.ts). */
+.summary > :not(.summary__head) {
+  opacity: var(--sheet-reveal, 1);
 }
 
 .summary__head {

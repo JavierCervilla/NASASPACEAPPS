@@ -39,8 +39,9 @@ function useGlobe({ sitesUrl, base, store, sheetEdge }: Props) {
     if (!el) return undefined;
     const warn = (message: string): void => console.warn(message);
     const options = { atMs: Date.now(), base, sitesUrl, store, sheetEdge };
-    const deps = { ...options, reducedMotion, warn };
-    const start = startGlobe(el, deps, setStatus, prefersSaveData());
+    const saveData = prefersSaveData();
+    const deps = { ...options, saveData, reducedMotion, warn };
+    const start = startGlobe(el, deps, setStatus, saveData);
     loader.current = start.load;
     return start.dispose;
   }, [sitesUrl, base, store, sheetEdge]);

@@ -19,8 +19,8 @@ export interface Candidate {
   readonly selected: boolean;
 }
 
-/** Half the side of a marker's hit box (globe.css: 24px). */
-export const HIT_HALF_PX = 12;
+/** Half the side of a marker's hit box (globe.css: 44px). */
+export const HIT_HALF_PX = 22;
 
 /** Placement order: the selected marker, then exact ones, then zones. */
 function rank(candidate: Candidate): number {

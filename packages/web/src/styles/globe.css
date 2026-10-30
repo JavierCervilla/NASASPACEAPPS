@@ -75,15 +75,16 @@
 
 /*
  * A marker is a fixed-size button whose centre sits on the site: the same
- * size at every zoom. The 24px box is the hit area; the dot is drawn inside.
+ * size at every zoom. The 44px box is the hit area (the touch target
+ * apple-design asks for); the small dot is drawn inside.
  */
 .globe-marker {
   --size: 8px;
   position: absolute;
-  top: -12px;
-  left: -12px;
-  width: 24px;
-  height: 24px;
+  top: -22px;
+  left: -22px;
+  width: 44px;
+  height: 44px;
   padding: 0;
   border: 0;
   border-radius: 50%;

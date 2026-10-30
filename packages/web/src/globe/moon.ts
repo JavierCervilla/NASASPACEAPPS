@@ -1,21 +1,29 @@
 /**
- * The Moon: a 64-segment sphere wearing the LROC colour mosaic (see
- * ASSETS.md), lit by one directional light from the real Sun and a faint
- * ambient term so the night side keeps its shape.
+ * The Moon: a 64-segment sphere wearing the LROC colour mosaic and the LOLA
+ * relief as an object-space normal map (see ASSETS.md), lit by one
+ * directional light from the real Sun and a faint ambient term so the
+ * night side keeps its shape; the relief never lights the night side
+ * (night-side.ts). Sharper maps arrive as the camera closes in
+ * (texture-lod.ts, texture-swap.ts).
  */
 import {
   AmbientLight,
   DirectionalLight,
   Mesh,
   MeshLambertMaterial,
+  ObjectSpaceNormalMap,
   SphereGeometry,
-  SRGBColorSpace,
-  TextureLoader,
-  type Scene,
   type Texture,
 } from 'three';
-import type { SelenographicPoint } from '@ventana/sim';
+import { subSolarPoint, type SelenographicPoint } from '@ventana/sim';
+import type { Tier } from '../lib/quality';
 import { sunDirection } from './geo';
+import { moonTextureDeps } from './moon-textures';
+import { keepNightDark } from './night-side';
+import type { Stage } from './stage';
+import { levelUrls, startLevel, wantedLevel } from './texture-lod';
+import { textureBytes } from './texture-bytes';
+import { TextureSwap } from './texture-swap';
 
 /** Widthwise and heightwise segments of the sphere (spec: 64). */
 const SEGMENTS = 64;
@@ -23,39 +31,52 @@ const SEGMENTS = 64;
 const SUN_INTENSITY = 3.2;
 const FILL_INTENSITY = 0.05;
 
+/** Grey until the first map arrives; the relief is an object-space map. */
+const BARE_MOON = { color: 0x8c8a85, normalMapType: ObjectSpaceNormalMap };
+
 export interface Moon {
-  /** Bytes the texture holds on the GPU, with mipmaps; 0 until loaded. */
+  /** Bytes the maps hold on the GPU, with mipmaps; 0 until loaded. */
   textureBytes(): number;
+  /** The camera's distance (Moon radii) is now `distance`. */
+  track(distance: number): void;
   dispose(): void;
 }
 
 export interface MoonOptions {
-  readonly textureUrl: string;
-  readonly sun: SelenographicPoint;
+  /** The site's base path, for the maps. */
+  readonly base: string;
+  readonly tier: Tier;
+  /** Under Save-Data the start map is the only one. */
+  readonly saveData: boolean;
+  /** The instant whose Sun lights the Moon, Unix ms. */
+  readonly atMs: number;
   readonly onChange: () => void;
   readonly warn: (message: string) => void;
 }
 
-/** Adds the Moon and its lights to `scene`. */
-export function addMoon(scene: Scene, options: MoonOptions): Moon {
+/** Adds the Moon and its lights to the stage's scene. */
+export function addMoon(stage: Stage, options: MoonOptions): Moon {
   const geometry = new SphereGeometry(1, SEGMENTS, SEGMENTS);
-  const material = new MeshLambertMaterial({ color: 0x8c8a85 });
-  const texture = new TextureLoader().load(
-    options.textureUrl,
-    (loaded) => {
-      loaded.colorSpace = SRGBColorSpace;
-      material.color.set(0xffffff);
-      material.map = loaded;
-      material.needsUpdate = true;
-      options.onChange();
-    },
-    undefined,
-    () => options.warn(`Ventana Lunar: Moon texture ${options.textureUrl} did not load.`),
-  );
-  scene.add(new Mesh(geometry, material), ...sunLights(options.sun));
+  const material = new MeshLambertMaterial(BARE_MOON);
+  keepNightDark(material);
+  const { renderer } = stage;
+  const { maxTextureSize } = renderer.capabilities;
+  const swap = new TextureSwap<Texture>({
+    ...moonTextureDeps({ ...options, renderer, material }),
+    urls: (level) => levelUrls(level, options.base),
+    warn: options.warn,
+  });
+  swap.want(startLevel(options.tier));
+  const lights = sunLights(subSolarPoint(options.atMs));
+  stage.scene.add(new Mesh(geometry, material), ...lights);
   return {
-    textureBytes: () => (material.map ? textureBytesOf(material.map) : 0),
-    dispose: () => [geometry, material, texture].forEach((x) => x.dispose()),
+    textureBytes: () => textureBytes(material.map, material.normalMap),
+    track: (d) => swap.want(wantedLevel(d, { ...options, maxTextureSize })),
+    dispose: () => {
+      swap.dispose();
+      geometry.dispose();
+      material.dispose();
+    },
   };
 }
 
@@ -64,10 +85,4 @@ function sunLights(sun: SelenographicPoint): [DirectionalLight, AmbientLight] {
   const { x, y, z } = sunDirection(sun);
   light.position.set(x, y, z).multiplyScalar(10);
   return [light, new AmbientLight(0xffffff, FILL_INTENSITY)];
-}
-
-function textureBytesOf(texture: Texture): number {
-  const image = texture.image as { width?: number; height?: number } | null;
-  // RGBA, plus a third for the mipmap chain.
-  return Math.round((image?.width ?? 0) * (image?.height ?? 0) * 4 * (4 / 3));
 }

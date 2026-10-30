@@ -79,29 +79,33 @@ class SheetGesture {
 
 /**
  * Listens for drags on `el` that start where `canDrag` allows (not inside
- * a scrolling list); a drag swallows the click that follows it. Returns
- * the unbind function.
+ * a scrolling list); a drag swallows the click that follows it. The press
+ * is followed on `moves` until it becomes a drag: the element itself, or
+ * the document for a small element the finger leaves at once (the tab
+ * bar). Returns the unbind function.
  */
 export function bindSheetDrag(
   el: HTMLElement,
   target: SheetDragTarget,
   canDrag: (event: PointerEvent) => boolean,
+  moves: EventTarget = el,
 ): () => void {
   const gesture = new SheetGesture(el, target);
-  const listeners: [PointerType, (event: PointerEvent) => void][] = [
-    ['pointerdown', (e) => gesture.down(e, canDrag(e))],
-    ['pointermove', (e) => gesture.move(e)],
-    ['pointerup', (e) => gesture.up(e, false)],
-    ['pointercancel', (e) => gesture.up(e, true)],
+  const on = (e: Event): PointerEvent => e as PointerEvent;
+  const binds: [EventTarget, PointerType, (event: Event) => void][] = [
+    [el, 'pointerdown', (e) => gesture.down(on(e), canDrag(on(e)))],
+    [moves, 'pointermove', (e) => gesture.move(on(e))],
+    [moves, 'pointerup', (e) => gesture.up(on(e), false)],
+    [moves, 'pointercancel', (e) => gesture.up(on(e), true)],
   ];
   const swallow = (event: Event): void => {
     if (gesture.swallowClick) event.stopPropagation();
     gesture.swallowClick = false;
   };
-  for (const [type, fn] of listeners) el.addEventListener(type, fn);
+  for (const [node, type, fn] of binds) node.addEventListener(type, fn);
   el.addEventListener('click', swallow, true);
   return () => {
-    for (const [type, fn] of listeners) el.removeEventListener(type, fn);
+    for (const [node, type, fn] of binds) node.removeEventListener(type, fn);
     el.removeEventListener('click', swallow, true);
   };
 }

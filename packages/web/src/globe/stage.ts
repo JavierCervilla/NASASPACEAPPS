@@ -33,11 +33,34 @@ export function createStage(
   return { renderer, scene: new Scene(), camera };
 }
 
-/** Fits the drawing buffer and the camera to `width` x `height` px. */
+/** Fits the drawing buffer to `width` x `height` px. */
 export function resizeStage(stage: Stage, width: number, height: number) {
   stage.renderer.setSize(width, height);
-  stage.camera.aspect = width / Math.max(height, 1);
-  stage.camera.updateProjectionMatrix();
+}
+
+/**
+ * Where the Moon is framed inside the canvas: a band `frameHeight` px tall
+ * whose top sits `top` px below the canvas's top, as wide as the canvas.
+ */
+export interface StageFrame {
+  /** The canvas, in CSS px. */
+  readonly width: number;
+  readonly height: number;
+  readonly frameHeight: number;
+  readonly top: number;
+}
+
+/**
+ * Aims the projection so the Moon is centred and scaled for the frame,
+ * while the whole canvas still draws: the field of view spans the frame,
+ * and the canvas is a window onto it (a view offset), so moving the frame
+ * moves the Moon without a gap and without changing the zoom.
+ */
+export function frameCamera(camera: PerspectiveCamera, frame: StageFrame) {
+  const width = Math.max(frame.width, 1);
+  const frameHeight = Math.max(frame.frameHeight, 1);
+  const height = Math.max(frame.height, 1);
+  camera.setViewOffset(width, frameHeight, 0, -frame.top, width, height);
 }
 
 /** Puts the camera at `pose`, looking at the Moon's centre, north up. */

@@ -5,9 +5,9 @@
  */
 import { projectMomentum } from '../globe/spring';
 
-export type DetentName = 'peek' | 'half' | 'full';
+export type DetentName = 'closed' | 'peek' | 'half' | 'full';
 
-/** The three rest positions, in px from the top of the viewport. */
+/** The four rest positions, in px from the top of the viewport. */
 export type Detents = Readonly<Record<DetentName, number>>;
 
 /** The visible heights the detents are built from (validated canvas). */
@@ -16,14 +16,23 @@ export interface SheetLayout {
   readonly fullGapPx: number;
   /** Visible sheet at half: the name and the four widgets. */
   readonly halfPx: number;
-  /** Visible sheet at peek: the name and the coordinates. */
+  /**
+   * Visible sheet at peek: the name and the coordinates, clear of the
+   * floating tab bar (22 px off the bottom, 61 px tall) by 12 px.
+   */
   readonly peekPx: number;
+  /**
+   * How far below the screen the closed sheet's edge rests: past the
+   * reach of its shadow, so nothing of it shows.
+   */
+  readonly closedPx: number;
 }
 
 export const SHEET_LAYOUT: SheetLayout = {
   fullGapPx: 96,
   halfPx: 344,
-  peekPx: 136,
+  peekPx: 156,
+  closedPx: 56,
 };
 
 /**
@@ -42,7 +51,7 @@ export function detentsFor(
   const full = layout.fullGapPx;
   const half = Math.max(full, heightPx - layout.halfPx);
   const peek = Math.max(half, heightPx - layout.peekPx);
-  return { full, half, peek };
+  return { full, half, peek, closed: heightPx + layout.closedPx };
 }
 
 /**
@@ -79,7 +88,7 @@ export function unRubberBand(
 
 /** The detent closest to `y`. */
 export function nearestDetent(detents: Detents, y: number): DetentName {
-  const names: DetentName[] = ['full', 'half', 'peek'];
+  const names: DetentName[] = ['full', 'half', 'peek', 'closed'];
   return names.reduce((best, name) =>
     Math.abs(detents[name] - y) < Math.abs(detents[best] - y) ? name : best,
   );

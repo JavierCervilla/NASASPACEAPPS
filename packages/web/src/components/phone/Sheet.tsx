@@ -2,7 +2,8 @@
  * The draggable bottom sheet (apple-design: direct manipulation, velocity
  * hand-off, momentum projection, rubber band, interruptible). The physics
  * live in src/sheet/; this binds them to the element and gives the
- * grabber, a button that cycles the detents from the keyboard.
+ * grabber, a button that cycles the detents from the keyboard. Closed, the
+ * sheet is inert; the tab bar's edge drags it back open.
  */
 import { useEffect, useRef, type ReactNode, type RefObject } from 'react';
 import type { DetentName } from '../../sheet/sheet-physics';
@@ -17,6 +18,8 @@ interface Props {
   readonly onOpenness: (value: number) => void;
   /** Each frame, the sheet's top edge in px from the viewport's top. */
   readonly onEdge: (top: number) => void;
+  /** Where a drag up opens the closed sheet (the tab bar). */
+  readonly edge: RefObject<HTMLElement | null>;
   readonly children: ReactNode;
 }
 
@@ -44,8 +47,9 @@ function useMountedSheet(
     const onOpenness = (v: number): void => latest.current.onOpenness(v);
     const onEdge = (top: number): void => latest.current.onEdge(top);
     const start = reported.current;
+    const edge = latest.current.edge.current;
     sheet.current = mountSheet(node, {
-      start, reducedMotion, onDetent, onOpenness, onEdge, canDrag,
+      start, reducedMotion, onDetent, onOpenness, onEdge, canDrag, edge,
     });
     return sheet.current.dispose;
   }, [el, latest, reported]);
@@ -71,8 +75,16 @@ export function Sheet(props: Props) {
   const el = useRef<HTMLElement>(null);
   useSheetMotion(el, props);
   const { label, detent, onDetent, children } = props;
+  // Closed, the sheet is off-screen: out of the accessibility tree and
+  // out of the tab order, so nothing reads or focuses what is not there.
   return (
-    <section ref={el} className="sheet" aria-label={label}>
+    <section
+      ref={el}
+      className="sheet"
+      aria-label={label}
+      data-detent={detent}
+      inert={detent === 'closed'}
+    >
       <button
         type="button"
         className="sheet__grabber"

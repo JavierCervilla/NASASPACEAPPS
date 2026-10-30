@@ -1,10 +1,11 @@
 /**
- * One frame of the globe: advance the springs, aim the camera, draw, and
- * move the HTML markers to match.
+ * One frame of the globe: advance the springs, ask for the map the zoom
+ * needs, aim the camera, draw, and move the HTML markers to match.
  */
 import { Vector2, Vector3 } from 'three';
 import { cameraPosition } from './framing';
 import type { Projector, MarkerLayer } from './marker-layer';
+import type { Moon } from './moon';
 import { poseOf, stepOrbit, type Orbit } from './orbit';
 import { aimCamera, type Stage } from './stage';
 
@@ -12,6 +13,8 @@ export interface FrameParts {
   readonly stage: Stage;
   readonly orbit: Orbit;
   readonly markers: MarkerLayer;
+  /** Fetches sharper maps as the zoom heads in. */
+  readonly moon: Pick<Moon, 'track'>;
 }
 
 /** Maps a globe point to CSS px in the canvas, through the camera. */
@@ -26,8 +29,11 @@ function projector(stage: Stage): Projector {
 
 /** Draws one frame `dt` seconds on; true while the springs still move. */
 export function drawFrame(parts: FrameParts, dt: number): boolean {
-  const { stage, orbit, markers } = parts;
+  const { stage, orbit, markers, moon } = parts;
   const moving = stepOrbit(orbit, dt);
+  // The target, not the live value: the map starts loading as the zoom
+  // starts, not once it lands.
+  moon.track(orbit.distance.target);
   const pose = poseOf(orbit);
   aimCamera(stage.camera, pose);
   stage.renderer.render(stage.scene, stage.camera);

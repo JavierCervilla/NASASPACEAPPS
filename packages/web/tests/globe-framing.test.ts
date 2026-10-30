@@ -34,7 +34,7 @@ import {
 } from '../src/globe/framing';
 import { isFacing, latLonToVector, vectorToLatLon } from '../src/globe/geo';
 
-// IM-2 Athena's touchdown and the Shackleton rim (Chang'e-7 target), from packages/server/data/sites.json.
+// IM-2 Athena's touchdown and the Shackleton crater area (Chang'e-7 target), from packages/server/data/sites.json.
 const IM2 = latLonToVector(-84.7906, 29.1957);
 const SHACKLETON = latLonToVector(-89.67, 129.78);
 

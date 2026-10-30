@@ -98,6 +98,19 @@
   pointer-events: auto;
 }
 
+/* Stacking: zones at the bottom, exact sites above, the selection on top. */
+.globe-marker--zone {
+  z-index: 1;
+}
+
+.globe-marker--exact {
+  z-index: 2;
+}
+
+.globe-marker[aria-pressed='true'] {
+  z-index: 3;
+}
+
 .globe-marker::after {
   content: '';
   position: absolute;
@@ -139,6 +152,7 @@
   margin: 10px 0 0 12px;
   padding: 6px 10px;
   border-radius: 10px;
+  border: 1px solid var(--glass-label-edge);
   background: var(--glass-label);
   color: var(--glass-label-text);
   backdrop-filter: blur(12px);
@@ -148,6 +162,7 @@
   letter-spacing: -0.005em;
   white-space: nowrap;
   pointer-events: none;
+  z-index: 4;
 }
 
 .globe-layers {

@@ -30,6 +30,13 @@ describe('pointerControls', () => {
     expect(d.invalidate).toHaveBeenCalledOnce();
   });
 
+  it('drags down to tilt the view north', () => {
+    const orbit = createOrbit(SOUTH_POLE_VIEW);
+    pointerControls(orbit, deps(false)).drag(0, 40);
+    expect(poseOf(orbit).latDeg).toBeGreaterThan(SOUTH_POLE_VIEW.latDeg);
+    expect(poseOf(orbit).lonEastDeg).toBe(SOUTH_POLE_VIEW.lonEastDeg);
+  });
+
   it('adds momentum to a flick, but not under reduced motion or after a slow release', () => {
     const flicked = createOrbit(SOUTH_POLE_VIEW);
     pointerControls(flicked, deps(false)).release(800, 0);
@@ -56,6 +63,14 @@ describe('keyControls', () => {
     keyControls(instant, deps(true)).zoom(-2);
     expect(instant.distance.value).toBeLessThan(SOUTH_POLE_VIEW.distance);
     expect(instant.distance.value).toBe(instant.distance.target);
+  });
+
+  it('lands an arrow-key turn at once under reduced motion', () => {
+    const orbit = createOrbit(SOUTH_POLE_VIEW);
+    keyControls(orbit, deps(true)).rotate({ latDeg: 10, lonEastDeg: 10 });
+    expect(orbit.lat.value).toBe(orbit.lat.target);
+    expect(orbit.lon.value).toBe(orbit.lon.target);
+    expect(orbit.lon.value).toBe(SOUTH_POLE_VIEW.lonEastDeg + 10);
   });
 });
 

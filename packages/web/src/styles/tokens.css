@@ -17,7 +17,9 @@
   --fill: rgba(120, 120, 128, 0.24);
   --fill-selected: #2c2c2e;
   --fill-selected-shadow: none;
-  --glass-label: rgba(18, 19, 24, 0.8);
+  /* Lighter than the chrome, with a hairline: it must read over the night side. */
+  --glass-label: rgba(58, 60, 68, 0.8);
+  --glass-label-edge: rgba(255, 255, 255, 0.16);
   --glass-label-text: #f2f2f4;
 
   /*
@@ -54,7 +56,8 @@
     --surface: rgba(255, 255, 255, 0.86);
     --surface-edge: rgba(0, 0, 0, 0.08);
     --text: #1c1c1e;
-    --text-muted: #6c6c70;
+    /* 4.9:1 on the legend glass over the darkest sky (#6c6c70 gave 3.8:1). */
+    --text-muted: #5c5c60;
     --text-secondary: #3a3a3c;
 
     --chrome: rgba(242, 242, 247, 0.78);
@@ -62,6 +65,7 @@
     --fill-selected: #ffffff;
     --fill-selected-shadow: 0 1px 3px rgba(0, 0, 0, 0.12);
     --glass-label: rgba(255, 255, 255, 0.86);
+    --glass-label-edge: rgba(0, 0, 0, 0.08);
     --glass-label-text: #1c1c1e;
 
     --sky: radial-gradient(120% 90% at 50% 40%, #151821 0%, #07080b 70%);
@@ -81,7 +85,7 @@
   :root {
     --surface: #15161b;
     --chrome: #101116;
-    --glass-label: #15161b;
+    --glass-label: #2e3036;
   }
 }
 

@@ -13,6 +13,14 @@ describe('parseSiteList', () => {
     expect(parseSiteList({ sites: [{ ...IM2, group: 'south_pole', sources: [] }] })).toEqual([IM2]);
   });
 
+  it('keeps at most 500 sites and cuts each name to 120 characters', () => {
+    const many = Array.from({ length: 501 }, (_, i) => ({ ...IM2, id: `s${i}`, name: 'n'.repeat(121) }));
+    const sites = parseSiteList({ sites: many });
+    expect(sites).toHaveLength(500);
+    expect(sites?.[0]?.name).toBe('n'.repeat(120));
+    expect(sites?.at(-1)?.id).toBe('s499');
+  });
+
   it('rejects a body that is not a site list', () => {
     expect(parseSiteList({ sites: [{ ...IM2, lat: 'south' }] })).toBeNull();
     expect(parseSiteList([IM2])).toBeNull();
@@ -21,6 +29,20 @@ describe('parseSiteList', () => {
 });
 
 describe('loadSites', () => {
+  it('says the body was not the expected shape when a 200 is malformed', async () => {
+    const warn = vi.fn();
+    expect(await loadSites({ fetch: respond(200, { items: [] }), url: URL_, warn })).toEqual([]);
+    expect(warn).toHaveBeenCalledOnce();
+    expect(warn.mock.calls[0]?.[0]).toContain('not the expected { sites: [...] } shape');
+    expect(warn.mock.calls[0]?.[0]).not.toContain('HTTP 200');
+  });
+
+  it('names the HTTP status of a failed response', async () => {
+    const warn = vi.fn();
+    await loadSites({ fetch: respond(503, 'busy'), url: URL_, warn });
+    expect(warn.mock.calls[0]?.[0]).toContain('HTTP 503');
+  });
+
   it('returns the API sites', async () => {
     const warn = vi.fn();
     expect(await loadSites({ fetch: respond(200, { sites: [IM2] }), url: URL_, warn })).toEqual([IM2]);

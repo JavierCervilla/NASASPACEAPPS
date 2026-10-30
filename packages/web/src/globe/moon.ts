@@ -15,7 +15,7 @@ import {
   type Texture,
 } from 'three';
 import type { SelenographicPoint } from '@ventana/sim';
-import { latLonToVector } from './geo';
+import { sunDirection } from './geo';
 
 /** Widthwise and heightwise segments of the sphere (spec: 64). */
 const SEGMENTS = 64;
@@ -61,8 +61,8 @@ export function addMoon(scene: Scene, options: MoonOptions): Moon {
 
 function sunLights(sun: SelenographicPoint): [DirectionalLight, AmbientLight] {
   const light = new DirectionalLight(0xffffff, SUN_INTENSITY);
-  const { x, y, z } = latLonToVector(sun.latDeg, sun.lonEastDeg, 10);
-  light.position.set(x, y, z);
+  const { x, y, z } = sunDirection(sun);
+  light.position.set(x, y, z).multiplyScalar(10);
   return [light, new AmbientLight(0xffffff, FILL_INTENSITY)];
 }
 

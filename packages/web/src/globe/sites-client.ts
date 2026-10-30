@@ -12,6 +12,12 @@ export interface SitesSource {
   readonly warn: (message: string) => void;
 }
 
+/** Response limits: the list and each name are cut beyond these. */
+const MAX_SITES = 500;
+const MAX_NAME_CHARS = 120;
+/** Why a 200 with a malformed body brings no sites. */
+const SHAPE = 'the body was not the expected { sites: [...] } shape';
+
 function isGlobeSite(value: unknown): value is GlobeSite {
   const v = value as Partial<Record<keyof GlobeSite, unknown>> | null;
   return (
@@ -25,13 +31,18 @@ function isGlobeSite(value: unknown): value is GlobeSite {
   );
 }
 
-/** The sites of an API body (`{ sites: Site[] }`), or null if malformed. */
+/**
+ * The sites of an API body (`{ sites: Site[] }`), or null if malformed. At
+ * most {@link MAX_SITES} are kept, each name cut to {@link MAX_NAME_CHARS}.
+ */
 export function parseSiteList(body: unknown): GlobeSite[] | null {
-  const sites = (body as { sites?: unknown } | null)?.sites;
-  if (!Array.isArray(sites) || !sites.every(isGlobeSite)) return null;
+  const all = (body as { sites?: unknown } | null)?.sites;
+  if (!Array.isArray(all)) return null;
+  const sites: unknown[] = all.slice(0, MAX_SITES);
+  if (!sites.every(isGlobeSite)) return null;
   return sites.map(({ id, name, lat, lonEast, approximate }) => ({
     id,
-    name,
+    name: name.slice(0, MAX_NAME_CHARS),
     lat,
     lonEast,
     approximate,
@@ -44,11 +55,16 @@ export async function loadSites(source: SitesSource): Promise<GlobeSite[]> {
     const response = await source.fetch(source.url, {
       headers: { accept: 'application/json' },
     });
-    const sites = response.ok ? parseSiteList(await response.json()) : null;
-    if (sites) return sites;
-    source.warn(`Ventana Lunar: no landing sites from ${source.url} (HTTP ${response.status}); the globe shows none.`);
+    if (!response.ok) return noSites(source, `HTTP ${response.status}`);
+    const body: unknown = await response.json().catch(() => null);
+    return parseSiteList(body) ?? noSites(source, SHAPE);
   } catch (error) {
-    source.warn(`Ventana Lunar: no landing sites from ${source.url} (${String(error)}); the globe shows none.`);
+    return noSites(source, String(error));
   }
+}
+
+/** Warns once that the globe shows no sites, and why; the empty list. */
+function noSites(source: SitesSource, reason: string): GlobeSite[] {
+  source.warn(`Ventana Lunar: no landing sites from ${source.url} (${reason}); the globe shows none.`);
   return [];
 }

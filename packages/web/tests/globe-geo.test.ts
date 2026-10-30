@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { isFacing, latLonToVector, vectorToLatLon } from '../src/globe/geo';
+import { isFacing, latLonToVector, sunDirection, vectorToLatLon } from '../src/globe/geo';
 
 describe('latLonToVector', () => {
   it('puts the poles on ±Y and the texture centre (0° E) on +X', () => {
@@ -46,5 +46,24 @@ describe('isFacing', () => {
     // From distance 4 the limb is at acos(1/4) = 75.5° from the sub-camera point.
     expect(isFacing(latLonToVector(0, 75), eye)).toBe(true);
     expect(isFacing(latLonToVector(0, 76), eye)).toBe(false);
+  });
+});
+
+describe('sunDirection', () => {
+  it('lights from +X when the Sun stands over 0° E', () => {
+    const d = sunDirection({ latDeg: 0, lonEastDeg: 0 });
+    expect(d.x).toBeCloseTo(1, 12);
+    expect(d.z).toBeCloseTo(0, 12);
+  });
+
+  it('lights from -Z when the Sun stands over 90° E', () => {
+    const d = sunDirection({ latDeg: 0, lonEastDeg: 90 });
+    expect(d.x).toBeCloseTo(0, 12);
+    expect(d.z).toBeCloseTo(-1, 12);
+  });
+
+  it('is a unit vector', () => {
+    const d = sunDirection({ latDeg: -1.5, lonEastDeg: 217 });
+    expect(Math.hypot(d.x, d.y, d.z)).toBeCloseTo(1, 12);
   });
 });

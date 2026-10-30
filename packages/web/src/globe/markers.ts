@@ -28,3 +28,37 @@ export function markerLabel(site: GlobeSite): string {
   const kind = markerKind(site) === 'exact' ? 'landing site' : 'approximate zone';
   return `${site.name}, ${kind}`;
 }
+
+/** A marker on the globe: one site, or several that share one point. */
+export interface MarkerSite extends GlobeSite {
+  /** The sites this marker stands for, in list order. */
+  readonly members: readonly GlobeSite[];
+}
+
+function toMarker(members: readonly [GlobeSite, ...GlobeSite[]]): MarkerSite {
+  const [first] = members;
+  return {
+    id: first.id,
+    name: members.map((site) => site.name).join('; '),
+    lat: first.lat,
+    lonEast: first.lonEast,
+    approximate: members.every((site) => site.approximate),
+    members,
+  };
+}
+
+/**
+ * One marker per point: sites with identical coordinates share a marker
+ * whose name lists them all, so no two buttons sit on the same spot. The
+ * marker is exact if any of its sites is.
+ */
+export function mergeColocated(sites: readonly GlobeSite[]): MarkerSite[] {
+  const byPoint = new Map<string, [GlobeSite, ...GlobeSite[]]>();
+  for (const site of sites) {
+    const key = `${site.lat},${site.lonEast}`;
+    const group = byPoint.get(key);
+    if (group) group.push(site);
+    else byPoint.set(key, [site]);
+  }
+  return [...byPoint.values()].map(toMarker);
+}

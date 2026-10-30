@@ -48,3 +48,14 @@ export function vectorToLatLon(v: Vec3): {
 export function isFacing(point: Vec3, eye: Vec3): boolean {
   return point.x * eye.x + point.y * eye.y + point.z * eye.z > 1;
 }
+
+/**
+ * Unit vector from the Moon's centre toward the Sun standing over `sun`:
+ * where the directional light comes from.
+ */
+export function sunDirection(sun: {
+  readonly latDeg: number;
+  readonly lonEastDeg: number;
+}): Vec3 {
+  return latLonToVector(sun.latDeg, sun.lonEastDeg);
+}

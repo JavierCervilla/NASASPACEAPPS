@@ -1,6 +1,7 @@
 /**
- * QA evidence, not a check: screenshots of the globe at 1440x900 in dark and light mode, saved under
- * production/qa/evidence/ with the capture date. It runs only on request, so a normal e2e run writes nothing:
+ * QA evidence, not a check: screenshots of the globe at 1440x900 in dark and light mode and of the phone view at
+ * 390x844, saved under production/qa/evidence/ with the capture date. It runs only on request, so a normal e2e run
+ * writes nothing:
  *
  *   CAPTURE_EVIDENCE=1 npm run e2e -- evidence.spec.ts
  */
@@ -30,4 +31,15 @@ test.describe('globe evidence', () => {
       await page.screenshot({ path: new URL(`${DATE}-vent-6-globe-${scheme}.png`, OUT).pathname });
     });
   }
+});
+
+test.describe('phone evidence', () => {
+  test.skip(!process.env.CAPTURE_EVIDENCE, 'captures only with CAPTURE_EVIDENCE=1');
+  test.use({ viewport: { width: 390, height: 844 }, hasTouch: true, isMobile: true });
+
+  test('phone view', async ({ page }) => {
+    await page.goto('./');
+    await expect(page.locator('.sites-mobile')).toBeVisible();
+    await page.screenshot({ path: new URL(`${DATE}-vent-6-mobile.png`, OUT).pathname });
+  });
 });

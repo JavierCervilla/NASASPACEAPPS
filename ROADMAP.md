@@ -32,6 +32,8 @@ completa está en el documento «Ventana Lunar · Especificación y roadmap».
 - [ ] Horizonte real con el relieve LOLA (VENT-11)
 - [x] Globo lunar 3D con el terminador del Sol real y los sitios de la API (VENT-6); la luz seguirá al slider cuando
   llegue la cinta de calendario (VENT-4)
+- [x] Versión móvil: globo, hoja inferior con cuatro tarjetas (ventana, Sol, Tierra, antena DSN) y selector de sitios
+  (VENT-23)
 - [ ] Modo DSN con Goldstone, Canberra y Robledo (VENT-7)
 - [ ] Coordenadas a medida: cualquier lat/lon (VENT-10)
 - [ ] Comparador de sitios o exportar a .ics (VENT-8)

@@ -26,9 +26,25 @@ describe('parseSiteList', () => {
     expect(parseSiteList([IM2])).toBeNull();
     expect(parseSiteList(null)).toBeNull();
   });
+
+  it('rejects a list with a site id outside the allowlist, so no id can change a path', () => {
+    for (const id of ['..', '../health', 'IM2', '-lead', 'a'.repeat(65), 'a/b', '', 'é']) {
+      expect(parseSiteList({ sites: [IM2, { ...IM2, id }] })).toBeNull();
+    }
+    expect(parseSiteList({ sites: [{ ...IM2, id: `0${'a-'.repeat(31)}b` }] })).toHaveLength(1);
+  });
 });
 
 describe('loadSites', () => {
+  it('refuses a response over 2 MB by its content-length', async () => {
+    const warn = vi.fn();
+    const body = JSON.stringify({ sites: [IM2] });
+    const headers = { 'content-length': String(2 * 1024 * 1024 + 1) };
+    const fetch = vi.fn(async () => new Response(body, { headers }));
+    expect(await loadSites({ fetch, url: URL_, warn })).toEqual([]);
+    expect(warn).toHaveBeenCalledWith(expect.stringContaining('too large'));
+  });
+
   it('says the body was not the expected shape when a 200 is malformed', async () => {
     const warn = vi.fn();
     expect(await loadSites({ fetch: respond(200, { items: [] }), url: URL_, warn })).toEqual([]);

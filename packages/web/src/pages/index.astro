@@ -1,11 +1,16 @@
 ---
-import Globe from '../components/Globe';
-import MobileSites from '../components/MobileSites.astro';
+import curated from '../../../server/data/sites.json';
+import LunarApp from '../components/LunarApp';
 import Base from '../layouts/Base.astro';
+import { toPhoneSite, type PhoneSite } from '../phone/phone-site';
 import '../styles/globe.css';
+import '../styles/phone.css';
 
 // Same origin in production: the API sits behind the same domain.
 const sitesUrl = `${import.meta.env.BASE_URL.replace(/\/$/, '')}/api/v1/sites`;
+
+// The phone's site picker reads the curated list the API serves, built in.
+const sites: PhoneSite[] = (curated as PhoneSite[]).map(toPhoneSite);
 
 // Only the globe exists yet; the other two views are later trajectories.
 const views = [
@@ -42,18 +47,13 @@ const views = [
       </nav>
     </header>
     <main class="stage">
-      <section class="globe" aria-label="Lunar globe">
-        <Globe client:load sitesUrl={sitesUrl} base={import.meta.env.BASE_URL} selectedId="im2-athena" />
-        <aside class="globe-layers" aria-label="Layers">
-          <h2>Layers</h2>
-          <ul>
-            <li><span class="layer-key layer-key--exact" aria-hidden="true"></span>Landing sites</li>
-            <li><span class="layer-key layer-key--zone" aria-hidden="true"></span>Approximate zones</li>
-            <li class="soon"><span class="layer-key layer-key--rover" aria-hidden="true"></span>Ghost rovers (soon)</li>
-          </ul>
-        </aside>
-      </section>
-      <MobileSites />
+      <LunarApp
+        client:load
+        sitesUrl={sitesUrl}
+        base={import.meta.env.BASE_URL}
+        selectedId="im2-athena"
+        sites={sites}
+      />
     </main>
   </div>
 </Base>
@@ -138,6 +138,17 @@ const views = [
   @media (prefers-reduced-transparency: reduce) {
     .bar {
       backdrop-filter: none;
+    }
+  }
+
+  /* Phones get their own glass bar (components/phone/PhoneBar.tsx). */
+  @media (max-width: 767.98px) {
+    .bar {
+      display: none;
+    }
+
+    .stage {
+      padding: 0;
     }
   }
 </style>

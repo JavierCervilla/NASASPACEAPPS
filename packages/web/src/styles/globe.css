@@ -1,8 +1,8 @@
 /*
  * The lunar globe section (VENT-6): the dark sky, the WebGL viewport, the
  * site markers and their label (created by src/globe/marker-layer.ts), and
- * the Layers legend. Desktop only: below 768px (DESKTOP_QUERY in
- * src/globe/boot.ts) the section is hidden and the globe never loads.
+ * the Layers legend. Below 768px (PHONE_QUERY in src/lib/viewport.ts) the
+ * section fills the screen behind the phone shell (styles/phone.css).
  */
 .globe {
   position: relative;
@@ -16,12 +16,6 @@
 @media (prefers-color-scheme: light) {
   .globe {
     box-shadow: 0 8px 30px rgba(0, 0, 0, 0.12);
-  }
-}
-
-@media (max-width: 767.98px) {
-  .globe {
-    display: none;
   }
 }
 
@@ -227,6 +221,11 @@
   border: 1.5px solid var(--text-muted);
 }
 
+/* Near the right edge the label sits on the marker's left instead. */
+.globe-label--flip {
+  translate: calc(-100% - 24px) 0;
+}
+
 @media (prefers-contrast: more) {
   .globe-layers,
   .globe-label {
@@ -239,4 +238,28 @@
   .globe-label {
     backdrop-filter: none;
   }
+}
+
+/* Under Save-Data the globe waits for this button (components/Globe.tsx). */
+.globe-load {
+  position: absolute;
+  top: 40%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  min-height: 44px;
+  padding: 0 20px;
+  border: 1px solid var(--glass-label-edge);
+  border-radius: 22px;
+  background: var(--glass-label);
+  color: var(--glass-label-text);
+  font: inherit;
+  font-size: 0.9375rem;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  cursor: pointer;
+}
+
+.globe-load:active {
+  transform: translate(-50%, -50%) scale(0.97);
+  transition: transform var(--dur-press) ease-out;
 }

@@ -33,6 +33,14 @@
   --signal-earth: #4a9cff;
   --signal-window: #3ddc84;
   --signal-none: #3a3c44;
+  /*
+   * The same three meanings as text on the phone's glass cards: as bright
+   * as the dots on dark, deeper on the light glass for contrast (validated
+   * canvas «Phone · globe (light)»).
+   */
+  --signal-sun-ink: #f5c542;
+  --signal-earth-ink: #4a9cff;
+  --signal-window-ink: #3ddc84;
 
   /* Springs follow apple-design defaults: critically damped, response 0.3-0.4 s. */
   --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
@@ -70,6 +78,11 @@
 
     --sky: radial-gradient(120% 90% at 50% 40%, #151821 0%, #07080b 70%);
     --marker: #ffffff;
+
+    --signal-sun-ink: #9a5a00;
+    --signal-earth-ink: #0062cc;
+    /* 5.1:1 on the white card (#248a3d gave 4.4:1, QA H3). */
+    --signal-window-ink: #1f7f37;
   }
 }
 

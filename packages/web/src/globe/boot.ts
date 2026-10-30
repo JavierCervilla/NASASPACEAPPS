@@ -1,18 +1,22 @@
 /**
- * Starts the globe only on a desktop-sized viewport. On a phone the globe
- * section is hidden (globe.css) and this never imports `./globe`, so neither
- * Three.js nor the Moon texture is downloaded there. A window that grows to
- * desktop size later starts it then.
+ * Starts the globe: imports `./globe` (Three.js inside) and mounts it. When
+ * the browser asks to save data, nothing is downloaded until the visitor
+ * asks for the globe (`load`).
  */
 import type { GlobeOptions } from './globe';
 
-/** Must match the breakpoint in styles/globe.css. */
-export const DESKTOP_QUERY = '(min-width: 768px)';
-
-/** How the start went: drawing, or no WebGL (or the chunk failed). */
+/** How the start went: drawing, no WebGL, or waiting to be asked. */
 export type GlobeStatus =
   | { readonly kind: 'ready'; readonly atMs: number }
-  | { readonly kind: 'unavailable' };
+  | { readonly kind: 'unavailable' }
+  | { readonly kind: 'deferred' };
+
+/** A started (or waiting) globe. */
+export interface GlobeStart {
+  /** Downloads and mounts the globe, once. */
+  readonly load: () => void;
+  readonly dispose: () => void;
+}
 
 const NOTHING = (): void => undefined;
 
@@ -36,32 +40,49 @@ async function mount(
   }
 }
 
-/**
- * Mounts the globe in `host` once the viewport is desktop-sized and reports
- * the outcome; returns the teardown.
- */
-export function startWhenDesktop(
+interface StartState {
+  started: boolean;
+  cancelled: boolean;
+  dispose: () => void;
+}
+
+/** The function that downloads and mounts the globe, at most once. */
+function loader(
   host: HTMLElement,
   options: GlobeOptions,
   onStatus: (status: GlobeStatus) => void,
+  state: StartState,
 ): () => void {
-  const media = matchMedia(DESKTOP_QUERY);
-  const state = { started: false, cancelled: false, dispose: NOTHING };
-  const start = (): void => {
-    if (!media.matches || state.started) return;
+  return () => {
+    if (state.started || state.cancelled) return;
     state.started = true;
-    media.removeEventListener('change', start);
     void mount(host, options, () => state.cancelled).then((outcome) => {
       state.dispose = outcome.dispose ?? NOTHING;
       if (state.cancelled) state.dispose();
       else onStatus(outcome.status);
     });
   };
-  media.addEventListener('change', start);
-  start();
-  return () => {
-    state.cancelled = true;
-    media.removeEventListener('change', start);
-    state.dispose();
+}
+
+/**
+ * Mounts the globe in `host` at once, or with `saveData` only once `load`
+ * is called (reporting `deferred` meanwhile), and reports the outcome.
+ */
+export function startGlobe(
+  host: HTMLElement,
+  options: GlobeOptions,
+  onStatus: (status: GlobeStatus) => void,
+  saveData: boolean,
+): GlobeStart {
+  const state = { started: false, cancelled: false, dispose: NOTHING };
+  const load = loader(host, options, onStatus, state);
+  if (saveData) onStatus({ kind: 'deferred' });
+  else load();
+  return {
+    load,
+    dispose: () => {
+      state.cancelled = true;
+      state.dispose();
+    },
   };
 }

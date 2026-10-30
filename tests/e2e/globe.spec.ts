@@ -15,7 +15,7 @@ const ZONE_POINTS = [...POINTS.values()].filter((group) => group.every((s) => s.
 const IM2 = '[data-site-id="im2-athena"]';
 // A merged zone (Griffin-1 and Nobile Rims 1 and 2) whose ring falls inside IM-2's hit box at the opening view.
 const NOBILE = '[data-site-id="griffin1-nobile"]';
-// Requests only the desktop globe makes: its chunk (Three.js inside) and the Moon texture.
+// Requests only the globe makes: its chunk (Three.js inside) and the Moon texture.
 const GLOBE_ASSET = /\/_astro\/globe\.[^/]*\.js$|\/textures\/moon-lroc-/;
 // Chromium's own line for a failed request; the page cannot silence it, so the unreachable-API test allows it.
 const NETWORK_LINE = /^Failed to load resource/;
@@ -46,7 +46,7 @@ test.describe('desktop, 1440x900', () => {
     await expect(globe.locator('.globe-label')).toHaveText('Mons Mouton (IM-2 Athena)');
     await expect(globe.locator('.globe-label')).toBeVisible();
     expect(log.errors).toEqual([]);
-    // The phone test below looks for these same requests: here they must happen.
+    // The phone Save-Data test (phone.spec.ts) looks for these same requests: here they must happen.
     expect(requested.filter((url) => GLOBE_ASSET.test(url))).toHaveLength(2);
   });
 
@@ -117,31 +117,10 @@ test.describe('desktop, 1440x900', () => {
     await expect.poll(() => page.locator(IM2).evaluate((el) => (el as HTMLElement).style.transform)).not.toBe(before);
   });
 
-  test('hides the phone list of sites', async ({ page }) => {
+  test('renders no phone shell', async ({ page }) => {
     await page.goto('./');
     await expect(page.locator('section.globe')).toBeVisible();
-    await expect(page.locator('.sites-mobile')).toBeHidden();
-  });
-});
-
-test.describe('phone, 390x844', () => {
-  test.use({ viewport: { width: 390, height: 844 }, hasTouch: true, isMobile: true });
-
-  test('hides the globe and never downloads Three.js or the texture', async ({ page }) => {
-    const requested: string[] = [];
-    page.on('request', (r) => requested.push(r.url()));
-    await page.goto('./');
-    await expect(page.getByRole('heading', { level: 1 })).toHaveText('Ventana Lunar');
-    await expect(page.locator('section.globe')).toBeHidden();
-    await page.waitForLoadState('networkidle');
-    expect(requested.filter((url) => GLOBE_ASSET.test(url))).toEqual([]);
-  });
-
-  test('says the globe is on larger screens and lists the landing sites by name', async ({ page }) => {
-    await page.goto('./');
-    const list = page.getByRole('region', { name: 'Landing sites' });
-    await expect(list).toBeVisible();
-    await expect(list).toContainText('The 3D globe opens on larger screens.');
-    await expect(list.getByRole('listitem')).toHaveText(SITES.map((s) => s.name));
+    await expect(page.locator('.phone')).toHaveCount(0);
+    await expect(page.locator('.sheet')).toHaveCount(0);
   });
 });

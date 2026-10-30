@@ -3,6 +3,7 @@
  * preview, the e2e run, an outage) the globe still works with no markers, so
  * a failure is one console warning, never an error.
  */
+import { isSiteId, tooLarge } from '../lib/api-limits';
 import type { GlobeSite } from './markers';
 
 export interface SitesSource {
@@ -23,7 +24,7 @@ function isGlobeSite(value: unknown): value is GlobeSite {
   return (
     typeof v === 'object' &&
     v !== null &&
-    typeof v.id === 'string' &&
+    isSiteId(v.id) &&
     typeof v.name === 'string' &&
     Number.isFinite(v.lat) &&
     Number.isFinite(v.lonEast) &&
@@ -32,8 +33,9 @@ function isGlobeSite(value: unknown): value is GlobeSite {
 }
 
 /**
- * The sites of an API body (`{ sites: Site[] }`), or null if malformed. At
- * most {@link MAX_SITES} are kept, each name cut to {@link MAX_NAME_CHARS}.
+ * The sites of an API body (`{ sites: Site[] }`), or null if malformed (a
+ * site id outside the allowlist included). At most {@link MAX_SITES} are
+ * kept, each name cut to {@link MAX_NAME_CHARS}.
  */
 export function parseSiteList(body: unknown): GlobeSite[] | null {
   const all = (body as { sites?: unknown } | null)?.sites;
@@ -56,6 +58,7 @@ export async function loadSites(source: SitesSource): Promise<GlobeSite[]> {
       headers: { accept: 'application/json' },
     });
     if (!response.ok) return noSites(source, `HTTP ${response.status}`);
+    if (tooLarge(response)) return noSites(source, 'the body is too large');
     const body: unknown = await response.json().catch(() => null);
     return parseSiteList(body) ?? noSites(source, SHAPE);
   } catch (error) {

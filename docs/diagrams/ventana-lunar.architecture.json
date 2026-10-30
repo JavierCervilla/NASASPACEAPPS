@@ -317,7 +317,7 @@
         "One Time store (site + UTC hour) fetches site data",
         "Views subscribe read-only; they never compute ephemerides",
         "MVP: calendar, polar map, site card; luxury: globes",
-        "Built: the 3D globe, lazy-loaded on desktop; it reads the sites API directly until the store lands"
+        "Built: the 3D globe (lazy-loaded) and the phone sheet, sharing a site store; the sheet reads one site's month and its next 30 days from the API in one request, and refreshes each hour"
       ]
     }
   ]

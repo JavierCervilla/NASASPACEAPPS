@@ -100,7 +100,7 @@ async function ephemerisResponse(
   try {
     const request = parseEphemerisParams(raw, deps.now());
     const ephemeris = await computeEphemeris(deps.horizons, request, {
-      onMiss: limitMisses(deps.missLimiter, clientIp(c)),
+      onMiss: limitMisses(deps.missLimiter, () => clientIp(c)),
       pinnedPoint: isCuratedPoint(deps.sites, request),
     });
     c.header('Cache-Control', EPHEMERIS_CACHE_CONTROL);

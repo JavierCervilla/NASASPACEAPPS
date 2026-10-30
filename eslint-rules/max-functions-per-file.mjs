@@ -1,11 +1,14 @@
 /**
- * Local ESLint rule: at most `max` named functions per file (the 42 Norm's "five functions per file", adapted to
- * TypeScript). ESLint has no built-in rule for this.
+ * Local ESLint rule: at most `max` named functions per file (the 42 Norm's
+ * "five functions per file", adapted to TypeScript). ESLint has no built-in
+ * rule for this.
  *
- * Counted: every function declaration, a module-scope `const x = () => ...` or `const x = function ...`, every class
- * method or class property holding a function, and every method of an object literal that sits at module scope or is returned by a module-scope function
- * (a factory). Not counted: inline callbacks, such as the arguments of `map`, `then` or `new Promise`, because they
- * are expressions, not named units of the module.
+ * Counted: every function declaration, a module-scope `const x = () => ...`
+ * or `const x = function ...`, every class method or class property holding a
+ * function, and every method of an object literal that sits at module scope
+ * or is returned by a module-scope function (a factory). Not counted: inline
+ * callbacks, such as the arguments of `map`, `then` or `new Promise`, because
+ * they are expressions, not named units of the module.
  */
 
 const DEFAULT_MAX = 5;

@@ -15,7 +15,14 @@ epic: `VENT-1` (Dashboard project «Ventana Lunar», prefix `VENT`).
 - **Web** (`packages/web`): Astro 7 (static output) + React 19 islands + TypeScript (strictest). Three.js joins with
   the globe (luxury 1). No login and no user accounts.
 - **Sim** (`packages/sim`): pure TypeScript, no network, disk or DOM: the site data contract and the
-  visibility, window and DSN logic.
+  visibility, window and DSN logic. It also computes the sky in closed form (VENT-36), no ephemeris file: the
+  sub-solar point (`sun.ts`), the Moon's geocentric position (Meeus 47 truncated at 0.001°, `moon.ts`), the optical
+  libration (`libration.ts`), the Sun and Earth on a lunar site's horizon with the Earth's parallax (`sky.ts`), and the
+  Moon over each DSN 70 m antenna (`dsn-sky.ts`, stations in `dsn-sites.ts`, which the server re-exports).
+  `skyAt(point, ms)` gives one instant, `computedHours(point, fromIso, lastIso)` the server's `HourSample[]` (both ends
+  included), a month in about 11 ms. Against Horizons, hourly over Nov-Dec 2026 (`tests/sky.test.ts`): Sun 0.04° in
+  elevation and 0.17° in azimuth, Earth 0.03° and 0.02°, Moon from the DSN 0.007° and 0.04°; Sun, Earth, window and
+  antenna agree every hour except within one hour of a transition.
 - **Backend** (`packages/server`, Node + Hono; decided 2026-10-29): one service on Dokploy serves all site data, for the
   curated sites and for custom coordinates. It queries JPL Horizons and caches the responses on disk, because Horizons
   is slow and rate limited and the spec wants answers in under 3 s. The browser never calls Horizons directly.

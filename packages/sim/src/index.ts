@@ -52,3 +52,13 @@ export { groupBlocks, longestBlock } from './blocks.ts';
 export { computeRangeMetrics, hoursUntilLost, nextBlock } from './metrics.ts';
 export { HOUR_MS, addHours, hoursBetween, toIso, toMs } from './time.ts';
 export { subSolarPoint, wrapDeg, type SelenographicPoint } from './sun.ts';
+export {
+  DSN_COMPLEXES,
+  DSN_SITES,
+  type GeodeticSite,
+} from './dsn-sites.ts';
+export { computedHours, skyAt, type Sky } from './sky.ts';
+export { moonPosition, type MoonPosition } from './moon.ts';
+export { subEarthPoint } from './libration.ts';
+export { moonElevationFromDsn } from './dsn-sky.ts';
+export type { Horizontal } from './horizon.ts';

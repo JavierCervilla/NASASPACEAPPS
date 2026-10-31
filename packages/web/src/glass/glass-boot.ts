@@ -32,13 +32,17 @@ import { isPhoneViewport, prefersSaveData } from '../lib/viewport';
 import { chromiumEngine, type UaBrand } from './glass-gate';
 import { glassStore } from './glass-memory';
 import { startGlass } from './glass-start';
+import { startLenses } from './lens-start';
 
 /** `navigator.userAgentData`, where the browser has it. */
 interface UaData {
   readonly userAgentData?: { readonly brands?: readonly UaBrand[] };
 }
 
-/** Sets `data-glass` on the page's root and starts Liquid's trial. */
+/**
+ * Sets `data-glass` on the page's root, starts Liquid's trial, and gives
+ * each Liquid surface its lens.
+ */
 export function bootGlass(): void {
   const brands = (navigator as UaData).userAgentData?.brands;
   startGlass({
@@ -55,4 +59,5 @@ export function bootGlass(): void {
     firstInput: (fn) =>
       window.addEventListener('pointerdown', fn, { once: true, capture: true }),
   });
+  startLenses(document);
 }

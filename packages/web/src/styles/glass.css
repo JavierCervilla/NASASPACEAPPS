@@ -27,6 +27,9 @@
  * Liquid glass (VENT-27, approved prototype VENT-16): where the glass
  * gate (src/glass/) sets data-glass="liquid" on the root, the floating
  * surfaces refract the globe under them and catch light on their rim.
+ * Each surface refracts through its own lens, --glass-lens, which
+ * src/glass/lens-start.ts sets on it; until it is built, through the
+ * page's shared filter (#glass-liquid, components/GlassFilter.astro).
  * Frosted, the default, is each surface's own blur and stays as it was.
  * The pill inside the phone's top bar takes the rim only: a second
  * refracting layer on glass would stack translucency (apple-design §12).
@@ -52,12 +55,14 @@
     .card-block
   ) {
   background: var(--glass-liquid-tint);
-  backdrop-filter: var(--glass-liquid-filter);
+  backdrop-filter: var(--glass-lens, url('#glass-liquid'))
+    var(--glass-liquid-filter);
 }
 
 /* The sheet holds the most text: it keeps its heavier tint. */
 :root[data-glass='liquid'] .sheet {
-  backdrop-filter: var(--glass-liquid-filter);
+  backdrop-filter: var(--glass-lens, url('#glass-liquid'))
+    var(--glass-liquid-filter);
   box-shadow: var(--phone-sheet-edge), var(--glass-liquid-rim);
 }
 

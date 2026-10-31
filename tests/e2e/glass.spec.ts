@@ -24,8 +24,8 @@
  */
 
 /**
- * The glass gate (VENT-27): which glass the page's floating surfaces wear, Liquid (refraction through
- * `backdrop-filter: url(#glass-liquid)`) or frosted. Headless Chromium draws with SwiftShader, which the tier detection
+ * The glass gate (VENT-27): which glass the page's floating surfaces wear, Liquid (refraction through each surface's
+ * own lens filter, named in --glass-lens) or frosted. Headless Chromium draws with SwiftShader, which the tier detection
  * rates low, so the tests that need a capable device pass `?quality=high`. Every value `data-glass` takes is recorded
  * from the first script on, so a test sees a live switch, not just the last value.
  */
@@ -73,6 +73,28 @@ const backdrops = (page: Page, selectors: readonly string[]) =>
     selectors,
   );
 
+/**
+ * The lens filter id each of `selectors` names in --glass-lens (the first match of each), once every one has its own
+ * filter in the page's SVG.
+ */
+async function lensIds(page: Page, selectors: readonly string[]): Promise<string[]> {
+  const read = () =>
+    page.evaluate(
+      (list) =>
+        list.map((selector) => {
+          const el = document.querySelector(selector);
+          const id = el ? /url\(#([\w-]+)\)/.exec(getComputedStyle(el).getPropertyValue('--glass-lens'))?.[1] : null;
+          return id && document.querySelector(`.glass-defs filter#${id} feImage[href^="data:image/png"]`) ? id : '';
+        }),
+      selectors,
+    );
+  await expect.poll(async () => (await read()).every(Boolean), { timeout: 5_000 }).toBe(true);
+  return read();
+}
+
+/** Every id distinct: one lens per surface. */
+const distinct = (ids: readonly string[]) => new Set(ids).size === ids.length;
+
 /** Asks Chromium for prefers-reduced-transparency: reduce, which emulateMedia does not offer. */
 async function reduceTransparency(page: Page): Promise<void> {
   const cdp = await page.context().newCDPSession(page);
@@ -94,9 +116,12 @@ test.describe('desktop, 1440x900', () => {
     for (const [selector, filter] of await backdrops(page, SURFACES)) {
       expect(filter, selector).toContain('url(');
     }
+    expect(distinct(await lensIds(page, SURFACES))).toBe(true);
     await page.getByRole('button', { name: /^Change site, now/ }).click();
     await expect(page.getByRole('dialog', { name: 'Choose a site' })).toBeVisible();
     expect((await backdrops(page, ['.site-popover']))[0]?.[1]).toContain('url(');
+    const [popoverLens] = await lensIds(page, ['.site-popover']);
+    expect(await lensIds(page, SURFACES)).not.toContain(popoverLens);
   });
 
   test('?glass=frosted keeps the frosted blur, with no refraction anywhere', async ({ page }) => {
@@ -106,6 +131,8 @@ test.describe('desktop, 1440x900', () => {
       expect(filter, selector).not.toContain('url(');
     }
     expect((await backdrops(page, ['.bar']))[0]?.[1]).toContain('blur(20px)');
+    await page.waitForTimeout(300);
+    expect(await page.locator('.glass-defs filter[id^="glass-lens-"]').count()).toBe(0);
   });
 
   test('a capable device starts on Liquid', async ({ page }) => {
@@ -140,6 +167,8 @@ test.describe('desktop, 1440x900', () => {
     });
     await open(page, '?quality=high', false);
     await expect.poll(() => glassSeen(page), { timeout: 15_000 }).toEqual(['liquid', 'frosted']);
+    // Frosted takes the lenses down with it.
+    await expect(page.locator('.glass-defs filter[id^="glass-lens-"]')).toHaveCount(0);
     expect(await page.evaluate(() => sessionStorage.getItem('ventana.glass'))).toBe('frosted');
     await page.reload();
     await expect(page.locator('html')).toHaveAttribute('data-glass', 'frosted');
@@ -157,6 +186,7 @@ test.describe('phone, 390x844', () => {
     for (const [selector, filter] of await backdrops(page, ['.phone-bar', '.sheet', '.tab-bar', '.globe-callout'])) {
       expect(filter, selector).toContain('url(');
     }
+    expect(distinct(await lensIds(page, ['.phone-bar', '.sheet', '.tab-bar', '.globe-callout']))).toBe(true);
     const pill = page.locator('.site-pill');
     expect(await pill.evaluate((el) => getComputedStyle(el).boxShadow)).toContain('inset');
   });

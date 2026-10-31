@@ -25,11 +25,11 @@
  */
 
 /*
- * The Liquid glass's refraction (VENT-27): one SVG filter for every
- * surface, read by `backdrop-filter: url(#glass-liquid)` in glass.css. A
- * slow fractal noise displaces what lies under the glass, as thick
- * moulded glass would. Presentation attributes only: the page's CSP
- * allows no style attributes.
+ * The Liquid glass's SVG (VENT-27). Each surface's own lens filter is
+ * added here at run time (src/glass/lens-set.ts); #glass-liquid is the
+ * shared one a surface wears until its lens is built: a slow fractal
+ * noise that displaces what lies under the glass. Presentation
+ * attributes only: the page's CSP allows no style attributes.
  */
 import '../styles/glass.css';
 ---

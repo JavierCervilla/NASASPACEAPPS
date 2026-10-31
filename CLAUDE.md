@@ -52,9 +52,11 @@ Every visible change follows `.claude/skills/apple-design/SKILL.md` (vendored fr
   writes its transform. Under Save-Data
   the globe waits for a «Load the 3D globe» button and never loads more than its start map.
 - Glass: the floating surfaces (phone top bar, sheet, tab bar, site pill and callout; desktop header, site popover,
-  Layers key, calendar strip, site card and callout) wear Liquid glass (refraction through the inline SVG filter
-  `#glass-liquid` in `src/components/GlassFilter.astro`, `--glass-liquid-*` tokens, `src/styles/glass.css`) or the
-  frosted blur. The glass gate (`src/glass/`) sets `data-glass="liquid|frosted"` on the root: Liquid only on Chromium
+  Layers key, calendar strip, site card and callout) wear Liquid glass or the frosted blur. Liquid refracts through a
+  lens per surface: a rounded-rect displacement map that pulls the backdrop in at the edge (`src/glass/lens-map.ts`),
+  added as its own filter to the inline SVG of `src/components/GlassFilter.astro` and named on the surface in
+  `--glass-lens` (CSSOM), rebuilt only when the surface's layout size settles (`src/glass/lens-set.ts`); the shared
+  `#glass-liquid` filter covers a surface until its lens is built (`--glass-liquid-*` tokens, `src/styles/glass.css`). The glass gate (`src/glass/`) sets `data-glass="liquid|frosted"` on the root: Liquid only on Chromium
   with `backdrop-filter: url()` (Safari and Firefox parse it but do not draw it), at the medium or high tier, without
   reduced transparency, more contrast or Save-Data, and while a 2 s frame probe holds the tier's budget (timed at load
   and again from the first press, since an idle page redraws nothing under the glass); a slow probe switches to frosted

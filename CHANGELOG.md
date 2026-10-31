@@ -5,14 +5,15 @@
 ### Añadido
 - Acabado Liquid Glass (VENT-27, prototipo VENT-16 aprobado): en los navegadores Chromium con potencia (Chrome, Edge,
   Brave, Android), las superficies flotantes refractan lo que hay debajo como un vidrio grueso y tienen un borde que
-  capta la luz: en el móvil la barra superior, la hoja, la barra de pestañas, la píldora del sitio y la tarjeta del
-  sitio; en el PC la cabecera, el menú de sitios, la leyenda «Layers», la cinta del calendario, la ficha y la tarjeta
-  del sitio. Si el dispositivo va justo (nivel de calidad bajo, o 2 s de fotogramas, al cargar y de nuevo al primer
-  toque o clic, no aguantan el ritmo de su nivel), si se pide menos transparencia o más contraste, o con ahorro de
-  datos, se queda el cristal esmerilado de siempre; si la prueba de fotogramas falla, cambia en caliente y no vuelve a
-  intentarlo en la sesión. Safari y Firefox, que no pintan la refracción, siempre van con el esmerilado. `?glass=liquid`
-  o `?glass=frosted` fuerzan uno para probar. En el PC con GPU por software (Chromium sin GPU) la refracción cuesta la
-  mitad de los fotogramas, y es justo el caso en que la prueba vuelve al esmerilado.
+  capta la luz, con un tinte fino que deja ver la Luna: cada superficie lleva su propia lente, que curva hacia dentro lo
+  que hay debajo cerca del borde, como en el prototipo. En el móvil la barra superior, la hoja, la barra de pestañas, la
+  píldora del sitio y la tarjeta del sitio; en el PC la cabecera, el menú de sitios, la leyenda «Layers», la cinta del
+  calendario, la ficha y la tarjeta del sitio. Si el dispositivo va justo (nivel de calidad bajo, o 2 s de fotogramas,
+  al cargar y de nuevo al primer toque o clic, no aguantan el ritmo de su nivel), si se pide menos transparencia o más
+  contraste, o con ahorro de datos, se queda el cristal esmerilado de siempre; si la prueba de fotogramas falla, cambia
+  en caliente y no vuelve a intentarlo en la sesión. Safari y Firefox, que no pintan la refracción, siempre van con el
+  esmerilado. `?glass=liquid` o `?glass=frosted` fuerzan uno para probar. En el PC con GPU por software (Chromium sin
+  GPU) la refracción cuesta la mitad de los fotogramas, y es justo el caso en que la prueba vuelve al esmerilado.
 - Tarjeta del sitio sobre el globo (VENT-29, lienzos validados «Globe · site callout B, image card» para escritorio y
   «… A, compact» para el móvil): la etiqueta del sitio elegido pasa a ser una tarjeta de cristal unida a su punto por una
   línea fina. En escritorio lleva arriba una vista del terreno desde la órbita con el estado del instante («Landing

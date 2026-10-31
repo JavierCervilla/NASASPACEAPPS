@@ -36,7 +36,7 @@ import {
 
 /** The surfaces that wear Liquid glass (styles/glass.css). */
 export const LENS_SURFACES = [
-  '.bar', '.phone-bar', '.tab-bar', '.sheet', '.site-popover',
+  '.bar', '.phone-bar', '.tab-bar', '.sheet', '.site-popover', '.lang-popover',
   '.globe-layers', '.strip', '.card-block',
 ].join(', ');
 

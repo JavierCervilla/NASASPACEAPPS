@@ -28,6 +28,7 @@ import { describe, expect, it } from 'vitest';
 import { rowDetail, shortName, siteLabels, splitName, toPhoneSite, type PhoneSite } from '../src/phone/phone-site';
 import { unlistedSite } from '../src/phone/unlisted-site';
 import { filterSites, foldText, matchesQuery, REGIONS, regionName } from '../src/phone/site-search';
+import { EN } from './i18n-factories';
 
 const CURATED = JSON.parse(
   readFileSync(new URL('../../server/data/sites.json', import.meta.url), 'utf8'),
@@ -103,15 +104,15 @@ describe('unlistedSite', () => {
 
 describe('rowDetail', () => {
   it('starts with the region while a search spans every region', () => {
-    expect(rowDetail(byId('apollo11'), null, 'Apollo')).toBe('Apollo · Apollo 11');
+    expect(rowDetail(EN, byId('apollo11'), null, 'Apollo')).toBe('Apollo · Apollo 11');
   });
 
   it('names the mission and the state right now of the selected site', () => {
-    expect(rowDetail(byId('im2-athena'), 'window')).toBe('IM-2 Athena · window now');
+    expect(rowDetail(EN, byId('im2-athena'), 'window')).toBe('IM-2 Athena · window now');
   });
 
   it('marks approximate zones', () => {
-    expect(rowDetail(byId('change7-target'), null)).toBe("Chang'e-7 target · approximate");
+    expect(rowDetail(EN, byId('change7-target'), null)).toBe("Chang'e-7 target · approximate");
   });
 });
 
@@ -156,7 +157,7 @@ describe('site search', () => {
   });
 
   it('names the regions as the picker control does', () => {
-    expect(REGIONS.map(([group]) => regionName(group))).toEqual(['South pole', 'Apollo', 'Other']);
+    expect(REGIONS.map((group) => regionName(EN, group))).toEqual(['South pole', 'Apollo', 'Other']);
   });
 });
 

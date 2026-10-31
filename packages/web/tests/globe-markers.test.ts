@@ -26,6 +26,7 @@
 import { describe, expect, it } from 'vitest';
 import { readFileSync } from 'node:fs';
 import { markerKind, markerLabel, mergeColocated, type GlobeSite } from '../src/globe/markers';
+import { EN } from './i18n-factories';
 
 // The curated list the API serves.
 const CURATED = JSON.parse(readFileSync(new URL('../../server/data/sites.json', import.meta.url), 'utf8')) as GlobeSite[];
@@ -44,8 +45,8 @@ describe('markerKind', () => {
 
 describe('markerLabel', () => {
   it('names the site and says whether its point is exact', () => {
-    expect(markerLabel(site(false))).toBe('Mons Mouton (IM-2 Athena), landing site');
-    expect(markerLabel(site(true))).toBe('Mons Mouton (IM-2 Athena), approximate zone');
+    expect(markerLabel(EN, site(false))).toBe('Mons Mouton (IM-2 Athena), landing site');
+    expect(markerLabel(EN, site(true))).toBe('Mons Mouton (IM-2 Athena), approximate zone');
   });
 });
 
@@ -62,7 +63,7 @@ describe('mergeColocated', () => {
     expect(rest.map((m) => m.id)).toEqual(['x']);
     expect(merged).toMatchObject({ id: 'a', lat: -85.2752, lonEast: 53.2725, approximate: true });
     expect(merged?.members.map((m) => m.id)).toEqual(['a', 'b']);
-    expect(markerLabel(merged!)).toBe('Site a; Site b, approximate zone');
+    expect(markerLabel(EN, merged!)).toBe('Site a; Site b, approximate zone');
   });
 
   it('draws the merged marker as exact when any member is exact', () => {

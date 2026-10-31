@@ -29,6 +29,7 @@
  * four widgets of any hour of that month.
  */
 import type { HourSample } from '@ventana/sim';
+import type { I18n } from '../i18n/translate';
 import type { HoursLoader } from './hours-cache';
 import { siteWidgets } from './site-widgets';
 import { widgetRange } from './widget-range';
@@ -70,9 +71,13 @@ export async function loadMonthHours(
 }
 
 /** The widgets at the hour of `atMs`, from its month's `hours`. */
-export function widgetsAt(hours: HoursResult, atMs: number): WidgetsResult {
+export function widgetsAt(
+  hours: HoursResult,
+  atMs: number,
+  i18n: I18n,
+): WidgetsResult {
   if (hours.kind !== 'ready') return hours;
   const range = widgetRange(atMs);
-  const widgets = range && siteWidgets(hours.hours, range);
+  const widgets = range && siteWidgets(hours.hours, range, i18n);
   return widgets ? { kind: 'ready', widgets } : { kind: 'error' };
 }

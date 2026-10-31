@@ -32,6 +32,7 @@ import { SheetMotion } from '../src/sheet/sheet-motion';
 import { detentsFor, releaseDetent, rubberBand, SHEET_LAYOUT } from '../src/sheet/sheet-physics';
 import { createSheetState, dragSheet, grabSheet } from '../src/sheet/sheet-state';
 import { grabberLabel, nextDetent, openness } from '../src/sheet/sheet-view';
+import { EN } from './i18n-factories';
 
 // The e2e and canvas phone: 390x844.
 const HEIGHT = 844;
@@ -80,7 +81,7 @@ describe('closed detent', () => {
   it('stays out of the grabber cycle, which a closed sheet hides', () => {
     expect(nextDetent('closed')).toBe('half');
     expect(nextDetent('full')).toBe('peek');
-    expect(grabberLabel('closed')).toBe('Sheet closed; press for half height');
+    expect(grabberLabel(EN, 'closed')).toBe('Sheet closed; press for half height');
   });
 });
 

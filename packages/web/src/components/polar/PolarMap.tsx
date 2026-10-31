@@ -44,6 +44,7 @@ import {
   polarMarkers,
   type PolarMarker,
 } from '../../polar/polar-markers';
+import { useI18n } from '../i18n-context';
 import { Layers } from '../Layers';
 import { Graticule } from './Graticule';
 import { PolarKey } from './PolarKey';
@@ -62,9 +63,11 @@ interface Props {
 const IMAGE = 'textures/moon-south-polar-2k.jpg';
 
 function OffMap({ site }: { readonly site: PhoneSite }) {
+  const { t } = useI18n();
+  const name = siteLabels(site).subtitle;
   return (
     <p className="polar__note" role="status">
-      {siteLabels(site).subtitle} lies north of 80° S, off this map
+      {t('polar.offMap', { name })}
     </p>
   );
 }
@@ -81,8 +84,15 @@ function layout(
   return { labels, badges };
 }
 
+/** The map's markers of `sites`, labelled in the visitor's language. */
+function useMarkers(sites: readonly PhoneSite[]) {
+  const i18n = useI18n();
+  const markers = useMemo(() => polarMarkers(sites, i18n), [sites, i18n]);
+  return { markers, label: i18n.t('polar.label') };
+}
+
 export function PolarMap({ sites, site, state, base, onPick }: Props) {
-  const markers = useMemo(() => polarMarkers(sites), [sites]);
+  const { markers, label } = useMarkers(sites);
   const [disk, size] = useWidth<HTMLDivElement>();
   const chosen = markerOf(markers, site.id)?.id ?? null;
   const { labels, badges } = layout(markers, size, chosen);
@@ -94,7 +104,7 @@ export function PolarMap({ sites, site, state, base, onPick }: Props) {
   };
   const src = `${base.replace(/\/?$/, '/')}${IMAGE}`;
   return (
-    <section className="polar" aria-label="South pole map, 80 to 90 degrees south">
+    <section className="polar" aria-label={label}>
       <div className="polar__disk" ref={disk} onClick={click}>
         <img className="polar__image" src={src} alt="" decoding="async" />
         <Graticule />

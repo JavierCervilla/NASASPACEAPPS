@@ -35,24 +35,33 @@ import {
   hoursUntilLost,
   type HourSample,
 } from '@ventana/sim';
+import type { TextKey } from '../i18n/catalogue';
+import type { I18n } from '../i18n/translate';
 import { formatAtLeast, formatDuration, formatElevation } from './format';
 import type { BodyWidget } from './widget-types';
 
 /** The Sun or the Earth, as a widget sees it. */
 interface Body {
-  readonly name: string;
+  readonly id: 'sun' | 'earth';
+  /** The widget's label while the body is up, and while it is down. */
+  readonly sets: TextKey;
+  readonly rises: TextKey;
   readonly up: (sample: HourSample) => boolean;
   readonly elevation: (sample: HourSample) => number;
 }
 
 export const SUN: Body = {
-  name: 'Sun',
+  id: 'sun',
+  sets: 'body.sunset',
+  rises: 'body.sunrise',
   up: hasSun,
   elevation: (sample) => sample.sunEl,
 };
 
 export const EARTH: Body = {
-  name: 'Earth',
+  id: 'earth',
+  sets: 'body.earthset',
+  rises: 'body.earthrise',
   up: hasEarth,
   elevation: (sample) => sample.earthEl,
 };
@@ -65,12 +74,13 @@ function timeLeft(
   hours: readonly HourSample[],
   now: HourSample,
   keeps: (sample: HourSample) => boolean,
+  i18n: I18n,
 ): string {
   const left = hoursUntilLost(hours, now.t, keeps);
   const last = hours.at(-1)?.t ?? now.t;
   return left === null
-    ? formatAtLeast(hoursBetween(now.t, last) + 1)
-    : formatDuration(left);
+    ? formatAtLeast(i18n, hoursBetween(now.t, last) + 1)
+    : formatDuration(i18n, left);
 }
 
 /**
@@ -81,12 +91,12 @@ export function bodyWidget(
   body: Body,
   hours: readonly HourSample[],
   now: HourSample,
+  i18n: I18n,
 ): BodyWidget {
   const up = body.up(now);
   const keeps = (sample: HourSample): boolean => body.up(sample) === up;
-  const value = timeLeft(hours, now, keeps);
-  const event = up ? 'set' : 'rise';
-  const label = `${body.name}${event} in`;
-  const detail = formatElevation(body.name, body.elevation(now));
+  const value = timeLeft(hours, now, keeps, i18n);
+  const label = i18n.t(up ? body.sets : body.rises);
+  const detail = formatElevation(i18n, body.id, body.elevation(now));
   return { label, value, detail };
 }

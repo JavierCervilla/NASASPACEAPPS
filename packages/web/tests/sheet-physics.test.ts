@@ -29,6 +29,7 @@ import { SheetMotion } from '../src/sheet/sheet-motion';
 import { detentsFor, nearestDetent, releaseDetent, rubberBand, SHEET_LAYOUT, unRubberBand } from '../src/sheet/sheet-physics';
 import { createSheetState, dragSheet, FLICK_MIN_PX_S, grabSheet, settleSheet, stepSheet, type SheetState } from '../src/sheet/sheet-state';
 import { grabberLabel, nextDetent, openness, reveal } from '../src/sheet/sheet-view';
+import { EN } from './i18n-factories';
 
 // The e2e and canvas phone: 390x844.
 const HEIGHT = 844;
@@ -237,7 +238,7 @@ describe('SheetMotion', () => {
 describe('sheet view', () => {
   it('cycles the detents from the grabber and names them', () => {
     expect([nextDetent('peek'), nextDetent('half'), nextDetent('full')]).toEqual(['half', 'full', 'peek']);
-    expect(grabberLabel('half')).toBe('Sheet half height; press for full height');
+    expect(grabberLabel(EN, 'half')).toBe('Sheet half height; press for full height');
   });
 
   it('measures how far open past half the sheet is', () => {

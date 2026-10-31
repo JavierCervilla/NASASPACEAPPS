@@ -1,0 +1,53 @@
+---
+/*
+ *   _   _       _                         _ _
+ *  | | | |_ __ (_)_   _____ _ __ ___  ___| | | ___
+ *  | | | | '_ \| \ \ / / _ \ '__/ __|/ _ \ | |/ _ \
+ *  | |_| | | | | |\ V /  __/ |  \__ \  __/ | |  __/
+ *   \___/|_| |_|_| \_/ \___|_|  |___/\___|_|_|\___|
+ *
+ *             =++==--::.
+ *         %%%%##**++=--:..  .
+ *      ##**#%@%%#***+=--::.   .
+ *    #**=+*#*#**#++++=-:::.. .  .
+ *   #++-====*@%+*++==--::...   .  .    Ventana Lunar
+ *  #+=-=--++==+===-+==--:..   .  .  .  Sun, Earth and landing
+ * #----====-------=-=---:..  .  .  .   windows at the lunar
+ * #+---+=====--=---==-::..     .  .  . south pole
+ * #*----==---==-=-=-:-....    .  .  .
+ * *#----===+*===--:-::...    .  .  .   Built for the NASA Space
+ *  *----=*-+*%*+=-:::....   .  .  .    Apps Challenge 2026,
+ *   *------=+*=--:::-:::.. .  .  .     Madrid. Not endorsed
+ *    %*===-=-==--==-:::.  .  .  .      by NASA.
+ *      *+:--+:--::::::.  .  .  .
+ *         -=:::...:..   .  .           (c) 2026 Universelle
+ *             :::.. .  .               SPDX-License-Identifier: MIT
+ */
+
+/*
+ * The page of every other locale, under its own folder: /es/, /fr/, /de/
+ * and /it/, and the pseudo-locale (/en-xa/) for the overflow tests unless
+ * the build sets PSEUDO_LOCALE=0, as the production image does.
+ */
+import type { GetStaticPaths } from 'astro';
+import Page from '../../components/Page.astro';
+import {
+  DEFAULT_LOCALE,
+  LOCALES,
+  PSEUDO_LOCALE,
+  type UiLocale,
+} from '../../i18n/locales';
+
+export const getStaticPaths = (() => {
+  const others: UiLocale[] = LOCALES.filter((l) => l !== DEFAULT_LOCALE);
+  if (process.env['PSEUDO_LOCALE'] !== '0') others.push(PSEUDO_LOCALE);
+  return others.map((locale) => ({
+    params: { locale: locale.toLowerCase() },
+    props: { locale },
+  }));
+}) satisfies GetStaticPaths;
+
+const { locale } = Astro.props;
+---
+
+<Page locale={locale} />

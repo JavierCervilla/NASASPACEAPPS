@@ -31,6 +31,9 @@
  * state, whether the hours are coming or failed. Pure.
  */
 import { hoursBetween, hoursUntilLost, type HourSample } from '@ventana/sim';
+import type { TextKey } from '../i18n/catalogue';
+import type { I18n } from '../i18n/translate';
+import { formatSpan } from './format';
 import { nowState } from './now-widget';
 import { sampleAt, samplesWithin } from './site-widgets';
 import { widgetRange } from './widget-range';
@@ -70,25 +73,25 @@ export function hoursStatus(
  * calendar legend's words (Sun, Earth, window, Neither), short enough
  * that the longest line fits whole at 360 px.
  */
-const BADGES: Readonly<Record<NowState, string>> = {
-  window: 'Landing window now',
-  sun: 'Sun only',
-  earth: 'Earth only',
-  none: 'Neither',
+const BADGES: Readonly<Record<NowState, TextKey>> = {
+  window: 'state.badge.window',
+  sun: 'state.badge.sun',
+  earth: 'state.badge.earth',
+  none: 'state.badge.none',
 };
-const LINES: Readonly<Record<NowState, string>> = {
-  window: 'Window',
-  sun: 'Sun',
-  earth: 'Earth',
-  none: 'Neither',
+const LINES: Readonly<Record<NowState, TextKey>> = {
+  window: 'state.line.window',
+  sun: 'state.line.sun',
+  earth: 'state.line.earth',
+  none: 'state.line.none',
 };
 
 const HOURS_PER_DAY = 24;
 
 /**
- * How long `kind` holds from `now`, to the largest whole unit, so the
+ * How long the state of `now` holds, to the largest whole unit, so the
  * pill stays one short line at 360 px: «7 d», «5 h», or «30+ d» when it
- * outlasts the horizon. The sheet's widgets give it to the hour.
+ * outlasts the horizon; and that unit's count, which «left» agrees with.
  */
 function shortLeft(horizon: readonly HourSample[], now: HourSample) {
   const kind = nowState(now);
@@ -97,14 +100,14 @@ function shortLeft(horizon: readonly HourSample[], now: HourSample) {
   const last = horizon.at(-1)?.t ?? now.t;
   const hours = left ?? hoursBetween(now.t, last) + 1;
   const days = Math.floor(hours / HOURS_PER_DAY);
-  const span = days === 0 ? `${Math.max(0, hours)} h` : `${days} d`;
-  return left === null ? span.replace(' ', '+ ') : span;
+  return { hours, count: days === 0 ? hours : days, runsOn: left === null };
 }
 
 /** The state at the hour of `atMs`; null until its hours are known. */
 export function siteState(
   hours: HoursResult,
   atMs: number | null,
+  i18n: I18n,
 ): SiteState | null {
   const range = atMs === null ? null : widgetRange(atMs);
   if (!range || hours.kind !== 'ready') return null;
@@ -112,18 +115,21 @@ export function siteState(
   const now = sampleAt(horizon, range.at);
   if (!now) return null;
   const kind = nowState(now);
-  const left = shortLeft(horizon, now);
-  const short = `${LINES[kind]} · ${left}`;
-  return { kind, badge: BADGES[kind], lines: [`${short} left`, short, left] };
+  const span = shortLeft(horizon, now);
+  const left = formatSpan(i18n, span.hours, span.runsOn);
+  const named = { state: i18n.t(LINES[kind]), left };
+  const long = i18n.plural('pill.long', span.count, named);
+  const lines = [long, i18n.t('pill.short', named), left];
+  return { kind, badge: i18n.t(BADGES[kind]), lines };
 }
 
 /** What the pill says while there is no state, by where the hours stand. */
-const NO_STATE: Readonly<Record<HoursStatus, string>> = {
-  pending: 'Loading…',
+const NO_STATE: Readonly<Record<HoursStatus, TextKey>> = {
+  pending: 'pill.loading',
   // Hours in, but none at this instant: the calendar's own words.
-  ready: 'No data for this hour',
-  error: 'Data unavailable',
-  outside: 'Outside the data window',
+  ready: 'pill.noHour',
+  error: 'pill.error',
+  outside: 'pill.outside',
 };
 
 /**
@@ -133,6 +139,7 @@ const NO_STATE: Readonly<Record<HoursStatus, string>> = {
 export function stateLines(
   state: SiteState | null,
   status: HoursStatus,
+  i18n: I18n,
 ): readonly string[] {
-  return state ? state.lines : [NO_STATE[status]];
+  return state ? state.lines : [i18n.t(NO_STATE[status])];
 }

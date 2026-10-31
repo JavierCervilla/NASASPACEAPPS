@@ -1,0 +1,57 @@
+---
+/*
+ *   _   _       _                         _ _
+ *  | | | |_ __ (_)_   _____ _ __ ___  ___| | | ___
+ *  | | | | '_ \| \ \ / / _ \ '__/ __|/ _ \ | |/ _ \
+ *  | |_| | | | | |\ V /  __/ |  \__ \  __/ | |  __/
+ *   \___/|_| |_|_| \_/ \___|_|  |___/\___|_|_|\___|
+ *
+ *             =++==--::.
+ *         %%%%##**++=--:..  .
+ *      ##**#%@%%#***+=--::.   .
+ *    #**=+*#*#**#++++=-:::.. .  .
+ *   #++-====*@%+*++==--::...   .  .    Ventana Lunar
+ *  #+=-=--++==+===-+==--:..   .  .  .  Sun, Earth and landing
+ * #----====-------=-=---:..  .  .  .   windows at the lunar
+ * #+---+=====--=---==-::..     .  .  . south pole
+ * #*----==---==-=-=-:-....    .  .  .
+ * *#----===+*===--:-::...    .  .  .   Built for the NASA Space
+ *  *----=*-+*%*+=-:::....   .  .  .    Apps Challenge 2026,
+ *   *------=+*=--:::-:::.. .  .  .     Madrid. Not endorsed
+ *    %*===-=-==--==-:::.  .  .  .      by NASA.
+ *      *+:--+:--::::::.  .  .  .
+ *         -=:::...:..   .  .           (c) 2026 Universelle
+ *             :::.. .  .               SPDX-License-Identifier: MIT
+ */
+
+/*
+ * What tells browsers and search engines this page exists in five
+ * languages: a `rel="alternate"` link per locale and `x-default` (the
+ * English page). The English page at `/` also carries the first-visit
+ * redirect (i18n/first-visit.ts), inline so it runs before the page
+ * paints; scripts/csp-header.mjs allows it by its hash.
+ */
+import { firstVisitScript } from '../i18n/first-visit';
+import { DEFAULT_LOCALE, PSEUDO_LOCALE, type UiLocale } from '../i18n/locales';
+import { alternates } from '../i18n/routes';
+
+interface Props {
+  readonly locale: UiLocale;
+}
+
+const { locale } = Astro.props;
+const base = import.meta.env.BASE_URL;
+const links = alternates(base, Astro.site);
+---
+
+{
+  links.map(({ hreflang, href }) => (
+    <link rel="alternate" hreflang={hreflang} href={href} />
+  ))
+}
+{locale === PSEUDO_LOCALE ? <meta name="robots" content="noindex" /> : null}
+{
+  locale === DEFAULT_LOCALE ? (
+    <script is:inline set:html={firstVisitScript(base)} />
+  ) : null
+}

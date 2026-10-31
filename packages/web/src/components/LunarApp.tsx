@@ -36,6 +36,9 @@
  * site's state, which its marker on the globe wears.
  */
 import { useEffect, useState } from 'react';
+import type { Catalogue } from '../i18n/catalogue';
+import type { UiLocale } from '../i18n/locales';
+import { createI18n } from '../i18n/translate';
 import { followClock } from '../calendar/follow-clock';
 import { createPlayer } from '../calendar/time-player';
 import { createTimeStore } from '../calendar/time-store';
@@ -48,6 +51,7 @@ import type { CalendarParts } from './calendar/hooks';
 import { DesktopShell } from './desktop/DesktopShell';
 import { useView } from './desktop/use-view';
 import Globe from './Globe';
+import { I18nContext, useI18n } from './i18n-context';
 import { Layers } from './Layers';
 import { usePhone } from './phone/hooks';
 import { PhoneShell } from './phone/PhoneShell';
@@ -62,10 +66,13 @@ interface Props {
   readonly selectedId: string;
   /** The curated sites, for the site pickers, the map and the card. */
   readonly sites: readonly CardSite[];
+  /** The page's language, and its catalogue (only this one ships). */
+  readonly locale: UiLocale;
+  readonly messages: Catalogue;
 }
 
-/** The header's view tabs (pages/index.astro). */
-const VIEW_NAV = 'nav[aria-label="View"]';
+/** The header's view tabs (components/Page.astro). */
+const VIEW_NAV = 'nav.views';
 
 /**
  * The shared instant (live on the browser's clock, which it follows once
@@ -86,18 +93,29 @@ function useCalendarParts(sitesUrl: string): CalendarParts {
   return parts;
 }
 
-export default function LunarApp({ sitesUrl, base, selectedId, sites }: Props) {
+export default function LunarApp(props: Props) {
+  const { locale, messages } = props;
+  const [i18n] = useState(() => createI18n(locale, messages));
+  return (
+    <I18nContext value={i18n}>
+      <Island {...props} />
+    </I18nContext>
+  );
+}
+
+function Island({ sitesUrl, base, selectedId, sites }: Props) {
   const [store] = useState(() => createSiteStore(selectedId));
   const [sheetEdge] = useState(() => createWatchedValue<number | null>(null));
   const parts = useCalendarParts(sitesUrl);
   const view = useView(VIEW_NAV);
   const offView = !usePhone() && view !== 'globe';
   const state = useStateFeed(store, parts);
+  const { t } = useI18n();
   const time = parts.time;
   const globe = { base, sitesUrl, store, sheetEdge, time, state };
   return (
     <>
-      <section className="globe" aria-label="Lunar globe" hidden={offView}>
+      <section className="globe" aria-label={t('globe.section')} hidden={offView}>
         <Globe {...globe} />
         <Layers />
       </section>

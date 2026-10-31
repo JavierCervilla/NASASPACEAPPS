@@ -32,6 +32,7 @@
  */
 import type { ReactNode } from 'react';
 import type { WidgetsResult } from '../../phone/widgets-loader';
+import { useI18n } from '../i18n-context';
 
 interface CardProps {
   readonly widget: {
@@ -59,8 +60,9 @@ function Card({ widget, tone, big = false }: CardProps) {
 }
 
 function Skeletons() {
+  const { t } = useI18n();
   return (
-    <ul className="widgets" aria-busy="true" aria-label="Loading this site">
+    <ul className="widgets" aria-busy="true" aria-label={t('widgets.loading')}>
       {[0, 1, 2, 3].map((n) => (
         <li key={n} className="widget-skeleton" aria-hidden="true" />
       ))}
@@ -69,19 +71,21 @@ function Skeletons() {
 }
 
 function Failure({ onRetry }: { readonly onRetry: () => void }) {
+  const { t } = useI18n();
   return (
     <div className="widgets-error" role="alert">
-      <p>The Sun and Earth data for this site could not load.</p>
-      <button type="button" onClick={onRetry}>Try again</button>
+      <p>{t('data.siteError')}</p>
+      <button type="button" onClick={onRetry}>{t('data.retry')}</button>
     </div>
   );
 }
 
 /** The current hour has no data: said plainly, never clamped data. */
 function Outside() {
+  const { t } = useI18n();
   return (
     <p className="widgets-outside" role="status">
-      Outside the data window (2026–2027)
+      {t('data.outside')}
     </p>
   );
 }
@@ -94,6 +98,7 @@ interface Props {
 }
 
 export function Widgets({ result, onRetry, when }: Props) {
+  const { t } = useI18n();
   if (result.kind === 'loading') return <Skeletons />;
   if (result.kind === 'error') return <Failure onRetry={onRetry} />;
   if (result.kind === 'outside') return <Outside />;
@@ -101,11 +106,11 @@ export function Widgets({ result, onRetry, when }: Props) {
   const label = (
     <>
       <span className="signal-dot" data-state={now.state} />
-      {when ?? 'Right now'}
+      {when ?? t('widgets.rightNow')}
     </>
   );
-  const listening = { ...dsn, label: 'Listening on Earth' };
-  const name = when ? `This site at ${when}` : 'This site now';
+  const listening = { ...dsn, label: t('widgets.listening') };
+  const name = when ? t('widgets.at', { when }) : t('widgets.now');
   return (
     <ul className="widgets" aria-label={name}>
       <Card widget={{ ...now, label, value: now.title }} tone={now.state} />

@@ -2,7 +2,8 @@
   "exclude": [],
   "interface": [
     "CHANGELOG.md",
-    "ROADMAP.md"
+    "ROADMAP.md",
+    "packages/web/src/i18n/messages/*.json"
   ],
   "vendored": [
     ".claude/skills/apple-design/**",

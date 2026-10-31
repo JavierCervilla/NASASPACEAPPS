@@ -1,0 +1,254 @@
+---
+/*
+ *   _   _       _                         _ _
+ *  | | | |_ __ (_)_   _____ _ __ ___  ___| | | ___
+ *  | | | | '_ \| \ \ / / _ \ '__/ __|/ _ \ | |/ _ \
+ *  | |_| | | | | |\ V /  __/ |  \__ \  __/ | |  __/
+ *   \___/|_| |_|_| \_/ \___|_|  |___/\___|_|_|\___|
+ *
+ *             =++==--::.
+ *         %%%%##**++=--:..  .
+ *      ##**#%@%%#***+=--::.   .
+ *    #**=+*#*#**#++++=-:::.. .  .
+ *   #++-====*@%+*++==--::...   .  .    Ventana Lunar
+ *  #+=-=--++==+===-+==--:..   .  .  .  Sun, Earth and landing
+ * #----====-------=-=---:..  .  .  .   windows at the lunar
+ * #+---+=====--=---==-::..     .  .  . south pole
+ * #*----==---==-=-=-:-....    .  .  .
+ * *#----===+*===--:-::...    .  .  .   Built for the NASA Space
+ *  *----=*-+*%*+=-:::....   .  .  .    Apps Challenge 2026,
+ *   *------=+*=--:::-:::.. .  .  .     Madrid. Not endorsed
+ *    %*===-=-==--==-:::.  .  .  .      by NASA.
+ *      *+:--+:--::::::.  .  .  .
+ *         -=:::...:..   .  .           (c) 2026 Universelle
+ *             :::.. .  .               SPDX-License-Identifier: MIT
+ */
+
+/*
+ * The page in one locale: the header (title, the view tabs, and the slots
+ * the island fills with the site button and the language menu) and the
+ * island. Every route renders it: pages/index.astro in English,
+ * pages/[locale]/index.astro in the others.
+ */
+import curated from '../../../server/data/sites.json';
+import GlassFilter from './GlassFilter.astro';
+import LocaleHead from './LocaleHead.astro';
+import LunarApp from './LunarApp';
+import Base from '../layouts/Base.astro';
+import { toCardSite, type CardSite } from '../card/site-facts';
+import { catalogueOf } from '../i18n/catalogues';
+import type { UiLocale } from '../i18n/locales';
+import { localSite } from '../i18n/site-names';
+import { createI18n } from '../i18n/translate';
+import { VIEW_HASH } from '../lib/view-tabs';
+import '../styles/globe.css';
+import '../styles/phone.css';
+import '../styles/calendar.css';
+import '../styles/desktop.css';
+import '../styles/polar.css';
+import '../styles/lang.css';
+
+interface Props {
+  readonly locale: UiLocale;
+}
+
+const { locale } = Astro.props;
+const messages = catalogueOf(locale);
+const i18n = createI18n(locale, messages);
+const { t } = i18n;
+
+// Same origin in production: the API sits behind the same domain.
+const sitesUrl = `${import.meta.env.BASE_URL.replace(/\/$/, '')}/api/v1/sites`;
+
+// The site pickers, the polar map and the site card read the curated list
+// the API serves, built in, with its names in the page's language.
+const full = curated as Required<CardSite>[];
+const sites: CardSite[] = full.map((s) => localSite(i18n, toCardSite(s)));
+
+// The globe and the polar map switch by hash (lib/view-tabs.ts); the
+// island marks the current one. Horizon is a later trajectory.
+const views = [
+  { label: t('view.globe'), view: 'globe', current: true },
+  { label: t('view.polar'), view: 'polar', current: false },
+  { label: t('view.horizon'), view: null, current: false },
+] as const;
+---
+
+<Base lang={locale} title={t('page.title')} description={t('page.description')}>
+  <LocaleHead slot="head" locale={locale} />
+  <GlassFilter />
+  <div class="page">
+    <header class="bar">
+      <div class="titles">
+        <h1 class="title">Ventana Lunar</h1>
+        <p class="subtitle">{t('header.subtitle')}</p>
+      </div>
+      <!-- The island puts the site button here once it runs. -->
+      <div id="site-slot" class="site-slot"></div>
+      <div class="bar__end">
+        <nav aria-label={t('header.views')} class="views">
+          {
+            views.map(({ label, view, current }) =>
+              view ? (
+                <a
+                  href={VIEW_HASH[view]}
+                  data-view={view}
+                  aria-current={current ? 'page' : undefined}
+                >
+                  {label}
+                </a>
+              ) : (
+                <span aria-disabled="true" title={t('view.soon')}>
+                  {label}
+                </span>
+              ),
+            )
+          }
+        </nav>
+        <!-- The island puts the language menu here once it runs. -->
+        <div id="lang-slot" class="lang-slot"></div>
+      </div>
+    </header>
+    <main class="stage">
+      <LunarApp
+        client:load
+        sitesUrl={sitesUrl}
+        base={import.meta.env.BASE_URL}
+        selectedId="im2-athena"
+        sites={sites}
+        locale={locale}
+        messages={messages}
+      />
+    </main>
+  </div>
+</Base>
+
+<style>
+  .page {
+    min-height: 100dvh;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .bar {
+    position: sticky;
+    top: 0;
+    z-index: 1;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px 24px;
+    padding: 14px 24px;
+    background: var(--chrome);
+    backdrop-filter: blur(20px) saturate(180%);
+  }
+
+  .titles {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    min-width: 0;
+  }
+
+  /* Tracking tightens as the size grows (apple-design §15). */
+  .title {
+    margin: 0;
+    font-size: 1.0625rem;
+    line-height: 1.25;
+    font-weight: 700;
+    letter-spacing: -0.022em;
+  }
+
+  .subtitle {
+    margin: 0;
+    font-size: 0.8125rem;
+    line-height: 1.35;
+    color: var(--text-muted);
+  }
+
+  .views {
+    display: flex;
+    padding: 2px;
+    border-radius: 10px;
+    background: var(--fill);
+  }
+
+  /* A 44 px tall target (apple-design). */
+  .views > * {
+    display: flex;
+    align-items: center;
+    min-height: 44px;
+    padding: 0 16px;
+    border-radius: 8px;
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: var(--text-secondary);
+    text-decoration: none;
+  }
+
+  .views [aria-current='page'] {
+    background: var(--fill-selected);
+    box-shadow: var(--fill-selected-shadow);
+    color: var(--text);
+  }
+
+  .views [aria-disabled='true'] {
+    opacity: 0.55;
+    cursor: default;
+  }
+
+  /* The globe, with the calendar strip under it. */
+  .stage {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    padding: 16px 24px 20px;
+  }
+
+  /*
+   * Desktop: the view (globe or polar map) with the site card to its
+   * right and the calendar strip under both (validated canvas «Globe
+   * view»); the areas are named in desktop.css.
+   */
+  @media (min-width: 768px) {
+    .stage {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) 320px;
+      grid-template-rows: minmax(320px, 1fr) auto;
+      grid-template-areas:
+        'view card'
+        'strip strip';
+    }
+  }
+
+  /* Narrow desktops: the card wraps under the view, the page scrolls. */
+  @media (min-width: 768px) and (max-width: 1023.98px) {
+    .stage {
+      grid-template-columns: minmax(0, 1fr);
+      grid-template-rows: minmax(360px, 1fr) auto auto;
+      grid-template-areas:
+        'view'
+        'card'
+        'strip';
+    }
+  }
+
+  @media (prefers-reduced-transparency: reduce) {
+    .bar {
+      backdrop-filter: none;
+    }
+  }
+
+  /* Phones get their own glass bar (components/phone/PhoneBar.tsx). */
+  @media (max-width: 767.98px) {
+    .bar {
+      display: none;
+    }
+
+    .stage {
+      padding: 0;
+    }
+  }
+</style>

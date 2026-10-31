@@ -41,10 +41,13 @@ import {
 import { dayTicks, monthHours } from '../../calendar/month';
 import { instantPct, type MonthStrip } from '../../calendar/month-strip';
 import { hourOfMonth, moveToHour } from '../../calendar/time-actions';
-import { NOW_TITLES } from '../../phone/now-widget';
+import { formatPercent } from '../../i18n/format';
+import type { I18n } from '../../i18n/translate';
+import { nowTitle } from '../../phone/now-widget';
 import { siteLabels, type PhoneSite } from '../../phone/phone-site';
 import type { NowState } from '../../phone/widget-types';
 import type { HoursResult } from '../../phone/widgets-loader';
+import { useI18n } from '../i18n-context';
 import { hourDrag } from './hour-drag';
 import { useCalendar, type CalendarParts } from './hooks';
 import {
@@ -68,17 +71,21 @@ interface Props {
  * when the month has no window at all.
  */
 function Shares({ strip }: { readonly strip: MonthStrip | null }) {
+  const i18n = useI18n();
+  const { t } = i18n;
   const shares = [
-    ['sun', 'Sun', strip?.sunPct],
-    ['earth', 'Earth', strip?.earthPct],
-    ['window', 'Window', strip?.windowPct],
+    ['sun', t('signal.sun'), strip?.sunPct],
+    ['earth', t('signal.earth'), strip?.earthPct],
+    ['window', t('signal.window'), strip?.windowPct],
   ] as const;
+  const value = (pct?: number) =>
+    pct === undefined ? '–' : formatPercent(i18n, pct);
   return (
     <>
-      <ul className="calendar__shares" aria-label="Share of the month">
+      <ul className="calendar__shares" aria-label={t('calendar.shares')}>
         {shares.map(([tone, label, pct]) => (
           <li key={tone} data-tone={tone}>
-            {label} <b>{pct === undefined ? '–' : `${Math.round(pct)} %`}</b>
+            {label} <b>{value(pct)}</b>
           </li>
         ))}
       </ul>
@@ -91,10 +98,11 @@ interface ColumnsProps {
   readonly parts: CalendarParts;
   readonly strip: MonthStrip;
   readonly atMs: number;
+  readonly i18n: I18n;
 }
 
 /** The slider's role, range and value, and its keys. */
-function sliderProps({ parts, atMs }: Omit<ColumnsProps, 'strip'>) {
+function sliderProps({ parts, atMs, i18n }: Omit<ColumnsProps, 'strip'>) {
   const hour = hourOfMonth(atMs);
   const hours = monthHours(atMs);
   const move = (to: number): void => moveToHour(parts.time, atMs, to);
@@ -107,18 +115,20 @@ function sliderProps({ parts, atMs }: Omit<ColumnsProps, 'strip'>) {
     move(end ?? hour + (delta ?? 0));
   };
   return {
-    role: 'slider', tabIndex: 0, 'aria-label': 'Selected hour',
+    role: 'slider', tabIndex: 0, 'aria-label': i18n.t('calendar.slider'),
     'aria-orientation': 'vertical', 'aria-valuemin': 0,
     'aria-valuemax': hours - 1, 'aria-valuenow': hour,
-    'aria-valuetext': formatInstant(atMs), onKeyDown, ...hourDrag(move, hours),
+    'aria-valuetext': formatInstant(i18n, atMs), onKeyDown,
+    ...hourDrag(move, hours),
   } as const;
 }
 
 /** The columns: a vertical slider over the month's hours. */
-function Columns({ parts, strip, atMs }: ColumnsProps) {
+function Columns({ parts, strip, atMs, i18n }: ColumnsProps) {
   const top = `${instantPct(atMs)}%`;
+  const slider = sliderProps({ parts, atMs, i18n });
   return (
-    <div className="columns" data-sheet-scroll {...sliderProps({ parts, atMs })}>
+    <div className="columns" data-sheet-scroll {...slider}>
       <div className="columns__days" aria-hidden="true">
         {dayTicks(atMs).map(({ day, pct }) => (
           <span key={day} style={{ top: `${pct}%` }}>{day}</span>
@@ -142,23 +152,25 @@ interface ControlsProps extends Props {
   readonly playing: boolean;
 }
 
-const HINT = 'drag the strip to move in time';
-
 /** Play, the date with the state at that hour, and «Now». */
 function Controls(props: ControlsProps) {
   const { parts, state, atMs, live, playing } = props;
+  const i18n = useI18n();
+  const { t } = i18n;
   // No state: the hour's data is on its way, or there is none.
   const idle = props.result.kind === 'loading'
-    ? 'Drag the strip to move in time'
-    : 'No data for this hour';
-  const line = state ? NOW_TITLES[state] : idle;
+    ? t('calendar.idle')
+    : t('calendar.noHour');
+  const line = state ? nowTitle(i18n, state) : idle;
   // The hint goes first when large text leaves no room (calendar.css).
-  const hint = state ? <span className="calendar__hint"> · {HINT}</span> : null;
+  const hint = state
+    ? <span className="calendar__hint"> · {t('calendar.hint')}</span>
+    : null;
   return (
     <div className="calendar__controls">
       <PlayButton parts={parts} playing={playing} />
       <div className="calendar__when">
-        <span className="calendar__date">{formatInstant(atMs)}</span>
+        <span className="calendar__date">{formatInstant(i18n, atMs)}</span>
         <span className="calendar__state" data-tone={state ?? undefined}>
           {line}
           {hint}
@@ -171,6 +183,7 @@ function Controls(props: ControlsProps) {
 
 export function CalendarSheet(props: Props) {
   const { parts, site } = props;
+  const i18n = useI18n();
   const calendar = useCalendar(parts, site.id);
   const { state: time, strip, playing, result } = calendar;
   if (!time) return null;
@@ -179,13 +192,13 @@ export function CalendarSheet(props: Props) {
     <div className="calendar">
       <MonthArrows parts={parts} atMs={time.atMs}>
         <div className="calendar__title">
-          <h2>{monthLabel(time.atMs)}</h2>
+          <h2>{monthLabel(i18n, time.atMs)}</h2>
           <p>{pillDetail ? `${pill} · ${pillDetail}` : pill}</p>
         </div>
       </MonthArrows>
       <Shares strip={strip} />
       {strip ? (
-        <Columns parts={parts} strip={strip} atMs={time.atMs} />
+        <Columns parts={parts} strip={strip} atMs={time.atMs} i18n={i18n} />
       ) : (
         <StripStatus calendar={calendar} />
       )}

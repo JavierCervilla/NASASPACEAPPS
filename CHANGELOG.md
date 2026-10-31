@@ -3,6 +3,18 @@
 ## [Sin publicar]
 
 ### Añadido
+- La web en cinco idiomas (VENT-35, lienzos validados «LangDesktop» y «LangPhoneB»): inglés (por defecto), español,
+  francés, alemán e italiano, cada uno en su dirección (`/`, `/es/`, `/fr/`, `/de/`, `/it/`), con el idioma declarado en
+  la página y los enlaces entre versiones para los buscadores. En el PC, un botón «🌐 EN» al final de la cabecera abre la
+  lista de idiomas; en el móvil, una fila «Language · English ›» bajo el título del panel de sitios la abre dentro de la
+  hoja con «‹ Back», deslizándose como en iOS (o con un fundido si se pide menos movimiento). La lista es como la de
+  Apple: cada idioma con su propio nombre, debajo su nombre en el idioma actual y ✓ en el elegido; se maneja con
+  teclado (flechas, Inicio, Fin, Escape devuelve el foco) y el idioma elegido se recuerda. La primera visita a `/` abre
+  el idioma del navegador una sola vez; un enlace con idioma (`/fr/`) se respeta siempre. Fechas, números («84,79° S»),
+  porcentajes y duraciones («7 j 1 h», «7 Tg. 1 Std.») van en el formato de cada idioma, y los estados y fechas de las
+  misiones también se traducen, con sus fechas. De los nombres de sitios y misiones se traducen las palabras
+  descriptivas («Región de Malapert A», «al norte de Boguslawsky»); los nombres propios se quedan como están. Las traducciones las ha escrito
+  Claude: conviene que una persona nativa las revise antes del 13 de noviembre.
 - Acabado Liquid Glass (VENT-27, prototipo VENT-16 aprobado): en los navegadores Chromium con potencia (Chrome, Edge,
   Brave, Android), las superficies flotantes refractan lo que hay debajo como un vidrio grueso y tienen un borde que
   capta la luz, con un tinte fino que deja ver la Luna: cada superficie lleva su propia lente, que curva hacia dentro lo

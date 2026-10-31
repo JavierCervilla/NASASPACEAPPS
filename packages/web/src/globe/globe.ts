@@ -43,6 +43,7 @@ import { keyControls } from './key-controls';
 import { bindKeys, bindWheel } from './keys';
 import { createLoop, type Loop } from './loop';
 import { MarkerLayer } from './marker-layer';
+import type { GlobeSite } from './markers';
 import { addMoon } from './moon';
 import { createOrbit, type Orbit } from './orbit';
 import { bindPinch } from './pinch';
@@ -72,6 +73,8 @@ export interface GlobeOptions {
   readonly saveData: boolean;
   readonly reducedMotion: () => boolean;
   readonly warn: (message: string) => void;
+  /** A marker's accessible name, in the visitor's language. */
+  readonly markerName: (site: GlobeSite) => string;
 }
 
 /** Keeps the canvas the host's size; redraws after a restored context. */
@@ -139,14 +142,14 @@ function bindSites(
     Pick<SelectionParts, 'markers'> & Pick<Stage, 'camera'>,
 ): () => void {
   const { markers } = globe;
-  const { store, reducedMotion, anchors, sheetEdge } = options;
+  const { store, reducedMotion, anchors, sheetEdge, markerName } = options;
   const band = new FreeBandWatch();
   const framer = createSiteFramer({ ...globe, band, reducedMotion });
   const get = globalThis.fetch.bind(globalThis);
   const source = { fetch: get, url: options.sitesUrl, warn: options.warn };
   const changes = sheetEdge.subscribe;
   const unbind = [
-    loadSelection({ store, markers, framer }, source),
+    loadSelection({ store, markers, framer, nameOf: markerName }, source),
     bindSheetEdge(host, { ...globe, band }, sheetEdge),
     watchBand({ host, band, anchors, changes }),
     bindState(options.state, markers),

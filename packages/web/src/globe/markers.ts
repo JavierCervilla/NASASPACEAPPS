@@ -28,6 +28,7 @@
  * page.
  */
 import type { Site } from '@ventana/sim';
+import type { I18n } from '../i18n/translate';
 
 /** The part of a site the globe draws. */
 export type GlobeSite = Pick<
@@ -49,9 +50,9 @@ export function markerKind(site: Pick<Site, 'approximate'>): MarkerKind {
 /**
  * The accessible name of a marker: the site, and whether its point is exact.
  */
-export function markerLabel(site: GlobeSite): string {
-  const kind = markerKind(site) === 'exact' ? 'landing site' : 'approximate zone';
-  return `${site.name}, ${kind}`;
+export function markerLabel(i18n: I18n, site: GlobeSite): string {
+  const exact = markerKind(site) === 'exact';
+  return i18n.t(exact ? 'marker.exact' : 'marker.zone', { name: site.name });
 }
 
 /** A marker on the globe: one site, or several that share one point. */

@@ -34,6 +34,7 @@ import {
   type GlobeSite,
   type MarkerSite,
 } from '../globe/markers';
+import type { I18n } from '../i18n/translate';
 import {
   onPolarMap,
   toPolarMap,
@@ -61,17 +62,23 @@ export interface PolarMarker {
 }
 
 /**
- * The leading words the places of `members` share: «Nobile» for «Nobile
- * region near Mons Mouton» and «Nobile Rim 1»; the first place if none.
+ * The words the places of `members` share, longest run first and starting
+ * with a name: «Nobile» for «Nobile region near Mons Mouton» and «Nobile
+ * Rim 1», and for «Región de Nobile cerca de Mons Mouton» too, where the
+ * language puts the name later; the first place if none.
  */
 function sharedPlace(members: readonly GlobeSite[]): string {
   const places = members.map(({ name }) => splitName(name).title.split(' '));
   const [first = []] = places;
-  const differs = first.findIndex((word, i) =>
-    places.some((words) => words[i] !== word),
-  );
-  const shared = differs === -1 ? first : first.slice(0, differs);
-  return (shared.length > 0 ? shared : first).join(' ');
+  const padded = places.map((words) => ` ${words.join(' ')} `);
+  for (let size = first.length; size > 0; size -= 1) {
+    for (let at = 0; at + size <= first.length; at += 1) {
+      const run = first.slice(at, at + size).join(' ');
+      const named = /^\p{Lu}/u.test(run);
+      if (named && padded.every((p) => p.includes(` ${run} `))) return run;
+    }
+  }
+  return first.join(' ');
 }
 
 /**
@@ -79,20 +86,28 @@ function sharedPlace(members: readonly GlobeSite[]): string {
  * sites on one point the place they share and how many: «Nobile · 3
  * sites». Naming one of them with a count read as that one being near.
  */
-function markerText(first: PhoneSite, site: MarkerSite): string {
+function markerText(
+  first: PhoneSite,
+  site: MarkerSite,
+  i18n: I18n,
+): string {
   const count = site.members.length;
   if (count < 2) return shortName(first);
-  return `${sharedPlace(site.members)} · ${count} sites`;
+  const place = sharedPlace(site.members);
+  return i18n.plural('polar.sharedPlace', count, { place });
 }
 
 /** The markers of the sites of `sites` that lie on the map. */
-export function polarMarkers(sites: readonly PhoneSite[]): PolarMarker[] {
+export function polarMarkers(
+  sites: readonly PhoneSite[],
+  i18n: I18n,
+): PolarMarker[] {
   const byId = new Map(sites.map((site) => [site.id, site]));
   const onMap = sites.filter((site) => onPolarMap(site.lat));
   return mergeColocated(onMap).flatMap((site) => {
     const first = byId.get(site.id);
     if (!first) return [];
-    const label = markerText(first, site);
+    const label = markerText(first, site, i18n);
     const at = toPolarMap(site);
     return [{ id: site.id, site, zone: site.approximate, at, label }];
   });

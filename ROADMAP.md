@@ -28,6 +28,9 @@ completa está en el documento «Ventana Lunar · Especificación y roadmap».
 - [x] Ficha del sitio con el tiempo hasta la puesta de Sol y de Tierra, y mapa polar 2D (VENT-5)
 - [x] Tarjeta del sitio sobre el globo, con la vista del terreno LOLA desde la órbita, el estado y las cuentas atrás
   (VENT-29); retirada en VENT-33: el estado va en la píldora del sitio y la vista del terreno en la hoja y en la ficha
+- [x] Web en cinco idiomas (inglés, español, francés, alemán e italiano) con su dirección cada uno, selector en la
+  cabecera y en el panel de sitios, y protección para que todo texto nuevo nazca traducible (VENT-35)
+- [ ] Revisión de las traducciones por personas nativas antes del 13 de noviembre (VENT-35)
 
 ## Lujo y entrega (código congelado el domingo 15 a las 15:30)
 

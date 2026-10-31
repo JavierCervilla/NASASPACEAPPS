@@ -28,23 +28,22 @@
  * it is the same on the server and in the browser for the same input.
  */
 import { subSolarPoint } from '@ventana/sim';
-
-function angle(deg: number, positive: string, negative: string): string {
-  return `${Math.abs(deg).toFixed(1)}° ${deg < 0 ? negative : positive}`;
-}
+import { formatAngle } from '../i18n/format';
+import type { I18n } from '../i18n/translate';
 
 /** When the Sun is lit and where it stands overhead, in one sentence. */
-export function describeSun(atMs: number): string {
+export function describeSun(i18n: I18n, atMs: number): string {
   const sun = subSolarPoint(atMs);
-  const when = new Date(atMs).toLocaleString('en-GB', {
+  const when = new Intl.DateTimeFormat(i18n.tag, {
     day: 'numeric',
     month: 'short',
     year: 'numeric',
     hour: '2-digit',
     minute: '2-digit',
+    hourCycle: 'h23',
     timeZone: 'UTC',
-  });
-  const lat = angle(sun.latDeg, 'N', 'S');
-  const lon = angle(sun.lonEastDeg, 'E', 'W');
-  return `Lit by the Sun as of ${when} UTC, overhead at ${lat}, ${lon}.`;
+  }).format(atMs);
+  const lat = formatAngle(i18n, sun.latDeg, 'lat', 1);
+  const lon = formatAngle(i18n, sun.lonEastDeg, 'lon', 1);
+  return i18n.t('globe.sun', { when, lat, lon });
 }

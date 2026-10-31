@@ -45,6 +45,7 @@ import {
   type CardSite,
 } from '../../card/site-facts';
 import type { CardModel } from '../../card/site-card';
+import { useI18n } from '../i18n-context';
 import { SiteThumb } from '../SiteThumb';
 import { CardStatus } from './CardStatus';
 import { useScrollEdges } from './use-scroll-edges';
@@ -85,15 +86,16 @@ function CardMedia({ thumb, state }: MediaProps) {
 }
 
 function CardHead({ site, state, base }: Omit<Props, 'model' | 'onRetry'>) {
+  const i18n = useI18n();
   const { title, subtitle } = siteLabels(site);
-  const thumb = thumbOf(site.id, title, base);
+  const thumb = thumbOf({ id: site.id, place: title }, base, i18n);
   return (
     <div className="card-block card-head">
       <CardMedia thumb={thumb} state={state} />
-      <p className="card-head__mission">{missionLine(site)}</p>
+      <p className="card-head__mission">{missionLine(i18n, site)}</p>
       <h2 className="card-head__name">{subtitle}</h2>
       {title === subtitle ? null : <p className="card-head__place">{title}</p>}
-      <p className="card-head__point">{pointLine(site)}</p>
+      <p className="card-head__point">{pointLine(i18n, site)}</p>
     </div>
   );
 }
@@ -134,13 +136,14 @@ export function SiteCard({ model, onRetry, ...head }: Props) {
   // Focusable only while it overflows, so the keyboard can scroll it on a
   // short screen; on a tall one it would be an empty tab stop.
   const scrolls = edges.top || edges.bottom;
+  const { t } = useI18n();
   return (
-    <aside className="site-card" aria-label="Site card">
+    <aside className="site-card" aria-label={t('card.label')}>
       <div
         className="site-card__scroll"
         ref={scroller}
         role={scrolls ? 'group' : undefined}
-        aria-label={scrolls ? 'Site details' : undefined}
+        aria-label={scrolls ? t('card.details') : undefined}
         tabIndex={scrolls ? 0 : undefined}
         data-fade-top={edges.top}
         data-fade-bottom={edges.bottom}

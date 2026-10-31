@@ -86,13 +86,19 @@ export class MarkerLayer {
     host.append(this.root);
   }
 
-  /** Replaces the markers with one per site, or per shared point. */
-  setSites(sites: readonly GlobeSite[]): void {
+  /**
+   * Replaces the markers with one per site, or per shared point, each
+   * named by `nameOf` in the visitor's language.
+   */
+  setSites(
+    sites: readonly GlobeSite[],
+    nameOf: (site: GlobeSite) => string,
+  ): void {
     for (const marker of this.markers) marker.el.remove();
     this.markers = mergeColocated(sites).map((site) => ({
       site,
       point: latLonToVector(site.lat, site.lonEast),
-      el: markerButton(site),
+      el: markerButton(site, nameOf(site)),
     }));
     this.root.prepend(...this.markers.map((marker) => marker.el));
     this.select(this.selected);

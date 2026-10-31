@@ -27,35 +27,46 @@
  * How the sheet's position reaches the page, and how it is named to
  * assistive technology. Pure apart from writing the sheet's style.
  */
+import type { TextKey } from '../i18n/catalogue';
+import type { I18n } from '../i18n/translate';
 import type { DetentName, Detents } from './sheet-physics';
 
 /**
  * The order the grabber button cycles through. Closed is not in it: a
  * closed sheet hides its grabber, and the Globe tab closes it instead.
  */
-const NEXT: Readonly<Record<DetentName, DetentName>> = {
+const NEXT: Readonly<Record<DetentName, Exclude<DetentName, 'closed'>>> = {
   closed: 'half',
   peek: 'half',
   half: 'full',
   full: 'peek',
 };
 
-const SPOKEN: Readonly<Record<DetentName, string>> = {
-  closed: 'closed',
-  peek: 'collapsed',
-  half: 'half height',
-  full: 'full height',
+/** Where the sheet is, and what pressing the grabber does. */
+const AT: Readonly<Record<DetentName, TextKey>> = {
+  closed: 'sheet.at.closed',
+  peek: 'sheet.at.peek',
+  half: 'sheet.at.half',
+  full: 'sheet.at.full',
+};
+const TO: Readonly<Record<Exclude<DetentName, 'closed'>, TextKey>> = {
+  peek: 'sheet.to.peek',
+  half: 'sheet.to.half',
+  full: 'sheet.to.full',
 };
 
 /** The detent the grabber moves to from `detent`. */
-export function nextDetent(detent: DetentName): DetentName {
+export function nextDetent(
+  detent: DetentName,
+): Exclude<DetentName, 'closed'> {
   return NEXT[detent];
 }
 
 /** The grabber's accessible name: where the sheet is and what it does. */
-export function grabberLabel(detent: DetentName): string {
-  const next = SPOKEN[nextDetent(detent)];
-  return `Sheet ${SPOKEN[detent]}; press for ${next}`;
+export function grabberLabel(i18n: I18n, detent: DetentName): string {
+  const at = i18n.t(AT[detent]);
+  const to = i18n.t(TO[nextDetent(detent)]);
+  return i18n.t('sheet.grabber', { at, to });
 }
 
 /**

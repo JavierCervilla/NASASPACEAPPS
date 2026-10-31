@@ -29,6 +29,7 @@
  * retry, or that the instant is outside the data the API holds.
  */
 import type { CardModel } from '../../card/site-card';
+import { useI18n } from '../i18n-context';
 
 interface Props {
   readonly kind: CardModel['kind'];
@@ -36,8 +37,9 @@ interface Props {
 }
 
 function Loading() {
+  const { t } = useI18n();
   return (
-    <div className="card-loading" aria-busy="true" aria-label="Loading this site">
+    <div className="card-loading" aria-busy="true" aria-label={t('card.loading')}>
       <div className="card-tiles" aria-hidden="true">
         <span className="card-block card-skeleton" />
         <span className="card-block card-skeleton" />
@@ -48,20 +50,21 @@ function Loading() {
 }
 
 export function CardStatus({ kind, onRetry }: Props) {
+  const { t } = useI18n();
   if (kind === 'loading') return <Loading />;
   if (kind === 'outside') {
     return (
       <p className="card-block card-note" role="status">
-        Outside the data window (2026–2027)
+        {t('data.outside')}
       </p>
     );
   }
   if (kind !== 'error') return null;
   return (
     <div className="card-block card-note" role="alert">
-      <p>The Sun and Earth data for this site could not load.</p>
+      <p>{t('data.siteError')}</p>
       <button type="button" className="card-retry" onClick={onRetry}>
-        Try again
+        {t('data.retry')}
       </button>
     </div>
   );

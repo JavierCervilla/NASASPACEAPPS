@@ -42,7 +42,13 @@ import { siteState } from '../../phone/site-state';
 import { unlistedSite } from '../../phone/unlisted-site';
 import { LOADING, widgetsAt } from '../../phone/widgets-loader';
 import { CalendarStrip } from '../calendar/CalendarStrip';
-import { useCalendar, type CalendarParts } from '../calendar/hooks';
+import {
+  useCalendar,
+  type Calendar,
+  type CalendarParts,
+} from '../calendar/hooks';
+import { useI18n } from '../i18n-context';
+import { LanguageMenu } from '../lang/LanguageMenu';
 import { usePhone, useSelection } from '../phone/hooks';
 import { PolarMap } from '../polar/PolarMap';
 import { SiteCard } from './SiteCard';
@@ -69,15 +75,26 @@ function useSlot(): HTMLElement | null {
   return useSyncExternalStore(unchanging, find, () => null);
 }
 
+/**
+ * The selected site's state, the card's badge and the card, at the
+ * selected instant, from the month's hours.
+ */
+function useCardState(calendar: Calendar) {
+  const i18n = useI18n();
+  const { result } = calendar;
+  const atMs = calendar.state?.atMs;
+  const now = atMs === undefined ? null : widgetsAt(result, atMs, i18n);
+  const state = now?.kind === 'ready' ? now.widgets.now.state : null;
+  const badge = siteState(result, atMs ?? null, i18n);
+  const model = atMs === undefined ? LOADING : siteCard(result, atMs, i18n);
+  return { state, badge, model };
+}
+
 function DesktopUi({ sites, store, parts, base, view }: Props) {
   const { id } = useSelection(store);
   const site = sites.find((s) => s.id === id) ?? unlistedSite(id);
   const calendar = useCalendar(parts, id);
-  const atMs = calendar.state?.atMs;
-  const now = atMs === undefined ? null : widgetsAt(calendar.result, atMs);
-  const state = now?.kind === 'ready' ? now.widgets.now.state : null;
-  const badge = siteState(calendar.result, atMs ?? null);
-  const model = atMs === undefined ? LOADING : siteCard(calendar.result, atMs);
+  const { state, badge, model } = useCardState(calendar);
   const slot = useSlot();
   const pick = (picked: string): void => store.select(picked, 'list');
   const menu = { sites, site, state, onPick: pick };
@@ -96,5 +113,11 @@ function DesktopUi({ sites, store, parts, base, view }: Props) {
 }
 
 export function DesktopShell(props: Props) {
-  return usePhone() ? null : <DesktopUi {...props} />;
+  if (usePhone()) return null;
+  return (
+    <>
+      <DesktopUi {...props} />
+      <LanguageMenu base={props.base} />
+    </>
+  );
 }

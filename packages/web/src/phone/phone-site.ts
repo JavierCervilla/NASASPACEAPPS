@@ -28,6 +28,8 @@
  * names are tested without a page.
  */
 import type { Site } from '@ventana/sim';
+import type { TextKey } from '../i18n/catalogue';
+import type { I18n } from '../i18n/translate';
 import type { NowState } from './widget-types';
 
 /** The part of a site the phone sheet shows. */
@@ -87,11 +89,11 @@ export function toPhoneSite(site: PhoneSite): PhoneSite {
   return { id, name, mission, group, lat, lonEast, approximate };
 }
 
-const NOW_WORDS: Readonly<Record<NowState, string>> = {
-  window: 'window now',
-  sun: 'Sun only now',
-  earth: 'Earth only now',
-  none: 'no window now',
+const NOW_WORDS: Readonly<Record<NowState, TextKey>> = {
+  window: 'row.window',
+  sun: 'row.sun',
+  earth: 'row.earth',
+  none: 'row.none',
 };
 
 /**
@@ -100,13 +102,14 @@ const NOW_WORDS: Readonly<Record<NowState, string>> = {
  * (the selected site), and whether it is approximate.
  */
 export function rowDetail(
+  i18n: I18n,
   site: PhoneSite,
   state: NowState | null,
   region = '',
 ): string {
   const parts = [splitName(site.name).detail || site.mission];
   if (region) parts.unshift(region);
-  if (state) parts.push(NOW_WORDS[state]);
-  if (site.approximate) parts.push('approximate');
+  if (state) parts.push(i18n.t(NOW_WORDS[state]));
+  if (site.approximate) parts.push(i18n.t('row.approximate'));
   return parts.join(' · ');
 }

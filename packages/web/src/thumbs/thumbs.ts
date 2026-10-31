@@ -30,6 +30,7 @@
  * for 2x screens; any other (north of 80° S, or one the API added since
  * the build) has none.
  */
+import type { I18n } from '../i18n/translate';
 import manifest from './thumbs.json';
 
 /** One manifest entry: its files under public/thumbs and its frame. */
@@ -55,22 +56,23 @@ export interface Thumb {
 const ENTRIES: Readonly<Record<string, ThumbEntry>> = manifest;
 
 /**
- * The image of site `id` at `place`, under the site's base path `base`;
- * null when the site has none. `entries` defaults to the manifest.
+ * The image of the site `id` at `place`, under the site's base path
+ * `base`, described in the language of `i18n`; null when the site has
+ * none. `entries` defaults to the manifest.
  */
 export function thumbOf(
-  id: string,
-  place: string,
+  site: { readonly id: string; readonly place: string },
   base: string,
+  i18n: I18n,
   entries: Readonly<Record<string, ThumbEntry>> = ENTRIES,
 ): Thumb | null {
-  const entry = Object.hasOwn(entries, id) ? entries[id] : undefined;
+  const entry = Object.hasOwn(entries, site.id) ? entries[site.id] : undefined;
   if (!entry) return null;
   const dir = `${base.replace(/\/?$/, '/')}thumbs/`;
   return {
     src: `${dir}${entry.file}`,
     srcset: `${dir}${entry.file} 320w, ${dir}${entry.file2x} 640w`,
-    alt: `${place} from orbit, LOLA relief`,
-    caption: `LOLA · ${entry.frameKm} km`,
+    alt: i18n.t('thumb.alt', { place: site.place }),
+    caption: i18n.t('thumb.caption', { km: i18n.number(entry.frameKm) }),
   };
 }

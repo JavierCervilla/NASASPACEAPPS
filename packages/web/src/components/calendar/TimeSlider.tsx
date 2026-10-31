@@ -36,6 +36,7 @@ import { formatInstant } from '../../calendar/instant-format';
 import { monthHours } from '../../calendar/month';
 import { hourOfMonth, moveToHour } from '../../calendar/time-actions';
 import type { TimeStore } from '../../calendar/time-store';
+import { useI18n } from '../i18n-context';
 import type { Calendar, CalendarParts } from './hooks';
 import { NowButton, PlayButton } from './parts';
 
@@ -57,10 +58,11 @@ function dayKeys(time: TimeStore, atMs: number) {
 /** The selected date and «Now», in the strip's head. */
 export function StripClock({ parts, calendar }: Props) {
   const { state } = calendar;
+  const i18n = useI18n();
   if (!state) return null;
   return (
     <div className="strip__clock">
-      <span className="strip__date">{formatInstant(state.atMs)}</span>
+      <span className="strip__date">{formatInstant(i18n, state.atMs)}</span>
       <NowButton parts={parts} live={state.live} />
     </div>
   );
@@ -69,6 +71,7 @@ export function StripClock({ parts, calendar }: Props) {
 /** Play in the labels' column, the slider in the bars' column. */
 export function TimeSlider({ parts, calendar }: Props) {
   const { state, playing } = calendar;
+  const i18n = useI18n();
   if (!state) return null;
   const { atMs } = state;
   return (
@@ -77,8 +80,8 @@ export function TimeSlider({ parts, calendar }: Props) {
       <input
         type="range"
         className="strip__slider"
-        aria-label="Selected hour"
-        aria-valuetext={formatInstant(atMs)}
+        aria-label={i18n.t('calendar.slider')}
+        aria-valuetext={formatInstant(i18n, atMs)}
         min={0}
         max={monthHours(atMs) - 1}
         step={1}

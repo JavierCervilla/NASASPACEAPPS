@@ -30,12 +30,14 @@
  * labels: every marker is already a button named in full.
  */
 import type { Badge } from '../../polar/badge-layout';
+import { useI18n } from '../i18n-context';
 
 export function PolarKey({ badges }: { readonly badges: readonly Badge[] }) {
+  const { t } = useI18n();
   if (badges.length === 0) return null;
   return (
     <div className="polar-key" aria-hidden="true">
-      <p className="polar-key__title">Numbered sites</p>
+      <p className="polar-key__title">{t('polar.numbered')}</p>
       <ol>
         {badges.map(({ id, n, label }) => (
           <li key={id} data-site-id={id}>

@@ -28,10 +28,11 @@ import { describe, expect, it, vi } from 'vitest';
 import { cachedHours } from '../src/phone/hours-cache';
 import type { HoursSource } from '../src/phone/site-hours';
 import { loadMonthHours, widgetsAt } from '../src/phone/widgets-loader';
+import { EN } from './i18n-factories';
 
 /** The widgets at `nowMs`, through a fresh cache: what the sheet shows once the month has loaded. */
 async function loadWidgets(source: HoursSource, id: string, nowMs: number) {
-  return widgetsAt(await loadMonthHours(cachedHours(source), id, nowMs), nowMs);
+  return widgetsAt(await loadMonthHours(cachedHours(source), id, nowMs), nowMs, EN);
 }
 
 const SITES_URL = '/api/v1/sites';
@@ -164,7 +165,7 @@ describe('cachedHours', () => {
     const load = cachedHours(api.source);
     for (const at of ['2026-11-01T00:00:00Z', '2026-11-15T09:00:00Z', '2026-11-30T23:00:00Z']) {
       const hours = await loadMonthHours(load, 'im2-athena', Date.parse(at));
-      expect(widgetsAt(hours, Date.parse(at)).kind).toBe('ready');
+      expect(widgetsAt(hours, Date.parse(at), EN).kind).toBe('ready');
     }
     expect(api.fetch).toHaveBeenCalledOnce();
     await loadMonthHours(load, 'im2-athena', Date.parse('2026-12-01T00:00:00Z'));

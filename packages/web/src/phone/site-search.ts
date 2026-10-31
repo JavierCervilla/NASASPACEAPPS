@@ -29,18 +29,15 @@
  * without a page.
  */
 import type { SiteGroup } from '@ventana/sim';
+import type { I18n } from '../i18n/translate';
 import type { PhoneSite } from './phone-site';
 
-/** The regions, in the order and with the names the picker shows. */
-export const REGIONS: readonly (readonly [SiteGroup, string])[] = [
-  ['south_pole', 'South pole'],
-  ['apollo', 'Apollo'],
-  ['other', 'Other'],
-];
+/** The regions, in the order the picker shows them. */
+export const REGIONS: readonly SiteGroup[] = ['south_pole', 'apollo', 'other'];
 
 /** The region's name: «South pole», «Apollo» or «Other». */
-export function regionName(group: SiteGroup): string {
-  return REGIONS.find(([g]) => g === group)?.[1] ?? group;
+export function regionName(i18n: I18n, group: SiteGroup): string {
+  return i18n.t(`region.${group}`);
 }
 
 export interface SiteFilter {

@@ -28,25 +28,27 @@
  * month loads, an honest error with a retry, or that the month is outside
  * the data the API holds.
  */
+import { useI18n } from '../i18n-context';
 import type { Calendar } from './hooks';
 
 export function StripStatus({ calendar }: { readonly calendar: Calendar }) {
   const { result, retry } = calendar;
+  const { t } = useI18n();
   // Loaded but holding none of the month counts as a failure too.
   if (result.kind === 'error' || result.kind === 'ready') {
     return (
       <div className="strip-status" role="alert">
-        <p>The Sun and Earth data for this month could not load.</p>
-        <button type="button" onClick={retry}>Try again</button>
+        <p>{t('data.monthError')}</p>
+        <button type="button" onClick={retry}>{t('data.retry')}</button>
       </div>
     );
   }
   if (result.kind === 'outside') {
     return (
       <p className="strip-status" role="status">
-        Outside the data window (2026–2027)
+        {t('data.outside')}
       </p>
     );
   }
-  return <div className="strip-status strip-status--loading" aria-busy="true" aria-label="Loading this month" />;
+  return <div className="strip-status strip-status--loading" aria-busy="true" aria-label={t('calendar.loading')} />;
 }

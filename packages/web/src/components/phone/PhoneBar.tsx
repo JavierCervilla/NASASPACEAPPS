@@ -32,6 +32,7 @@
 import type { Ref } from 'react';
 import { siteLabels, type PhoneSite } from '../../phone/phone-site';
 import type { NowState } from '../../phone/widget-types';
+import { useI18n } from '../i18n-context';
 import { FitLine } from './FitLine';
 import { Icon } from './Icon';
 
@@ -56,12 +57,14 @@ interface Props {
  */
 function SitePill({ site, state, lines, onOpenPicker }: Props) {
   const { pill } = siteLabels(site);
+  const { t } = useI18n();
   const tone = state ?? 'unknown';
+  const label = t('pill.label', { name: site.name, state: lines[0] ?? '' });
   return (
     <button
       type="button"
       className="site-pill"
-      aria-label={`Change site, now ${site.name}: ${lines[0] ?? ''}`}
+      aria-label={label}
       onClick={onOpenPicker}
     >
       <span className="signal-dot" data-state={state ?? 'loading'} />
@@ -74,13 +77,23 @@ function SitePill({ site, state, lines, onOpenPicker }: Props) {
   );
 }
 
-/** «Sun + Earth = window», each word in its signal colour. */
+/**
+ * «Sun + Earth = window», each word in its signal colour. «= window» never
+ * breaks inside and «+» stays with «Sun», so a narrow bar wraps it after
+ * «Earth», and only very large text also after «+».
+ */
 function Rule() {
+  const { t } = useI18n();
   return (
     <p className="phone-bar__rule">
-      <span data-tone="sun">Sun</span> + <span data-tone="earth">Earth</span>
-      {' = '}
-      <span data-tone="window">window</span>
+      <span data-tone="sun">{t('rule.sun')}</span>
+      {'\u00a0+ '}
+      <span data-tone="earth">{t('rule.earth')}</span>
+      {' '}
+      <span className="phone-bar__rule-group">
+        {'= '}
+        <span data-tone="window">{t('rule.window')}</span>
+      </span>
     </p>
   );
 }

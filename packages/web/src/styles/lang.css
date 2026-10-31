@@ -101,6 +101,11 @@
   gap: 12px;
 }
 
+/* Holds the site button's height before the island fills it. */
+.site-slot {
+  min-height: 44px;
+}
+
 /* Holds the language button's size before the island fills it. */
 .lang-slot {
   min-width: 84px;
@@ -259,8 +264,29 @@
   transform: translateX(calc((1 - var(--push)) * 105%));
 }
 
-.push[data-pushed='false'] .push__page:empty {
+/*
+ * Whichever side rests out of sight is hidden, so the list never shows
+ * under the short language page (the one being pushed or popped to is
+ * shown at once, so it can take the focus); while they slide, the page is opaque
+ * sheet material, and at rest it is the sheet's own (no second tint).
+ */
+.push[data-at='page'][data-pushed='true'] .push__root,
+.push[data-at='root'][data-pushed='false'] .push__page {
   visibility: hidden;
+}
+
+.push[data-at='moving'] .push__page {
+  background: var(--push-page);
+}
+
+.push__page {
+  --push-page: #16171c;
+}
+
+@media (prefers-color-scheme: light) {
+  .push__page {
+    --push-page: #f2f2f7;
+  }
 }
 
 /* Reduced motion: a cross-fade in place of the slide (apple-design §14). */

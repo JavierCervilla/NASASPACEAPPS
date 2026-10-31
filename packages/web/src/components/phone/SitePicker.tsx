@@ -61,7 +61,7 @@ function Search(props: { value: string; onChange: (v: string) => void }) {
       <span className="visually-hidden">{t('picker.search')}</span>
       <input
         type="search"
-        placeholder={t('picker.search')}
+        placeholder={t('picker.placeholder')}
         value={props.value}
         onChange={(event) => props.onChange(event.target.value)}
       />

@@ -176,6 +176,11 @@
   color: var(--text-secondary);
 }
 
+/* «= window» never breaks inside (VENT-35, German). */
+.phone-bar__rule-group {
+  white-space: nowrap;
+}
+
 .phone-bar__rule [data-tone],
 .site-pill__state {
   font-weight: 600;

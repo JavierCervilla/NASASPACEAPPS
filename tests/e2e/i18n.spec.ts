@@ -91,6 +91,12 @@ test.describe('locale routes', () => {
     await expect(page.locator('.phone-bar__rule')).toHaveText('Sol + Tierra = ventana');
     await expect(page.getByRole('list', { name: 'Este lugar ahora' })).toBeVisible();
     await expect(page.locator('.summary__coords')).toHaveText('84,79° S, 29,20° E');
+    // Site names: the proper names stay, the words around them are Spanish (QA PR #17).
+    await page.getByRole('navigation', { name: 'Vistas' }).getByRole('button', { name: 'Lugares' }).click();
+    const list = page.getByRole('list', { name: 'Lugares' });
+    await expect(list.getByRole('button', { name: /^Región de Malapert A/ })).toBeVisible();
+    await expect(list).toContainText('región candidata de Artemis');
+    await expect(list).not.toContainText(/candidate region|planned site|crater area|north of/);
   });
 });
 
@@ -166,6 +172,39 @@ test.describe('phone language list, 390x844', () => {
   });
 });
 
+/** Whether the boxes of `a` and `b` overlap. */
+const overlap = (a: { x: number; y: number; width: number; height: number }, b: typeof a) =>
+  a.x < b.x + b.width && b.x < a.x + a.width && a.y < b.y + b.height && b.y < a.y + a.height;
+
+test.describe('phone language list with motion on, 390x844 (QA PR #17)', () => {
+  test.use({ viewport: { width: 390, height: 844 }, hasTouch: true, isMobile: true });
+
+  test('the push settles with the list alone on screen, and Back brings the sites back alone', async ({ page }) => {
+    await page.emulateMedia({ reducedMotion: 'no-preference', colorScheme: 'dark' });
+    await page.clock.setFixedTime(NOW);
+    await stubApi(page);
+    await page.goto('./de/');
+    await expect(page.locator('.globe-markers')).toHaveAttribute('data-state', 'window');
+    await page.locator('.tab-bar .tab').last().click();
+    await page.locator('.lang-row').click();
+    // The spring settles well within 1.5 s (response 0.4 s, critically damped).
+    await page.waitForTimeout(1500);
+    await expect(page.locator('.picker__title')).toBeHidden({ timeout: 100 });
+    await expect(page.locator('.push')).toHaveAttribute('data-at', 'page');
+    await expect(page.getByRole('list', { name: 'Landeplätze' })).toBeHidden();
+    const back = (await page.locator('.lang-page__back').boundingBox())!;
+    const title = (await page.locator('.lang-page__title').boundingBox())!;
+    expect(overlap(back, title)).toBe(false);
+    expect(await page.locator('.push__page').evaluate((el) => el.getBoundingClientRect().left)).toBeGreaterThanOrEqual(0);
+    await page.locator('.lang-page__back').click();
+    await expect(page.locator('.push')).toHaveAttribute('data-at', 'root', { timeout: 3000 });
+    await expect(page.locator('.picker__title')).toBeVisible();
+    await expect(page.locator('.lang-list')).toHaveCount(0);
+    const done = (await page.locator('.picker__done').boundingBox())!;
+    expect(overlap((await page.locator('.picker__title').boundingBox())!, done)).toBe(false);
+  });
+});
+
 test.describe('first visit to /, browser in Spanish', () => {
   test.use({ locale: 'es-ES' });
 
@@ -199,7 +238,7 @@ const outside = (page: Page, selector: string) =>
     }).map((el) => el.className || el.tagName),
   );
 
-for (const [path, name] of [['de/', 'German'], ['en-xa/', 'the pseudo-locale']] as const) {
+for (const [path, name] of [['de/', 'German'], ['fr/', 'French'], ['en-xa/', 'the pseudo-locale']] as const) {
   for (const [width, height] of [[320, 640], [360, 780], [390, 844]] as const) {
     test.describe(`phone, ${width}x${height}, ${name}: nothing cut`, () => {
       test.use({ viewport: { width, height }, hasTouch: true, isMobile: true });
@@ -216,6 +255,14 @@ for (const [path, name] of [['de/', 'German'], ['en-xa/', 'the pseudo-locale']] 
         await expect(page.locator('.lang-row')).toBeVisible();
         expect(await outside(page, '.lang-row, .lang-row__value, .picker__done, .segmented')).toEqual([]);
         expect(await allWhole(page, '.segmented button')).toEqual([]);
+        // The search field's placeholder is drawn whole, never cut mid-word (QA PR #17).
+        expect(await page.locator('.search input').evaluate((input: HTMLInputElement) => {
+          const style = getComputedStyle(input);
+          const context = document.createElement('canvas').getContext('2d')!;
+          context.font = `${style.fontWeight} ${style.fontSize} ${style.fontFamily}`;
+          const room = input.clientWidth - parseFloat(style.paddingLeft) - parseFloat(style.paddingRight);
+          return context.measureText(input.placeholder).width <= room;
+        })).toBe(true);
       });
     });
   }

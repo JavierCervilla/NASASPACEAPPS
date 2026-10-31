@@ -12,7 +12,8 @@
   teclado (flechas, Inicio, Fin, Escape devuelve el foco) y el idioma elegido se recuerda. La primera visita a `/` abre
   el idioma del navegador una sola vez; un enlace con idioma (`/fr/`) se respeta siempre. Fechas, números («84,79° S»),
   porcentajes y duraciones («7 j 1 h», «7 Tg. 1 Std.») van en el formato de cada idioma, y los estados y fechas de las
-  misiones también se traducen. Los nombres de sitios y misiones no se traducen. Las traducciones las ha escrito
+  misiones también se traducen, con sus fechas. De los nombres de sitios y misiones se traducen las palabras
+  descriptivas («Región de Malapert A», «al norte de Boguslawsky»); los nombres propios se quedan como están. Las traducciones las ha escrito
   Claude: conviene que una persona nativa las revise antes del 13 de noviembre.
 - Acabado Liquid Glass (VENT-27, prototipo VENT-16 aprobado): en los navegadores Chromium con potencia (Chrome, Edge,
   Brave, Android), las superficies flotantes refractan lo que hay debajo como un vidrio grueso y tienen un borde que

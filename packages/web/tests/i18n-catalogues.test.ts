@@ -32,7 +32,9 @@ import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import type { PluralForms } from '../src/i18n/catalogue';
 import { CATALOGUES, catalogueOf } from '../src/i18n/catalogues';
+import { formatStatusDate, missionLine } from '../src/card/site-facts';
 import { dataText } from '../src/i18n/data-text';
+import { localName, localSite } from '../src/i18n/site-names';
 import { FORMAT_TAGS, LOCALES } from '../src/i18n/locales';
 import { pseudoText } from '../src/i18n/pseudo';
 import { EN, i18nOf } from './i18n-factories';
@@ -101,9 +103,45 @@ describe('site data in the visitor’s language', () => {
     for (const text of free) expect(dataText(i18n, text), text).not.toBe(text);
   });
 
-  it('keeps English as the data wrote it, and unknown text as it is', () => {
-    for (const text of free) expect(dataText(EN, text)).toBe(text);
+  it('keeps English words as the data wrote them, its dates in the visitor’s format, and unknown text as it is', () => {
+    expect(dataText(EN, 'crashed 2025-06-05 (failed landing)')).toBe('crashed 5 Jun 2025 (failed landing)');
+    expect(dataText(EN, 'NET Q1 2027 (launch)')).toBe('NET Q1 2027 (launch)');
+    expect(dataText(i18nOf('es'), 'crashed 2025-06-05 (failed landing)')).toBe('se estrelló el 5 jun 2025 (aterrizaje fallido)');
+    expect(dataText(i18nOf('de'), 'planned (launch slipped from 2026-08 to 2027)')).toBe('geplant (Start von Aug. 2026 auf 2027 verschoben)');
     expect(dataText(i18nOf('fr'), 'a status added later')).toBe('a status added later');
+  });
+});
+
+/** English descriptive words of the site data; proper names never hold them. */
+const ENGLISH_WORDS =
+  /\b(region|planned|site|north|crater|area|connecting|ridge|Peak|near|target|candidate region|far side|crashed|crewed|landing|landed|originally|since|launch|announced|failed|before|slipped|list|NET|TBA)\b/;
+const ISO_DATE = /\d{4}-\d{2}(-\d{2})?/;
+
+describe('site and mission names in the visitor’s language (QA PR #17)', () => {
+  const sites = JSON.parse(
+    readFileSync(new URL('../../server/data/sites.json', import.meta.url), 'utf8'),
+  ) as { name: string; mission: string; agency: string; status: string; statusDate: string; approximate: boolean; lat: number; lonEast: number; id: string; group: 'south_pole' }[];
+
+  it.each(LOCALES.filter((locale) => locale !== 'en'))('%s leaves no English descriptive word nor ISO date in any name, mission or status', (locale) => {
+    const i18n = i18nOf(locale);
+    for (const site of sites) {
+      const local = localSite(i18n, site);
+      for (const text of [local.name, local.mission, missionLine(i18n, site), formatStatusDate(i18n, site.statusDate)]) {
+        expect(text, `${locale}: ${site.id}`).not.toMatch(ENGLISH_WORDS);
+        expect(text, `${locale}: ${site.id}`).not.toMatch(ISO_DATE);
+      }
+    }
+  });
+
+  it('keeps proper names and English names as the data wrote them', () => {
+    for (const site of sites) expect(localSite(EN, site)).toEqual(site);
+    const es = i18nOf('es');
+    expect(localName(es, 'Malapert A region (IM-1 Odysseus)')).toBe('Región de Malapert A (IM-1 Odysseus)');
+    expect(localName(es, 'Luna-25 planned site (north of Boguslawsky)')).toBe('Lugar previsto de Luna-25 (al norte de Boguslawsky)');
+    expect(localName(i18nOf('de'), 'Von Kármán crater (Chang\'e-4, far side)')).toBe('Krater Von Kármán (Chang\'e-4, Mondrückseite)');
+    expect(localName(es, 'Haworth (Artemis candidate region); Shioli crater (SLIM)')).toBe(
+      'Haworth (región candidata de Artemis); Cráter Shioli (SLIM)',
+    );
   });
 });
 

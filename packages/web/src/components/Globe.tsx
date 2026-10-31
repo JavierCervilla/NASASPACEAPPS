@@ -28,7 +28,8 @@ import type { TimeStore } from '../calendar/time-store';
 import { startGlobe, type GlobeStatus } from '../globe/boot';
 import { pageAnchors } from '../globe/band-watch';
 import { describeSun } from '../globe/describe';
-import { markerLabel } from '../globe/markers';
+import { markerLabel, type GlobeSite } from '../globe/markers';
+import { localName } from '../i18n/site-names';
 import type { I18n } from '../i18n/translate';
 import type { WatchedValue } from '../lib/watched-value';
 import { prefersSaveData } from '../lib/viewport';
@@ -73,7 +74,9 @@ function useGlobe(props: Props, i18n: I18n) {
     const anchors = () => pageAnchors(el);
     const options = { time, base, sitesUrl, store, sheetEdge, state };
     const saveData = prefersSaveData();
-    const markerName = markerLabel.bind(null, i18n);
+    // The globe's sites come from the API, named in English.
+    const markerName = (site: GlobeSite): string =>
+      markerLabel(i18n, { ...site, name: localName(i18n, site.name) });
     const deps = { ...options, saveData, reducedMotion, warn, anchors };
     const start = startGlobe(el, { ...deps, markerName }, setStatus, saveData);
     loader.current = start.load;

@@ -77,16 +77,23 @@ function SitePill({ site, state, lines, onOpenPicker }: Props) {
   );
 }
 
-/** «Sun + Earth = window», each word in its signal colour. */
+/**
+ * «Sun + Earth = window», each word in its signal colour. «= window» never
+ * breaks inside and «+» stays with «Sun», so a narrow bar wraps it after
+ * «Earth», and only very large text also after «+».
+ */
 function Rule() {
   const { t } = useI18n();
   return (
     <p className="phone-bar__rule">
       <span data-tone="sun">{t('rule.sun')}</span>
-      {' + '}
+      {'\u00a0+ '}
       <span data-tone="earth">{t('rule.earth')}</span>
-      {' = '}
-      <span data-tone="window">{t('rule.window')}</span>
+      {' '}
+      <span className="phone-bar__rule-group">
+        {'= '}
+        <span data-tone="window">{t('rule.window')}</span>
+      </span>
     </p>
   );
 }

@@ -31,15 +31,23 @@
 import { useEffect, useRef, useState, type RefObject } from 'react';
 import { createPush, type PushMotion } from '../../lib/push-motion';
 
+/** Where the push rests: on the list, on the page, or between them. */
+export type PushAt = 'root' | 'page' | 'moving';
+
+const restOf = (value: number): PushAt => {
+  if (value === 0) return 'root';
+  return value === 1 ? 'page' : 'moving';
+};
+
 /**
- * Springs `el` to the page while `pushed`; whether it rests on the list,
- * so the page can leave the tree only once it is out of sight.
+ * Springs `el` to the page while `pushed`; where it rests, so the page
+ * leaves the tree, and the list hides, only once out of sight.
  */
 export function usePush(
   el: RefObject<HTMLElement | null>,
   pushed: boolean,
-): boolean {
-  const [home, setHome] = useState(true);
+): PushAt {
+  const [at, setAt] = useState<PushAt>('root');
   const motion = useRef<PushMotion | null>(null);
   useEffect(() => {
     const node = el.current;
@@ -49,12 +57,12 @@ export function usePush(
       cancel: (id) => cancelAnimationFrame(id),
       onValue: (value) => {
         node.style.setProperty('--push', String(value));
-        setHome(value === 0);
+        setAt(restOf(value));
       },
     });
     motion.current = push;
     return push.dispose;
   }, [el]);
   useEffect(() => motion.current?.to(pushed ? 1 : 0), [pushed]);
-  return home;
+  return at;
 }

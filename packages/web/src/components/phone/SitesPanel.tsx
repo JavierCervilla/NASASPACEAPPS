@@ -90,17 +90,17 @@ export function SitesPanel(props: PickerProps & { readonly base: string }) {
   const [pushed, setPushed] = useState(false);
   const stack = useRef<HTMLDivElement>(null);
   const row = useRef<HTMLButtonElement>(null);
-  const home = usePush(stack, pushed);
+  const at = usePush(stack, pushed);
   useFocusOnReturn(row, pushed);
   const back = (): void => setPushed(false);
   const languageRow = <LanguageRow ref={row} onOpen={() => setPushed(true)} />;
   return (
-    <div ref={stack} className="push" data-pushed={pushed}>
+    <div ref={stack} className="push" data-pushed={pushed} data-at={at}>
       <div className="push__root" inert={pushed}>
         <SitePicker {...picker} languageRow={languageRow} />
       </div>
       <div className="push__page" inert={!pushed}>
-        {pushed || !home ? <LanguagePage base={base} onBack={back} /> : null}
+        {pushed || at !== 'root' ? <LanguagePage base={base} onBack={back} /> : null}
       </div>
     </div>
   );

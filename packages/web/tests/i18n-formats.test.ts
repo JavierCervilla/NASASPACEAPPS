@@ -74,11 +74,11 @@ describe('numbers and shares', () => {
 });
 
 describe('durations', () => {
-  // Outside English a number never wraps away from its unit: a no-break space joins them.
+  // Outside English a number never wraps away from its unit; a narrow tile breaks only between days and hours.
   it('writes days and hours with each language’s units', () => {
     expect(formatDuration(EN, 169)).toBe('7 d 1 h');
     expect(formatDuration(fr, 169)).toBe('7\u00a0j 1\u00a0h');
-    expect(formatDuration(de, 169)).toBe('7\u00a0Tg. 1\u00a0Std.');
+    expect(formatDuration(de, 169)).toBe('7\u00a0T 1\u00a0Std.');
     expect(formatDuration(it_, 72)).toBe('3\u00a0g');
     expect(formatAtLeast(es, 173)).toBe('al menos 7\u00a0d');
   });

@@ -73,9 +73,25 @@ function Check() {
   );
 }
 
-function Option({ locale, base }: { locale: Locale; base: string }) {
+/** The language's own name, its name in the page's language, the check. */
+function OptionLabel(props: { locale: Locale; current: boolean }) {
+  const { locale, current } = props;
   const i18n = useI18n();
-  const current = locale === i18n.locale;
+  // Its name in the page's language, unless that is its own name again.
+  const local = i18n.t(`lang.name.${locale}`);
+  return (
+    <>
+      <span className="lang-option__name" lang={locale}>{AUTONYMS[locale]}</span>
+      {local === AUTONYMS[locale] ? null : (
+        <span className="lang-option__local">{local}</span>
+      )}
+      {current ? <Check /> : null}
+    </>
+  );
+}
+
+function Option({ locale, base }: { locale: Locale; base: string }) {
+  const current = locale === useI18n().locale;
   const choose = (event: MouseEvent<HTMLAnchorElement>): void => {
     event.preventDefault();
     switchLocale(base, locale, { storage: localStore(), location });
@@ -91,9 +107,7 @@ function Option({ locale, base }: { locale: Locale; base: string }) {
         tabIndex={current ? 0 : -1}
         onClick={choose}
       >
-        <span className="lang-option__name" lang={locale}>{AUTONYMS[locale]}</span>
-        <span className="lang-option__local">{i18n.t(`lang.name.${locale}`)}</span>
-        {current ? <Check /> : null}
+        <OptionLabel locale={locale} current={current} />
       </a>
     </li>
   );

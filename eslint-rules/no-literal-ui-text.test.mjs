@@ -50,6 +50,10 @@ tester.run('no-literal-ui-text', rule, {
     { name: 'attributes nobody reads', code: 'const a = <a className="lang-option" role="menuitemradio" href="/es/" />;' },
     { name: 'a computed attribute', code: 'const a = <img alt={thumb.alt} />;' },
     { name: 'an empty alt for a decorative image', code: 'const a = <img alt="" />;' },
+    { name: 'punctuation in an expression', code: "const a = <p>{' + '}{pct === undefined ? '–' : value}</p>;" },
+    { name: 'a computed branch', code: "const a = <p>{when ?? t('widgets.rightNow')}</p>;" },
+    { name: 'a DOM write from the catalogue', code: "el.textContent = t('pill.loading'); el.setAttribute('aria-label', name);" },
+    { name: 'attributes that are not read', code: "el.setAttribute('data-state', 'window'); el.className = 'globe-marker';" },
   ],
   invalid: [
     {
@@ -76,6 +80,41 @@ tester.run('no-literal-ui-text', rule, {
       name: 'alt and title too',
       code: 'const a = <><img alt="The Moon" /><span title="Coming soon" /></>;',
       errors: [{ messageId: 'attribute' }, { messageId: 'attribute' }],
+    },
+    {
+      name: 'a literal string as a child',
+      code: "const a = <span>{'Yes'}</span>;",
+      errors: [{ messageId: 'text', data: { text: 'Yes' } }],
+    },
+    {
+      name: 'both branches of a conditional child',
+      code: "const a = <span>{open ? 'Yes' : 'No'}</span>;",
+      errors: [{ messageId: 'text', data: { text: 'Yes' } }, { messageId: 'text', data: { text: 'No' } }],
+    },
+    {
+      name: 'a logical child',
+      code: "const a = <span>{busy && 'Loading'}{name || 'Unknown'}</span>;",
+      errors: [{ messageId: 'text', data: { text: 'Loading' } }, { messageId: 'text', data: { text: 'Unknown' } }],
+    },
+    {
+      name: 'a template child',
+      code: 'const a = <span>{`${n} sites`}</span>;',
+      errors: [{ messageId: 'text' }],
+    },
+    {
+      name: 'a conditional attribute',
+      code: "const a = <button aria-label={open ? 'Open' : 'Closed'} />;",
+      errors: [{ messageId: 'attribute', data: { name: 'aria-label', text: 'Open' } }, { messageId: 'attribute', data: { name: 'aria-label', text: 'Closed' } }],
+    },
+    {
+      name: 'a DOM text write',
+      code: "el.textContent = 'Loading…';",
+      errors: [{ messageId: 'attribute', data: { name: 'textContent', text: 'Loading…' } }],
+    },
+    {
+      name: 'a DOM attribute write',
+      code: "el.setAttribute('aria-label', `Marker ${n}`);",
+      errors: [{ messageId: 'attribute', data: { name: 'aria-label', text: 'Marker' } }],
     },
     {
       name: 'a proper noun not in the allow list',

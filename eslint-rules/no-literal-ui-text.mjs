@@ -28,10 +28,14 @@
  * (VENT-35). Every word a visitor reads or hears comes from the message
  * catalogues (packages/web/src/i18n/messages/*.json), so it exists in all
  * five languages. Flagged: JSX text (in .tsx and .astro templates) with a
- * letter in it, and a string with a letter given to an attribute a person
+ * letter in it; a string with a letter given to an attribute a person
  * reads or a screen reader speaks (aria-label, alt, title, placeholder…),
- * as a literal or a template. Text with no letters (numbers, «°», «–»,
- * «·») is not language. Proper nouns that never change go in `allow`.
+ * as a literal or a template; the same strings reached through a JSX
+ * expression, as a child or an attribute, including both branches of
+ * `? :`, `&&`, `||` and `??`; and, in plain .ts DOM code, a literal
+ * written to `textContent`, `title`, `ariaLabel`… or given to
+ * `setAttribute('aria-label', …)`. Text with no letters (numbers, «°»,
+ * «–», «·») is not language. Proper nouns that never change go in `allow`.
  */
 
 const LETTER = /\p{L}/u;
@@ -50,16 +54,29 @@ const DEFAULT_ATTRIBUTES = [
 const attributeName = (node) =>
   node.name.type === 'JSXNamespacedName' ? `${node.name.namespace.name}:${node.name.name.name}` : node.name.name;
 
-/** The literal text of an attribute's value, or null when it is computed. */
-function literalText(value) {
-  if (!value) return null;
-  if (value.type === 'Literal') return typeof value.value === 'string' ? value.value : null;
-  if (value.type !== 'JSXExpressionContainer') return null;
-  const { expression } = value;
-  if (expression.type === 'Literal' && typeof expression.value === 'string') return expression.value;
-  if (expression.type === 'TemplateLiteral') return expression.quasis.map((q) => q.value.cooked).join(' ');
-  return null;
+/**
+ * The literal texts an expression can evaluate to: a string, the static
+ * parts of a template, and both branches of `a ? b : c` or `a && b` /
+ * `a ?? b`. A call or a name is computed: none.
+ */
+function literalTexts(node) {
+  if (!node) return [];
+  if (node.type === 'Literal') return typeof node.value === 'string' ? [node.value] : [];
+  if (node.type === 'TemplateLiteral') return [node.quasis.map((q) => q.value.cooked).join(' ')];
+  if (node.type === 'ConditionalExpression') return [...literalTexts(node.consequent), ...literalTexts(node.alternate)];
+  if (node.type === 'LogicalExpression') return [...literalTexts(node.left), ...literalTexts(node.right)];
+  return [];
 }
+
+/** The literal texts of an attribute's value, `="x"` or `={…}`. */
+function attributeTexts(value) {
+  if (!value) return [];
+  if (value.type === 'Literal') return literalTexts(value);
+  return value.type === 'JSXExpressionContainer' ? literalTexts(value.expression) : [];
+}
+
+/** The properties of a DOM node a person reads or a screen reader speaks. */
+const DOM_PROPERTIES = new Set(['textContent', 'innerText', 'title', 'placeholder', 'alt', 'ariaLabel', 'ariaRoleDescription']);
 
 export default {
   meta: {
@@ -96,9 +113,32 @@ export default {
       JSXAttribute(node) {
         const name = attributeName(node);
         if (!attributes.has(name)) return;
-        const text = literalText(node.value);
-        if (text !== null && isLanguage(text)) {
+        for (const text of attributeTexts(node.value).filter(isLanguage)) {
           context.report({ node, messageId: 'attribute', data: { name, text: clip(text) } });
+        }
+      },
+      // `{'Yes'}`, `{open ? 'Open' : 'Closed'}` and `{a && 'x'}` as children.
+      JSXExpressionContainer(node) {
+        if (node.parent.type === 'JSXAttribute') return;
+        for (const text of literalTexts(node.expression).filter(isLanguage)) {
+          context.report({ node, messageId: 'text', data: { text: clip(text) } });
+        }
+      },
+      // In a .ts DOM writer: `el.textContent = 'Loading'`.
+      AssignmentExpression(node) {
+        const { left } = node;
+        if (left.type !== 'MemberExpression' || left.computed || !DOM_PROPERTIES.has(left.property.name)) return;
+        for (const text of literalTexts(node.right).filter(isLanguage)) {
+          context.report({ node, messageId: 'attribute', data: { name: left.property.name, text: clip(text) } });
+        }
+      },
+      // `el.setAttribute('aria-label', 'Open')`.
+      CallExpression(node) {
+        const { callee, arguments: [name, value] } = node;
+        const isSet = callee.type === 'MemberExpression' && !callee.computed && callee.property.name === 'setAttribute';
+        if (!isSet || name?.type !== 'Literal' || !attributes.has(name.value)) return;
+        for (const text of literalTexts(value).filter(isLanguage)) {
+          context.report({ node, messageId: 'attribute', data: { name: name.value, text: clip(text) } });
         }
       },
     };

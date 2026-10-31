@@ -82,7 +82,9 @@ Every visible change follows `.claude/skills/apple-design/SKILL.md` (vendored fr
   locale, typed from `en.json`), never as a literal. To add a string: add the key to `en.json` and to the other four,
   then read it with `useI18n().t('key')` in a component or pass the `I18n` into a pure module; counts use plural forms
   (`plural`, by `Intl.PluralRules`), and numbers, dates, months and coordinates go through Intl (`src/i18n/format.ts`).
-  Proper nouns (Ventana Lunar, site and mission names, NASA, JPL, DSN stations) are not translated. The local rule
+  Proper nouns (Ventana Lunar, NASA, JPL, DSN stations, the proper names inside site and mission names) are not
+  translated; the descriptive words of the site data are, through the `siteName.*` and `siteData.*` patterns
+  (`src/i18n/site-names.ts`, `src/i18n/data-text.ts`), whose dates Intl writes. The local rule
   `eslint-rules/no-literal-ui-text.mjs` fails on literal text in JSX and Astro markup and in `aria-label`, `alt`,
   `title`, `placeholder`…; `tests/i18n-catalogues.test.ts` fails when a catalogue misses a key, a placeholder or a
   plural form, or a site status has no translation. The selector (desktop header menu, phone Sites sheet row) keeps the

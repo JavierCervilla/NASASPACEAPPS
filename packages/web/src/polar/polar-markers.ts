@@ -62,17 +62,23 @@ export interface PolarMarker {
 }
 
 /**
- * The leading words the places of `members` share: «Nobile» for «Nobile
- * region near Mons Mouton» and «Nobile Rim 1»; the first place if none.
+ * The words the places of `members` share, longest run first and starting
+ * with a name: «Nobile» for «Nobile region near Mons Mouton» and «Nobile
+ * Rim 1», and for «Región de Nobile cerca de Mons Mouton» too, where the
+ * language puts the name later; the first place if none.
  */
 function sharedPlace(members: readonly GlobeSite[]): string {
   const places = members.map(({ name }) => splitName(name).title.split(' '));
   const [first = []] = places;
-  const differs = first.findIndex((word, i) =>
-    places.some((words) => words[i] !== word),
-  );
-  const shared = differs === -1 ? first : first.slice(0, differs);
-  return (shared.length > 0 ? shared : first).join(' ');
+  const padded = places.map((words) => ` ${words.join(' ')} `);
+  for (let size = first.length; size > 0; size -= 1) {
+    for (let at = 0; at + size <= first.length; at += 1) {
+      const run = first.slice(at, at + size).join(' ');
+      const named = /^\p{Lu}/u.test(run);
+      if (named && padded.every((p) => p.includes(` ${run} `))) return run;
+    }
+  }
+  return first.join(' ');
 }
 
 /**

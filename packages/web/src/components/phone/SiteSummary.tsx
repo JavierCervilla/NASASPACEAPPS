@@ -45,7 +45,9 @@ interface Props {
   readonly when: string | null;
   /** The site's base path, for the thumbnail. */
   readonly base: string;
-  /** Under the widgets: the computed caption and Horizons' state. */
+  /** Over the widgets: that Horizons is down, with its retry. */
+  readonly status?: ReactNode;
+  /** Under the widgets: the computed caption. */
   readonly notes?: ReactNode;
 }
 
@@ -66,7 +68,8 @@ function Coords({ site }: { readonly site: PhoneSite }) {
 }
 
 export function SiteSummary(props: Props) {
-  const { site, result, onRetry, when, base, notes } = props;
+  const { site, result, onRetry, when, base, status, notes } = props;
+  const ready = result.kind === 'ready';
   const { title, subtitle } = siteLabels(site);
   const i18n = useI18n();
   const thumb = thumbOf({ id: site.id, place: title }, base, i18n);
@@ -82,8 +85,9 @@ export function SiteSummary(props: Props) {
           <Coords site={site} />
         </p>
       </div>
+      {ready ? status : null}
       <Widgets result={result} onRetry={onRetry} when={when} />
-      {result.kind === 'ready' ? notes : null}
+      {ready ? notes : null}
     </div>
   );
 }

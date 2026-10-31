@@ -159,3 +159,19 @@
   text-align: center;
   justify-content: center;
 }
+
+/*
+ * The phone's summary does not scroll at half, so the Horizons-down note
+ * sits between the head and the widgets, clear of the tab bar: the text
+ * wraps beside its retry, never under it, so the note stays one row.
+ */
+.summary .source-note--down {
+  flex-wrap: nowrap;
+  justify-content: space-between;
+  text-align: start;
+}
+
+.summary .source-note__retry {
+  flex: none;
+}
+

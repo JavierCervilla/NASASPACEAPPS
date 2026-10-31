@@ -34,7 +34,7 @@
 import { execFileSync } from 'node:child_process';
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
-import { expect, test, type Page } from '@playwright/test';
+import { expect, test, type Locator, type Page } from '@playwright/test';
 
 type Box = { x: number; y: number; width: number; height: number };
 import { SITES, stubApi } from './api-stub';
@@ -381,6 +381,80 @@ test.describe('phone, 390x844: computed data and the stale answer', () => {
     await evidence(page, 'phone-computed-2029');
   });
 });
+
+/** The site route's requests, counted on top of the stub. */
+async function countSiteRequests(page: Page): Promise<() => number> {
+  let asked = 0;
+  await page.route(/\/api\/v1\/sites\/[^/?]+\?/, async (route) => {
+    asked += 1;
+    await route.fallback();
+  });
+  return () => asked;
+}
+
+/** Whether a tap at the element's centre lands on it, not on a surface above it. */
+const hitAtCentre = (locator: Locator) =>
+  locator.evaluate((el) => {
+    const r = el.getBoundingClientRect();
+    return document.elementFromPoint(r.x + r.width / 2, r.y + r.height / 2) === el;
+  });
+
+// Orchestrator's decision on PR #19: at half the summary does not scroll, so the Horizons-down note sits above the
+// widgets, where its retry is clear of the tab bar.
+for (const viewport of [
+  { width: 390, height: 844 },
+  { width: 360, height: 780 },
+]) {
+  test.describe(`phone, ${viewport.width}x${viewport.height}: Horizons down at half`, () => {
+    test.use({ viewport, hasTouch: true, isMobile: true });
+
+    const retryIn = (page: Page) =>
+      page
+        .locator('.summary')
+        .getByRole('status')
+        .filter({ hasText: 'Horizons unavailable: showing the computed sky' })
+        .getByRole('button', { name: 'Try again' });
+
+    /** The retry's box is clear of the tab bar and the screen's bottom, and a tap lands on it. */
+    async function expectReachable(page: Page): Promise<void> {
+      const retry = retryIn(page);
+      await expect(retry).toBeInViewport({ ratio: 1 });
+      const tabs = (await page.getByRole('navigation', { name: 'Views' }).boundingBox())!;
+      await expect.poll(async () => {
+        const box = (await retry.boundingBox())!;
+        return box.y + box.height <= tabs.y;
+      }).toBe(true);
+      expect(await hitAtCentre(retry)).toBe(true);
+    }
+
+    test('the «Try again» of the Horizons-down note is clear of the tab bar, and a tap retries', async ({ page }) => {
+      await stubApi(page, { status: 500 });
+      const asked = await countSiteRequests(page);
+      await open(page);
+      await expect(page.locator('.widget')).toHaveCount(4);
+      await expectReachable(page);
+      const before = asked();
+      await retryIn(page).tap();
+      await expect.poll(asked).toBeGreaterThan(before);
+      await evidence(page, `phone-horizons-down-${viewport.width}`);
+    });
+
+    test('at 200 % text the retry stays reachable inside the sheet', async ({ page }) => {
+      await stubApi(page, { status: 500 });
+      await open(page);
+      await page.evaluate(() => {
+        document.documentElement.style.fontSize = '200%';
+      });
+      await expect(page.locator('.widget')).toHaveCount(4);
+      await expectReachable(page);
+      const sheet = (await page.locator(SHEET).boundingBox())!;
+      const box = (await retryIn(page).boundingBox())!;
+      expect(box.x).toBeGreaterThanOrEqual(sheet.x);
+      expect(box.x + box.width).toBeLessThanOrEqual(sheet.x + sheet.width + 0.5);
+      await evidence(page, `phone-horizons-down-200-text-${viewport.width}`);
+    });
+  });
+}
 
 test.describe('desktop, 1440x900: computed data', () => {
   test.use({ viewport: { width: 1440, height: 900 } });

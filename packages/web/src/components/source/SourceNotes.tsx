@@ -63,18 +63,31 @@ function HorizonsDown({ onRetry }: { readonly onRetry: () => void }) {
   );
 }
 
-export function SourceNotes({ month, atMs }: Props) {
+/**
+ * Only that Horizons is down, with its retry: the phone's summary puts it
+ * above the widgets, where the tab bar never covers it.
+ */
+export function SourceDown({ month, atMs }: Props) {
+  if (atMs === null || !month.horizonsDown) return null;
+  return <HorizonsDown onRetry={month.retry} />;
+}
+
+/** Only the caption, once the computed hours are the answer. */
+export function SourceCaption({ month, atMs }: Props) {
   const i18n = useI18n();
-  if (atMs === null) return null;
-  const settled = month.computed && !month.provisional;
+  if (atMs === null || !month.computed || month.provisional) return null;
+  return (
+    <p className="source-note source-note--caption">
+      {computedCaption(i18n, atMs)}
+    </p>
+  );
+}
+
+export function SourceNotes(props: Props) {
   return (
     <>
-      {month.horizonsDown ? <HorizonsDown onRetry={month.retry} /> : null}
-      {settled ? (
-        <p className="source-note source-note--caption">
-          {computedCaption(i18n, atMs)}
-        </p>
-      ) : null}
+      <SourceDown {...props} />
+      <SourceCaption {...props} />
     </>
   );
 }

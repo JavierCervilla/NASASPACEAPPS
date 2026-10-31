@@ -46,7 +46,7 @@ import { useI18n } from '../i18n-context';
 import { usePhone, useScrim, useSelection, useSiteWidgets } from './hooks';
 import { PhoneBar } from './PhoneBar';
 import { Sheet } from './Sheet';
-import { SourceNotes } from '../source/SourceNotes';
+import { SourceCaption, SourceDown } from '../source/SourceNotes';
 import { SitesPanel } from './SitesPanel';
 import { SiteSummary } from './SiteSummary';
 import { TabBar } from './TabBar';
@@ -147,8 +147,10 @@ function SheetBody(props: { phone: PhoneState } & Props) {
     );
   }
   const { result, retry: onRetry } = widgets;
-  const notes = <SourceNotes month={widgets} atMs={phone.at} />;
-  return <SiteSummary {...{ site, result, onRetry, when, base, notes }} />;
+  const source = { month: widgets, atMs: phone.at };
+  const notes = <SourceCaption {...source} />;
+  const summary = { site, result, onRetry, when, base, notes };
+  return <SiteSummary {...summary} status={<SourceDown {...source} />} />;
 }
 
 function PhoneUi(props: Props) {

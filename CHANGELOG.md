@@ -11,10 +11,11 @@
   Horizons se rellena (también el marcador elegido en el globo y en el mapa polar, y el botón del sitio del PC dice
   «calculado» al lector de pantalla). Si Horizons falla, se queda el cálculo propio con el punto hueco y una nota
   discreta, «Horizons no disponible: se muestra el cielo calculado», con «Reintentar» (decisión del orquestador en la
-  revisión). El cálculo propio que se queda en pantalla lleva un pie, decisión de Javier: «Calculado por Ventana Lunar ·
-  aproximado, a menos de 0,05° de JPL Horizons» en los meses en que se comprobó (noviembre y diciembre de 2026) y
-  «extrapolado, sin contrastar con JPL Horizons este mes» en cualquier otro; el 0,05° es la cota que el test de
-  validación del simulador exige, en una sola constante. Un conmutador
+  revisión), también con «Compare». El cálculo propio que se queda en pantalla lleva un pie, decisión de Javier:
+  «Calculado por Ventana Lunar · aproximado: elevaciones a menos de 0,05° de JPL Horizons» en los meses en que se
+  comprobó (noviembre y diciembre de 2026) y «extrapolado: sin contrastar con JPL Horizons este mes» en cualquier otro;
+  el 0,05° es la cota de la elevación (el acimut del Sol difiere hasta 0,17°) que el test de validación del simulador
+  exige, en una sola constante, medida en dos puntos del polo y válida para cualquier sitio. Un conmutador
   «Computed | Horizons | Compare» («Fuente de datos») elige de dónde salen los datos de toda la vista: en el PC, bajo
   una línea fina en la leyenda «Layers»; en el móvil, en el panel de sitios junto a «Idioma». Por defecto «Horizons» y
   la elección se recuerda en el dispositivo. Con «Computed» todo es cálculo propio (punto siempre hueco y la ficha dice

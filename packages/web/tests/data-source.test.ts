@@ -241,8 +241,9 @@ describe('what the views show', () => {
   it('Compare: pending while Horizons loads, unavailable when it fails', () => {
     expect(monthView('compare', LOADING, SIM).compare).toEqual({ kind: 'pending' });
     expect(monthView('compare', ERROR, SIM).compare).toEqual({ kind: 'unavailable' });
-    // The computed hours stay; Compare's own note already says Horizons is unavailable.
-    expect(monthView('compare', ERROR, SIM)).toMatchObject({ result: ready(SIM), computed: true, horizonsDown: false });
+    // Verificador on PR #19: the computed hours stay and Horizons is down, so the note offers «Try again» here too.
+    expect(monthView('compare', ERROR, SIM)).toMatchObject({ result: ready(SIM), computed: true, horizonsDown: true });
+    expect(monthView('compare', LOADING, SIM).horizonsDown).toBe(false);
     expect(monthView('computed', ERROR, SIM).horizonsDown).toBe(false);
     expect(monthView('compare', ready(API), null).compare).toEqual({ kind: 'unavailable' });
   });
@@ -304,9 +305,10 @@ describe('monthDiff', () => {
 // Javier's decision on PR #19: computed data says it is ours and approximate, and never overclaims outside the
 // months the model was checked against Horizons.
 describe('the computed caption', () => {
-  it('states the validated bound in a checked month', () => {
+  // The bound is on elevation only (the Sun's azimuth differs by up to 0.17°): the caption says so.
+  it('states the validated elevation bound in a checked month', () => {
     expect(computedCaption(EN, Date.UTC(2026, 10, 23, 18))).toBe(
-      `Computed by Ventana Lunar · approximate, within ${VALIDATED_ELEVATION_DEG}° of JPL Horizons`,
+      `Computed by Ventana Lunar · approximate: elevations within ${VALIDATED_ELEVATION_DEG}° of JPL Horizons`,
     );
     expect(computedCaption(EN, Date.UTC(2026, 11, 31, 23))).toContain('within');
   });
@@ -314,7 +316,7 @@ describe('the computed caption', () => {
   it('says a month outside the checked period is extrapolated', () => {
     for (const atMs of [Date.UTC(2026, 9, 31, 23), Date.UTC(2027, 0, 1), Date.UTC(2029, 2, 10)]) {
       expect(computedCaption(EN, atMs)).toBe(
-        'Computed by Ventana Lunar · extrapolated, not checked against JPL Horizons for this month',
+        'Computed by Ventana Lunar · extrapolated: not checked against JPL Horizons for this month',
       );
     }
   });

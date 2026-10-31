@@ -33,8 +33,8 @@
   "source.horizons": "Horizons",
   "source.compare": "Comparar",
   "source.down": "Horizons no disponible: se muestra el cielo calculado",
-  "source.caption": "Calculado por Ventana Lunar · aproximado, a menos de {deg}° de JPL Horizons",
-  "source.captionExtrapolated": "Calculado por Ventana Lunar · extrapolado, sin contrastar con JPL Horizons este mes",
+  "source.caption": "Calculado por Ventana Lunar · aproximado: elevaciones a menos de {deg}° de JPL Horizons",
+  "source.captionExtrapolated": "Calculado por Ventana Lunar · extrapolado: sin contrastar con JPL Horizons este mes",
   "marker.exact": "{name}, lugar de aterrizaje",
   "marker.zone": "{name}, zona aproximada",
   "polar.sharedPlace": {

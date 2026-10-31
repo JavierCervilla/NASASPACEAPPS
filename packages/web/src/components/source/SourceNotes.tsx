@@ -27,9 +27,10 @@
  * Quiet notes under data the simulator computed (VENT-36): the caption
  * that says the hours are ours and approximate, with the error measured
  * against JPL Horizons, or extrapolated outside the months checked
- * (Javier's decision); and, when Horizons was chosen and failed, that it
- * is unavailable and the view shows the computed sky, with a retry. The
- * caption waits while the computed hours only stand in for Horizons.
+ * (Javier's decision); and, when Horizons (or Compare) was chosen and
+ * failed, that it is unavailable and the view shows the computed sky, with
+ * a retry. The caption waits while the computed hours only stand in for
+ * Horizons.
  */
 import { computedCaption } from '../../source/computed-caption';
 import { useI18n } from '../i18n-context';

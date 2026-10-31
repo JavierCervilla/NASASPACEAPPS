@@ -25,10 +25,11 @@
 
 /**
  * The quiet caption under the simulator's hours (VENT-36, Javier's
- * decision): they are ours and approximate, within the bound measured
- * against JPL Horizons over the months the model was checked
- * (`@ventana/sim`'s accuracy, held by its validation test); any other
- * month is extrapolated from the same model and says so. Pure.
+ * decision): they are ours and approximate, their elevations within the
+ * bound measured against JPL Horizons over the months the model was
+ * checked (`@ventana/sim`'s accuracy, held by its validation test; the
+ * azimuth is not bound by it); any other month is extrapolated from the
+ * same model and says so. Pure.
  */
 import {
   toMs,

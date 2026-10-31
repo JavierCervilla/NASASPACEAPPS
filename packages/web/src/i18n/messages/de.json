@@ -33,8 +33,8 @@
   "source.horizons": "Horizons",
   "source.compare": "Vergleichen",
   "source.down": "Horizons nicht verfügbar: berechneter Himmel wird gezeigt",
-  "source.caption": "Berechnet von Ventana Lunar · ungefähr, höchstens {deg}° Abweichung von JPL Horizons",
-  "source.captionExtrapolated": "Berechnet von Ventana Lunar · extrapoliert, für diesen Monat nicht mit JPL Horizons geprüft",
+  "source.caption": "Berechnet von Ventana Lunar · ungefähr: Höhen höchstens {deg}° von JPL Horizons entfernt",
+  "source.captionExtrapolated": "Berechnet von Ventana Lunar · extrapoliert: für diesen Monat nicht mit JPL Horizons geprüft",
   "marker.exact": "{name}, Landeplatz",
   "marker.zone": "{name}, ungefähres Gebiet",
   "polar.sharedPlace": {

@@ -30,7 +30,8 @@
  * as computed (the hollow dot), and stay when Horizons fails, with a note
  * that it is down; with nothing computed, the failure is an honest error.
  * With Computed chosen, the computed hours always. With Compare, Horizons
- * as with Horizons, and both sides for the comparison once both are in.
+ * as with Horizons (down note included), and both sides for the
+ * comparison once both are in.
  * Pure.
  */
 import type { HourSample } from '@ventana/sim';
@@ -52,7 +53,10 @@ export interface MonthView {
    * computed caption waits for the hours that stay.
    */
   readonly provisional: boolean;
-  /** Horizons was chosen, failed, and the computed hours took its place. */
+  /**
+   * Horizons (or Compare) was chosen, failed, and the computed hours took
+   * its place.
+   */
   readonly horizonsDown: boolean;
   readonly compare: CompareState;
 }
@@ -89,6 +93,6 @@ export function monthView(
   }
   const result = { kind: 'ready', hours: computed } as const;
   const provisional = source !== 'computed' && horizons.kind === 'loading';
-  const horizonsDown = source === 'horizons' && horizons.kind === 'error';
+  const horizonsDown = source !== 'computed' && horizons.kind === 'error';
   return { result, computed: true, compare, provisional, horizonsDown };
 }

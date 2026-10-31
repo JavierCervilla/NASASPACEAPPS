@@ -110,8 +110,8 @@ async function choose(page: Page, source: 'computed' | 'horizons' | 'compare'): 
   await page.addInitScript((kept) => localStorage.setItem('ventana.dataSource', kept), source);
 }
 
-const CAPTION_CHECKED = 'Computed by Ventana Lunar · approximate, within 0.05° of JPL Horizons';
-const CAPTION_EXTRAPOLATED = 'Computed by Ventana Lunar · extrapolated, not checked against JPL Horizons for this month';
+const CAPTION_CHECKED = 'Computed by Ventana Lunar · approximate: elevations within 0.05° of JPL Horizons';
+const CAPTION_EXTRAPOLATED = 'Computed by Ventana Lunar · extrapolated: not checked against JPL Horizons for this month';
 /** A month the simulator was never checked in, outside the API's data window. */
 const MARCH_2029 = new Date('2029-03-10T06:00:00Z');
 
@@ -275,6 +275,10 @@ test.describe('desktop, 1440x900', () => {
     await expect(page.locator('.strip__compare')).toHaveText('Horizons unavailable: nothing to compare');
     await expect(page.locator('.signal-bar__differs')).toHaveCount(0);
     await expect(page.getByRole('list', { name: 'Legend' })).not.toContainText('Differs');
+    // Verificador on PR #19: Compare shows the computed hours too, so it offers the same «Try again» as Horizons.
+    const site = page.getByRole('complementary', { name: 'Site' });
+    const down = site.getByRole('status').filter({ hasText: 'Horizons unavailable: showing the computed sky' });
+    await expect(down.getByRole('button', { name: 'Try again' })).toBeVisible();
   });
 
   test('the switch is a radio group the arrows move through', async ({ page }) => {
@@ -490,6 +494,48 @@ test.describe('desktop, 1280x720: floating surfaces over the markers', () => {
     await expect(compare).toHaveAttribute('aria-checked', 'true');
     await expect(page.locator('.site-button')).toHaveAttribute('aria-label', site!);
     await evidence(page, 'desktop-1280-es-layers');
+  });
+
+  // Verificador on PR #19: the polar disk is its own stacking context too, or its image and markers paint over the
+  // Layers key where the two overlap (at 1280x720 the key's top right corner sits over the disk).
+  test('on the polar map, the Layers key is on top of the disk wherever they overlap, and Compare takes the click', async ({
+    page,
+  }) => {
+    await stubApi(page);
+    await open(page, 'es/#polar-map');
+    const layers = '.polar .globe-layers';
+    await expect(page.locator('.polar-marker').first()).toBeVisible();
+    await page.waitForTimeout(500);
+    // The key and the disk's labels ignore the pointer; all hit-testable here, elementFromPoint reports what paints
+    // on top (the place labels, z-index 4, are the first to cover the key without the disk's stacking context).
+    await page.addStyleTag({ content: `${layers}, ${layers} *, .polar__disk * { pointer-events: auto !important; }` });
+    const covered = await page.evaluate((scope) => {
+      const key = document.querySelector(scope)!;
+      const [a, b] = [key.getBoundingClientRect(), document.querySelector('.polar__disk')!.getBoundingClientRect()];
+      // Inset by the key's corner radius: the rounded corners are not the key's to paint.
+      const r = parseFloat(getComputedStyle(key).borderTopLeftRadius);
+      const [left, right] = [Math.max(a.left + r, b.left), Math.min(a.right - r, b.right)];
+      const [top, bottom] = [Math.max(a.top + r, b.top), Math.min(a.bottom - r, b.bottom)];
+      const hits: string[] = [];
+      for (let x = left + 2; x < right; x += 8) {
+        for (let y = top + 2; y < bottom; y += 8) {
+          const hit = document.elementFromPoint(x, y);
+          if (!hit || !key.contains(hit)) hits.push(`${Math.round(x)},${Math.round(y)} ${hit?.className ?? '?'}`);
+        }
+      }
+      return { hits, sampled: right > left && bottom > top };
+    }, layers);
+    expect(covered.sampled).toBe(true);
+    expect(covered.hits).toEqual([]);
+    const compare = switchIn(page, layers).getByRole('radio', { name: 'Comparar' });
+    for (const name of ['Calculado', 'Horizons', 'Comparar']) {
+      expect(await switchIn(page, layers).getByRole('radio', { name }).evaluate(onTop)).toBe(true);
+    }
+    const site = await page.locator('.site-button').getAttribute('aria-label');
+    await compare.click();
+    await expect(compare).toHaveAttribute('aria-checked', 'true');
+    await expect(page.locator('.site-button')).toHaveAttribute('aria-label', site!);
+    await evidence(page, 'desktop-1280-es-polar-layers');
   });
 
   test('no marker paints over the site card, the calendar strip or the header', async ({ page }) => {

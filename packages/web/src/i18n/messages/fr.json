@@ -33,8 +33,8 @@
   "source.horizons": "Horizons",
   "source.compare": "Comparer",
   "source.down": "Horizons indisponible : ciel calculé affiché",
-  "source.caption": "Calculé par Ventana Lunar · approché, à moins de {deg}° de JPL Horizons",
-  "source.captionExtrapolated": "Calculé par Ventana Lunar · extrapolé, non vérifié avec JPL Horizons pour ce mois",
+  "source.caption": "Calculé par Ventana Lunar · approché : hauteurs à moins de {deg}° de JPL Horizons",
+  "source.captionExtrapolated": "Calculé par Ventana Lunar · extrapolé : non vérifié avec JPL Horizons pour ce mois",
   "marker.exact": "{name}, site d’atterrissage",
   "marker.zone": "{name}, zone approximative",
   "polar.sharedPlace": {

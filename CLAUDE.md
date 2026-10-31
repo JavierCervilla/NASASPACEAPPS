@@ -57,12 +57,17 @@ Every visible change follows `.claude/skills/apple-design/SKILL.md` (vendored fr
   honest error. While the view shows computed hours the state dot is hollow, a ring in the state's colour (phone pill,
   desktop site button, site card badge, and the selected marker on the globe and the polar map), and the accessible name
   gains «computed» (pill and desktop site button); it fills when Horizons arrives. Computed hours that stay (Computed
-  chosen, or Horizons down) carry a caption, the human's decision: «Computed by Ventana Lunar · approximate, within
-  0.05° of JPL Horizons» in the months the model was checked (Nov-Dec 2026), «… extrapolated, not checked against JPL
-  Horizons for this month» in any other (`src/source/computed-caption.ts`; the bound and the period are
-  `VALIDATED_ELEVATION_DEG`, `VALIDATED_FROM` and `VALIDATED_TO` in `packages/sim/src/accuracy.ts`, which
-  `packages/sim/tests/sky.test.ts` holds the model to), under the desktop card's figures, the phone summary and the
-  phone Calendar sheet. The computed cache is keyed by point and range, so a moved point is computed again. A «Data source» switch,
+  chosen, Horizons or Compare with Horizons down) carry a caption, the human's decision: «Computed by Ventana Lunar ·
+  approximate: elevations within 0.05° of JPL Horizons» in the months the model was checked (Nov-Dec 2026), «…
+  extrapolated: not checked against JPL Horizons for this month» in any other (`src/source/computed-caption.ts`; the
+  bound and the period are `VALIDATED_ELEVATION_DEG`, `VALIDATED_FROM` and `VALIDATED_TO` in
+  `packages/sim/src/accuracy.ts`, which `packages/sim/tests/sky.test.ts` holds the model to), under the desktop card's
+  figures, the phone summary and the phone Calendar sheet. The bound is on elevation only (the Sun's azimuth differs by
+  up to 0.17°). It was measured at two polar points (89.5° S 0° E and IM-2, 84.79° S 29.20° E) and holds for any site:
+  the error comes from the sub-solar and sub-Earth points, which do not depend on the site, while the step to the
+  site's horizon is exact spherical geometry plus the Earth's parallax (`sky.ts`, `horizon.ts`), and an elevation is
+  never further off than the direction it is read from. With Horizons or Compare chosen and Horizons down, the
+  «Horizons unavailable» note offers «Try again» (`src/source/month-view.ts`). The computed cache is keyed by point and range, so a moved point is computed again. A «Data source» switch,
   «Computed | Horizons | Compare» (radiogroup in the segmented control's style, never a signal colour,
   `src/components/source/SourceSwitch.tsx`), sits under a hairline in the desktop Layers key and in the phone's Sites
   sheet grouped with the «Language» row; default Horizons, kept in `localStorage` (`src/source/data-source.ts`).

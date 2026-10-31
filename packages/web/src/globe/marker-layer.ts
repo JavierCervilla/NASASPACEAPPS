@@ -31,15 +31,14 @@
  * that would cover another marker (marker-cull.ts). Where two boxes
  * overlap, a click goes to the dot nearest the pointer (marker-hit.ts).
  * Sites that share a point share one marker. The selected site's marker
- * wears a pulsing ring, hidden with its marker; the selected site's
- * callout is docked apart from it (site-callout.ts).
+ * wears a pulsing ring, hidden with its marker, and both take the
+ * colour of its state at the selected instant.
  */
 import { isFacing, latLonToVector, type Vec3 } from './geo';
 import { markerButton } from './marker-button';
 import { cullZones } from './marker-cull';
 import { pickedSite, type PlacedMarker } from './marker-hit';
 import { mergeColocated, type GlobeSite, type MarkerSite } from './markers';
-import { SiteCallout } from './site-callout';
 
 /** Screen position, in px from the host's top left, of a globe point. */
 export type Projector = (point: Vec3) => { x: number; y: number };
@@ -55,11 +54,13 @@ export class MarkerLayer {
   private selected: string | null;
   /** The markers shown at the last frame, where a click is routed. */
   private placed: PlacedMarker[] = [];
-  private readonly root = document.createElement('div');
+  /**
+   * The layer; its `data-state` (globe.ts) is the selected site's state,
+   * which its marker and ring wear (styles/globe.css).
+   */
+  readonly root = document.createElement('div');
   /** The pulsing ring around the selected site's marker. */
   private readonly ring = document.createElement('span');
-  /** The selected site's callout, docked at the globe's bottom left. */
-  readonly callout = new SiteCallout();
 
   /**
    * `onPick` hears a tapped marker's site; the selection comes back
@@ -76,11 +77,12 @@ export class MarkerLayer {
     this.ring.setAttribute('aria-hidden', 'true');
     this.ring.hidden = true;
     this.root.className = 'globe-markers';
+    this.root.dataset['state'] = 'unknown';
     this.root.addEventListener('click', (event) => {
       const id = pickedSite(event, this.root, this.placed);
       if (id) onPick(id);
     });
-    this.root.append(this.ring, this.callout.dom.card);
+    this.root.append(this.ring);
     host.append(this.root);
   }
 
@@ -136,7 +138,7 @@ export class MarkerLayer {
     }
   }
 
-  /** Takes the markers, the ring and the callout off the page. */
+  /** Takes the markers and the ring off the page. */
   dispose(): void {
     this.root.remove();
   }

@@ -24,19 +24,19 @@
  */
 
 /**
- * How the globe yields to the phone sheet. The canvas always covers the
- * whole screen; the Moon is framed in a band above the sheet at half (the
- * CSS custom property `--globe-frame-inset` sets how much of the host's
- * bottom it leaves out). The site callout rides the sheet's top edge,
- * and once the sheet drops below the frame (towards peek or closed) the
- * frame slides down to stay centred in the space the sheet frees: with the
- * sheet closed the Moon sits between the top bar and the tab bar, as the
- * validated canvas «Phone · sheet closed» shows. It slides, not grows, so
+ * How the globe yields to the phone sheet. The canvas always covers the whole
+ * screen; the Moon is framed in a band above the sheet at half (the CSS custom
+ * property `--globe-frame-inset` sets how much of the host's bottom it leaves
+ * out). The free band a framed site lands in ends at the sheet's top edge
+ * (free-band.ts), and once the sheet drops below the frame (towards peek or
+ * closed) the frame slides down to stay centred in the space the sheet frees:
+ * with the sheet closed the Moon sits between the top bar and the tab bar, as
+ * the validated canvas «Phone · sheet closed» shows. It slides, not grows, so
  * the zoom never changes under the finger.
  */
 import type { PerspectiveCamera } from 'three';
 import type { WatchedValue } from '../lib/watched-value';
-import type { MarkerLayer } from './marker-layer';
+import type { FreeBandWatch } from './free-band';
 import { frameCamera, type StageFrame } from './stage';
 
 /**
@@ -77,14 +77,14 @@ export function frameInset(host: HTMLElement): number {
 
 export interface SheetEdgeParts {
   readonly camera: PerspectiveCamera;
-  readonly markers: MarkerLayer;
+  readonly band: Pick<FreeBandWatch, 'layout'>;
   readonly invalidate: () => void;
 }
 
 /**
  * Follows the sheet's edge and the host's size: frames the camera, then
- * docks the callout 12 px above the sheet's top edge, in the host's
- * coordinates. Returns the unbind function.
+ * hands the free band the sheet's top edge, in the host's coordinates.
+ * Returns the unbind function.
  */
 export function bindSheetEdge(
   host: HTMLElement,
@@ -99,7 +99,7 @@ export function bindSheetEdge(
     frameCamera(parts.camera, globeFrame(size, top));
     const sheetTop = top ?? Number.POSITIVE_INFINITY;
     const hostTop = host.getBoundingClientRect().top;
-    parts.markers.callout.layout({ sheetTop: sheetTop - hostTop });
+    parts.band.layout({ sheetTop: sheetTop - hostTop });
     parts.invalidate();
   };
   const unwatch = watchSize(host, () => {

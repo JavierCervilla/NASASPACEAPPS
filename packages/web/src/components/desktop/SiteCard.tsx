@@ -24,23 +24,28 @@
  */
 
 /**
- * The desktop site card beside the view (validated canvas «Globe view»):
- * the mission, its agency and date, the site, its point and how exact it
- * is; «Sunset in» and «Earthset in» (or «…rise in») for the selected
- * instant with each body's elevation; and the month's shares, longest
- * window and longest night, with where the figures come from. Grey
- * blocks while the month loads, an honest error with «Try again», and an
- * honest state outside the data window. On a short screen the card
- * scrolls, focusable only then, and fades at each edge that hides more.
+ * The desktop site card beside the view (validated canvas «Globe view»): the
+ * site's LOLA relief image south of 80° S, with the state at the selected
+ * instant and the ground it spans (VENT-33, canvas «DeskThumbH1440»); the
+ * mission, its agency and date, the site, its point and how exact it is;
+ * «Sunset in» and «Earthset in» (or «…rise in») for the selected instant with
+ * each body's elevation; and the month's shares, longest window and longest
+ * night, with where the figures come from. Grey blocks while the month loads,
+ * an honest error with «Try again», and an honest state outside the data
+ * window. On a short screen the card scrolls, focusable only then, and fades at
+ * each edge that hides more.
  */
 import { siteLabels } from '../../phone/phone-site';
+import type { SiteState } from '../../phone/site-state';
 import type { BodyWidget } from '../../phone/widget-types';
+import { thumbOf, type Thumb } from '../../thumbs/thumbs';
 import {
   missionLine,
   pointLine,
   type CardSite,
 } from '../../card/site-facts';
 import type { CardModel } from '../../card/site-card';
+import { SiteThumb } from '../SiteThumb';
 import { CardStatus } from './CardStatus';
 import { useScrollEdges } from './use-scroll-edges';
 
@@ -48,12 +53,43 @@ interface Props {
   readonly site: CardSite;
   readonly model: CardModel;
   readonly onRetry: () => void;
+  /** The state at the selected instant; null until it is known. */
+  readonly state: SiteState | null;
+  /** The site's base path, for the image. */
+  readonly base: string;
 }
 
-function CardHead({ site }: { readonly site: CardSite }) {
+/** The card is 320 px wide, the whole width below 1024 px. */
+const THUMB_SIZES = '(max-width: 1023.98px) 100vw, 320px';
+
+interface MediaProps {
+  readonly thumb: Thumb | null;
+  readonly state: SiteState | null;
+}
+
+/** The image with the state's badge and its frame; none without one. */
+function CardMedia({ thumb, state }: MediaProps) {
+  if (!thumb) return null;
+  return (
+    <div className="card-media">
+      <SiteThumb thumb={thumb} sizes={THUMB_SIZES} className="card-media__image" />
+      <span className="card-media__shade" aria-hidden="true" />
+      {state ? (
+        <span className="card-media__badge" data-tone={state.kind}>
+          {state.badge}
+        </span>
+      ) : null}
+      <span className="card-media__caption">{thumb.caption}</span>
+    </div>
+  );
+}
+
+function CardHead({ site, state, base }: Omit<Props, 'model' | 'onRetry'>) {
   const { title, subtitle } = siteLabels(site);
+  const thumb = thumbOf(site.id, title, base);
   return (
     <div className="card-block card-head">
+      <CardMedia thumb={thumb} state={state} />
       <p className="card-head__mission">{missionLine(site)}</p>
       <h2 className="card-head__name">{subtitle}</h2>
       {title === subtitle ? null : <p className="card-head__place">{title}</p>}
@@ -93,7 +129,7 @@ function Figures({ model }: { readonly model: CardModel }) {
   );
 }
 
-export function SiteCard({ site, model, onRetry }: Props) {
+export function SiteCard({ model, onRetry, ...head }: Props) {
   const [scroller, edges] = useScrollEdges<HTMLDivElement>();
   // Focusable only while it overflows, so the keyboard can scroll it on a
   // short screen; on a tall one it would be an empty tab stop.
@@ -109,7 +145,7 @@ export function SiteCard({ site, model, onRetry }: Props) {
         data-fade-top={edges.top}
         data-fade-bottom={edges.bottom}
       >
-        <CardHead site={site} />
+        <CardHead {...head} />
         <Figures model={model} />
         <CardStatus kind={model.kind} onRetry={onRetry} />
       </div>

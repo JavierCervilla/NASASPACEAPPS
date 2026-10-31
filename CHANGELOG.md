@@ -138,6 +138,20 @@
 - Imágenes Docker fijadas por digest, acciones del CI fijadas por commit y descargas verificadas con su checksum.
 
 ### Cambiado
+- Fuera la tarjeta flotante del globo (VENT-33, lienzos «PillStateP1…», «SheetThumbD», «DeskThumbH1440» y
+  «DeskThumbH1280», tras la auditoría de UX): tapaba entre el 18 % y el 32 % de la Luna, repetía el nombre y el estado y
+  no se podía pulsar. En el móvil, la píldora del sitio de la barra superior lleva el nombre corto en la primera línea
+  («IM-2») y en la segunda el estado del instante elegido con el tiempo que le queda, en su color: «Window · 7 d left»,
+  «Sun · …», «Earth · …» o «Neither · …» (horas cuando queda menos de un día; «30+ d» cuando dura más que los datos);
+  mientras llegan los datos dice «Loading…» y, si la API falla, «Data unavailable», en gris. El lector de pantalla oye
+  el nombre completo y el estado. El subtítulo de la barra pasa a ser la regla de la leyenda, «Sun + Earth = window»,
+  cada palabra en su color (más oscuros en modo claro para leerse a 4,5:1), y se va la pista del gesto. La cabecera de
+  la hoja lleva la vista del terreno LOLA junto al nombre. En el PC la vista del terreno encabeza la ficha del sitio de
+  la derecha, con el estado («Landing window now») y su ancho («LOLA · 30 km»); en ventanas bajas, como 1280x720, es
+  una banda de 96 px para que las cuentas atrás sigan a la vista. Los sitios al norte de 80° S, sin vista del terreno,
+  no muestran nada en su lugar (antes, un círculo vacío que parecía una imagen rota). El anillo del punto elegido sigue
+  igual, y el encuadre al abrir la página o elegir un sitio deja ahora el punto entre la barra superior y el borde de
+  la hoja.
 - La tarjeta del sitio sobre el globo ya no sigue a su punto al girar el globo (VENT-32, lienzos «FixedCalloutPhone»,
   «FixedCalloutPhoneClosed» y «FixedCalloutDesktop»): queda fija abajo a la izquierda. En el PC, encima de la leyenda
   «Layers» y alineada con ella, con 14 px de separación (en una ventana de portátil baja, como 1280x720, pasa a la

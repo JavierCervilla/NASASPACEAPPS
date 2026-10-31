@@ -25,12 +25,13 @@
 
 Every site south of 80° S gets a 320 x 320 shaded relief of the LOLA DEM
 LDEM_80S_20M (lola_polar.py) around its point, lit by a low Sun
-(hillshade.py), for the site callout on the globe, and the same frame at
+(hillshade.py), for the site's header in the phone sheet and the desktop
+site card, and the same frame at
 640 x 640 for 2x screens (`<name>@2x.jpg`). Sites further north
 are outside the DEM and get none. Sites that share a point share one
 file, named after the first of them in the site list.
 
-It also writes the manifest the web reads (src/callout/thumbs.json): for
+It also writes the manifest the web reads (src/thumbs/thumbs.json): for
 each site id, its two files and the width of ground it shows. The web knows no
 other rule: a site missing from the manifest has no thumbnail.
 
@@ -54,7 +55,7 @@ from lola_polar import METRES_PER_PIXEL, StripCache, window
 ROOT = Path(__file__).resolve().parents[3]
 SITES = ROOT / "packages" / "server" / "data" / "sites.json"
 OUT_DIR = ROOT / "packages" / "web" / "public" / "thumbs"
-MANIFEST = ROOT / "packages" / "web" / "src" / "callout" / "thumbs.json"
+MANIFEST = ROOT / "packages" / "web" / "src" / "thumbs" / "thumbs.json"
 CACHE = Path.home() / ".cache" / "ventana-lunar" / "ldem_80s_20m"
 # The DEM's rim: a site north of it is outside the grid.
 SOUTH_OF_DEG = -80.0

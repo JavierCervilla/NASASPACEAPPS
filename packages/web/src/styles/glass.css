@@ -60,7 +60,6 @@
     .tab-bar,
     .site-popover,
     .globe-layers,
-    .globe-callout,
     .strip,
     .card-block
   ) {
@@ -79,8 +78,7 @@
 :root[data-glass='liquid'] :is(
     .phone-bar,
     .tab-bar,
-    .globe-layers,
-    .globe-callout
+    .globe-layers
   )::before {
   content: '';
   position: absolute;
@@ -90,12 +88,6 @@
   background: var(--glass-liquid-scrim);
   filter: blur(var(--glass-liquid-scrim-feather));
   pointer-events: none;
-}
-
-/* The phone callout's state pill reaches into the scrim's feathered edge:
- * it carries its own solid ground, the card's, under its state tint. */
-:root[data-glass='liquid'] .globe-callout__pill {
-  background: color-mix(in srgb, var(--tone) 16%, var(--card));
 }
 
 /* The sheet holds the most text: it keeps its heavier tint. */
@@ -115,12 +107,6 @@
 
 :root[data-glass='liquid'] .site-popover {
   box-shadow: var(--popover-shadow), var(--glass-liquid-rim);
-}
-
-:root[data-glass='liquid'] .globe-callout {
-  box-shadow:
-    0 22px 54px rgba(0, 0, 0, 0.55),
-    var(--glass-liquid-rim);
 }
 
 /* Dark mode lifts the desktop panels with no shadow (--strip-edge: none). */

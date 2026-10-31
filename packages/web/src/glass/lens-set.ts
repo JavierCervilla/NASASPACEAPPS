@@ -26,7 +26,7 @@
 /**
  * Keeps a lens (lens-surfaces.ts) on every Liquid surface on the page:
  * those there at the start and those that mount later (islands,
- * popovers, the callout), found by a rescan once the page's DOM has been
+ * popovers), found by a rescan once the page's DOM has been
  * quiet for SETTLE_MS. A surface that leaves the page takes its filter
  * with it.
  */
@@ -37,7 +37,7 @@ import {
 /** The surfaces that wear Liquid glass (styles/glass.css). */
 export const LENS_SURFACES = [
   '.bar', '.phone-bar', '.tab-bar', '.sheet', '.site-popover',
-  '.globe-layers', '.globe-callout', '.strip', '.card-block',
+  '.globe-layers', '.strip', '.card-block',
 ].join(', ');
 
 interface LensState {

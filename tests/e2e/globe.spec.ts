@@ -92,8 +92,9 @@ test.describe('desktop, 1440x900', () => {
     await expect(globe.locator('canvas')).toHaveCount(1);
     await expect(globe.locator('.globe-marker')).toHaveCount(POINTS.size);
     await expect(globe.locator('.globe-marker--zone')).toHaveCount(ZONE_POINTS.length);
-    await expect(globe.locator('.globe-callout')).toHaveAttribute('aria-label', 'Mons Mouton (IM-2 Athena)');
-    await expect(globe.locator('.globe-callout')).toBeVisible();
+    await expect(globe.locator(IM2)).toHaveAttribute('aria-pressed', 'true');
+    // No card floats over the globe (VENT-33): the site card beside it names the site.
+    await expect(globe.locator('.globe-callout')).toHaveCount(0);
     expect(log.errors).toEqual([]);
     // The phone Save-Data test (phone.spec.ts) looks for these same requests: here they must happen.
     expect(requested.filter((url) => GLOBE_ASSET.test(url))).toHaveLength(2);
@@ -111,14 +112,14 @@ test.describe('desktop, 1440x900', () => {
     expect(log.errors.filter((e) => !NETWORK_LINE.test(e))).toEqual([]);
   });
 
-  test('selecting a site names it in the callout and rings its marker', async ({ page }) => {
+  test('selecting a site names it in the site card and rings its marker', async ({ page }) => {
     await page.emulateMedia({ reducedMotion: 'reduce' });
     await stubApi(page);
     await page.goto('./');
     await expect(page.locator(IM1)).toHaveAttribute('style', /translate3d/);
     const at = await centreOf(page, IM1);
     await page.mouse.click(at.x, at.y);
-    await expect(page.locator('.globe-callout')).toHaveAttribute('aria-label', 'Malapert A region (IM-1 Odysseus)');
+    await expect(page.getByRole('complementary', { name: 'Site card' }).getByRole('heading', { name: 'IM-1 Odysseus' })).toBeVisible();
     const transform = (selector: string) => page.locator(selector).evaluate((el) => (el as HTMLElement).style.transform);
     // The globe turns to the picked site: compare where both are now, frame after frame.
     await expect.poll(async () => (await transform('.globe-ring')) === (await transform(IM1))).toBe(true);
@@ -142,7 +143,6 @@ test.describe('desktop, 1440x900', () => {
     expect(await siteUnder(page, im2)).toBe('im1-odysseus');
     await page.mouse.click(im2.x, im2.y);
     await expect(page.locator(IM2)).toHaveAttribute('aria-pressed', 'true');
-    await expect(page.locator('.globe-callout')).toHaveAttribute('aria-label', 'Mons Mouton (IM-2 Athena)');
   });
 
   test('the keyboard selects a marker whose dot another box covers', async ({ page }) => {
@@ -202,33 +202,6 @@ test.describe('desktop, 1440x900', () => {
     await expect(page.locator('.sheet')).toHaveCount(0);
   });
 });
-
-for (const [width, height] of [[1440, 900], [1280, 720], [1024, 768]] as const) {
-  test(`at 200 % text, ${width}x${height}, the Layers key stays clear of the site callout (QA)`, async ({ page }) => {
-    await page.setViewportSize({ width, height });
-    await page.clock.setFixedTime(new Date('2026-11-23T18:00:00Z'));
-    await stubApi(page);
-    await page.goto('./');
-    await expect(page.locator('.globe-callout')).toBeVisible();
-    await page.evaluate(() => {
-      document.documentElement.style.fontSize = '200%';
-    });
-    const label = page.locator('.globe-callout');
-    // By class: a role query skips a hidden key and would wait for it.
-    const layers = page.locator('.globe-layers');
-    // The callout docks again as the view settles at the new size.
-    await expect
-      .poll(async () => {
-        const [a, b] = [await label.boundingBox(), await layers.boundingBox()];
-        // A hidden key cannot cover the label, nor can a hidden label be covered: with no room above the key the
-        // label hides (QA F2).
-        if ((await label.getAttribute('data-shown')) === 'false') return true;
-        if (!a || !b) return Boolean(a);
-        return a.x >= b.x + b.width || b.x >= a.x + a.width || a.y >= b.y + b.height || b.y >= a.y + a.height;
-      })
-      .toBe(true);
-  });
-}
 
 test.describe('desktop texture detail, 1440x900', () => {
   test.use({ viewport: { width: 1440, height: 900 } });

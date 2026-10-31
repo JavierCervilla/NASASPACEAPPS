@@ -31,9 +31,9 @@
  * share what is created here and passed down: one selection store, so
  * the globe and the views always agree on the site; one instant with its
  * player and one cache of the API's hours, so the globe's Sun, the
- * widgets and the calendar show the same time; and the sheet's top edge,
- * so the globe keeps its callout above the sheet; and what the selected
- * site's callout on the globe says.
+ * widgets and the calendar show the same time; the sheet's top edge, so
+ * the globe frames the selected site above the sheet; and the selected
+ * site's state, which its marker on the globe wears.
  */
 import { useEffect, useState } from 'react';
 import { followClock } from '../calendar/follow-clock';
@@ -48,10 +48,10 @@ import type { CalendarParts } from './calendar/hooks';
 import { DesktopShell } from './desktop/DesktopShell';
 import { useView } from './desktop/use-view';
 import Globe from './Globe';
-import { useCalloutFeed } from './use-callout-feed';
 import { Layers } from './Layers';
 import { usePhone } from './phone/hooks';
 import { PhoneShell } from './phone/PhoneShell';
+import { useStateFeed } from './use-state-feed';
 
 interface Props {
   /** The landing sites endpoint, same origin in production. */
@@ -92,9 +92,9 @@ export default function LunarApp({ sitesUrl, base, selectedId, sites }: Props) {
   const parts = useCalendarParts(sitesUrl);
   const view = useView(VIEW_NAV);
   const offView = !usePhone() && view !== 'globe';
-  const callout = useCalloutFeed({ sites, store, parts, base });
+  const state = useStateFeed(store, parts);
   const time = parts.time;
-  const globe = { base, sitesUrl, store, sheetEdge, time, callout };
+  const globe = { base, sitesUrl, store, sheetEdge, time, state };
   return (
     <>
       <section className="globe" aria-label="Lunar globe" hidden={offView}>
@@ -102,7 +102,7 @@ export default function LunarApp({ sitesUrl, base, selectedId, sites }: Props) {
         <Layers />
       </section>
       <DesktopShell {...{ sites, store, parts, base, view }} />
-      <PhoneShell {...{ sites, store, sheetEdge, parts }} />
+      <PhoneShell {...{ sites, store, sheetEdge, parts, base }} />
     </>
   );
 }

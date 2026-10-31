@@ -27,7 +27,7 @@ completa está en el documento «Ventana Lunar · Especificación y roadmap».
 - [x] Store de tiempo, selector de sitio y cinta de calendario (VENT-4)
 - [x] Ficha del sitio con el tiempo hasta la puesta de Sol y de Tierra, y mapa polar 2D (VENT-5)
 - [x] Tarjeta del sitio sobre el globo, con la vista del terreno LOLA desde la órbita, el estado y las cuentas atrás
-  (VENT-29)
+  (VENT-29); retirada en VENT-33: el estado va en la píldora del sitio y la vista del terreno en la hoja y en la ficha
 
 ## Lujo y entrega (código congelado el domingo 15 a las 15:30)
 

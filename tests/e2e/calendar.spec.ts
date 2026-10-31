@@ -170,7 +170,7 @@ test.describe('desktop calendar strip, 1440x900', () => {
     const left = await strip(page).locator('.instant-line').evaluate((el) => (el as HTMLElement).style.left);
     expect(Number.parseFloat(left)).toBeCloseTo(75.83, 1);
     await expect(page.getByRole('region', { name: 'Lunar globe' }).locator('canvas')).toHaveCount(1);
-    await expect(page.locator('.globe-callout')).toHaveAttribute('aria-label', 'Mons Mouton (IM-2 Athena)');
+    await expect(page.locator('[data-site-id="im2-athena"]')).toHaveAttribute('aria-pressed', 'true');
   });
 
   test('the slider moves the instant: the date, the line and the globe follow', async ({ page }) => {
@@ -225,7 +225,7 @@ test.describe('desktop calendar strip, 1440x900', () => {
     await dialog.getByRole('searchbox', { name: 'Search a site or mission' }).fill('vikram');
     await dialog.getByRole('button', { name: /^Statio Shiv Shakti/ }).click();
     await expect(dialog).toBeHidden();
-    await expect(page.locator('.globe-callout')).toHaveAttribute('aria-label', 'Statio Shiv Shakti (Chandrayaan-3 Vikram)');
+    await expect(page.locator('[data-site-id="chandrayaan3-vikram"]')).toHaveAttribute('aria-pressed', 'true');
     await expect(page.getByRole('button', { name: /^Change site, now Chandrayaan-3 Vikram/ })).toBeVisible();
     await expect(strip(page).getByRole('img', { name: /^Window:/ })).toBeVisible();
   });

@@ -26,7 +26,7 @@
 /*
  * The lunar globe section (VENT-6): the dark sky, the WebGL viewport, the
  * site markers (created by src/globe/marker-layer.ts) and the Layers
- * legend; the site callout is in styles/callout.css. Below 768px (PHONE_QUERY in src/lib/viewport.ts) the
+ * legend. Below 768px (PHONE_QUERY in src/lib/viewport.ts) the
  * section fills the screen behind the phone shell (styles/phone.css).
  */
 /* It gives up height first, so the calendar strip fits a 720 px tall laptop screen. */
@@ -98,8 +98,6 @@
   position: absolute;
   inset: 0;
   pointer-events: none;
-  /* Sized by the globe, never by its content: the callout queries it. */
-  container: callout-host / size;
 }
 
 /*
@@ -166,15 +164,16 @@
 
 /*
  * Once its state is known, the selected marker takes the state's colour
- * with a halo of it (canvas «Globe · site callout B»), the same colour as
- * the callout's badge: the legend's meaning, never decoration.
+ * with a halo of it (canvas «Globe · site callout B»; the state is set on
+ * the layer by src/globe/marker-layer.ts): the legend's meaning, never
+ * decoration.
  */
-.globe-markers:has(> .globe-callout[data-state='window']) { --halo: var(--signal-window); }
-.globe-markers:has(> .globe-callout[data-state='sun']) { --halo: var(--signal-sun); }
-.globe-markers:has(> .globe-callout[data-state='earth']) { --halo: var(--signal-earth); }
-.globe-markers:has(> .globe-callout[data-state='none']) { --halo: var(--signal-none); }
+.globe-markers[data-state='window'] { --halo: var(--signal-window); }
+.globe-markers[data-state='sun'] { --halo: var(--signal-sun); }
+.globe-markers[data-state='earth'] { --halo: var(--signal-earth); }
+.globe-markers[data-state='none'] { --halo: var(--signal-none); }
 
-.globe-markers:has(> .globe-callout:not([data-state='unknown'])) .globe-marker[aria-pressed='true']::after {
+.globe-markers:not([data-state='unknown']) .globe-marker[aria-pressed='true']::after {
   border-color: var(--halo);
   box-shadow:
     0 0 0 5px color-mix(in srgb, var(--halo) 28%, transparent),
@@ -182,12 +181,12 @@
 }
 
 /* A zone keeps its dashed ring, in the state's colour; a point is filled. */
-.globe-markers:has(> .globe-callout:not([data-state='unknown'])) .globe-marker--exact[aria-pressed='true']::after {
+.globe-markers:not([data-state='unknown']) .globe-marker--exact[aria-pressed='true']::after {
   background: var(--halo);
 }
 
 /* «Neither» is a dark grey: a light ring keeps it visible on the Moon. */
-.globe-markers:has(> .globe-callout[data-state='none']) .globe-marker[aria-pressed='true']::after {
+.globe-markers[data-state='none'] .globe-marker[aria-pressed='true']::after {
   box-shadow:
     0 0 0 1.5px rgba(242, 242, 244, 0.6),
     0 0 0 5px rgba(242, 242, 244, 0.18);
@@ -199,8 +198,8 @@
 }
 
 /*
- * The selected marker's ring (VENT-32, canvases «FixedCallout…»): it ties
- * the docked callout to its site. Placed on the marker by
+ * The selected marker's ring (VENT-32, canvases «FixedCallout…»): it
+ * says which site the pill and the sheet speak of. Placed on the marker by
  * src/globe/marker-layer.ts and hidden with it behind the limb; the
  * pseudo-element pulses, so the frame loop only writes the position. In
  * the state's colour, as the marker: the legend's meaning. Still under
@@ -227,7 +226,7 @@
 }
 
 /* «Neither» is a dark grey: the ring takes the marker's light edge. */
-.globe-markers:has(> .globe-callout[data-state='none']) .globe-ring::after {
+.globe-markers[data-state='none'] .globe-ring::after {
   border-color: rgba(242, 242, 244, 0.6);
   box-shadow: 0 0 0 4px rgba(242, 242, 244, 0.18);
 }
@@ -300,7 +299,7 @@
 
 /*
  * A view narrow for its text (200 % text, a narrow window) stacks the
- * key, so it stays in its corner, under the site callout docked above it.
+ * key, so it stays in its corner.
  * The em is the view's own, so it grows with the text.
  */
 @container (max-width: 52em) {
@@ -312,7 +311,7 @@
 
 /*
  * Too small for both (200 % text in a narrow window): the key gives way,
- * as the site callout is the one that says which site is selected.
+ * as the site card and the ringed marker say which site is selected.
  */
 @container (max-width: 24em) {
   .globe-layers {

@@ -95,7 +95,7 @@ test.describe('phone, 390x844', () => {
     await open(page);
     await expect(page.getByRole('heading', { level: 1 })).toHaveText('Ventana Lunar');
     await expect(page.locator('section.globe canvas')).toHaveCount(1);
-    await expect(page.getByRole('button', { name: 'Change site, now IM-2, Mons Mouton', exact: true })).toBeVisible();
+    await expect(page.getByRole('button', { name: 'Change site, now Mons Mouton (IM-2 Athena): Window · 7 d left', exact: true })).toBeVisible();
     await expect(page.locator('.summary__subtitle')).toHaveText('IM-2 Athena');
     const widgets = page.getByRole('list', { name: 'This site now' }).getByRole('listitem');
     await expect(widgets).toHaveCount(4);
@@ -107,7 +107,9 @@ test.describe('phone, 390x844', () => {
     await expect(widgets.nth(2)).toContainText('Earth 10.6° up');
     await expect(widgets.nth(3)).toContainText('Robledo');
     await expect.poll(() => sheetTop(page)).toBe(HALF_TOP);
-    await expect(page.locator('.globe-callout')).toHaveAttribute('aria-label', 'Mons Mouton (IM-2 Athena)');
+    // No card floats over the globe (VENT-33): the pill carries the state, the ring marks the site.
+    await expect(page.locator('.globe-callout')).toHaveCount(0);
+    await expect(page.locator('.globe-markers')).toHaveAttribute('data-state', 'window');
   });
 
   test('dragging the sheet up reaches the site picker', async ({ page }) => {
@@ -135,20 +137,6 @@ test.describe('phone, 390x844', () => {
     expect(Math.round((bar?.y ?? 0) + 2.5 - HALF_TOP)).toBe(12);
   });
 
-  test('the globe callout stays above the sheet, and hides when the sheet covers its marker', async ({ page }) => {
-    await page.emulateMedia({ reducedMotion: 'reduce' });
-    await open(page);
-    const label = page.locator('.globe-callout');
-    await expect(label).toBeVisible();
-    const box = await label.boundingBox();
-    expect((box?.y ?? 0) + (box?.height ?? 0)).toBeLessThanOrEqual(HALF_TOP);
-    await page.getByRole('button', { name: /^Sheet half height/ }).press('Enter');
-    await expect.poll(() => sheetTop(page)).toBe(FULL_TOP);
-    await expect(label).toBeHidden();
-    await page.getByRole('button', { name: 'Done' }).click();
-    await expect(label).toBeVisible();
-  });
-
   test('the grabber is a button that cycles the detents from the keyboard', async ({ page }) => {
     await page.emulateMedia({ reducedMotion: 'reduce' });
     await open(page);
@@ -165,7 +153,7 @@ test.describe('phone, 390x844', () => {
 
   test('search spans every region and names it; with the query cleared the region control filters', async ({ page }) => {
     await open(page);
-    await page.getByRole('button', { name: 'Change site, now IM-2' }).click();
+    await page.getByRole('button', { name: /^Change site, now Mons Mouton \(IM-2 Athena\)/ }).click();
     const rows = page.getByRole('list', { name: 'Sites' }).getByRole('listitem');
     const search = page.getByRole('searchbox', { name: 'Search a site or mission' });
     await expect(rows).toHaveCount(16);
@@ -190,21 +178,21 @@ test.describe('phone, 390x844', () => {
     await page.getByRole('navigation', { name: 'Views' }).getByRole('button', { name: 'Sites' }).click();
     await page.getByRole('button', { name: 'Apollo', exact: true }).click();
     await page.getByRole('list', { name: 'Sites' }).getByRole('button', { name: /^Mare Tranquillitatis/ }).click();
-    await expect(page.getByRole('button', { name: 'Change site, now Apollo 11, Mare Tranquillitatis (Tranquility Base)' })).toBeVisible();
+    await expect(page.getByRole('button', { name: /^Change site, now Mare Tranquillitatis \(Tranquility Base\) \(Apollo 11\): Neither · / })).toBeVisible();
     await expect(page.locator('.widget').first()).toContainText('No window');
     await expect(page.locator('.widget').nth(3)).toContainText('No antenna');
     await expect(page.locator('[data-site-id="apollo11"]')).toHaveAttribute('aria-pressed', 'true');
-    await expect(page.locator('.globe-callout')).toHaveAttribute('aria-label', 'Mare Tranquillitatis (Tranquility Base) (Apollo 11)');
+    await expect(page.locator('.globe-markers')).toHaveAttribute('data-state', 'none');
     await expect.poll(() => sheetTop(page)).toBe(HALF_TOP);
   });
 
   test('reaches the Mons Mouton zone that the globe hides under IM-2', async ({ page }) => {
     await open(page);
-    await page.getByRole('button', { name: 'Change site, now IM-2' }).click();
+    await page.getByRole('button', { name: /^Change site, now Mons Mouton \(IM-2 Athena\)/ }).click();
     await page.getByRole('list', { name: 'Sites' }).getByRole('button', { name: /^Mons Mouton\s*Artemis candidate region/ }).click();
     // The pill and the title tell the zone apart from IM-2, which shares the place name.
-    await expect(page.getByRole('button', { name: 'Change site, now Mons Mouton, Artemis candidate region', exact: true })).toBeVisible();
-    await expect(page.locator('.site-pill__detail')).toHaveText('Artemis candidate region');
+    await expect(page.getByRole('button', { name: /^Change site, now Mons Mouton \(Artemis candidate region\): / })).toBeVisible();
+    await expect(page.locator('.site-pill__name')).toHaveText('Mons Mouton');
     await expect(page.locator('.summary__name')).toHaveText('Mons Mouton');
     await expect(page.locator('.summary__subtitle')).toHaveText('Artemis candidate region');
     const zone = page.locator('[data-site-id="artemis-mons-mouton-plateau"]');

@@ -66,3 +66,31 @@ describe('light-mode label contrast on the phone cards', () => {
     expect(contrast(colour, card)).toBeGreaterThanOrEqual(4.5);
   });
 });
+
+/** `rgba(r, g, b, a)` over the opaque `#rrggbb` colour `under`, as `#rrggbb`. */
+function over(rgba: string, under: string): string {
+  const [r, g, b, a] = (rgba.match(/[\d.]+/g) ?? []).map(Number);
+  const base = [1, 3, 5].map((i) => Number.parseInt(under.slice(i, i + 2), 16));
+  const mixed = [r, g, b].map((c, i) => Math.round((a ?? 1) * (c ?? 0) + (1 - (a ?? 1)) * (base[i] ?? 0)));
+  return `#${mixed.map((c) => c.toString(16).padStart(2, '0')).join('')}`;
+}
+
+describe('light-mode signal words on the phone top bar (VENT-33)', () => {
+  const light = block(TOKENS, '@media (prefers-color-scheme: light) {');
+  const phone = block(PHONE, '@media (prefers-color-scheme: light) {');
+  // The worst case: the bar's glass over the black sky at the screen's top, and the site pill's fill on it.
+  const SKY = '#07080b';
+  const bar = over(phone['--phone-bar'] ?? '', SKY);
+  const pill = over(light['--fill'] ?? '', bar);
+
+  it.each(['--bar-sun-ink', '--bar-earth-ink', '--bar-window-ink'])('%s reaches 4.5:1 on the bar and in the pill', (token) => {
+    const colour = phone[token] ?? '';
+    expect(colour).toMatch(/^#[0-9a-f]{6}$/i);
+    expect(contrast(colour, bar)).toBeGreaterThanOrEqual(4.5);
+    expect(contrast(colour, pill)).toBeGreaterThanOrEqual(4.5);
+  });
+
+  it('keeps the rule\'s «+» and «=» and a plain state line, in the secondary text, at 4.5:1 in the pill', () => {
+    expect(contrast(light['--text-secondary'] ?? '', pill)).toBeGreaterThanOrEqual(4.5);
+  });
+});

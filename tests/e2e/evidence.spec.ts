@@ -29,7 +29,8 @@
  * header site picker, the site card beside the globe (also at 1280x720, where it scrolls and fades at its edge) and
  * the polar map with it (also with IM-2 not selected, where crowded markers wear numbers its key names), and of the
  * phone at 390x844 (the sheet at half in dark and light, the site picker, the sheet at peek, the sheet closed, also
- * zoomed in, and the calendar, also at 200 % text), the Liquid and the frosted glass on both (VENT-27), saved under production/qa/evidence/ with the capture date. It runs only on request, so a normal e2e run writes nothing:
+ * zoomed in, and the calendar, also at 200 % text), the Liquid and the frosted glass on both (VENT-27), and the
+ * selected site with its state in the phone's pill and its relief in the sheet or the site card (VENT-33), saved under production/qa/evidence/ with the capture date. It runs only on request, so a normal e2e run writes nothing:
  *
  *   CAPTURE_EVIDENCE=1 npm run e2e -- evidence.spec.ts
  *
@@ -58,7 +59,7 @@ test.describe('globe evidence', () => {
       // a desktop GPU gets.
       await page.goto('./?quality=high');
       await texture;
-      await expect(page.locator('.globe-callout')).toBeVisible();
+      await expect(page.locator('.globe-ring')).toBeVisible();
       await settle(page);
       await page.screenshot({ path: new URL(`${DATE}-vent-6-globe-${scheme}.png`, OUT).pathname });
     });
@@ -77,7 +78,7 @@ test.describe('calendar evidence', () => {
     await page.goto('./?quality=high');
     await texture;
     await expect(page.getByRole('img', { name: /^Window:/ })).toBeVisible();
-    await expect(page.locator('.globe-callout')).toBeVisible();
+    await expect(page.locator('.globe-ring')).toBeVisible();
     await settle(page);
   }
 
@@ -113,7 +114,7 @@ test.describe('site card evidence', () => {
     await page.goto('./?quality=high');
     await texture;
     await expect(page.getByRole('complementary', { name: 'Site card' }).getByText('Longest night')).toBeVisible();
-    await expect(page.locator('.globe-callout')).toBeVisible();
+    await expect(page.locator('.globe-ring')).toBeVisible();
     await settle(page);
   }
 
@@ -261,51 +262,63 @@ test.describe('phone evidence', () => {
 
   test('phone, site picker open', async ({ page }) => {
     await openPhone(page, 'dark');
-    await page.getByRole('button', { name: 'Change site, now IM-2' }).click();
+    await page.getByRole('button', { name: /^Change site, now/ }).click();
     await expect(page.getByRole('heading', { name: 'Landing sites' })).toBeVisible();
     await settle(page);
     await page.screenshot({ path: new URL(`${DATE}-vent-23-phone-picker.png`, OUT).pathname });
   });
 });
 
-test.describe('callout evidence', () => {
+test.describe('selected site evidence', () => {
   test.skip(!process.env.CAPTURE_EVIDENCE, 'captures only with CAPTURE_EVIDENCE=1');
 
-  /** The canvas's date and IM-2's real hours, the globe's texture decoded and the callout's thumbnail painted. */
-  async function openCallout(page: Page, phone: boolean): Promise<void> {
-    await page.emulateMedia({ colorScheme: 'dark', reducedMotion: 'reduce' });
+  /**
+   * The canvas's date and IM-2's real hours, the globe's texture decoded and the site's thumbnail painted (VENT-33:
+   * the state in the pill, the thumbnail in the sheet or the site card, no card on the globe).
+   */
+  async function openSite(page: Page, scheme: 'dark' | 'light', phone: boolean): Promise<void> {
+    await page.emulateMedia({ colorScheme: scheme, reducedMotion: 'reduce' });
     await page.clock.setFixedTime(new Date('2026-11-23T18:00:00Z'));
     await stubApi(page);
     const texture = page.waitForResponse(/\/textures\/moon-lroc-/);
     await page.goto(phone ? './' : './?quality=high');
     await texture;
-    if (phone) {
-      await page.getByRole('navigation', { name: 'Views' }).getByRole('button', { name: 'Globe' }).click();
-      await expect(page.locator('.sheet')).toHaveAttribute('inert', '');
-    }
-    await expect(page.locator('.globe-callout')).toHaveAttribute('data-state', 'window');
-    await page.locator('.globe-callout__image').evaluate((img: HTMLImageElement) => img.decode());
+    await expect(page.locator('.globe-markers')).toHaveAttribute('data-state', 'window');
+    const thumb = page.locator(phone ? '.summary__thumb' : '.card-media__image');
+    await thumb.evaluate((img: HTMLImageElement) => img.decode());
     await page.waitForTimeout(600);
     await settle(page);
   }
 
-  test.describe('desktop', () => {
-    test.use({ viewport: { width: 1440, height: 900 } });
+  for (const [width, height] of [[1440, 900], [1280, 720]] as const) {
+    test.describe(`desktop ${width}x${height}`, () => {
+      test.use({ viewport: { width, height } });
 
-    test('globe callout, image card, dark mode', async ({ page }) => {
-      await openCallout(page, false);
-      await page.screenshot({ path: new URL(`${DATE}-vent-29-callout-desktop-dark.png`, OUT).pathname });
+      test(`site card with its relief, ${width}x${height}, dark mode`, async ({ page }) => {
+        await openSite(page, 'dark', false);
+        await page.screenshot({ path: new URL(`${DATE}-vent-33-desktop-${width}x${height}-dark.png`, OUT).pathname });
+      });
     });
-  });
+  }
 
-  test.describe('phone', () => {
-    test.use({ viewport: { width: 390, height: 844 }, hasTouch: true, isMobile: true, deviceScaleFactor: 2 });
+  for (const [width, height] of [[390, 844], [360, 780]] as const) {
+    test.describe(`phone ${width}x${height}`, () => {
+      test.use({ viewport: { width, height }, hasTouch: true, isMobile: true, deviceScaleFactor: 2 });
 
-    test('globe callout, compact card, sheet closed, dark mode', async ({ page }) => {
-      await openCallout(page, true);
-      await page.screenshot({ path: new URL(`${DATE}-vent-29-callout-phone-dark.png`, OUT).pathname });
+      for (const scheme of ['dark', 'light'] as const) {
+        test(`pill state and sheet relief, ${width}, half and closed, ${scheme} mode`, async ({ page }) => {
+          await openSite(page, scheme, true);
+          const name = `${DATE}-vent-33-phone-${width}-${scheme}`;
+          await page.screenshot({ path: new URL(`${name}-half.png`, OUT).pathname });
+          await page.getByRole('navigation', { name: 'Views' }).getByRole('button', { name: 'Globe' }).click();
+          await expect(page.locator('.sheet')).toHaveAttribute('inert', '');
+          await page.waitForTimeout(600);
+          await settle(page);
+          await page.screenshot({ path: new URL(`${name}-closed.png`, OUT).pathname });
+        });
+      }
     });
-  });
+  }
 });
 
 test.describe('glass evidence', () => {
@@ -319,8 +332,7 @@ test.describe('glass evidence', () => {
     const texture = page.waitForResponse(/\/textures\/moon-lroc-/);
     await page.goto(`./${query}`);
     await texture;
-    await expect(page.locator('.globe-callout')).toHaveAttribute('data-state', 'window');
-    await page.locator('.globe-callout__image').evaluate((img: HTMLImageElement) => img.decode());
+    await expect(page.locator('.globe-markers')).toHaveAttribute('data-state', 'window');
     await page.waitForTimeout(600);
     await settle(page);
   }

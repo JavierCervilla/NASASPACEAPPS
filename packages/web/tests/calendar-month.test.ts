@@ -31,6 +31,7 @@ import { dayTicks, monthEndMs, monthHours, monthStartMs, shiftMonth } from '../s
 import { instantPct, monthStrip } from '../src/calendar/month-strip';
 import { canShiftMonth, hourOfMonth, moveMonths, moveToHour } from '../src/calendar/time-actions';
 import { createTimeStore } from '../src/calendar/time-store';
+import { EN } from './i18n-factories';
 
 const HOUR = 3_600_000;
 const AT = Date.parse('2026-11-23T18:20:00Z');
@@ -74,10 +75,10 @@ describe('month', () => {
 
 describe('instant formats', () => {
   it('writes the date as the canvas does', () => {
-    expect(formatInstant(AT)).toBe('Mon 23 Nov · 18:00 UTC');
+    expect(formatInstant(EN, AT)).toBe('Mon 23 Nov · 18:00 UTC');
     expect(formatChip(AT)).toBe('23 · 18:00');
-    expect(monthLabel(AT)).toBe('November 2026');
-    expect(formatInstant(Date.parse('2026-09-05T07:59:00Z'))).toBe('Sat 5 Sep · 07:00 UTC');
+    expect(monthLabel(EN, AT)).toBe('November 2026');
+    expect(formatInstant(EN, Date.parse('2026-09-05T07:59:00Z'))).toBe('Sat 5 Sept · 07:00 UTC');
   });
 });
 

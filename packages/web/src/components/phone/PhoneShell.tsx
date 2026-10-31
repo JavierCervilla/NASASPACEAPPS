@@ -42,10 +42,11 @@ import type { SiteStore } from '../../phone/site-store';
 import { unlistedSite } from '../../phone/unlisted-site';
 import { CalendarSheet } from '../calendar/CalendarSheet';
 import { useTime, type CalendarParts } from '../calendar/hooks';
+import { useI18n } from '../i18n-context';
 import { usePhone, useScrim, useSelection, useSiteWidgets } from './hooks';
 import { PhoneBar } from './PhoneBar';
 import { Sheet } from './Sheet';
-import { SitePicker } from './SitePicker';
+import { SitesPanel } from './SitesPanel';
 import { SiteSummary } from './SiteSummary';
 import { TabBar } from './TabBar';
 import { useSheetPanel } from './use-sheet-detent';
@@ -73,14 +74,15 @@ function usePhoneState({ sites, store, parts }: Props) {
   const site =
     sites.find((s) => s.id === selection.id) ?? unlistedSite(selection.id);
   const time = useTime(parts.time);
+  const i18n = useI18n();
   const at = time?.atMs ?? null;
   const widgets = useSiteWidgets(parts.load, selection.id, at);
-  const when = time && !time.live ? formatInstant(time.atMs) : null;
+  const when = time && !time.live ? formatInstant(i18n, time.atMs) : null;
   const panel = useSheetPanel();
-  const { result } = widgets;
+  const { result, hours } = widgets;
   const state = result.kind === 'ready' ? result.widgets.now.state : null;
-  const { hours } = widgets;
-  const lines = stateLines(siteState(hours, at), hoursStatus(hours, at));
+  const status = hoursStatus(hours, at);
+  const lines = stateLines(siteState(hours, at, i18n), status, i18n);
   const select = (id: string): void => store.select(id, 'list');
   const actions = sheetActions(panel.setDetent, select, panel.setView);
   return { site, widgets, when, state, lines, ...panel, ...actions };
@@ -89,7 +91,7 @@ function usePhoneState({ sites, store, parts }: Props) {
 type PhoneState = ReturnType<typeof usePhoneState>;
 
 /** The sheet's name for what fills it. */
-const SHEET_LABELS = { sites: 'Choose a site', calendar: 'Calendar' };
+const SHEET_LABELS = { sites: 'site.choose', calendar: 'sheet.calendar' } as const;
 
 /**
  * The sheet's props; the tab bar's element, where a drag up opens the
@@ -103,10 +105,11 @@ function useSheetWiring(
 ) {
   const tabs = useRef<HTMLElement>(null);
   const bar = useRef<HTMLElement>(null);
+  const { t } = useI18n();
   useEffect(() => () => sheetEdge.set(null), [sheetEdge]);
   const atFull = phone.detent === 'full';
   const sheet = {
-    label: atFull ? SHEET_LABELS[phone.view] : 'Site summary',
+    label: t(atFull ? SHEET_LABELS[phone.view] : 'sheet.summary'),
     detent: phone.detent,
     onDetent: phone.setDetent,
     onOpenness: dim,
@@ -129,12 +132,13 @@ function SheetBody(props: { phone: PhoneState } & Props) {
   }
   if (phone.detent === 'full') {
     return (
-      <SitePicker
+      <SitesPanel
         sites={sites}
         selected={site}
         state={state}
         onPick={phone.pick}
         onDone={phone.close}
+        base={base}
       />
     );
   }

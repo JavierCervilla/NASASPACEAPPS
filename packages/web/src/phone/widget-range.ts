@@ -49,8 +49,6 @@ export interface WidgetRange {
   readonly monthEnd: string;
   /** The horizon's last hour: `at` plus 30 days, held inside the window. */
   readonly horizonEnd: string;
-  /** The month's English name, for «47 % of November». */
-  readonly month: string;
 }
 
 /** How far ahead the countdowns look, in hours (30 days). */
@@ -58,11 +56,6 @@ export const HORIZON_HOURS = 30 * 24;
 /** The API's window (packages/server/src/params.ts), first and last hour. */
 const FIRST_HOUR_MS = Date.UTC(2026, 0, 1);
 const LAST_HOUR_MS = Date.UTC(2028, 0, 1) - HOUR_MS;
-/** The English month names, January first. */
-export const MONTHS = [
-  'January', 'February', 'March', 'April', 'May', 'June', 'July',
-  'August', 'September', 'October', 'November', 'December',
-];
 
 /**
  * The range for the instant `nowMs`, or null when its hour falls outside
@@ -83,6 +76,5 @@ export function widgetRange(nowMs: number): WidgetRange | null {
     at: toIso(atMs),
     monthEnd: toIso(monthEndMs),
     horizonEnd: toIso(ahead(atMs)),
-    month: MONTHS[month] ?? '',
   };
 }

@@ -10,7 +10,8 @@ COPY packages/web/package.json packages/web/
 COPY packages/server/package.json packages/server/
 RUN npm ci
 COPY . .
-RUN npm run build -w @ventana/web \
+# PSEUDO_LOCALE=0: the pseudo-locale page (/en-xa/) is for the e2e overflow tests, never for visitors.
+RUN PSEUDO_LOCALE=0 npm run build -w @ventana/web \
   && node packages/web/scripts/csp-header.mjs packages/web/dist > /app/csp.conf \
   && grep -q 'Content-Security-Policy' /app/csp.conf
 

@@ -28,10 +28,11 @@
  * 80° S), its name with what tells it apart (IM-2 and the Mons Mouton
  * zone share a place), its coordinates and the widgets.
  */
-import { formatCoords } from '../../phone/format';
+import { formatCoords } from '../../i18n/format';
 import { siteLabels, type PhoneSite } from '../../phone/phone-site';
 import type { WidgetsResult } from '../../phone/widgets-loader';
 import { thumbOf } from '../../thumbs/thumbs';
+import { useI18n } from '../i18n-context';
 import { SiteThumb } from '../SiteThumb';
 import { Widgets } from './Widgets';
 
@@ -50,12 +51,13 @@ const THUMB_SIZES = '40px';
 
 /** «84.79° S, 29.20° E», or nothing for a site without coordinates. */
 function Coords({ site }: { readonly site: PhoneSite }) {
+  const i18n = useI18n();
   if (!Number.isFinite(site.lat) || !Number.isFinite(site.lonEast)) {
     return null;
   }
   return (
     <span className="summary__coords">
-      {formatCoords(site.lat, site.lonEast)}
+      {formatCoords(i18n, site.lat, site.lonEast)}
     </span>
   );
 }
@@ -63,7 +65,8 @@ function Coords({ site }: { readonly site: PhoneSite }) {
 export function SiteSummary(props: Props) {
   const { site, result, onRetry, when, base } = props;
   const { title, subtitle } = siteLabels(site);
-  const thumb = thumbOf(site.id, title, base);
+  const i18n = useI18n();
+  const thumb = thumbOf({ id: site.id, place: title }, base, i18n);
   return (
     <div className="summary">
       <div className="summary__head">

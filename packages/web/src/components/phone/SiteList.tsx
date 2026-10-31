@@ -36,6 +36,7 @@ import {
 } from '../../phone/phone-site';
 import { regionName } from '../../phone/site-search';
 import type { NowState } from '../../phone/widget-types';
+import { useI18n } from '../i18n-context';
 
 interface RowProps {
   readonly site: PhoneSite;
@@ -48,8 +49,9 @@ interface RowProps {
 }
 
 function Check() {
+  const { t } = useI18n();
   return (
-    <svg className="site-row__check" width="16" height="16" viewBox="0 0 16 16" role="img" aria-label="Selected">
+    <svg className="site-row__check" width="16" height="16" viewBox="0 0 16 16" role="img" aria-label={t('picker.selected')}>
       <path d="M3 8.5l3 3 7-7" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
     </svg>
   );
@@ -58,8 +60,9 @@ function Check() {
 function SiteRow(props: RowProps) {
   const { site, selected, state, onPick } = props;
   const kind = site.approximate ? 'zone' : 'exact';
-  const region = props.withRegion ? regionName(site.group) : '';
-  const detail = rowDetail(site, selected ? state : null, region);
+  const i18n = useI18n();
+  const region = props.withRegion ? regionName(i18n, site.group) : '';
+  const detail = rowDetail(i18n, site, selected ? state : null, region);
   return (
     <li>
       <button
@@ -89,11 +92,12 @@ interface Props {
 
 export function SiteList(props: Props) {
   const { sites, selectedId, state, onPick, withRegion } = props;
+  const { t } = useI18n();
   if (sites.length === 0) {
-    return <p className="site-list-empty">No sites match.</p>;
+    return <p className="site-list-empty">{t('picker.empty')}</p>;
   }
   return (
-    <ul className="site-list" data-sheet-scroll aria-label="Sites">
+    <ul className="site-list" data-sheet-scroll aria-label={t('picker.list')}>
       {sites.map((site) => (
         <SiteRow
           key={site.id}

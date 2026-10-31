@@ -28,6 +28,7 @@ import { describe, expect, it } from 'vitest';
 
 // The web image's server config (Dockerfile copies it to nginx's conf.d).
 const CONF = readFileSync(new URL('../../../nginx.conf', import.meta.url), 'utf8');
+const DOCKERFILE = readFileSync(new URL('../../../Dockerfile', import.meta.url), 'utf8');
 
 /** The body of each `location <path> { ... }` block, by path. */
 function locations(conf: string): Map<string, string> {
@@ -50,5 +51,15 @@ describe('nginx.conf', () => {
     const textures = blocks.get('/textures/') ?? '';
     expect(textures).toContain('add_header Cache-Control "public, max-age=86400";');
     expect(textures).not.toContain('immutable');
+  });
+});
+
+describe('the locale routes (VENT-35)', () => {
+  it('serves each locale’s folder: /es/ is es/index.html', () => {
+    expect(locations(CONF).get('/') ?? '').toMatch(/try_files \$uri \$uri\/ /);
+  });
+
+  it('builds the production image without the pseudo-locale page', () => {
+    expect(DOCKERFILE).toMatch(/PSEUDO_LOCALE=0 npm run build -w @ventana\/web/);
   });
 });

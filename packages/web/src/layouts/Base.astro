@@ -27,16 +27,18 @@
 import '../styles/global.css';
 
 interface Props {
+  /** The page's language, for `<html lang>`. */
+  lang: string;
   title: string;
   description: string;
 }
 
-const { title, description } = Astro.props;
+const { lang, title, description } = Astro.props;
 const favicon = `${import.meta.env.BASE_URL.replace(/\/$/, '')}/favicon.svg`;
 ---
 
 <!doctype html>
-<html lang="en">
+<html lang={lang}>
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
@@ -44,6 +46,7 @@ const favicon = `${import.meta.env.BASE_URL.replace(/\/$/, '')}/favicon.svg`;
     <meta name="theme-color" content="#07080b" />
     <link rel="icon" type="image/svg+xml" href={favicon} />
     <title>{title}</title>
+    <slot name="head" />
   </head>
   <body>
     <slot />

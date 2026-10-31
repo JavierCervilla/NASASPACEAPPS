@@ -29,9 +29,12 @@ import { defineConfig } from 'astro/config';
 
 // Served at the domain root on Dokploy; SITE_BASE sets a sub-path if a host ever needs one.
 const base = process.env.SITE_BASE ?? '/';
+// The public address, when known, makes the hreflang links absolute.
+const site = process.env.SITE_URL;
 
 export default defineConfig({
   base,
+  ...(site ? { site } : {}),
   output: 'static',
   integrations: [react()],
   vite: {

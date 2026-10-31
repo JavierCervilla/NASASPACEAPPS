@@ -35,6 +35,7 @@ import {
   SUN_MIN_ELEVATION_DEG,
 } from '@ventana/sim';
 import { monthLabel } from '../calendar/instant-format';
+import type { I18n } from '../i18n/translate';
 import type { BodyWidget } from '../phone/widget-types';
 import { widgetsAt, type HoursResult } from '../phone/widgets-loader';
 import { monthFacts, type FactRow } from './month-facts';
@@ -53,21 +54,27 @@ export type CardModel =
  * «November 2026 · JPL Horizons, 1 h step · Sun above 0°, Earth above
  * 3°»: the month counted, the data and the rules.
  */
-export function sourceLine(atMs: number): string {
-  const rules =
-    `Sun above ${SUN_MIN_ELEVATION_DEG}°, ` +
-    `Earth above ${EARTH_MIN_ELEVATION_DEG}°`;
-  return `${monthLabel(atMs)} · JPL Horizons, 1 h step · ${rules}`;
+export function sourceLine(i18n: I18n, atMs: number): string {
+  return i18n.t('card.source', {
+    month: monthLabel(i18n, atMs),
+    sun: i18n.number(SUN_MIN_ELEVATION_DEG),
+    earth: i18n.number(EARTH_MIN_ELEVATION_DEG),
+  });
 }
 
 /** The card for the hour of `atMs`, from its month's `hours`. */
-export function siteCard(hours: HoursResult, atMs: number): CardModel {
-  const widgets = widgetsAt(hours, atMs);
+export function siteCard(
+  hours: HoursResult,
+  atMs: number,
+  i18n: I18n,
+): CardModel {
+  const widgets = widgetsAt(hours, atMs, i18n);
   if (widgets.kind !== 'ready' || hours.kind !== 'ready') {
     return { kind: widgets.kind === 'ready' ? 'error' : widgets.kind };
   }
-  const rows = monthFacts(hours.hours, atMs);
+  const rows = monthFacts(hours.hours, atMs, i18n);
   if (!rows) return { kind: 'error' };
   const { sun, earth } = widgets.widgets;
-  return { kind: 'ready', sun, earth, rows, source: sourceLine(atMs) };
+  const source = sourceLine(i18n, atMs);
+  return { kind: 'ready', sun, earth, rows, source };
 }

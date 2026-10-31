@@ -34,6 +34,7 @@ import { labelBox, visibleLabels } from '../src/polar/label-layout';
 import { toPx } from '../src/polar/layout-geometry';
 import { markerOf, polarMarkers } from '../src/polar/polar-markers';
 import type { PhoneSite } from '../src/phone/phone-site';
+import { EN } from './i18n-factories';
 
 const site = (id: string, lat: number, lonEast: number, extra: Partial<PhoneSite> = {}): PhoneSite => ({
   id,
@@ -59,7 +60,7 @@ const SITES = [
 const CURATED = JSON.parse(readFileSync(new URL('../../server/data/sites.json', import.meta.url), 'utf8')) as PhoneSite[];
 
 describe('polar markers', () => {
-  const markers = polarMarkers(SITES);
+  const markers = polarMarkers(SITES, EN);
 
   it('draws only the sites from 80° S to the pole', () => {
     expect(markers.map(({ id }) => id)).toEqual(['im2', 'nobile1']);
@@ -81,7 +82,7 @@ describe('polar markers', () => {
     const [merged] = polarMarkers([
       site('a', -85, 10, { approximate: true, name: 'Haworth (Artemis candidate region)' }),
       site('b', -85, 10, { approximate: true, name: 'Shoemaker (Artemis candidate region)' }),
-    ]);
+    ], EN);
     expect(merged?.label).toBe('Haworth · 2 sites');
   });
 
@@ -198,7 +199,7 @@ describe('polar number badges', () => {
 
   for (const selected of [null, 'im2-athena']) {
     it(`identifies every curated marker at the map's smallest size, ${selected ?? 'none'} selected`, () => {
-      const markers = polarMarkers(CURATED);
+      const markers = polarMarkers(CURATED, EN);
       const shown = visibleLabels(markers, 320, selected);
       const badges = numberBadges(markers, 320, shown, selected);
       // A label or a number for every marker, and the landed IM-2 keeps its own label.

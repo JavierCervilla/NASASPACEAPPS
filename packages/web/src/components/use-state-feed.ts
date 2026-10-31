@@ -36,6 +36,7 @@ import { siteState } from '../phone/site-state';
 import type { SiteStore } from '../phone/site-store';
 import type { NowState } from '../phone/widget-types';
 import { useMonthHours, useTime, type CalendarParts } from './calendar/hooks';
+import { useI18n } from './i18n-context';
 import { useSelection } from './phone/hooks';
 
 /** The selected site's state, as a value the globe watches. */
@@ -47,7 +48,8 @@ export function useStateFeed(
   const { id } = useSelection(store);
   const atMs = useTime(parts.time)?.atMs ?? null;
   const { result: hours } = useMonthHours(parts.load, id, atMs);
-  const kind = siteState(hours, atMs)?.kind ?? null;
+  const i18n = useI18n();
+  const kind = siteState(hours, atMs, i18n)?.kind ?? null;
   useEffect(() => {
     feed.set(kind);
   }, [feed, kind]);

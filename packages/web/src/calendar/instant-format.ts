@@ -23,10 +23,12 @@
  *             :::.. .  .               SPDX-License-Identifier: MIT
  */
 
-/** How the calendar writes an instant and a month, in UTC. Pure. */
-import { MONTHS } from '../phone/widget-range';
-
-const WEEKDAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+/**
+ * How the calendar writes an instant and a month, in UTC and in the
+ * visitor's language: Intl names the weekday and the month. Pure.
+ */
+import { monthYear } from '../i18n/format';
+import type { I18n } from '../i18n/translate';
 
 const twoDigits = (n: number): string => String(n).padStart(2, '0');
 
@@ -36,12 +38,16 @@ function hourText(date: Date): string {
 }
 
 /** «Mon 23 Nov · 18:00 UTC». */
-export function formatInstant(atMs: number): string {
-  const date = new Date(atMs);
-  const weekday = WEEKDAYS[date.getUTCDay()] ?? '';
-  const month = (MONTHS[date.getUTCMonth()] ?? '').slice(0, 3);
-  const day = `${weekday} ${date.getUTCDate()} ${month}`;
-  return `${day} · ${hourText(date)} UTC`;
+export function formatInstant(i18n: I18n, atMs: number): string {
+  const options = {
+    weekday: 'short',
+    day: 'numeric',
+    month: 'short',
+    timeZone: 'UTC',
+  } as const;
+  const day = new Intl.DateTimeFormat(i18n.tag, options).format(atMs);
+  const hour = hourText(new Date(atMs));
+  return i18n.t('instant.utc', { day, hour });
 }
 
 /** «23 · 18:00»: the chip on the phone's instant line. */
@@ -50,8 +56,7 @@ export function formatChip(atMs: number): string {
   return `${date.getUTCDate()} · ${hourText(date)}`;
 }
 
-/** «November 2026». */
-export function monthLabel(atMs: number): string {
-  const date = new Date(atMs);
-  return `${MONTHS[date.getUTCMonth()] ?? ''} ${date.getUTCFullYear()}`;
+/** «November 2026», as a heading. */
+export function monthLabel(i18n: I18n, atMs: number): string {
+  return monthYear(i18n, atMs, true);
 }

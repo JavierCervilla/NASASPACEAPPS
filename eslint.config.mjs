@@ -28,6 +28,7 @@ import reactHooks from 'eslint-plugin-react-hooks';
 import tseslint from 'typescript-eslint';
 import antiSlop from './eslint.anti-slop.mjs';
 import maxFunctionsPerFile from './eslint-rules/max-functions-per-file.mjs';
+import noLiteralUiText from './eslint-rules/no-literal-ui-text.mjs';
 
 export default [
   { ignores: ['**/dist/', '**/.astro/', '**/node_modules/', '.english-gate/', 'playwright-report/', 'test-results/', '.claude/'] },
@@ -71,5 +72,11 @@ export default [
       'max-params': ['error', 4],
       'local/max-functions-per-file': ['error', { max: 5 }],
     },
+  },
+  // i18n (VENT-35): every word the interface shows or speaks comes from the message catalogues, in five languages.
+  {
+    files: ['packages/web/src/**/*.tsx', 'packages/web/src/**/*.astro'],
+    plugins: { i18n: { rules: { 'no-literal-ui-text': noLiteralUiText } } },
+    rules: { 'i18n/no-literal-ui-text': ['error', { allow: ['Ventana Lunar'] }] },
   },
 ];

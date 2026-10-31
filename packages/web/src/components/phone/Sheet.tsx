@@ -33,7 +33,7 @@
 import { useEffect, useRef, type ReactNode, type RefObject } from 'react';
 import type { DetentName } from '../../sheet/sheet-physics';
 import { mountSheet, type MountedSheet } from '../../sheet/sheet-mount';
-import { grabberLabel, nextDetent } from '../../sheet/sheet-view';
+import { Grabber } from './Grabber';
 
 interface Props {
   readonly label: string;
@@ -113,15 +113,7 @@ export function Sheet(props: Props) {
       data-detent={detent}
       inert={detent === 'closed'}
     >
-      <button
-        type="button"
-        className="sheet__grabber"
-        aria-label={grabberLabel(detent)}
-        aria-expanded={detent === 'full'}
-        onClick={() => onDetent(nextDetent(detent))}
-      >
-        <span className="sheet__bar" />
-      </button>
+      <Grabber detent={detent} onDetent={onDetent} />
       {children}
     </section>
   );

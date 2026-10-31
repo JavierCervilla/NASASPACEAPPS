@@ -30,6 +30,7 @@
  * sheet.
  */
 import type { Ref } from 'react';
+import { useI18n } from '../i18n-context';
 import { Icon, type IconName } from './Icon';
 
 interface Props {
@@ -53,30 +54,32 @@ interface Tab {
 
 function TabButton({ icon, label, current, onClick }: Tab) {
   const soon = onClick === undefined;
+  const { t } = useI18n();
   return (
     <button
       type="button"
       className="tab"
       aria-current={current ? 'true' : undefined}
       aria-disabled={soon ? 'true' : undefined}
-      aria-label={soon ? `${label} (soon)` : undefined}
+      aria-label={soon ? t('tabs.soonLabel', { label }) : undefined}
       onClick={onClick}
     >
       <Icon name={icon} />
       <span>{label}</span>
-      {soon ? <span className="tab__soon">soon</span> : null}
+      {soon ? <span className="tab__soon">{t('tabs.soon')}</span> : null}
     </button>
   );
 }
 
 export function TabBar(props: Props) {
   const { ref, current, onGlobe, onCalendar, onSites } = props;
+  const { t } = useI18n();
   return (
-    <nav ref={ref} className="tab-bar" aria-label="Views">
-      <TabButton icon="globe" label="Globe" current={current === 'globe'} onClick={onGlobe} />
-      <TabButton icon="calendar" label="Calendar" current={current === 'calendar'} onClick={onCalendar} />
-      <TabButton icon="horizon" label="Horizon" />
-      <TabButton icon="sites" label="Sites" current={current === 'sites'} onClick={onSites} />
+    <nav ref={ref} className="tab-bar" aria-label={t('tabs.label')}>
+      <TabButton icon="globe" label={t('tabs.globe')} current={current === 'globe'} onClick={onGlobe} />
+      <TabButton icon="calendar" label={t('tabs.calendar')} current={current === 'calendar'} onClick={onCalendar} />
+      <TabButton icon="horizon" label={t('tabs.horizon')} />
+      <TabButton icon="sites" label={t('tabs.sites')} current={current === 'sites'} onClick={onSites} />
     </nav>
   );
 }

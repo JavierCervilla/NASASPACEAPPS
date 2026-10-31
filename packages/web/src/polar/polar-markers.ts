@@ -34,6 +34,7 @@ import {
   type GlobeSite,
   type MarkerSite,
 } from '../globe/markers';
+import type { I18n } from '../i18n/translate';
 import {
   onPolarMap,
   toPolarMap,
@@ -79,20 +80,28 @@ function sharedPlace(members: readonly GlobeSite[]): string {
  * sites on one point the place they share and how many: «Nobile · 3
  * sites». Naming one of them with a count read as that one being near.
  */
-function markerText(first: PhoneSite, site: MarkerSite): string {
+function markerText(
+  first: PhoneSite,
+  site: MarkerSite,
+  i18n: I18n,
+): string {
   const count = site.members.length;
   if (count < 2) return shortName(first);
-  return `${sharedPlace(site.members)} · ${count} sites`;
+  const place = sharedPlace(site.members);
+  return i18n.plural('polar.sharedPlace', count, { place });
 }
 
 /** The markers of the sites of `sites` that lie on the map. */
-export function polarMarkers(sites: readonly PhoneSite[]): PolarMarker[] {
+export function polarMarkers(
+  sites: readonly PhoneSite[],
+  i18n: I18n,
+): PolarMarker[] {
   const byId = new Map(sites.map((site) => [site.id, site]));
   const onMap = sites.filter((site) => onPolarMap(site.lat));
   return mergeColocated(onMap).flatMap((site) => {
     const first = byId.get(site.id);
     if (!first) return [];
-    const label = markerText(first, site);
+    const label = markerText(first, site, i18n);
     const at = toPolarMap(site);
     return [{ id: site.id, site, zone: site.approximate, at, label }];
   });

@@ -35,6 +35,8 @@ import {
   toMs,
   type HourSample,
 } from '@ventana/sim';
+import { monthName } from '../i18n/format';
+import type { I18n } from '../i18n/translate';
 import { bodyWidget, EARTH, SUN } from './body-widget';
 import { dsnWidget } from './dsn-widget';
 import { nowWidget } from './now-widget';
@@ -68,22 +70,24 @@ export function samplesWithin(
 }
 
 /**
- * The widgets for the hour `range.at` of `hours` (the whole range), or
- * null when no sample covers it.
+ * The widgets for the hour `range.at` of `hours` (the whole range), in
+ * the language of `i18n`, or null when no sample covers it.
  */
 export function siteWidgets(
   hours: readonly HourSample[],
   range: WidgetRange,
+  i18n: I18n,
 ): SiteWidgets | null {
   const horizon = samplesWithin(hours, range.at, range.horizonEnd);
   const now = sampleAt(horizon, range.at);
   if (!now) return null;
   const month = samplesWithin(hours, range.from, range.monthEnd);
   const { windowPct } = computeRangeMetrics(month, now.t);
+  const monthOf = monthName(i18n, toMs(range.from));
   return {
-    now: nowWidget(now, windowPct, range.month),
-    sun: bodyWidget(SUN, horizon, now),
-    earth: bodyWidget(EARTH, horizon, now),
-    dsn: dsnWidget(horizon, now),
+    now: nowWidget(now, windowPct, monthOf, i18n),
+    sun: bodyWidget(SUN, horizon, now, i18n),
+    earth: bodyWidget(EARTH, horizon, now, i18n),
+    dsn: dsnWidget(horizon, now, i18n),
   };
 }

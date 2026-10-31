@@ -30,7 +30,9 @@
  * up with the image and the markers at any size. Decorative: the map's
  * name says what it shows.
  */
+import { formatAngle } from '../../i18n/format';
 import { toPolarMap } from '../../lib/polar-projection';
+import { useI18n } from '../i18n-context';
 
 const MERIDIANS = [0, 30, 60, 90, 120, 150, 180, 210, 240, 270, 300, 330];
 /** The 85° S parallel's radius on the unit disk. */
@@ -50,21 +52,23 @@ function Lines() {
 }
 
 export function Graticule() {
+  const i18n = useI18n();
+  const lon = (deg: number) => formatAngle(i18n, deg, 'lon', 0);
   // On the 180° meridian, where no site's label runs.
   const parallelTop = `${50 + 50 * PARALLEL_R}%`;
   return (
     <>
       <Lines />
       <span className="graticule-label graticule-label--top" aria-hidden="true">0°</span>
-      <span className="graticule-label graticule-label--right" aria-hidden="true">90° E</span>
+      <span className="graticule-label graticule-label--right" aria-hidden="true">{lon(90)}</span>
       <span className="graticule-label graticule-label--bottom" aria-hidden="true">180°</span>
-      <span className="graticule-label graticule-label--left" aria-hidden="true">90° W</span>
+      <span className="graticule-label graticule-label--left" aria-hidden="true">{lon(270)}</span>
       <span
         className="graticule-label graticule-label--parallel"
         style={{ top: parallelTop }}
         aria-hidden="true"
       >
-        85° S
+        {formatAngle(i18n, -85, 'lat', 0)}
       </span>
     </>
   );

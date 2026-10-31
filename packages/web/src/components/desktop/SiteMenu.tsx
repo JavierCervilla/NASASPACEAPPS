@@ -32,9 +32,11 @@
  * under the button.
  */
 import { useRef, useState, type RefObject } from 'react';
-import { formatCoords } from '../../phone/format';
+import { formatCoords } from '../../i18n/format';
+import type { I18n } from '../../i18n/translate';
 import { siteLabels, type PhoneSite } from '../../phone/phone-site';
 import type { NowState } from '../../phone/widget-types';
+import { useI18n } from '../i18n-context';
 import { Icon } from '../phone/Icon';
 import { SitePicker } from '../phone/SitePicker';
 
@@ -51,9 +53,10 @@ interface Props {
 }
 
 /** «Mons Mouton · 84.79° S, 29.20° E», or the place alone. */
-function placeLine(site: PhoneSite, title: string): string {
+function placeLine(i18n: I18n, site: PhoneSite, title: string): string {
   const known = Number.isFinite(site.lat) && Number.isFinite(site.lonEast);
-  return known ? `${title} · ${formatCoords(site.lat, site.lonEast)}` : title;
+  if (!known) return title;
+  return `${title} · ${formatCoords(i18n, site.lat, site.lonEast)}`;
 }
 
 /** Puts the popover under `button`, before the browser shows it. */
@@ -67,6 +70,7 @@ type Anchor = RefObject<HTMLDivElement | null>;
 
 function SiteButton(props: Props & { readonly popover: Anchor }) {
   const { site, state, popover } = props;
+  const i18n = useI18n();
   const { title, subtitle } = siteLabels(site);
   const name = subtitle === title ? title : `${subtitle}, ${title}`;
   return (
@@ -74,12 +78,12 @@ function SiteButton(props: Props & { readonly popover: Anchor }) {
       type="button"
       className="site-button"
       popoverTarget={POPOVER_ID}
-      aria-label={`Change site, now ${name}`}
+      aria-label={i18n.t('site.change', { name })}
       onClick={(e) => anchorUnder(e.currentTarget, popover.current)}
     >
       <span className="signal-dot" data-state={state ?? 'loading'} />
       <span className="site-button__name">{subtitle}</span>
-      <span className="site-button__place">{placeLine(site, title)}</span>
+      <span className="site-button__place">{placeLine(i18n, site, title)}</span>
       <Icon name="chevron" />
     </button>
   );
@@ -92,6 +96,7 @@ function SiteButton(props: Props & { readonly popover: Anchor }) {
 function SitePopover(props: Props & { readonly popover: Anchor }) {
   const { popover, sites, site, state } = props;
   const [open, setOpen] = useState(false);
+  const { t } = useI18n();
   const close = (): void => popover.current?.hidePopover();
   const pick = (id: string): void => {
     props.onPick(id);
@@ -105,7 +110,7 @@ function SitePopover(props: Props & { readonly popover: Anchor }) {
       className="site-popover"
       popover="auto"
       role="dialog"
-      aria-label="Choose a site"
+      aria-label={t('site.choose')}
       onToggle={(e) => setOpen(e.newState === 'open')}
     >
       {open ? <SitePicker {...picker} /> : null}

@@ -30,29 +30,38 @@
  * search, and the list.
  */
 import type { SiteGroup } from '@ventana/sim';
-import { useState } from 'react';
+import { useState, type ReactNode } from 'react';
 import type { PhoneSite } from '../../phone/phone-site';
-import { filterSites, foldText, REGIONS } from '../../phone/site-search';
+import {
+  filterSites,
+  foldText,
+  regionName,
+  REGIONS,
+} from '../../phone/site-search';
 import type { NowState } from '../../phone/widget-types';
+import { useI18n } from '../i18n-context';
 import { Icon } from './Icon';
 import { SiteList } from './SiteList';
 
-interface Props {
+export interface PickerProps {
   readonly sites: readonly PhoneSite[];
   readonly selected: PhoneSite;
   readonly state: NowState | null;
   readonly onPick: (id: string) => void;
   readonly onDone: () => void;
+  /** Under the title: the phone's language row (SitesPanel.tsx). */
+  readonly languageRow?: ReactNode;
 }
 
 function Search(props: { value: string; onChange: (v: string) => void }) {
+  const { t } = useI18n();
   return (
     <label className="search">
       <Icon name="search" />
-      <span className="visually-hidden">Search a site or mission</span>
+      <span className="visually-hidden">{t('picker.search')}</span>
       <input
         type="search"
-        placeholder="Search a site or mission"
+        placeholder={t('picker.search')}
         value={props.value}
         onChange={(event) => props.onChange(event.target.value)}
       />
@@ -66,28 +75,38 @@ function Regions(props: {
   off: boolean;
   onChange: (g: SiteGroup) => void;
 }) {
+  const i18n = useI18n();
   return (
-    <div className="segmented" role="group" aria-label="Region">
-      {REGIONS.map(([group, label]) => (
+    <div className="segmented" role="group" aria-label={i18n.t('picker.region')}>
+      {REGIONS.map((group) => (
         <button key={group} type="button" disabled={props.off} aria-pressed={!props.off && group === props.value} onClick={() => props.onChange(group)}>
-          {label}
+          {regionName(i18n, group)}
         </button>
       ))}
     </div>
   );
 }
 
-export function SitePicker({ sites, selected, state, onPick, onDone }: Props) {
+function PickerHead({ onDone }: { readonly onDone: () => void }) {
+  const { t } = useI18n();
+  return (
+    <div className="picker__head">
+      <h2 className="picker__title">{t('picker.title')}</h2>
+      <button type="button" className="picker__done" onClick={onDone}>{t('picker.done')}</button>
+    </div>
+  );
+}
+
+export function SitePicker(props: PickerProps) {
+  const { sites, selected, state, onPick, onDone } = props;
   const [query, setQuery] = useState('');
   const [group, setGroup] = useState<SiteGroup>(selected.group);
   const shown = filterSites(sites, { query, group });
   const searching = foldText(query) !== '';
   return (
     <div className="picker">
-      <div className="picker__head">
-        <h2 className="picker__title">Landing sites</h2>
-        <button type="button" className="picker__done" onClick={onDone}>Done</button>
-      </div>
+      <PickerHead onDone={onDone} />
+      {props.languageRow}
       <Search value={query} onChange={setQuery} />
       <Regions value={group} off={searching} onChange={setGroup} />
       <SiteList

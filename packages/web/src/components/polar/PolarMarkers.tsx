@@ -36,6 +36,7 @@ import type { Badge } from '../../polar/badge-layout';
 import type { Side } from '../../polar/label-layout';
 import type { PolarMarker } from '../../polar/polar-markers';
 import type { NowState } from '../../phone/widget-types';
+import { useI18n } from '../i18n-context';
 
 interface Props {
   readonly markers: readonly PolarMarker[];
@@ -60,12 +61,13 @@ interface MarkerProps {
 }
 
 function MarkerButton({ marker, selected, state }: MarkerProps) {
+  const i18n = useI18n();
   return (
     <button
       type="button"
       className={`polar-marker polar-marker--${markerKind(marker.site)}`}
       style={placeOf(marker)}
-      aria-label={markerLabel(marker.site)}
+      aria-label={markerLabel(i18n, marker.site)}
       aria-pressed={selected}
       data-site-id={marker.id}
       data-state={selected ? (state ?? 'loading') : undefined}

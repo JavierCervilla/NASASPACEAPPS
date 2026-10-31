@@ -31,6 +31,8 @@
  */
 import { computeRangeMetrics, type HourSample } from '@ventana/sim';
 import { monthSamples } from '../calendar/month-samples';
+import { formatPercent } from '../i18n/format';
+import type { I18n } from '../i18n/translate';
 import { formatDuration } from '../phone/format';
 
 /** One row of the card's list; `tone` colours the value. */
@@ -44,23 +46,23 @@ export interface FactRow {
 export function monthFacts(
   hours: readonly HourSample[],
   atMs: number,
+  i18n: I18n,
 ): readonly FactRow[] | null {
   const samples = monthSamples(hours, atMs);
   const first = samples[0];
   if (!first) return null;
   const metrics = computeRangeMetrics(samples, first.t);
-  const share = (pct: number): string => `${Math.round(pct)} %`;
+  const { t } = i18n;
+  const share = (pct: number): string => formatPercent(i18n, pct);
   const span = (hoursLong: number | undefined, none: string): string =>
-    hoursLong === undefined ? none : formatDuration(hoursLong);
+    hoursLong === undefined ? none : formatDuration(i18n, hoursLong);
+  const longest = metrics.longestWindow?.hours;
+  const night = metrics.longestNight?.hours;
   return [
-    { label: 'Hours with Sun', value: share(metrics.sunPct) },
-    { label: 'Hours with Earth', value: share(metrics.earthPct) },
-    {
-      label: 'Landing window',
-      value: share(metrics.windowPct),
-      tone: 'window',
-    },
-    { label: 'Longest window', value: span(metrics.longestWindow?.hours, 'None') },
-    { label: 'Longest night', value: span(metrics.longestNight?.hours, 'No night') },
+    { label: t('facts.sun'), value: share(metrics.sunPct) },
+    { label: t('facts.earth'), value: share(metrics.earthPct) },
+    { label: t('facts.window'), value: share(metrics.windowPct), tone: 'window' },
+    { label: t('facts.longestWindow'), value: span(longest, t('facts.noWindow')) },
+    { label: t('facts.longestNight'), value: span(night, t('facts.noNight')) },
   ];
 }

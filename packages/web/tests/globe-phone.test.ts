@@ -81,7 +81,7 @@ describe('selection', () => {
     // No frame set yet: the framer only flies.
     const band = { band: () => ({ top: 0, bottom: 800 }), watch: () => () => undefined };
     const framer = createSiteFramer({ orbit, camera: { view: null }, band, invalidate, reducedMotion: () => true });
-    const unbind = bindSelection({ store, markers, framer }, () => [APOLLO11]);
+    const unbind = bindSelection({ store, markers, framer, nameOf: (site) => site.name }, () => [APOLLO11]);
     return { store, markers, orbit, unbind };
   };
 

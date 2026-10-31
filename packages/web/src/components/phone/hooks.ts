@@ -33,6 +33,7 @@ import type { HoursLoader } from '../../phone/hours-cache';
 import type { Selection, SiteStore } from '../../phone/site-store';
 import { LOADING, widgetsAt } from '../../phone/widgets-loader';
 import { useMonthHours } from '../calendar/hooks';
+import { useI18n } from '../i18n-context';
 
 const subscribePhone = (onChange: () => void): (() => void) => {
   const media = matchMedia(PHONE_QUERY);
@@ -77,6 +78,7 @@ export function useSiteWidgets(
   atMs: number | null,
 ) {
   const { result: hours, retry } = useMonthHours(load, id, atMs);
-  const result = atMs === null ? LOADING : widgetsAt(hours, atMs);
+  const i18n = useI18n();
+  const result = atMs === null ? LOADING : widgetsAt(hours, atMs, i18n);
   return { result, hours, retry };
 }

@@ -41,6 +41,8 @@ export interface SelectionParts {
   readonly store: SiteStore;
   readonly markers: MarkerLayer;
   readonly framer: Pick<SiteFramer, 'fly' | 'hold'>;
+  /** A marker's accessible name, in the visitor's language. */
+  readonly nameOf: (site: GlobeSite) => string;
 }
 
 /**
@@ -95,7 +97,7 @@ export function loadSelection(
   let sites: readonly GlobeSite[] = [];
   void loadSites(source).then((loaded) => {
     sites = loaded;
-    parts.markers.setSites(loaded);
+    parts.markers.setSites(loaded, parts.nameOf);
     holdSelected(parts, loaded);
   });
   return bindSelection(parts, () => sites);

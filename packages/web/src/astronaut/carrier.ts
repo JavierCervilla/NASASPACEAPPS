@@ -25,16 +25,16 @@
 
 /**
  * Holds the one carry of the astronaut at a time (VENT-10): what it shows,
- * and how the last one ended, for the views that follow it (the phone
- * sheet steps aside while it is carried, the screen reader hears where it
- * was dropped).
+ * read again whenever the Moon moves under it, and how the last one ended,
+ * for the views that follow it (the phone sheet steps aside while it is
+ * carried, the screen reader hears where it was dropped).
  */
 import type { LatLon } from '../lib/polar-projection';
 import {
   createWatchedValue,
   type WatchedValue,
 } from '../lib/watched-value';
-import type { CarryView } from './carry-view';
+import { viewAt, type CarryView, type ReadoutDeps } from './carry-view';
 import {
   CarrySession,
   type SessionDeps,
@@ -76,11 +76,28 @@ function sessionOf(
   return new CarrySession({ ...deps, view, onDrop, onBack }, start);
 }
 
+/**
+ * Reads again what is under the carried feet: the Moon moved under them
+ * (the globe zoomed, turned or was re-framed), not the pointer. Only a
+ * new point or state is set, so a turning globe redraws nothing else.
+ */
+function repick(deps: ReadoutDeps, view: Carrier['view']): void {
+  const now = view.get();
+  if (now?.phase !== 'carry') return;
+  const next = viewAt(deps, now, now.feet);
+  const same = next.point?.lat === now.point?.lat
+    && next.point?.lonEast === now.point?.lonEast
+    && next.state === now.state;
+  if (!same) view.set(next);
+}
+
 export function createCarrier(deps: CarrierDeps): Carrier {
   const view = createWatchedValue<CarryView | null>(null);
   const ended = createWatchedValue<CarryEnd | null>(null);
   let session: CarrySession | null = null;
+  let unwatch = (): void => undefined;
   const end = (outcome: CarryEnd): void => {
+    unwatch();
     session = null;
     ended.set(outcome);
   };
@@ -90,6 +107,7 @@ export function createCarrier(deps: CarrierDeps): Carrier {
     lift: (start) => {
       if (session) return null;
       session = sessionOf(deps, view, end, start);
+      unwatch = deps.surfaces.subscribe(() => repick(deps, view));
       return session;
     },
     current: () => session,

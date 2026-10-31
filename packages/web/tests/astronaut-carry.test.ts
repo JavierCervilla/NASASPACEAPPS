@@ -179,6 +179,91 @@ describe('a carry', () => {
   });
 });
 
+/**
+ * A Moon that moves under still feet, as the globe does when it zooms, turns, is re-framed or is resized: the disk
+ * shifts `dx` px right, and each shift is told as a drawn frame.
+ */
+function slidingMoon() {
+  let dx = 0;
+  const listeners = new Set<() => void>();
+  const moon = fakeMoon();
+  const surface: DropSurface = {
+    ...moon,
+    pointAt: (x, y) => moon.pointAt(x - dx, y),
+    subscribe: (listener) => {
+      listeners.add(listener);
+      return () => void listeners.delete(listener);
+    },
+  };
+  const slide = (by: number) => {
+    dx += by;
+    listeners.forEach((listener) => listener());
+  };
+  return { surface, slide, listeners };
+}
+
+describe('a carry over a Moon that moves under still feet', () => {
+  const start = { mode: 'pointer', pointer: DOCK, feet: DOCK, touch: false, t: 0 } as const;
+
+  it('reads the point again on every frame, and drops the point under the feet when let go', () => {
+    const moon = slidingMoon();
+    const { carrier, drop } = carrierOver(moon.surface);
+    const session = carrier.lift(start);
+    session?.move({ x: 250, y: 230 }, 16);
+    expect(carrier.view.get()?.point).toEqual({ lat: -23, lonEast: 25 });
+    moon.slide(-30);
+    expect(carrier.view.get()).toMatchObject({ feet: { x: 250, y: 230 }, point: { lat: -23, lonEast: 28 } });
+    moon.slide(-12);
+    session?.release(48);
+    expect(drop).toHaveBeenCalledWith({ lat: -23, lonEast: 29.2 });
+  });
+
+  it('turns to off the Moon when the Moon slides out from under the feet', () => {
+    const moon = slidingMoon();
+    const { carrier } = carrierOver(moon.surface);
+    carrier.lift(start)?.move({ x: 280, y: 200 }, 16);
+    moon.slide(-50);
+    expect(carrier.view.get()).toMatchObject({ phase: 'carry', point: null, state: null });
+  });
+
+  it('drops what is under the feet even when no frame told it (a resize before the next draw)', () => {
+    let dx = 0;
+    const moon = fakeMoon();
+    const { carrier, drop } = carrierOver({ ...moon, pointAt: (x, y) => moon.pointAt(x - dx, y) });
+    const session = carrier.lift(start);
+    session?.move({ x: 200, y: 200 }, 16);
+    dx = 20;
+    expect(carrier.view.get()?.point).toEqual({ lat: -20, lonEast: 20 });
+    session?.release(32);
+    expect(drop).toHaveBeenCalledWith({ lat: -20, lonEast: 18 });
+  });
+
+  it('keeps the view while nothing under the feet changed, and stops listening once the carry ends', () => {
+    const moon = slidingMoon();
+    const { carrier } = carrierOver(moon.surface);
+    const session = carrier.lift(start);
+    session?.move({ x: 200, y: 200 }, 16);
+    const before = carrier.view.get();
+    moon.slide(0);
+    expect(carrier.view.get()).toBe(before);
+    session?.release(32);
+    moon.slide(-10);
+    expect(carrier.view.get()).toBeNull();
+    expect(carrier.current()).toBeNull();
+  });
+
+  it('reads the point again for the keyboard too, where the feet only move by steps', () => {
+    const moon = slidingMoon();
+    const { carrier, drop } = carrierOver(moon.surface);
+    const at = { x: 200, y: 200 };
+    const session = carrier.lift({ ...start, mode: 'keys', pointer: at, feet: at });
+    moon.slide(10);
+    expect(carrier.view.get()?.point).toEqual({ lat: -20, lonEast: 19 });
+    session?.release(0);
+    expect(drop).toHaveBeenCalledWith({ lat: -20, lonEast: 19 });
+  });
+});
+
 describe('walk home', () => {
   it('starts at the hand’s velocity', () => {
     const frames = manualFrames();
@@ -208,6 +293,20 @@ describe('surfaces', () => {
     hit = inside;
     expect(surfaces.at({ x: 200, y: 200 })).toBeNull();
     expect(surfaces.shown()).toBeNull();
+  });
+
+  it('tell together when any surface’s points move, until it is taken away', () => {
+    const moon = slidingMoon();
+    const surfaces = createSurfaces(() => ({}) as Element);
+    const remove = surfaces.add(moon.surface);
+    surfaces.add(fakeMoon());
+    const heard = vi.fn();
+    const stop = surfaces.subscribe(heard);
+    moon.slide(1);
+    expect(heard).toHaveBeenCalledTimes(1);
+    remove();
+    expect(moon.listeners.size).toBe(0);
+    stop();
   });
 });
 

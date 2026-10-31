@@ -96,9 +96,14 @@ export class CarrySession {
     return true;
   }
 
-  /** Let go at `t` ms: dropped on the Moon, or it walks back. */
+  /**
+   * Let go at `t` ms: dropped on the Moon, or it walks back. The point is
+   * read again here, not taken from the last move: the Moon may have
+   * moved under a still pointer since (a zoom, the sheet re-framing it).
+   */
   release(t: number): void {
-    const point = this.deps.view.get()?.point ?? null;
+    const base = { mode: this.start.mode, phase: 'carry', lean: 0 } as const;
+    const { point } = viewAt(this.deps, base, this.feet);
     if (!point) return this.cancel(false, this.tracker.velocity(t));
     this.deps.view.set(null);
     this.deps.onDrop(point);

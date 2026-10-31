@@ -26,25 +26,46 @@
 /**
  * Changing the interface's language: the choice is kept for the next visit
  * to `/`, and the browser goes to that locale's page with the same view
- * (the hash: `#globe`, `#polar-map`).
+ * (the hash: `#globe`, `#polar-map`) and the same place: the address's own
+ * parameters (`?site=`, the astronaut's `?lat&lon`, `?glass=`) go along,
+ * any other is left behind.
  */
 import { saveChoice, type ChoiceStorage } from './choice';
 import type { Locale } from './locales';
 import { localePath } from './routes';
 
-/** `locale`'s page under `base`, on the view of `hash`. */
-export function localeHref(base: string, locale: Locale, hash: string) {
-  return `${localePath(base, locale)}${hash}`;
+/** The query parameters that say what the page shows. */
+const KEPT_PARAMS = ['site', 'lat', 'lon', 'glass'] as const;
+
+/** `search`'s kept parameters, as a query string; empty when none is. */
+function keptQuery(search: string): string {
+  const from = new URLSearchParams(search);
+  const kept = new URLSearchParams();
+  for (const name of KEPT_PARAMS) {
+    const value = from.get(name);
+    if (value !== null) kept.set(name, value);
+  }
+  const query = kept.toString();
+  return query ? `?${query}` : '';
+}
+
+/** `locale`'s page under `base`, with `search`'s place, on `hash`'s view. */
+export function localeHref(
+  base: string,
+  locale: Locale,
+  where: Pick<Location, 'search' | 'hash'>,
+) {
+  return `${localePath(base, locale)}${keptQuery(where.search)}${where.hash}`;
 }
 
 /** What switching needs from the browser. */
 export interface SwitchDeps {
   readonly storage: ChoiceStorage | null;
-  readonly location: Pick<Location, 'hash' | 'assign'>;
+  readonly location: Pick<Location, 'search' | 'hash' | 'assign'>;
 }
 
 /** Keeps `locale` as the choice and opens its page, on the same view. */
 export function switchLocale(base: string, locale: Locale, deps: SwitchDeps) {
   saveChoice(deps.storage, locale);
-  deps.location.assign(localeHref(base, locale, deps.location.hash));
+  deps.location.assign(localeHref(base, locale, deps.location));
 }

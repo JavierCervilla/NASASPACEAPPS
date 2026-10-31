@@ -29,9 +29,11 @@
  * belongs to the surface whose element is the one under it, so a panel
  * floating over the Moon (the Layers key, the phone sheet) is not the
  * Moon. Each surface answers the Moon's point under a client px, and
- * where a point of the Moon shows.
+ * where a point of the Moon shows, and they tell together when their
+ * points move, so a carry reads again what is under a still crosshair.
  */
 import type { LatLon } from '../lib/polar-projection';
+import { createWatchedValue } from '../lib/watched-value';
 
 export interface ClientPoint {
   readonly x: number;
@@ -55,6 +57,8 @@ export interface Surfaces {
   at(at: ClientPoint): { surface: DropSurface; point: LatLon | null } | null;
   /** The surface on screen, for the keyboard; null when none is. */
   shown(): DropSurface | null;
+  /** Hears that any surface's points moved; returns the unsubscribe. */
+  subscribe(listener: () => void): () => void;
 }
 
 /** The element at client px, as the page hit-tests it. */
@@ -65,10 +69,15 @@ const isShown = (surface: DropSurface): boolean =>
 
 export function createSurfaces(hitTest: HitTest): Surfaces {
   const list = new Set<DropSurface>();
+  const moved = createWatchedValue(0);
   return {
     add: (surface) => {
       list.add(surface);
-      return () => void list.delete(surface);
+      const stop = surface.subscribe?.(() => moved.set(moved.get() + 1));
+      return () => {
+        list.delete(surface);
+        stop?.();
+      };
     },
     at: (at) => {
       const hit = hitTest(at);
@@ -78,5 +87,6 @@ export function createSurfaces(hitTest: HitTest): Surfaces {
       return { surface, point: surface.pointAt(at.x, at.y) };
     },
     shown: () => [...list].find(isShown) ?? null,
+    subscribe: moved.subscribe,
   };
 }

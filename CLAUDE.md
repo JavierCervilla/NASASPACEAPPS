@@ -125,7 +125,11 @@ Every visible change follows `.claude/skills/apple-design/SKILL.md` (vendored fr
   (`skyAt`, one instant per move, `src/astronaut/sky-state.ts`); the visor wears that state, neutral silver at home and
   off the Moon. The drop surfaces register themselves (`src/astronaut/surfaces.ts`): the globe (a ray from the camera
   to the sphere, `src/globe/globe-view.ts`) and the polar disk (inverse projection, `src/astronaut/polar-surface.ts`);
-  a point belongs to the surface whose element is under it, so a floating panel is never the Moon. Off the Moon the
+  a point belongs to the surface whose element is under it, so a floating panel is never the Moon. The point under
+  the crosshair is read again whenever the Moon moves under a still pointer (the surfaces tell their drawn frames
+  through `Surfaces.subscribe`, and `carrier.ts` re-picks on each: a wheel zoom or a second finger mid-drag, the phone
+  sheet re-framing the globe, a resize), and the drop reads it once more where the pointer is when let go
+  (`carry-session.ts` `release()`), so readout, visor, drop, address and the Horizons request name one point. Off the Moon the
   readout says «Off the Moon · Let go and it walks home» and on release it walks back on critically damped springs
   from the hand's velocity; Escape cancels. On the phone the sheet drops to peek while it is carried, and opens at half
   on a drop. Where the phone dock wraps above the tab bar (360 px, large text) half and peek rise by as much, so the
@@ -163,7 +167,8 @@ Every visible change follows `.claude/skills/apple-design/SKILL.md` (vendored fr
   `eslint-rules/no-literal-ui-text.mjs` fails on literal text in JSX and Astro markup and in `aria-label`, `alt`,
   `title`, `placeholder`…; `tests/i18n-catalogues.test.ts` fails when a catalogue misses a key, a placeholder or a
   plural form, or a site status has no translation. The selector (desktop header menu, phone Sites sheet row) keeps the
-  choice in `localStorage`; the first visit to `/` opens the browser's language once (`src/i18n/first-visit.ts`,
+  choice in `localStorage` and opens the locale's page on the same view and place: the hash and the app's own query
+  parameters (`?site=`, `?lat&lon`, `?glass=`; any other is dropped, `src/i18n/switch.ts`); the first visit to `/` opens the browser's language once (`src/i18n/first-visit.ts`,
   inline and CSP-hashed). The pseudo-locale `/en-xa/` (accented, about 40 % longer) exists only for the e2e overflow
   checks: never offered, `noindex`, and left out of the production image (`PSEUDO_LOCALE=0` in the `Dockerfile`).
   Translations were written by Claude: a native speaker should review them before launch. The local pitch is in Spanish

@@ -136,10 +136,18 @@ describe('the kept choice and the switch', () => {
   it('opens the chosen locale on the same view, and keeps the choice', () => {
     const storage = memoryStorage();
     const assign = vi.fn();
-    switchLocale('/', 'fr', { storage, location: { hash: '#polar-map', assign } });
+    switchLocale('/', 'fr', { storage, location: { search: '', hash: '#polar-map', assign } });
     expect(assign).toHaveBeenCalledWith('/fr/#polar-map');
     expect(storage.items.get(CHOICE_KEY)).toBe('fr');
-    expect(localeHref('/', 'en', '')).toBe('/');
+    expect(localeHref('/', 'en', { search: '', hash: '' })).toBe('/');
+  });
+
+  it('keeps the shown site, the astronaut\'s point and the glass, and drops any other parameter', () => {
+    const search = '?utm_source=x&site=shackleton-rim&lat=-85.87&lon=61.34&glass=frosted&q=1';
+    expect(localeHref('/', 'es', { search, hash: '#globe' })).toBe(
+      '/es/?site=shackleton-rim&lat=-85.87&lon=61.34&glass=frosted#globe',
+    );
+    expect(localeHref('/base', 'de', { search: '?q=1', hash: '' })).toBe('/base/de/');
   });
 });
 

@@ -48,6 +48,24 @@ const at = (event: PointerEvent): ClientPoint => ({
   y: event.clientY,
 });
 
+/**
+ * The button came up at `up`: a tap if it never travelled from `down`,
+ * else a drop read where the pointer is now.
+ */
+function letGo(
+  session: CarrySession,
+  down: ClientPoint,
+  up: PointerEvent,
+  onTap: () => void,
+): void {
+  if (isTap(down, at(up))) {
+    session.cancel(false);
+    return onTap();
+  }
+  session.move(at(up), up.timeStamp);
+  session.release(up.timeStamp);
+}
+
 /** Drives `session` from the pointer captured by `el` until it ends. */
 function bindCarry(
   session: CarrySession,
@@ -63,10 +81,7 @@ function bindCarry(
   on(el, 'pointermove', (e) => session.move(at(e as PointerEvent), e.timeStamp));
   on(el, 'pointerup', (e) => {
     off();
-    const up = at(e as PointerEvent);
-    if (!isTap(down, up)) return session.release(e.timeStamp);
-    session.cancel(false);
-    onTap();
+    letGo(session, down, e as PointerEvent, onTap);
   });
   on(el, 'pointercancel', abandon);
   on(el, 'lostpointercapture', abandon);

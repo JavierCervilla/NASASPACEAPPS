@@ -104,6 +104,19 @@ function parseCoords(text: string): { lat: number; lon: number } {
   return { lat, lon };
 }
 
+/** The carried readout once three reads 200 ms apart agree: the globe is at rest under the crosshair. */
+async function readoutAtRest(page: Page): Promise<string> {
+  const coords = page.locator(`${CARRY} .astro-readout__coords`);
+  let last = await coords.textContent();
+  for (let still = 0; still < 3; ) {
+    await page.waitForTimeout(200);
+    const now = await coords.textContent();
+    still = now === last ? still + 1 : 0;
+    last = now;
+  }
+  return last ?? '';
+}
+
 /** The point the address names. */
 const addressPoint = (page: Page) => {
   const params = new URL(page.url()).searchParams;
@@ -215,6 +228,29 @@ test.describe('desktop, 1440x900: the astronaut on the globe', () => {
     await expect(page.locator(DOCK)).toHaveAttribute('data-status', 'home');
     await expect(page.locator(PIN)).toHaveCount(0);
     expect(new URL(page.url()).search).toBe('');
+  });
+
+  test('the window resized mid-drag, it reads the Moon now under the crosshair and lands there', async ({ page }) => {
+    await open(page);
+    await expect(page.locator(`${DOCK} .astro-figure__image`)).toBeVisible();
+    const middle = await moonMiddle(page);
+    const target = { x: middle.x + 60, y: middle.y + 40 };
+    await carry(page, await feetOf(page.locator(`${DOCK} .astro-figure`)), target);
+    await expect(page.locator(CARRY)).toHaveAttribute('data-over', 'moon');
+    const before = await readoutAtRest(page);
+    // The globe's canvas is resized and the Moon moves under a pointer that has not.
+    await page.setViewportSize({ width: 1360, height: 860 });
+    await expect(page.locator(CARRY)).toHaveAttribute('data-over', 'moon');
+    const after = await readoutAtRest(page);
+    expect(after).not.toBe(before);
+    const cross = (await page.locator(`${CARRY} .astro-carry__cross`).boundingBox())!;
+    await page.mouse.up();
+
+    await expect(page.locator(CARRY)).toHaveCount(0);
+    expect(addressPoint(page)).toEqual(parseCoords(after));
+    const feet = await feetOf(page.locator(`${PIN} .astro-figure`));
+    expect(Math.abs(feet.x - (cross.x + cross.width / 2))).toBeLessThan(3);
+    expect(Math.abs(feet.y - (cross.y + cross.height / 2))).toBeLessThan(3);
   });
 
   test('picked up again where it stands, it moves; the dock brings it home to the site chosen before', async ({ page }) => {

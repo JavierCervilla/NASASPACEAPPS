@@ -250,6 +250,15 @@
   comprobada en el lint.
 
 ### Corregido
+- El astronauta caía en un punto que ya no estaba bajo la cruz (VENT-10, hallazgos de qa-adversario): el punto solo se
+  leía al mover el puntero, así que si la Luna se movía bajo un dedo o un ratón quietos (la hoja del móvil bajando a
+  reposo y el globo reencuadrándose, la rueda haciendo zoom mientras se arrastra, un segundo dedo girando el globo o
+  la ventana cambiando de tamaño) la etiqueta, el visor, la caída, la dirección, la ficha y la consulta a Horizons
+  usaban un punto viejo, a entre 1° y 17° de la cruz en el móvil. Ahora el punto se vuelve a leer en cada fotograma
+  del globo mientras se lleva el astronauta y otra vez al soltarlo, donde esté el puntero; el zoom con la rueda o los
+  dos dedos sigue permitido durante el arrastre, para afinar dónde soltarlo.
+- Cambiar de idioma ya no pierde el sitio ni el punto del astronauta: la página del nuevo idioma se abre con el mismo
+  `?site=`, `?lat&lon` y `?glass=` de la dirección, además de la misma vista (VENT-10, hallazgo de qa-adversario).
 - La estrella oscura del polo sur del globo, justo bajo IM-2 (VENT-10): la esfera se junta en el polo en un abanico de
   triángulos finos y la textura se pintaba en gajos. Ahora cada píxel lee el mapa por su propio punto de la esfera, sin
   costura en el meridiano de 180° y sin halo borroso en los polos.

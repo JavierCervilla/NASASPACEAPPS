@@ -91,6 +91,10 @@ function CardMedia({ thumb, state, computed }: MediaProps) {
   );
 }
 
+/**
+ * The head: the image with its badge or, without an image (north of
+ * 80° S), the badge on its own at the top.
+ */
 function CardHead(props: Omit<Props, 'model' | 'onRetry' | 'notes'>) {
   const { site, state, computed, base } = props;
   const i18n = useI18n();
@@ -99,6 +103,7 @@ function CardHead(props: Omit<Props, 'model' | 'onRetry' | 'notes'>) {
   return (
     <div className="card-block card-head">
       <CardMedia thumb={thumb} state={state} computed={computed} />
+      {thumb ? null : <StateBadge state={state} computed={computed} inHead />}
       <p className="card-head__mission">{missionLine(i18n, site)}</p>
       <h2 className="card-head__name">{subtitle}</h2>
       {title === subtitle ? null : <p className="card-head__place">{title}</p>}

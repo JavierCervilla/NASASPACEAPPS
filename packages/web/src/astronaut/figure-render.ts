@@ -30,8 +30,9 @@
  * picture per pose and visor colour (figure-types.ts). This module, with
  * the glTF loader, loads only when the page asks for the pictures
  * (figure-load.ts), and the model needs no decoder (the CSP allows no
- * WebAssembly). The time it takes is measured as
- * «astronaut-figures» (Performance API).
+ * WebAssembly). Each picture waits for its own slice (`slice`), so the
+ * work never blocks the page in one piece. The time it takes is measured
+ * as «astronaut-figures» (Performance API).
  */
 import {
   ACESFilmicToneMapping,
@@ -88,18 +89,25 @@ async function loadModel(url: string): Promise<Object3D> {
   return gltf.scene;
 }
 
-/** Every picture, drawn by `renderer` from `figure`. */
-function drawAll(
-  renderer: WebGLRenderer,
-  figure: FigureScene,
-  visor: Tintable,
+/** What draws the pictures: the renderer, the figure and its visor. */
+interface Painter {
+  readonly renderer: WebGLRenderer;
+  readonly figure: FigureScene;
+  readonly visor: Tintable;
+}
+
+/** Every picture, drawn by `painter`, each in a slice of its own. */
+async function drawAll(
+  { renderer, figure, visor }: Painter,
   colours: Readonly<Record<Visor, string>>,
-): FigureImages {
+  slice: () => Promise<void>,
+): Promise<FigureImages> {
   const canvas = renderer.domElement;
-  const draw = (pose: (typeof POSES)[number]) => {
-    figure.pose(pose);
+  const draw = async (pose: (typeof POSES)[number]) => {
     const row: Partial<Record<Visor, string>> = {};
     for (const tone of VISORS) {
+      await slice();
+      figure.pose(pose);
       visor.color.set(colours[tone]);
       visor.emissive?.set(colours[tone]);
       visor.emissiveIntensity = tone === 'idle' ? 0.08 : 0.35;
@@ -108,7 +116,8 @@ function drawAll(
     }
     return row as Record<Visor, string>;
   };
-  return { stand: draw('stand'), carry: draw('carry') };
+  const stand = await draw('stand');
+  return { stand, carry: await draw('carry') };
 }
 
 /** Frees what the model holds on the GPU, and the renderer's context. */
@@ -126,12 +135,14 @@ function release(model: Object3D | null, renderer: WebGLRenderer): void {
 }
 
 /**
- * The pictures of the model at `url`, its visor in `colours`. Rejects
- * when the browser has no WebGL or the model does not load.
+ * The pictures of the model at `url`, its visor in `colours`, one per
+ * `slice`. Rejects when the browser has no WebGL or the model does not
+ * load.
  */
 export async function renderFigures(
   url: string,
   colours: Readonly<Record<Visor, string>>,
+  slice: () => Promise<void>,
 ): Promise<FigureImages> {
   performance.mark('astronaut-figures-start');
   const canvas = document.createElement('canvas');
@@ -144,7 +155,8 @@ export async function renderFigures(
   try {
     model = await loadModel(url);
     const visor = materialOf(model, 'visor');
-    const images = drawAll(renderer, figureScene(model), visor, colours);
+    const painter = { renderer, figure: figureScene(model), visor };
+    const images = await drawAll(painter, colours, slice);
     performance.measure('astronaut-figures', 'astronaut-figures-start');
     return images;
   } finally {

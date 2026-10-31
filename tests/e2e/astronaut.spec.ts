@@ -298,10 +298,20 @@ test.describe('desktop, 1440x900: the astronaut on the globe', () => {
     await expect(layer.locator('.astro-figure')).toHaveAttribute('data-pose', 'stand');
     const transform = await layer.locator('.astro-carry__figure').evaluate((el) => (el as HTMLElement).style.transform);
     expect(transform).not.toContain('rotate');
+    // The fade lasts 160 ms (FADE_MS), shorter than a round trip under load: note where the figure is the moment the
+    // return starts, in the page, instead of asking afterwards.
+    await layer.evaluate((el) => {
+      const seen = window as unknown as { returnLeft?: number };
+      new MutationObserver(() => {
+        const figure = el.querySelector('.astro-carry__figure');
+        if (el.getAttribute('data-phase') === 'return' && figure && seen.returnLeft === undefined) {
+          seen.returnLeft = figure.getBoundingClientRect().x;
+        }
+      }).observe(el, { attributes: true, attributeFilter: ['data-phase'] });
+    });
     await page.mouse.up();
-    await expect(layer).toHaveAttribute('data-phase', 'return');
-    const left = (await layer.locator('.astro-carry__figure').boundingBox())!.x;
     await expect(layer).toHaveCount(0);
+    const left = await page.evaluate(() => (window as unknown as { returnLeft?: number }).returnLeft);
     expect(left).toBeGreaterThan(box.x + box.width - 200);
   });
 

@@ -114,10 +114,12 @@ Every visible change follows `.claude/skills/apple-design/SKILL.md` (vendored fr
   reduced transparency or more contrast.
 - **The astronaut** (VENT-10, canvas «Astro A + B»): NASA's «Astronaut» model (`public/models/astronaut.glb` and its
   suit texture beside it, `astronaut-suit.webp`, built by `packages/web/scripts/astronaut.mjs`: arms lowered, no NASA
-  insignia, materials `suit` and `visor`; no decoder and no `blob:` URL needed, so the CSP holds) is drawn once after load into small pictures, two poses times five visor colours
-  (`src/astronaut/figure-render.ts`, its own WebGL renderer, released at once; none under Save-Data, where a plain
-  silhouette stands in), so the figure costs no draw call. Its dock ends the desktop Layers key («Drag me anywhere»)
-  and is a round glass button beside the phone's tab bar (`src/components/astronaut/`). A press lifts it (Pointer
+  insignia, materials `suit` and `visor`; no decoder and no `blob:` URL needed, so the CSP holds) is drawn once the
+  globe is up (its loading state gone: never on its critical path), one picture per idle slice, into small pictures,
+  two poses times five visor colours (`src/astronaut/figure-render.ts`, its own WebGL renderer, released at once; none
+  under Save-Data, where a plain silhouette stands in), so the figure costs no draw call. Its dock ends the desktop
+  Layers key («Drag me anywhere») and is a round glass button beside the phone's tab bar
+  (`src/components/astronaut/`). A press lifts it (Pointer
   Events with capture; the feet keep the grab offset, at least 64 px above a finger); it leans with the hand's speed,
   with its shadow, a crosshair on the drop point and a readout of the point and its state at the shared instant
   (`skyAt`, one instant per move, `src/astronaut/sky-state.ts`); the visor wears that state, neutral silver at home and
@@ -126,8 +128,10 @@ Every visible change follows `.claude/skills/apple-design/SKILL.md` (vendored fr
   a point belongs to the surface whose element is under it, so a floating panel is never the Moon. Off the Moon the
   readout says «Off the Moon · Let go and it walks home» and on release it walks back on critically damped springs
   from the hand's velocity; Escape cancels. On the phone the sheet drops to peek while it is carried, and opens at half
-  on a drop. Dropped, the point (snapped to the server's 0.01° grid, `src/astronaut/custom-point.ts`) becomes the
-  selected site under an id that carries it (`@-85.87,61.34`): «Custom point», «Near <nearest listed site> · N km»
+  on a drop. Where the phone dock wraps above the tab bar (360 px, large text) half and peek rise by as much, so the
+  dock never covers what they show (`src/sheet/sheet-mount.ts`). Dropped, the point (snapped to the server's 0.01°
+  grid, `src/astronaut/custom-point.ts`) becomes the selected site under an id that carries it (`@-85.87,61.34`):
+  «Custom point», «Near <nearest listed site> · N km»
   (great circle, `src/astronaut/nearest-site.ts`), computed at once and then from `/api/v1/ephemeris?lat&lon`
   (`src/astronaut/point-hours.ts`), and it stands there (`StandingAstronaut.tsx`, placed after every globe frame), to
   be lifted again; the dock says «On the Moon» and a tap brings it home and reselects the listed site chosen before.

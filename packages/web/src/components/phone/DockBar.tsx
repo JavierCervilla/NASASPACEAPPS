@@ -35,15 +35,17 @@ import { TabBar, type TabView } from './TabBar';
 interface Props {
   /** The tab bar's element, where a drag up opens the closed sheet. */
   readonly tabs: Ref<HTMLElement>;
+  /** The row itself, which the sheet's half and peek stay above. */
+  readonly foot: Ref<HTMLDivElement>;
   readonly current: TabView;
   readonly onGlobe: () => void;
   readonly onCalendar: () => void;
   readonly onSites: () => void;
 }
 
-export function DockBar({ tabs, ...bar }: Props) {
+export function DockBar({ tabs, foot, ...bar }: Props) {
   return (
-    <div className="phone-dockbar">
+    <div ref={foot} className="phone-dockbar">
       <TabBar ref={tabs} {...bar} />
       <PhoneDock />
     </div>

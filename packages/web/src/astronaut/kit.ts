@@ -66,6 +66,12 @@ export interface AstronautKit {
   readonly surfaces: Surfaces;
   /** Its pictures once drawn; null until then, or if they cannot be. */
   readonly figures: WatchedValue<FigureImages | null>;
+  /**
+   * Whether the pictures may be drawn: set once the globe has taken over
+   * (its first map is on, it gave up, or its splash timed out), so their
+   * second WebGL renderer never competes with the globe's start.
+   */
+  readonly figuresDue: WatchedValue<boolean>;
   /** What the polite live region says. */
   readonly live: WatchedValue<string>;
   /** The state of `point` at the shared instant. */
@@ -122,8 +128,10 @@ export function createKit(deps: KitDeps): AstronautKit {
   const keys = (home: ClientPoint): boolean =>
     carryByKeys(home, { carrier, surfaces, startPoint, say });
   const figures = createWatchedValue<FigureImages | null>(null);
-  const parts = { places, carrier, surfaces, figures, live, stateAt };
-  const kit = { ...parts, time, selectedState, reducedMotion, keys };
+  const figuresDue = createWatchedValue(false);
+  const parts = { places, carrier, surfaces, figures, figuresDue, live };
+  const shared = { ...parts, stateAt };
+  const kit = { ...shared, time, selectedState, reducedMotion, keys };
   const ends = carrier.ended.subscribe(() =>
     sayEnd(kit, i18n, carrier.ended.get()));
   return { ...kit, stop: () => [places.stop, ends].forEach((fn) => fn()) };

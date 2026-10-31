@@ -25,12 +25,14 @@
 
 /**
  * What the mounted globe tells the page: that its first map is on the
- * Moon (the loading state may go), and its view, where the astronaut is
- * dropped and stands (VENT-10). `restart` forgets the map when the globe
- * starts again.
+ * Moon (the loading state may go), its view, where the astronaut is
+ * dropped and stands (VENT-10), and `done`, called once its loading state
+ * is gone, after which the astronaut's pictures may be drawn. `restart`
+ * forgets the map when the globe starts again.
  */
 import { useMemo, useState } from 'react';
 import type { GlobeView } from '../globe/globe-view';
+import { useFiguresDue } from './astronaut/context';
 
 export function useGlobeSignals() {
   const [textured, setTextured] = useState(false);
@@ -43,5 +45,5 @@ export function useGlobeSignals() {
     }),
     [],
   );
-  return { textured, view, signals };
+  return { textured, view, signals, done: useFiguresDue() };
 }

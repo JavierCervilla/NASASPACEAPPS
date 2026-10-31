@@ -109,6 +109,7 @@ function useSheetWiring(
 ) {
   const tabs = useRef<HTMLElement>(null);
   const bar = useRef<HTMLElement>(null);
+  const foot = useRef<HTMLDivElement>(null);
   const { t } = useI18n();
   useEffect(() => () => sheetEdge.set(null), [sheetEdge]);
   const atFull = phone.detent === 'full';
@@ -120,8 +121,10 @@ function useSheetWiring(
     onEdge: sheetEdge.set,
     edge: tabs,
     bar,
+    foot,
   };
-  return { tabs, bar, current: atFull ? phone.view : 'globe', sheet } as const;
+  const current = atFull ? phone.view : 'globe';
+  return { tabs, bar, foot, current, sheet } as const;
 }
 
 /**
@@ -158,7 +161,7 @@ function PhoneUi(props: Props) {
   const phone = usePhoneState(props);
   const [scrim, dim] = useScrim();
   const wiring = useSheetWiring(phone, props.sheetEdge, dim);
-  const { tabs, bar, current, sheet } = wiring;
+  const { tabs, bar, foot, current, sheet } = wiring;
   const tabActions = {
     onGlobe: phone.close,
     onCalendar: phone.calendar,
@@ -174,7 +177,7 @@ function PhoneUi(props: Props) {
       <Sheet {...sheet}>
         <SheetBody phone={phone} {...props} />
       </Sheet>
-      <DockBar tabs={tabs} current={current} {...tabActions} />
+      <DockBar tabs={tabs} foot={foot} current={current} {...tabActions} />
     </div>
   );
 }

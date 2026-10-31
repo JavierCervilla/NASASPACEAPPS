@@ -3,6 +3,21 @@
 ## [Sin publicar]
 
 ### Añadido
+- Astronauta del Apolo arrastrable a cualquier punto de la Luna (VENT-10, opción A + B del lienzo, aprobada por
+  Javier): el modelo «Astronaut» de la NASA (dominio público), con los brazos bajados y sin la insignia de la NASA,
+  espera en un hueco al final de la leyenda «Layers» del PC («Drag me anywhere») y en un botón redondo de cristal junto
+  a la barra de pestañas del móvil. Se coge con el ratón o el dedo y sigue a la mano desde donde se agarró (en el móvil,
+  por encima del dedo, y la hoja baja a reposo mientras tanto), inclinado y con su sombra, con una cruz en el punto de
+  caída y una etiqueta con las coordenadas y el estado de ese punto en el instante elegido; el visor toma el color del
+  estado (plata neutro en el hueco y fuera de la Luna). Funciona sobre el globo y sobre el mapa polar. Fuera de la Luna
+  dice «Off the Moon · Let go and it walks home» y, al soltarlo, vuelve a casa con un muelle sin rebote; Esc cancela.
+  Al soltarlo en la Luna, el punto pasa a ser el sitio elegido: «Custom point», «Near <sitio más cercano> · N km» y sus
+  coordenadas, con la respuesta al instante del cálculo propio (punto hueco) y la de Horizons para esas coordenadas
+  cuando llega (punto relleno). El astronauta se queda de pie en el punto y se puede volver a coger allí; el hueco dice
+  «On the Moon» y al pulsarlo vuelve a casa y se elige otra vez el sitio de antes. El punto entra en la dirección
+  (`?lat=…&lon=…`, junto a `?site=`), así que se comparte y sobrevive a una recarga. Con teclado: Intro sobre el hueco
+  lo coge, las flechas lo mueven (con Mayúsculas, a pasos grandes), Intro lo suelta y Esc lo devuelve, y el lector de
+  pantalla oye cada paso. Con movimiento reducido va derecho y se desvanece en vez de volar. En los cinco idiomas.
 - Respuesta al instante con el cálculo propio y conmutador para compararlo con Horizons (VENT-36, opción C del lienzo,
   aprobada por Javier): al elegir un sitio, la píldora, las tarjetas, la ficha y el calendario se pintan en el acto con
   el Sol, la Tierra y la antena DSN que calcula la propia web, sin esperar a JPL Horizons; cuando llega Horizons, lo
@@ -229,6 +244,14 @@
   comprobada en el lint.
 
 ### Corregido
+- La estrella oscura del polo sur del globo, justo bajo IM-2 (VENT-10): la esfera se junta en el polo en un abanico de
+  triángulos finos y la textura se pintaba en gajos. Ahora cada píxel lee el mapa por su propio punto de la esfera, sin
+  costura en el meridiano de 180° y sin halo borroso en los polos.
+- A 1440×900 la leyenda «Layers» tapaba parte de la Luna en el globo y del disco del mapa polar (VENT-10): ahora es
+  una columna estrecha que queda al lado de la Luna, y el disco polar se coloca junto a las leyendas, apartándose antes
+  de encogerse, así que toda la Luna a la vista admite al astronauta.
+- La ficha del PC de un sitio sin imagen (al norte de 80° S, y el punto propio) no mostraba la etiqueta de estado
+  (VENT-10): ahora encabeza la ficha cuando no hay imagen.
 - La tarjeta del sitio sobre el globo ya no parpadea al arrastrar el globo con el zoom cerca (VENT-31, visto en Brave
   para Android con IM-1): cuando dos lados quedaban casi igual de bien, la tarjeta saltaba de uno a otro en cada
   fotograma y parecía estar en dos sitios. Ahora se queda en su lado mientras ese lado no tape nada y solo cambia si

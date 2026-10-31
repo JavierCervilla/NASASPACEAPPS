@@ -112,6 +112,33 @@ Every visible change follows `.claude/skills/apple-design/SKILL.md` (vendored fr
   and again from the first press, since an idle page redraws nothing under the glass); a slow probe switches to frosted
   live and for the session. `?glass=liquid|frosted` forces a mode, except that `?glass=liquid` never overrides
   reduced transparency or more contrast.
+- **The astronaut** (VENT-10, canvas «Astro A + B»): NASA's «Astronaut» model (`public/models/astronaut.glb` and its
+  suit texture beside it, `astronaut-suit.webp`, built by `packages/web/scripts/astronaut.mjs`: arms lowered, no NASA
+  insignia, materials `suit` and `visor`; no decoder and no `blob:` URL needed, so the CSP holds) is drawn once after load into small pictures, two poses times five visor colours
+  (`src/astronaut/figure-render.ts`, its own WebGL renderer, released at once; none under Save-Data, where a plain
+  silhouette stands in), so the figure costs no draw call. Its dock ends the desktop Layers key («Drag me anywhere»)
+  and is a round glass button beside the phone's tab bar (`src/components/astronaut/`). A press lifts it (Pointer
+  Events with capture; the feet keep the grab offset, at least 64 px above a finger); it leans with the hand's speed,
+  with its shadow, a crosshair on the drop point and a readout of the point and its state at the shared instant
+  (`skyAt`, one instant per move, `src/astronaut/sky-state.ts`); the visor wears that state, neutral silver at home and
+  off the Moon. The drop surfaces register themselves (`src/astronaut/surfaces.ts`): the globe (a ray from the camera
+  to the sphere, `src/globe/globe-view.ts`) and the polar disk (inverse projection, `src/astronaut/polar-surface.ts`);
+  a point belongs to the surface whose element is under it, so a floating panel is never the Moon. Off the Moon the
+  readout says «Off the Moon · Let go and it walks home» and on release it walks back on critically damped springs
+  from the hand's velocity; Escape cancels. On the phone the sheet drops to peek while it is carried, and opens at half
+  on a drop. Dropped, the point (snapped to the server's 0.01° grid, `src/astronaut/custom-point.ts`) becomes the
+  selected site under an id that carries it (`@-85.87,61.34`): «Custom point», «Near <nearest listed site> · N km»
+  (great circle, `src/astronaut/nearest-site.ts`), computed at once and then from `/api/v1/ephemeris?lat&lon`
+  (`src/astronaut/point-hours.ts`), and it stands there (`StandingAstronaut.tsx`, placed after every globe frame), to
+  be lifted again; the dock says «On the Moon» and a tap brings it home and reselects the listed site chosen before.
+  The address carries the point, `?lat=…&lon=…` beside `?site=` (validated, clamped and wrapped,
+  `src/astronaut/point-param.ts`), so it is shareable and reloads. Keyboard: Enter on the dock (or on the standing
+  figure) lifts it over the selected site, the arrows move it in screen steps (Shift: bigger), Enter drops, Escape
+  cancels, and a polite live region says each step. Reduced motion: upright, no lean, a fade instead of the walk. The
+  desktop Layers key is a 17rem column (`--layers-w`) clear of the globe's Moon, and the polar disk is fitted beside
+  the keys in its panel (`src/polar/disk-fit.ts`). The Moon's maps are sampled by sphere point, not by the vertices'
+  UVs (`src/globe/pole-uv.ts`), so the south pole shows no star. A site card without an image shows its state badge in
+  its head.
 - **Five interface languages** (VENT-35): English (the default and the fallback), Spanish, French, German and Italian,
   each on its own static route (`/`, `/es/`, `/fr/`, `/de/`, `/it/`; `pages/[locale]/index.astro`) with `<html lang>`,
   `hreflang` links and `x-default` → `/`. This replaces the Language rule below for the interface only: every word a
@@ -150,10 +177,10 @@ Every visible change follows `.claude/skills/apple-design/SKILL.md` (vendored fr
 - **Offline**: `scripts/service-worker.mjs` (an Astro integration) bundles `src/pwa/sw-worker.ts` into `dist/sw.js`
   after every build, with the files it caches at install, the whole offline set (every locale's page except `/en-xa/`,
   `_astro/`, the manifests, `icons/` with the 30 phase frames, every site thumbnail, the 1K and 2K maps, the polar map,
-  `favicon.ico`, `favicon.svg` and the root `apple-touch-icon.png`), fetched past the HTTP cache (`cache: 'reload'`),
+  the astronaut's model, `favicon.ico`, `favicon.svg` and the root `apple-touch-icon.png`), fetched past the HTTP cache (`cache: 'reload'`),
   and the build's digest over every file the worker may keep, which names the static cache (`ventana-static-<digest>`),
   so a deploy drops the old one. The install set has a hard budget of 5 MB (`PRECACHE_BUDGET`, human decision
-  2026-10-31): the build logs the precache total and fails over it. The 4K and 8K maps, and any build file not
+  2026-10-31): the build logs the precache total and fails over it (4.75 MB with the astronaut, VENT-10). The 4K and 8K maps, and any build file not
   precached, are kept cache first the first time the page fetches them. Under Save-Data the worker is not registered
   at all. Pages and API GETs are network first,
   build files cache first; the network's answer always wins (a copy that cannot be kept, a full quota, is skipped), only

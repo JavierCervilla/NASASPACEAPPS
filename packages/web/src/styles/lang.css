@@ -269,13 +269,17 @@
  * under the short language page (the one being pushed or popped to is
  * shown at once, so it can take the focus); while they slide, the page is opaque
  * sheet material, and at rest it is the sheet's own (no second tint).
+ * Back or a push starts a frame or two before the spring moves: the page
+ * is already opaque then, so the two lists never show through each other.
  */
 .push[data-at='page'][data-pushed='true'] .push__root,
 .push[data-at='root'][data-pushed='false'] .push__page {
   visibility: hidden;
 }
 
-.push[data-at='moving'] .push__page {
+.push[data-at='moving'] .push__page,
+.push[data-at='page'][data-pushed='false'] .push__page,
+.push[data-at='root'][data-pushed='true'] .push__page {
   background: var(--push-page);
 }
 

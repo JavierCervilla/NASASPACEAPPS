@@ -71,15 +71,22 @@ function localPart(i18n: I18n, text: string): string {
 /** A trailing «(detail)», split off so each part is matched alone. */
 const TRAILING = /^(.*\S)\s*\(([^()]+)\)$/;
 
-/** A site's or a mission's name in the language of `i18n`. */
+/**
+ * A site's or a mission's name in the language of `i18n`. Each name's
+ * trailing «(detail)» groups are peeled off in a loop, not by recursion,
+ * so even an absurdly long name cannot overflow the stack.
+ */
 export function localName(i18n: I18n, name: string): string {
   return name
     .split('; ')
     .map((one) => {
-      const split = TRAILING.exec(one);
-      if (!split) return localPart(i18n, one);
-      const [, head = '', detail = ''] = split;
-      return `${localName(i18n, head)} (${localPart(i18n, detail)})`;
+      const details: string[] = [];
+      let head = one;
+      for (let at = TRAILING.exec(head); at; at = TRAILING.exec(head)) {
+        head = at[1] ?? '';
+        details.unshift(` (${localPart(i18n, at[2] ?? '')})`);
+      }
+      return `${localPart(i18n, head)}${details.join('')}`;
     })
     .join('; ');
 }

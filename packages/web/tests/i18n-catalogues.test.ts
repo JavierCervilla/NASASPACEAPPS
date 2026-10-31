@@ -143,6 +143,11 @@ describe('site and mission names in the visitor’s language (QA PR #17)', () =>
       'Haworth (región candidata de Artemis); Cráter Shioli (SLIM)',
     );
   });
+
+  it('survives a name with thousands of «(detail)» groups', () => {
+    const name = `A${' (b)'.repeat(5000)}`;
+    expect(localName(i18nOf('es'), name)).toBe(name);
+  });
 });
 
 describe('the pseudo-locale', () => {

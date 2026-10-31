@@ -46,14 +46,14 @@
   "compass.w": "O",
   "coords.pair": "{lat}, {lon}",
 
-  "unit.days": "{n} d",
-  "unit.hours": "{n} h",
-  "unit.daysPlus": "{n}+ d",
-  "unit.hoursPlus": "{n}+ h",
+  "unit.days": "{n} d",
+  "unit.hours": "{n} h",
+  "unit.daysPlus": "{n}+ d",
+  "unit.hoursPlus": "{n}+ h",
   "duration.pair": "{days} {hours}",
   "duration.atLeast": "al menos {span}",
   "duration.about": "~{span}",
-  "percent": "{n} %",
+  "percent": "{n} %",
 
   "signal.sun": "Sol",
   "signal.earth": "Tierra",
@@ -79,7 +79,7 @@
   "pill.outside": "Fuera del periodo con datos",
   "pill.label": "Cambiar de lugar; ahora {name}: {state}",
 
-  "now.window": "Ventana de aterrizaje",
+  "now.window": "Ventana abierta",
   "now.sun": "Solo Sol",
   "now.earth": "Solo Tierra",
   "now.none": "Sin ventana",

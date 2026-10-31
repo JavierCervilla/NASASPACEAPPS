@@ -62,9 +62,9 @@ describe('numbers and shares', () => {
   it('writes percents and the month share', () => {
     expect(formatPercent(EN, 47.4)).toBe('47 %');
     expect(formatPercent(it_, 47.4)).toBe('47%');
-    expect(formatShare(es, 47, monthName(es, AT))).toBe('47 % de noviembre');
-    expect(formatShare(fr, 47, monthName(fr, AT))).toBe('47 % en novembre');
-    expect(formatShare(de, 47, monthName(de, AT))).toBe('47 % im November');
+    expect(formatShare(es, 47, monthName(es, AT))).toBe('47\u00a0% de noviembre');
+    expect(formatShare(fr, 47, monthName(fr, AT))).toBe('47\u00a0% en novembre');
+    expect(formatShare(de, 47, monthName(de, AT))).toBe('47\u00a0% im November');
   });
 
   it('writes elevations with one decimal', () => {
@@ -74,17 +74,18 @@ describe('numbers and shares', () => {
 });
 
 describe('durations', () => {
+  // Outside English a number never wraps away from its unit: a no-break space joins them.
   it('writes days and hours with each language’s units', () => {
     expect(formatDuration(EN, 169)).toBe('7 d 1 h');
-    expect(formatDuration(fr, 169)).toBe('7 j 1 h');
-    expect(formatDuration(de, 169)).toBe('7 Tg. 1 Std.');
-    expect(formatDuration(it_, 72)).toBe('3 g');
-    expect(formatAtLeast(es, 173)).toBe('al menos 7 d');
+    expect(formatDuration(fr, 169)).toBe('7\u00a0j 1\u00a0h');
+    expect(formatDuration(de, 169)).toBe('7\u00a0Tg. 1\u00a0Std.');
+    expect(formatDuration(it_, 72)).toBe('3\u00a0g');
+    expect(formatAtLeast(es, 173)).toBe('al menos 7\u00a0d');
   });
 
   it('marks a span that runs on', () => {
     expect(formatSpan(EN, 800, true)).toBe('33+ d');
-    expect(formatSpan(fr, 5)).toBe('5 h');
+    expect(formatSpan(fr, 5)).toBe('5\u00a0h');
   });
 });
 

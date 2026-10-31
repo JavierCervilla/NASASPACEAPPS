@@ -75,7 +75,22 @@ Every visible change follows `.claude/skills/apple-design/SKILL.md` (vendored fr
   and again from the first press, since an idle page redraws nothing under the glass); a slow probe switches to frosted
   live and for the session. `?glass=liquid|frosted` forces a mode, except that `?glass=liquid` never overrides
   reduced transparency or more contrast.
-- UI text is **English** (the global jury is international): this project's exception to the Language rule below. The local pitch is in Spanish and does not live here.
+- **Five interface languages** (VENT-35): English (the default and the fallback), Spanish, French, German and Italian,
+  each on its own static route (`/`, `/es/`, `/fr/`, `/de/`, `/it/`; `pages/[locale]/index.astro`) with `<html lang>`,
+  `hreflang` links and `x-default` → `/`. This replaces the Language rule below for the interface only: every word a
+  visitor reads or a screen reader speaks lives in `packages/web/src/i18n/messages/<locale>.json` (one catalogue per
+  locale, typed from `en.json`), never as a literal. To add a string: add the key to `en.json` and to the other four,
+  then read it with `useI18n().t('key')` in a component or pass the `I18n` into a pure module; counts use plural forms
+  (`plural`, by `Intl.PluralRules`), and numbers, dates, months and coordinates go through Intl (`src/i18n/format.ts`).
+  Proper nouns (Ventana Lunar, site and mission names, NASA, JPL, DSN stations) are not translated. The local rule
+  `eslint-rules/no-literal-ui-text.mjs` fails on literal text in JSX and Astro markup and in `aria-label`, `alt`,
+  `title`, `placeholder`…; `tests/i18n-catalogues.test.ts` fails when a catalogue misses a key, a placeholder or a
+  plural form, or a site status has no translation. The selector (desktop header menu, phone Sites sheet row) keeps the
+  choice in `localStorage`; the first visit to `/` opens the browser's language once (`src/i18n/first-visit.ts`,
+  inline and CSP-hashed). The pseudo-locale `/en-xa/` (accented, about 40 % longer) exists only for the e2e overflow
+  checks: never offered, `noindex`, and left out of the production image (`PSEUDO_LOCALE=0` in the `Dockerfile`).
+  Translations were written by Claude: a native speaker should review them before launch. The local pitch is in Spanish
+  and does not live here.
 
 ## Clean Code
 

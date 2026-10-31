@@ -31,7 +31,7 @@
  * right, and Back (or Escape) slides them home and gives the focus back
  * to the row.
  */
-import { useRef, useState, type Ref } from 'react';
+import { useEffect, useRef, useState, type Ref, type RefObject } from 'react';
 import { AUTONYMS, isLocale } from '../../i18n/locales';
 import { useI18n } from '../i18n-context';
 import { LanguageList } from '../lang/LanguageList';
@@ -73,16 +73,26 @@ function LanguagePage(props: { base: string; onBack: () => void }) {
   );
 }
 
+/**
+ * Gives the focus back to the row once the list is popped and the picker
+ * is no longer inert.
+ */
+function useFocusOnReturn(row: RefObject<HTMLElement | null>, pushed: boolean) {
+  const was = useRef(pushed);
+  useEffect(() => {
+    if (was.current && !pushed) row.current?.focus();
+    was.current = pushed;
+  }, [row, pushed]);
+}
+
 export function SitesPanel(props: PickerProps & { readonly base: string }) {
   const { base, ...picker } = props;
   const [pushed, setPushed] = useState(false);
   const stack = useRef<HTMLDivElement>(null);
   const row = useRef<HTMLButtonElement>(null);
   const home = usePush(stack, pushed);
-  const back = (): void => {
-    setPushed(false);
-    row.current?.focus();
-  };
+  useFocusOnReturn(row, pushed);
+  const back = (): void => setPushed(false);
   const languageRow = <LanguageRow ref={row} onOpen={() => setPushed(true)} />;
   return (
     <div ref={stack} className="push" data-pushed={pushed}>

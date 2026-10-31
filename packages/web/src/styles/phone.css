@@ -763,6 +763,10 @@
   backdrop-filter: blur(20px);
   box-shadow: var(--phone-bar-edge);
   transform: translateX(-50%);
+  /* Longer languages (VENT-35): as wide as its tabs, but never off a
+     narrow screen. */
+  width: max-content;
+  max-width: calc(100vw - 16px);
 }
 
 .tab {
@@ -771,7 +775,8 @@
   flex-direction: column;
   align-items: center;
   gap: 2px;
-  min-width: 64px;
+  flex: 0 1 auto;
+  min-width: min(64px, 22vw - 8px);
   padding: 6px 10px;
   border: 0;
   border-radius: 22px;
@@ -783,6 +788,19 @@
   font-weight: 600;
   letter-spacing: 0.01em;
   cursor: pointer;
+}
+
+/* A label longer than its share of a narrow bar wraps, never cut. */
+.tab > span:not(.tab__soon) {
+  max-width: 100%;
+  overflow-wrap: anywhere;
+  text-align: center;
+}
+
+@media (max-width: 359.98px) {
+  .tab {
+    padding: 6px 6px;
+  }
 }
 
 .tab[aria-current='true'] {

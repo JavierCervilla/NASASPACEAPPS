@@ -259,13 +259,20 @@ test.describe('phone, 390x844', () => {
     });
   }
 
-  test('the pill says when the data failed, neutral', async ({ page }) => {
+  // Orchestrator's decision on PR #19: a failed Horizons keeps the computed state in the pill, hollow and named
+  // computed, and the sheet says Horizons is unavailable. «Data unavailable» stays for a site with nothing computed
+  // (site-state.test.ts, data-source.test.ts).
+  test('when Horizons fails, the pill keeps the computed state, hollow, and the sheet says Horizons is down', async ({
+    page,
+  }) => {
     await page.emulateMedia({ reducedMotion: 'reduce' });
     await page.clock.setFixedTime(NOW);
     await stubApi(page, { status: 500 });
     await page.goto('./');
-    await expect(shown(page)).toHaveText('Data unavailable');
-    await expect(pill(page).locator('.site-pill__state')).toHaveAttribute('data-tone', 'unknown');
+    await expect(page.getByRole('status').filter({ hasText: 'Horizons unavailable' })).toBeVisible();
+    await expect(shown(page)).toHaveText(/^Window · /);
+    await expect(pill(page).locator('.signal-dot')).toHaveAttribute('data-computed', 'true');
+    await expect(pill(page)).toHaveAccessibleName(/, computed$/);
   });
 
   test('the sheet\'s head carries the relief at half and at peek, and none for a site north of 80° S', async ({ page }) => {

@@ -45,8 +45,13 @@
 }
 
 /* As large as the panel allows, with room for the edge labels. */
+/*
+ * Its own stacking context: the markers, labels and badges order
+ * among themselves, and the Layers key after the disk paints over them.
+ */
 .polar__disk {
   position: relative;
+  isolation: isolate;
   width: var(--disk);
   aspect-ratio: 1;
   border-radius: 50%;
@@ -181,6 +186,24 @@
 .polar-marker[data-state='none']::after {
   background: var(--signal-none);
   box-shadow: 0 0 0 1.5px var(--marker);
+}
+
+/* Hollow while the state is the simulator's (VENT-36), as on the globe. */
+.polar[data-computed='true'] .polar-marker[data-state]::after {
+  background: transparent;
+  border: 2px solid var(--marker);
+}
+
+.polar[data-computed='true'] .polar-marker[data-state='window']::after {
+  border-color: var(--signal-window);
+}
+
+.polar[data-computed='true'] .polar-marker[data-state='sun']::after {
+  border-color: var(--signal-sun);
+}
+
+.polar[data-computed='true'] .polar-marker[data-state='earth']::after {
+  border-color: var(--signal-earth);
 }
 
 .polar-marker:active::after {

@@ -28,6 +28,7 @@
  * 80° S), its name with what tells it apart (IM-2 and the Mons Mouton
  * zone share a place), its coordinates and the widgets.
  */
+import type { ReactNode } from 'react';
 import { formatCoords } from '../../i18n/format';
 import { siteLabels, type PhoneSite } from '../../phone/phone-site';
 import type { WidgetsResult } from '../../phone/widgets-loader';
@@ -44,6 +45,10 @@ interface Props {
   readonly when: string | null;
   /** The site's base path, for the thumbnail. */
   readonly base: string;
+  /** Over the widgets: that Horizons is down, with its retry. */
+  readonly status?: ReactNode;
+  /** Under the widgets: the computed caption. */
+  readonly notes?: ReactNode;
 }
 
 /** Drawn at 40 px: the 320 px file covers any phone's density. */
@@ -63,7 +68,8 @@ function Coords({ site }: { readonly site: PhoneSite }) {
 }
 
 export function SiteSummary(props: Props) {
-  const { site, result, onRetry, when, base } = props;
+  const { site, result, onRetry, when, base, status, notes } = props;
+  const ready = result.kind === 'ready';
   const { title, subtitle } = siteLabels(site);
   const i18n = useI18n();
   const thumb = thumbOf({ id: site.id, place: title }, base, i18n);
@@ -79,7 +85,9 @@ export function SiteSummary(props: Props) {
           <Coords site={site} />
         </p>
       </div>
+      {ready ? status : null}
       <Widgets result={result} onRetry={onRetry} when={when} />
+      {ready ? notes : null}
     </div>
   );
 }

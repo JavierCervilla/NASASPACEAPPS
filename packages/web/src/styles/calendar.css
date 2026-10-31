@@ -58,6 +58,81 @@
 .signal-bar[data-tone='earth'] .signal-bar__on { background: var(--signal-earth); }
 .signal-bar[data-tone='window'] .signal-bar__on { background: var(--signal-window); }
 
+/*
+ * «Compare» (VENT-36): where the computed hours and Horizons disagree, a
+ * neutral white hatch and outline over the bar, never a signal colour.
+ * An hour is under 2 px wide, so a run is drawn at least 4 px wide (6 px
+ * down the phone's columns) to be seen.
+ */
+/*
+ * White strokes on near-black gaps, inside a dark edge: neutral, and
+ * legible over any signal colour even one hour wide (QA on PR #19).
+ */
+.signal-bar__differs,
+.legend-key[data-tone='differs'] {
+  background: repeating-linear-gradient(
+    135deg,
+    var(--differs-ink) 0 1.5px,
+    var(--differs-gap) 1.5px 3.5px
+  );
+  box-shadow:
+    inset 0 0 0 1px var(--differs-ink),
+    0 0 0 1px var(--differs-gap);
+}
+
+.signal-bar__differs {
+  --differs-ink: rgba(255, 255, 255, 0.95);
+  --differs-gap: rgba(7, 8, 11, 0.8);
+  position: absolute;
+}
+
+.signal-bar[data-axis='horizontal'] .signal-bar__differs {
+  top: 0;
+  bottom: 0;
+  min-width: 8px;
+}
+
+.signal-bar[data-axis='vertical'] .signal-bar__differs {
+  left: 0;
+  right: 0;
+  min-height: 6px;
+}
+
+/* On the strip's surface the key needs the text's ink to show. */
+.legend-key[data-tone='differs'] {
+  --differs-ink: var(--text-secondary);
+  --differs-gap: transparent;
+}
+
+/* The phone sheet's key to the hatch, under the count. */
+.calendar__legend {
+  display: flex;
+  justify-content: center;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  font-size: 0.8125rem;
+  color: var(--text-secondary);
+}
+
+.calendar__legend li {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.strip__compare,
+.calendar__compare {
+  margin: 0;
+  font-size: 0.8125rem;
+  color: var(--text-secondary);
+}
+
+.calendar__compare {
+  text-align: center;
+}
+
 .month-arrows {
   display: flex;
   align-items: center;

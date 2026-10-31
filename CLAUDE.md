@@ -15,7 +15,14 @@ epic: `VENT-1` (Dashboard project «Ventana Lunar», prefix `VENT`).
 - **Web** (`packages/web`): Astro 7 (static output) + React 19 islands + TypeScript (strictest). Three.js joins with
   the globe (luxury 1). No login and no user accounts.
 - **Sim** (`packages/sim`): pure TypeScript, no network, disk or DOM: the site data contract and the
-  visibility, window and DSN logic.
+  visibility, window and DSN logic. It also computes the sky in closed form (VENT-36), no ephemeris file: the
+  sub-solar point (`sun.ts`), the Moon's geocentric position (Meeus 47 truncated at 0.001°, `moon.ts`), the optical
+  libration (`libration.ts`), the Sun and Earth on a lunar site's horizon with the Earth's parallax (`sky.ts`), and the
+  Moon over each DSN 70 m antenna (`dsn-sky.ts`, stations in `dsn-sites.ts`, which the server re-exports).
+  `skyAt(point, ms)` gives one instant, `computedHours(point, fromIso, lastIso)` the server's `HourSample[]` (both ends
+  included), a month in about 11 ms. Against Horizons, hourly over Nov-Dec 2026 (`tests/sky.test.ts`): Sun 0.04° in
+  elevation and 0.17° in azimuth, Earth 0.03° and 0.02°, Moon from the DSN 0.007° and 0.04°; Sun, Earth, window and
+  antenna agree every hour except within one hour of a transition.
 - **Backend** (`packages/server`, Node + Hono; decided 2026-10-29): one service on Dokploy serves all site data, for the
   curated sites and for custom coordinates. It queries JPL Horizons and caches the responses on disk, because Horizons
   is slow and rate limited and the spec wants answers in under 3 s. The browser never calls Horizons directly.
@@ -41,7 +48,37 @@ Every visible change follows `.claude/skills/apple-design/SKILL.md` (vendored fr
   sheet (closed, peek, half with four widgets, full with the site picker or the calendar) follows apple-design's sheet
   physics, and a floating tab bar switches views. One shared instant (`src/calendar/time-store.ts`: live on the clock by
   default, scrubbed or played) drives the globe's Sun, the widgets and the calendar (the strip under the globe on
-  desktop); the hours come from one cached request per site and month (`src/phone/hours-cache.ts`). On desktop
+  desktop); the hours come from one cached request per site and month (`src/phone/hours-cache.ts`). The answer is
+  instant (VENT-36): the views first show the simulator's hours for the same site and range (`computedHours`, cached
+  in `src/source/computed-hours.ts`, from the build-time site list), and Horizons replaces them when it arrives
+  (`src/source/month-view.ts`, `src/components/use-site-hours.ts`). When Horizons fails the computed hours stay, with
+  a quiet «Horizons unavailable: showing the computed sky» note and «Try again» (`src/components/source/SourceNotes.tsx`,
+  desktop site card, phone summary and Calendar sheet); only with nothing computed (a site without coordinates) is the failure an
+  honest error. While the view shows computed hours the state dot is hollow, a ring in the state's colour (phone pill,
+  desktop site button, site card badge, and the selected marker on the globe and the polar map), and the accessible name
+  gains «computed» (pill and desktop site button); it fills when Horizons arrives. Computed hours that stay (Computed
+  chosen, Horizons or Compare with Horizons down) carry a caption, the human's decision: «Computed by Ventana Lunar ·
+  approximate: elevations within 0.05° of JPL Horizons» in the months the model was checked (Nov-Dec 2026), «…
+  extrapolated: not checked against JPL Horizons for this month» in any other (`src/source/computed-caption.ts`; the
+  bound and the period are `VALIDATED_ELEVATION_DEG`, `VALIDATED_FROM` and `VALIDATED_TO` in
+  `packages/sim/src/accuracy.ts`, which `packages/sim/tests/sky.test.ts` holds the model to), under the desktop card's
+  figures, the phone summary and the phone Calendar sheet. The bound is on elevation only (the Sun's azimuth differs by
+  up to 0.17°). It was measured at two polar points (89.5° S 0° E and IM-2, 84.79° S 29.20° E) and holds for any site:
+  the error comes from the sub-solar and sub-Earth points, which do not depend on the site, while the step to the
+  site's horizon is exact spherical geometry plus the Earth's parallax (`sky.ts`, `horizon.ts`), and an elevation is
+  never further off than the direction it is read from. With Horizons or Compare chosen and Horizons down, the
+  «Horizons unavailable» note offers «Try again» (`src/source/month-view.ts`). The computed cache is keyed by point and range, so a moved point is computed again. A «Data source» switch,
+  «Computed | Horizons | Compare» (radiogroup in the segmented control's style, never a signal colour,
+  `src/components/source/SourceSwitch.tsx`), sits under a hairline in the desktop Layers key and in the phone's Sites
+  sheet grouped with the «Language» row; default Horizons, kept in `localStorage` (`src/source/data-source.ts`).
+  Computed: the simulator's hours always, for any month (no data window: the month arrows go past 2026-2027),
+  dot hollow for good, card source «computed here». Horizons and Compare keep the API's window and say «Outside the
+  data window» beyond it. Compare: Horizons shown, and the desktop strip and the phone Calendar sheet hatch the hours
+  where the two disagree on Sun, Earth or window (`src/calendar/month-diff.ts`) in neutral white strokes on dark gaps,
+  at least 8 px wide on the strip, with «N h differ this month» and a «Differs» legend key (strip legend, and next to
+  the count in the Calendar sheet); without Horizons it says so instead of hatching nothing. The globe's marker layer
+  and the polar disk are their own stacking contexts, so the Layers key and every floating surface paint over the
+  markers and take their clicks. On desktop
   the site card sits beside the view and the header tabs switch the view by hash (`#globe`, `#polar-map`,
   `src/lib/view-tabs.ts`): the polar map is a south polar stereographic disk from 80° S
   (`src/lib/polar-projection.ts`, image from `scripts/moon_textures.py polar`). No card floats over the globe (VENT-33). On phones the
@@ -105,9 +142,9 @@ Every visible change follows `.claude/skills/apple-design/SKILL.md` (vendored fr
   has none.
 - **Live parts**: the tab's favicon is redrawn on a canvas (`src/pwa/live-favicon.ts`) with the Moon's phase at the
   shared instant and the ring emphasising the selected site's state (Neither or no data: the full legend), only when
-  the frame or the state changes, at most every 250 ms. The phase is `meanOrbitPhase` (`src/pwa/moon-phase.ts`, mean
-  orbits plus the largest periodic terms, within half an hour of the true phases), behind `PhaseSource` so VENT-36's
-  Sun can replace it. The globe's loading state (`GlobeSplash.tsx`) shows J2 with the same phase until the Moon's first
+  the frame or the state changes, at most every 250 ms. The phase is `simPhase` (`src/pwa/moon-phase.ts`, behind
+  `PhaseSource`): the simulator's sub-solar point against its sub-Earth point (VENT-36), within a quarter of an hour of
+  the true phases. The globe's loading state (`GlobeSplash.tsx`) shows J2 with the same phase until the Moon's first
   map is on the running scene (`onTextured`), or 6 s at most. A phase frame that fails to load leaves the ring alone and
   is asked again on the next update.
 - **Offline**: `scripts/service-worker.mjs` (an Astro integration) bundles `src/pwa/sw-worker.ts` into `dist/sw.js`

@@ -133,6 +133,7 @@ describe('month facts', () => {
 describe('site card states', () => {
   it('names the month, the source and the rules', () => {
     expect(sourceLine(EN, AT)).toBe('November 2026 · JPL Horizons, 1 h step · Sun above 0°, Earth above 3°');
+    expect(sourceLine(EN, AT, true)).toBe('November 2026 · computed here, 1 h step · Sun above 0°, Earth above 3°');
   });
 
   it('passes loading, error and outside through', () => {

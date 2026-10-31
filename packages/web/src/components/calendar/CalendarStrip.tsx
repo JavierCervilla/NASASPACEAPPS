@@ -37,6 +37,7 @@ import { instantPct, type MonthStrip } from '../../calendar/month-strip';
 import { monthYear } from '../../i18n/format';
 import { formatShare } from '../../phone/format';
 import { useI18n } from '../i18n-context';
+import { CompareNote } from './CompareNote';
 import type { Calendar, CalendarParts } from './hooks';
 import { MonthArrows, NoWindowNote, SignalBar } from './parts';
 import { StripStatus } from './StripStatus';
@@ -47,13 +48,15 @@ interface Props {
   readonly calendar: Calendar;
 }
 
-function Legend() {
+/** The four signals, and «Differs» under «Compare». */
+function Legend({ comparing }: { readonly comparing: boolean }) {
   const { t } = useI18n();
   const keys = [
     ['sun', t('signal.sun')],
     ['earth', t('signal.earth')],
     ['window', t('calendar.both')],
     ['none', t('signal.neither')],
+    ...(comparing ? [['differs', t('calendar.differs')]] : []),
   ];
   return (
     <ul className="strip__legend" aria-label={t('calendar.legend')}>
@@ -66,7 +69,7 @@ function Legend() {
 
 /** The three bars, the instant on the window bar, and the day ticks. */
 function Bars({ calendar, atMs }: { calendar: Calendar; atMs: number }) {
-  const { strip } = calendar;
+  const { strip, diff } = calendar;
   const i18n = useI18n();
   if (!strip) return <StripStatus calendar={calendar} />;
   const share = (pct: number) =>
@@ -81,7 +84,7 @@ function Bars({ calendar, atMs }: { calendar: Calendar; atMs: number }) {
       {rows.map(([tone, label, segments, pct]) => (
         <div key={tone} className="strip__row" role="img" aria-label={i18n.t('calendar.row', { label, share: share(pct) })}>
           <span className="strip__label" aria-hidden="true">{label}</span>
-          <SignalBar tone={tone} segments={segments} axis="horizontal">
+          <SignalBar tone={tone} segments={segments} axis="horizontal" differs={diff?.[tone]}>
             {tone === 'window' ? <WindowMarks strip={strip} atMs={atMs} /> : null}
           </SignalBar>
         </div>
@@ -125,7 +128,8 @@ export function CalendarStrip({ parts, calendar }: Props) {
           <h2 className="strip__month">{monthLabel(i18n, atMs)}</h2>
         </MonthArrows>
         <StripClock parts={parts} calendar={calendar} />
-        <Legend />
+        <CompareNote calendar={calendar} className="strip__compare" />
+        <Legend comparing={calendar.diff !== null} />
       </div>
       <div className="strip__grid">
         <Bars calendar={calendar} atMs={atMs} />

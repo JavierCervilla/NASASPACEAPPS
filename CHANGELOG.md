@@ -3,6 +3,32 @@
 ## [Sin publicar]
 
 ### Añadido
+- Respuesta al instante con el cálculo propio y conmutador para compararlo con Horizons (VENT-36, opción C del lienzo,
+  aprobada por Javier): al elegir un sitio, la píldora, las tarjetas, la ficha y el calendario se pintan en el acto con
+  el Sol, la Tierra y la antena DSN que calcula la propia web, sin esperar a JPL Horizons; cuando llega Horizons, lo
+  sustituye. Mientras se ve el cálculo propio, el punto de estado de la píldora (y el del botón del sitio y la etiqueta
+  de la ficha en el PC) es un anillo hueco del color del estado, y el lector de pantalla añade «calculado»; al llegar
+  Horizons se rellena (también el marcador elegido en el globo y en el mapa polar, y el botón del sitio del PC dice
+  «calculado» al lector de pantalla). Si Horizons falla, se queda el cálculo propio con el punto hueco y una nota
+  discreta, «Horizons no disponible: se muestra el cielo calculado», con «Reintentar» (decisión del orquestador en la
+  revisión), también con «Compare». El cálculo propio que se queda en pantalla lleva un pie, decisión de Javier:
+  «Calculado por Ventana Lunar · aproximado: elevaciones a menos de 0,05° de JPL Horizons» en los meses en que se
+  comprobó (noviembre y diciembre de 2026) y «extrapolado: sin contrastar con JPL Horizons este mes» en cualquier otro;
+  el 0,05° es la cota de la elevación (el acimut del Sol difiere hasta 0,17°) que el test de validación del simulador
+  exige, en una sola constante, medida en dos puntos del polo y válida para cualquier sitio. Un conmutador
+  «Computed | Horizons | Compare» («Fuente de datos») elige de dónde salen los datos de toda la vista: en el PC, bajo
+  una línea fina en la leyenda «Layers»; en el móvil, en el panel de sitios junto a «Idioma». Por defecto «Horizons» y
+  la elección se recuerda en el dispositivo. Con «Computed» todo es cálculo propio (punto siempre hueco y la ficha dice
+  «calculado aquí») y sirve para cualquier mes, también fuera de 2026-2027: las flechas del mes pasan de la ventana de
+  datos; «Horizons» y «Compare» siguen diciendo «Fuera de la ventana de datos» fuera de ella. Con «Compare» se ve Horizons y la cinta del calendario (y las columnas del calendario del móvil)
+  raya en blanco neutro sobre huecos oscuros (al menos 8 px de ancho en la cinta, para que una hora se vea) las horas
+  en que los dos cálculos no coinciden en Sol, Tierra o ventana, cuenta «3 h difieren este mes» y la leyenda gana
+  «Difiere» (en el móvil, junto a la cuenta); si Horizons no está disponible, lo dice en vez de fingir que no hay
+  diferencias. Se maneja con teclado (flechas, Inicio, Fin) y está en los cinco idiomas. La fase de la Luna del icono
+  de la pestaña sale ahora del Sol del simulador: cae a menos de un cuarto de hora de las lunas nueva y llena reales.
+  Arreglado en la revisión: en un portátil de 1280×720 en español, el marcador de Chang'e-6 tapaba «Comparar» y el clic
+  elegía el sitio; ahora la leyenda y las demás superficies flotantes quedan siempre por encima de los marcadores. Con
+  el texto al 200 %, la etiqueta «Ventana de aterrizaje ahora» ya no pisa «LOLA · 30 km» en la imagen de la ficha.
 - Aplicación instalable (VENT-28, icono «J2» elegido por Javier): Ventana Lunar se instala en el móvil y en el PC con
   su icono, una Luna real (de los mapas LROC y LOLA de la NASA) dentro del anillo de la leyenda (Sol, ventana, Tierra).
   Cada idioma se instala como su propia app, con su descripción traducida, y en Android y en el escritorio el icono

@@ -70,14 +70,18 @@ export async function loadMonthHours(
   }
 }
 
-/** The widgets at the hour of `atMs`, from its month's `hours`. */
+/**
+ * The widgets at the hour of `atMs`, from its month's `hours`; `open` when
+ * those are the simulator's, which have no data window.
+ */
 export function widgetsAt(
   hours: HoursResult,
   atMs: number,
   i18n: I18n,
+  open = false,
 ): WidgetsResult {
   if (hours.kind !== 'ready') return hours;
-  const range = widgetRange(atMs);
+  const range = widgetRange(atMs, open);
   const widgets = range && siteWidgets(hours.hours, range, i18n);
   return widgets ? { kind: 'ready', widgets } : { kind: 'error' };
 }

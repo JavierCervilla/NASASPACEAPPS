@@ -102,10 +102,12 @@ test.describe('desktop site card and polar map, 1440x900', () => {
     await expect(card(page).getByRole('group', { name: 'Site details' })).toHaveCount(0);
   });
 
-  test('the card says when the data cannot load, with «Try again»', async ({ page }) => {
+  // Orchestrator's decision on PR #19: the card keeps the computed figures and says Horizons is down, quietly.
+  test('the card says when Horizons cannot load, with «Try again», and keeps the computed figures', async ({ page }) => {
     await open(page, 500);
-    await expect(card(page).getByRole('alert')).toContainText('could not load');
+    await expect(card(page).getByRole('status')).toContainText('Horizons unavailable');
     await expect(card(page).getByRole('button', { name: 'Try again' })).toBeVisible();
+    await expect(card(page).getByText('Longest night')).toBeVisible();
   });
 
   test('the Polar map tab shows the map and its sites in place of the globe, the card beside it', async ({ page }) => {

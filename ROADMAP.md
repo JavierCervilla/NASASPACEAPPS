@@ -31,6 +31,8 @@ completa está en el documento «Ventana Lunar · Especificación y roadmap».
 - [x] Web en cinco idiomas (inglés, español, francés, alemán e italiano) con su dirección cada uno, selector en la
   cabecera y en el panel de sitios, y protección para que todo texto nuevo nazca traducible (VENT-35)
 - [ ] Revisión de las traducciones por personas nativas antes del 13 de noviembre (VENT-35)
+- [x] Cálculo propio del Sol, la Tierra y la antena DSN en el simulador, validado contra Horizons; la web lo enseña al
+  instante y un conmutador «Computed | Horizons | Compare» permite compararlos (VENT-36)
 
 ## Lujo y entrega (código congelado el domingo 15 a las 15:30)
 

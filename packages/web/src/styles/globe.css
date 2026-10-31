@@ -94,9 +94,15 @@
   color: #9a9ca6;
 }
 
+/*
+ * Its own stacking context (z-index 0): the markers' z-indexes order them
+ * among themselves only, so every floating surface after the layer (the
+ * Layers key) paints over them and takes their clicks (QA on PR #19).
+ */
 .globe-markers {
   position: absolute;
   inset: 0;
+  z-index: 0;
   pointer-events: none;
 }
 
@@ -190,6 +196,20 @@
   box-shadow:
     0 0 0 1.5px rgba(242, 242, 244, 0.6),
     0 0 0 5px rgba(242, 242, 244, 0.18);
+}
+
+/*
+ * While the state is the simulator's (VENT-36) the selected point is
+ * hollow, a ring in the state's colour, like the pill's dot; a zone keeps
+ * its dashed ring. The pulsing ring is unchanged.
+ */
+.globe[data-computed='true'] .globe-markers:not([data-state='unknown']) .globe-marker--exact[aria-pressed='true']::after {
+  background: transparent;
+  border: 2px solid var(--halo);
+}
+
+.globe[data-computed='true'] .globe-markers[data-state='none'] .globe-marker--exact[aria-pressed='true']::after {
+  border-color: rgba(242, 242, 244, 0.6);
 }
 
 .globe-marker:focus-visible {

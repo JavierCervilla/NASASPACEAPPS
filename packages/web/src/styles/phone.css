@@ -315,6 +315,34 @@
   box-shadow: inset 0 0 0 1px var(--text-muted);
 }
 
+/*
+ * Hollow while the state is the simulator's (VENT-36): a ring in the
+ * state's colour, filled once Horizons answers.
+ */
+.signal-dot[data-computed='true'] {
+  --dot-ring: var(--text-muted);
+  background: transparent;
+  box-shadow: inset 0 0 0 1.5px var(--dot-ring);
+}
+
+.signal-dot[data-computed='true'][data-state='window'] {
+  --dot-ring: var(--signal-window);
+}
+
+.signal-dot[data-computed='true'][data-state='sun'] {
+  --dot-ring: var(--signal-sun);
+}
+
+.signal-dot[data-computed='true'][data-state='earth'] {
+  --dot-ring: var(--signal-earth);
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .signal-dot {
+    transition: background-color var(--dur-enter) var(--ease-out);
+  }
+}
+
 :is(.site-pill, .tab, .site-row, .picker__done, .sheet__grabber):focus-visible {
   outline: 2px solid var(--text);
   outline-offset: 2px;

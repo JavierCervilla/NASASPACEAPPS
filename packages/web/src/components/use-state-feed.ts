@@ -28,30 +28,35 @@
  * globe's selected marker and its ring, with the month's hours from the
  * shared cache (the site card and the calendar ask for the same month,
  * so no extra request). The globe follows the watched value; React
- * renders nothing for it.
+ * renders nothing for it. Also whether that state is the simulator's, so
+ * the selected marker can go hollow (VENT-36).
  */
 import { useEffect, useState } from 'react';
 import { createWatchedValue, type WatchedValue } from '../lib/watched-value';
 import { siteState } from '../phone/site-state';
 import type { SiteStore } from '../phone/site-store';
 import type { NowState } from '../phone/widget-types';
-import { useMonthHours, useTime, type CalendarParts } from './calendar/hooks';
+import { useTime, type CalendarParts } from './calendar/hooks';
 import { useI18n } from './i18n-context';
 import { useSelection } from './phone/hooks';
+import { useSiteHours } from './use-site-hours';
 
-/** The selected site's state, as a value the globe watches. */
+/**
+ * The selected site's state, as a value the globe watches, and whether it
+ * is the simulator's.
+ */
 export function useStateFeed(
   store: SiteStore,
   parts: CalendarParts,
-): WatchedValue<NowState | null> {
+): { feed: WatchedValue<NowState | null>; computed: boolean } {
   const [feed] = useState(() => createWatchedValue<NowState | null>(null));
   const { id } = useSelection(store);
   const atMs = useTime(parts.time)?.atMs ?? null;
-  const { result: hours } = useMonthHours(parts.load, id, atMs);
+  const { result: hours, computed } = useSiteHours(parts, id, atMs);
   const i18n = useI18n();
-  const kind = siteState(hours, atMs, i18n)?.kind ?? null;
+  const kind = siteState(hours, atMs, i18n, computed)?.kind ?? null;
   useEffect(() => {
     feed.set(kind);
   }, [feed, kind]);
-  return feed;
+  return { feed, computed: kind !== null && computed };
 }

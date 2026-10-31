@@ -33,6 +33,7 @@ import type { ReactNode } from 'react';
 import type { MonthStrip, Segment } from '../../calendar/month-strip';
 import { canShiftMonth, moveMonths } from '../../calendar/time-actions';
 import { useI18n } from '../i18n-context';
+import { useDataSource } from '../use-site-hours';
 import type { CalendarParts } from './hooks';
 
 /** Which signal a bar shows; its colour is that signal's, and only it. */
@@ -43,11 +44,17 @@ interface BarProps {
   readonly segments: readonly Segment[];
   /** Left to right (desktop strip) or top to bottom (phone columns). */
   readonly axis: 'horizontal' | 'vertical';
+  /** Under «Compare»: where the computed hours disagree, hatched. */
+  readonly differs?: readonly Segment[] | undefined;
   readonly children?: ReactNode;
 }
 
-/** The month as a bar: grey («neither»), coloured where the signal holds. */
-export function SignalBar({ tone, segments, axis, children }: BarProps) {
+/**
+ * The month as a bar: grey («neither»), coloured where the signal holds,
+ * hatched in neutral white where the two sources disagree.
+ */
+export function SignalBar(props: BarProps) {
+  const { tone, segments, axis, differs = [], children } = props;
   const across = axis === 'horizontal';
   const place = (s: Segment) =>
     across
@@ -57,6 +64,9 @@ export function SignalBar({ tone, segments, axis, children }: BarProps) {
     <div className="signal-bar" data-tone={tone} data-axis={axis}>
       {segments.map((s) => (
         <span key={s.startPct} className="signal-bar__on" style={place(s)} />
+      ))}
+      {differs.map((s) => (
+        <span key={`d${s.startPct}`} className="signal-bar__differs" style={place(s)} />
       ))}
       {children}
     </div>
@@ -70,16 +80,20 @@ interface MonthProps {
   readonly children: ReactNode;
 }
 
-/** ‹ the month › : the arrows move the instant a month, inside the data. */
+/**
+ * ‹ the month › : the arrows move the instant a month, inside the data;
+ * under «Computed», to any month (the simulator has no data window).
+ */
 export function MonthArrows({ parts, atMs, children }: MonthProps) {
   const { t } = useI18n();
+  const open = useDataSource(parts.source) === 'computed';
   const arrow = (delta: number, label: string, path: string) => (
     <button
       type="button"
       className="round-button"
       aria-label={label}
-      disabled={!canShiftMonth(atMs, delta)}
-      onClick={() => moveMonths(parts.time, atMs, delta)}
+      disabled={!canShiftMonth(atMs, delta, open)}
+      onClick={() => moveMonths(parts.time, atMs, delta, open)}
     >
       <svg width="12" height="12" viewBox="0 0 12 12" aria-hidden="true">
         <path d={path} fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />

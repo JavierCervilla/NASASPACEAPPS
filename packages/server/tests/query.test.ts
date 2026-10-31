@@ -62,6 +62,21 @@ describe('toHorizonsParams', () => {
     expect(params['CENTER']).toBe("'coord@399'");
     expect(params['SITE_COORD']).toBe("'355.751991,40.43121,0.865'");
   });
+
+  // Seguridad on PR #19: the three stations the simulator shares (dsn-sites.ts) are pinned, not only Madrid.
+  it.each([
+    ['goldstone', "'243.110462,35.425901,1.001'"],
+    ['canberra', "'148.981267,-35.402424,0.689'"],
+  ] as const)('puts %s on Earth at its pinned coordinates', (complex, coord) => {
+    const params = toHorizonsParams({
+      target: BODY.moon,
+      centerBody: BODY.earth,
+      point: DSN_SITES[complex],
+      start: 'a',
+      stop: 'b',
+    });
+    expect(params['SITE_COORD']).toBe(coord);
+  });
 });
 
 describe('toHorizonsParams at a curated site', () => {

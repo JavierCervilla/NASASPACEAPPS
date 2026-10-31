@@ -29,11 +29,10 @@
  */
 import { useRef, useSyncExternalStore, type RefObject } from 'react';
 import { isPhoneViewport, PHONE_QUERY } from '../../lib/viewport';
-import type { HoursLoader } from '../../phone/hours-cache';
 import type { Selection, SiteStore } from '../../phone/site-store';
 import { LOADING, widgetsAt } from '../../phone/widgets-loader';
-import { useMonthHours } from '../calendar/hooks';
 import { useI18n } from '../i18n-context';
+import { useSiteHours, type HoursParts } from '../use-site-hours';
 
 const subscribePhone = (onChange: () => void): (() => void) => {
   const media = matchMedia(PHONE_QUERY);
@@ -68,17 +67,20 @@ export function useSelection(store: SiteStore): Selection {
 
 /**
  * The widgets of site `id` at the hour of `atMs` (null: not known yet),
- * and the month's hours they come from. A new hour of the same month is
- * worked out from the hours already loaded: playing time never waits for
- * the API; a retry asks again.
+ * the month's hours they come from, whether those are the computed ones
+ * and why (month-view.ts). A new hour of the same month is worked out
+ * from the hours already loaded: playing time never waits for the API; a
+ * retry asks again.
  */
 export function useSiteWidgets(
-  load: HoursLoader,
+  parts: HoursParts,
   id: string,
   atMs: number | null,
 ) {
-  const { result: hours, retry } = useMonthHours(load, id, atMs);
+  const month = useSiteHours(parts, id, atMs);
+  const { result: hours, computed } = month;
   const i18n = useI18n();
-  const result = atMs === null ? LOADING : widgetsAt(hours, atMs, i18n);
-  return { result, hours, retry };
+  const result =
+    atMs === null ? LOADING : widgetsAt(hours, atMs, i18n, computed);
+  return { ...month, result, hours };
 }

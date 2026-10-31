@@ -200,16 +200,24 @@ test.describe('phone, 390x844', () => {
     await expect(zone).toBeVisible();
   });
 
-  test('shows skeletons while the API is slow, then an honest error when it fails', async ({ page }) => {
+  test('shows the computed widgets while the API is slow, and keeps them when it fails, saying Horizons is down', async ({
+    page,
+  }) => {
     await page.clock.setFixedTime(NOW);
     let answer = (): void => undefined;
     await stubApi(page, { status: 502, hold: new Promise<void>((done) => (answer = done)) });
     await page.goto('./');
-    await expect(page.getByRole('list', { name: 'Loading this site' })).toHaveAttribute('aria-busy', 'true');
-    await expect(page.locator('.widget-skeleton')).toHaveCount(4);
+    // VENT-36: the simulator answers at once, with the pill's dot hollow, where there were skeletons.
+    await expect(page.locator('.widget')).toHaveCount(4);
+    await expect(page.locator('.widget-skeleton')).toHaveCount(0);
+    await expect(page.locator('.site-pill .signal-dot')).toHaveAttribute('data-computed', 'true');
     answer();
-    await expect(page.getByRole('alert')).toContainText('could not load');
+    // Orchestrator's decision on PR #19: the failure is said, quietly, and no longer takes the answer away.
+    await expect(page.getByRole('status').filter({ hasText: 'Horizons unavailable: showing the computed sky' })).toBeVisible();
     await expect(page.getByRole('button', { name: 'Try again' })).toBeVisible();
+    await expect(page.locator('.widget')).toHaveCount(4);
+    await expect(page.locator('.site-pill .signal-dot')).toHaveAttribute('data-computed', 'true');
+    await expect(page.getByRole('alert')).toHaveCount(0);
   });
 
   test('says the hour is outside the data window instead of showing clamped data', async ({ page }) => {

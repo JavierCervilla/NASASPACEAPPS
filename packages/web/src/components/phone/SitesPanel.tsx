@@ -25,7 +25,8 @@
 
 /**
  * The Sites sheet at full (validated canvas «LangPhoneB»): the site
- * picker with a «Language · English ›» row under its title. The row
+ * picker with a «Language · English ›» row under its title, grouped with
+ * the «Data source» switch (VENT-36, canvas option C). The row
  * pushes the language list into the sheet with a Back control, as an iOS
  * navigation push: the picker slides left as the list comes in from the
  * right, and Back (or Escape) slides them home and gives the focus back
@@ -33,8 +34,10 @@
  */
 import { useEffect, useRef, useState, type Ref, type RefObject } from 'react';
 import { AUTONYMS, isLocale } from '../../i18n/locales';
+import type { SourceStore } from '../../source/data-source';
 import { useI18n } from '../i18n-context';
 import { LanguageList } from '../lang/LanguageList';
+import { SourceRow } from '../source/SourceSwitch';
 import { Icon } from './Icon';
 import { SitePicker, type PickerProps } from './SitePicker';
 import { usePush } from './use-push';
@@ -85,15 +88,25 @@ function useFocusOnReturn(row: RefObject<HTMLElement | null>, pushed: boolean) {
   }, [row, pushed]);
 }
 
-export function SitesPanel(props: PickerProps & { readonly base: string }) {
-  const { base, ...picker } = props;
+interface PanelProps extends PickerProps {
+  readonly base: string;
+  readonly source: SourceStore;
+}
+
+export function SitesPanel(props: PanelProps) {
+  const { base, source, ...picker } = props;
   const [pushed, setPushed] = useState(false);
   const stack = useRef<HTMLDivElement>(null);
   const row = useRef<HTMLButtonElement>(null);
   const at = usePush(stack, pushed);
   useFocusOnReturn(row, pushed);
   const back = (): void => setPushed(false);
-  const languageRow = <LanguageRow ref={row} onOpen={() => setPushed(true)} />;
+  const languageRow = (
+    <div className="settings-group">
+      <LanguageRow ref={row} onOpen={() => setPushed(true)} />
+      <SourceRow source={source} icon={<Icon name="database" />} />
+    </div>
+  );
   return (
     <div ref={stack} className="push" data-pushed={pushed} data-at={at}>
       <div className="push__root" inert={pushed}>

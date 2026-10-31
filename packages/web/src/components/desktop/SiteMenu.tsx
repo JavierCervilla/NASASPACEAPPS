@@ -49,6 +49,8 @@ interface Props {
   readonly site: PhoneSite;
   /** The site's state at the selected instant, once loaded. */
   readonly state: NowState | null;
+  /** Whether that state is the simulator's: the dot is hollow. */
+  readonly computed?: boolean;
   readonly onPick: (id: string) => void;
 }
 
@@ -69,19 +71,21 @@ function anchorUnder(button: HTMLElement, popover: HTMLElement | null) {
 type Anchor = RefObject<HTMLDivElement | null>;
 
 function SiteButton(props: Props & { readonly popover: Anchor }) {
-  const { site, state, popover } = props;
+  const { site, state, computed, popover } = props;
   const i18n = useI18n();
   const { title, subtitle } = siteLabels(site);
   const name = subtitle === title ? title : `${subtitle}, ${title}`;
+  // Like the phone pill: a hollow dot is said, not only drawn.
+  const label = computed ? 'site.changeComputed' : 'site.change';
   return (
     <button
       type="button"
       className="site-button"
       popoverTarget={POPOVER_ID}
-      aria-label={i18n.t('site.change', { name })}
+      aria-label={i18n.t(label, { name })}
       onClick={(e) => anchorUnder(e.currentTarget, popover.current)}
     >
-      <span className="signal-dot" data-state={state ?? 'loading'} />
+      <span className="signal-dot" data-state={state ?? 'loading'} data-computed={computed} />
       <span className="site-button__name">{subtitle}</span>
       <span className="site-button__place">{placeLine(i18n, site, title)}</span>
       <Icon name="chevron" />

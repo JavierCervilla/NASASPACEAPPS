@@ -30,7 +30,8 @@
  * month (for the widget at that hour, the countdowns and the DSN antenna)
  * is in the same answer, and a countdown never collapses at the end of a
  * month. Outside the API's data window there is no range: the sheet says
- * so.
+ * so. The simulator's own hours (VENT-36) have no window: their range is
+ * open.
  */
 import { HOUR_MS, toIso } from '@ventana/sim';
 
@@ -59,17 +60,23 @@ const LAST_HOUR_MS = Date.UTC(2028, 0, 1) - HOUR_MS;
 
 /**
  * The range for the instant `nowMs`, or null when its hour falls outside
- * the API's data window (2026-01-01 to 2027-12-31, UTC).
+ * the API's data window (2026-01-01 to 2027-12-31, UTC). An `open` range,
+ * for the simulator's hours, has neither the window nor its end.
  */
-export function widgetRange(nowMs: number): WidgetRange | null {
+export function widgetRange(
+  nowMs: number,
+  open = false,
+): WidgetRange | null {
   const atMs = Math.floor(nowMs / HOUR_MS) * HOUR_MS;
-  if (atMs < FIRST_HOUR_MS || atMs > LAST_HOUR_MS) return null;
+  const outside = atMs < FIRST_HOUR_MS || atMs > LAST_HOUR_MS;
+  if (outside && !open) return null;
   const now = new Date(atMs);
   const [year, month] = [now.getUTCFullYear(), now.getUTCMonth()];
   const fromMs = Date.UTC(year, month, 1);
   const monthEndMs = Date.UTC(year, month + 1, 1) - HOUR_MS;
+  const last = open ? Number.POSITIVE_INFINITY : LAST_HOUR_MS;
   const ahead = (ms: number): number =>
-    Math.min(ms + HORIZON_HOURS * HOUR_MS, LAST_HOUR_MS);
+    Math.min(ms + HORIZON_HOURS * HOUR_MS, last);
   return {
     from: toIso(fromMs),
     to: toIso(ahead(monthEndMs)),

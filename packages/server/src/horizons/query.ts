@@ -27,7 +27,6 @@
  * What to ask JPL Horizons: one observer table for one target seen from one
  * point, over one calendar month.
  */
-import type { DsnComplex } from '@ventana/sim';
 
 /** Horizons body codes used by the service. */
 export const BODY = { sun: '10', earth: '399', moon: '301' } as const;
@@ -57,21 +56,11 @@ export interface HorizonsQuery {
 }
 
 /**
- * The 70 m antenna of each Deep Space Network complex (DSS 14, DSS 43, DSS 63),
- * WGS 84 geodetic coordinates from DSN Telecommunications Link Design Handbook
- * 810-005, module 301 rev. N «Coverage and Geometry», Table 5
- * (https://deepspace.jpl.nasa.gov/dsndocs/810-005/301/301N.pdf), converted from
- * degrees-minutes-seconds: DSS 14 35°25'33.24" N 243°06'37.66" E, DSS 43
- * 35°24'08.73" S 148°58'52.56" E, DSS 63 40°25'52.36" N 355°45'07.17" E.
+ * The 70 m antenna of each DSN complex and their order: defined in
+ * `@ventana/sim`, so the analytic sky computes the Moon from the same points
+ * the service asks Horizons about.
  */
-export const DSN_SITES: Readonly<Record<DsnComplex, SurfacePoint>> = {
-  goldstone: { lat: 35.425901, lonEast: -116.889538, altKm: 1.001 },
-  canberra: { lat: -35.402424, lonEast: 148.981267, altKm: 0.689 },
-  madrid: { lat: 40.431210, lonEast: -4.248009, altKm: 0.865 },
-};
-
-/** Order in which the DSN complexes are queried and reported. */
-export const DSN_COMPLEXES: readonly DsnComplex[] = ['goldstone', 'canberra', 'madrid'];
+export { DSN_COMPLEXES, DSN_SITES } from '@ventana/sim';
 
 function formatAngle(value: number): string {
   return String(Number(value.toFixed(6)));

@@ -23,14 +23,12 @@
  *             :::.. .  .               SPDX-License-Identifier: MIT
  */
 
-/** The globe's site callout (src/callout/*): its content per state, its placement and flips, and the no-image case. */
+/** The globe's site callout (src/callout/*): its content per state, where it docks, and the no-image case. */
 import type { HourSample } from '@ventana/sim';
 import { readFileSync } from 'node:fs';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { clampInto, overlap } from '../src/callout/box';
 import { calloutContent } from '../src/callout/callout-content';
-import { placeCallout, type CalloutSide, type PlaceInput } from '../src/callout/callout-place';
-import { CalloutVisibility, HOLD_MS } from '../src/callout/callout-visibility';
+import { DESKTOP_GAP_PX, dockCallout, PHONE_GAP_PX, type CalloutLayout } from '../src/callout/callout-dock';
 import { missionLines } from '../src/callout/mission-line';
 import { PHONE_MISSION_CHARS, PHONE_PLACE_CHARS, placeShort } from '../src/callout/phone-lines';
 import { thumbOf } from '../src/callout/thumbs';
@@ -230,102 +228,65 @@ describe('phone compact callout lines', () => {
   });
 });
 
-/** A 1000 x 600 globe with a 264 x 280 card, the desktop canvas's proportions. */
-const SIZE = { width: 264, height: 280 };
-const AREA = { left: 8, top: 8, right: 992, bottom: 592 };
-const place = (x: number, y: number, extra: Partial<PlaceInput> = {}) =>
-  placeCallout({ at: { x, y }, size: SIZE, area: AREA, avoid: [], ...extra });
+/** The 390x844 phone of the canvas: the top bar's bottom at 70, the tab bar's top at 761, a 104 px compact card. */
+const PHONE: CalloutLayout = {
+  phone: true,
+  hostWidth: 390,
+  hostHeight: 844,
+  cardWidth: 312,
+  cardHeight: 104,
+  sheetTop: Number.POSITIVE_INFINITY,
+  tabsTop: 761,
+  barBottom: 70,
+  layers: null,
+};
+/** The 1440x900 desktop: a 1392 x 640 globe, the Layers key at its bottom left, a 284 px image card. */
+const LAYERS = { left: 20, top: 560, right: 380, bottom: 620 };
+const DESKTOP: CalloutLayout = { ...PHONE, phone: false, hostWidth: 1392, hostHeight: 640, cardWidth: 264, cardHeight: 284, tabsTop: Number.POSITIVE_INFINITY, barBottom: 0, layers: LAYERS };
 
-describe('callout placement', () => {
-  it('sits above and to the right of its marker, as on the canvas, with the leader rising to its left edge', () => {
-    const placed = place(500, 400);
-    expect(placed?.box).toEqual({ left: 536, top: 116, right: 800, bottom: 396 });
-    expect(placed?.leader.from).toEqual({ x: 500, y: 400 });
-    expect(placed?.leader.length).toBeCloseTo(Math.hypot(36, 36));
-    expect(placed?.leader.angleDeg).toBeCloseTo(-45);
+describe('callout dock', () => {
+  it('on a phone sits 12 px off the left edge, its bottom 12 px above the sheet\'s top edge', () => {
+    expect(dockCallout({ ...PHONE, sheetTop: 500 })).toEqual({ left: PHONE_GAP_PX, bottom: 500 - PHONE_GAP_PX });
+    expect(dockCallout({ ...PHONE, sheetTop: 687.5 })).toEqual({ left: 12, bottom: 675.5 });
   });
 
-  it('flips to the left near the right edge', () => {
-    const placed = place(900, 400);
-    expect(placed?.box.right).toBe(864);
-    expect(placed?.leader.angleDeg).toBeCloseTo(-135);
+  it('on a phone with the sheet closed (below the screen), or lower than the tab bar, stands 12 px above the tab bar', () => {
+    expect(dockCallout({ ...PHONE, sheetTop: 900 })).toEqual({ left: 12, bottom: 761 - 12 });
+    expect(dockCallout(PHONE)).toEqual({ left: 12, bottom: 749 });
   });
 
-  it('drops below its marker near the top edge, and flips both near the top right corner', () => {
-    expect(place(500, 100)?.box).toMatchObject({ left: 536, top: 104 });
-    expect(place(900, 100)?.box).toMatchObject({ right: 864, top: 104 });
+  it('hides at full height, where it would reach the top bar, and stays at half on a short 390x664 screen', () => {
+    expect(dockCallout({ ...PHONE, sheetTop: 96 })).toBeNull();
+    // The last edge that keeps 12 px between the card and the top bar, and one px above it.
+    expect(dockCallout({ ...PHONE, sheetTop: 70 + 12 + 104 + 12 })).not.toBeNull();
+    expect(dockCallout({ ...PHONE, sheetTop: 70 + 12 + 104 + 11 })).toBeNull();
+    expect(dockCallout({ ...PHONE, hostHeight: 664, tabsTop: 581, sheetTop: 664 - 344 })).toEqual({ left: 12, bottom: 308 });
   });
 
-  it('keeps clear of what the page holds over the globe (the Layers key)', () => {
-    const layers = { left: 0, top: 300, right: 420, bottom: 600 };
-    const placed = place(450, 590 - 300, { avoid: [layers], area: AREA });
-    expect(placed && overlap(placed.box, layers)).toBe(0);
+  it('on a desktop stands on the Layers key\'s left edge, its bottom 14 px above the key', () => {
+    expect(dockCallout(DESKTOP)).toEqual({ left: 20, bottom: 560 - DESKTOP_GAP_PX });
+    expect(dockCallout({ ...DESKTOP, layers: { ...LAYERS, left: 32, top: 400 } })).toEqual({ left: 32, bottom: 386 });
   });
 
-  it('judges each side as drawn, slid inside the area: a side whose slid card would cover a key loses', () => {
-    // A short globe (1280 x 720): the card above the marker spills off the top and slides down. Up-right slid down
-    // lands on the key at its right; up-left slid down clears it. Unslid, both sides clear the key and tie.
-    const area = { left: 8, top: 8, right: 882, bottom: 350 };
-    const size = { width: 264, height: 307 };
-    const key = { left: 440, top: 275, right: 860, bottom: 339 };
-    const placed = placeCallout({ at: { x: 415, y: 210 }, size, area, avoid: [key] });
-    expect(placed && overlap(placed.box, key)).toBe(0);
-    expect(placed?.box).toEqual({ left: 115, top: 8, right: 379, bottom: 315 });
-    // Without the key the canvas's first side wins, slid down the same way.
-    expect(placeCallout({ at: { x: 415, y: 210 }, size, area, avoid: [] })?.box).toEqual({ left: 451, top: 8, right: 715, bottom: 315 });
+  it('on a desktop without a drawn key takes the key\'s corner, and hides with no room above', () => {
+    expect(dockCallout({ ...DESKTOP, layers: null })).toEqual({ left: 20, bottom: 620 });
+    expect(dockCallout({ ...DESKTOP, layers: null, cardHeight: 612 })).toEqual({ left: 20, bottom: 620 });
+    expect(dockCallout({ ...DESKTOP, layers: null, cardHeight: 613 })).toBeNull();
   });
 
-  it('prefers a side that has to slide over one that fits but covers something', () => {
-    const area = { left: 8, top: 8, right: 992, bottom: 592 };
-    // Up-right fits unslid but covers a strip; down-right spills off the bottom, slides up and covers nothing.
-    const strip = { left: 536, top: 116, right: 800, bottom: 200 };
-    const speck = { left: 220, top: 300, right: 230, bottom: 310 };
-    const placed = placeCallout({ at: { x: 500, y: 400 }, size: SIZE, area, avoid: [strip, speck] });
-    const covered = (box: NonNullable<typeof placed>['box']) => overlap(box, strip) + overlap(box, speck);
-    expect(placed && covered(placed.box)).toBeLessThan(264 * 84);
+  it('at large text, with no room above the key, stands 14 px to its right, bottoms aligned; with no room there, hides', () => {
+    expect(dockCallout({ ...DESKTOP, cardHeight: 538 })).toEqual({ left: 20, bottom: 546 });
+    expect(dockCallout({ ...DESKTOP, cardHeight: 539 })).toEqual({ left: 380 + DESKTOP_GAP_PX, bottom: 620 });
+    // 200 % text at 1280x720: a 896 x 320 globe, a 286 x 191 key and a 528 x 196 card.
+    const large = { ...DESKTOP, hostWidth: 896, hostHeight: 320, cardWidth: 528, cardHeight: 196, layers: { left: 20, top: 109, right: 306, bottom: 300 } };
+    expect(dockCallout(large)).toEqual({ left: 320, bottom: 300 });
+    expect(dockCallout({ ...large, hostWidth: 855 })).toBeNull();
+    expect(dockCallout({ ...large, cardHeight: 293 })).toBeNull();
   });
 
-  it('hides while its marker is under something the card must not cover, as the phone tab bar', () => {
-    const tabs = { left: 52, top: 760, right: 337, bottom: 821 };
-    const phone = { left: 8, top: 8, right: 382, bottom: 836 };
-    const size = { width: 312, height: 127 };
-    // Just inside the bar's top edge the card above the marker would clear the bar (its bottom at 758), so only the
-    // marker-under-the-bar rule hides it.
-    expect(placeCallout({ at: { x: 157, y: 762 }, size, area: phone, avoid: [tabs] })).toBeNull();
-    // Just above the bar the card shows, above its marker.
-    expect(placeCallout({ at: { x: 157, y: 755 }, size, area: phone, avoid: [tabs] })?.box.bottom).toBe(751);
-  });
-
-  it('hides deeper under the tab bar too, where every side would also land on it', () => {
-    const tabs = { left: 52, top: 760, right: 337, bottom: 821 };
-    const phone = { left: 8, top: 8, right: 382, bottom: 836 };
-    expect(placeCallout({ at: { x: 157, y: 778 }, size: { width: 312, height: 127 }, area: phone, avoid: [tabs] })).toBeNull();
-  });
-
-  it('hides where every side would cover something: just below the tab bar, every card lands on it', () => {
-    const tabs = { left: 52, top: 760, right: 337, bottom: 821 };
-    const phone = { left: 8, top: 8, right: 382, bottom: 836 };
-    expect(placeCallout({ at: { x: 160, y: 832 }, size: { width: 312, height: 109 }, area: phone, avoid: [tabs] })).toBeNull();
-  });
-
-  it('stays inside a phone-sized area when no side fits: the side that spills least, slid in, above the marker', () => {
-    const phone = { left: 8, top: 8, right: 382, bottom: 700 };
-    const placed = placeCallout({ at: { x: 195, y: 400 }, size: { width: 312, height: 104 }, area: phone, avoid: [] });
-    expect(placed?.box.left).toBeGreaterThanOrEqual(8);
-    expect(placed?.box.right).toBeLessThanOrEqual(382);
-    expect(placed?.box.bottom).toBe(396);
-    // The leader runs straight up from the marker to the card's bottom edge.
-    expect(placed?.leader.angleDeg).toBeCloseTo(-90);
-    expect(placed?.leader.length).toBeCloseTo(4);
-  });
-
-  it('hides with a marker outside the visible area, as under the phone sheet', () => {
-    expect(place(500, 593)).toBeNull();
-    expect(place(500, 400, { area: { ...AREA, bottom: 380 } })).toBeNull();
-  });
-
-  it('slides a box into the area, keeping its size', () => {
-    expect(clampInto({ left: -20, top: 10, right: 80, bottom: 60 }, AREA)).toEqual({ left: 8, top: 10, right: 108, bottom: 60 });
+  it('ignores the sheet on a desktop and the Layers key on a phone', () => {
+    expect(dockCallout({ ...DESKTOP, sheetTop: 100 })).toEqual(dockCallout(DESKTOP));
+    expect(dockCallout({ ...PHONE, layers: LAYERS })).toEqual(dockCallout(PHONE));
   });
 });
 
@@ -360,22 +321,29 @@ describe('SiteCallout', () => {
   const mount = () => {
     vi.stubGlobal('document', { createElement: (tag: string) => new StyledElement(tag) });
     const callout = new SiteCallout();
-    callout.layout({ width: 1000, height: 600, size: SIZE, avoid: [] });
+    callout.layout(DESKTOP);
     const card = callout.dom.card as unknown as StyledElement;
     return { callout, card };
   };
 
-  it('shows the content next to its marker and hides when the sheet rises over the marker', () => {
+  it('docks the content above the Layers key, anchored to the host\'s bottom, and on a phone rides the sheet\'s edge', () => {
     const { callout, card } = mount();
+    expect(card.dataset['shown']).toBe('false');
     callout.show(content(IM2, READY, 150));
-    callout.follow({ x: 500, y: 400 });
     expect(card.dataset['shown']).toBe('true');
     expect(card.dataset['state']).toBe('window');
-    expect(card.style['transform']).toBe('translate3d(536px, 116px, 0)');
-    callout.layout({ bottom: 300 });
+    // Its bottom at 546 px from the host's top, 94 px above the host's bottom edge.
+    expect(card.style['transform']).toBe('translate3d(20px, -94px, 0)');
+    callout.layout(PHONE);
+    callout.layout({ sheetTop: 500 });
+    expect(card.style['transform']).toBe('translate3d(12px, -356px, 0)');
+    // At full height it hides where it was, so it fades out in place.
+    callout.layout({ sheetTop: 96 });
     expect(card.dataset['shown']).toBe('false');
-    callout.layout({ bottom: Number.POSITIVE_INFINITY });
-    expect(card.dataset['shown']).toBe('true');
+    expect(card.style['transform']).toBe('translate3d(12px, -356px, 0)');
+    callout.show(null);
+    callout.layout({ sheetTop: 500 });
+    expect(card.dataset['shown']).toBe('false');
   });
 
   it('marks pending hours for a skeleton, and says «Data unavailable», neutral, when they fail', () => {
@@ -408,147 +376,11 @@ describe('SiteCallout', () => {
     expect(img.src).toBe('/thumbs/im1-odysseus.jpg');
   });
 
-  it('hides with no marker to follow (behind the limb) and marks a site without an image', () => {
+  it('marks a site without an image, and shows it whatever its marker does', () => {
     const { callout, card } = mount();
     callout.show(content(APOLLO11, READY, 150));
-    callout.follow(null);
-    expect(card.dataset['shown']).toBe('false');
+    expect(card.dataset['shown']).toBe('true');
     expect(card.dataset['image']).toBe('none');
     expect(callout.dom.img.getAttribute('src')).toBeNull();
-  });
-});
-
-/** VENT-31: a marker moving along a placement boundary must not make the card jump or blink every frame. */
-describe('callout flicker', () => {
-  afterEach(() => vi.unstubAllGlobals());
-
-  // A phone-sized area where up-right and up-left spill the same with the marker at x = 195.
-  const PHONE = { left: 8, top: 8, right: 382, bottom: 836 };
-  const CARD = { width: 312, height: 127 };
-  const TABS = { left: 52, top: 760, right: 337, bottom: 821 };
-  const input = (x: number, y = 400): PlaceInput => ({ at: { x, y }, size: CARD, area: PHONE, avoid: [] });
-
-  /** The sides a path of marker positions gives, each frame told the side before it, or not. */
-  const sides = (path: readonly number[], remember: boolean): (CalloutSide | undefined)[] => {
-    let side: CalloutSide | null = null;
-    return path.map((x) => {
-      const placed = placeCallout(input(x), remember ? side : null);
-      side = placed?.side ?? side;
-      return placed?.side;
-    });
-  };
-  const changes = (list: readonly (CalloutSide | undefined)[]): number =>
-    list.filter((side, i) => i > 0 && side !== list[i - 1]).length;
-
-  it('a marker wobbling across a tie keeps one side: at most one change', () => {
-    const wobble = Array.from({ length: 40 }, (_, i) => 195 + (i % 2 === 0 ? 3 : -3) + Math.sin(i) * 2);
-    // Without memory the best side flips with every wobble: this is the bug.
-    expect(changes(sides(wobble, false))).toBeGreaterThan(10);
-    expect(changes(sides(wobble, true))).toBeLessThanOrEqual(1);
-  });
-
-  it('still switches once a side slides clearly less, and not back inside the margin', () => {
-    const sweep = Array.from({ length: 41 }, (_, i) => 300 - i * 5);
-    const list = sides(sweep, true);
-    expect(list[0]).toBe('up-left');
-    expect(list.at(-1)).toBe('up-right');
-    expect(changes(list)).toBe(1);
-    // The switch waits until up-right slides at least 24 px less than up-left: x ≤ 183, not at the tie (195).
-    expect(sweep[list.indexOf('up-right')]).toBeLessThanOrEqual(183);
-    // From up-right, a marker back at the tie keeps up-right.
-    expect(placeCallout(input(200), 'up-right')?.side).toBe('up-right');
-    expect(placeCallout(input(200), null)?.side).toBe('up-left');
-  });
-
-  it('drops a remembered side the moment it covers something', () => {
-    const key = { left: 200, top: 250, right: 382, bottom: 300 };
-    const placed = placeCallout({ ...input(150), avoid: [key] }, 'up-right');
-    expect(placed?.side).not.toBe('up-right');
-    expect(placed && overlap(placed.box, key)).toBe(0);
-  });
-
-  it('holds a keep-clear hide or show for HOLD_MS; losing the marker hides at once', () => {
-    const shown = new CalloutVisibility();
-    expect(shown.next('show', 0)).toEqual({ shown: true, waiting: false });
-    expect(shown.next('blocked', 10)).toEqual({ shown: true, waiting: true });
-    expect(shown.next('blocked', 10 + HOLD_MS - 1)).toEqual({ shown: true, waiting: true });
-    expect(shown.next('blocked', 10 + HOLD_MS)).toEqual({ shown: false, waiting: false });
-    // Coming back from a keep-clear hide waits too.
-    expect(shown.next('show', 200)).toEqual({ shown: false, waiting: true });
-    expect(shown.next('show', 200 + HOLD_MS)).toEqual({ shown: true, waiting: false });
-    expect(shown.next('gone', 400)).toEqual({ shown: false, waiting: false });
-    expect(shown.next('show', 401)).toEqual({ shown: true, waiting: false });
-  });
-
-  it('a wish that flaps every frame never changes the visibility, and a reset starts afresh', () => {
-    const shown = new CalloutVisibility();
-    shown.next('show', 0);
-    const frames = Array.from({ length: 60 }, (_, i) => shown.next(i % 2 === 0 ? 'blocked' : 'show', 16 * (i + 1)).shown);
-    expect(new Set(frames)).toEqual(new Set([true]));
-    shown.next('blocked', 2000);
-    shown.next('blocked', 2000 + HOLD_MS);
-    shown.reset();
-    expect(shown.next('show', 2200).shown).toBe(true);
-  });
-
-  const mount = () => {
-    vi.stubGlobal('document', { createElement: (tag: string) => new StyledElement(tag) });
-    const clock = { ms: 0, wakes: 0 };
-    const callout = new SiteCallout({ now: () => clock.ms, wake: () => (clock.wakes += 1) });
-    callout.layout({ width: 390, height: 844, size: CARD, avoid: [TABS] });
-    const card = callout.dom.card as unknown as StyledElement;
-    return { callout, card, clock };
-  };
-
-  it('a marker grazing the tab bar\'s top edge keeps the card steady, and a held hide asks for frames', () => {
-    const { callout, card, clock } = mount();
-    callout.show(content(IM2, READY, 150));
-    callout.follow({ x: 157, y: 755 });
-    expect([card.dataset['shown'], card.dataset['side']]).toEqual(['true', 'up-right']);
-    const seen = new Set<string | undefined>();
-    for (let frame = 0; frame < 30; frame += 1) {
-      clock.ms += 16;
-      callout.follow({ x: 157, y: frame % 2 === 0 ? 762 : 755 });
-      seen.add(card.dataset['shown']);
-    }
-    expect([...seen]).toEqual(['true']);
-    // Under the bar for good: the card hides once the hold has passed, after asking for frames meanwhile.
-    const wakes = clock.wakes;
-    callout.follow({ x: 157, y: 762 });
-    clock.ms += HOLD_MS;
-    callout.follow({ x: 157, y: 762 });
-    expect(card.dataset['shown']).toBe('false');
-    expect(clock.wakes).toBeGreaterThan(wakes);
-  });
-
-  it('a new site starts afresh: shown at once, on the canvas\'s first side', () => {
-    const { callout, card, clock } = mount();
-    callout.show(content(IM2, READY, 150));
-    callout.follow({ x: 157, y: 755 });
-    callout.follow({ x: 157, y: 762 });
-    clock.ms += HOLD_MS;
-    callout.follow({ x: 157, y: 762 });
-    expect(card.dataset['shown']).toBe('false');
-    // The same site coming back out from under the bar waits for the hold ...
-    callout.follow({ x: 157, y: 755 });
-    expect(card.dataset['shown']).toBe('false');
-    // ... a new one does not.
-    callout.show(content({ ...IM2, id: 'im1-odysseus' }, READY, 150));
-    callout.follow({ x: 157, y: 755 });
-    expect([card.dataset['shown'], card.dataset['side']]).toEqual(['true', 'up-right']);
-  });
-
-  it('a new site forgets the old site\'s side: up-left does not carry over to a marker that fits up-right best', () => {
-    const { callout, card } = mount();
-    callout.show(content(IM2, READY, 150));
-    callout.follow({ x: 300, y: 400 });
-    expect(card.dataset['side']).toBe('up-left');
-    // The same site moving to x = 190, inside the switch margin, keeps up-left ...
-    callout.follow({ x: 190, y: 400 });
-    expect(card.dataset['side']).toBe('up-left');
-    // ... a new site there starts from no side and takes the best one.
-    callout.show(content({ ...IM2, id: 'im1-odysseus' }, READY, 150));
-    callout.follow({ x: 190, y: 400 });
-    expect(card.dataset['side']).toBe('up-right');
   });
 });

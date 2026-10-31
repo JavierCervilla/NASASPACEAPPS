@@ -138,6 +138,14 @@
 - Imágenes Docker fijadas por digest, acciones del CI fijadas por commit y descargas verificadas con su checksum.
 
 ### Cambiado
+- La tarjeta del sitio sobre el globo ya no sigue a su punto al girar el globo (VENT-32, lienzos «FixedCalloutPhone»,
+  «FixedCalloutPhoneClosed» y «FixedCalloutDesktop»): queda fija abajo a la izquierda. En el PC, encima de la leyenda
+  «Layers» y alineada con ella, con 14 px de separación (con el texto muy grande, si no cabe encima, se pone a su
+  derecha). En el móvil, a 12 px del borde izquierdo y 12 px por encima del borde de la hoja, o de la barra de pestañas
+  con la hoja cerrada; sigue a la hoja cuando se arrastra y se desvanece con la hoja abierta del todo o si fuese a tapar
+  la barra superior. Se ve aunque el punto quede detrás del borde de la Luna. A cambio, el punto del sitio elegido lleva
+  un anillo del color de su estado que late cada 2,4 s (quieto con «reducir movimiento»). Se retiran la línea que unía
+  la tarjeta con su punto, el cambio de lado y las esperas contra el parpadeo de VENT-31, que ya no hacen falta.
 - El objetivo de Chang'e-7 se llama ahora «Shackleton crater area» en vez de «Shackleton rim»: no hay coordenada
   publicada del punto de aterrizaje en el borde, y el punto que se muestra es el centro del cráter (VENT-29).
 - La página provisional da paso a la pantalla principal del lienzo: cabecera con el título, la pregunta y el selector de

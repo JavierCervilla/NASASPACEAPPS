@@ -34,7 +34,7 @@ import { isPhoneViewport } from '../lib/viewport';
 import type { WatchedValue } from '../lib/watched-value';
 import type { SiteStore } from '../phone/site-store';
 import { attachDevTools } from './dev-hook';
-import { watchCallout } from './callout-watch';
+import { watchCallout, type CalloutAnchors } from './callout-watch';
 import { bindDrag } from './drag';
 import { drawFrame } from './frame';
 import { SOUTH_POLE_VIEW } from './framing';
@@ -66,8 +66,8 @@ export interface GlobeOptions {
   readonly sheetEdge: WatchedValue<number | null>;
   /** What the selected site's callout says, kept by the page. */
   readonly callout: WatchedValue<CalloutContent | null>;
-  /** The page's elements the callout must not cover. */
-  readonly avoid: () => readonly Element[];
+  /** The page's elements the callout docks against. */
+  readonly anchors: () => CalloutAnchors;
   /** The browser asks to save data: the globe keeps its start map. */
   readonly saveData: boolean;
   readonly reducedMotion: () => boolean;
@@ -117,7 +117,7 @@ function bindInput(
 /** Shows the page's callout content and keeps the callout measured. */
 function bindCallout(
   host: HTMLElement,
-  options: Pick<GlobeOptions, 'callout' | 'avoid'>,
+  options: Pick<GlobeOptions, 'callout' | 'anchors'>,
   markers: MarkerLayer,
   invalidate: () => void,
 ): () => void {
@@ -128,8 +128,9 @@ function bindCallout(
   };
   show();
   const unsubscribe = options.callout.subscribe(show);
-  const { avoid } = options;
-  const unwatch = watchCallout({ host, callout, avoid, invalidate });
+  const { anchors } = options;
+  const phone = isPhoneViewport;
+  const unwatch = watchCallout({ host, callout, anchors, phone });
   return () => [unsubscribe, unwatch].forEach((unbind) => unbind());
 }
 

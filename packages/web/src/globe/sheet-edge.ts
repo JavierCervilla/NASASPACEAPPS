@@ -27,7 +27,7 @@
  * How the globe yields to the phone sheet. The canvas always covers the
  * whole screen; the Moon is framed in a band above the sheet at half (the
  * CSS custom property `--globe-frame-inset` sets how much of the host's
- * bottom it leaves out). The site callout stays above the sheet's top edge,
+ * bottom it leaves out). The site callout rides the sheet's top edge,
  * and once the sheet drops below the frame (towards peek or closed) the
  * frame slides down to stay centred in the space the sheet frees: with the
  * sheet closed the Moon sits between the top bar and the tab bar, as the
@@ -83,7 +83,7 @@ export interface SheetEdgeParts {
 
 /**
  * Follows the sheet's edge and the host's size: frames the camera, then
- * clips the callout to the part of the globe above the sheet, in the host's
+ * docks the callout 12 px above the sheet's top edge, in the host's
  * coordinates. Returns the unbind function.
  */
 export function bindSheetEdge(
@@ -97,9 +97,9 @@ export function bindSheetEdge(
     const { clientWidth: width, clientHeight: height } = host;
     const size = { width, height, inset, screen: window.innerHeight };
     frameCamera(parts.camera, globeFrame(size, top));
-    const bottom = top ?? Number.POSITIVE_INFINITY;
+    const sheetTop = top ?? Number.POSITIVE_INFINITY;
     const hostTop = host.getBoundingClientRect().top;
-    parts.markers.callout.layout({ bottom: bottom - hostTop });
+    parts.markers.callout.layout({ sheetTop: sheetTop - hostTop });
     parts.invalidate();
   };
   const unwatch = watchSize(host, () => {

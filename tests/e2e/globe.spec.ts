@@ -111,7 +111,7 @@ test.describe('desktop, 1440x900', () => {
     expect(log.errors.filter((e) => !NETWORK_LINE.test(e))).toEqual([]);
   });
 
-  test('selecting a site names it in the callout, whose leader starts on its marker', async ({ page }) => {
+  test('selecting a site names it in the callout and rings its marker', async ({ page }) => {
     await page.emulateMedia({ reducedMotion: 'reduce' });
     await stubApi(page);
     await page.goto('./');
@@ -121,9 +121,7 @@ test.describe('desktop, 1440x900', () => {
     await expect(page.locator('.globe-callout')).toHaveAttribute('aria-label', 'Malapert A region (IM-1 Odysseus)');
     const transform = (selector: string) => page.locator(selector).evaluate((el) => (el as HTMLElement).style.transform);
     // The globe turns to the picked site: compare where both are now, frame after frame.
-    await expect
-      .poll(async () => (await transform('.globe-callout-leader')).startsWith(`${await transform(IM1)} rotate(`))
-      .toBe(true);
+    await expect.poll(async () => (await transform('.globe-ring')) === (await transform(IM1))).toBe(true);
     expect(await transform(IM1)).toMatch(/^translate3d\(/);
   });
 
@@ -218,7 +216,7 @@ for (const [width, height] of [[1440, 900], [1280, 720], [1024, 768]] as const) 
     const label = page.locator('.globe-callout');
     // By class: a role query skips a hidden key and would wait for it.
     const layers = page.locator('.globe-layers');
-    // The callout follows its marker as the view settles at the new size.
+    // The callout docks again as the view settles at the new size.
     await expect
       .poll(async () => {
         const [a, b] = [await label.boundingBox(), await layers.boundingBox()];

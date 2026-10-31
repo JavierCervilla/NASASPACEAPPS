@@ -26,24 +26,25 @@
 /*
  * The selected site's callout on the globe (VENT-29, validated canvases
  * «Globe · site callout B, image card» for desktop and «… A, compact» for
- * phones), built by src/callout/callout-dom.ts and placed each frame by
- * src/globe/site-callout.ts through its transform. The same card in two
- * layouts: from 768px an image header with the state badge, the site and
- * the two countdowns; below it a thumbnail beside the site and a state
- * pill with the time left. Frosted glass, as the Layers key. It never
- * takes the pointer: a marker under it still gets the click.
+ * phones), built by src/callout/callout-dom.ts. Docked at the globe's
+ * bottom left (VENT-32, canvases «FixedCallout…»): anchored here to the
+ * host's bottom left corner and lifted by src/globe/site-callout.ts
+ * through its transform, above the Layers key on a desktop and above the
+ * sheet or the tab bar on a phone. The same card in two layouts: from
+ * 768px an image header with the state badge, the site and the two
+ * countdowns; below it a thumbnail beside the site and a state pill with
+ * the time left. Frosted glass, as the Layers key. It never takes the
+ * pointer: a marker under it still gets the click.
  */
-.globe-callout,
-.globe-callout-leader {
+.globe-callout {
   position: absolute;
-  top: 0;
+  bottom: 0;
   left: 0;
   pointer-events: none;
   z-index: 4;
 }
 
-.globe-callout[data-shown='false'],
-.globe-callout-leader[data-shown='false'] {
+.globe-callout[data-shown='false'] {
   visibility: hidden;
 }
 
@@ -62,15 +63,6 @@
     0 22px 54px rgba(0, 0, 0, 0.55),
     inset 0 0 0 1px var(--surface-edge);
   letter-spacing: -0.01em;
-}
-
-/* A thin line from the marker's centre to the card's near edge. */
-.globe-callout-leader {
-  height: 1.5px;
-  margin-top: -0.75px;
-  transform-origin: 0 50%;
-  background: var(--marker);
-  opacity: 0.55;
 }
 
 .globe-callout__media {
@@ -341,7 +333,8 @@
     flex-direction: row;
     gap: 12px;
     width: 19.5rem;
-    max-width: calc(100% - 16px);
+    /* 12 px off the screen's left edge, and as much off its right one. */
+    max-width: calc(100% - 24px);
     padding: 10px;
     border-radius: 20px;
     box-shadow:
@@ -416,6 +409,7 @@
   }
 }
 
+/* It fades out in place (the sheet rising to full, say), then hides. */
 @media (prefers-reduced-motion: no-preference) {
   .globe-callout {
     transition: opacity 160ms var(--ease-out);
@@ -423,6 +417,9 @@
 
   .globe-callout[data-shown='false'] {
     opacity: 0;
+    transition:
+      opacity 160ms var(--ease-out),
+      visibility 0s linear 160ms;
   }
 }
 

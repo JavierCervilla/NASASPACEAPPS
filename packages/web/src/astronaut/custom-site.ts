@@ -26,11 +26,15 @@
 /**
  * The custom point as a site the views show (VENT-10): «Custom point»,
  * near the listed site closest to it, «Near Nobile Rim 1 · 26 km», with
- * its point. Pure.
+ * its point; without any listed site to be near, no subtitle. Pure.
  */
 import type { I18n } from '../i18n/translate';
 import type { LatLon } from '../lib/polar-projection';
-import { splitName, type PhoneSite } from '../phone/phone-site';
+import {
+  splitName,
+  type CustomFacts,
+  type PhoneSite,
+} from '../phone/phone-site';
 import { customId } from './custom-point';
 import { nearestSite } from './nearest-site';
 
@@ -44,6 +48,22 @@ export function formatKm(i18n: I18n, km: number): string {
 }
 
 /**
+ * «Near Nobile Rim 1» and «26 km» for `nearest`; both empty without one,
+ * so no «Near …» shows at all.
+ */
+function nearFacts(
+  i18n: I18n,
+  nearest: ReturnType<typeof nearestSite<PhoneSite>>,
+): CustomFacts {
+  if (!nearest) return { near: '', distance: '' };
+  const place = splitName(nearest.site.name).title;
+  return {
+    near: i18n.t('custom.near', { name: place }),
+    distance: formatKm(i18n, nearest.km),
+  };
+}
+
+/**
  * The site of the custom point at `point` (already on the grid), named by
  * the nearest of `sites`; its group is that site's, so the site picker
  * opens on the region around it.
@@ -54,12 +74,8 @@ export function customSite(
   i18n: I18n,
 ): PhoneSite {
   const nearest = nearestSite(point, sites);
-  const place = nearest ? splitName(nearest.site.name).title : '';
   const name = i18n.t('custom.title');
-  const custom = {
-    near: i18n.t('custom.near', { name: place }),
-    distance: nearest ? formatKm(i18n, nearest.km) : '',
-  };
+  const custom = nearFacts(i18n, nearest);
   return {
     id: customId(point),
     name,

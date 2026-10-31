@@ -166,6 +166,21 @@
   line-height: 1.3;
 }
 
+/* The hint names the pointer in use: click with a mouse, tap by touch. */
+.astro-dock__coarse {
+  display: none;
+}
+
+@media (pointer: coarse) {
+  .astro-dock__fine {
+    display: none;
+  }
+
+  .astro-dock__coarse {
+    display: inline;
+  }
+}
+
 /*
  * Phones: a round glass button beside the tab bar, in the thumb's reach.
  * They share a row at the screen's foot; when the tab bar needs the whole

@@ -30,9 +30,9 @@
 //   node packages/web/scripts/astronaut.mjs <Astronaut.glb> [out.glb]
 //
 // The source is read as data only (a GLB, Draco-compressed). The build bakes the root transform into the mesh, lowers
-// the arms (astronaut-mesh.mjs), covers the NASA insignia on the backpack with the fabric next to it, names the two
-// materials `suit` and `visor` (the page tints the visor with the state's colour, so its texture goes), welds the
-// vertices and quantizes the mesh (KHR_mesh_quantization). The output needs no decoder: Draco and meshopt would both
+// the arms (astronaut-mesh.mjs), covers the NASA insignia on the backpack and the mission patch on the suit with the
+// fabric next to each, names the two materials `suit` and `visor` (the page tints the visor with the state's colour,
+// so its texture goes), welds the vertices and quantizes the mesh (KHR_mesh_quantization). The output needs no decoder: Draco and meshopt would both
 // need WebAssembly, which the page's CSP does not allow. The suit texture, shrunk to 512 px WebP, is its own file: a
 // texture inside a GLB reaches the browser through a blob: URL, which the CSP does not allow either.
 import { readFileSync, writeFileSync } from 'node:fs';
@@ -43,7 +43,7 @@ import { ALL_EXTENSIONS } from '@gltf-transform/extensions';
 import { dedup, flatten, prune, quantize, weld } from '@gltf-transform/functions';
 import draco3d from 'draco3dgltf';
 import sharp from 'sharp';
-import { INSIGNIA, PATCH_FROM, lowerArms } from './astronaut-mesh.mjs';
+import { COVERED_MARKS, lowerArms } from './astronaut-mesh.mjs';
 
 const OUT = fileURLToPath(new URL('../public/models/astronaut.glb', import.meta.url));
 const TEXTURE_PX = 512;
@@ -104,16 +104,17 @@ function lowerAllArms(doc) {
   }
 }
 
-/** The suit texture without the NASA insignia, `TEXTURE_PX` square, as WebP. */
+/** The suit texture without the marks it must not carry (COVERED_MARKS), `TEXTURE_PX` square, as WebP. */
 async function cleanSuitTexture(image) {
-  const patch = await sharp(image)
-    .extract({ left: PATCH_FROM.left, top: PATCH_FROM.top, width: INSIGNIA.width, height: INSIGNIA.height })
-    .png()
-    .toBuffer();
-  const covered = await sharp(image)
-    .composite([{ input: patch, left: INSIGNIA.left, top: INSIGNIA.top }])
-    .png()
-    .toBuffer();
+  const covers = [];
+  for (const { area, from } of COVERED_MARKS) {
+    const patch = await sharp(image)
+      .extract({ left: from.left, top: from.top, width: area.width, height: area.height })
+      .png()
+      .toBuffer();
+    covers.push({ input: patch, left: area.left, top: area.top });
+  }
+  const covered = await sharp(image).composite(covers).png().toBuffer();
   return sharp(covered).resize(TEXTURE_PX, TEXTURE_PX).webp({ quality: WEBP_QUALITY, effort: 6 }).toBuffer();
 }
 

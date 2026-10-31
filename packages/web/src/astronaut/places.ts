@@ -27,8 +27,9 @@
  * Where the astronaut is (VENT-10): home in the dock, or standing on a
  * point of the Moon. Dropping it makes that point the selected site, the
  * custom point, and writes it into the address (`?lat&lon`), so it can be
- * shared and survives a reload; bringing it home selects again the listed
- * site chosen before and takes the point out of the address.
+ * shared and survives a reload; bringing it home, or picking a listed
+ * site, takes the point out of the address again (and moves `?site=` to
+ * that site when the address names one), so a reload opens what is shown.
  */
 import type { LatLon } from '../lib/polar-projection';
 import {
@@ -39,6 +40,7 @@ import { siteFromSearch } from '../lib/site-param';
 import type { SiteStore } from '../phone/site-store';
 import { customId, customPointOf } from './custom-point';
 import { followListed } from './listed-site';
+import { followAddress } from './listed-address';
 import { pointFromSearch, searchWithPoint } from './point-param';
 
 export type Place =
@@ -70,12 +72,12 @@ function restoreFrom(
   search: string,
   ids: readonly string[],
   store: SiteStore,
-  stand: (point: LatLon) => void,
+  move: (point: LatLon) => void,
 ): void {
   const site = siteFromSearch(search, ids);
   if (site) store.select(site, 'list');
   const point = pointFromSearch(search);
-  if (point) stand(point);
+  if (point) move(point);
 }
 
 /**
@@ -88,23 +90,22 @@ export function createPlaces(
 ): Places & { readonly stop: () => void } {
   const place = createWatchedValue<Place>({ kind: 'home' });
   const listed = followListed(store);
+  const unfollow = followAddress(store, address);
   // On a point it selects the point; home, the listed site chosen before.
   const stand = (point: LatLon | null): void => {
     place.set(point ? { kind: 'moon', point } : { kind: 'home' });
     if (point) store.select(customId(point), 'globe');
     else if (customPointOf(store.get().id)) store.select(listed.get(), 'list');
   };
-  const write = (point: LatLon | null): void =>
-    address.replace(searchWithPoint(address.search(), point));
   const move = (point: LatLon | null): void => {
     stand(point);
-    write(point);
+    address.replace(searchWithPoint(address.search(), point));
   };
   return {
     place,
-    stop: listed.stop,
+    stop: () => [listed.stop, unfollow].forEach((fn) => fn()),
     drop: move,
     bringHome: () => move(null),
-    restore: (ids) => restoreFrom(address.search(), ids, store, stand),
+    restore: (ids) => restoreFrom(address.search(), ids, store, move),
   };
 }

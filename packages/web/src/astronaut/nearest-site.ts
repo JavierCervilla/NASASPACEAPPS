@@ -48,19 +48,22 @@ const SAME_POINT_KM = 0.5;
 
 /**
  * The nearest of `sites` with coordinates, and how far; null for none.
- * Of sites sharing a point, the one with the shortest name.
+ * Of the sites within {@link SAME_POINT_KM} of the nearest (sharing its
+ * point), the one with the shortest name: always measured against the
+ * nearest, so a run of close sites never leads further away.
  */
 export function nearestSite<T extends LatLon & { readonly name: string }>(
   point: LatLon,
   sites: readonly T[],
 ): { site: T; km: number } | null {
+  const measured = sites
+    .filter(({ lat, lonEast }) => Number.isFinite(lat + lonEast))
+    .map((site) => ({ site, km: greatCircleKm(point, site) }));
+  const nearestKm = Math.min(...measured.map(({ km }) => km));
   let best: { site: T; km: number } | null = null;
-  for (const site of sites) {
-    if (!Number.isFinite(site.lat) || !Number.isFinite(site.lonEast)) continue;
-    const km = greatCircleKm(point, site);
-    const tie = best !== null && Math.abs(km - best.km) < SAME_POINT_KM;
-    const shorter = tie && site.name.length < (best?.site.name.length ?? 0);
-    if (!best || shorter || (!tie && km < best.km)) best = { site, km };
+  for (const entry of measured) {
+    if (entry.km - nearestKm >= SAME_POINT_KM) continue;
+    if (!best || entry.site.name.length < best.site.name.length) best = entry;
   }
   return best;
 }

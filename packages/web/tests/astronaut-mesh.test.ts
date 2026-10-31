@@ -24,7 +24,7 @@
  */
 
 import { describe, expect, it } from 'vitest';
-import { ARMS, lowerArms } from '../scripts/astronaut-mesh.mjs';
+import { ARMS, COVERED_MARKS, lowerArms } from '../scripts/astronaut-mesh.mjs';
 
 describe('the astronaut build lowers the arms', () => {
   it('turns a hand held out down beside the hip, and its normal with it', () => {
@@ -53,5 +53,32 @@ describe('the astronaut build lowers the arms', () => {
     lowerArms(left, null);
     expect(left[0]).toBeCloseTo(-(right[0] ?? 0), 9);
     expect(left[1]).toBeCloseTo(right[1] ?? 0, 9);
+  });
+});
+
+describe('the marks the build covers on the suit texture', () => {
+  type Rect = { left: number; top: number; width: number; height: number };
+  const contains = (r: Rect, x: number, y: number) => x >= r.left && x < r.left + r.width && y >= r.top && y < r.top + r.height;
+  const overlaps = (a: Rect, b: Rect) =>
+    a.left < b.left + b.width && b.left < a.left + a.width && a.top < b.top + b.height && b.top < a.top + a.height;
+
+  it('covers the NASA insignia on the backpack and the mission patch on the suit', () => {
+    const names = COVERED_MARKS.map((mark) => mark.name);
+    expect(names).toEqual(['nasa-insignia', 'mission-patch']);
+    const [insignia, patch] = COVERED_MARKS.map((mark) => mark.area);
+    // The «meatball» sits around (920, 210) of the 1024 px texture; the patch, with its grey ground, (793-862, 388-438).
+    expect(contains(insignia!, 920, 210)).toBe(true);
+    for (const [x, y] of [[793, 388], [862, 388], [793, 438], [862, 438], [828, 412]] as const) {
+      expect(contains(patch!, x, y)).toBe(true);
+    }
+  });
+
+  it('takes each cover from plain fabric of the same size, clear of every mark, inside the texture', () => {
+    for (const { area, from } of COVERED_MARKS) {
+      const source = { ...from, width: area.width, height: area.height };
+      for (const mark of COVERED_MARKS) expect(overlaps(source, mark.area)).toBe(false);
+      expect(source.left + source.width).toBeLessThanOrEqual(1024);
+      expect(source.top + source.height).toBeLessThanOrEqual(1024);
+    }
   });
 });

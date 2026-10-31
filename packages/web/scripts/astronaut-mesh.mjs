@@ -24,8 +24,8 @@
  */
 
 // The pure geometry steps of the astronaut build (astronaut.mjs), apart so they are unit-tested without the model:
-// lowering the arms of NASA's «Astronaut» model, which stands with its arms held out, and the texture rectangle that
-// carries the NASA insignia.
+// lowering the arms of NASA's «Astronaut» model, which stands with its arms held out, and the texture rectangles of
+// the marks the build covers.
 
 /**
  * The arm bend. The model stands Y-up after its root transform, about 50 units tall, facing +Z, its arms out along
@@ -68,8 +68,13 @@ export function lowerArms(positions, normals, arms = ARMS) {
 }
 
 /**
- * The NASA insignia («meatball») on the backpack, in px of the 1024 x 1024 suit texture: NASA's media guidelines do
- * not let it be used, so the build covers it with the fabric `PATCH_FROM` px above it.
+ * The marks the build covers, in px of the 1024 x 1024 suit texture, each with the fabric of the same size it is
+ * covered with (`from`, its top left corner): the NASA insignia («meatball») on the backpack, which NASA's media
+ * guidelines do not let be used, covered with the fabric 80 px above it; and the circular mission patch on the suit
+ * (a figure on blue with a gold border, on its grey ground), covered with the plain fabric of the same band to its right.
+ * The US flags stay.
  */
-export const INSIGNIA = { left: 890, top: 180, width: 62, height: 62 };
-export const PATCH_FROM = { left: 890, top: 100 };
+export const COVERED_MARKS = [
+  { name: 'nasa-insignia', area: { left: 890, top: 180, width: 62, height: 62 }, from: { left: 890, top: 100 } },
+  { name: 'mission-patch', area: { left: 789, top: 384, width: 78, height: 59 }, from: { left: 900, top: 384 } },
+];

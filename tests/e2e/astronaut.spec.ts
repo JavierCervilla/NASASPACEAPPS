@@ -223,6 +223,9 @@ test.describe('desktop, 1440x900: the astronaut on the globe', () => {
     await dropFromDock(page, middle);
     const first = addressPoint(page);
     await expect(page.locator(PIN)).toBeVisible();
+    // With a mouse the dock says click, not tap (a touch screen reads «tap»).
+    const hint = page.locator(`${DOCK} .astro-dock__hint`);
+    await expect.poll(() => hint.innerText()).toBe('Drag it again, or click to bring it home');
     await carry(page, await feetOf(page.locator(`${PIN} .astro-figure`)), { x: middle.x + 40, y: middle.y + 30 });
     // Lifted, the standing figure steps aside; the dock says how to cancel.
     await expect(page.locator(PIN)).toHaveAttribute('data-carried', 'true');
@@ -258,6 +261,33 @@ test.describe('desktop, 1440x900: the astronaut on the globe', () => {
     await expect(page.locator(DOCK)).toHaveAttribute('data-status', 'home');
   });
 
+  test('a point out of range or not a plain decimal opens nothing, and ?site= still does', async ({ page }) => {
+    for (const search of ['?lat=-200&lon=10', '?lat=-85&lon=999', '?lat=0x10&lon=3', '?lat=1e1&lon=3']) {
+      await open(page, `./${search}`);
+      await expect(page.locator('.site-button__name')).toHaveText('IM-2 Athena');
+      await expect(page.locator(DOCK)).toHaveAttribute('data-status', 'home');
+      await expect(page.locator(PIN)).toHaveCount(0);
+    }
+    await open(page, './?site=apollo11&lat=-85&lon=999');
+    await expect(page.locator('.site-button__name')).toHaveText('Apollo 11');
+    await expect(page.locator(DOCK)).toHaveAttribute('data-status', 'home');
+  });
+
+  test('picking a listed site takes the dropped point out of the address, so a reload opens that site', async ({ page }) => {
+    await open(page, './?site=im2-athena');
+    await dropFromDock(page, await moonMiddle(page));
+    await expect(page.locator('.site-button__name')).toHaveText('Custom point');
+    expect(new URL(page.url()).searchParams.has('lat')).toBe(true);
+    await page.getByRole('button', { name: /^Change site, now/ }).click();
+    const dialog = page.getByRole('dialog', { name: 'Choose a site' });
+    await dialog.getByRole('searchbox', { name: 'Search a site or mission' }).fill('apollo 11');
+    await dialog.getByRole('button', { name: /^Mare Tranquillitatis/ }).click();
+    await expect(page.locator('.site-button__name')).toHaveText('Apollo 11');
+    expect(new URL(page.url()).search).toBe('?site=apollo11');
+    await page.reload();
+    await expect(page.locator('.site-button__name')).toHaveText('Apollo 11');
+  });
+
   test('the keyboard lifts it from the dock, moves it with the arrows and drops it, said in a live region', async ({ page }) => {
     await open(page);
     const dock = page.getByRole('button', { name: /^Astronaut: drag it onto the Moon/ });
@@ -276,6 +306,11 @@ test.describe('desktop, 1440x900: the astronaut on the globe', () => {
     await page.keyboard.press('Enter');
     await expect(layer).toHaveCount(0);
     await expect(page.locator(LIVE)).toContainText('Astronaut dropped at');
+    // It says where it landed and how to pick it up again; the focus stays on the dock, which now brings it home.
+    await expect(page.locator(LIVE)).toHaveText(
+      /^Astronaut dropped at \d+\.\d+° S, \d+\.\d+° [EW]: .+\. To move it again, press Enter on the standing astronaut; the dock brings it home\.$/,
+    );
+    await expect(page.getByRole('button', { name: 'Astronaut on the Moon: bring it home' })).toBeFocused();
     expect(addressPoint(page)).toEqual(moved);
     await expect(dock).toHaveCount(0);
     await expect(page.locator(PIN)).toBeVisible();
@@ -382,6 +417,17 @@ test.describe('desktop, 1440x900: the astronaut on the globe', () => {
   });
 });
 
+test.describe('desktop size with a touch screen, 1440x900', () => {
+  test.use({ viewport: { width: 1440, height: 900 }, hasTouch: true });
+
+  test('the dock says tap, not click, where the pointer is coarse', async ({ page }) => {
+    await open(page, './?lat=-85.87&lon=61.34');
+    expect(await page.evaluate(() => matchMedia('(pointer: coarse)').matches)).toBe(true);
+    const hint = page.locator(`.globe ${DOCK} .astro-dock__hint`);
+    await expect.poll(() => hint.innerText()).toBe('Drag it again, or tap to bring it home');
+  });
+});
+
 test.describe('desktop, 1440x900: the astronaut on the polar map', () => {
   test.use({ viewport: { width: 1440, height: 900 } });
 
@@ -415,6 +461,36 @@ test.describe('desktop, 1440x900: the astronaut on the polar map', () => {
     // A custom point on the map is not «off this map».
     await expect(page.locator('.polar__note')).toHaveCount(0);
     await evidence(page, 'drop-polar');
+  });
+
+  test('standing next to a site, the figure leaves that site’s label readable', async ({ page }) => {
+    await open(page, './#polar-map');
+    const label = page.locator('.polar-label', { hasText: 'Haworth' });
+    await expect(label).toBeVisible();
+    const box = (await label.boundingBox())!;
+    // Feet a little under the label, so the standing figure rises over its first letters.
+    const target = { x: box.x + 14, y: box.y + box.height + 30 };
+    await carry(page, await feetOf(page.locator(`.polar ${DOCK} .astro-figure`)), target);
+    await page.mouse.up();
+    const pin = page.locator(`.polar ${PIN}`);
+    await expect(pin).toBeVisible();
+    const figure = (await pin.boundingBox())!;
+    const overlap = {
+      x: Math.max(box.x, figure.x),
+      y: Math.max(box.y, figure.y),
+      right: Math.min(box.x + box.width, figure.x + figure.width),
+      bottom: Math.min(box.y + box.height, figure.y + figure.height),
+    };
+    expect(overlap.right - overlap.x).toBeGreaterThan(4);
+    expect(overlap.bottom - overlap.y).toBeGreaterThan(4);
+    // Where the two meet, the label paints on top (it takes no pointer, so it is made hittable only to ask).
+    const top = await label.evaluate((el, at) => {
+      (el as HTMLElement).style.pointerEvents = 'auto';
+      const hit = document.elementFromPoint(at.x, at.y);
+      (el as HTMLElement).style.pointerEvents = '';
+      return hit === el;
+    }, { x: (overlap.x + overlap.right) / 2, y: (overlap.y + overlap.bottom) / 2 });
+    expect(top).toBe(true);
   });
 });
 

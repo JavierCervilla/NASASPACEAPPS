@@ -72,9 +72,27 @@ describe('custom point id', () => {
 });
 
 describe('?lat&lon', () => {
-  it('reads two numbers, snapped, clamped and wrapped', () => {
+  it('reads two plain decimals, snapped to the grid', () => {
     expect(pointFromSearch('?lat=-85.874&lon=61.339')).toEqual({ lat: -85.87, lonEast: 61.34 });
-    expect(pointFromSearch('?lat=-123&lon=361')).toEqual({ lat: -90, lonEast: 1 });
+    expect(pointFromSearch('?lat=%2B12.5&lon=-180')).toEqual({ lat: 12.5, lonEast: 180 });
+  });
+
+  it('takes east longitudes up to 360°, as the API does, wrapped to ±180°', () => {
+    expect(pointFromSearch('?lat=-85&lon=300')).toEqual({ lat: -85, lonEast: -60 });
+    expect(pointFromSearch('?lat=-85&lon=360')).toEqual({ lat: -85, lonEast: 0 });
+  });
+
+  it('ignores a value out of range instead of clamping or wrapping it', () => {
+    for (const search of ['?lat=-200&lon=10', '?lat=90.01&lon=10', '?lat=-85&lon=999', '?lat=-85&lon=-180.5', '?lat=-85&lon=360.01']) {
+      expect(pointFromSearch(search)).toBeNull();
+    }
+    expect(pointFromSearch('?lat=-90&lon=0')).toEqual({ lat: -90, lonEast: 0 });
+  });
+
+  it('reads only plain decimals: no hex, exponent, binary or bare dot', () => {
+    for (const search of ['?lat=0x10&lon=3', '?lat=1e1&lon=3', '?lat=0b11&lon=3', '?lat=.5&lon=3', '?lat=5.&lon=3', '?lat=-85&lon=1_0', '?lat=--5&lon=3', '?lat=-85&lon= 3']) {
+      expect(pointFromSearch(search)).toBeNull();
+    }
   });
 
   it('ignores a missing, empty, non-numeric or overlong value', () => {
@@ -95,6 +113,21 @@ describe('nearest site', () => {
   it('measures great circles on the Moon', () => {
     expect(greatCircleKm({ lat: 0, lonEast: 0 }, { lat: 0, lonEast: 90 })).toBeCloseTo((Math.PI / 2) * MOON_RADIUS_KM, 6);
     expect(greatCircleKm({ lat: -90, lonEast: 0 }, { lat: -90, lonEast: 120 })).toBeCloseTo(0, 9);
+  });
+
+  it('breaks a tie by the shortest name only against the true nearest, never chaining further away', () => {
+    // Each site is 0.4 km further than the one before (0.012° of latitude ≈ 0.36 km): within 0.5 km of its neighbour,
+    // but the last is 0.8 km from the nearest, so its shorter name must not win.
+    const chain = [
+      site('a', 'Nearest of all sites', -85, 0),
+      site('b', 'Second site name', -85.013, 0),
+      site('c', 'Far', -85.026, 0),
+    ];
+    const near = nearestSite({ lat: -85, lonEast: 0 }, chain);
+    expect(near?.site.id).toBe('b');
+    expect(near?.km).toBeCloseTo(greatCircleKm({ lat: -85, lonEast: 0 }, chain[1]!), 9);
+    const sameButLonger = [site('x', 'Short', -85.013, 0), site('y', 'A much longer name', -85, 0)];
+    expect(nearestSite({ lat: -85, lonEast: 0 }, sameButLonger)?.site.id).toBe('x');
   });
 
   it('picks the closest site, and of sites sharing a point the shortest name', () => {
@@ -118,6 +151,12 @@ describe('the custom point as a site', () => {
       pillDetail: '',
     });
     expect(pointLine(EN, custom)).toBe('85.87° S, 61.34° E · dropped here');
+  });
+
+  it('has no «Near» subtitle when no listed site has coordinates', () => {
+    const alone = customSite(point, [], EN);
+    expect(alone.custom).toEqual({ near: '', distance: '' });
+    expect(siteLabels(alone).subtitle).toBe('');
   });
 
   it('writes short distances with one decimal', () => {

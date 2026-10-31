@@ -237,14 +237,15 @@
   "astro.dock.carry.title": "Suéltalo en cualquier punto",
   "astro.dock.carry.hint": "Suéltalo fuera de la Luna, o pulsa Esc, para cancelar",
   "astro.dock.away.title": "En la Luna",
-  "astro.dock.away.hint": "Arrástralo otra vez, o toca para traerlo de vuelta",
+  "astro.dock.away.hint": "Arrástralo otra vez, o haz clic para traerlo de vuelta",
+  "astro.dock.away.hintTouch": "Arrástralo otra vez, o toca para traerlo de vuelta",
   "astro.dock.label.home": "Astronauta: arrástralo a la Luna, o pulsa Intro para colocarlo con las flechas",
   "astro.dock.label.away": "Astronauta en la Luna: traerlo de vuelta",
   "astro.pin.label": "Astronauta en {coords}: pulsa Intro para moverlo",
   "astro.readout.off": "Fuera de la Luna · Suéltalo y vuelve a casa",
   "astro.say.pickedUp": "Astronauta recogido en {coords}: {state}. Las flechas lo mueven, con Mayúsculas en pasos más grandes; Intro lo suelta, Escape cancela.",
   "astro.say.at": "{coords}: {state}",
-  "astro.say.dropped": "Astronauta soltado en {coords}: {state}.",
+  "astro.say.dropped": "Astronauta soltado en {coords}: {state}. Para moverlo otra vez, pulsa Intro sobre el astronauta de pie; su hueco lo trae de vuelta.",
   "astro.say.home": "El astronauta ha vuelto a casa.",
   "astro.say.cancelled": "Cancelado: el astronauta vuelve a donde estaba."
 }

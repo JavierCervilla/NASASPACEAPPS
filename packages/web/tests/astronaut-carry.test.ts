@@ -244,4 +244,29 @@ describe('places', () => {
     places.bringHome();
     expect(store.get().id).toBe('apollo11');
   });
+
+  it('takes the point out of the address when a listed site is picked, and keeps ?site= on it', () => {
+    const { store, address, places } = placesAt('?site=apollo11');
+    places.drop({ lat: -62.03, lonEast: 30 });
+    expect(address.value).toBe('?site=apollo11&lat=-62.03&lon=30.00');
+    store.select('im2-athena', 'list');
+    expect(address.value).toBe('?site=im2-athena');
+    places.drop({ lat: -62.03, lonEast: 30 });
+    store.select('apollo11', 'list');
+    expect(address.value).toBe('?site=apollo11');
+  });
+
+  it('writes no ?site= of its own when the address had none', () => {
+    const { store, address, places } = placesAt('');
+    places.drop({ lat: -62.03, lonEast: 30 });
+    store.select('apollo11', 'list');
+    expect(address.value).toBe('');
+  });
+
+  it('keeps the point it opens in the address', () => {
+    const { store, address, places } = placesAt('?site=apollo11&lat=-89.5&lon=0');
+    places.restore(['im2-athena', 'apollo11']);
+    expect(store.get().id).toBe('@-89.50,0.00');
+    expect(address.value).toBe('?site=apollo11&lat=-89.50&lon=0.00');
+  });
 });

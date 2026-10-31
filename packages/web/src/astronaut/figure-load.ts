@@ -26,10 +26,13 @@
 /**
  * Loads the astronaut's pictures once the page runs (VENT-10): the visor
  * colours come from the page's own tokens, so they never drift from the
- * legend. Under Save-Data, or without WebGL, there are none and the
- * figure is drawn plain (components/astronaut/Figure.tsx). The work is cut
- * into idle slices (one picture each), so it never holds the main thread
- * for long while the page is busy.
+ * legend. They are baked once: the four signal colours are the same in
+ * every theme and contrast setting (tokens.css, held by contrast.test.ts),
+ * so a later theme switch leaves nothing to redraw. Under Save-Data, or
+ * without WebGL, there are none and the figure is drawn plain
+ * (components/astronaut/Figure.tsx). The work is cut into idle slices (one
+ * picture each), so it never holds the main thread for long while the
+ * page is busy.
  */
 import {
   IDLE_VISOR,

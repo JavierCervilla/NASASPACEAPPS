@@ -46,6 +46,26 @@ const NORMAL_MAPS = '#include <normal_fragment_maps>';
 /** The sphere point, interpolated: on a sphere it never pinches. */
 const VARYING = 'varying vec3 vSpherePos;';
 
+/**
+ * The gradients' choices, scalar GLSL so tests can run them: across the
+ * 180° meridian the longitude's step is the smaller of the plain one and
+ * the one of a copy shifted half a turn (whose wrap is at u = 0.5), and
+ * near the poles (|y| past 0.94, fully at 0.985) it is capped by the
+ * latitude's.
+ */
+export const GRADIENT_GLSL = `
+float seamless( float du, float duShifted ) {
+  return abs( duShifted ) < abs( du ) ? duShifted : du;
+}
+float polarCap( float y, float dvx, float dvy ) {
+  float polar = smoothstep( 0.94, 0.985, abs( y ) );
+  return mix( 1.0, max( abs( dvx ), abs( dvy ) ), polar );
+}
+float uGradient( float du, float duShifted, float cap ) {
+  return clamp( seamless( du, duShifted ), - cap, cap );
+}
+`;
+
 /** The UV of `SphereGeometry` at sphere point `p`, sampled with gradients. */
 const SAMPLE_SPHERE = `
 ${VARYING}
@@ -54,19 +74,16 @@ vec2 sphereUv( vec3 p ) {
   float v = asin( clamp( p.y, - 1.0, 1.0 ) ) * RECIPROCAL_PI + 0.5;
   return vec2( u, v );
 }
-float seamless( float du, float duShifted ) {
-  return abs( duShifted ) < abs( du ) ? duShifted : du;
-}
+${GRADIENT_GLSL}
 vec4 sampleSphere( sampler2D tex ) {
   vec3 p = normalize( vSpherePos );
   vec2 uv = sphereUv( p );
   float shifted = fract( uv.x + 0.5 );
-  vec2 gx = vec2( seamless( dFdx( uv.x ), dFdx( shifted ) ), dFdx( uv.y ) );
-  vec2 gy = vec2( seamless( dFdy( uv.x ), dFdy( shifted ) ), dFdy( uv.y ) );
-  float polar = smoothstep( 0.94, 0.985, abs( p.y ) );
-  float cap = mix( 1.0, max( abs( gx.y ), abs( gy.y ) ), polar );
-  gx.x = clamp( gx.x, - cap, cap );
-  gy.x = clamp( gy.x, - cap, cap );
+  float dvx = dFdx( uv.y );
+  float dvy = dFdy( uv.y );
+  float cap = polarCap( p.y, dvx, dvy );
+  vec2 gx = vec2( uGradient( dFdx( uv.x ), dFdx( shifted ), cap ), dvx );
+  vec2 gy = vec2( uGradient( dFdy( uv.x ), dFdy( shifted ), cap ), dvy );
   return textureGrad( tex, uv, gx, gy );
 }
 `;

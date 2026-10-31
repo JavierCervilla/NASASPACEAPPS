@@ -109,7 +109,9 @@ function CardHead(props: Omit<Props, 'model' | 'onRetry' | 'notes'>) {
       {thumb ? null : <StateBadge state={state} computed={computed} inHead />}
       {mission ? <p className="card-head__mission">{mission}</p> : null}
       <h2 className="card-head__name">{name}</h2>
-      {name === place ? null : <p className="card-head__place">{place}</p>}
+      {!place || name === place ? null : (
+        <p className="card-head__place">{place}</p>
+      )}
       <p className="card-head__point">{pointLine(i18n, site)}</p>
     </div>
   );

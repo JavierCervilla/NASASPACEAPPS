@@ -54,11 +54,15 @@ interface Props {
   readonly onPick: (id: string) => void;
 }
 
-/** «Mons Mouton · 84.79° S, 29.20° E», or the place alone. */
+/**
+ * «Mons Mouton · 84.79° S, 29.20° E», the place alone, or the point alone
+ * (a custom point near no listed site).
+ */
 function placeLine(i18n: I18n, site: PhoneSite, title: string): string {
   const known = Number.isFinite(site.lat) && Number.isFinite(site.lonEast);
   if (!known) return title;
-  return `${title} · ${formatCoords(i18n, site.lat, site.lonEast)}`;
+  const coords = formatCoords(i18n, site.lat, site.lonEast);
+  return title ? `${title} · ${coords}` : coords;
 }
 
 /** Puts the popover under `button`, before the browser shows it. */
@@ -78,7 +82,7 @@ function SiteButton(props: Props & { readonly popover: Anchor }) {
   const [subtitle, title] = site.custom
     ? [labels.title, site.custom.near]
     : [labels.subtitle, labels.title];
-  const name = subtitle === title ? title : `${subtitle}, ${title}`;
+  const name = !title || subtitle === title ? subtitle : `${subtitle}, ${title}`;
   // Like the phone pill: a hollow dot is said, not only drawn.
   const label = computed ? 'site.changeComputed' : 'site.change';
   return (

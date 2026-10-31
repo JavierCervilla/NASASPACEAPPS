@@ -26,31 +26,49 @@
 /**
  * The custom point a link opens: `?lat=…&lon=…` (degrees, longitude east),
  * as the page writes it when the astronaut is dropped, so a point is
- * shareable and survives a reload. It lives beside `?site=`, which it
- * leaves alone. Anything that is not two finite numbers is ignored; a
- * latitude past a pole is clamped, a longitude wrapped. Pure.
+ * shareable and survives a reload. It lives beside `?site=`. Only plain
+ * decimals count (an optional sign, digits, an optional fraction: no hex,
+ * exponent or bare dot), the latitude within ±90° and the longitude from
+ * -180° to 360° east, the range the API's ephemeris route takes; anything
+ * else is ignored, never clamped. Pure.
  */
 import type { LatLon } from '../lib/polar-projection';
+import { SITE_PARAM } from '../lib/site-param';
 import { snapPoint } from './custom-point';
 
 export const LAT_PARAM = 'lat';
 export const LON_PARAM = 'lon';
 /** Longer than any coordinate a person or the page writes. */
 const MAX_CHARS = 24;
+const DECIMAL = /^[+-]?\d+(?:\.\d+)?$/;
+const LAT_RANGE = [-90, 90] as const;
+/** East longitudes past 180° are wrapped, as the server reads them. */
+const LON_RANGE = [-180, 360] as const;
 
-/** A parameter as a number, or NaN when absent, empty or too long. */
-function numberOf(params: URLSearchParams, name: string): number {
-  const raw = params.get(name)?.trim() ?? '';
-  if (raw === '' || raw.length > MAX_CHARS) return Number.NaN;
-  return Number(raw);
+/** A parameter as a number in `range`, or NaN when it is not one. */
+function numberOf(
+  params: URLSearchParams,
+  name: string,
+  [min, max]: readonly [number, number],
+): number {
+  const raw = params.get(name) ?? '';
+  if (raw.length > MAX_CHARS || !DECIMAL.test(raw)) return Number.NaN;
+  const value = Number(raw);
+  return value >= min && value <= max ? value : Number.NaN;
 }
 
 /** The point `search` names, snapped to the grid; null when it names none. */
 export function pointFromSearch(search: string): LatLon | null {
   const params = new URLSearchParams(search);
-  const lat = numberOf(params, LAT_PARAM);
-  const lonEast = numberOf(params, LON_PARAM);
+  const lat = numberOf(params, LAT_PARAM, LAT_RANGE);
+  const lonEast = numberOf(params, LON_PARAM, LON_RANGE);
   return snapPoint({ lat, lonEast });
+}
+
+/** `params` as a search, with a leading `?`, or empty when there are none. */
+function searchOf(params: URLSearchParams): string {
+  const text = params.toString();
+  return text ? `?${text}` : '';
 }
 
 /**
@@ -68,6 +86,15 @@ export function searchWithPoint(
     params.set(LAT_PARAM, point.lat.toFixed(2));
     params.set(LON_PARAM, point.lonEast.toFixed(2));
   }
-  const text = params.toString();
-  return text ? `?${text}` : '';
+  return searchOf(params);
+}
+
+/**
+ * `search` once the listed site `id` is selected: no point, and `?site=`
+ * naming `id` if the address named a site (the page never adds one).
+ */
+export function searchWithListed(search: string, id: string): string {
+  const params = new URLSearchParams(searchWithPoint(search, null));
+  if (params.has(SITE_PARAM)) params.set(SITE_PARAM, id);
+  return searchOf(params);
 }

@@ -575,13 +575,29 @@ test.describe('desktop, 1280x720: floating surfaces over the markers', () => {
     await evidence(page, 'desktop-1280-es-layers');
   });
 
+  // Verificador on PR #20: since VENT-10 the disk is fitted clear of the key (polar/disk-fit.ts), so at the common
+  // desktop sizes the stacking check below had nothing left to sample. Say that the two are apart there.
+  test('on the polar map at 1280x720 and 1440x900, the Layers key and the disk do not overlap', async ({ page }) => {
+    await stubApi(page);
+    for (const viewport of [{ width: 1280, height: 720 }, { width: 1440, height: 900 }]) {
+      await page.setViewportSize(viewport);
+      await open(page, 'es/#polar-map');
+      await expect(page.locator('.polar-marker').first()).toBeVisible();
+      const key = (await page.locator('.polar .globe-layers').boundingBox())!;
+      const disk = (await page.locator('.polar__disk').boundingBox())!;
+      const apart =
+        key.x + key.width <= disk.x || disk.x + disk.width <= key.x || key.y + key.height <= disk.y || disk.y + disk.height <= key.y;
+      expect(apart, `${viewport.width}x${viewport.height}`).toBe(true);
+    }
+  });
+
   // Verificador on PR #19: the polar disk is its own stacking context too, or its image and markers paint over the
-  // Layers key where the two overlap (at 1280x720 the key's top right corner sat over the disk). Since VENT-10 the
-  // disk is fitted clear of the key (polar/disk-fit.ts), so its box may not reach the key at all; wherever it still
-  // does, the key is on top.
+  // Layers key where the two overlap. At 1024x768 the disk, at its smallest, still reaches under the key: there the key
+  // is on top.
   test('on the polar map, the Layers key is on top of the disk wherever they overlap, and Compare takes the click', async ({
     page,
   }) => {
+    await page.setViewportSize({ width: 1024, height: 768 });
     await stubApi(page);
     await open(page, 'es/#polar-map');
     const layers = '.polar .globe-layers';
@@ -606,6 +622,8 @@ test.describe('desktop, 1280x720: floating surfaces over the markers', () => {
       }
       return { hits, sampled: right > left && bottom > top };
     }, layers);
+    // The check has something to look at: the two do overlap at this size.
+    expect(covered.sampled).toBe(true);
     expect(covered.hits).toEqual([]);
     const compare = switchIn(page, layers).getByRole('radio', { name: 'Comparar' });
     for (const name of ['Calculado', 'Horizons', 'Comparar']) {
@@ -615,7 +633,7 @@ test.describe('desktop, 1280x720: floating surfaces over the markers', () => {
     await compare.click();
     await expect(compare).toHaveAttribute('aria-checked', 'true');
     await expect(page.locator('.site-button')).toHaveAttribute('aria-label', site!);
-    await evidence(page, 'desktop-1280-es-polar-layers');
+    await evidence(page, 'desktop-1024-es-polar-layers');
   });
 
   test('no marker paints over the site card, the calendar strip or the header', async ({ page }) => {

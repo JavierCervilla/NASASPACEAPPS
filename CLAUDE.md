@@ -113,8 +113,8 @@ Every visible change follows `.claude/skills/apple-design/SKILL.md` (vendored fr
   live and for the session. `?glass=liquid|frosted` forces a mode, except that `?glass=liquid` never overrides
   reduced transparency or more contrast.
 - **The astronaut** (VENT-10, canvas «Astro A + B»): NASA's «Astronaut» model (`public/models/astronaut.glb` and its
-  suit texture beside it, `astronaut-suit.webp`, built by `packages/web/scripts/astronaut.mjs`: arms lowered, no NASA
-  insignia, materials `suit` and `visor`; no decoder and no `blob:` URL needed, so the CSP holds) is drawn once the
+  suit texture beside it, `astronaut-suit.webp`, built by `packages/web/scripts/astronaut.mjs`: arms lowered, the NASA
+  insignia and the mission patch covered with fabric (the US flags stay), materials `suit` and `visor`; no decoder and no `blob:` URL needed, so the CSP holds) is drawn once the
   globe is up (its loading state gone: never on its critical path), one picture per idle slice, into small pictures,
   two poses times five visor colours (`src/astronaut/figure-render.ts`, its own WebGL renderer, released at once; none
   under Save-Data, where a plain silhouette stands in), so the figure costs no draw call. Its dock ends the desktop
@@ -132,16 +132,23 @@ Every visible change follows `.claude/skills/apple-design/SKILL.md` (vendored fr
   dock never covers what they show (`src/sheet/sheet-mount.ts`). Dropped, the point (snapped to the server's 0.01°
   grid, `src/astronaut/custom-point.ts`) becomes the selected site under an id that carries it (`@-85.87,61.34`):
   «Custom point», «Near <nearest listed site> · N km»
-  (great circle, `src/astronaut/nearest-site.ts`), computed at once and then from `/api/v1/ephemeris?lat&lon`
+  (great circle, `src/astronaut/nearest-site.ts`; of sites within 0.5 km of the nearest, the shortest name; no
+  subtitle when no listed site has coordinates), computed at once and then from `/api/v1/ephemeris?lat&lon`
   (`src/astronaut/point-hours.ts`), and it stands there (`StandingAstronaut.tsx`, placed after every globe frame), to
-  be lifted again; the dock says «On the Moon» and a tap brings it home and reselects the listed site chosen before.
-  The address carries the point, `?lat=…&lon=…` beside `?site=` (validated, clamped and wrapped,
-  `src/astronaut/point-param.ts`), so it is shareable and reloads. Keyboard: Enter on the dock (or on the standing
+  be lifted again; the dock says «On the Moon» and a click (a tap under `(pointer: coarse)`, by CSS) brings it home
+  and reselects the listed site chosen before. On the polar map the site labels and number badges paint over the
+  standing figure (z-index 5 over 4), so a name beside it stays readable. The address carries the point,
+  `?lat=…&lon=…` beside `?site=` (`src/astronaut/point-param.ts`: plain decimals only, latitude within ±90°, east
+  longitude from -180° to 360° like the API, wrapped; anything else is ignored, never clamped), so it is shareable
+  and reloads; picking a listed site takes the point out again and moves an existing `?site=` to that site
+  (`src/astronaut/places.ts`), so a reload opens what is shown. Keyboard: Enter on the dock (or on the standing
   figure) lifts it over the selected site, the arrows move it in screen steps (Shift: bigger), Enter drops, Escape
-  cancels, and a polite live region says each step. Reduced motion: upright, no lean, a fade instead of the walk. The
+  cancels, and a polite live region says each step; the drop says where it landed and how to move it again (Enter on
+  the standing figure), while the focus stays on the dock, which then brings it home. Reduced motion: upright, no lean, a fade instead of the walk. The
   desktop Layers key is a 17rem column (`--layers-w`) clear of the globe's Moon, and the polar disk is fitted beside
   the keys in its panel (`src/polar/disk-fit.ts`). The Moon's maps are sampled by sphere point, not by the vertices'
-  UVs (`src/globe/pole-uv.ts`), so the south pole shows no star. A site card without an image shows its state badge in
+  UVs (`src/globe/pole-uv.ts`), so the south pole shows no star; its gradient choices (the 180° seam, the polar cap)
+  are scalar GLSL (`GRADIENT_GLSL`) that `tests/globe-pole.test.ts` runs as JavaScript. A site card without an image shows its state badge in
   its head.
 - **Five interface languages** (VENT-35): English (the default and the fallback), Spanish, French, German and Italian,
   each on its own static route (`/`, `/es/`, `/fr/`, `/de/`, `/it/`; `pages/[locale]/index.astro`) with `<html lang>`,

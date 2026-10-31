@@ -83,14 +83,15 @@ export interface SiteLabels {
 /**
  * The names of a site. Co-located sites share a place («Mons Mouton»), so
  * the title always comes with a subtitle and the pill with a second line.
- * The custom point is «Custom point», near its nearest site.
+ * The custom point is «Custom point», near its nearest site (no
+ * subtitle when there is none).
  */
 export function siteLabels(
   site: Pick<PhoneSite, 'name' | 'mission' | 'custom'>,
 ): SiteLabels {
   if (site.custom) {
     const { near, distance } = site.custom;
-    const subtitle = `${near} · ${distance}`;
+    const subtitle = near ? `${near} · ${distance}` : '';
     return { title: site.name, subtitle, pill: site.name, pillDetail: '' };
   }
   const { title, detail } = splitName(site.name);

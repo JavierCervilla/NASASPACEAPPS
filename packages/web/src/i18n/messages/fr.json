@@ -237,14 +237,15 @@
   "astro.dock.carry.title": "Dépose-le sur n’importe quel point",
   "astro.dock.carry.hint": "Lâche-le hors de la Lune, ou appuie sur Échap, pour annuler",
   "astro.dock.away.title": "Sur la Lune",
-  "astro.dock.away.hint": "Déplace-le encore, ou touche pour le ramener",
+  "astro.dock.away.hint": "Déplace-le encore, ou clique pour le ramener",
+  "astro.dock.away.hintTouch": "Déplace-le encore, ou touche pour le ramener",
   "astro.dock.label.home": "Astronaute : fais-le glisser sur la Lune, ou appuie sur Entrée pour le placer avec les flèches",
   "astro.dock.label.away": "Astronaute sur la Lune : le ramener",
   "astro.pin.label": "Astronaute à {coords} : appuie sur Entrée pour le déplacer",
   "astro.readout.off": "Hors de la Lune · Lâche-le et il rentre",
   "astro.say.pickedUp": "Astronaute pris à {coords} : {state}. Les flèches le déplacent, Maj pour de plus grands pas ; Entrée le dépose, Échap annule.",
   "astro.say.at": "{coords} : {state}",
-  "astro.say.dropped": "Astronaute déposé à {coords} : {state}.",
+  "astro.say.dropped": "Astronaute déposé à {coords} : {state}. Pour le déplacer encore, appuie sur Entrée sur l’astronaute debout ; son emplacement le ramène.",
   "astro.say.home": "L’astronaute est rentré.",
   "astro.say.cancelled": "Annulé : l’astronaute revient là où il était."
 }

@@ -4,7 +4,7 @@
 
 ### Añadido
 - Astronauta del Apolo arrastrable a cualquier punto de la Luna (VENT-10, opción A + B del lienzo, aprobada por
-  Javier): el modelo «Astronaut» de la NASA (dominio público), con los brazos bajados y sin la insignia de la NASA,
+  Javier): el modelo «Astronaut» de la NASA (dominio público), con los brazos bajados y sin la insignia de la NASA ni el parche de misión (las banderas de EE. UU. se quedan),
   espera en un hueco al final de la leyenda «Layers» del PC («Drag me anywhere») y en un botón redondo de cristal junto
   a la barra de pestañas del móvil. Se coge con el ratón o el dedo y sigue a la mano desde donde se agarró (en el móvil,
   por encima del dedo, y la hoja baja a reposo mientras tanto), inclinado y con su sombra, con una cruz en el punto de
@@ -14,10 +14,13 @@
   Al soltarlo en la Luna, el punto pasa a ser el sitio elegido: «Custom point», «Near <sitio más cercano> · N km» y sus
   coordenadas, con la respuesta al instante del cálculo propio (punto hueco) y la de Horizons para esas coordenadas
   cuando llega (punto relleno). El astronauta se queda de pie en el punto y se puede volver a coger allí; el hueco dice
-  «On the Moon» y al pulsarlo vuelve a casa y se elige otra vez el sitio de antes. El punto entra en la dirección
-  (`?lat=…&lon=…`, junto a `?site=`), así que se comparte y sobrevive a una recarga. Con teclado: Intro sobre el hueco
+  «On the Moon» y con un clic (un toque en pantallas táctiles) vuelve a casa y se elige otra vez el sitio de antes. En
+  el mapa polar, los nombres de los sitios se leen por encima del astronauta cuando está de pie a su lado. El punto
+  entra en la dirección (`?lat=…&lon=…`, junto a `?site=`), así que se comparte y sobrevive a una recarga; al elegir
+  un sitio de la lista el punto sale de la dirección, para que una recarga abra lo que se ve. Solo valen números
+  decimales simples dentro de rango (latitud ±90°, longitud de -180° a 360° este); cualquier otra cosa se ignora. Con teclado: Intro sobre el hueco
   lo coge, las flechas lo mueven (con Mayúsculas, a pasos grandes), Intro lo suelta y Esc lo devuelve, y el lector de
-  pantalla oye cada paso. Con movimiento reducido va derecho y se desvanece en vez de volar. En los cinco idiomas.
+  pantalla oye cada paso; al soltarlo dice dónde ha quedado y cómo volver a moverlo. Con movimiento reducido va derecho y se desvanece en vez de volar. En los cinco idiomas.
   Las imágenes del astronauta se dibujan cuando el globo ya está en pantalla, a ratos libres, y nunca retrasan su
   arranque; en un móvil estrecho o con texto grande, donde el botón del astronauta sube sobre la barra de pestañas, la
   hoja sube lo mismo para que el botón no tape «Reintentar» ni las tarjetas.

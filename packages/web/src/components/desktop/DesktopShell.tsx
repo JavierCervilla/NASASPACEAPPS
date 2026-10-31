@@ -38,6 +38,7 @@ import { siteCard } from '../../card/site-card';
 import type { CardSite } from '../../card/site-facts';
 import type { View } from '../../lib/view-tabs';
 import type { SiteStore } from '../../phone/site-store';
+import { siteState } from '../../phone/site-state';
 import { unlistedSite } from '../../phone/unlisted-site';
 import { LOADING, widgetsAt } from '../../phone/widgets-loader';
 import { CalendarStrip } from '../calendar/CalendarStrip';
@@ -54,7 +55,7 @@ interface Props {
   readonly sites: readonly CardSite[];
   readonly store: SiteStore;
   readonly parts: CalendarParts;
-  /** The site's base path, for the polar map image. */
+  /** The site's base path, for the polar map and the site's image. */
   readonly base: string;
   /** The view the header's tabs chose. */
   readonly view: View;
@@ -75,6 +76,7 @@ function DesktopUi({ sites, store, parts, base, view }: Props) {
   const atMs = calendar.state?.atMs;
   const now = atMs === undefined ? null : widgetsAt(calendar.result, atMs);
   const state = now?.kind === 'ready' ? now.widgets.now.state : null;
+  const badge = siteState(calendar.result, atMs ?? null);
   const model = atMs === undefined ? LOADING : siteCard(calendar.result, atMs);
   const slot = useSlot();
   const pick = (picked: string): void => store.select(picked, 'list');
@@ -83,7 +85,10 @@ function DesktopUi({ sites, store, parts, base, view }: Props) {
   return (
     <>
       {view === 'polar' ? <PolarMap {...map} /> : null}
-      <SiteCard site={site} model={model} onRetry={calendar.retry} />
+      <SiteCard
+        {...{ site, model, base, state: badge }}
+        onRetry={calendar.retry}
+      />
       <CalendarStrip parts={parts} calendar={calendar} />
       {slot ? createPortal(<SiteMenu {...menu} />, slot) : null}
     </>

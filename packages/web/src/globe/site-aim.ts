@@ -25,9 +25,9 @@
 
 /**
  * Where the camera aims so the selected marker lands in the free part of
- * the globe view (QA F1, VENT-32): on a phone the docked card covers the
- * frame's lower part, so a framed site is nudged up into the band between
- * the top bar and the card. The camera turns, the Moon's frame stays: the
+ * the globe view (QA F1, VENT-32): on a phone a framed site is nudged
+ * into the band between the top bar and the sheet (free-band.ts). The
+ * camera turns, the Moon's frame stays: the
  * nudge is a change of latitude along the site's meridian. Pure, so it is
  * tested alone.
  */

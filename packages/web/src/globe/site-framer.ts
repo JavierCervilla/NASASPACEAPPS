@@ -24,20 +24,20 @@
  */
 
 /**
- * Keeps a framed site clear of the docked card (QA F1, VENT-32). The globe
- * frames a site at load and when one is picked in the list; from then on,
- * whenever the card or the frame moves (the card measured, the sheet
- * between detents, a resize), the camera turns just enough to keep the
- * site's marker in the free band (site-aim.ts), on the orbit's springs, so
- * it lands at once under reduced motion. Once the user turns or zooms the
- * globe, the view is theirs: the framer stops until the next pick.
+ * Keeps a framed site in view (QA F1, VENT-32; VENT-33): between the phone's
+ * top bar and its sheet. The globe frames a site at load and when one is picked
+ * in the list; from then on, whenever the free band or the frame moves (the
+ * sheet between detents, a resize), the camera turns just enough to keep the
+ * site's marker in the free band (site-aim.ts), on the orbit's springs, so it
+ * lands at once under reduced motion. Once the user turns or zooms the globe,
+ * the view is theirs: the framer stops until the next pick.
  */
 import type { PerspectiveCamera } from 'three';
 import type { GlobeSite } from './markers';
 import { moveOrbit, type Orbit } from './orbit';
 import { flyTo } from './selection';
 import { aimLatitude, type AimView } from './site-aim';
-import type { SiteCallout } from './site-callout';
+import type { FreeBandWatch } from './free-band';
 
 /** A site to frame: where it is on the Moon. */
 export type FramedSite = Pick<GlobeSite, 'lat' | 'lonEast'>;
@@ -46,8 +46,8 @@ export interface SiteFramerParts {
   readonly orbit: Orbit;
   /** Its view offset is the Moon's frame (stage.ts, frameCamera). */
   readonly camera: Pick<PerspectiveCamera, 'view'>;
-  /** Gives the free band and says when it may have moved. */
-  readonly callout: Pick<SiteCallout, 'band' | 'watch'>;
+  /** Gives the free band and says when it has moved. */
+  readonly band: Pick<FreeBandWatch, 'band' | 'watch'>;
   readonly invalidate: () => void;
   readonly reducedMotion: () => boolean;
 }
@@ -60,7 +60,7 @@ export interface SiteFramer {
    * the globe since the last framing; null: frame nothing.
    */
   hold(site: FramedSite | null): void;
-  /** Stops following the callout. */
+  /** Stops following the free band. */
   dispose(): void;
 }
 
@@ -78,7 +78,7 @@ function aimViewOf(parts: SiteFramerParts): AimView | null {
     frameTop: -view.offsetY,
     frameHeight: view.fullHeight,
     distance: parts.orbit.distance.target,
-    band: parts.callout.band(),
+    band: parts.band.band(),
   };
 }
 
@@ -116,6 +116,6 @@ export function createSiteFramer(parts: SiteFramerParts): SiteFramer {
     parts.invalidate();
     hold(site);
   };
-  const dispose = parts.callout.watch(() => refit(parts, framing));
+  const dispose = parts.band.watch(() => refit(parts, framing));
   return { fly, hold, dispose };
 }

@@ -43,6 +43,10 @@
   --phone-field: rgba(118, 118, 128, 0.24);
   --phone-segment-on: #636366;
   --phone-segment-shadow: none;
+  /* The signal words on the top bar's glass: the cards' inks on dark. */
+  --bar-sun-ink: var(--signal-sun-ink);
+  --bar-earth-ink: var(--signal-earth-ink);
+  --bar-window-ink: var(--signal-window-ink);
 }
 
 @media (prefers-color-scheme: light) {
@@ -58,6 +62,14 @@
     --phone-field: rgba(118, 118, 128, 0.12);
     --phone-segment-on: #ffffff;
     --phone-segment-shadow: 0 1px 3px rgba(0, 0, 0, 0.12);
+    /*
+     * Deeper than the cards' inks: the light bar over the black sky, and
+     * the pill's fill on it, is greyer than a white card. 4.5:1 there
+     * (tests/contrast.test.ts).
+     */
+    --bar-sun-ink: #7a4600;
+    --bar-earth-ink: #0050a8;
+    --bar-window-ink: #0f5c27;
   }
 }
 
@@ -135,11 +147,16 @@
   box-shadow: var(--phone-bar-edge);
 }
 
+/*
+ * The titles take what the pill leaves, wrapping down to their longest
+ * word before the pill shortens its state (QA, PR #16).
+ */
 .phone-bar__titles {
   display: flex;
+  flex: 1 1 0;
   flex-direction: column;
   gap: 1px;
-  min-width: 0;
+  min-width: min-content;
 }
 
 .phone-bar__title {
@@ -150,21 +167,42 @@
   letter-spacing: -0.022em;
 }
 
-.phone-bar__hint {
+/* «Sun + Earth = window»: the legend's rule, each word in its colour. */
+.phone-bar__rule {
   margin: 0;
   font-size: 0.75rem;
   line-height: 1.3;
   letter-spacing: 0;
-  color: var(--text-muted);
+  color: var(--text-secondary);
+}
+
+.phone-bar__rule [data-tone],
+.site-pill__state {
+  font-weight: 600;
+}
+
+.phone-bar__rule [data-tone='sun'],
+.site-pill__state[data-tone='sun'] {
+  color: var(--bar-sun-ink);
+}
+
+.phone-bar__rule [data-tone='earth'],
+.site-pill__state[data-tone='earth'] {
+  color: var(--bar-earth-ink);
+}
+
+.phone-bar__rule [data-tone='window'],
+.site-pill__state[data-tone='window'] {
+  color: var(--bar-window-ink);
 }
 
 .site-pill {
   display: flex;
-  flex: none;
+  flex: 0 1 auto;
   align-items: center;
   gap: 8px;
+  min-width: 0;
   min-height: 44px;
-  max-width: 55%;
   padding: 6px 12px;
   border: 0;
   border-radius: 16px;
@@ -184,7 +222,7 @@
 }
 
 .site-pill__name,
-.site-pill__detail {
+.site-pill__state {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -194,13 +232,52 @@
   line-height: 1.2;
 }
 
-/* What tells co-located sites apart: «Artemis candidate region». */
-.site-pill__detail {
+/* The state with its time left, in the state's colour: «Window · 7 d left».
+ * «Neither» and the notes (loading, unavailable) read as plain text. */
+/*
+ * The state shows the longest of its lines that fits (FitLine.tsx): it
+ * asks for the longest one's width through a zero-height copy, and
+ * measures each in a zero-size box, off the layout.
+ */
+.fit-line {
+  position: relative;
+  display: block;
+}
+
+.fit-line__size {
+  display: block;
+  height: 0;
+  max-width: 100%;
+  overflow: hidden;
+  visibility: hidden;
+}
+
+.fit-line__measure {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 0;
+  height: 0;
+  overflow: hidden;
+  visibility: hidden;
+}
+
+.fit-line__try {
+  display: block;
+  width: max-content;
+}
+
+.fit-line__shown {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.site-pill__state {
   font-size: 0.6875rem;
   line-height: 1.25;
-  font-weight: 500;
   letter-spacing: 0.005em;
-  color: var(--text-muted);
+  color: var(--text-secondary);
 }
 
 .site-pill svg {
@@ -309,7 +386,28 @@
   gap: 8px;
 }
 
+/*
+ * The site's LOLA relief (VENT-33, canvas «SheetThumbD»): beside the name,
+ * south of 80° S only; it keeps the head's height so peek still shows it
+ * whole. Hidden until its file loads, so an old site's relief never
+ * lingers under a new name.
+ */
+.summary__thumb {
+  flex: none;
+  align-self: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 9px;
+  object-fit: cover;
+  background: var(--fill);
+}
+
+.summary__thumb[data-ready='false'] {
+  visibility: hidden;
+}
+
 .summary__name {
+  flex: 1;
   margin: 0;
   min-width: 0;
   font-size: 1.25rem;
@@ -743,7 +841,6 @@
     border: 1px solid var(--surface-edge);
   }
 
-  .phone-bar__hint,
   .widget__detail,
   .site-row__detail {
     color: var(--text-secondary);

@@ -53,14 +53,13 @@ export function formatStatusDate(date: string): string {
 /**
  * «Intuitive Machines / NASA CLPS · landed 6 Mar 2025», or the status and
  * its date apart when it is not a landing: «NASA · candidate region · list
- * announced 2024-10-28; landing planned 2028». `lead` replaces the agency
- * up front (the globe's callout leads with the mission: «IM-2 Athena»).
+ * announced 2024-10-28; landing planned 2028».
  */
-export function missionLine(site: CardSite, lead = site.agency): string {
+export function missionLine(site: CardSite): string {
   const date = formatStatusDate(site.statusDate ?? '');
   const landed = site.status === 'landed' && date;
   const status = landed ? [`landed ${date}`] : [site.status, date];
-  return [lead, ...status].filter(Boolean).join(' · ');
+  return [site.agency, ...status].filter(Boolean).join(' · ');
 }
 
 /** How exact a site's point is, from its kind and its mission's status. */

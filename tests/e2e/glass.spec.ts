@@ -106,13 +106,13 @@ async function reduceTransparency(page: Page): Promise<void> {
 test.describe('desktop, 1440x900', () => {
   test.use({ viewport: { width: 1440, height: 900 } });
 
-  const SURFACES = ['.bar', '.globe-layers', '.globe-callout', '.strip', '.card-block'];
+  const SURFACES = ['.bar', '.globe-layers', '.strip', '.card-block'];
 
   test('?glass=liquid refracts every desktop surface, the site popover too', async ({ page }) => {
     await open(page, '?glass=liquid');
     await expect(page.locator('html')).toHaveAttribute('data-glass', 'liquid');
     await expect(page.locator('.card-block').first()).toBeVisible();
-    await expect(page.locator('.globe-callout')).toHaveAttribute('data-state', 'window');
+    await expect(page.locator('.globe-markers')).toHaveAttribute('data-state', 'window');
     for (const [selector, filter] of await backdrops(page, SURFACES)) {
       expect(filter, selector).toContain('url(');
     }
@@ -184,14 +184,13 @@ test.describe('desktop, 1440x900', () => {
 test.describe('phone, 390x844', () => {
   test.use({ viewport: { width: 390, height: 844 }, hasTouch: true, isMobile: true });
 
-  test('?glass=liquid refracts the top bar, the sheet, the tab bar and the callout; the pill takes the rim', async ({ page }) => {
+  test('?glass=liquid refracts the top bar, the sheet and the tab bar; the pill takes the rim', async ({ page }) => {
     await open(page, '?glass=liquid');
     await expect(page.locator('.widget')).toHaveCount(4);
-    await expect(page.locator('.globe-callout')).toHaveAttribute('data-state', 'window');
-    for (const [selector, filter] of await backdrops(page, ['.phone-bar', '.sheet', '.tab-bar', '.globe-callout'])) {
+    for (const [selector, filter] of await backdrops(page, ['.phone-bar', '.sheet', '.tab-bar'])) {
       expect(filter, selector).toContain('url(');
     }
-    expect(distinct(await lensIds(page, ['.phone-bar', '.sheet', '.tab-bar', '.globe-callout']))).toBe(true);
+    expect(distinct(await lensIds(page, ['.phone-bar', '.sheet', '.tab-bar']))).toBe(true);
     const pill = page.locator('.site-pill');
     expect(await pill.evaluate((el) => getComputedStyle(el).boxShadow)).toContain('inset');
   });
@@ -210,9 +209,9 @@ function builtPolicy(): string {
   return /Content-Security-Policy "([^"]+)"/.exec(line)![1]!;
 }
 
-for (const [name, viewport, isMobile] of [
-  ['desktop', { width: 1440, height: 900 }, false],
-  ['phone', { width: 390, height: 844 }, true],
+for (const [name, viewport, isMobile, surface] of [
+  ['desktop', { width: 1440, height: 900 }, false, '.globe-layers'],
+  ['phone', { width: 390, height: 844 }, true, '.phone-bar'],
 ] as const) {
   test.describe(`${name} under the production CSP`, () => {
     test.use({ viewport, isMobile, hasTouch: isMobile });
@@ -233,10 +232,10 @@ for (const [name, viewport, isMobile] of [
       const header = await page.evaluate(async () => (await fetch(location.href)).headers.get('content-security-policy'));
       expect(header).toBe(policy);
       await expect(page.locator('html')).toHaveAttribute('data-glass', 'liquid');
-      await expect(page.locator('.globe-callout')).toHaveAttribute('data-state', 'window');
+      await expect(page.locator('.globe-markers')).toHaveAttribute('data-state', 'window');
       await page.waitForTimeout(1500);
       expect(await page.evaluate(() => (window as unknown as { violations: string[] }).violations)).toEqual([]);
-      expect((await backdrops(page, ['.globe-callout']))[0]?.[1]).toContain('url(');
+      expect((await backdrops(page, [surface]))[0]?.[1]).toContain('url(');
     });
   });
 }

@@ -25,13 +25,13 @@
 
 import { useEffect, useRef, useState } from 'react';
 import type { TimeStore } from '../calendar/time-store';
-import type { CalloutContent } from '../callout/callout-content';
 import { startGlobe, type GlobeStatus } from '../globe/boot';
-import { pageAnchors } from '../globe/callout-watch';
+import { pageAnchors } from '../globe/band-watch';
 import { describeSun } from '../globe/describe';
 import type { WatchedValue } from '../lib/watched-value';
 import { prefersSaveData } from '../lib/viewport';
 import type { SiteStore } from '../phone/site-store';
+import type { NowState } from '../phone/widget-types';
 import { useTime } from './calendar/hooks';
 
 const REDUCED_MOTION = '(prefers-reduced-motion: reduce)';
@@ -53,8 +53,8 @@ interface Props {
   readonly sheetEdge: WatchedValue<number | null>;
   /** The selected instant: its Sun lights the globe. */
   readonly time: TimeStore;
-  /** What the selected site's callout says. */
-  readonly callout: WatchedValue<CalloutContent | null>;
+  /** The selected site's state, which its marker wears. */
+  readonly state: WatchedValue<NowState | null>;
 }
 
 const reducedMotion = (): boolean => matchMedia(REDUCED_MOTION).matches;
@@ -64,7 +64,7 @@ const reducedMotion = (): boolean => matchMedia(REDUCED_MOTION).matches;
  * visitor under Save-Data); its status, and how to load it on request.
  */
 function useGlobe(props: Props) {
-  const { sitesUrl, base, store, sheetEdge, time, callout } = props;
+  const { sitesUrl, base, store, sheetEdge, time, state } = props;
   const host = useRef<HTMLDivElement>(null);
   const loader = useRef<() => void>(() => undefined);
   const [status, setStatus] = useState<GlobeStatus | null>(null);
@@ -73,13 +73,13 @@ function useGlobe(props: Props) {
     if (!el) return undefined;
     const warn = (message: string): void => console.warn(message);
     const anchors = () => pageAnchors(el);
-    const options = { time, base, sitesUrl, store, sheetEdge, callout };
+    const options = { time, base, sitesUrl, store, sheetEdge, state };
     const saveData = prefersSaveData();
     const deps = { ...options, saveData, reducedMotion, warn, anchors };
     const start = startGlobe(el, deps, setStatus, saveData);
     loader.current = start.load;
     return start.dispose;
-  }, [sitesUrl, base, store, sheetEdge, time, callout]);
+  }, [sitesUrl, base, store, sheetEdge, time, state]);
   const load = (): void => loader.current();
   return { host, status, load };
 }

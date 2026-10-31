@@ -116,6 +116,106 @@
   margin: 0;
 }
 
+/*
+ * The site's LOLA relief across the head's top (VENT-33, canvases
+ * «DeskThumbH1440» and «DeskThumbH1280»), with the state's badge and the
+ * ground it spans; south of 80° S only. A short window (a 720 px laptop)
+ * takes a lower band, so the countdowns stay above the fold.
+ */
+/* Clip, not hidden: a hidden box could shrink in the scrolling column. */
+.card-head:has(> .card-media) {
+  overflow: clip;
+}
+
+.card-media {
+  position: relative;
+  flex: none;
+  height: 150px;
+  margin: -18px -18px 10px;
+  background: var(--card-skeleton);
+}
+
+.card-media__image {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.card-media__image[data-ready='false'] {
+  visibility: hidden;
+}
+
+.card-media__shade {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg, rgba(7, 8, 11, 0) 45%, rgba(7, 8, 11, 0.75) 100%);
+}
+
+.card-media__badge {
+  position: absolute;
+  left: 12px;
+  bottom: 10px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 9px;
+  border-radius: 999px;
+  background: rgba(7, 8, 11, 0.62);
+  color: var(--on-signal-none);
+  font-size: 0.75rem;
+  font-weight: 600;
+  line-height: 1.35;
+  white-space: nowrap;
+}
+
+/* The state's dot and word: the legend's colours, on the dark image. */
+.card-media__badge::before {
+  content: '';
+  width: 7px;
+  height: 7px;
+  flex: none;
+  border-radius: 50%;
+  background: var(--tone);
+}
+
+.card-media__badge[data-tone='none'] { --tone: var(--signal-none); }
+
+/* On the dark image the bright signal colours read in both themes. */
+.card-media__badge[data-tone='window'] {
+  --tone: var(--signal-window);
+  color: var(--tone);
+}
+
+.card-media__badge[data-tone='sun'] {
+  --tone: var(--signal-sun);
+  color: var(--tone);
+}
+
+.card-media__badge[data-tone='earth'] {
+  --tone: var(--signal-earth);
+  color: var(--tone);
+}
+
+/* «Neither» reads as plain text, its dark dot ringed so it shows. */
+.card-media__badge[data-tone='none']::before {
+  box-shadow: 0 0 0 1px rgba(242, 242, 244, 0.5);
+}
+
+.card-media__caption {
+  position: absolute;
+  right: 10px;
+  bottom: 10px;
+  font-size: 0.625rem;
+  color: rgba(242, 242, 244, 0.7);
+}
+
+@media (max-height: 800px) {
+  .card-media {
+    height: 96px;
+  }
+}
+
 .card-head__mission,
 .card-tile__label,
 .card-tile__detail,

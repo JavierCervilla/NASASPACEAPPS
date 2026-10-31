@@ -29,7 +29,7 @@ import { createOrbit, moveOrbit, poseOf } from '../src/globe/orbit';
 import { AIM_MARGIN_PX, aimLatitude, angleForOffset, offsetForAngle, type AimView } from '../src/globe/site-aim';
 import { createSiteFramer } from '../src/globe/site-framer';
 
-/** The 360x780 phone at half: a 490 px frame from the top, the top bar's bottom at 81, the card's top at 315. */
+/** A 360 px phone: a 490 px frame from the top, the top bar's bottom at 81, a band down to 315. */
 const PHONE: AimView = { frameTop: 0, frameHeight: 490, distance: 5, band: { top: 81, bottom: 315 } };
 /** IM-2 (Mons Mouton) and the opening view's latitude. */
 const IM2 = { lat: -84.79, lonEast: 29.2 };
@@ -68,7 +68,7 @@ describe('site aim: the free band', () => {
     expect(aimLatitude(-69.37, -60, { ...PHONE, band: { top: 0, bottom: 780 } })).toBe(-60);
   });
 
-  it('nudges a site under the card up to the band\'s lower edge, the margin above the card', () => {
+  it('nudges a site below the band up to its lower edge, the margin above it', () => {
     const lat = aimLatitude(IM2.lat, OPENING_LAT, PHONE);
     expect(lat).toBeLessThan(OPENING_LAT);
     expect(landsAt(IM2.lat, lat, PHONE)).toBeCloseTo(315 - AIM_MARGIN_PX, 6);
@@ -93,16 +93,16 @@ describe('site aim: the free band', () => {
 });
 
 describe('site framer', () => {
-  /** A camera framed as on the 360x780 phone at half, and a callout whose band can change. */
+  /** A camera framed as on the 360x780 phone at half, and a free band that can change. */
   const setUp = (reducedMotion = true) => {
     const orbit = createOrbit({ latDeg: OPENING_LAT, lonEastDeg: 30, distance: 5 });
     const view = { enabled: true, fullWidth: 360, fullHeight: 490, offsetX: 0, offsetY: -0, width: 360, height: 780 };
     const camera = { view } as unknown as Pick<PerspectiveCamera, 'view'>;
     let band = PHONE.band;
     let heard = (): void => undefined;
-    const callout = { band: () => band, watch: (fn: () => void) => ((heard = fn), () => undefined) };
+    const freeBand = { band: () => band, watch: (fn: () => void) => ((heard = fn), () => undefined) };
     const invalidate = vi.fn();
-    const framer = createSiteFramer({ orbit, camera, callout, invalidate, reducedMotion: () => reducedMotion });
+    const framer = createSiteFramer({ orbit, camera, band: freeBand, invalidate, reducedMotion: () => reducedMotion });
     const moveBand = (next: typeof band): void => {
       band = next;
       heard();
@@ -110,7 +110,7 @@ describe('site framer', () => {
     return { orbit, framer, moveBand, invalidate };
   };
 
-  it('at load nudges the selected site out from under the card, at once under reduced motion', () => {
+  it('at load nudges the selected site into the band above the sheet, at once under reduced motion', () => {
     const { orbit, framer } = setUp();
     framer.hold(IM2);
     expect(landsAt(IM2.lat, poseOf(orbit).latDeg, PHONE)).toBeCloseTo(315 - AIM_MARGIN_PX, 6);
@@ -124,7 +124,7 @@ describe('site framer', () => {
     expect(orbit.lat.target).toBeLessThan(OPENING_LAT);
   });
 
-  it('re-frames when the card moves over the site, until the user moves the globe', () => {
+  it('re-frames when the band moves off the site, until the user moves the globe', () => {
     const { orbit, framer, moveBand } = setUp();
     framer.hold(SHIV_SHAKTI);
     moveBand({ top: 81, bottom: 230 });

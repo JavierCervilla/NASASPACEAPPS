@@ -33,6 +33,11 @@ import { formatInstant } from '../../calendar/instant-format';
 import type { WatchedValue } from '../../lib/watched-value';
 import type { PhoneSite } from '../../phone/phone-site';
 import { sheetActions } from '../../phone/sheet-actions';
+import {
+  hoursStatus,
+  siteState,
+  stateLines,
+} from '../../phone/site-state';
 import type { SiteStore } from '../../phone/site-store';
 import { unlistedSite } from '../../phone/unlisted-site';
 import { CalendarSheet } from '../calendar/CalendarSheet';
@@ -52,6 +57,8 @@ interface Props {
   readonly sheetEdge: WatchedValue<number | null>;
   /** The shared instant, its player and the hours loader. */
   readonly parts: CalendarParts;
+  /** The site's base path, for the site's thumbnail. */
+  readonly base: string;
 }
 
 /**
@@ -72,9 +79,11 @@ function usePhoneState({ sites, store, parts }: Props) {
   const panel = useSheetPanel();
   const { result } = widgets;
   const state = result.kind === 'ready' ? result.widgets.now.state : null;
+  const { hours } = widgets;
+  const lines = stateLines(siteState(hours, at), hoursStatus(hours, at));
   const select = (id: string): void => store.select(id, 'list');
   const actions = sheetActions(panel.setDetent, select, panel.setView);
-  return { site, widgets, when, state, ...panel, ...actions };
+  return { site, widgets, when, state, lines, ...panel, ...actions };
 }
 
 type PhoneState = ReturnType<typeof usePhoneState>;
@@ -113,7 +122,7 @@ function useSheetWiring(
  * summary.
  */
 function SheetBody(props: { phone: PhoneState } & Props) {
-  const { phone, sites, parts } = props;
+  const { phone, sites, parts, base } = props;
   const { site, state, widgets, when } = phone;
   if (phone.detent === 'full' && phone.view === 'calendar') {
     return <CalendarSheet parts={parts} site={site} state={state} />;
@@ -130,7 +139,7 @@ function SheetBody(props: { phone: PhoneState } & Props) {
     );
   }
   const { result, retry: onRetry } = widgets;
-  return <SiteSummary {...{ site, result, onRetry, when }} />;
+  return <SiteSummary {...{ site, result, onRetry, when, base }} />;
 }
 
 function PhoneUi(props: Props) {
@@ -143,11 +152,12 @@ function PhoneUi(props: Props) {
     onCalendar: phone.calendar,
     onSites: phone.open,
   };
-  const { site, state } = phone;
+  const { site, state, lines } = phone;
+  const pill = { site, state, lines, onOpenPicker: phone.open };
   return (
     <div className="phone">
       <div ref={scrim} className="phone-scrim" aria-hidden="true" />
-      <PhoneBar ref={bar} site={site} state={state} onOpenPicker={phone.open} />
+      <PhoneBar ref={bar} {...pill} />
       <Sheet {...sheet}>
         <SheetBody phone={phone} {...props} />
       </Sheet>

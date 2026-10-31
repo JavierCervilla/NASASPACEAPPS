@@ -125,7 +125,7 @@ Total 270 486 bytes for the 11 files at 320 x 320 and 867 027 bytes for their 11
 screens with two device pixels per CSS px); a visitor fetches one file, the selected site's at their screen's density.
 Sites that share a point share the file named after the first of them in the site
 list (Mons Mouton uses Mons Mouton Plateau's; Nobile Rims 1 and 2 use Griffin-1's); the manifest the script writes,
-`packages/web/src/callout/thumbs.json`, maps every site id to its two files and its frame.
+`packages/web/src/thumbs/thumbs.json`, maps every site id to its two files and its frame.
 
 - **Source**: the Lunar Orbiter Laser Altimeter (LOLA) south polar gridded elevation, `LDEM_80S_20M` (PDS data set
   `LRO-L-LOLA-4-GDR-V1.0`, product version V2.0), at

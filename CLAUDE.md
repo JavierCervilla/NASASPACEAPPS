@@ -44,30 +44,31 @@ Every visible change follows `.claude/skills/apple-design/SKILL.md` (vendored fr
   desktop); the hours come from one cached request per site and month (`src/phone/hours-cache.ts`). On desktop
   the site card sits beside the view and the header tabs switch the view by hash (`#globe`, `#polar-map`,
   `src/lib/view-tabs.ts`): the polar map is a south polar stereographic disk from 80° S
-  (`src/lib/polar-projection.ts`, image from `scripts/moon_textures.py polar`). The selected site's callout is a card docked
-  at the globe's bottom left (`src/callout/`, `src/callout/callout-dock.ts`, `src/globe/site-callout.ts`): the image
-  card on desktop, 14 px above the Layers key on its left edge (the compact card where a short window leaves the image
-  card no room there, `fitCallout`; hidden when large text leaves even that none: the site card beside the view shows
-  the same site), and the compact card on phones, 12 px off the left edge and 12 px above
-  the sheet's top edge or the tab bar, riding the sheet as it is dragged and hiding at full height or wherever it would
-  reach the top bar. So the card never covers the selected marker, the globe framing a site (at load and on a pick in
-  the list) turns just enough to land it in the band between the top bar and the card (`src/globe/site-aim.ts`,
-  `src/globe/site-framer.ts`), and again on the orbit's springs when the card moves, until the user moves the globe. It has a LOLA relief thumbnail for
-  sites south of 80° S (320 px, and 640 px through `srcset` for 2x screens; rendered offline by
-  `scripts/site_thumbs.py` and committed, manifest `src/callout/thumbs.json`), takes no pointer events, stays still
-  while the globe turns and shows the site even with its marker behind the limb; the frame loop never touches it. The
+  (`src/lib/polar-projection.ts`, image from `scripts/moon_textures.py polar`). No card floats over the globe (VENT-33). On phones the
+  top bar's subtitle is the legend's rule, «Sun + Earth = window», each word in its signal colour (`--bar-*-ink`,
+  deeper on the light bar for 4.5:1), and the site pill shows the short name over the state at the shared instant with
+  its time left in its colour («Window · 7 d left», «Sun · …», «Earth · …», «Neither · …»; `src/phone/site-state.ts`;
+  the titles wrap first, then a narrow pill drops «left», then the name, never the time: `FitLine.tsx`),
+  its accessible name the full site name and the state; the sheet's head carries the site's LOLA relief thumbnail. On
+  desktop the thumbnail heads the site card, with the state badge and its frame, as a 96 px band on short windows.
+  Thumbnails exist only south of 80° S (320 px, and 640 px through `srcset` for 2x screens; rendered offline by
+  `scripts/site_thumbs.py` and committed, manifest `src/thumbs/thumbs.json`, drawn by `src/components/SiteThumb.tsx`);
+  a site without one shows nothing in its place. The globe framing a site (at load and on a pick in the list) turns
+  just enough to land it in the free band between the phone's top bar and the sheet's top edge, or the tab bar below
+  it (`src/globe/free-band.ts`, `src/globe/site-aim.ts`, `src/globe/site-framer.ts`), and again on the orbit's springs
+  when the band moves, until the user moves the globe. The
   selected marker wears a ring in its state colour that pulses (2.4 s; still under reduced motion), placed with the
   markers (`src/globe/marker-layer.ts`) and hidden with its marker. Under Save-Data
   the globe waits for a «Load the 3D globe» button and never loads more than its start map.
-- Glass: the floating surfaces (phone top bar, sheet, tab bar and callout; desktop header, site popover, Layers key,
-  calendar strip, site card and callout) wear Liquid glass or the frosted blur; the phone's site pill, inside the top
+- Glass: the floating surfaces (phone top bar, sheet and tab bar; desktop header, site popover, Layers key,
+  calendar strip and site card) wear Liquid glass or the frosted blur; the phone's site pill, inside the top
   bar's glass, takes only the Liquid rim. Liquid refracts through a
   lens per surface: a rounded-rect displacement map that pulls the backdrop in at the edge (`src/glass/lens-map.ts`),
   added as its own filter to the inline SVG of `src/components/GlassFilter.astro` and named on the surface in
   `--glass-lens` (CSSOM), rebuilt only when the surface's layout size settles (`src/glass/lens-set.ts`); the shared
   `#glass-liquid` filter covers a surface until its lens is built (`--glass-lens` is registered non-inheriting, so a
-  surface never borrows its parent's lens; `--glass-liquid-*` tokens, `src/styles/glass.css`). On the top bar, tab bar,
-  Layers key and callout the text sits on a feathered scrim held in from the edge, so it keeps 4.5:1 over the Moon
+  surface never borrows its parent's lens; `--glass-liquid-*` tokens, `src/styles/glass.css`). On the top bar, tab bar
+  and Layers key the text sits on a feathered scrim held in from the edge, so it keeps 4.5:1 over the Moon
   while the rim still refracts. The glass gate (`src/glass/`) sets `data-glass="liquid|frosted"` on the root: Liquid only on Chromium
   with `backdrop-filter: url()` (Safari and Firefox parse it but do not draw it), at the medium or high tier, without
   reduced transparency, more contrast or Save-Data, and while a 2 s frame probe holds the tier's budget (timed at load

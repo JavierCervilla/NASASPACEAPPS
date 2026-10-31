@@ -29,15 +29,16 @@
  * asks for it (boot.ts).
  */
 import type { TimeStore } from '../calendar/time-store';
-import type { CalloutContent } from '../callout/callout-content';
 import { isPhoneViewport } from '../lib/viewport';
 import type { WatchedValue } from '../lib/watched-value';
 import type { SiteStore } from '../phone/site-store';
+import type { NowState } from '../phone/widget-types';
+import { watchBand, type BandAnchors } from './band-watch';
 import { attachDevTools } from './dev-hook';
-import { watchCallout, type CalloutAnchors } from './callout-watch';
 import { bindDrag } from './drag';
 import { drawFrame } from './frame';
 import { SOUTH_POLE_VIEW } from './framing';
+import { FreeBandWatch } from './free-band';
 import { keyControls } from './key-controls';
 import { bindKeys, bindWheel } from './keys';
 import { createLoop, type Loop } from './loop';
@@ -63,10 +64,10 @@ export interface GlobeOptions {
   readonly store: SiteStore;
   /** The phone sheet's top edge, px from the viewport's top; null: none. */
   readonly sheetEdge: WatchedValue<number | null>;
-  /** What the selected site's callout says, kept by the page. */
-  readonly callout: WatchedValue<CalloutContent | null>;
-  /** The page's elements the callout docks against. */
-  readonly anchors: () => CalloutAnchors;
+  /** The selected site's state, which its marker wears. */
+  readonly state: WatchedValue<NowState | null>;
+  /** The page's elements the free band is measured from. */
+  readonly anchors: () => BandAnchors;
   /** The browser asks to save data: the globe keeps its start map. */
   readonly saveData: boolean;
   readonly reducedMotion: () => boolean;
@@ -113,30 +114,23 @@ function bindInput(
   ];
 }
 
-/** Shows the page's callout content and keeps the callout measured. */
-function bindCallout(
-  host: HTMLElement,
-  options: Pick<GlobeOptions, 'callout' | 'anchors'>,
+/** The selected marker wears the page's state of the selected site. */
+function bindState(
+  state: GlobeOptions['state'],
   markers: MarkerLayer,
-  invalidate: () => void,
 ): () => void {
-  const { callout } = markers;
+  const { dataset } = markers.root;
   const show = (): void => {
-    callout.show(options.callout.get());
-    invalidate();
+    dataset['state'] = state.get() ?? 'unknown';
   };
   show();
-  const unsubscribe = options.callout.subscribe(show);
-  const { anchors } = options;
-  const phone = isPhoneViewport;
-  const unwatch = watchCallout({ host, callout, anchors, phone });
-  return () => [unsubscribe, unwatch].forEach((unbind) => unbind());
+  return state.subscribe(show);
 }
 
 /**
  * Binds the markers to the page: loads the API sites into them, frames
- * the selected one, follows the shared selection and shows the callout,
- * above the phone sheet.
+ * the selected one in the free band above the phone sheet, follows the
+ * shared selection and its state.
  */
 function bindSites(
   host: HTMLElement,
@@ -144,16 +138,18 @@ function bindSites(
   globe: Pick<SiteFramerParts, 'orbit' | 'invalidate'> &
     Pick<SelectionParts, 'markers'> & Pick<Stage, 'camera'>,
 ): () => void {
-  const { markers, invalidate } = globe;
-  const { store, reducedMotion } = options;
-  const callout = markers.callout;
-  const framer = createSiteFramer({ ...globe, callout, reducedMotion });
+  const { markers } = globe;
+  const { store, reducedMotion, anchors, sheetEdge } = options;
+  const band = new FreeBandWatch();
+  const framer = createSiteFramer({ ...globe, band, reducedMotion });
   const get = globalThis.fetch.bind(globalThis);
   const source = { fetch: get, url: options.sitesUrl, warn: options.warn };
+  const changes = sheetEdge.subscribe;
   const unbind = [
     loadSelection({ store, markers, framer }, source),
-    bindSheetEdge(host, globe, options.sheetEdge),
-    bindCallout(host, options, markers, invalidate),
+    bindSheetEdge(host, { ...globe, band }, sheetEdge),
+    watchBand({ host, band, anchors, changes }),
+    bindState(options.state, markers),
     framer.dispose,
   ];
   return () => unbind.forEach((fn) => fn());

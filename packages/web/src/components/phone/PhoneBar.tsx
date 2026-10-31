@@ -24,47 +24,64 @@
  */
 
 /**
- * The phone's glass top bar: the title, how to move the Moon, and the site
- * pill (a status dot, the short name and what tells it apart) that opens
- * the site picker.
+ * The phone's glass top bar: the title, the legend's rule in its colours
+ * («Sun + Earth = window»), and the site pill that opens the site
+ * picker: a status dot, the short name, and the state at the selected
+ * instant with its time left, in the state's colour.
  */
 import type { Ref } from 'react';
 import { siteLabels, type PhoneSite } from '../../phone/phone-site';
 import type { NowState } from '../../phone/widget-types';
+import { FitLine } from './FitLine';
 import { Icon } from './Icon';
 
 interface Props {
   readonly site: PhoneSite;
-  /** The site's state right now, once its data has loaded. */
+  /** The site's state at the selected instant, once its data has loaded. */
   readonly state: NowState | null;
+  /**
+   * The state with its time left, or why there is none, longest first
+   * (site-state.ts); the pill shows the longest that fits.
+   */
+  readonly lines: readonly string[];
   readonly onOpenPicker: () => void;
   /** The bar's element, which the full sheet stays under. */
   readonly ref?: Ref<HTMLElement>;
 }
 
 /**
- * The pill: two lines, so co-located sites (IM-2 and the Mons Mouton zone)
- * never read the same.
+ * The pill: the short name, and under it the state. Its name for a
+ * screen reader is the site's full name and the state, so co-located
+ * sites (IM-2 and the Mons Mouton zone) never read the same.
  */
-function SitePill({ site, state, onOpenPicker }: Props) {
-  const { pill, pillDetail } = siteLabels(site);
-  const name = pillDetail ? `${pill}, ${pillDetail}` : pill;
+function SitePill({ site, state, lines, onOpenPicker }: Props) {
+  const { pill } = siteLabels(site);
+  const tone = state ?? 'unknown';
   return (
     <button
       type="button"
       className="site-pill"
-      aria-label={`Change site, now ${name}`}
+      aria-label={`Change site, now ${site.name}: ${lines[0] ?? ''}`}
       onClick={onOpenPicker}
     >
       <span className="signal-dot" data-state={state ?? 'loading'} />
       <span className="site-pill__names">
         <span className="site-pill__name">{pill}</span>
-        {pillDetail ? (
-          <span className="site-pill__detail">{pillDetail}</span>
-        ) : null}
+        <FitLine className="site-pill__state" tone={tone} lines={lines} />
       </span>
       <Icon name="chevron" />
     </button>
+  );
+}
+
+/** «Sun + Earth = window», each word in its signal colour. */
+function Rule() {
+  return (
+    <p className="phone-bar__rule">
+      <span data-tone="sun">Sun</span> + <span data-tone="earth">Earth</span>
+      {' = '}
+      <span data-tone="window">window</span>
+    </p>
   );
 }
 
@@ -73,7 +90,7 @@ export function PhoneBar({ ref, ...props }: Props) {
     <header ref={ref} className="phone-bar">
       <div className="phone-bar__titles">
         <h1 className="phone-bar__title">Ventana Lunar</h1>
-        <p className="phone-bar__hint">Drag the Moon · pinch to zoom</p>
+        <Rule />
       </div>
       <SitePill {...props} />
     </header>

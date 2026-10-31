@@ -3,6 +3,21 @@
 ## [Sin publicar]
 
 ### Añadido
+- Acabado Liquid Glass (VENT-27, prototipo VENT-16 aprobado): en los navegadores Chromium con potencia (Chrome, Edge,
+  Brave, Android), las superficies flotantes refractan lo que hay debajo como un vidrio grueso y tienen un borde que
+  capta la luz, con un tinte fino que deja ver la Luna: cada superficie lleva su propia lente, que curva hacia dentro lo
+  que hay debajo cerca del borde, como en el prototipo. En el móvil la barra superior, la hoja, la barra de pestañas y la
+  tarjeta del sitio (la píldora del sitio, que va dentro del cristal de la barra superior, solo lleva el borde de luz); en
+  el PC la cabecera, el menú de sitios, la leyenda «Layers», la cinta del
+  calendario, la ficha y la tarjeta del sitio. Si el dispositivo va justo (nivel de calidad bajo, o 2 s de fotogramas,
+  al cargar y de nuevo al primer toque o clic, no aguantan el ritmo de su nivel), si se pide menos transparencia o más
+  contraste, o con ahorro de datos, se queda el cristal esmerilado de siempre; si la prueba de fotogramas falla, cambia
+  en caliente y no vuelve a intentarlo en la sesión. Safari y Firefox, que no pintan la refracción, siempre van con el
+  esmerilado. `?glass=liquid` o `?glass=frosted` fuerzan uno para probar, salvo que `?glass=liquid` nunca pasa por encima
+  de pedir menos transparencia o más contraste. En la barra superior, la barra de pestañas, la leyenda «Layers» y la
+  tarjeta del sitio el texto va sobre un velo difuminado que deja libre el borde, para que se lea (al menos 4,5:1 sobre
+  la Luna) sin perder la refracción del borde. En el PC con GPU por software (Chromium sin
+  GPU) la refracción cuesta la mitad de los fotogramas, y es justo el caso en que la prueba vuelve al esmerilado.
 - Tarjeta del sitio sobre el globo (VENT-29, lienzos validados «Globe · site callout B, image card» para escritorio y
   «… A, compact» para el móvil): la etiqueta del sitio elegido pasa a ser una tarjeta de cristal unida a su punto por una
   línea fina. En escritorio lleva arriba una vista del terreno desde la órbita con el estado del instante («Landing
@@ -130,3 +145,10 @@
   vuelve con la cinta de calendario (VENT-4).
 - El código cumple la Norma de 42 adaptada a TypeScript (funciones de 25 líneas, 80 columnas, 5 funciones por fichero),
   comprobada en el lint.
+
+### Corregido
+- La tarjeta del sitio sobre el globo ya no parpadea al arrastrar el globo con el zoom cerca (VENT-31, visto en Brave
+  para Android con IM-1): cuando dos lados quedaban casi igual de bien, la tarjeta saltaba de uno a otro en cada
+  fotograma y parecía estar en dos sitios. Ahora se queda en su lado mientras ese lado no tape nada y solo cambia si
+  otro le ahorra al menos 24 px de desplazamiento; y cuando la oculta o la vuelve a mostrar la regla de no tapar la
+  barra de pestañas, la leyenda u otra pieza, el cambio espera a que dure 100 ms. Al elegir otro sitio empieza de cero.

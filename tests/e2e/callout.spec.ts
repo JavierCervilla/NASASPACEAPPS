@@ -261,6 +261,59 @@ test.describe('phone, 390x844', () => {
   });
 });
 
+/**
+ * VENT-31 (Brave on Android): with IM-1 selected and the globe zoomed in, a slow drag made the card jump between two
+ * sides, or blink, frame after frame. Every frame's side and visibility, as the card states them, through a slow drag.
+ */
+async function dragStates(page: Page, step: { x: number; y: number }): Promise<string[]> {
+  await page.evaluate(() => {
+    const card = document.querySelector<HTMLElement>('.globe-callout')!;
+    const states: string[] = [];
+    (window as unknown as { calloutStates: string[] }).calloutStates = states;
+    const sample = (): void => {
+      const now = `${card.dataset['shown']}:${card.dataset['side']}`;
+      if (states.at(-1) !== now) states.push(now);
+      requestAnimationFrame(sample);
+    };
+    sample();
+  });
+  let [x, y] = [195, 300];
+  await page.mouse.move(x, y);
+  await page.mouse.down();
+  for (let move = 0; move < 120; move += 1) {
+    [x, y] = [x + step.x, y + step.y];
+    await page.mouse.move(x, y);
+    await page.waitForTimeout(16);
+  }
+  await page.mouse.up();
+  await page.waitForTimeout(200);
+  return page.evaluate(() => (window as unknown as { calloutStates: string[] }).calloutStates);
+}
+
+test.describe('phone, 390x844, IM-1 zoomed in', () => {
+  test.use({ viewport: { width: 390, height: 844 }, hasTouch: true, isMobile: true });
+
+  for (const [name, step] of [['sideways', { x: 3, y: 0 }], ['downwards', { x: 0, y: 3 }]] as const) {
+    test(`a slow drag ${name} never flips the card back and forth`, async ({ page }) => {
+      await open(page);
+      const tabs = page.getByRole('navigation', { name: 'Views' });
+      await tabs.getByRole('button', { name: 'Sites' }).click();
+      await page.getByRole('list', { name: 'Sites' }).getByRole('button', { name: /IM-1/ }).first().click();
+      await tabs.getByRole('button', { name: 'Globe' }).click();
+      await expect(page.locator('.sheet')).toHaveAttribute('inert', '');
+      await expect(callout(page)).toHaveAttribute('aria-label', 'Malapert A region (IM-1 Odysseus)');
+      await page.getByRole('application', { name: 'The Moon, seen over its south pole' }).focus();
+      for (let press = 0; press < 9; press += 1) await page.keyboard.press('+');
+      await settledCentre(page, IM1);
+      const states = await dragStates(page, step);
+      // A→B→A: the card went somewhere and came straight back, the flicker the phone showed.
+      const flips = states.filter((state, i) => i >= 2 && state === states[i - 2]);
+      expect(flips, states.join(' → ')).toEqual([]);
+      expect(states.length, states.join(' → ')).toBeLessThanOrEqual(4);
+    });
+  }
+});
+
 /** The area two page boxes share, in px². */
 function shared(a: { x: number; y: number; width: number; height: number }, b: typeof a): number {
   const width = Math.min(a.x + a.width, b.x + b.width) - Math.max(a.x, b.x);

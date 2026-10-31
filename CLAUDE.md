@@ -51,6 +51,21 @@ Every visible change follows `.claude/skills/apple-design/SKILL.md` (vendored fr
   events, never covers the Layers key, the top bar or the tab bar (it hides when it cannot), and the frame loop only
   writes its transform. Under Save-Data
   the globe waits for a «Load the 3D globe» button and never loads more than its start map.
+- Glass: the floating surfaces (phone top bar, sheet, tab bar and callout; desktop header, site popover, Layers key,
+  calendar strip, site card and callout) wear Liquid glass or the frosted blur; the phone's site pill, inside the top
+  bar's glass, takes only the Liquid rim. Liquid refracts through a
+  lens per surface: a rounded-rect displacement map that pulls the backdrop in at the edge (`src/glass/lens-map.ts`),
+  added as its own filter to the inline SVG of `src/components/GlassFilter.astro` and named on the surface in
+  `--glass-lens` (CSSOM), rebuilt only when the surface's layout size settles (`src/glass/lens-set.ts`); the shared
+  `#glass-liquid` filter covers a surface until its lens is built (`--glass-lens` is registered non-inheriting, so a
+  surface never borrows its parent's lens; `--glass-liquid-*` tokens, `src/styles/glass.css`). On the top bar, tab bar,
+  Layers key and callout the text sits on a feathered scrim held in from the edge, so it keeps 4.5:1 over the Moon
+  while the rim still refracts. The glass gate (`src/glass/`) sets `data-glass="liquid|frosted"` on the root: Liquid only on Chromium
+  with `backdrop-filter: url()` (Safari and Firefox parse it but do not draw it), at the medium or high tier, without
+  reduced transparency, more contrast or Save-Data, and while a 2 s frame probe holds the tier's budget (timed at load
+  and again from the first press, since an idle page redraws nothing under the glass); a slow probe switches to frosted
+  live and for the session. `?glass=liquid|frosted` forces a mode, except that `?glass=liquid` never overrides
+  reduced transparency or more contrast.
 - UI text is **English** (the global jury is international): this project's exception to the Language rule below. The local pitch is in Spanish and does not live here.
 
 ## Clean Code

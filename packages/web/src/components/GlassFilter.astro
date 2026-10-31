@@ -1,0 +1,59 @@
+---
+/*
+ *   _   _       _                         _ _
+ *  | | | |_ __ (_)_   _____ _ __ ___  ___| | | ___
+ *  | | | | '_ \| \ \ / / _ \ '__/ __|/ _ \ | |/ _ \
+ *  | |_| | | | | |\ V /  __/ |  \__ \  __/ | |  __/
+ *   \___/|_| |_|_| \_/ \___|_|  |___/\___|_|_|\___|
+ *
+ *             =++==--::.
+ *         %%%%##**++=--:..  .
+ *      ##**#%@%%#***+=--::.   .
+ *    #**=+*#*#**#++++=-:::.. .  .
+ *   #++-====*@%+*++==--::...   .  .    Ventana Lunar
+ *  #+=-=--++==+===-+==--:..   .  .  .  Sun, Earth and landing
+ * #----====-------=-=---:..  .  .  .   windows at the lunar
+ * #+---+=====--=---==-::..     .  .  . south pole
+ * #*----==---==-=-=-:-....    .  .  .
+ * *#----===+*===--:-::...    .  .  .   Built for the NASA Space
+ *  *----=*-+*%*+=-:::....   .  .  .    Apps Challenge 2026,
+ *   *------=+*=--:::-:::.. .  .  .     Madrid. Not endorsed
+ *    %*===-=-==--==-:::.  .  .  .      by NASA.
+ *      *+:--+:--::::::.  .  .  .
+ *         -=:::...:..   .  .           (c) 2026 Universelle
+ *             :::.. .  .               SPDX-License-Identifier: MIT
+ */
+
+/*
+ * The Liquid glass's SVG (VENT-27). Each surface's own lens filter is
+ * added here at run time (src/glass/lens-set.ts); #glass-liquid is the
+ * shared one a surface wears until its lens is built: a slow fractal
+ * noise that displaces what lies under the glass. Presentation
+ * attributes only: the page's CSP allows no style attributes.
+ */
+import '../styles/glass.css';
+---
+
+<svg class="glass-defs" width="0" height="0" aria-hidden="true" focusable="false">
+  <filter
+    id="glass-liquid"
+    x="0"
+    y="0"
+    width="100%"
+    height="100%"
+    color-interpolation-filters="sRGB"
+  >
+    <feTurbulence
+      type="fractalNoise"
+      baseFrequency="0.006 0.009"
+      numOctaves="2"
+      seed="7"
+      result="ripple"></feTurbulence>
+    <feDisplacementMap
+      in="SourceGraphic"
+      in2="ripple"
+      scale="36"
+      xChannelSelector="R"
+      yChannelSelector="G"></feDisplacementMap>
+  </filter>
+</svg>

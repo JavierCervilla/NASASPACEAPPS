@@ -29,7 +29,8 @@ import { readFileSync } from 'node:fs';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { clampInto, overlap } from '../src/callout/box';
 import { calloutContent } from '../src/callout/callout-content';
-import { placeCallout, type PlaceInput } from '../src/callout/callout-place';
+import { placeCallout, type CalloutSide, type PlaceInput } from '../src/callout/callout-place';
+import { CalloutVisibility, HOLD_MS } from '../src/callout/callout-visibility';
 import { missionLines } from '../src/callout/mission-line';
 import { PHONE_MISSION_CHARS, PHONE_PLACE_CHARS, placeShort } from '../src/callout/phone-lines';
 import { thumbOf } from '../src/callout/thumbs';
@@ -414,5 +415,140 @@ describe('SiteCallout', () => {
     expect(card.dataset['shown']).toBe('false');
     expect(card.dataset['image']).toBe('none');
     expect(callout.dom.img.getAttribute('src')).toBeNull();
+  });
+});
+
+/** VENT-31: a marker moving along a placement boundary must not make the card jump or blink every frame. */
+describe('callout flicker', () => {
+  afterEach(() => vi.unstubAllGlobals());
+
+  // A phone-sized area where up-right and up-left spill the same with the marker at x = 195.
+  const PHONE = { left: 8, top: 8, right: 382, bottom: 836 };
+  const CARD = { width: 312, height: 127 };
+  const TABS = { left: 52, top: 760, right: 337, bottom: 821 };
+  const input = (x: number, y = 400): PlaceInput => ({ at: { x, y }, size: CARD, area: PHONE, avoid: [] });
+
+  /** The sides a path of marker positions gives, each frame told the side before it, or not. */
+  const sides = (path: readonly number[], remember: boolean): (CalloutSide | undefined)[] => {
+    let side: CalloutSide | null = null;
+    return path.map((x) => {
+      const placed = placeCallout(input(x), remember ? side : null);
+      side = placed?.side ?? side;
+      return placed?.side;
+    });
+  };
+  const changes = (list: readonly (CalloutSide | undefined)[]): number =>
+    list.filter((side, i) => i > 0 && side !== list[i - 1]).length;
+
+  it('a marker wobbling across a tie keeps one side: at most one change', () => {
+    const wobble = Array.from({ length: 40 }, (_, i) => 195 + (i % 2 === 0 ? 3 : -3) + Math.sin(i) * 2);
+    // Without memory the best side flips with every wobble: this is the bug.
+    expect(changes(sides(wobble, false))).toBeGreaterThan(10);
+    expect(changes(sides(wobble, true))).toBeLessThanOrEqual(1);
+  });
+
+  it('still switches once a side slides clearly less, and not back inside the margin', () => {
+    const sweep = Array.from({ length: 41 }, (_, i) => 300 - i * 5);
+    const list = sides(sweep, true);
+    expect(list[0]).toBe('up-left');
+    expect(list.at(-1)).toBe('up-right');
+    expect(changes(list)).toBe(1);
+    // The switch waits until up-right slides at least 24 px less than up-left: x ≤ 183, not at the tie (195).
+    expect(sweep[list.indexOf('up-right')]).toBeLessThanOrEqual(183);
+    // From up-right, a marker back at the tie keeps up-right.
+    expect(placeCallout(input(200), 'up-right')?.side).toBe('up-right');
+    expect(placeCallout(input(200), null)?.side).toBe('up-left');
+  });
+
+  it('drops a remembered side the moment it covers something', () => {
+    const key = { left: 200, top: 250, right: 382, bottom: 300 };
+    const placed = placeCallout({ ...input(150), avoid: [key] }, 'up-right');
+    expect(placed?.side).not.toBe('up-right');
+    expect(placed && overlap(placed.box, key)).toBe(0);
+  });
+
+  it('holds a keep-clear hide or show for HOLD_MS; losing the marker hides at once', () => {
+    const shown = new CalloutVisibility();
+    expect(shown.next('show', 0)).toEqual({ shown: true, waiting: false });
+    expect(shown.next('blocked', 10)).toEqual({ shown: true, waiting: true });
+    expect(shown.next('blocked', 10 + HOLD_MS - 1)).toEqual({ shown: true, waiting: true });
+    expect(shown.next('blocked', 10 + HOLD_MS)).toEqual({ shown: false, waiting: false });
+    // Coming back from a keep-clear hide waits too.
+    expect(shown.next('show', 200)).toEqual({ shown: false, waiting: true });
+    expect(shown.next('show', 200 + HOLD_MS)).toEqual({ shown: true, waiting: false });
+    expect(shown.next('gone', 400)).toEqual({ shown: false, waiting: false });
+    expect(shown.next('show', 401)).toEqual({ shown: true, waiting: false });
+  });
+
+  it('a wish that flaps every frame never changes the visibility, and a reset starts afresh', () => {
+    const shown = new CalloutVisibility();
+    shown.next('show', 0);
+    const frames = Array.from({ length: 60 }, (_, i) => shown.next(i % 2 === 0 ? 'blocked' : 'show', 16 * (i + 1)).shown);
+    expect(new Set(frames)).toEqual(new Set([true]));
+    shown.next('blocked', 2000);
+    shown.next('blocked', 2000 + HOLD_MS);
+    shown.reset();
+    expect(shown.next('show', 2200).shown).toBe(true);
+  });
+
+  const mount = () => {
+    vi.stubGlobal('document', { createElement: (tag: string) => new StyledElement(tag) });
+    const clock = { ms: 0, wakes: 0 };
+    const callout = new SiteCallout({ now: () => clock.ms, wake: () => (clock.wakes += 1) });
+    callout.layout({ width: 390, height: 844, size: CARD, avoid: [TABS] });
+    const card = callout.dom.card as unknown as StyledElement;
+    return { callout, card, clock };
+  };
+
+  it('a marker grazing the tab bar\'s top edge keeps the card steady, and a held hide asks for frames', () => {
+    const { callout, card, clock } = mount();
+    callout.show(content(IM2, READY, 150));
+    callout.follow({ x: 157, y: 755 });
+    expect([card.dataset['shown'], card.dataset['side']]).toEqual(['true', 'up-right']);
+    const seen = new Set<string | undefined>();
+    for (let frame = 0; frame < 30; frame += 1) {
+      clock.ms += 16;
+      callout.follow({ x: 157, y: frame % 2 === 0 ? 762 : 755 });
+      seen.add(card.dataset['shown']);
+    }
+    expect([...seen]).toEqual(['true']);
+    // Under the bar for good: the card hides once the hold has passed, after asking for frames meanwhile.
+    const wakes = clock.wakes;
+    callout.follow({ x: 157, y: 762 });
+    clock.ms += HOLD_MS;
+    callout.follow({ x: 157, y: 762 });
+    expect(card.dataset['shown']).toBe('false');
+    expect(clock.wakes).toBeGreaterThan(wakes);
+  });
+
+  it('a new site starts afresh: shown at once, on the canvas\'s first side', () => {
+    const { callout, card, clock } = mount();
+    callout.show(content(IM2, READY, 150));
+    callout.follow({ x: 157, y: 755 });
+    callout.follow({ x: 157, y: 762 });
+    clock.ms += HOLD_MS;
+    callout.follow({ x: 157, y: 762 });
+    expect(card.dataset['shown']).toBe('false');
+    // The same site coming back out from under the bar waits for the hold ...
+    callout.follow({ x: 157, y: 755 });
+    expect(card.dataset['shown']).toBe('false');
+    // ... a new one does not.
+    callout.show(content({ ...IM2, id: 'im1-odysseus' }, READY, 150));
+    callout.follow({ x: 157, y: 755 });
+    expect([card.dataset['shown'], card.dataset['side']]).toEqual(['true', 'up-right']);
+  });
+
+  it('a new site forgets the old site\'s side: up-left does not carry over to a marker that fits up-right best', () => {
+    const { callout, card } = mount();
+    callout.show(content(IM2, READY, 150));
+    callout.follow({ x: 300, y: 400 });
+    expect(card.dataset['side']).toBe('up-left');
+    // The same site moving to x = 190, inside the switch margin, keeps up-left ...
+    callout.follow({ x: 190, y: 400 });
+    expect(card.dataset['side']).toBe('up-left');
+    // ... a new site there starts from no side and takes the best one.
+    callout.show(content({ ...IM2, id: 'im1-odysseus' }, READY, 150));
+    callout.follow({ x: 190, y: 400 });
+    expect(card.dataset['side']).toBe('up-right');
   });
 });

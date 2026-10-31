@@ -1,0 +1,135 @@
+/*
+ *   _   _       _                         _ _
+ *  | | | |_ __ (_)_   _____ _ __ ___  ___| | | ___
+ *  | | | | '_ \| \ \ / / _ \ '__/ __|/ _ \ | |/ _ \
+ *  | |_| | | | | |\ V /  __/ |  \__ \  __/ | |  __/
+ *   \___/|_| |_|_| \_/ \___|_|  |___/\___|_|_|\___|
+ *
+ *             =++==--::.
+ *         %%%%##**++=--:..  .
+ *      ##**#%@%%#***+=--::.   .
+ *    #**=+*#*#**#++++=-:::.. .  .
+ *   #++-====*@%+*++==--::...   .  .    Ventana Lunar
+ *  #+=-=--++==+===-+==--:..   .  .  .  Sun, Earth and landing
+ * #----====-------=-=---:..  .  .  .   windows at the lunar
+ * #+---+=====--=---==-::..     .  .  . south pole
+ * #*----==---==-=-=-:-....    .  .  .
+ * *#----===+*===--:-::...    .  .  .   Built for the NASA Space
+ *  *----=*-+*%*+=-:::....   .  .  .    Apps Challenge 2026,
+ *   *------=+*=--:::-:::.. .  .  .     Madrid. Not endorsed
+ *    %*===-=-==--==-:::.  .  .  .      by NASA.
+ *      *+:--+:--::::::.  .  .  .
+ *         -=:::...:..   .  .           (c) 2026 Universelle
+ *             :::.. .  .               SPDX-License-Identifier: MIT
+ */
+
+/*
+ * Liquid glass (VENT-27, approved prototype VENT-16): where the glass
+ * gate (src/glass/) sets data-glass="liquid" on the root, the floating
+ * surfaces refract the globe under them and catch light on their rim.
+ * Each surface refracts through its own lens, --glass-lens, which
+ * src/glass/lens-start.ts sets on it; until it is built, through the
+ * page's shared filter (#glass-liquid, components/GlassFilter.astro).
+ * Frosted, the default, is each surface's own blur and stays as it was.
+ * The pill inside the phone's top bar takes the rim only: a second
+ * refracting layer on glass would stack translucency (apple-design §12).
+ */
+
+/*
+ * A lens belongs to its own surface: the site popover sits inside the
+ * header, and an inherited lens is a filter sized for another box.
+ * Until a surface has its own, the shared filter below applies.
+ */
+@property --glass-lens {
+  syntax: '*';
+  inherits: false;
+}
+
+/* The filter's SVG: in the page, never in the layout. */
+.glass-defs {
+  position: absolute;
+  width: 0;
+  height: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+:root[data-glass='liquid'] :is(
+    .bar,
+    .phone-bar,
+    .tab-bar,
+    .site-popover,
+    .globe-layers,
+    .globe-callout,
+    .strip,
+    .card-block
+  ) {
+  background: var(--glass-liquid-tint);
+  backdrop-filter: var(--glass-lens, url('#glass-liquid'))
+    var(--glass-liquid-filter);
+}
+
+/*
+ * Text over a thin tint and the bright Moon fell under 4.5:1. The small
+ * surfaces sit their text on a scrim inside them, held in from the edge
+ * and feathered: the rim, where the lens bends the Moon most, stays
+ * clear. Each surface's backdrop-filter makes it a stacking context, so
+ * the scrim paints over its tint and under its content.
+ */
+:root[data-glass='liquid'] :is(
+    .phone-bar,
+    .tab-bar,
+    .globe-layers,
+    .globe-callout
+  )::before {
+  content: '';
+  position: absolute;
+  inset: var(--glass-liquid-scrim-inset);
+  z-index: -1;
+  border-radius: inherit;
+  background: var(--glass-liquid-scrim);
+  filter: blur(var(--glass-liquid-scrim-feather));
+  pointer-events: none;
+}
+
+/* The phone callout's state pill reaches into the scrim's feathered edge:
+ * it carries its own solid ground, the card's, under its state tint. */
+:root[data-glass='liquid'] .globe-callout__pill {
+  background: color-mix(in srgb, var(--tone) 16%, var(--card));
+}
+
+/* The sheet holds the most text: it keeps its heavier tint. */
+:root[data-glass='liquid'] .sheet {
+  backdrop-filter: var(--glass-lens, url('#glass-liquid'))
+    var(--glass-liquid-filter);
+  box-shadow: var(--phone-sheet-edge), var(--glass-liquid-rim);
+}
+
+:root[data-glass='liquid'] :is(.bar, .globe-layers, .site-pill) {
+  box-shadow: var(--glass-liquid-rim);
+}
+
+:root[data-glass='liquid'] :is(.phone-bar, .tab-bar) {
+  box-shadow: var(--phone-bar-edge), var(--glass-liquid-rim);
+}
+
+:root[data-glass='liquid'] .site-popover {
+  box-shadow: var(--popover-shadow), var(--glass-liquid-rim);
+}
+
+:root[data-glass='liquid'] .globe-callout {
+  box-shadow:
+    0 22px 54px rgba(0, 0, 0, 0.55),
+    var(--glass-liquid-rim);
+}
+
+/* Dark mode lifts the desktop panels with no shadow (--strip-edge: none). */
+:root[data-glass='liquid'] :is(.strip, .card-block) {
+  box-shadow: var(--glass-liquid-rim);
+}
+
+@media (prefers-color-scheme: light) {
+  :root[data-glass='liquid'] :is(.strip, .card-block) {
+    box-shadow: var(--strip-edge), var(--glass-liquid-rim);
+  }
+}

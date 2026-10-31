@@ -56,7 +56,7 @@ export class MarkerLayer {
   private placed: PlacedMarker[] = [];
   private readonly root = document.createElement('div');
   /** The selected site's callout; the page clips it above the sheet. */
-  readonly callout = new SiteCallout();
+  readonly callout: SiteCallout;
 
   /**
    * `onPick` hears a tapped marker's site; the selection comes back
@@ -69,6 +69,9 @@ export class MarkerLayer {
     onPick: (id: string) => void,
   ) {
     this.selected = selected;
+    // A held callout change asks for frames until it settles.
+    const clock = { now: () => performance.now(), wake: onChange };
+    this.callout = new SiteCallout(clock);
     this.root.className = 'globe-markers';
     this.root.addEventListener('click', (event) => {
       const id = pickedSite(event, this.root, this.placed);

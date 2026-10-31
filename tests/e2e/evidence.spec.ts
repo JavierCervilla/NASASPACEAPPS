@@ -29,11 +29,11 @@
  * header site picker, the site card beside the globe (also at 1280x720, where it scrolls and fades at its edge) and
  * the polar map with it (also with IM-2 not selected, where crowded markers wear numbers its key names), and of the
  * phone at 390x844 (the sheet at half in dark and light, the site picker, the sheet at peek, the sheet closed, also
- * zoomed in, and the calendar, also at 200 % text), saved under production/qa/evidence/ with the capture date. It runs only on request, so a normal e2e run writes nothing:
+ * zoomed in, and the calendar, also at 200 % text), the Liquid and the frosted glass on both (VENT-27), saved under production/qa/evidence/ with the capture date. It runs only on request, so a normal e2e run writes nothing:
  *
  *   CAPTURE_EVIDENCE=1 npm run e2e -- evidence.spec.ts
  *
- * `-g phone`, `-g globe`, `-g calendar` or `-g "site card"` captures one set only.
+ * `-g phone`, `-g globe`, `-g calendar`, `-g "site card"` or `-g glass` captures one set only.
  */
 import { expect, test, type Page } from '@playwright/test';
 import { SITES, stubApi } from './api-stub';
@@ -306,4 +306,43 @@ test.describe('callout evidence', () => {
       await page.screenshot({ path: new URL(`${DATE}-vent-29-callout-phone-dark.png`, OUT).pathname });
     });
   });
+});
+
+test.describe('glass evidence', () => {
+  test.skip(!process.env.CAPTURE_EVIDENCE, 'captures only with CAPTURE_EVIDENCE=1');
+
+  /** The page in dark mode with `glass` forced: headless Chromium could not hold Liquid's frame budget on its own. */
+  async function openGlass(page: Page, query: string): Promise<void> {
+    await page.emulateMedia({ colorScheme: 'dark', reducedMotion: 'reduce' });
+    await page.clock.setFixedTime(new Date('2026-11-23T18:00:00Z'));
+    await stubApi(page);
+    const texture = page.waitForResponse(/\/textures\/moon-lroc-/);
+    await page.goto(`./${query}`);
+    await texture;
+    await expect(page.locator('.globe-callout')).toHaveAttribute('data-state', 'window');
+    await page.locator('.globe-callout__image').evaluate((img: HTMLImageElement) => img.decode());
+    await page.waitForTimeout(600);
+    await settle(page);
+  }
+
+  for (const glass of ['liquid', 'frosted'] as const) {
+    test.describe(`desktop, ${glass}`, () => {
+      test.use({ viewport: { width: 1440, height: 900 } });
+
+      test(`glass, desktop, ${glass}, dark mode`, async ({ page }) => {
+        await openGlass(page, `?quality=high&glass=${glass}`);
+        await page.screenshot({ path: new URL(`${DATE}-vent-27-glass-desktop-${glass}-dark.png`, OUT).pathname });
+      });
+    });
+
+    test.describe(`phone, ${glass}`, () => {
+      test.use({ viewport: { width: 390, height: 844 }, hasTouch: true, isMobile: true, deviceScaleFactor: 2 });
+
+      test(`glass, phone, ${glass}, dark mode`, async ({ page }) => {
+        await openGlass(page, `?glass=${glass}`);
+        await expect(page.locator('.widget')).toHaveCount(4);
+        await page.screenshot({ path: new URL(`${DATE}-vent-27-glass-phone-${glass}-dark.png`, OUT).pathname });
+      });
+    });
+  }
 });

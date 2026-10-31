@@ -198,6 +198,63 @@
   outline-offset: 0;
 }
 
+/*
+ * The selected marker's ring (VENT-32, canvases «FixedCallout…»): it ties
+ * the docked callout to its site. Placed on the marker by
+ * src/globe/marker-layer.ts and hidden with it behind the limb; the
+ * pseudo-element pulses, so the frame loop only writes the position. In
+ * the state's colour, as the marker: the legend's meaning. Still under
+ * reduced motion.
+ */
+.globe-ring {
+  position: absolute;
+  top: -15px;
+  left: -15px;
+  z-index: 3;
+  width: 30px;
+  height: 30px;
+  pointer-events: none;
+}
+
+.globe-ring::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  box-sizing: border-box;
+  border-radius: 50%;
+  border: 2px solid var(--halo, var(--marker));
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--halo, var(--marker)) 18%, transparent);
+}
+
+/* «Neither» is a dark grey: the ring takes the marker's light edge. */
+.globe-markers:has(> .globe-callout[data-state='none']) .globe-ring::after {
+  border-color: rgba(242, 242, 244, 0.6);
+  box-shadow: 0 0 0 4px rgba(242, 242, 244, 0.18);
+}
+
+@keyframes globe-ring-pulse {
+  0% {
+    transform: scale(0.8);
+    opacity: 1;
+  }
+
+  70% {
+    transform: scale(1.35);
+    opacity: 0;
+  }
+
+  100% {
+    transform: scale(1.35);
+    opacity: 0;
+  }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .globe-ring::after {
+    animation: globe-ring-pulse 2.4s cubic-bezier(0.2, 0.7, 0.3, 1) infinite;
+  }
+}
+
 .globe-layers {
   position: absolute;
   left: 20px;
@@ -243,7 +300,7 @@
 
 /*
  * A view narrow for its text (200 % text, a narrow window) stacks the
- * key, so it stays in its corner, clear of the site callout over the globe.
+ * key, so it stays in its corner, under the site callout docked above it.
  * The em is the view's own, so it grows with the text.
  */
 @container (max-width: 52em) {

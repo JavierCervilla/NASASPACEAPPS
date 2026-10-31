@@ -111,7 +111,7 @@ test.describe('desktop, 1440x900', () => {
     expect(log.errors.filter((e) => !NETWORK_LINE.test(e))).toEqual([]);
   });
 
-  test('selecting a site names it in the callout, whose leader starts on its marker', async ({ page }) => {
+  test('selecting a site names it in the callout and rings its marker', async ({ page }) => {
     await page.emulateMedia({ reducedMotion: 'reduce' });
     await stubApi(page);
     await page.goto('./');
@@ -121,9 +121,7 @@ test.describe('desktop, 1440x900', () => {
     await expect(page.locator('.globe-callout')).toHaveAttribute('aria-label', 'Malapert A region (IM-1 Odysseus)');
     const transform = (selector: string) => page.locator(selector).evaluate((el) => (el as HTMLElement).style.transform);
     // The globe turns to the picked site: compare where both are now, frame after frame.
-    await expect
-      .poll(async () => (await transform('.globe-callout-leader')).startsWith(`${await transform(IM1)} rotate(`))
-      .toBe(true);
+    await expect.poll(async () => (await transform('.globe-ring')) === (await transform(IM1))).toBe(true);
     expect(await transform(IM1)).toMatch(/^translate3d\(/);
   });
 
@@ -218,11 +216,13 @@ for (const [width, height] of [[1440, 900], [1280, 720], [1024, 768]] as const) 
     const label = page.locator('.globe-callout');
     // By class: a role query skips a hidden key and would wait for it.
     const layers = page.locator('.globe-layers');
-    // The callout follows its marker as the view settles at the new size.
+    // The callout docks again as the view settles at the new size.
     await expect
       .poll(async () => {
         const [a, b] = [await label.boundingBox(), await layers.boundingBox()];
-        // A hidden key cannot cover the label.
+        // A hidden key cannot cover the label, nor can a hidden label be covered: with no room above the key the
+        // label hides (QA F2).
+        if ((await label.getAttribute('data-shown')) === 'false') return true;
         if (!a || !b) return Boolean(a);
         return a.x >= b.x + b.width || b.x >= a.x + a.width || a.y >= b.y + b.height || b.y >= a.y + a.height;
       })

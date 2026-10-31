@@ -44,12 +44,20 @@ Every visible change follows `.claude/skills/apple-design/SKILL.md` (vendored fr
   desktop); the hours come from one cached request per site and month (`src/phone/hours-cache.ts`). On desktop
   the site card sits beside the view and the header tabs switch the view by hash (`#globe`, `#polar-map`,
   `src/lib/view-tabs.ts`): the polar map is a south polar stereographic disk from 80° S
-  (`src/lib/polar-projection.ts`, image from `scripts/moon_textures.py polar`). The selected site's callout rides its
-  marker on the globe (`src/callout/`, `src/globe/site-callout.ts`): the image card on desktop, the compact card on
-  phones, with a LOLA relief thumbnail for sites south of 80° S (320 px, and 640 px through `srcset` for 2x screens;
-  rendered offline by `scripts/site_thumbs.py` and committed, manifest `src/callout/thumbs.json`); it takes no pointer
-  events, never covers the Layers key, the top bar or the tab bar (it hides when it cannot), and the frame loop only
-  writes its transform. Under Save-Data
+  (`src/lib/polar-projection.ts`, image from `scripts/moon_textures.py polar`). The selected site's callout is a card docked
+  at the globe's bottom left (`src/callout/`, `src/callout/callout-dock.ts`, `src/globe/site-callout.ts`): the image
+  card on desktop, 14 px above the Layers key on its left edge (the compact card where a short window leaves the image
+  card no room there, `fitCallout`; hidden when large text leaves even that none: the site card beside the view shows
+  the same site), and the compact card on phones, 12 px off the left edge and 12 px above
+  the sheet's top edge or the tab bar, riding the sheet as it is dragged and hiding at full height or wherever it would
+  reach the top bar. So the card never covers the selected marker, the globe framing a site (at load and on a pick in
+  the list) turns just enough to land it in the band between the top bar and the card (`src/globe/site-aim.ts`,
+  `src/globe/site-framer.ts`), and again on the orbit's springs when the card moves, until the user moves the globe. It has a LOLA relief thumbnail for
+  sites south of 80° S (320 px, and 640 px through `srcset` for 2x screens; rendered offline by
+  `scripts/site_thumbs.py` and committed, manifest `src/callout/thumbs.json`), takes no pointer events, stays still
+  while the globe turns and shows the site even with its marker behind the limb; the frame loop never touches it. The
+  selected marker wears a ring in its state colour that pulses (2.4 s; still under reduced motion), placed with the
+  markers (`src/globe/marker-layer.ts`) and hidden with its marker. Under Save-Data
   the globe waits for a «Load the 3D globe» button and never loads more than its start map.
 - Glass: the floating surfaces (phone top bar, sheet, tab bar and callout; desktop header, site popover, Layers key,
   calendar strip, site card and callout) wear Liquid glass or the frosted blur; the phone's site pill, inside the top

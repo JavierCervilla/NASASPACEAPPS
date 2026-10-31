@@ -30,8 +30,9 @@
  * hidden, which also takes them out of the tab order, and so are zone rings
  * that would cover another marker (marker-cull.ts). Where two boxes
  * overlap, a click goes to the dot nearest the pointer (marker-hit.ts).
- * Sites that share a point share one marker. The callout of the
- * selected site rides next to its marker (site-callout.ts).
+ * Sites that share a point share one marker. The selected site's marker
+ * wears a pulsing ring, hidden with its marker; the selected site's
+ * callout is docked apart from it (site-callout.ts).
  */
 import { isFacing, latLonToVector, type Vec3 } from './geo';
 import { markerButton } from './marker-button';
@@ -55,8 +56,10 @@ export class MarkerLayer {
   /** The markers shown at the last frame, where a click is routed. */
   private placed: PlacedMarker[] = [];
   private readonly root = document.createElement('div');
-  /** The selected site's callout; the page clips it above the sheet. */
-  readonly callout: SiteCallout;
+  /** The pulsing ring around the selected site's marker. */
+  private readonly ring = document.createElement('span');
+  /** The selected site's callout, docked at the globe's bottom left. */
+  readonly callout = new SiteCallout();
 
   /**
    * `onPick` hears a tapped marker's site; the selection comes back
@@ -69,15 +72,15 @@ export class MarkerLayer {
     onPick: (id: string) => void,
   ) {
     this.selected = selected;
-    // A held callout change asks for frames until it settles.
-    const clock = { now: () => performance.now(), wake: onChange };
-    this.callout = new SiteCallout(clock);
+    this.ring.className = 'globe-ring';
+    this.ring.setAttribute('aria-hidden', 'true');
+    this.ring.hidden = true;
     this.root.className = 'globe-markers';
     this.root.addEventListener('click', (event) => {
       const id = pickedSite(event, this.root, this.placed);
       if (id) onPick(id);
     });
-    this.root.append(this.callout.dom.leader, this.callout.dom.card);
+    this.root.append(this.ring, this.callout.dom.card);
     host.append(this.root);
   }
 
@@ -105,7 +108,7 @@ export class MarkerLayer {
     this.onChange();
   }
 
-  /** Moves every marker and the callout to where `project` puts them. */
+  /** Moves every marker and the ring to where `project` puts them. */
   place(project: Projector, eye: Vec3): void {
     const facing = this.markers
       .filter(({ point }) => isFacing(point, eye))
@@ -125,11 +128,15 @@ export class MarkerLayer {
       marker.el.style.transform = `translate3d(${at.x}px, ${at.y}px, 0)`;
     }
     this.placed = shown.map(({ marker, at }) => ({ id: marker.site.id, at }));
-    const calloutAt = shown.find(({ selected }) => selected)?.at ?? null;
-    this.callout.follow(calloutAt);
+    // The ring hides with the selected marker (behind the limb).
+    const ringAt = shown.find(({ selected }) => selected)?.at;
+    if (this.ring.hidden !== !ringAt) this.ring.hidden = !ringAt;
+    if (ringAt) {
+      this.ring.style.transform = `translate3d(${ringAt.x}px, ${ringAt.y}px, 0)`;
+    }
   }
 
-  /** Takes the markers and the callout off the page. */
+  /** Takes the markers, the ring and the callout off the page. */
   dispose(): void {
     this.root.remove();
   }

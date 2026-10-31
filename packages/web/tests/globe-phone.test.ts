@@ -31,6 +31,7 @@ import { spreadOf } from '../src/globe/pinch';
 import { pinchControls, pinchDistance } from '../src/globe/pointer-controls';
 import { phoneTier } from '../src/globe/quality-pick';
 import { bindSelection, flyTo } from '../src/globe/selection';
+import { createSiteFramer } from '../src/globe/site-framer';
 import { createSiteStore } from '../src/phone/site-store';
 
 const deps = { invalidate: vi.fn(), reducedMotion: () => false, heightPx: () => 600 };
@@ -77,8 +78,10 @@ describe('selection', () => {
     const markers = { select: vi.fn() } as unknown as MarkerLayer & { select: ReturnType<typeof vi.fn> };
     const orbit = createOrbit(SOUTH_POLE_VIEW);
     const invalidate = vi.fn();
-    const parts = { store, markers, orbit, invalidate, reducedMotion: () => true };
-    const unbind = bindSelection(parts, () => [APOLLO11]);
+    // No frame set yet: the framer only flies.
+    const callout = { band: () => ({ top: 0, bottom: 800 }), watch: () => () => undefined };
+    const framer = createSiteFramer({ orbit, camera: { view: null }, callout, invalidate, reducedMotion: () => true });
+    const unbind = bindSelection({ store, markers, framer }, () => [APOLLO11]);
     return { store, markers, orbit, unbind };
   };
 

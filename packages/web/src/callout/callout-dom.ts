@@ -25,9 +25,9 @@
 
 /**
  * The callout's DOM: one card for both layouts (globe.css draws it as the
- * image card on a desktop and as the compact card on a phone) and the
- * leader line to its marker. Built once; a new site or instant only
- * rewrites its text and, for a new site, its image (callout-image.ts).
+ * image card on a desktop and as the compact card on a phone). Built
+ * once; a new site or instant only rewrites its text and, for a new site,
+ * its image (callout-image.ts).
  * The card is a named group, not a control: no focus stop, no pointer
  * events.
  */
@@ -38,7 +38,6 @@ import { UNAVAILABLE } from './callout-state';
 /** The parts of the card that change with the content. */
 export interface CalloutDom {
   readonly card: HTMLDivElement;
-  readonly leader: HTMLSpanElement;
   readonly img: HTMLImageElement;
   readonly text: Readonly<Record<TextPart, HTMLElement>>;
 }
@@ -75,7 +74,7 @@ function row(parent: HTMLElement, name: string): [HTMLElement, HTMLElement] {
   return [part(line, 'span', 'wide'), part(line, 'span', 'narrow')];
 }
 
-/** Builds the card and its leader, hidden until placed. */
+/** Builds the card, hidden until docked. */
 export function calloutDom(): CalloutDom {
   const card = document.createElement('div');
   card.className = 'globe-callout';
@@ -93,10 +92,7 @@ export function calloutDom(): CalloutDom {
   const [pill, tiles] = [part(body, 'span', 'pill'), part(body, 'div', 'tiles')];
   const [sunLabel, sunValue] = tile(tiles, 'sun');
   const [earthLabel, earthValue] = tile(tiles, 'earth');
-  const leader = document.createElement('span');
-  leader.className = 'globe-callout-leader';
-  leader.setAttribute('aria-hidden', 'true');
-  return { card, leader, img, text: {
+  return { card, img, text: {
     badge, caption, mission, missionShort, place, placeShort, point,
     pointShort, pill, sunLabel, sunValue, earthLabel, earthValue,
   } };

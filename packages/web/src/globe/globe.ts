@@ -34,7 +34,7 @@ import { isPhoneViewport } from '../lib/viewport';
 import type { WatchedValue } from '../lib/watched-value';
 import type { SiteStore } from '../phone/site-store';
 import { attachDevTools } from './dev-hook';
-import { watchCallout } from './callout-watch';
+import { watchCallout, type CalloutAnchors } from './callout-watch';
 import { bindDrag } from './drag';
 import { drawFrame } from './frame';
 import { SOUTH_POLE_VIEW } from './framing';
@@ -42,15 +42,14 @@ import { keyControls } from './key-controls';
 import { bindKeys, bindWheel } from './keys';
 import { createLoop, type Loop } from './loop';
 import { MarkerLayer } from './marker-layer';
-import type { GlobeSite } from './markers';
 import { addMoon } from './moon';
 import { createOrbit, type Orbit } from './orbit';
 import { bindPinch } from './pinch';
 import { pinchControls, pointerControls } from './pointer-controls';
 import { pickQuality } from './quality-pick';
 import { bindSheetEdge, frameInset } from './sheet-edge';
-import { bindSelection, type SelectionParts } from './selection';
-import { loadSites } from './sites-client';
+import { loadSelection, type SelectionParts } from './selection';
+import { createSiteFramer, type SiteFramerParts } from './site-framer';
 import { createStage, disposeStage, resizeStage, type Stage } from './stage';
 import { bindSun } from './sun-light';
 
@@ -66,8 +65,8 @@ export interface GlobeOptions {
   readonly sheetEdge: WatchedValue<number | null>;
   /** What the selected site's callout says, kept by the page. */
   readonly callout: WatchedValue<CalloutContent | null>;
-  /** The page's elements the callout must not cover. */
-  readonly avoid: () => readonly Element[];
+  /** The page's elements the callout docks against. */
+  readonly anchors: () => CalloutAnchors;
   /** The browser asks to save data: the globe keeps its start map. */
   readonly saveData: boolean;
   readonly reducedMotion: () => boolean;
@@ -117,7 +116,7 @@ function bindInput(
 /** Shows the page's callout content and keeps the callout measured. */
 function bindCallout(
   host: HTMLElement,
-  options: Pick<GlobeOptions, 'callout' | 'avoid'>,
+  options: Pick<GlobeOptions, 'callout' | 'anchors'>,
   markers: MarkerLayer,
   invalidate: () => void,
 ): () => void {
@@ -128,38 +127,36 @@ function bindCallout(
   };
   show();
   const unsubscribe = options.callout.subscribe(show);
-  const { avoid } = options;
-  const unwatch = watchCallout({ host, callout, avoid, invalidate });
+  const { anchors } = options;
+  const phone = isPhoneViewport;
+  const unwatch = watchCallout({ host, callout, anchors, phone });
   return () => [unsubscribe, unwatch].forEach((unbind) => unbind());
 }
 
 /**
- * Binds the markers to the page: loads the API sites into them, follows
- * the shared selection and shows the callout, above the phone sheet.
+ * Binds the markers to the page: loads the API sites into them, frames
+ * the selected one, follows the shared selection and shows the callout,
+ * above the phone sheet.
  */
 function bindSites(
   host: HTMLElement,
   options: GlobeOptions,
-  globe: Pick<SelectionParts, 'markers' | 'orbit' | 'invalidate'> &
-    Pick<Stage, 'camera'>,
+  globe: Pick<SiteFramerParts, 'orbit' | 'invalidate'> &
+    Pick<SelectionParts, 'markers'> & Pick<Stage, 'camera'>,
 ): () => void {
-  const { markers, orbit, invalidate, camera } = globe;
-  let sites: readonly GlobeSite[] = [];
-  const get = globalThis.fetch.bind(globalThis);
-  void loadSites({ fetch: get, url: options.sitesUrl, warn: options.warn })
-    .then((loaded) => {
-      sites = loaded;
-      markers.setSites(loaded);
-    });
+  const { markers, invalidate } = globe;
   const { store, reducedMotion } = options;
-  const parts = { store, markers, orbit, invalidate, reducedMotion };
-  const unbindSelection = bindSelection(parts, () => sites);
-  const edgeParts = { camera, markers, invalidate };
-  const unbindEdge = bindSheetEdge(host, edgeParts, options.sheetEdge);
-  const unbindCallout = bindCallout(host, options, markers, invalidate);
-  return () => {
-    [unbindSelection, unbindEdge, unbindCallout].forEach((fn) => fn());
-  };
+  const callout = markers.callout;
+  const framer = createSiteFramer({ ...globe, callout, reducedMotion });
+  const get = globalThis.fetch.bind(globalThis);
+  const source = { fetch: get, url: options.sitesUrl, warn: options.warn };
+  const unbind = [
+    loadSelection({ store, markers, framer }, source),
+    bindSheetEdge(host, globe, options.sheetEdge),
+    bindCallout(host, options, markers, invalidate),
+    framer.dispose,
+  ];
+  return () => unbind.forEach((fn) => fn());
 }
 
 /**

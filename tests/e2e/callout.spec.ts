@@ -35,6 +35,22 @@ const NOW = new Date('2026-11-23T18:00:00Z');
 const IM1 = '[data-site-id="im1-odysseus"]';
 const IM2 = '[data-site-id="im2-athena"]';
 const callout = (page: Page) => page.locator('.globe-callout');
+const ring = (page: Page) => page.locator('.globe-ring');
+/** The sheet's top edge, in px from the top of the viewport. */
+const sheetTop = (page: Page) => page.locator('.sheet').evaluate((el) => Math.round(el.getBoundingClientRect().top));
+const HALF_TOP = 844 - 344;
+/**
+ * Waits until the card stands 12 px above the tab bar: the sheet reports its edge on the frame after it closes (the
+ * `inert` attribute comes first), and the card docks on that report.
+ */
+async function dockedAboveTabs(page: Page): Promise<void> {
+  const gap = () =>
+    page.evaluate(() => {
+      const card = document.querySelector('.globe-callout')!.getBoundingClientRect();
+      return Math.round(document.querySelector('.tab-bar')!.getBoundingClientRect().top - card.bottom);
+    });
+  await expect.poll(gap).toBe(12);
+}
 const part = (page: Page, name: string) => callout(page).locator(`.globe-callout__${name}`);
 /** A row's wording for one layout: `wide` on a desktop, `narrow` on a phone. */
 const wording = (page: Page, name: string, layout: 'wide' | 'narrow') => part(page, name).locator(`.globe-callout__${layout}`);
@@ -103,43 +119,71 @@ test.describe('desktop, 1440x900', () => {
     await expect(part(page, 'badge')).toHaveText('Neither');
   });
 
-  test('hides when its marker turns behind the limb, and comes back with it', async ({ page }) => {
+  test('stays while its marker turns behind the limb, where the ring hides, and both come back with it', async ({ page }) => {
     await open(page);
-    await expect(callout(page)).toBeVisible();
+    await expect(ring(page)).toBeVisible();
     await page.getByRole('application', { name: 'The Moon, seen over its south pole' }).focus();
     for (let press = 0; press < 8; press += 1) await page.keyboard.press('ArrowUp');
     await expect(page.locator(IM2)).toBeHidden();
-    await expect(callout(page)).toBeHidden();
-    await expect(page.locator('.globe-callout-leader')).toBeHidden();
-    for (let press = 0; press < 8; press += 1) await page.keyboard.press('ArrowDown');
+    await expect(ring(page)).toBeHidden();
     await expect(callout(page)).toBeVisible();
+    for (let press = 0; press < 8; press += 1) await page.keyboard.press('ArrowDown');
+    await expect(ring(page)).toBeVisible();
   });
 
-  test('takes no clicks: IM-1 and a marker under the card are still picked', async ({ page }) => {
+  test('docks on the Layers key\'s left edge, 14 px above it, and the selected marker wears the ring', async ({ page }) => {
+    await open(page);
+    const card = (await callout(page).boundingBox())!;
+    const layers = (await page.locator('section.globe .globe-layers').boundingBox())!;
+    expect(card.x).toBe(layers.x);
+    expect(card.x).toBe(44);
+    expect(Math.abs(card.y + card.height - (layers.y - 14))).toBeLessThanOrEqual(1);
+    const marker = await settledCentre(page, IM2);
+    const box = (await ring(page).boundingBox())!;
+    // The ring is centred on the marker.
+    expect(Math.abs(box.x + box.width / 2 - marker.x)).toBeLessThanOrEqual(1);
+    expect(Math.abs(box.y + box.height / 2 - marker.y)).toBeLessThanOrEqual(1);
+    // Under reduced motion the ring is still: no pulse.
+    expect(await ring(page).evaluate((el) => getComputedStyle(el, '::after').animationName)).toBe('none');
+  });
+
+  test('pulses the ring for 2.4 s, scaling out and fading, with motion allowed', async ({ page }) => {
+    await page.emulateMedia({ reducedMotion: 'no-preference', colorScheme: 'dark' });
+    await page.clock.setFixedTime(NOW);
+    await stubApi(page);
+    await page.goto('./');
+    await expect(callout(page)).toHaveAttribute('data-state', 'window');
+    const style = await ring(page).evaluate((el) => {
+      const after = getComputedStyle(el, '::after');
+      return [after.animationName, after.animationDuration, after.animationIterationCount, after.borderTopColor];
+    });
+    expect(style).toEqual(['globe-ring-pulse', '2.4s', 'infinite', 'rgb(61, 220, 132)']);
+  });
+
+  test('stays still while the globe is dragged', async ({ page }) => {
+    await open(page);
+    const before = await callout(page).boundingBox();
+    const globe = (await page.locator('.globe-viewport').boundingBox())!;
+    const [x, y] = [globe.x + globe.width / 2, globe.y + globe.height / 3];
+    await page.mouse.move(x, y);
+    await page.mouse.down();
+    for (let move = 1; move <= 20; move += 1) await page.mouse.move(x + move * 8, y + move * 3);
+    await page.mouse.up();
+    await settledCentre(page, IM2).catch(() => undefined);
+    expect(await callout(page).boundingBox()).toEqual(before);
+  });
+
+  test('takes no clicks: IM-1 is still picked, and the card lets the pointer through', async ({ page }) => {
     await open(page);
     expect(await callout(page).evaluate((el) => getComputedStyle(el).pointerEvents)).toBe('none');
     const im1 = await settledCentre(page, IM1);
     await page.mouse.click(im1.x, im1.y);
     await expect(page.locator(IM1)).toHaveAttribute('aria-pressed', 'true');
     await expect(callout(page)).toHaveAttribute('aria-label', 'Malapert A region (IM-1 Odysseus)');
-    // Back on IM-2, zoomed in until a marker sits under its card: the click goes through the card to it.
-    await page.getByRole('button', { name: /^Mons Mouton \(IM-2 Athena\)/ }).press('Enter');
-    await page.getByRole('application', { name: 'The Moon, seen over its south pole' }).focus();
-    for (let press = 0; press < 4; press += 1) await page.keyboard.press('+');
-    await settledCentre(page, IM2);
-    const under = await page.evaluate(() => {
-      const card = document.querySelector('.globe-callout')!.getBoundingClientRect();
-      const inside = [...document.querySelectorAll<HTMLElement>('.globe-marker')].filter((el) => {
-        const r = el.getBoundingClientRect();
-        const [x, y] = [r.x + r.width / 2, r.y + r.height / 2];
-        return !el.hidden && x > card.left && x < card.right && y > card.top && y < card.bottom;
-      });
-      const first = inside[0]!.getBoundingClientRect();
-      return { id: inside[0]!.dataset['siteId'], x: first.x + first.width / 2, y: first.y + first.height / 2 };
-    });
-    expect(await page.evaluate(({ x, y }) => (document.elementFromPoint(x, y) as HTMLElement).dataset['siteId'], under)).toBe(under.id);
-    await page.mouse.click(under.x, under.y);
-    await expect(page.locator(`[data-site-id="${under.id}"]`)).toHaveAttribute('aria-pressed', 'true');
+    // The point under the card's centre belongs to what is beneath it, never to the card.
+    const card = (await callout(page).boundingBox())!;
+    const centre = { x: card.x + card.width / 2, y: card.y + card.height / 2 };
+    expect(await page.evaluate(({ x, y }) => Boolean(document.elementFromPoint(x, y)?.closest('.globe-callout')), centre)).toBe(false);
   });
 
   test('a site north of 80° S shows the card without the image header', async ({ page }) => {
@@ -244,74 +288,93 @@ test.describe('phone, 390x844', () => {
     await page.getByRole('navigation', { name: 'Views' }).getByRole('button', { name: 'Globe' }).click();
     await expect(page.locator('.sheet')).toHaveAttribute('inert', '');
     await expect(callout(page)).toBeVisible();
+    await dockedAboveTabs(page);
     const image = callout(page).getByRole('img', { name: 'Mons Mouton from orbit, LOLA relief' });
     const box = await image.boundingBox();
     expect([box?.width, box?.height]).toEqual([84, 84]);
     await expect(part(page, 'pill')).toHaveText('Landing window · 7 d 1 h left');
     await expect(part(page, 'tiles')).toBeHidden();
     await expect(part(page, 'badge')).toBeHidden();
-    // Inside the screen, clear of the top bar and the tab bar.
+    // Docked 12 px off the left edge and 12 px above the tab bar.
     const card = (await callout(page).boundingBox())!;
-    const bar = (await page.locator('.phone-bar').boundingBox())!;
     const tabs = (await page.locator('.tab-bar').boundingBox())!;
-    expect(card.x).toBeGreaterThanOrEqual(0);
-    expect(card.x + card.width).toBeLessThanOrEqual(390);
-    expect(card.y).toBeGreaterThanOrEqual(bar.y + bar.height);
-    expect(card.y + card.height).toBeLessThanOrEqual(tabs.y);
+    expect(card.x).toBe(12);
+    expect(Math.abs(card.y + card.height - (tabs.y - 12))).toBeLessThanOrEqual(1);
+  });
+
+  test('at half height the card stands 12 px above the sheet\'s edge, and hides at full height', async ({ page }) => {
+    await open(page);
+    await expect.poll(() => sheetTop(page)).toBe(HALF_TOP);
+    await expect(callout(page)).toBeVisible();
+    const card = (await callout(page).boundingBox())!;
+    expect(card.x).toBe(12);
+    expect(Math.abs(card.y + card.height - (HALF_TOP - 12))).toBeLessThanOrEqual(1);
+    await page.getByRole('button', { name: /^Sheet half height/ }).press('Enter');
+    await expect.poll(() => sheetTop(page)).toBe(96);
+    await expect(callout(page)).toBeHidden();
+    await expect(callout(page)).toHaveAttribute('data-shown', 'false');
+  });
+
+  test('follows the sheet\'s edge through a drag, frame by frame', async ({ page }) => {
+    await open(page);
+    await expect.poll(() => sheetTop(page)).toBe(HALF_TOP);
+    await page.mouse.move(195, HALF_TOP + 40);
+    await page.mouse.down();
+    await page.mouse.move(195, HALF_TOP + 120, { steps: 6 });
+    const gap = await page.evaluate(() => {
+      const card = document.querySelector('.globe-callout')!.getBoundingClientRect();
+      return document.querySelector('.sheet')!.getBoundingClientRect().top - card.bottom;
+    });
+    await page.mouse.up();
+    expect(Math.abs(gap - 12)).toBeLessThanOrEqual(1);
+  });
+
+  test('a drag on the globe never moves the card', async ({ page }) => {
+    await open(page);
+    await page.getByRole('navigation', { name: 'Views' }).getByRole('button', { name: 'Globe' }).click();
+    await expect(page.locator('.sheet')).toHaveAttribute('inert', '');
+    await expect(callout(page)).toBeVisible();
+    await dockedAboveTabs(page);
+    const before = await callout(page).boundingBox();
+    await page.evaluate(() => {
+      const card = document.querySelector<HTMLElement>('.globe-callout')!;
+      const seen = new Set<string>();
+      (window as unknown as { cardStates: Set<string> }).cardStates = seen;
+      const sample = (): void => {
+        const r = card.getBoundingClientRect();
+        seen.add(`${card.dataset['shown']}:${r.x},${r.y},${r.width},${r.height}`);
+        requestAnimationFrame(sample);
+      };
+      sample();
+    });
+    let [x, y] = [195, 300];
+    await page.mouse.move(x, y);
+    await page.mouse.down();
+    for (let move = 0; move < 60; move += 1) {
+      [x, y] = [x + 3, y + 2];
+      await page.mouse.move(x, y);
+      await page.waitForTimeout(16);
+    }
+    await page.mouse.up();
+    await page.waitForTimeout(200);
+    const states = await page.evaluate(() => [...(window as unknown as { cardStates: Set<string> }).cardStates]);
+    expect(states).toHaveLength(1);
+    expect(await callout(page).boundingBox()).toEqual(before);
   });
 });
 
-/**
- * VENT-31 (Brave on Android): with IM-1 selected and the globe zoomed in, a slow drag made the card jump between two
- * sides, or blink, frame after frame. Every frame's side and visibility, as the card states them, through a slow drag.
- */
-async function dragStates(page: Page, step: { x: number; y: number }): Promise<string[]> {
-  await page.evaluate(() => {
-    const card = document.querySelector<HTMLElement>('.globe-callout')!;
-    const states: string[] = [];
-    (window as unknown as { calloutStates: string[] }).calloutStates = states;
-    const sample = (): void => {
-      const now = `${card.dataset['shown']}:${card.dataset['side']}`;
-      if (states.at(-1) !== now) states.push(now);
-      requestAnimationFrame(sample);
-    };
-    sample();
+test.describe('phone, 390x664', () => {
+  test.use({ viewport: { width: 390, height: 664 }, hasTouch: true, isMobile: true });
+
+  test('at half height on a short screen the card stays clear of the top bar', async ({ page }) => {
+    await open(page);
+    await expect.poll(() => sheetTop(page)).toBe(664 - 344);
+    await expect(callout(page)).toBeVisible();
+    const card = (await callout(page).boundingBox())!;
+    const bar = (await page.locator('.phone-bar').boundingBox())!;
+    expect(card.y).toBeGreaterThanOrEqual(bar.y + bar.height + 12);
+    expect(Math.abs(card.y + card.height - (664 - 344 - 12))).toBeLessThanOrEqual(1);
   });
-  let [x, y] = [195, 300];
-  await page.mouse.move(x, y);
-  await page.mouse.down();
-  for (let move = 0; move < 120; move += 1) {
-    [x, y] = [x + step.x, y + step.y];
-    await page.mouse.move(x, y);
-    await page.waitForTimeout(16);
-  }
-  await page.mouse.up();
-  await page.waitForTimeout(200);
-  return page.evaluate(() => (window as unknown as { calloutStates: string[] }).calloutStates);
-}
-
-test.describe('phone, 390x844, IM-1 zoomed in', () => {
-  test.use({ viewport: { width: 390, height: 844 }, hasTouch: true, isMobile: true });
-
-  for (const [name, step] of [['sideways', { x: 3, y: 0 }], ['downwards', { x: 0, y: 3 }]] as const) {
-    test(`a slow drag ${name} never flips the card back and forth`, async ({ page }) => {
-      await open(page);
-      const tabs = page.getByRole('navigation', { name: 'Views' });
-      await tabs.getByRole('button', { name: 'Sites' }).click();
-      await page.getByRole('list', { name: 'Sites' }).getByRole('button', { name: /IM-1/ }).first().click();
-      await tabs.getByRole('button', { name: 'Globe' }).click();
-      await expect(page.locator('.sheet')).toHaveAttribute('inert', '');
-      await expect(callout(page)).toHaveAttribute('aria-label', 'Malapert A region (IM-1 Odysseus)');
-      await page.getByRole('application', { name: 'The Moon, seen over its south pole' }).focus();
-      for (let press = 0; press < 9; press += 1) await page.keyboard.press('+');
-      await settledCentre(page, IM1);
-      const states = await dragStates(page, step);
-      // A→B→A: the card went somewhere and came straight back, the flicker the phone showed.
-      const flips = states.filter((state, i) => i >= 2 && state === states[i - 2]);
-      expect(flips, states.join(' → ')).toEqual([]);
-      expect(states.length, states.join(' → ')).toBeLessThanOrEqual(4);
-    });
-  }
 });
 
 /** The area two page boxes share, in px². */
@@ -328,7 +391,7 @@ async function coveredBy(page: Page, selector: string): Promise<number> {
   return card && other ? shared(card, other) : 0;
 }
 
-/** The globe turned and zoomed through the moves that once slid the card onto the Layers key at 1280x720. */
+/** The globe turned and zoomed through the moves that once slid the riding card onto the Layers key at 1280x720. */
 const SWEEP = [
   ...Array<string>(6).fill('ArrowLeft'),
   ...Array<string>(4).fill('+'),
@@ -341,7 +404,7 @@ const SWEEP = [
 test.describe('desktop, 1280x720', () => {
   test.use({ viewport: { width: 1280, height: 720 } });
 
-  test('never covers the Layers key as the globe turns, even when the card has to slide down', async ({ page }) => {
+  test('never covers the Layers key as the globe turns', async ({ page }) => {
     await open(page);
     await page.getByRole('application', { name: 'The Moon, seen over its south pole' }).focus();
     for (const [step, key] of SWEEP.entries()) {
@@ -367,22 +430,15 @@ test.describe('desktop, 1280x720', () => {
     await expect.poll(() => dot(IM2)).toBe('rgb(242, 242, 244)');
   });
 
-  test('at 200 % text the card drops its image and countdowns, stays inside the globe, and clips nothing', async ({ page }) => {
+  test('at 200 % text the card drops its image and countdowns and clips nothing', async ({ page }) => {
     await open(page);
     await page.addStyleTag({ content: 'html { font-size: 200%; }' });
     await expect(part(page, 'media')).toBeHidden();
     await expect(part(page, 'tiles')).toBeHidden();
     await expect(part(page, 'pill')).toHaveText('Landing window · 7 d 1 h left');
     await settledCentre(page, IM2);
-    await expect(callout(page)).toBeVisible();
+    // No room above the Layers key at this size: the card hides (QA F2, the test at the end of this file).
     expect(await coveredBy(page, '.globe-layers')).toBe(0);
-    const host = (await page.locator('.globe-markers').boundingBox())!;
-    const card = (await callout(page).boundingBox())!;
-    expect(card.x).toBeGreaterThanOrEqual(host.x);
-    expect(card.y).toBeGreaterThanOrEqual(host.y);
-    expect(card.x + card.width).toBeLessThanOrEqual(host.x + host.width);
-    expect(card.y + card.height).toBeLessThanOrEqual(host.y + host.height);
-    expect(card.width).toBeLessThanOrEqual(host.width * 0.62 + 1);
     const clipped = await callout(page).evaluate((el) =>
       [el as HTMLElement, ...el.querySelectorAll<HTMLElement>('*')]
         .filter((node) => node.offsetParent !== null || node === el)
@@ -484,24 +540,119 @@ for (const [name, viewport, isMobile, file, width] of [
 test.describe('phone, 390x844, behind the tab bar', () => {
   test.use({ viewport: { width: 390, height: 844 }, hasTouch: true, isMobile: true });
 
-  test('the callout never covers the top bar or the tab bar, and hides while IM-2 is under the tab bar', async ({ page }) => {
+  test('the callout never covers the top bar or the tab bar, and stays shown wherever IM-2 turns', async ({ page }) => {
     await open(page);
     await page.getByRole('navigation', { name: 'Views' }).getByRole('button', { name: 'Globe' }).click();
     await page.getByRole('application', { name: 'The Moon, seen over its south pole' }).focus();
-    let underTabs = 0;
     for (const [step, key] of [...SWEEP.slice(0, 20), 'ArrowUp', 'ArrowUp', 'ArrowDown', 'ArrowDown'].entries()) {
       await page.keyboard.press(key);
-      const marker = await settledCentre(page, IM2).catch(() => null);
+      await settledCentre(page, IM2).catch(() => null);
+      await expect(callout(page), `move ${step}`).toHaveAttribute('data-shown', 'true');
       expect(await coveredBy(page, '.tab-bar'), `tab bar, move ${step}`).toBe(0);
       expect(await coveredBy(page, '.phone-bar'), `top bar, move ${step}`).toBe(0);
-      const tabs = (await page.locator('.tab-bar').boundingBox())!;
-      const inside = marker && shared({ ...marker, width: 1, height: 1 }, tabs) > 0;
-      if (inside) {
-        underTabs += 1;
-        await expect(callout(page)).toBeHidden();
-      }
     }
-    // The walk does take IM-2 under the tab bar.
-    expect(underTabs).toBeGreaterThan(0);
+  });
+});
+
+/** The ring's box once the globe has stopped turning. */
+async function settledRing(page: Page): Promise<{ x: number; y: number; width: number; height: number }> {
+  const read = () => ring(page).evaluate((el) => (el as HTMLElement).style.transform);
+  let last = await read();
+  await expect
+    .poll(async () => {
+      await page.waitForTimeout(150);
+      const now = await read();
+      const still = now === last && now !== '';
+      last = now;
+      return still;
+    })
+    .toBe(true);
+  return (await ring(page).boundingBox())!;
+}
+
+// QA F1 (VENT-32): the docked card covered the selected marker and its ring. Framing a site aims it into the free
+// area between the top bar and the card.
+for (const [width, height] of [[360, 780], [390, 844]] as const) {
+  test.describe(`phone, ${width}x${height}, the card never covers the selected marker`, () => {
+    test.use({ viewport: { width, height }, hasTouch: true, isMobile: true });
+
+    async function expectClear(page: Page, label: string): Promise<void> {
+      await expect(callout(page)).toHaveAttribute('data-shown', 'true');
+      await expect(ring(page)).toBeVisible();
+      const box = await settledRing(page);
+      const card = (await callout(page).boundingBox())!;
+      const bar = (await page.locator('.phone-bar').boundingBox())!;
+      expect(shared(box, card), `${label}: ring under the card`).toBe(0);
+      expect(shared(box, bar), `${label}: ring under the top bar`).toBe(0);
+    }
+
+    test('at load, with the sheet at half', async ({ page }) => {
+      await open(page);
+      await expect.poll(() => sheetTop(page)).toBe(height - 344);
+      await expectClear(page, 'IM-2 at load');
+    });
+
+    test('after picking Statio Shiv Shakti', async ({ page }) => {
+      await open(page);
+      const tabs = page.getByRole('navigation', { name: 'Views' });
+      await tabs.getByRole('button', { name: 'Sites' }).click();
+      await page.getByRole('list', { name: 'Sites' }).getByRole('button', { name: /^Statio Shiv Shakti/ }).click();
+      await expect(callout(page)).toHaveAttribute('aria-label', 'Statio Shiv Shakti (Chandrayaan-3 Vikram)');
+      await expectClear(page, 'Statio Shiv Shakti');
+    });
+  });
+}
+
+for (const [width, height] of [[1280, 800], [1440, 900]] as const) {
+  test.describe(`desktop, ${width}x${height}, the card never covers the selected marker`, () => {
+    test.use({ viewport: { width, height } });
+
+    test('at load and after picking Statio Shiv Shakti', async ({ page }) => {
+      await open(page);
+      await expect(callout(page)).toHaveAttribute('data-shown', 'true');
+      expect(shared(await settledRing(page), (await callout(page).boundingBox())!), 'IM-2 at load').toBe(0);
+      await page.getByRole('button', { name: /^Change site, now/ }).click();
+      const dialog = page.getByRole('dialog', { name: 'Choose a site' });
+      await dialog.getByRole('searchbox', { name: 'Search a site or mission' }).fill('vikram');
+      await dialog.getByRole('button', { name: /^Statio Shiv Shakti/ }).click();
+      await expect(callout(page)).toHaveAttribute('aria-label', 'Statio Shiv Shakti (Chandrayaan-3 Vikram)');
+      expect(shared(await settledRing(page), (await callout(page).boundingBox())!), 'Statio Shiv Shakti').toBe(0);
+    });
+  });
+}
+
+// CI on edd4cc4: on a short laptop window the image card has no room above the Layers key; it shows as the compact
+// card there instead of hiding.
+for (const [width, height] of [[1024, 768], [1280, 720]] as const) {
+  test.describe(`desktop, ${width}x${height}, 100 % text`, () => {
+    test.use({ viewport: { width, height } });
+
+    test('shows the compact card above the Layers key, clear of the selected marker', async ({ page }) => {
+      await open(page);
+      await expect(callout(page)).toHaveAttribute('data-fit', 'compact');
+      await expect(callout(page)).toHaveAttribute('data-shown', 'true');
+      await expect(part(page, 'media')).toBeHidden();
+      await expect(part(page, 'pill')).toHaveText('Landing window · 7 d 1 h left');
+      const card = (await callout(page).boundingBox())!;
+      const layers = (await page.locator('section.globe .globe-layers').boundingBox())!;
+      expect(card.x).toBe(layers.x);
+      expect(Math.abs(card.y + card.height - (layers.y - 14))).toBeLessThanOrEqual(1);
+      expect(shared(await settledRing(page), card)).toBe(0);
+    });
+  });
+}
+
+// QA F2 (VENT-32): at 200 % text the card no longer fits above the Layers key; the site card on the right already
+// shows the site, so the callout hides instead of standing over the globe and its marker.
+test.describe('desktop, 1440x900, 200 % text', () => {
+  test.use({ viewport: { width: 1440, height: 900 } });
+
+  test('hides the card when it does not fit above the Layers key, and the selected marker stays visible', async ({ page }) => {
+    await open(page);
+    await page.addStyleTag({ content: 'html { font-size: 200%; }' });
+    await expect(callout(page)).toHaveAttribute('data-shown', 'false');
+    await expect(callout(page)).toBeHidden();
+    await expect(page.locator(IM2)).toBeVisible();
+    await expect(ring(page)).toBeVisible();
   });
 });

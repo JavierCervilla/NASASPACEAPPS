@@ -204,7 +204,8 @@ list (Mons Mouton uses Mons Mouton Plateau's; Nobile Rims 1 and 2 use Griffin-1'
 
 | File | Size | sha256 |
 |---|---|---|
-| `packages/web/public/models/astronaut.glb` | glTF 2.0 binary, 4 122 vertices, 6 381 triangles, one 512 x 512 WebP texture, 150 700 bytes | `6a56112c870dca60077f5bf2a12bbdce0c26810ed6d57da02efd7a481640dee8` |
+| `packages/web/public/models/astronaut.glb` | glTF 2.0 binary, 4 122 vertices, 6 381 triangles, no texture inside, 138 880 bytes | `977be426b398161cde6a15fa70dfccc9d434d8dcffc86099e4c2f23e2f28c70e` |
+| `packages/web/public/models/astronaut-suit.webp` | the suit texture, 512 x 512 WebP, 12 000 bytes | `234f12fc831783112c49a6dbfc1f662fa8f390310f4018a6fa296f050033ff83` |
 
 - **Source**: NASA 3D Resources, «Astronaut» (`3D Models/Astronaut/Astronaut.glb`, https://github.com/nasa/NASA-3D-Resources/tree/master/3D%20Models/Astronaut,
   commit `11ebb4ee043715aefbba6aeec8a61746fad67fa7` of 2025-06-03), 762 988 bytes, sha256
@@ -220,6 +221,7 @@ list (Mons Mouton uses Mons Mouton Plateau's; Nobile Rims 1 and 2 use Griffin-1'
   1.5.7 to read the source, `sharp` for the texture, all pinned in `packages/web/package.json`): it bakes the root
   transform into the mesh, lowers the arms that the source holds out (`scripts/astronaut-mesh.mjs`), covers the
   insignia, names the materials `suit` and `visor` (the visor loses its texture: the page tints it), welds the
-  vertices, shrinks the suit texture to 512 px WebP at quality 82 and quantizes positions and normals
-  (KHR_mesh_quantization). No Draco or meshopt: both would need WebAssembly in the browser, which the page's CSP does
-  not allow. Two runs give byte-identical files.
+  vertices and quantizes positions and normals (KHR_mesh_quantization); the suit texture, shrunk to 512 px WebP at
+  quality 82, is written beside the model and put back on by the page. No Draco or meshopt: both would need
+  WebAssembly in the browser, and a texture inside the GLB would load through a `blob:` URL; the page's CSP allows
+  neither. Two runs give byte-identical files.

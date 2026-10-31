@@ -24,20 +24,22 @@
  */
 
 // Builds the astronaut the page lets you drag onto the Moon (VENT-10) from NASA's «Astronaut» model, NASA 3D
-// Resources (public domain), into packages/web/public/models/astronaut.glb:
+// Resources (public domain), into packages/web/public/models/astronaut.glb and its suit texture beside it,
+// astronaut-suit.webp:
 //
 //   node packages/web/scripts/astronaut.mjs <Astronaut.glb> [out.glb]
 //
 // The source is read as data only (a GLB, Draco-compressed). The build bakes the root transform into the mesh, lowers
 // the arms (astronaut-mesh.mjs), covers the NASA insignia on the backpack with the fabric next to it, names the two
 // materials `suit` and `visor` (the page tints the visor with the state's colour, so its texture goes), welds the
-// vertices, shrinks the suit texture to 512 px WebP and quantizes the mesh (KHR_mesh_quantization). The output needs no
-// decoder: Draco and meshopt would both need WebAssembly, which the page's CSP does not allow.
+// vertices and quantizes the mesh (KHR_mesh_quantization). The output needs no decoder: Draco and meshopt would both
+// need WebAssembly, which the page's CSP does not allow. The suit texture, shrunk to 512 px WebP, is its own file: a
+// texture inside a GLB reaches the browser through a blob: URL, which the CSP does not allow either.
 import { readFileSync, writeFileSync } from 'node:fs';
 import { createHash } from 'node:crypto';
 import { fileURLToPath } from 'node:url';
 import { NodeIO } from '@gltf-transform/core';
-import { ALL_EXTENSIONS, EXTTextureWebP } from '@gltf-transform/extensions';
+import { ALL_EXTENSIONS } from '@gltf-transform/extensions';
 import { dedup, flatten, prune, quantize, weld } from '@gltf-transform/functions';
 import draco3d from 'draco3dgltf';
 import sharp from 'sharp';
@@ -116,10 +118,12 @@ async function cleanSuitTexture(image) {
 }
 
 /**
- * Names the materials `suit` and `visor`, gives the visor a plain silver with no texture, and keeps one suit
- * texture (the source carries each as WebP with a PNG fallback; the PNG is the lossless one, so it is the source).
+ * Names the materials `suit` and `visor`, gives the visor a plain silver, and takes the textures out of the model;
+ * returns the suit texture, cleaned (the source carries each as WebP with a PNG fallback; the PNG is the lossless one,
+ * so it is the source).
  */
 async function setMaterials(doc) {
+  let suit = null;
   const root = doc.getRoot();
   for (const material of root.listMaterials()) {
     if (material.getName() === SOURCE_VISOR) {
@@ -131,14 +135,24 @@ async function setMaterials(doc) {
     const texture = material.getBaseColorTexture();
     const png = root.listTextures().find((t) => t.getName() === texture?.getName() && t.getMimeType() === 'image/png');
     if (!texture || !png) throw new Error('the suit texture is missing');
-    texture.setImage(await cleanSuitTexture(png.getImage())).setMimeType('image/webp').setURI('suit.webp');
+    suit = await cleanSuitTexture(png.getImage());
+    material.setBaseColorTexture(null);
   }
   for (const extension of root.listExtensionsUsed()) {
-    if (extension.extensionName === 'KHR_draco_mesh_compression') extension.dispose();
+    const name = extension.extensionName;
+    if (name === 'KHR_draco_mesh_compression' || name === 'EXT_texture_webp') extension.dispose();
   }
+  return suit;
 }
 
-/** Reads the source, builds the page's model, writes it to `out` and prints its size and sha256. */
+/** Writes `bytes` to `path` and prints its size and sha256. */
+function writeAndSay(path, bytes) {
+  writeFileSync(path, bytes);
+  const sha = createHash('sha256').update(bytes).digest('hex');
+  console.log(`${path}: ${bytes.byteLength} bytes, sha256 ${sha}`);
+}
+
+/** Reads the source, builds the page's model and its suit texture, writes them beside `out` and prints them. */
 async function build(source, out) {
   const io = new NodeIO()
     .registerExtensions(ALL_EXTENSIONS)
@@ -146,13 +160,12 @@ async function build(source, out) {
   const doc = await io.readBinary(new Uint8Array(readFileSync(source)));
   bakeTransforms(doc);
   lowerAllArms(doc);
-  await setMaterials(doc);
-  doc.createExtension(EXTTextureWebP).setRequired(true);
-  await doc.transform(flatten(), dedup(), prune(), weld(), quantize({ quantizePosition: 14, quantizeNormal: 10 }));
-  const bytes = await io.writeBinary(doc);
-  writeFileSync(out, bytes);
-  const sha = createHash('sha256').update(bytes).digest('hex');
-  console.log(`${out}: ${bytes.byteLength} bytes, sha256 ${sha}`);
+  const suit = await setMaterials(doc);
+  // The suit's UVs stay: the page puts the texture back on.
+  const keep = prune({ keepAttributes: true });
+  await doc.transform(flatten(), dedup(), keep, weld(), quantize({ quantizePosition: 14, quantizeNormal: 10 }));
+  writeAndSay(out, await io.writeBinary(doc));
+  writeAndSay(out.replace(/\.glb$/, '-suit.webp'), suit);
 }
 
 const [source, out = OUT] = process.argv.slice(2);

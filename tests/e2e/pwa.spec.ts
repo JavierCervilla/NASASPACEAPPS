@@ -31,7 +31,7 @@
  */
 import { execFileSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
-import { expect, test, type BrowserContext, type Page } from '@playwright/test';
+import { expect, test, type BrowserContext, type Page, type Response } from '@playwright/test';
 import { stubApi } from './api-stub';
 
 const NOW = new Date('2026-11-29T20:00:00Z');
@@ -62,6 +62,34 @@ async function controlled(page: Page): Promise<void> {
   await page.waitForFunction(() => navigator.serviceWorker.controller !== null, undefined, { timeout: 15_000 });
 }
 
+/** The paths under the base the worker keeps in its static cache. */
+function keptFiles(page: Page): Promise<string[]> {
+  return page.evaluate(async (root) => {
+    const names = (await caches.keys()).filter((n) => n.startsWith('ventana-static-'));
+    const lists = await Promise.all(names.map(async (n) => (await caches.open(n)).keys()));
+    return lists.flat().map((r) => new URL(r.url).pathname.slice(root.length));
+  }, base);
+}
+
+/**
+ * Opens `path` on a 390 px phone, lets the worker take it over and keep what the visit used, then goes offline and
+ * reloads; resolves with the Moon map's answer on that offline load.
+ */
+async function offlineVisit(context: BrowserContext, page: Page, path: string): Promise<Response> {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await open(context, page, path);
+  await controlled(page);
+  // The second visit runs through the worker, which keeps the API's answers and the files the page uses.
+  await page.reload();
+  await expect(page.locator('.globe-markers')).toHaveAttribute('data-state', 'window');
+  await expect(page.locator('.offline-notice')).toBeEmpty();
+  await expect.poll(async () => (await keptFiles(page)).some((f) => f.startsWith('textures/moon-lroc-'))).toBe(true);
+  await context.setOffline(true);
+  const map = page.waitForResponse(/\/textures\/moon-lroc-\dk\.jpg$/);
+  await page.reload();
+  return map;
+}
+
 /** The width and height a PNG declares in its header. */
 function pngSize(bytes: Buffer): [number, number] {
   expect(bytes.subarray(1, 4).toString('latin1')).toBe('PNG');
@@ -89,6 +117,10 @@ test.describe('manifests', () => {
       expect(manifest.icons.map((i: { purpose: string }) => i.purpose)).toContain('maskable');
       const touch = await page.locator('link[rel="apple-touch-icon"]').getAttribute('href');
       expect(pngSize(await (await page.request.get(new URL(touch!, page.url()).href)).body())).toEqual([180, 180]);
+      // Some clients ask for it at the root without reading the link.
+      const root = await page.request.get(new URL(`${base}apple-touch-icon.png`, page.url()).href);
+      expect(root.headers()['content-type']).toBe('image/png');
+      expect(pngSize(await root.body())).toEqual([180, 180]);
     });
   }
 
@@ -114,15 +146,9 @@ test.describe('offline', () => {
     ['de/', 'de', /^Offline · Daten vom \d{1,2}\. \w+ \d{4}$/],
   ] as const) {
     test(`/${path} opens without a network, with the last data and the ${lang} notice`, async ({ context, page }) => {
-      await page.setViewportSize({ width: 390, height: 844 });
-      await open(context, page, path);
-      await controlled(page);
-      // The second visit runs through the worker, which keeps the API's answers.
-      await page.reload();
-      await expect(page.locator('.globe-markers')).toHaveAttribute('data-state', 'window');
-      await expect(page.locator('.offline-notice')).toBeEmpty();
-      await context.setOffline(true);
-      await page.reload();
+      const map = await offlineVisit(context, page, path);
+      // The map the visit used comes from the worker's cache.
+      expect(map.fromServiceWorker()).toBe(true);
       await expect(page.locator('html')).toHaveAttribute('lang', lang);
       await expect(page.locator('.offline-notice')).toHaveText(notice);
       await expect(page.locator('.globe-markers')).toHaveAttribute('data-state', 'window');
@@ -131,6 +157,54 @@ test.describe('offline', () => {
       await expect(page.locator('.offline-notice')).toBeEmpty();
     });
   }
+});
+
+test.describe('what the worker downloads', () => {
+  test('the install keeps only the shell; maps, thumbnails and phase frames only as the page uses them', async ({
+    context,
+    page,
+  }) => {
+    await page.setViewportSize({ width: 390, height: 844 });
+    await open(context, page, '');
+    await controlled(page);
+    const kept = await keptFiles(page);
+    expect(kept).toEqual(expect.arrayContaining(['', 'es/', 'manifest.webmanifest', 'icons/icon-192.png']));
+    expect(kept.filter((f) => f.startsWith('icons/phase/')).length).toBeLessThanOrEqual(2);
+    expect(kept.filter((f) => /moon-lroc-(4|8)k/.test(f))).toEqual([]);
+    expect(kept.filter((f) => f.startsWith('thumbs/')).length).toBeLessThanOrEqual(2);
+  });
+
+  test('under Save-Data no worker is registered', async ({ context, page }) => {
+    await page.addInitScript(() => {
+      Object.defineProperty(navigator, 'connection', { value: { saveData: true }, configurable: true });
+    });
+    await stubApi(context);
+    await page.goto('./');
+    await expect(page.getByRole('button', { name: 'Load the 3D globe' })).toBeVisible();
+    await page.waitForLoadState('networkidle');
+    expect(await page.evaluate(async () => (await navigator.serviceWorker.getRegistrations()).length)).toBe(0);
+  });
+});
+
+test.describe('offline notice, 390x844 at 200 % text', () => {
+  test('sits under the grown top bar and never over the site pill (QA VENT-28)', async ({ context, page }) => {
+    await offlineVisit(context, page, '');
+    await page.evaluate(() => {
+      document.documentElement.style.fontSize = '200%';
+    });
+    const notice = page.locator('.offline-notice');
+    await expect(notice).toHaveText(/^Offline · data from/);
+    const box = async (selector: string) => (await page.locator(selector).boundingBox())!;
+    await expect.poll(async () => (await box('.offline-notice')).y >= (await box('.phone-bar')).y + (await box('.phone-bar')).height).toBe(true);
+    const pill = await box('.site-pill');
+    const note = await box('.offline-notice');
+    const apart = note.y >= pill.y + pill.height || note.x >= pill.x + pill.width || note.x + note.width <= pill.x;
+    expect(apart).toBe(true);
+    // Two lines at most, so it covers little of the globe.
+    const lineHeight = await notice.evaluate((el) => parseFloat(getComputedStyle(el).lineHeight));
+    expect(note.height).toBeLessThanOrEqual(2 * lineHeight + 20);
+    await page.screenshot({ path: test.info().outputPath('offline-200.png') });
+  });
 });
 
 const favicon = (page: Page) => page.locator('#live-favicon');

@@ -77,3 +77,15 @@ export function staticCacheName(digest: string): string {
 export function staleCaches(names: readonly string[], current: string) {
   return names.filter((n) => n.startsWith(STATIC_PREFIX) && n !== current);
 }
+
+/**
+ * The install's requests for `paths` under `scope`, past the HTTP cache:
+ * a stale copy there would be kept for the whole build.
+ */
+export function precacheRequests(
+  paths: readonly string[],
+  scope: URL,
+): Request[] {
+  const reload = { cache: 'reload' } as const;
+  return paths.map((p) => new Request(new URL(p, scope), reload));
+}

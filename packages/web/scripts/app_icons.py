@@ -36,7 +36,9 @@ Writes, under packages/web/public:
   rounded square;
 - icons/icon-maskable-512.png: full bleed, the ring inside the central
   80 % circle Android may crop to;
-- icons/apple-touch-icon.png (180): full bleed, iOS rounds it;
+- icons/apple-touch-icon.png (180): full bleed, iOS rounds it, and the
+  same bytes at the root (apple-touch-icon.png), which some clients ask
+  for without reading the page's link;
 - favicon.ico (16, 32, 48) and favicon.svg (vector ring around an
   embedded Moon): the fallbacks before the live favicon draws;
 - icons/phase/moon-NN.webp: PHASE_FRAMES Moons through one synodic
@@ -54,6 +56,7 @@ import argparse
 import base64
 import io
 import math
+import shutil
 from pathlib import Path
 
 import numpy as np
@@ -250,6 +253,7 @@ def write_icons(maps, public):
         icons / "icon-maskable-512.png", optimize=True
     )
     j2(moon, 180, "square").save(icons / "apple-touch-icon.png", optimize=True)
+    shutil.copyfile(icons / "apple-touch-icon.png", public / "apple-touch-icon.png")
     j2(moon, 48, "rounded").save(
         public / "favicon.ico", sizes=[(16, 16), (32, 32), (48, 48)]
     )

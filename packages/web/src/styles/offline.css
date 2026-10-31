@@ -26,17 +26,20 @@
 /*
  * The offline notice (VENT-28, components/OfflineNotice.tsx): a small
  * glass pill under the header (desktop) or the top bar (phones), above
- * the globe and the sheet. Empty while online.
+ * the globe and the sheet. Empty while online. `--top` is the lowest
+ * bar's bottom, measured; at most two lines, the date cut with an
+ * ellipsis under very large text, and taps go through to the globe.
  */
 .offline-notice {
   position: fixed;
-  top: calc(env(safe-area-inset-top, 0px) + 84px);
+  top: var(--top, calc(env(safe-area-inset-top, 0px) + 84px));
   left: 50%;
   z-index: 5;
   max-width: calc(100vw - 32px);
   margin: 0;
   padding: 8px 14px;
-  border-radius: 999px;
+  /* Half a one-line pill's height: a pill, or a rounded box on two. */
+  border-radius: calc(0.8125rem * 1.35 / 2 + 8px);
   translate: -50% 0;
   background: var(--chrome);
   backdrop-filter: blur(20px) saturate(180%);
@@ -46,6 +49,12 @@
   font-weight: 600;
   color: var(--text);
   text-align: center;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  overflow: hidden;
+  pointer-events: none;
 }
 
 .offline-notice:empty {

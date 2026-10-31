@@ -26,7 +26,8 @@
 /**
  * Registers the service worker (sw-worker.ts) at the site's base, so its
  * scope is every locale's page. Production builds only: the dev server
- * has no `sw.js`, and a worker there would serve stale modules.
+ * has no `sw.js`, and a worker there would serve stale modules. Not under
+ * Save-Data: nothing is downloaded the visitor did not ask for.
  */
 
 /** The worker's address and scope under `base`. */
@@ -35,12 +36,16 @@ export function workerAt(base: string): { url: string; scope: string } {
   return { url: `${scope}sw.js`, scope };
 }
 
-/** Registers the worker when the browser has them; a failure is quiet. */
+/**
+ * Registers the worker when the browser has them and is not saving data
+ * (its install downloads the shell of every locale); a failure is quiet.
+ */
 export function registerServiceWorker(
   base: string,
   container: ServiceWorkerContainer | undefined,
+  saveData: boolean,
 ): void {
-  if (!container) return;
+  if (!container || saveData) return;
   const { url, scope } = workerAt(base);
   container.register(url, { scope }).catch((error: unknown) => {
     console.warn(`Ventana Lunar: no offline mode (${String(error)}).`);

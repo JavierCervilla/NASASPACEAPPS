@@ -9,9 +9,13 @@
   ofrece accesos directos a cuatro sitios destacados (IM-2, Shackleton, Haworth y Apolo 11); cualquier enlace puede
   abrir un sitio con `?site=<id>`. El icono de la pestaña está vivo: muestra la Luna en su fase del instante elegido
   (con la luz cenicienta en la parte oscura) y el anillo resalta el estado del sitio elegido (ventana, solo Sol o solo
-  Tierra; con «ninguno» o sin datos, la leyenda entera). Mientras el globo carga se ve el icono con la fase de hoy. Sin
-  conexión, la app abre con lo último que descargó y avisa «Sin conexión · datos del 31 de octubre de 2026» (en los
-  cinco idiomas); al volver la red, actualiza los datos sin recargar. Lo que las plataformas no permiten: el icono de la
+  Tierra; con «ninguno» o sin datos, la leyenda entera). Mientras el globo carga se ve el icono con la fase de hoy, hasta
+  que el mapa de la Luna está puesto (nunca una esfera gris lisa). Sin conexión, la app abre con lo que ya se vio (las
+  páginas, el mapa y los datos de las últimas consultas) y avisa «Sin conexión · datos del 31 de octubre de 2026» (en
+  los cinco idiomas) bajo la barra superior, sin tapar el botón del sitio aunque el texto esté al 200 %; al volver la
+  red, actualiza los datos sin recargar. Al instalarse solo descarga lo imprescindible (las páginas y los iconos): los
+  mapas y las miniaturas se guardan cuando se usan, y con «Ahorro de datos» no descarga nada extra ni funciona sin
+  conexión. Lo que las plataformas no permiten: el icono de la
   pantalla de inicio no cambia una vez instalado (iOS nunca lo refresca), iOS no usa los accesos directos y, sin
   imágenes de arranque por tamaño de pantalla, enseña una pantalla lisa hasta que pinta la página.
 - La web en cinco idiomas (VENT-35, lienzos validados «LangDesktop» y «LangPhoneB»): inglés (por defecto), español,

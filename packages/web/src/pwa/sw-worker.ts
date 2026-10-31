@@ -29,20 +29,27 @@
  * `__SW_CONFIG__`: the build's digest and the files to cache at install.
  * The pages, network first, so a deploy is never hidden behind a stale
  * shell; the build's files, cache first, under a cache named after the
- * build; the API's GETs, network first, their last answer offline.
+ * build: the shell at install, the rest (maps, thumbnails, phase frames)
+ * the first time the page uses them; the API's GETs, network first,
+ * their last answers offline.
  */
+import { apiFirst } from './sw-api';
 import {
   API_CACHE,
+  precacheRequests,
   routeOf,
   staleCaches,
   staticCacheName,
   SYNC_ENTRY,
 } from './sw-routes';
-import { apiFirst, cacheFirst, networkFirst } from './sw-strategies';
+import { cacheFirst, networkFirst } from './sw-strategies';
 
 declare const __SW_CONFIG__: {
   readonly digest: string;
-  /** Paths under the scope: the locale shells and the build's files. */
+  /**
+   * Paths under the scope: the shell (pages, build files, manifests, app
+   * icons). Maps, thumbnails and phase frames are kept as they are used.
+   */
   readonly precache: readonly string[];
 };
 
@@ -73,8 +80,7 @@ const net = {
 
 async function install(): Promise<void> {
   const cache = await caches.open(STATIC);
-  const urls = __SW_CONFIG__.precache.map((p) => new URL(p, scope).href);
-  await cache.addAll(urls);
+  await cache.addAll(precacheRequests(__SW_CONFIG__.precache, scope));
   await sw.skipWaiting();
 }
 

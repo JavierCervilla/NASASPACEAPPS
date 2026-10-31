@@ -68,6 +68,7 @@ function useGlobe(props: Props, i18n: I18n) {
   const host = useRef<HTMLDivElement>(null);
   const loader = useRef<() => void>(() => undefined);
   const [status, setStatus] = useState<GlobeStatus | null>(null);
+  const [textured, setTextured] = useState(false);
   useEffect(() => {
     const el = host.current;
     if (!el) return undefined;
@@ -79,12 +80,14 @@ function useGlobe(props: Props, i18n: I18n) {
     const markerName = (site: GlobeSite): string =>
       markerLabel(i18n, { ...site, name: localName(i18n, site.name) });
     const deps = { ...options, saveData, reducedMotion, warn, anchors };
-    const start = startGlobe(el, { ...deps, markerName }, setStatus, saveData);
+    const onTextured = (): void => setTextured(true);
+    const all = { ...deps, markerName, onTextured };
+    const start = startGlobe(el, all, setStatus, saveData);
     loader.current = start.load;
     return start.dispose;
   }, [sitesUrl, base, store, sheetEdge, time, state, i18n]);
   const load = (): void => loader.current();
-  return { host, status, load };
+  return { host, status, load, textured };
 }
 
 /**
@@ -120,7 +123,7 @@ function LoadButton({ onLoad }: { readonly onLoad: () => void }) {
  */
 export default function Globe(props: Props) {
   const i18n = useI18n();
-  const { host, status, load } = useGlobe(props, i18n);
+  const { host, status, load, textured } = useGlobe(props, i18n);
   const atMs = useTime(props.time)?.atMs ?? null;
   // The scene owns the viewport's children (canvas, markers), so React
   // renders nothing inside it; the text alternative is its sibling.
@@ -141,7 +144,7 @@ export default function Globe(props: Props) {
         {helpText(i18n, status, atMs)}
       </p>
       {kind === 'deferred' ? <LoadButton onLoad={load} /> : null}
-      <GlobeSplash base={props.base} time={props.time} done={kind !== 'idle'} />
+      <GlobeSplash {...props} textured={textured} status={kind} />
     </>
   );
 }

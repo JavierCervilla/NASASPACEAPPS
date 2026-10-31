@@ -107,15 +107,24 @@ Every visible change follows `.claude/skills/apple-design/SKILL.md` (vendored fr
   shared instant and the ring emphasising the selected site's state (Neither or no data: the full legend), only when
   the frame or the state changes, at most every 250 ms. The phase is `meanOrbitPhase` (`src/pwa/moon-phase.ts`, mean
   orbits plus the largest periodic terms, within half an hour of the true phases), behind `PhaseSource` so VENT-36's
-  Sun can replace it. The globe's loading state (`GlobeSplash.tsx`) shows J2 with the same phase until the scene runs.
+  Sun can replace it. The globe's loading state (`GlobeSplash.tsx`) shows J2 with the same phase until the Moon's first
+  map is on the running scene (`onTextured`), or 6 s at most. A phase frame that fails to load leaves the ring alone and
+  is asked again on the next update.
 - **Offline**: `scripts/service-worker.mjs` (an Astro integration) bundles `src/pwa/sw-worker.ts` into `dist/sw.js`
-  after every build, with the files it caches at install (every locale's page except `/en-xa/`, `_astro/`, icons,
-  manifests, thumbnails, the 1K/2K maps and the polar map; 4K/8K are cached as the zoom fetches them) and the build's
-  digest, which names the static cache (`ventana-static-<digest>`), so a deploy drops the old one. Pages and API GETs
-  are network first, build files cache first; the API's answers live in `ventana-api-v1`, stamped with when they came.
-  Offline, the page shows «Offline · data from <date>» (`OfflineNotice.tsx`), and when the network returns the hours
-  are asked again quietly. Registered in production builds only; e2e specs block service workers except
-  `tests/e2e/pwa.spec.ts`. nginx serves `sw.js` and the manifests with `no-cache`, the manifests as
+  after every build, with the files it caches at install, the shell only (every locale's page except `/en-xa/`,
+  `_astro/`, the manifests, the app icons `icons/*.png`, `favicon.ico`, `favicon.svg` and the root
+  `apple-touch-icon.png`), fetched past the HTTP cache (`cache: 'reload'`), and the build's digest over every file the
+  worker may keep, which names the static cache (`ventana-static-<digest>`), so a deploy drops the old one. Maps,
+  thumbnails and phase frames are never precached: the worker keeps each one cache first the first time the page
+  fetches it, so offline works for what the visitor has seen and the install downloads nothing the device tier or
+  Save-Data would not. Under Save-Data the worker is not registered at all. Pages and API GETs are network first,
+  build files cache first; the network's answer always wins (a copy that cannot be kept, a full quota, is skipped), only
+  ok answers are kept, a page is kept under its URL without the query string and never as a redirected answer. The
+  API's answers live in `ventana-api-v1`, stamped with when they came, the 24 latest only (`src/pwa/sw-api.ts`, like
+  `hours-cache.ts`). Offline, the page shows «Offline · data from <date>» (`OfflineNotice.tsx`, under the lowest top
+  bar, measured, two lines at most), and when the network returns the hours are asked again quietly. Registered in
+  production builds only; e2e specs block service workers except `tests/e2e/pwa.spec.ts`. Emergency kill switch
+  (unregister and delete the caches everywhere): `docs/service-worker.md`. nginx serves `sw.js` and the manifests with `no-cache`, the manifests as
   `application/manifest+json`. The CSP did not change: `default-src 'self'` already covers the worker, the manifest
   and its fetches, and the favicon's `data:` image is under `img-src 'self' data:`.
 - **What the platforms do not allow**: the home-screen icon is fixed once installed (iOS never refreshes it, Android at

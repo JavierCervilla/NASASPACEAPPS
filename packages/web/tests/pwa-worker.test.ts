@@ -30,19 +30,21 @@
 import { mkdirSync, mkdtempSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { precached, precacheOf, requestPath } from '../scripts/service-worker.mjs';
 import { syncDate, syncedAt, syncUrl } from '../src/pwa/offline-status';
-import { workerAt } from '../src/pwa/register-sw';
+import { registerServiceWorker, workerAt } from '../src/pwa/register-sw';
+import { API_ENTRIES, apiFirst } from '../src/pwa/sw-api';
 import {
   API_CACHE,
   FETCHED_AT_HEADER,
+  precacheRequests,
   routeOf,
   staleCaches,
   staticCacheName,
   STATIC_PREFIX,
 } from '../src/pwa/sw-routes';
-import { apiFirst, cacheFirst, networkFirst, type SwNet } from '../src/pwa/sw-strategies';
+import { cacheFirst, networkFirst, type SwNet } from '../src/pwa/sw-strategies';
 
 const SCOPE = new URL('https://ventana.test/');
 const route = (path: string, navigate = false) => routeOf(new URL(path, SCOPE), SCOPE, navigate);
@@ -105,36 +107,56 @@ const BUILD = {
   'es/manifest.webmanifest': '{}',
   'en-xa/index.html': 'pseudo',
   '_astro/app.1.js': 'js',
+  'icons/icon-192.png': 'i',
+  'icons/apple-touch-icon.png': 't',
   'icons/phase/moon-00.webp': 'w',
+  'apple-touch-icon.png': 't',
+  'favicon.ico': 'f',
+  'thumbs/im2-athena-320.webp': 'th',
+  'textures/moon-lroc-1k.jpg': '1k',
   'textures/moon-lroc-2k.jpg': '2k',
   'textures/moon-lroc-8k.jpg': '8k',
   'sw.js': 'worker',
 };
 
 describe('precache', () => {
-  it('caches the locale shells, the build’s files and the start maps, not the pseudo-locale nor the 8K map', () => {
+  it('caches only the shell at install: pages, build files, manifests and app icons; no map, thumbnail nor phase', () => {
     expect(precacheOf(dist(BUILD)).precache.toSorted()).toEqual([
       '',
       '_astro/app.1.js',
+      'apple-touch-icon.png',
       'es/',
       'es/manifest.webmanifest',
-      'icons/phase/moon-00.webp',
-      'textures/moon-lroc-2k.jpg',
+      'favicon.ico',
+      'icons/apple-touch-icon.png',
+      'icons/icon-192.png',
     ]);
-    expect(precached('en-xa/index.html')).toBe(false);
+    for (const file of ['en-xa/index.html', 'textures/moon-lroc-1k.jpg', 'thumbs/im2-athena-320.webp']) {
+      expect(precached(file)).toBe(false);
+    }
+    expect(precached('icons/phase/moon-00.webp')).toBe(false);
     expect(requestPath('de/index.html')).toBe('de/');
   });
 
-  it('changes the digest, and so the cache name, when any cached file changes', () => {
+  it('changes the digest, and so the cache name, when any file the worker may keep changes', () => {
     const before = precacheOf(dist(BUILD)).digest;
     expect(precacheOf(dist(BUILD)).digest).toBe(before);
     expect(precacheOf(dist({ ...BUILD, '_astro/app.1.js': 'js2' })).digest).not.toBe(before);
-    expect(precacheOf(dist({ ...BUILD, 'textures/moon-lroc-8k.jpg': 'other' })).digest).toBe(before);
+    // Maps are kept at runtime under the same cache, so a new map must name a new cache.
+    expect(precacheOf(dist({ ...BUILD, 'textures/moon-lroc-8k.jpg': 'other' })).digest).not.toBe(before);
+    expect(precacheOf(dist({ ...BUILD, 'sw.js': 'other worker' })).digest).toBe(before);
+  });
+
+  it('asks the server, not the HTTP cache, for every file at install', () => {
+    const requests = precacheRequests(['', 'es/'], SCOPE);
+    expect(requests.map((r) => r.url)).toEqual(['https://ventana.test/', 'https://ventana.test/es/']);
+    expect(requests.every((r) => r.cache === 'reload')).toBe(true);
   });
 });
 
-/** An in-memory cache storage and a scripted network. */
+/** An in-memory cache storage and a scripted network; after `fillQuota` every write fails as a full quota does. */
 function fakeNet(answer: () => Promise<Response>) {
+  let failPut = false;
   const stores = new Map<string, Map<string, Response>>();
   const keyOf = (req: RequestInfo | URL, ignoreSearch = false) => {
     const url = new URL(typeof req === 'string' || req instanceof URL ? req : req.url);
@@ -145,7 +167,12 @@ function fakeNet(answer: () => Promise<Response>) {
     const store = stores.get(name) ?? new Map<string, Response>();
     stores.set(name, store);
     return {
-      put: async (req: RequestInfo | URL, res: Response) => void store.set(keyOf(req), res),
+      put: async (req: RequestInfo | URL, res: Response) => {
+        if (failPut) throw new DOMException('quota', 'QuotaExceededError');
+        store.set(keyOf(req), res);
+      },
+      keys: async () => [...store.keys()].map((k) => new Request(k)),
+      delete: async (req: RequestInfo | URL) => store.delete(keyOf(req)),
       match: async (req: RequestInfo | URL, opts?: { ignoreSearch?: boolean }) =>
         store.get(keyOf(req, opts?.ignoreSearch))?.clone() ??
         [...store.entries()].find(([k]) => opts?.ignoreSearch && keyOf(k, true) === keyOf(req, true))?.[1].clone(),
@@ -153,11 +180,26 @@ function fakeNet(answer: () => Promise<Response>) {
   };
   const caches = { open } as unknown as CacheStorage;
   const net: SwNet = { caches, fetch: () => answer(), now: () => 1_793_000_000_000 };
-  return { net, stores };
+  const fillQuota = () => {
+    failPut = true;
+  };
+  return { net, stores, fillQuota };
 }
 
 const ok = (body: string) => () => Promise.resolve(new Response(body));
 const down = () => Promise.reject(new TypeError('offline'));
+const failing = (status: number) => () => Promise.resolve(new Response('error', { status }));
+
+/** A response that followed a redirect, as `fetch` gives it (a constructed Response never has `redirected`). */
+function redirected(body: string): Response {
+  const mark = (r: Response): Response => {
+    Object.defineProperty(r, 'redirected', { value: true });
+    const clone = r.clone.bind(r);
+    r.clone = () => mark(clone());
+    return r;
+  };
+  return mark(new Response(body));
+}
 
 describe('strategies', () => {
   it('network first keeps the answer and serves it offline, ignoring a page’s `?site=`', async () => {
@@ -172,6 +214,63 @@ describe('strategies', () => {
   it('network first fails as the network does when nothing is kept', async () => {
     const { net } = fakeNet(down);
     await expect(networkFirst(net, new Request('https://ventana.test/fr/'), { cache: 'c' })).rejects.toThrow('offline');
+  });
+
+  it('network first answers with the network even when keeping the copy fails (a full quota)', async () => {
+    const { net, stores, fillQuota } = fakeNet(ok('stale'));
+    const keep = { cache: 'c' };
+    const request = () => new Request('https://ventana.test/fr/');
+    await networkFirst(net, request(), keep);
+    fillQuota();
+    const res = await networkFirst({ ...net, fetch: ok('fresh') }, request(), keep);
+    expect(await res.text()).toBe('fresh');
+    expect(stores.get('c')?.size).toBe(1);
+  });
+
+  it('network first never keeps an answer that is not ok', async () => {
+    const { net, stores } = fakeNet(failing(500));
+    const res = await networkFirst(net, new Request('https://ventana.test/fr/'), { cache: 'c' });
+    expect(res.status).toBe(500);
+    expect(stores.get('c')?.size ?? 0).toBe(0);
+  });
+
+  it('keeps one copy of a page whatever its query string', async () => {
+    const { net, stores } = fakeNet(ok('page'));
+    const keep = { cache: 'c', ignoreSearch: true };
+    for (const q of ['?x=1', '?x=2', '?site=apollo11']) {
+      await networkFirst(net, new Request(`https://ventana.test/es/${q}`), keep);
+    }
+    expect([...(stores.get('c')?.keys() ?? [])]).toEqual(['https://ventana.test/es/']);
+  });
+
+  it('never keeps a page as a redirected answer, so offline it can be served to a navigation', async () => {
+    const { net, stores } = fakeNet(() => Promise.resolve(redirected('final page')));
+    const keep = { cache: 'c', ignoreSearch: true };
+    const res = await networkFirst(net, new Request('https://ventana.test/es'), keep);
+    expect(await res.text()).toBe('final page');
+    const kept = stores.get('c')?.get('https://ventana.test/es');
+    expect(kept?.redirected).toBe(false);
+    expect(await kept?.text()).toBe('final page');
+  });
+
+  it('cache first never keeps an answer that is not ok, and asks again next time', async () => {
+    let asked = 0;
+    const { net, stores } = fakeNet(() => {
+      asked += 1;
+      return failing(404)();
+    });
+    const request = () => new Request('https://ventana.test/textures/moon-lroc-4k.jpg');
+    expect((await cacheFirst(net, request(), 'c')).status).toBe(404);
+    await cacheFirst(net, request(), 'c');
+    expect(asked).toBe(2);
+    expect(stores.get('c')?.size ?? 0).toBe(0);
+  });
+
+  it('cache first answers with the network even when keeping the copy fails', async () => {
+    const { net, fillQuota } = fakeNet(ok('map'));
+    fillQuota();
+    const res = await cacheFirst(net, new Request('https://ventana.test/textures/moon-lroc-4k.jpg'), 'c');
+    expect(await res.text()).toBe('map');
   });
 
   it('cache first answers from the cache without asking the network again', async () => {
@@ -199,7 +298,33 @@ describe('strategies', () => {
   });
 });
 
+describe('the API cache', () => {
+  it(`keeps at most ${API_ENTRIES} answers, dropping the oldest by when they came`, async () => {
+    let clock = 1_793_000_000_000;
+    const { net, stores } = fakeNet(ok('{"hours":[]}'));
+    const ticking: SwNet = { ...net, now: () => (clock += 1000) };
+    const keep = { cache: API_CACHE, syncUrl: 'https://ventana.test/__ventana-synced-at' };
+    const url = (i: number) => `https://ventana.test/api/v1/sites/s${i}?from=a&to=b`;
+    for (let i = 0; i < API_ENTRIES + 6; i += 1) await apiFirst(ticking, new Request(url(i)), keep);
+    const store = stores.get(API_CACHE)!;
+    expect(store.size).toBe(API_ENTRIES + 1);
+    expect(store.has(keep.syncUrl)).toBe(true);
+    expect(store.has(url(5))).toBe(false);
+    expect(store.has(url(6))).toBe(true);
+    expect(store.has(url(API_ENTRIES + 5))).toBe(true);
+  });
+});
+
 describe('the page side', () => {
+  it('registers no worker when the browser asks to save data', () => {
+    const register = vi.fn(() => Promise.resolve({} as ServiceWorkerRegistration));
+    const container = { register } as unknown as ServiceWorkerContainer;
+    registerServiceWorker('/', container, true);
+    expect(register).not.toHaveBeenCalled();
+    registerServiceWorker('/', container, false);
+    expect(register).toHaveBeenCalledWith('/sw.js', { scope: '/' });
+  });
+
   it('registers the worker at the base, scoped to every locale', () => {
     expect(workerAt('/')).toEqual({ url: '/sw.js', scope: '/' });
     expect(workerAt('/ventana')).toEqual({ url: '/ventana/sw.js', scope: '/ventana/' });

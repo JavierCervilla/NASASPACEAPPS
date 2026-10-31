@@ -100,6 +100,28 @@ test.describe('desktop, 1440x900', () => {
     expect(requested.filter((url) => GLOBE_ASSET.test(url))).toHaveLength(2);
   });
 
+  test('the loading splash stays over a running scene until the Moon’s map is on it (QA VENT-28)', async ({ page }) => {
+    await stubApi(page);
+    let release: () => void = () => undefined;
+    const held = new Promise<void>((resolve) => {
+      release = resolve;
+    });
+    let asked = false;
+    await page.route(/\/textures\/moon-lroc-\dk\.jpg$/, async (route) => {
+      asked = true;
+      await held;
+      await route.continue();
+    });
+    await page.goto('./');
+    const splash = page.locator('.globe-splash');
+    await expect(page.locator('.globe-viewport')).toHaveAttribute('data-status', 'ready');
+    await expect.poll(() => asked).toBe(true);
+    // The scene runs, the map is held: a flat grey sphere must not show.
+    await expect(splash).toHaveAttribute('data-done', 'false');
+    release();
+    await expect(splash).toHaveAttribute('data-done', 'true');
+  });
+
   test('still draws without the API: no markers and one clear warning', async ({ page }) => {
     const log = collectConsole(page);
     const sites = page.waitForResponse('**/api/v1/sites');

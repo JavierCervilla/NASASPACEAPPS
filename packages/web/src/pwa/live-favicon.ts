@@ -65,7 +65,11 @@ interface Wanted {
 
 const keyOf = (w: Wanted): string => `${w.index}|${w.state ?? '-'}`;
 
-/** Draws `target` unless the favicon moved on while its frame loaded. */
+/**
+ * Draws `target` unless the favicon moved on while its frame loaded;
+ * true once it shows with its Moon. A frame that failed to load leaves
+ * the ring alone, to be drawn again with the next update.
+ */
 async function drawFrame(
   deps: FaviconDeps,
   target: Wanted,
@@ -75,7 +79,7 @@ async function drawFrame(
   if (target !== current()) return false;
   const emphasis = ringEmphasis(target.state);
   deps.show(deps.paint({ size: FAVICON_SIZE, moon, emphasis }));
-  return true;
+  return moon !== null;
 }
 
 /** A favicon that follows `update`, drawn through `deps`. */
@@ -91,9 +95,10 @@ export function createLiveFavicon(deps: FaviconDeps): LiveFavicon {
   };
   return {
     update: (atMs, state) => {
-      const index = frameIndex(deps.phase.phaseAt(atMs));
-      if (wanted && keyOf(wanted) === keyOf({ index, state })) return;
-      wanted = { index, state };
+      const next = { index: frameIndex(deps.phase.phaseAt(atMs)), state };
+      // The same wish keeps its identity: a draw in flight stays valid.
+      if (!wanted || keyOf(wanted) !== keyOf(next)) wanted = next;
+      if (keyOf(next) === shown) return;
       timer ??= deps.setTimer(() => void draw(), THROTTLE_MS);
     },
     dispose: () => {

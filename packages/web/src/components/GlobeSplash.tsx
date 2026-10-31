@@ -28,9 +28,13 @@
  * «J2» with the Moon in the phase of the selected instant (the same
  * frames as the live favicon). Decorative: the globe's text alternative
  * speaks for the section. The Moon shows only once the instant is known
- * in the browser, so the static build never bakes its own phase in.
+ * in the browser, so the static build never bakes its own phase in. It
+ * stays over a running scene until the Moon's first map is on it (no
+ * flat grey sphere), or SPLASH_FALLBACK_MS at most, so it never sticks.
  */
+import { useEffect, useState } from 'react';
 import type { TimeStore } from '../calendar/time-store';
+import type { GlobeStatus } from '../globe/boot';
 import { meanOrbitPhase } from '../pwa/moon-phase';
 import { frameIndex, frameUrl } from '../pwa/phase-frames';
 import { ARCS, TRACK } from '../pwa/ring';
@@ -39,9 +43,14 @@ import { useTime } from './calendar/hooks';
 interface Props {
   readonly base: string;
   readonly time: TimeStore;
-  /** Whether the globe has taken over. */
-  readonly done: boolean;
+  /** The globe's start: 'idle' until it reports. */
+  readonly status: GlobeStatus['kind'] | 'idle';
+  /** Whether the Moon's first map is on the globe. */
+  readonly textured: boolean;
 }
+
+/** The longest the splash waits for the map over a running scene. */
+const SPLASH_FALLBACK_MS = 6000;
 
 const C = 512;
 const R = 372;
@@ -73,7 +82,20 @@ function Ring() {
   );
 }
 
-export function GlobeSplash({ base, time, done }: Props) {
+/** Whether the globe has taken over: textured, given up, or waiting. */
+function useDone(status: Props['status'], textured: boolean): boolean {
+  const [late, setLate] = useState(false);
+  useEffect(() => {
+    if (status !== 'ready' || textured) return undefined;
+    const id = window.setTimeout(() => setLate(true), SPLASH_FALLBACK_MS);
+    return () => window.clearTimeout(id);
+  }, [status, textured]);
+  if (status === 'idle') return false;
+  return status !== 'ready' || textured || late;
+}
+
+export function GlobeSplash({ base, time, status, textured }: Props) {
+  const done = useDone(status, textured);
   const atMs = useTime(time)?.atMs ?? null;
   const frame =
     atMs === null ? null : frameIndex(meanOrbitPhase.phaseAt(atMs));

@@ -24,13 +24,12 @@
  */
 
 /**
- * The service worker's three ways to answer (sw-routes.ts says which):
- * network first with the cache as fallback, cache first, and the API's
- * network first, which stamps each answer it keeps with when it came, so
- * the page can say «data from <date>» offline. The cache storage and
- * `fetch` come in, so the strategies run in tests without a worker.
+ * The service worker's two ways to answer (sw-routes.ts says which):
+ * network first with the cache as fallback, and cache first; the API's
+ * variant is in sw-api.ts. The network's answer always wins: a copy that
+ * cannot be kept (a full quota) is skipped, never the answer. The cache
+ * storage and `fetch` come in, so they run in tests without a worker.
  */
-import { FETCHED_AT_HEADER } from './sw-routes';
 
 export interface SwNet {
   readonly caches: CacheStorage;
@@ -41,8 +40,39 @@ export interface SwNet {
 
 export interface Keep {
   readonly cache: string;
-  /** A query string the cached copy ignores (a page's `?site=`). */
+  /** Pages: kept and matched without their query string (`?site=`). */
   readonly ignoreSearch?: boolean;
+}
+
+/** Turns the copy into what is kept (the API stamps it). */
+type Stamp = (response: Response) => Promise<Response>;
+
+/**
+ * A copy of `response` that never says it was redirected: a browser
+ * refuses a redirected answer to a navigation.
+ */
+async function unredirected(response: Response): Promise<Response> {
+  const copy = response.clone();
+  if (!response.redirected) return copy;
+  const { status, statusText, headers } = copy;
+  return new Response(await copy.blob(), { status, statusText, headers });
+}
+
+/** Keeps `response` for `request`, a page's under its query-free URL. */
+async function keepCopy(
+  cache: Cache,
+  request: Request,
+  response: Response,
+  how: Keep & { readonly stamp?: Stamp | undefined },
+): Promise<void> {
+  const url = new URL(request.url);
+  url.search = '';
+  // The request's headers go along, for a Vary header to match.
+  const key = how.ignoreSearch
+    ? new Request(url.href, { headers: request.headers })
+    : request;
+  const copy = await unredirected(response);
+  await cache.put(key, how.stamp ? await how.stamp(copy) : copy);
 }
 
 /** The network's answer, kept when good; the kept one when it fails. */
@@ -50,22 +80,24 @@ export async function networkFirst(
   net: SwNet,
   request: Request,
   keep: Keep,
-  stamp?: (response: Response) => Promise<Response>,
+  stamp?: Stamp,
 ): Promise<Response> {
   const cache = await net.caches.open(keep.cache);
+  const ignoreSearch = keep.ignoreSearch ?? false;
+  let response: Response;
   try {
-    const response = await net.fetch(request);
-    if (response.ok) {
-      const copy = response.clone();
-      await cache.put(request, stamp ? await stamp(copy) : copy);
-    }
-    return response;
+    response = await net.fetch(request);
   } catch (error) {
-    const options = { ignoreSearch: keep.ignoreSearch ?? false };
-    const kept = await cache.match(request, options);
+    const kept = await cache.match(request, { ignoreSearch });
     if (kept) return kept;
     throw error;
   }
+  if (response.ok) {
+    await keepCopy(cache, request, response, { ...keep, stamp }).catch(
+      () => undefined,
+    );
+  }
+  return response;
 }
 
 /** The kept copy, or the network's answer, kept when good. */
@@ -78,35 +110,10 @@ export async function cacheFirst(
   const kept = await cache.match(request);
   if (kept) return kept;
   const response = await net.fetch(request);
-  if (response.ok) await cache.put(request, response.clone());
+  if (response.ok) {
+    await keepCopy(cache, request, response, {
+      cache: cacheName,
+    }).catch(() => undefined);
+  }
   return response;
-}
-
-/** `response` with the instant it was fetched in FETCHED_AT_HEADER. */
-export async function stamped(
-  response: Response,
-  atMs: number,
-): Promise<Response> {
-  const headers = new Headers(response.headers);
-  headers.set(FETCHED_AT_HEADER, String(atMs));
-  const body = await response.blob();
-  const { status, statusText } = response;
-  return new Response(body, { status, statusText, headers });
-}
-
-/**
- * The API's answer, network first; each kept answer is stamped, and the
- * sync entry (`syncUrl`) records the latest.
- */
-export function apiFirst(
-  net: SwNet,
-  request: Request,
-  keep: Keep & { readonly syncUrl: string },
-): Promise<Response> {
-  return networkFirst(net, request, keep, async (copy) => {
-    const atMs = net.now();
-    const cache = await net.caches.open(keep.cache);
-    await cache.put(keep.syncUrl, new Response(String(atMs)));
-    return stamped(copy, atMs);
-  });
 }

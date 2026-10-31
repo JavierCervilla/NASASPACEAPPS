@@ -92,15 +92,15 @@ describe('drawIcon', () => {
 });
 
 /** Fake dependencies: a phase that is the instant itself (ms as a share of the month), manual timers. */
-function fakeDeps() {
+function fakeDeps(frame?: FaviconDeps['frame']) {
   const timers: (() => void)[] = [];
   const shown: string[] = [];
-  const painted: { index: number; emphasis: unknown }[] = [];
+  const painted: { index: number | string; emphasis: unknown }[] = [];
   const deps: FaviconDeps = {
     phase: { phaseAt: (atMs) => atMs },
-    frame: (index) => Promise.resolve({ index } as unknown as CanvasImageSource),
+    frame: frame ?? ((index) => Promise.resolve({ index } as unknown as CanvasImageSource)),
     paint: (picture) => {
-      const index = (picture.moon as unknown as { index: number }).index;
+      const index = (picture.moon as unknown as { index: number } | null)?.index ?? 'ring';
       painted.push({ index, emphasis: picture.emphasis });
       return `data:${index}`;
     },
@@ -143,6 +143,40 @@ describe('createLiveFavicon', () => {
     favicon.update(0.6, 'earth');
     await flush();
     expect(shown).toEqual(['data:15', 'data:15', 'data:18']);
+  });
+
+  it('drops a draw whose frame arrives after the favicon moved on, and draws the latest', async () => {
+    let release: () => void = () => undefined;
+    const slow = new Promise<void>((resolve) => {
+      release = resolve;
+    });
+    const { deps, shown, flush } = fakeDeps(async (index) => {
+      if (index === 15) await slow;
+      return { index } as unknown as CanvasImageSource;
+    });
+    const favicon = createLiveFavicon(deps);
+    favicon.update(0.5, null);
+    await flush();
+    favicon.update(0.6, null);
+    release();
+    await flush();
+    expect(shown).toEqual(['data:18']);
+  });
+
+  it('asks again for a frame that failed to load, showing the ring alone meanwhile', async () => {
+    let failures = 1;
+    const { deps, shown, flush } = fakeDeps((index) => {
+      failures -= 1;
+      if (failures >= 0) return Promise.reject(new Error('offline'));
+      return Promise.resolve({ index } as unknown as CanvasImageSource);
+    });
+    const favicon = createLiveFavicon(deps);
+    favicon.update(0.5, null);
+    await flush();
+    expect(shown).toEqual(['data:ring']);
+    favicon.update(0.5, null);
+    await flush();
+    expect(shown).toEqual(['data:ring', 'data:15']);
   });
 
   it('draws nothing after dispose', async () => {

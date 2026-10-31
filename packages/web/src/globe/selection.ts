@@ -25,21 +25,22 @@
 
 /**
  * The globe's side of the shared site selection: a site picked in the list
- * selects its marker and turns the Moon to it; a marker tapped on the globe
- * only selects (the globe does not move under the finger).
+ * selects its marker and turns the Moon to it, framed clear of the docked
+ * card (site-framer.ts); a marker tapped on the globe only selects (the
+ * globe does not move under the finger).
  */
 import { wrapDeg } from '@ventana/sim';
 import type { SiteStore } from '../phone/site-store';
 import type { MarkerLayer } from './marker-layer';
 import type { GlobeSite } from './markers';
 import { moveOrbit, type Orbit } from './orbit';
+import type { SiteFramer } from './site-framer';
+import { loadSites, type SitesSource } from './sites-client';
 
 export interface SelectionParts {
   readonly store: SiteStore;
   readonly markers: MarkerLayer;
-  readonly orbit: Orbit;
-  readonly invalidate: () => void;
-  readonly reducedMotion: () => boolean;
+  readonly framer: Pick<SiteFramer, 'fly' | 'hold'>;
 }
 
 /**
@@ -59,18 +60,43 @@ export function flyTo(
   moveOrbit(orbit, delta, follow);
 }
 
+/** Frames the selected site among `sites`, once they have loaded. */
+function holdSelected(
+  parts: SelectionParts,
+  sites: readonly GlobeSite[],
+): void {
+  const { id } = parts.store.get();
+  parts.framer.hold(sites.find((site) => site.id === id) ?? null);
+}
+
 /** Follows the store; `sites` gives the sites loaded so far. */
 export function bindSelection(
   parts: SelectionParts,
   sites: () => readonly GlobeSite[],
 ): () => void {
-  const { store, markers } = parts;
+  const { store, markers, framer } = parts;
   return store.subscribe(() => {
     const { id, origin } = store.get();
     markers.select(id);
     const site = sites().find((s) => s.id === id);
-    if (origin !== 'list' || !site) return;
-    flyTo(parts.orbit, site, parts.reducedMotion());
-    parts.invalidate();
+    if (origin === 'list' && site) framer.fly(site);
+    else framer.hold(null);
   });
+}
+
+/**
+ * Loads the sites into the markers, frames the selected one once they
+ * are in, and follows the store; returns how to stop following it.
+ */
+export function loadSelection(
+  parts: SelectionParts,
+  source: SitesSource,
+): () => void {
+  let sites: readonly GlobeSite[] = [];
+  void loadSites(source).then((loaded) => {
+    sites = loaded;
+    parts.markers.setSites(loaded);
+    holdSelected(parts, loaded);
+  });
+  return bindSelection(parts, () => sites);
 }

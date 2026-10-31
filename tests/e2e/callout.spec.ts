@@ -416,22 +416,15 @@ test.describe('desktop, 1280x720', () => {
     await expect.poll(() => dot(IM2)).toBe('rgb(242, 242, 244)');
   });
 
-  test('at 200 % text the card drops its image and countdowns, stays inside the globe, and clips nothing', async ({ page }) => {
+  test('at 200 % text the card drops its image and countdowns and clips nothing', async ({ page }) => {
     await open(page);
     await page.addStyleTag({ content: 'html { font-size: 200%; }' });
     await expect(part(page, 'media')).toBeHidden();
     await expect(part(page, 'tiles')).toBeHidden();
     await expect(part(page, 'pill')).toHaveText('Landing window · 7 d 1 h left');
     await settledCentre(page, IM2);
-    await expect(callout(page)).toBeVisible();
+    // No room above the Layers key at this size: the card hides (QA F2, the test at the end of this file).
     expect(await coveredBy(page, '.globe-layers')).toBe(0);
-    const host = (await page.locator('.globe-markers').boundingBox())!;
-    const card = (await callout(page).boundingBox())!;
-    expect(card.x).toBeGreaterThanOrEqual(host.x);
-    expect(card.y).toBeGreaterThanOrEqual(host.y);
-    expect(card.x + card.width).toBeLessThanOrEqual(host.x + host.width);
-    expect(card.y + card.height).toBeLessThanOrEqual(host.y + host.height);
-    expect(card.width).toBeLessThanOrEqual(host.width * 0.62 + 1);
     const clipped = await callout(page).evaluate((el) =>
       [el as HTMLElement, ...el.querySelectorAll<HTMLElement>('*')]
         .filter((node) => node.offsetParent !== null || node === el)
@@ -544,5 +537,87 @@ test.describe('phone, 390x844, behind the tab bar', () => {
       expect(await coveredBy(page, '.tab-bar'), `tab bar, move ${step}`).toBe(0);
       expect(await coveredBy(page, '.phone-bar'), `top bar, move ${step}`).toBe(0);
     }
+  });
+});
+
+/** The ring's box once the globe has stopped turning. */
+async function settledRing(page: Page): Promise<{ x: number; y: number; width: number; height: number }> {
+  const read = () => ring(page).evaluate((el) => (el as HTMLElement).style.transform);
+  let last = await read();
+  await expect
+    .poll(async () => {
+      await page.waitForTimeout(150);
+      const now = await read();
+      const still = now === last && now !== '';
+      last = now;
+      return still;
+    })
+    .toBe(true);
+  return (await ring(page).boundingBox())!;
+}
+
+// QA F1 (VENT-32): the docked card covered the selected marker and its ring. Framing a site aims it into the free
+// area between the top bar and the card.
+for (const [width, height] of [[360, 780], [390, 844]] as const) {
+  test.describe(`phone, ${width}x${height}, the card never covers the selected marker`, () => {
+    test.use({ viewport: { width, height }, hasTouch: true, isMobile: true });
+
+    async function expectClear(page: Page, label: string): Promise<void> {
+      await expect(callout(page)).toHaveAttribute('data-shown', 'true');
+      await expect(ring(page)).toBeVisible();
+      const box = await settledRing(page);
+      const card = (await callout(page).boundingBox())!;
+      const bar = (await page.locator('.phone-bar').boundingBox())!;
+      expect(shared(box, card), `${label}: ring under the card`).toBe(0);
+      expect(shared(box, bar), `${label}: ring under the top bar`).toBe(0);
+    }
+
+    test('at load, with the sheet at half', async ({ page }) => {
+      await open(page);
+      await expect.poll(() => sheetTop(page)).toBe(height - 344);
+      await expectClear(page, 'IM-2 at load');
+    });
+
+    test('after picking Statio Shiv Shakti', async ({ page }) => {
+      await open(page);
+      const tabs = page.getByRole('navigation', { name: 'Views' });
+      await tabs.getByRole('button', { name: 'Sites' }).click();
+      await page.getByRole('list', { name: 'Sites' }).getByRole('button', { name: /^Statio Shiv Shakti/ }).click();
+      await expect(callout(page)).toHaveAttribute('aria-label', 'Statio Shiv Shakti (Chandrayaan-3 Vikram)');
+      await expectClear(page, 'Statio Shiv Shakti');
+    });
+  });
+}
+
+for (const [width, height] of [[1280, 800], [1440, 900]] as const) {
+  test.describe(`desktop, ${width}x${height}, the card never covers the selected marker`, () => {
+    test.use({ viewport: { width, height } });
+
+    test('at load and after picking Statio Shiv Shakti', async ({ page }) => {
+      await open(page);
+      await expect(callout(page)).toHaveAttribute('data-shown', 'true');
+      expect(shared(await settledRing(page), (await callout(page).boundingBox())!), 'IM-2 at load').toBe(0);
+      await page.getByRole('button', { name: /^Change site, now/ }).click();
+      const dialog = page.getByRole('dialog', { name: 'Choose a site' });
+      await dialog.getByRole('searchbox', { name: 'Search a site or mission' }).fill('vikram');
+      await dialog.getByRole('button', { name: /^Statio Shiv Shakti/ }).click();
+      await expect(callout(page)).toHaveAttribute('aria-label', 'Statio Shiv Shakti (Chandrayaan-3 Vikram)');
+      expect(shared(await settledRing(page), (await callout(page).boundingBox())!), 'Statio Shiv Shakti').toBe(0);
+    });
+  });
+}
+
+// QA F2 (VENT-32): at 200 % text the card no longer fits above the Layers key; the site card on the right already
+// shows the site, so the callout hides instead of standing over the globe and its marker.
+test.describe('desktop, 1440x900, 200 % text', () => {
+  test.use({ viewport: { width: 1440, height: 900 } });
+
+  test('hides the card when it does not fit above the Layers key, and the selected marker stays visible', async ({ page }) => {
+    await open(page);
+    await page.addStyleTag({ content: 'html { font-size: 200%; }' });
+    await expect(callout(page)).toHaveAttribute('data-shown', 'false');
+    await expect(callout(page)).toBeHidden();
+    await expect(page.locator(IM2)).toBeVisible();
+    await expect(ring(page)).toBeVisible();
   });
 });

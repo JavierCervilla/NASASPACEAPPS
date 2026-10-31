@@ -274,14 +274,12 @@ describe('callout dock', () => {
     expect(dockCallout({ ...DESKTOP, layers: null, cardHeight: 613 })).toBeNull();
   });
 
-  it('at large text, with no room above the key, stands 14 px to its right, bottoms aligned; with no room there, hides', () => {
+  it('at large text, with no room above the key, hides rather than stand beside it over the globe (QA F2)', () => {
     expect(dockCallout({ ...DESKTOP, cardHeight: 538 })).toEqual({ left: 20, bottom: 546 });
-    expect(dockCallout({ ...DESKTOP, cardHeight: 539 })).toEqual({ left: 380 + DESKTOP_GAP_PX, bottom: 620 });
+    expect(dockCallout({ ...DESKTOP, cardHeight: 539 })).toBeNull();
     // 200 % text at 1280x720: a 896 x 320 globe, a 286 x 191 key and a 528 x 196 card.
     const large = { ...DESKTOP, hostWidth: 896, hostHeight: 320, cardWidth: 528, cardHeight: 196, layers: { left: 20, top: 109, right: 306, bottom: 300 } };
-    expect(dockCallout(large)).toEqual({ left: 320, bottom: 300 });
-    expect(dockCallout({ ...large, hostWidth: 855 })).toBeNull();
-    expect(dockCallout({ ...large, cardHeight: 293 })).toBeNull();
+    expect(dockCallout(large)).toBeNull();
   });
 
   it('ignores the sheet on a desktop and the Layers key on a phone', () => {
@@ -344,6 +342,26 @@ describe('SiteCallout', () => {
     callout.show(null);
     callout.layout({ sheetTop: 500 });
     expect(card.dataset['shown']).toBe('false');
+  });
+
+  it('gives a framed marker the band above the card when the card spans the view\'s middle, and tells its watchers (QA F1)', () => {
+    const { callout } = mount();
+    const heard = vi.fn();
+    const stop = callout.watch(heard);
+    // No content: no card, the whole host below the (absent) top bar.
+    expect(callout.band()).toEqual({ top: 0, bottom: 640 });
+    callout.show(content(IM2, READY, 150));
+    // The desktop card stands at the left, clear of the middle: the band is the whole host.
+    expect(callout.band()).toEqual({ top: 0, bottom: 640 });
+    callout.layout({ ...PHONE, sheetTop: 500 });
+    // The phone card spans the middle: from the top bar's bottom to the card's top, 488 - 104.
+    expect(callout.band()).toEqual({ top: 70, bottom: 384 });
+    callout.layout({ sheetTop: 96 });
+    expect(callout.band()).toEqual({ top: 70, bottom: 844 });
+    expect(heard).toHaveBeenCalledTimes(3);
+    stop();
+    callout.layout({ sheetTop: 500 });
+    expect(heard).toHaveBeenCalledTimes(3);
   });
 
   it('marks pending hours for a skeleton, and says «Data unavailable», neutral, when they fail', () => {

@@ -46,9 +46,12 @@ Every visible change follows `.claude/skills/apple-design/SKILL.md` (vendored fr
   `src/lib/view-tabs.ts`): the polar map is a south polar stereographic disk from 80° S
   (`src/lib/polar-projection.ts`, image from `scripts/moon_textures.py polar`). The selected site's callout is a card docked
   at the globe's bottom left (`src/callout/`, `src/callout/callout-dock.ts`, `src/globe/site-callout.ts`): the image
-  card on desktop, 14 px above the Layers key on its left edge (beside it when large text leaves no room), and the
-  compact card on phones, 12 px off the left edge and 12 px above the sheet's top edge or the tab bar, riding the sheet
-  as it is dragged and hiding at full height or wherever it would reach the top bar. It has a LOLA relief thumbnail for
+  card on desktop, 14 px above the Layers key on its left edge (hidden when large text leaves no room there: the site
+  card beside the view shows the same site), and the compact card on phones, 12 px off the left edge and 12 px above
+  the sheet's top edge or the tab bar, riding the sheet as it is dragged and hiding at full height or wherever it would
+  reach the top bar. So the card never covers the selected marker, the globe framing a site (at load and on a pick in
+  the list) turns just enough to land it in the band between the top bar and the card (`src/globe/site-aim.ts`,
+  `src/globe/site-framer.ts`), and again on the orbit's springs when the card moves, until the user moves the globe. It has a LOLA relief thumbnail for
   sites south of 80° S (320 px, and 640 px through `srcset` for 2x screens; rendered offline by
   `scripts/site_thumbs.py` and committed, manifest `src/callout/thumbs.json`), takes no pointer events, stays still
   while the globe turns and shows the site even with its marker behind the limb; the frame loop never touches it. The

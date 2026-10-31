@@ -29,8 +29,10 @@
  * a fixed card at the bottom left of the globe, not beside its marker. On
  * a phone it rides 12 px above the sheet's top edge, or above the tab bar
  * when the sheet is lower; on a desktop it stands 14 px above the Layers
- * key, on its left edge, or 14 px to its right when large text leaves no
- * room above it. Pure, so it is tested alone.
+ * key, on its left edge, and hides when large text leaves no room there:
+ * beside the key it would stand over the globe's middle and the selected
+ * marker (QA F2), and the site card beside the globe already shows the
+ * site. Pure, so it is tested alone.
  */
 
 /** A box in px from the globe host's top left. */
@@ -99,11 +101,7 @@ function desktopDock(layout: CalloutLayout): CalloutDock | null {
     return fits(layout, { left: DESKTOP_INSET_PX, bottom });
   }
   const above = { left: layers.left, bottom: layers.top - DESKTOP_GAP_PX };
-  const beside = {
-    left: layers.right + DESKTOP_GAP_PX,
-    bottom: layers.bottom,
-  };
-  return fits(layout, above) ?? fits(layout, beside);
+  return fits(layout, above);
 }
 
 /** Where the card docks for `layout`, or null when there is no room. */

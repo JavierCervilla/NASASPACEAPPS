@@ -220,7 +220,9 @@ for (const [width, height] of [[1440, 900], [1280, 720], [1024, 768]] as const) 
     await expect
       .poll(async () => {
         const [a, b] = [await label.boundingBox(), await layers.boundingBox()];
-        // A hidden key cannot cover the label.
+        // A hidden key cannot cover the label, nor can a hidden label be covered: with no room above the key the
+        // label hides (QA F2).
+        if ((await label.getAttribute('data-shown')) === 'false') return true;
         if (!a || !b) return Boolean(a);
         return a.x >= b.x + b.width || b.x >= a.x + a.width || a.y >= b.y + b.height || b.y >= a.y + a.height;
       })

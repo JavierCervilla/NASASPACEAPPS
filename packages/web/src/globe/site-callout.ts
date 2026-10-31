@@ -42,11 +42,14 @@ import {
   type CalloutDom,
 } from '../callout/callout-dom';
 
+import type { FreeBand } from './site-aim';
+
 export type { CalloutLayout } from '../callout/callout-dock';
 
 export class SiteCallout {
   readonly dom: CalloutDom = calloutDom();
   private content: CalloutContent | null = null;
+  private readonly listeners = new Set<() => void>();
   private layoutNow: CalloutLayout = {
     phone: false,
     hostWidth: 0,
@@ -72,10 +75,31 @@ export class SiteCallout {
     this.draw();
   }
 
+  /**
+   * Where a framed marker stays clear of the top bar and of the shown
+   * card, when the card spans the view's middle (a phone's): above it.
+   */
+  band(): FreeBand {
+    const { barBottom, hostWidth, hostHeight, cardWidth } = this.layoutNow;
+    const dock = this.content ? dockCallout(this.layoutNow) : null;
+    const middle = hostWidth / 2;
+    const spans =
+      dock !== null && dock.left < middle && dock.left + cardWidth > middle;
+    const top = spans ? dock.bottom - this.layoutNow.cardHeight : hostHeight;
+    return { top: barBottom, bottom: top };
+  }
+
+  /** Calls `listener` after every draw; returns how to stop. */
+  watch(listener: () => void): () => void {
+    this.listeners.add(listener);
+    return () => void this.listeners.delete(listener);
+  }
+
   private draw(): void {
     const { card } = this.dom;
     const dock = this.content ? dockCallout(this.layoutNow) : null;
     card.dataset['shown'] = String(dock !== null);
+    for (const listener of this.listeners) listener();
     // Hidden, it stays where it last was, so it fades out in place.
     if (!dock) return;
     // The card is anchored to the host's bottom left (callout.css).

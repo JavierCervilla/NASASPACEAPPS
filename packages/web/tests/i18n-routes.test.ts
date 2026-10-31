@@ -173,4 +173,17 @@ describe('the push spring', () => {
     expect(values.at(-1)).toBe(0);
     expect(frames).toHaveLength(0);
   });
+  it('lands in the spring\'s own time even at a few frames a second', () => {
+    const frames: ((t: number) => void)[] = [];
+    const values: number[] = [];
+    const push = createPush({ frame: (cb) => frames.push(cb), cancel: vi.fn(), onValue: (v) => values.push(v) });
+    push.to(1);
+    let t = 0;
+    while (frames.length > 0 && t < 5000) {
+      frames.shift()!(t);
+      t += 250;
+    }
+    expect(values.at(-1)).toBe(1);
+    expect(t).toBeLessThanOrEqual(1500);
+  });
 });

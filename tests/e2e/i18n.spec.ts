@@ -187,10 +187,10 @@ test.describe('phone language list with motion on, 390x844 (QA PR #17)', () => {
     await expect(page.locator('.globe-markers')).toHaveAttribute('data-state', 'window');
     await page.locator('.tab-bar .tab').last().click();
     await page.locator('.lang-row').click();
-    // The spring settles well within 1.5 s (response 0.4 s, critically damped).
-    await page.waitForTimeout(1500);
+    // Wait for the spring to report rest, not for a fixed time: a busy CI
+    // runner draws fewer frames, so a fixed sleep raced the settle.
+    await expect(page.locator('.push')).toHaveAttribute('data-at', 'page', { timeout: 5000 });
     await expect(page.locator('.picker__title')).toBeHidden({ timeout: 100 });
-    await expect(page.locator('.push')).toHaveAttribute('data-at', 'page');
     await expect(page.getByRole('list', { name: 'Landeplätze' })).toBeHidden();
     const back = (await page.locator('.lang-page__back').boundingBox())!;
     const title = (await page.locator('.lang-page__title').boundingBox())!;

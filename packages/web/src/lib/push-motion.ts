@@ -35,7 +35,12 @@ import { stepDampedSpring } from '../sheet/damped-spring';
 const PUSH = { damping: 1, response: 0.4 } as const;
 /** The spring runs in percent: its rest thresholds are in whole units. */
 const SCALE = 100;
-const MAX_STEP_S = 1 / 30;
+/**
+ * The step is exact at any length, so a slow device still lands in the
+ * spring's own time; the cap only stops a long stall (a hidden tab) from
+ * counting as one frame. 1/30 s made a push last seconds at a few fps.
+ */
+const MAX_STEP_S = 0.25;
 
 export interface PushDeps {
   readonly frame: (callback: (timeMs: number) => void) => number;

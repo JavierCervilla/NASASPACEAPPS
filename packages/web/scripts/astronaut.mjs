@@ -1,0 +1,163 @@
+/*
+ *   _   _       _                         _ _
+ *  | | | |_ __ (_)_   _____ _ __ ___  ___| | | ___
+ *  | | | | '_ \| \ \ / / _ \ '__/ __|/ _ \ | |/ _ \
+ *  | |_| | | | | |\ V /  __/ |  \__ \  __/ | |  __/
+ *   \___/|_| |_|_| \_/ \___|_|  |___/\___|_|_|\___|
+ *
+ *             =++==--::.
+ *         %%%%##**++=--:..  .
+ *      ##**#%@%%#***+=--::.   .
+ *    #**=+*#*#**#++++=-:::.. .  .
+ *   #++-====*@%+*++==--::...   .  .    Ventana Lunar
+ *  #+=-=--++==+===-+==--:..   .  .  .  Sun, Earth and landing
+ * #----====-------=-=---:..  .  .  .   windows at the lunar
+ * #+---+=====--=---==-::..     .  .  . south pole
+ * #*----==---==-=-=-:-....    .  .  .
+ * *#----===+*===--:-::...    .  .  .   Built for the NASA Space
+ *  *----=*-+*%*+=-:::....   .  .  .    Apps Challenge 2026,
+ *   *------=+*=--:::-:::.. .  .  .     Madrid. Not endorsed
+ *    %*===-=-==--==-:::.  .  .  .      by NASA.
+ *      *+:--+:--::::::.  .  .  .
+ *         -=:::...:..   .  .           (c) 2026 Universelle
+ *             :::.. .  .               SPDX-License-Identifier: MIT
+ */
+
+// Builds the astronaut the page lets you drag onto the Moon (VENT-10) from NASA's «Astronaut» model, NASA 3D
+// Resources (public domain), into packages/web/public/models/astronaut.glb:
+//
+//   node packages/web/scripts/astronaut.mjs <Astronaut.glb> [out.glb]
+//
+// The source is read as data only (a GLB, Draco-compressed). The build bakes the root transform into the mesh, lowers
+// the arms (astronaut-mesh.mjs), covers the NASA insignia on the backpack with the fabric next to it, names the two
+// materials `suit` and `visor` (the page tints the visor with the state's colour, so its texture goes), welds the
+// vertices, shrinks the suit texture to 512 px WebP and quantizes the mesh (KHR_mesh_quantization). The output needs no
+// decoder: Draco and meshopt would both need WebAssembly, which the page's CSP does not allow.
+import { readFileSync, writeFileSync } from 'node:fs';
+import { createHash } from 'node:crypto';
+import { fileURLToPath } from 'node:url';
+import { NodeIO } from '@gltf-transform/core';
+import { ALL_EXTENSIONS, EXTTextureWebP } from '@gltf-transform/extensions';
+import { dedup, flatten, prune, quantize, weld } from '@gltf-transform/functions';
+import draco3d from 'draco3dgltf';
+import sharp from 'sharp';
+import { INSIGNIA, PATCH_FROM, lowerArms } from './astronaut-mesh.mjs';
+
+const OUT = fileURLToPath(new URL('../public/models/astronaut.glb', import.meta.url));
+const TEXTURE_PX = 512;
+const WEBP_QUALITY = 82;
+/** The source names its visor material `astnt1_2` and the suit `astnt1_1`. */
+const SOURCE_VISOR = 'astnt1_2';
+/** Neutral silver, as the dock shows it; the page replaces it live. */
+const VISOR = { color: [0.62, 0.64, 0.68, 1], metalness: 0.6, roughness: 0.2 };
+
+/** Bakes every mesh node's world transform into its vertices and clears the nodes' transforms. */
+function bakeTransforms(doc) {
+  for (const node of doc.getRoot().listNodes()) {
+    const mesh = node.getMesh();
+    if (!mesh) continue;
+    const matrix = node.getWorldMatrix();
+    for (const prim of mesh.listPrimitives()) bakePrimitive(prim, matrix);
+  }
+  for (const node of doc.getRoot().listNodes()) {
+    node.setTranslation([0, 0, 0]).setRotation([0, 0, 0, 1]).setScale([1, 1, 1]);
+  }
+}
+
+/** Applies a column-major 4x4 `m` to a primitive's positions and its rotation part to its normals. */
+function bakePrimitive(prim, m) {
+  const position = prim.getAttribute('POSITION');
+  const normal = prim.getAttribute('NORMAL');
+  const p = position.getArray().slice();
+  for (let i = 0; i < p.length; i += 3) {
+    const [x, y, z] = [p[i], p[i + 1], p[i + 2]];
+    p[i] = m[0] * x + m[4] * y + m[8] * z + m[12];
+    p[i + 1] = m[1] * x + m[5] * y + m[9] * z + m[13];
+    p[i + 2] = m[2] * x + m[6] * y + m[10] * z + m[14];
+  }
+  position.setArray(p);
+  if (!normal) return;
+  const n = normal.getArray().slice();
+  for (let i = 0; i < n.length; i += 3) {
+    const [x, y, z] = [n[i], n[i + 1], n[i + 2]];
+    n[i] = m[0] * x + m[4] * y + m[8] * z;
+    n[i + 1] = m[1] * x + m[5] * y + m[9] * z;
+    n[i + 2] = m[2] * x + m[6] * y + m[10] * z;
+  }
+  normal.setArray(n);
+}
+
+/** Lowers the arms of every primitive. */
+function lowerAllArms(doc) {
+  for (const mesh of doc.getRoot().listMeshes()) {
+    for (const prim of mesh.listPrimitives()) {
+      const position = prim.getAttribute('POSITION');
+      const normal = prim.getAttribute('NORMAL');
+      const p = position.getArray().slice();
+      const n = normal ? normal.getArray().slice() : null;
+      lowerArms(p, n);
+      position.setArray(p);
+      if (normal && n) normal.setArray(n);
+    }
+  }
+}
+
+/** The suit texture without the NASA insignia, `TEXTURE_PX` square, as WebP. */
+async function cleanSuitTexture(image) {
+  const patch = await sharp(image)
+    .extract({ left: PATCH_FROM.left, top: PATCH_FROM.top, width: INSIGNIA.width, height: INSIGNIA.height })
+    .png()
+    .toBuffer();
+  const covered = await sharp(image)
+    .composite([{ input: patch, left: INSIGNIA.left, top: INSIGNIA.top }])
+    .png()
+    .toBuffer();
+  return sharp(covered).resize(TEXTURE_PX, TEXTURE_PX).webp({ quality: WEBP_QUALITY, effort: 6 }).toBuffer();
+}
+
+/**
+ * Names the materials `suit` and `visor`, gives the visor a plain silver with no texture, and keeps one suit
+ * texture (the source carries each as WebP with a PNG fallback; the PNG is the lossless one, so it is the source).
+ */
+async function setMaterials(doc) {
+  const root = doc.getRoot();
+  for (const material of root.listMaterials()) {
+    if (material.getName() === SOURCE_VISOR) {
+      material.setName('visor').setBaseColorTexture(null).setBaseColorFactor(VISOR.color);
+      material.setMetallicFactor(VISOR.metalness).setRoughnessFactor(VISOR.roughness);
+      continue;
+    }
+    material.setName('suit').setMetallicFactor(0).setRoughnessFactor(0.8);
+    const texture = material.getBaseColorTexture();
+    const png = root.listTextures().find((t) => t.getName() === texture?.getName() && t.getMimeType() === 'image/png');
+    if (!texture || !png) throw new Error('the suit texture is missing');
+    texture.setImage(await cleanSuitTexture(png.getImage())).setMimeType('image/webp').setURI('suit.webp');
+  }
+  for (const extension of root.listExtensionsUsed()) {
+    if (extension.extensionName === 'KHR_draco_mesh_compression') extension.dispose();
+  }
+}
+
+/** Reads the source, builds the page's model, writes it to `out` and prints its size and sha256. */
+async function build(source, out) {
+  const io = new NodeIO()
+    .registerExtensions(ALL_EXTENSIONS)
+    .registerDependencies({ 'draco3d.decoder': await draco3d.createDecoderModule() });
+  const doc = await io.readBinary(new Uint8Array(readFileSync(source)));
+  bakeTransforms(doc);
+  lowerAllArms(doc);
+  await setMaterials(doc);
+  doc.createExtension(EXTTextureWebP).setRequired(true);
+  await doc.transform(flatten(), dedup(), prune(), weld(), quantize({ quantizePosition: 14, quantizeNormal: 10 }));
+  const bytes = await io.writeBinary(doc);
+  writeFileSync(out, bytes);
+  const sha = createHash('sha256').update(bytes).digest('hex');
+  console.log(`${out}: ${bytes.byteLength} bytes, sha256 ${sha}`);
+}
+
+const [source, out = OUT] = process.argv.slice(2);
+if (!source) {
+  console.error('usage: node packages/web/scripts/astronaut.mjs <Astronaut.glb> [out.glb]');
+  process.exit(2);
+}
+await build(source, out);

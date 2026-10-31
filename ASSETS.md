@@ -199,3 +199,27 @@ list (Mons Mouton uses Mons Mouton Plateau's; Nobile Rims 1 and 2 use Griffin-1'
   requirements): each disk pixel samples the maps seen 12° from the south, lit with a Lommel-Seeliger-like law
   (2 mu / (mu + mu0)) over the relief normals, rendered at twice the size and resized with Lanczos; the ring is drawn
   at four times the size with round caps. Two runs give byte-identical files.
+
+## Astronaut model (VENT-10)
+
+| File | Size | sha256 |
+|---|---|---|
+| `packages/web/public/models/astronaut.glb` | glTF 2.0 binary, 4 122 vertices, 6 381 triangles, one 512 x 512 WebP texture, 150 700 bytes | `6a56112c870dca60077f5bf2a12bbdce0c26810ed6d57da02efd7a481640dee8` |
+
+- **Source**: NASA 3D Resources, «Astronaut» (`3D Models/Astronaut/Astronaut.glb`, https://github.com/nasa/NASA-3D-Resources/tree/master/3D%20Models/Astronaut,
+  commit `11ebb4ee043715aefbba6aeec8a61746fad67fa7` of 2025-06-03), 762 988 bytes, sha256
+  `d18c141410542b935113d1c25a9271d90c40d44015a64295b7b68a30f0ce2820`. An Apollo-era suit with its backpack, Draco
+  compressed, with a 1024 x 1024 suit texture.
+- **What it is**: the astronaut you drag onto the Moon. The page draws it once, in two poses and with the visor in each
+  state colour, into small pictures (`packages/web/src/astronaut/figure-render.ts`), so the figure costs no draw call.
+- **Licence**: NASA, public domain under the NASA media usage guidelines
+  (https://www.nasa.gov/nasa-brand-center/images-and-media/). NASA does not endorse Ventana Lunar. The guidelines do not
+  let the NASA insignia be used, so the build covers the «meatball» on the backpack with the fabric next to it; the
+  model carries no other NASA mark.
+- **How it was made**: `node packages/web/scripts/astronaut.mjs <Astronaut.glb>` (`@gltf-transform` 4.5.1, `draco3dgltf`
+  1.5.7 to read the source, `sharp` for the texture, all pinned in `packages/web/package.json`): it bakes the root
+  transform into the mesh, lowers the arms that the source holds out (`scripts/astronaut-mesh.mjs`), covers the
+  insignia, names the materials `suit` and `visor` (the visor loses its texture: the page tints it), welds the
+  vertices, shrinks the suit texture to 512 px WebP at quality 82 and quantizes positions and normals
+  (KHR_mesh_quantization). No Draco or meshopt: both would need WebAssembly in the browser, which the page's CSP does
+  not allow. Two runs give byte-identical files.

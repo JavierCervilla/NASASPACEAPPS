@@ -94,6 +94,38 @@ Every visible change follows `.claude/skills/apple-design/SKILL.md` (vendored fr
   Translations were written by Claude: a native speaker should review them before launch. The local pitch is in Spanish
   and does not live here.
 
+## Installable app and offline (VENT-28)
+
+- **Icon «J2»**: a photo-real Moon inside the legend ring, rendered offline by `packages/web/scripts/app_icons.py` from
+  the shipped LROC and LOLA maps (outputs and checksums in `ASSETS.md`): 192/512 `any`, 512 `maskable`, the 180 px
+  apple-touch-icon, `favicon.ico`/`favicon.svg`, and 30 phase frames (`public/icons/phase/`, about 3 kB each).
+- **Manifest per locale**: `/manifest.webmanifest`, `/es/manifest.webmanifest`… (`src/pwa/manifest.ts`), linked from
+  each locale page; `start_url` and `scope` are the locale route, so each language installs as its own app. Shortcuts
+  open four featured sites through `?site=<id>` (`src/lib/site-param.ts`), which any link can use. The pseudo-locale
+  has none.
+- **Live parts**: the tab's favicon is redrawn on a canvas (`src/pwa/live-favicon.ts`) with the Moon's phase at the
+  shared instant and the ring emphasising the selected site's state (Neither or no data: the full legend), only when
+  the frame or the state changes, at most every 250 ms. The phase is `meanOrbitPhase` (`src/pwa/moon-phase.ts`, mean
+  orbits plus the largest periodic terms, within half an hour of the true phases), behind `PhaseSource` so VENT-36's
+  Sun can replace it. The globe's loading state (`GlobeSplash.tsx`) shows J2 with the same phase until the scene runs.
+- **Offline**: `scripts/service-worker.mjs` (an Astro integration) bundles `src/pwa/sw-worker.ts` into `dist/sw.js`
+  after every build, with the files it caches at install (every locale's page except `/en-xa/`, `_astro/`, icons,
+  manifests, thumbnails, the 1K/2K maps and the polar map; 4K/8K are cached as the zoom fetches them) and the build's
+  digest, which names the static cache (`ventana-static-<digest>`), so a deploy drops the old one. Pages and API GETs
+  are network first, build files cache first; the API's answers live in `ventana-api-v1`, stamped with when they came.
+  Offline, the page shows «Offline · data from <date>» (`OfflineNotice.tsx`), and when the network returns the hours
+  are asked again quietly. Registered in production builds only; e2e specs block service workers except
+  `tests/e2e/pwa.spec.ts`. nginx serves `sw.js` and the manifests with `no-cache`, the manifests as
+  `application/manifest+json`. The CSP did not change: `default-src 'self'` already covers the worker, the manifest
+  and its fetches, and the favicon's `data:` image is under `img-src 'self' data:`.
+- **What the platforms do not allow**: the home-screen icon is fixed once installed (iOS never refreshes it, Android at
+  most when it updates the WebAPK), so the live Moon is only in the favicon and the loading state. Android builds its
+  launch screen from the manifest (`background_color`, name, the 512 icon); iOS shows its own launch screen only from
+  `apple-touch-startup-image` files, one per device size, which we do not ship, so it shows a plain screen until the
+  page paints. iOS ignores manifest shortcuts and only reads the apple-touch-icon; desktop Safari shows no favicon
+  changes for a canvas icon in some versions. A first visit is only cached once the worker has installed: data fetched
+  before that is not offline until the next visit.
+
 ## Clean Code
 
 The code follows Clean Code, and the size limits are enforced by lint:
@@ -159,6 +191,11 @@ definition of done of every step, together with the Dashboard and the vault: whe
 update the canvas in the same step with the `ArtifactData` tool (`items/*` status and note, `meta/state` cards and
 `updatedAt`; `phases/*` and `milestones/*` when the plan changes). Its data lives in the artifact's database, not in
 this repo; only the owner and editors write it. Its text is Spanish (the human reads it).
+
+**Spec document** (Claude Docs «Ventana Lunar · Especificación y roadmap»,
+https://claude.ai/artifact/Pm8HcFMSZZJZGtcEjbKxNu): kept current like the canvas. When a trajectory merges or a
+decision changes the spec, the orchestrator updates the «Última actualización» line at the top (date chip + one line),
+the «Estado al día» table and next steps, and «Cambios de especificación». Its text is Spanish.
 
 <!-- english-gate:start -->
 ## Language

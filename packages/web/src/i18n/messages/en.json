@@ -202,5 +202,8 @@
   "siteName.farSide": "{place}, far side",
   "siteName.areaIn": "{place} area, {region}",
   "siteName.crashed": "{mission}, crashed",
-  "siteName.artemisMission": "Artemis crewed landing (originally Artemis III; since 2026 the first crewed landing is Artemis IV, 2028)"
+  "siteName.artemisMission": "Artemis crewed landing (originally Artemis III; since 2026 the first crewed landing is Artemis IV, 2028)",
+  "manifest.description": "Sun, Earth and landing windows at the lunar south pole.",
+  "offline.notice": "Offline · data from {date}",
+  "offline.plain": "Offline"
 }

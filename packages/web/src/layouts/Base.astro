@@ -24,6 +24,7 @@
  *             :::.. .  .               SPDX-License-Identifier: MIT
  */
 
+import { FAVICON_LINK_ID } from '../pwa/favicon-dom';
 import '../styles/global.css';
 
 interface Props {
@@ -34,7 +35,7 @@ interface Props {
 }
 
 const { lang, title, description } = Astro.props;
-const favicon = `${import.meta.env.BASE_URL.replace(/\/$/, '')}/favicon.svg`;
+const root = import.meta.env.BASE_URL.replace(/\/?$/, '/');
 ---
 
 <!doctype html>
@@ -43,8 +44,32 @@ const favicon = `${import.meta.env.BASE_URL.replace(/\/$/, '')}/favicon.svg`;
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="description" content={description} />
-    <meta name="theme-color" content="#07080b" />
-    <link rel="icon" type="image/svg+xml" href={favicon} />
+    <meta
+      name="theme-color"
+      content="#07080b"
+      media="(prefers-color-scheme: dark)"
+    />
+    <meta
+      name="theme-color"
+      content="#f2f2f7"
+      media="(prefers-color-scheme: light)"
+    />
+    <!-- The installed app's icons (VENT-28, scripts/app_icons.py). The SVG
+         one is the live favicon's link, repointed by pwa/favicon-dom.ts. -->
+    <link rel="icon" href={`${root}favicon.ico`} sizes="48x48" />
+    <link
+      id={FAVICON_LINK_ID}
+      rel="icon"
+      type="image/svg+xml"
+      href={`${root}favicon.svg`}
+    />
+    <link rel="apple-touch-icon" href={`${root}icons/apple-touch-icon.png`} />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-title" content="Ventana Lunar" />
+    <!-- «black», not «black-translucent»: the page does not lay out under
+         the status bar (no viewport-fit=cover). -->
+    <meta name="apple-mobile-web-app-status-bar-style" content="black" />
     <title>{title}</title>
     <slot name="head" />
   </head>
@@ -54,6 +79,15 @@ const favicon = `${import.meta.env.BASE_URL.replace(/\/$/, '')}/favicon.svg`;
       // The glass gate (VENT-27): Liquid or frosted on the page's root.
       import { bootGlass } from '../glass/glass-boot';
       bootGlass();
+    </script>
+    <script>
+      // The service worker (VENT-28): offline pages, maps and data. Only in
+      // a production build: the dev server has no sw.js.
+      import { registerServiceWorker } from '../pwa/register-sw';
+      if (import.meta.env.PROD) {
+        const base = import.meta.env.BASE_URL;
+        registerServiceWorker(base, navigator.serviceWorker);
+      }
     </script>
     <script>
       // Dev tools (performance readout, breadcrumbs, Spector.js on request):

@@ -3,6 +3,17 @@
 ## [Sin publicar]
 
 ### Añadido
+- Aplicación instalable (VENT-28, icono «J2» elegido por Javier): Ventana Lunar se instala en el móvil y en el PC con
+  su icono, una Luna real (de los mapas LROC y LOLA de la NASA) dentro del anillo de la leyenda (Sol, ventana, Tierra).
+  Cada idioma se instala como su propia app, con su descripción traducida, y en Android y en el escritorio el icono
+  ofrece accesos directos a cuatro sitios destacados (IM-2, Shackleton, Haworth y Apolo 11); cualquier enlace puede
+  abrir un sitio con `?site=<id>`. El icono de la pestaña está vivo: muestra la Luna en su fase del instante elegido
+  (con la luz cenicienta en la parte oscura) y el anillo resalta el estado del sitio elegido (ventana, solo Sol o solo
+  Tierra; con «ninguno» o sin datos, la leyenda entera). Mientras el globo carga se ve el icono con la fase de hoy. Sin
+  conexión, la app abre con lo último que descargó y avisa «Sin conexión · datos del 31 de octubre de 2026» (en los
+  cinco idiomas); al volver la red, actualiza los datos sin recargar. Lo que las plataformas no permiten: el icono de la
+  pantalla de inicio no cambia una vez instalado (iOS nunca lo refresca), iOS no usa los accesos directos y, sin
+  imágenes de arranque por tamaño de pantalla, enseña una pantalla lisa hasta que pinta la página.
 - La web en cinco idiomas (VENT-35, lienzos validados «LangDesktop» y «LangPhoneB»): inglés (por defecto), español,
   francés, alemán e italiano, cada uno en su dirección (`/`, `/es/`, `/fr/`, `/de/`, `/it/`), con el idioma declarado en
   la página y los enlaces entre versiones para los buscadores. En el PC, un botón «🌐 EN» al final de la cabecera abre la

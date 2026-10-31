@@ -36,6 +36,7 @@ import { prefersSaveData } from '../lib/viewport';
 import type { SiteStore } from '../phone/site-store';
 import type { NowState } from '../phone/widget-types';
 import { useTime } from './calendar/hooks';
+import { GlobeSplash } from './GlobeSplash';
 import { useI18n } from './i18n-context';
 
 const REDUCED_MOTION = '(prefers-reduced-motion: reduce)';
@@ -140,6 +141,7 @@ export default function Globe(props: Props) {
         {helpText(i18n, status, atMs)}
       </p>
       {kind === 'deferred' ? <LoadButton onLoad={load} /> : null}
+      <GlobeSplash base={props.base} time={props.time} done={kind !== 'idle'} />
     </>
   );
 }

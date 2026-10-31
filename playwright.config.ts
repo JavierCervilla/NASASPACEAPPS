@@ -31,6 +31,9 @@ const port = 4321;
 export default defineConfig({
   testDir: 'tests/e2e',
   use: {
+    // The production build registers a service worker (VENT-28), which would answer the API before the specs' page
+    // routes see it. Only pwa.spec.ts lets it run.
+    serviceWorkers: 'block',
     baseURL: `http://localhost:${port}${base}/`,
     // The cloud container ships its own Chromium; CI installs Playwright's.
     launchOptions: process.env.PW_CHROMIUM_PATH ? { executablePath: process.env.PW_CHROMIUM_PATH } : {},

@@ -1,0 +1,67 @@
+/*
+ *   _   _       _                         _ _
+ *  | | | |_ __ (_)_   _____ _ __ ___  ___| | | ___
+ *  | | | | '_ \| \ \ / / _ \ '__/ __|/ _ \ | |/ _ \
+ *  | |_| | | | | |\ V /  __/ |  \__ \  __/ | |  __/
+ *   \___/|_| |_|_| \_/ \___|_|  |___/\___|_|_|\___|
+ *
+ *             =++==--::.
+ *         %%%%##**++=--:..  .
+ *      ##**#%@%%#***+=--::.   .
+ *    #**=+*#*#**#++++=-:::.. .  .
+ *   #++-====*@%+*++==--::...   .  .    Ventana Lunar
+ *  #+=-=--++==+===-+==--:..   .  .  .  Sun, Earth and landing
+ * #----====-------=-=---:..  .  .  .   windows at the lunar
+ * #+---+=====--=---==-::..     .  .  . south pole
+ * #*----==---==-=-=-:-....    .  .  .
+ * *#----===+*===--:-::...    .  .  .   Built for the NASA Space
+ *  *----=*-+*%*+=-:::....   .  .  .    Apps Challenge 2026,
+ *   *------=+*=--:::-:::.. .  .  .     Madrid. Not endorsed
+ *    %*===-=-==--==-:::.  .  .  .      by NASA.
+ *      *+:--+:--::::::.  .  .  .
+ *         -=:::...:..   .  .           (c) 2026 Universelle
+ *             :::.. .  .               SPDX-License-Identifier: MIT
+ */
+
+/**
+ * «Offline · data from 31 October 2026»: shown while the browser is
+ * offline, with the day the API last answered (the service worker keeps
+ * its answers, pwa/sw-strategies.ts). A polite live region, present
+ * from the start so the change is announced.
+ */
+import { useEffect, useState } from 'react';
+import { syncDate, syncedAt, syncUrl } from '../pwa/offline-status';
+import { useI18n } from './i18n-context';
+import { useOnline } from './use-online';
+
+/** When the API last answered, read each time the page goes offline. */
+function useSyncedAt(base: string, online: boolean): number | null {
+  const [atMs, setAtMs] = useState<number | null>(null);
+  useEffect(() => {
+    if (online) return undefined;
+    let live = true;
+    const url = syncUrl(base, location.origin);
+    void syncedAt(globalThis.caches, url).then((ms) => {
+      if (live) setAtMs(ms);
+    });
+    return () => {
+      live = false;
+    };
+  }, [base, online]);
+  return atMs;
+}
+
+export function OfflineNotice({ base }: { readonly base: string }) {
+  const { t, tag } = useI18n();
+  const online = useOnline();
+  const atMs = useSyncedAt(base, online);
+  const text =
+    atMs === null
+      ? t('offline.plain')
+      : t('offline.notice', { date: syncDate(tag, atMs) });
+  return (
+    <p className="offline-notice" role="status">
+      {online ? null : text}
+    </p>
+  );
+}

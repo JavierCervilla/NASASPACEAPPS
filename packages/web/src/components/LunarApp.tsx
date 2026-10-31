@@ -35,27 +35,30 @@
  * the globe frames the selected site above the sheet; and the selected
  * site's state, which its marker on the globe wears.
  */
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import type { Catalogue } from '../i18n/catalogue';
 import type { UiLocale } from '../i18n/locales';
 import { createI18n } from '../i18n/translate';
 import { followClock } from '../calendar/follow-clock';
 import { createPlayer } from '../calendar/time-player';
 import { createTimeStore } from '../calendar/time-store';
+import { siteFromSearch } from '../lib/site-param';
 import { createWatchedValue } from '../lib/watched-value';
 import { browserHourClock } from '../phone/hour-clock';
-import { cachedHours } from '../phone/hours-cache';
 import type { CardSite } from '../card/site-facts';
-import { createSiteStore } from '../phone/site-store';
+import { createSiteStore, type SiteStore } from '../phone/site-store';
 import type { CalendarParts } from './calendar/hooks';
 import { DesktopShell } from './desktop/DesktopShell';
 import { useView } from './desktop/use-view';
 import Globe from './Globe';
 import { I18nContext, useI18n } from './i18n-context';
 import { Layers } from './Layers';
+import { OfflineNotice } from './OfflineNotice';
 import { usePhone } from './phone/hooks';
 import { PhoneShell } from './phone/PhoneShell';
 import { useStateFeed } from './use-state-feed';
+import { useLiveFavicon } from './use-live-favicon';
+import { useHoursLoader } from './use-hours-loader';
 
 interface Props {
   /** The landing sites endpoint, same origin in production. */
@@ -76,21 +79,33 @@ const VIEW_NAV = 'nav.views';
 
 /**
  * The shared instant (live on the browser's clock, which it follows once
- * the island runs), its player, and the hours loader with its cache.
+ * the island runs), its player, and the hours loader with its cache. The
+ * loader starts afresh each time the browser comes back online, so the
+ * views ask for their hours again, quietly, over the old ones.
  */
 function useCalendarParts(sitesUrl: string): CalendarParts {
-  const [parts] = useState(() => {
+  const [clock] = useState(() => {
     const time = createTimeStore(() => Date.now());
     const player = createPlayer(time, {
       setTimer: (fn, ms) => window.setTimeout(fn, ms),
       clearTimer: (id) => window.clearTimeout(id),
     });
-    const fetch = globalThis.fetch.bind(globalThis);
-    return { time, player, load: cachedHours({ fetch, sitesUrl }) };
+    return { time, player };
   });
-  useEffect(() => followClock(parts.time, browserHourClock()), [parts]);
-  useEffect(() => parts.player.pause, [parts]);
+  const load = useHoursLoader(sitesUrl);
+  const parts = useMemo(() => ({ ...clock, load }), [clock, load]);
+  useEffect(() => followClock(clock.time, browserHourClock()), [clock]);
+  useEffect(() => clock.player.pause, [clock]);
   return parts;
+}
+
+/** Opens the site a link names (`?site=`), once the island runs. */
+function useSiteFromUrl(store: SiteStore, sites: readonly CardSite[]) {
+  useEffect(() => {
+    const ids = sites.map((site) => site.id);
+    const id = siteFromSearch(location.search, ids);
+    if (id) store.select(id, 'list');
+  }, [store, sites]);
 }
 
 export default function LunarApp(props: Props) {
@@ -110,6 +125,8 @@ function Island({ sitesUrl, base, selectedId, sites }: Props) {
   const view = useView(VIEW_NAV);
   const offView = !usePhone() && view !== 'globe';
   const state = useStateFeed(store, parts);
+  useLiveFavicon(base, parts.time, state);
+  useSiteFromUrl(store, sites);
   const { t } = useI18n();
   const time = parts.time;
   const globe = { base, sitesUrl, store, sheetEdge, time, state };
@@ -121,6 +138,7 @@ function Island({ sitesUrl, base, selectedId, sites }: Props) {
       </section>
       <DesktopShell {...{ sites, store, parts, base, view }} />
       <PhoneShell {...{ sites, store, sheetEdge, parts, base }} />
+      <OfflineNotice base={base} />
     </>
   );
 }

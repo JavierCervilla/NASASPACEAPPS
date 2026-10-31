@@ -205,5 +205,8 @@
   "siteName.farSide": "{place}, lato nascosto",
   "siteName.areaIn": "Zona di {place}, {region}",
   "siteName.crashed": "{mission}, si è schiantata",
-  "siteName.artemisMission": "Atterraggio Artemis con equipaggio (in origine Artemis III; dal 2026 il primo atterraggio con equipaggio è Artemis IV, nel 2028)"
+  "siteName.artemisMission": "Atterraggio Artemis con equipaggio (in origine Artemis III; dal 2026 il primo atterraggio con equipaggio è Artemis IV, nel 2028)",
+  "manifest.description": "Sole, Terra e finestre di atterraggio al polo sud lunare.",
+  "offline.notice": "Offline · dati del {date}",
+  "offline.plain": "Offline"
 }

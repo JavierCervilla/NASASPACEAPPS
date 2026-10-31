@@ -74,16 +74,16 @@ const backdrops = (page: Page, selectors: readonly string[]) =>
   );
 
 /**
- * The lens filter id each of `selectors` names in --glass-lens (the first match of each), once every one has its own
- * filter in the page's SVG.
+ * The lens filter id each of `selectors` names in its own --glass-lens (the first match of each; never an inherited
+ * one), once every one has its own filter in the page's SVG.
  */
 async function lensIds(page: Page, selectors: readonly string[]): Promise<string[]> {
   const read = () =>
     page.evaluate(
       (list) =>
         list.map((selector) => {
-          const el = document.querySelector(selector);
-          const id = el ? /url\(#([\w-]+)\)/.exec(getComputedStyle(el).getPropertyValue('--glass-lens'))?.[1] : null;
+          const el = document.querySelector<HTMLElement>(selector);
+          const id = el ? /url\(#([\w-]+)\)/.exec(el.style.getPropertyValue('--glass-lens'))?.[1] : null;
           return id && document.querySelector(`.glass-defs filter#${id} feImage[href^="data:image/png"]`) ? id : '';
         }),
       selectors,
@@ -119,6 +119,11 @@ test.describe('desktop, 1440x900', () => {
     expect(distinct(await lensIds(page, SURFACES))).toBe(true);
     await page.getByRole('button', { name: /^Change site, now/ }).click();
     await expect(page.getByRole('dialog', { name: 'Choose a site' })).toBeVisible();
+    // Never the header's lens, inherited before the popover has its own.
+    expect(
+      await page.locator('.site-popover').evaluate((el) =>
+        getComputedStyle(el).getPropertyValue('--glass-lens') === el.style.getPropertyValue('--glass-lens')),
+    ).toBe(true);
     expect((await backdrops(page, ['.site-popover']))[0]?.[1]).toContain('url(');
     const [popoverLens] = await lensIds(page, ['.site-popover']);
     expect(await lensIds(page, SURFACES)).not.toContain(popoverLens);

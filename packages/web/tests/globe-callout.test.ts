@@ -537,4 +537,18 @@ describe('callout flicker', () => {
     callout.follow({ x: 157, y: 755 });
     expect([card.dataset['shown'], card.dataset['side']]).toEqual(['true', 'up-right']);
   });
+
+  it('a new site forgets the old site\'s side: up-left does not carry over to a marker that fits up-right best', () => {
+    const { callout, card } = mount();
+    callout.show(content(IM2, READY, 150));
+    callout.follow({ x: 300, y: 400 });
+    expect(card.dataset['side']).toBe('up-left');
+    // The same site moving to x = 190, inside the switch margin, keeps up-left ...
+    callout.follow({ x: 190, y: 400 });
+    expect(card.dataset['side']).toBe('up-left');
+    // ... a new site there starts from no side and takes the best one.
+    callout.show(content({ ...IM2, id: 'im1-odysseus' }, READY, 150));
+    callout.follow({ x: 190, y: 400 });
+    expect(card.dataset['side']).toBe('up-right');
+  });
 });

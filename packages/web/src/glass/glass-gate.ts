@@ -33,8 +33,9 @@
  * `navigator.userAgentData`, which neither of them exposes). It also needs
  * a device with power (quality tier medium or high) and a visitor who
  * asked for none of: less transparency, more contrast, or saving data.
- * `?glass=liquid|frosted` forces a mode for testing, as `?quality=` does.
- * Pure.
+ * `?glass=liquid|frosted` forces a mode for testing, as `?quality=` does,
+ * except over the visitor's own settings: less transparency or more
+ * contrast keep the page frosted even under `?glass=liquid`. Pure.
  */
 import type { Tier } from '../lib/quality';
 
@@ -83,13 +84,18 @@ export function chromiumEngine(
   return brands?.some(({ brand }) => brand === 'Chromium') ?? false;
 }
 
+/** The visitor's setting that rules liquid out, even a forced one. */
+function refusedBecause(env: GlassEnv): string | null {
+  if (env.reducedTransparency) return 'reduced-transparency';
+  if (env.moreContrast) return 'more-contrast';
+  return null;
+}
+
 /** The first rule that rules liquid out, or null when none does. */
 function frostedBecause(env: GlassEnv): string | null {
   if (env.kept === 'frosted') return 'kept';
   if (!env.chromium || !env.refracts) return 'no-refraction';
   if (env.saveData) return 'save-data';
-  if (env.reducedTransparency) return 'reduced-transparency';
-  if (env.moreContrast) return 'more-contrast';
   if (env.tier() === 'low') return 'low-tier';
   return null;
 }
@@ -97,8 +103,11 @@ function frostedBecause(env: GlassEnv): string | null {
 /** The glass for this page load. */
 export function chooseGlass(env: GlassEnv): GlassChoice {
   const forced = forcedGlass(env.search);
-  if (forced) return { mode: forced, reason: 'forced', probe: false };
-  const reason = frostedBecause(env);
+  const refused = refusedBecause(env);
+  if (forced === 'frosted' || (forced && !refused)) {
+    return { mode: forced, reason: 'forced', probe: false };
+  }
+  const reason = refused ?? frostedBecause(env);
   if (reason) return { mode: 'frosted', reason, probe: false };
   return { mode: 'liquid', reason: 'capable', probe: true };
 }

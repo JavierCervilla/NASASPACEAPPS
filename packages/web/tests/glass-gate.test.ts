@@ -69,13 +69,22 @@ describe('glass choice', () => {
     expect(asked).toBe(0);
   });
 
-  it('lets ?glass= force a mode, over every condition, with no trial', () => {
+  it('lets ?glass= force a mode, over every condition but the visitor\'s settings, with no trial', () => {
     expect(forcedGlass('?glass=liquid')).toBe('liquid');
     expect(forcedGlass('?quality=high&glass=frosted')).toBe('frosted');
     expect(forcedGlass('?glass=solid')).toBeNull();
-    const weak = { ...CAPABLE, chromium: false, reducedTransparency: true, kept: 'frosted' as const };
+    const weak = { ...CAPABLE, chromium: false, saveData: true, tier: (): Tier => 'low', kept: 'frosted' as const };
     expect(chooseGlass({ ...weak, search: '?glass=liquid' })).toEqual({ mode: 'liquid', reason: 'forced', probe: false });
     expect(chooseGlass({ ...CAPABLE, search: '?glass=frosted' })).toEqual({ mode: 'frosted', reason: 'forced', probe: false });
+  });
+
+  it.each([
+    ['prefers-reduced-transparency', { reducedTransparency: true }, 'reduced-transparency'],
+    ['prefers-contrast: more', { moreContrast: true }, 'more-contrast'],
+  ])('keeps frosted under ?glass=liquid when the visitor asks for %s', (_, change, reason) => {
+    const env = { ...CAPABLE, ...change, search: '?glass=liquid' };
+    expect(chooseGlass(env)).toEqual({ mode: 'frosted', reason, probe: false });
+    expect(chooseGlass({ ...env, search: '?glass=frosted' }).mode).toBe('frosted');
   });
 
   it('knows Chromium by its brand, and nothing else for it', () => {
@@ -266,6 +275,15 @@ describe('glass gate on a page', () => {
     for (const which of ['transparency', 'contrast'] as const) {
       const p = page(1000 / 60);
       p.choice();
+      p.queries[which].set(true);
+      expect(p.attrs).toEqual(['liquid', 'frosted']);
+    }
+  });
+
+  it('drops a forced Liquid to frosted live when the visitor asks for less transparency or more contrast', () => {
+    for (const which of ['transparency', 'contrast'] as const) {
+      const p = page(50, { search: '?glass=liquid' });
+      expect(p.choice().reason).toBe('forced');
       p.queries[which].set(true);
       expect(p.attrs).toEqual(['liquid', 'frosted']);
     }

@@ -68,7 +68,7 @@ export interface GlassDeps {
 const LESS_TRANSPARENCY = '(prefers-reduced-transparency: reduce)';
 const MORE_CONTRAST = '(prefers-contrast: more)';
 
-/** Liquid on trial: drops to frosted when a setting asks for it. */
+/** Liquid, forced or on trial: drops to frosted when a setting asks. */
 function watchSettings(
   watches: readonly MediaWatch[],
   frost: () => void,
@@ -96,8 +96,8 @@ export function startGlass(deps: GlassDeps): GlassChoice {
   });
   const set = (mode: GlassMode): void => deps.root.setAttribute('data-glass', mode);
   set(choice.mode);
+  if (choice.mode === 'liquid') watchSettings(watches, () => set('frosted'));
   if (!choice.probe) return choice;
-  watchSettings(watches, () => set('frosted'));
   startTrials(deps, quality().targetFps, () => set('frosted'));
   return choice;
 }

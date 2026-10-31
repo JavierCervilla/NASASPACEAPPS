@@ -67,6 +67,14 @@
   --glass-liquid-tint: rgba(30, 32, 40, 0.38);
   --glass-liquid-rim: inset 0 1px 0 rgba(255, 255, 255, 0.26),
     inset 0 0 0 1px rgba(255, 255, 255, 0.1);
+  /*
+   * The scrim the text sits on (glass.css): the thin tint alone left
+   * secondary text over the bright Moon under 3:1. Held in from the edge
+   * and feathered, so the rim still bends the Moon.
+   */
+  --glass-liquid-scrim: rgba(30, 32, 40, 0.76);
+  --glass-liquid-scrim-inset: 6px;
+  --glass-liquid-scrim-feather: 4px;
 
   /*
    * The lunar sky stays black in both themes, and the site markers drawn on
@@ -130,6 +138,7 @@
     --glass-liquid-tint: rgba(255, 255, 255, 0.74);
     --glass-liquid-rim: inset 0 1px 0 rgba(255, 255, 255, 0.95),
       inset 0 0 0 1px rgba(0, 0, 0, 0.08);
+    --glass-liquid-scrim: rgba(255, 255, 255, 0.84);
 
     --sky: radial-gradient(120% 90% at 50% 40%, #151821 0%, #07080b 70%);
     --marker: #ffffff;

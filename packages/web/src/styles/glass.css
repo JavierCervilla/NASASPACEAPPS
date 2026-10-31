@@ -35,6 +35,16 @@
  * refracting layer on glass would stack translucency (apple-design §12).
  */
 
+/*
+ * A lens belongs to its own surface: the site popover sits inside the
+ * header, and an inherited lens is a filter sized for another box.
+ * Until a surface has its own, the shared filter below applies.
+ */
+@property --glass-lens {
+  syntax: '*';
+  inherits: false;
+}
+
 /* The filter's SVG: in the page, never in the layout. */
 .glass-defs {
   position: absolute;
@@ -57,6 +67,35 @@
   background: var(--glass-liquid-tint);
   backdrop-filter: var(--glass-lens, url('#glass-liquid'))
     var(--glass-liquid-filter);
+}
+
+/*
+ * Text over a thin tint and the bright Moon fell under 4.5:1. The small
+ * surfaces sit their text on a scrim inside them, held in from the edge
+ * and feathered: the rim, where the lens bends the Moon most, stays
+ * clear. Each surface's backdrop-filter makes it a stacking context, so
+ * the scrim paints over its tint and under its content.
+ */
+:root[data-glass='liquid'] :is(
+    .phone-bar,
+    .tab-bar,
+    .globe-layers,
+    .globe-callout
+  )::before {
+  content: '';
+  position: absolute;
+  inset: var(--glass-liquid-scrim-inset);
+  z-index: -1;
+  border-radius: inherit;
+  background: var(--glass-liquid-scrim);
+  filter: blur(var(--glass-liquid-scrim-feather));
+  pointer-events: none;
+}
+
+/* The phone callout's state pill reaches into the scrim's feathered edge:
+ * it carries its own solid ground, the card's, under its state tint. */
+:root[data-glass='liquid'] .globe-callout__pill {
+  background: color-mix(in srgb, var(--tone) 16%, var(--card));
 }
 
 /* The sheet holds the most text: it keeps its heavier tint. */

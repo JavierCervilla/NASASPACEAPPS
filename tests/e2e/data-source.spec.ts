@@ -571,7 +571,9 @@ test.describe('desktop, 1280x720: floating surfaces over the markers', () => {
   });
 
   // Verificador on PR #19: the polar disk is its own stacking context too, or its image and markers paint over the
-  // Layers key where the two overlap (at 1280x720 the key's top right corner sits over the disk).
+  // Layers key where the two overlap (at 1280x720 the key's top right corner sat over the disk). Since VENT-10 the
+  // disk is fitted clear of the key (polar/disk-fit.ts), so its box may not reach the key at all; wherever it still
+  // does, the key is on top.
   test('on the polar map, the Layers key is on top of the disk wherever they overlap, and Compare takes the click', async ({
     page,
   }) => {
@@ -599,7 +601,6 @@ test.describe('desktop, 1280x720: floating surfaces over the markers', () => {
       }
       return { hits, sampled: right > left && bottom > top };
     }, layers);
-    expect(covered.sampled).toBe(true);
     expect(covered.hits).toEqual([]);
     const compare = switchIn(page, layers).getByRole('radio', { name: 'Comparar' });
     for (const name of ['Calculado', 'Horizons', 'Comparar']) {

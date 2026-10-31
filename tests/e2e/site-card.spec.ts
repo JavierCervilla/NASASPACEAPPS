@@ -118,8 +118,9 @@ test.describe('desktop site card and polar map, 1440x900', () => {
     await expect(page.getByRole('region', { name: 'Lunar globe' })).toBeHidden();
     await expect(map(page).locator('img.polar__image')).toHaveJSProperty('complete', true);
     expect(await map(page).locator('img.polar__image').evaluate((img: HTMLImageElement) => img.naturalWidth)).toBe(2048);
-    // 15 curated sites lie south of 80° S; those sharing a point share a marker: 11.
-    await expect(map(page).getByRole('button')).toHaveCount(11);
+    // 15 curated sites lie south of 80° S; those sharing a point share a marker: 11 (on the disk: the Layers key
+    // beside it holds the astronaut's dock, VENT-10).
+    await expect(map(page).locator('.polar__disk').getByRole('button')).toHaveCount(11);
     const im2 = map(page).getByRole('button', { name: 'Mons Mouton (IM-2 Athena), landing site' });
     await expect(im2).toHaveAttribute('aria-pressed', 'true');
     await expect(im2).toHaveAttribute('data-state', 'window');

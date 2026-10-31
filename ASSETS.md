@@ -172,3 +172,30 @@ list (Mons Mouton uses Mons Mouton Plateau's; Nobile Rims 1 and 2 use Griffin-1'
 | `ldem_80s_20m.lines-16000.bin` | `1419184d902347b64491350759ccf0c2c7c20d576b362a9d310ba7320315227c` |
 | `ldem_80s_20m.lines-16500.bin` | `951a4029ad29c5104be3ad5768b8da8d18e38d459323ced62838e888e17e87fe` |
 | `ldem_80s_20m.lines-17000.bin` | `b30943c35485985ff0bfc4f6a591c4f41280212bd8564ca55dbcdafdb9fa1bda` |
+
+## App icon «J2» and the Moon's phase frames (VENT-28)
+
+| File | Size | sha256 |
+|---|---|---|
+| `packages/web/public/icons/icon-192.png` | 192 x 192, 34 795 bytes | `e0c7ac3335babdef2e125442c569f48129f7b3a38bbd94f1ae89145066bcb582` |
+| `packages/web/public/icons/icon-512.png` | 512 x 512, 170 846 bytes | `1c60244e5660e1a50d882ecc94ad732fa5f911ad01d90f1427e22abf977f9e37` |
+| `packages/web/public/icons/icon-maskable-512.png` | 512 x 512, 114 040 bytes | `88a17b2d30986d4e3b6503d13c0418db8ea7a5090a17b1ee97c5a523414d22c5` |
+| `packages/web/public/icons/apple-touch-icon.png` | 180 x 180, 29 425 bytes | `87ce99b87e16f9bb1fe2c9f9d7792701a76c0f1d2ff39e53e8b60271fa363cd3` |
+| `packages/web/public/apple-touch-icon.png` | the same file at the root, for clients that ask for it without reading the link | `87ce99b87e16f9bb1fe2c9f9d7792701a76c0f1d2ff39e53e8b60271fa363cd3` |
+| `packages/web/public/favicon.ico` | 16, 32 and 48 px, 7 337 bytes | `c16c5a6554319a9001471d0483b768289135307ee2e4c6fc4a08d99938f35f52` |
+| `packages/web/public/favicon.svg` | vector ring, embedded 96 px WebP Moon, 4 802 bytes | `0b4196b8e51c2fd6e7e20b55db61df0d4b5441b9b59afebd525b3f9a717e5e07` |
+| `packages/web/public/icons/phase/moon-00.webp` … `moon-29.webp` | 30 x 128 x 128 WebP, 88 372 bytes in all | sha256 of their `sha256sum` listing, in name order: `e0985a7808a04de39c72c80fa6f22979a6ba7ce2d667bddafa6251f6e41764d8` |
+
+- **Source**: the textures already listed above, nothing new downloaded: the 8K colour map
+  (`moon-lroc-8k.jpg`, for albedo) and the 4K LOLA normal map (`moon-lola-normal-4k.jpg`, for relief).
+- **What it is**: the app icon chosen by the human on 2026-10-31 («J2»): a photo-real Moon inside the legend ring
+  (dark track, then the Sun, window and Earth arcs from 12 o'clock clockwise in the signal colours), on the page's
+  near-black. The `any` icons and the favicons are a rounded square; the maskable icon and the apple-touch-icon are full
+  bleed, the maskable one with the ring scaled to 80 % so it stays inside Android's safe zone. The phase frames are the
+  same Moon through one synodic month (frame 0 new, 15 full, waxing lit on the right), the dark side in faint
+  earthshine, for the live favicon and the globe's loading state.
+- **Licence**: derived from NASA LROC and LOLA data, public domain, with the same NASA SVS credit as the maps above.
+- **How it was made**: `python3 packages/web/scripts/app_icons.py` (Pillow 13.0.0, NumPy 2.5.4 from the hash-pinned
+  requirements): each disk pixel samples the maps seen 12° from the south, lit with a Lommel-Seeliger-like law
+  (2 mu / (mu + mu0)) over the relief normals, rendered at twice the size and resized with Lanczos; the ring is drawn
+  at four times the size with round caps. Two runs give byte-identical files.

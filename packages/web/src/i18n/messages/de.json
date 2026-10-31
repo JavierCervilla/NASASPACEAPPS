@@ -202,5 +202,8 @@
   "siteName.farSide": "{place}, Mondrückseite",
   "siteName.areaIn": "Gebiet um {place}, {region}",
   "siteName.crashed": "{mission}, abgestürzt",
-  "siteName.artemisMission": "Bemannte Artemis-Landung (ursprünglich Artemis III; seit 2026 ist die erste bemannte Landung Artemis IV, 2028)"
+  "siteName.artemisMission": "Bemannte Artemis-Landung (ursprünglich Artemis III; seit 2026 ist die erste bemannte Landung Artemis IV, 2028)",
+  "manifest.description": "Sonne, Erde und Landefenster am lunaren Südpol.",
+  "offline.notice": "Offline · Daten vom {date}",
+  "offline.plain": "Offline"
 }

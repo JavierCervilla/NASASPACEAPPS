@@ -66,6 +66,8 @@ export interface MoonOptions {
   /** Under Save-Data the start map is the only one. */
   readonly saveData: boolean;
   readonly onChange: () => void;
+  /** A map went onto the Moon. */
+  readonly onTextured?: (() => void) | undefined;
   readonly warn: (message: string) => void;
 }
 

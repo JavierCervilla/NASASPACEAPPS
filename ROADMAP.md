@@ -41,6 +41,9 @@ completa está en el documento «Ventana Lunar · Especificación y roadmap».
   (VENT-23)
 - [x] Detalle del globo al acercar (texturas 4K y 8K según el zoom y el equipo), relieve LOLA en el globo y hoja del
   móvil que se cierra para dejar solo la Luna (VENT-24)
+- [x] Aplicación instalable (PWA) con el icono J2: manifiesto por idioma con accesos directos a sitios destacados,
+  favicon con la fase real de la Luna y el estado del sitio, pantalla de carga con la fase, y uso sin conexión con los
+  últimos datos (VENT-28)
 - [ ] Modo DSN con Goldstone, Canberra y Robledo (VENT-7)
 - [ ] Coordenadas a medida: cualquier lat/lon (VENT-10)
 - [ ] Comparador de sitios o exportar a .ics (VENT-8)

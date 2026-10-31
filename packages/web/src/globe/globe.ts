@@ -75,6 +75,8 @@ export interface GlobeOptions {
   readonly warn: (message: string) => void;
   /** A marker's accessible name, in the visitor's language. */
   readonly markerName: (site: GlobeSite) => string;
+  /** The first map is on the Moon: the loading state may go. */
+  readonly onTextured?: () => void;
 }
 
 /** Keeps the canvas the host's size; redraws after a restored context. */

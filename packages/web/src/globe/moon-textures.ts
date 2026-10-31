@@ -63,13 +63,15 @@ export interface MoonTextureOptions {
   readonly tier: Tier;
   /** Asks for a frame. */
   readonly onChange: () => void;
+  /** A map went onto the Moon. */
+  readonly onTextured?: (() => void) | undefined;
 }
 
 type GpuDeps = Pick<SwapDeps<Texture>, 'load' | 'upload' | 'apply' | 'dispose'>;
 
 /** Loads, uploads, applies and frees the Moon's textures. */
 export function moonTextureDeps(options: MoonTextureOptions): GpuDeps {
-  const { renderer, material, tier, onChange } = options;
+  const { renderer, material, tier, onChange, onTextured } = options;
   const gpuMax = renderer.capabilities.getMaxAnisotropy();
   const anisotropy = Math.min(ANISOTROPY[tier], gpuMax);
   const loader = new TextureLoader();
@@ -88,6 +90,7 @@ export function moonTextureDeps(options: MoonTextureOptions): GpuDeps {
       material.normalMap = maps.normal;
       material.needsUpdate = true;
       onChange();
+      onTextured?.();
     },
     dispose: (texture) => texture.dispose(),
   };

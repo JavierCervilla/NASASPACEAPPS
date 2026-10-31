@@ -30,7 +30,7 @@
  * widgets read the same in every run, and IM-2's read as the real Moon does.
  */
 import { readFileSync } from 'node:fs';
-import type { Page, Route } from '@playwright/test';
+import type { BrowserContext, Page, Route } from '@playwright/test';
 
 export const SITES = JSON.parse(readFileSync(new URL('../../packages/server/data/sites.json', import.meta.url), 'utf8')) as {
   id: string;
@@ -97,8 +97,11 @@ interface StubOptions {
   readonly hold?: Promise<void>;
 }
 
-/** Answers the site list and each site's range. */
-export async function stubApi(page: Page, { status = 200, hold }: StubOptions = {}): Promise<void> {
+/**
+ * Answers the site list and each site's range. On a context, the routes also answer the service worker's requests
+ * (pwa.spec.ts); on a page they do not, so the other specs run with service workers blocked (playwright.config.ts).
+ */
+export async function stubApi(page: Page | BrowserContext, { status = 200, hold }: StubOptions = {}): Promise<void> {
   await page.route('**/api/v1/sites', (route) => route.fulfill({ json: { sites: SITES } }));
   await page.route(/\/api\/v1\/sites\/[^/?]+\?/, async (route: Route) => {
     await hold;

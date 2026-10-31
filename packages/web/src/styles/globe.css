@@ -373,3 +373,42 @@
   transform: translate(-50%, -50%) scale(0.97);
   transition: transform var(--dur-press) ease-out;
 }
+
+/*
+ * The loading state (VENT-28, components/GlobeSplash.tsx): the app icon
+ * with the day's Moon, centred on the sky until the scene runs, then
+ * faded out on the default ease.
+ */
+.globe-splash {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  pointer-events: none;
+  transition:
+    opacity var(--dur-enter) var(--ease-out),
+    visibility 0s linear var(--dur-enter);
+}
+
+.globe-splash[data-done='true'] {
+  opacity: 0;
+  visibility: hidden;
+}
+
+.globe-splash__ring,
+.globe-splash__moon {
+  grid-area: 1 / 1;
+  width: min(36cqw, 200px);
+  aspect-ratio: 1;
+}
+
+/* The Moon's share of the icon: 600 of 1024. */
+.globe-splash__moon {
+  width: calc(min(36cqw, 200px) * 600 / 1024);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .globe-splash {
+    transition: none;
+  }
+}

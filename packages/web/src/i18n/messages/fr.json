@@ -205,5 +205,8 @@
   "siteName.farSide": "{place}, face cachée",
   "siteName.areaIn": "Zone de {place}, {region}",
   "siteName.crashed": "{mission}, écrasée",
-  "siteName.artemisMission": "Atterrissage habité Artemis (à l’origine Artemis III ; depuis 2026, le premier atterrissage habité est Artemis IV, en 2028)"
+  "siteName.artemisMission": "Atterrissage habité Artemis (à l’origine Artemis III ; depuis 2026, le premier atterrissage habité est Artemis IV, en 2028)",
+  "manifest.description": "Soleil, Terre et fenêtres d’alunissage au pôle Sud de la Lune.",
+  "offline.notice": "Hors ligne · données du {date}",
+  "offline.plain": "Hors ligne"
 }

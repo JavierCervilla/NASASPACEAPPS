@@ -205,5 +205,8 @@
   "siteName.farSide": "{place}, cara oculta",
   "siteName.areaIn": "Zona de {place}, {region}",
   "siteName.crashed": "{mission}, se estrelló",
-  "siteName.artemisMission": "Aterrizaje tripulado de Artemis (en origen Artemis III; desde 2026 el primer aterrizaje tripulado es Artemis IV, en 2028)"
+  "siteName.artemisMission": "Aterrizaje tripulado de Artemis (en origen Artemis III; desde 2026 el primer aterrizaje tripulado es Artemis IV, en 2028)",
+  "manifest.description": "Sol, Tierra y ventanas de aterrizaje en el polo sur lunar.",
+  "offline.notice": "Sin conexión · datos del {date}",
+  "offline.plain": "Sin conexión"
 }

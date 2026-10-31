@@ -63,3 +63,24 @@ describe('the locale routes (VENT-35)', () => {
     expect(DOCKERFILE).toMatch(/PSEUDO_LOCALE=0 npm run build -w @ventana\/web/);
   });
 });
+
+describe('the installable app (VENT-28)', () => {
+  /** The body of the regex location whose pattern is `pattern`. */
+  const regexBlock = (pattern: string): string => {
+    const at = CONF.indexOf(`location ~ ${pattern} {`);
+    expect(at).toBeGreaterThanOrEqual(0);
+    return CONF.slice(at, CONF.indexOf('\n  }', at));
+  };
+
+  it('serves the service worker uncached, with the security headers', () => {
+    const block = regexBlock('(^|/)sw\\.js$');
+    expect(block).toContain('add_header Cache-Control "no-cache";');
+    expect(block).toContain('include /etc/nginx/snippets/security-headers.conf;');
+  });
+
+  it('serves the manifests as application/manifest+json, with the security headers', () => {
+    const block = regexBlock('\\.webmanifest$');
+    expect(block).toMatch(/types \{ \}\s+default_type application\/manifest\+json;/);
+    expect(block).toContain('include /etc/nginx/snippets/security-headers.conf;');
+  });
+});

@@ -48,6 +48,7 @@ import type { CardModel } from '../../card/site-card';
 import { useI18n } from '../i18n-context';
 import { SiteThumb } from '../SiteThumb';
 import { CardStatus } from './CardStatus';
+import { StateBadge } from './StateBadge';
 import { useScrollEdges } from './use-scroll-edges';
 
 interface Props {
@@ -56,6 +57,8 @@ interface Props {
   readonly onRetry: () => void;
   /** The state at the selected instant; null until it is known. */
   readonly state: SiteState | null;
+  /** Whether that state is the simulator's: the badge's dot is hollow. */
+  readonly computed: boolean;
   /** The site's base path, for the image. */
   readonly base: string;
 }
@@ -66,32 +69,30 @@ const THUMB_SIZES = '(max-width: 1023.98px) 100vw, 320px';
 interface MediaProps {
   readonly thumb: Thumb | null;
   readonly state: SiteState | null;
+  readonly computed: boolean;
 }
 
 /** The image with the state's badge and its frame; none without one. */
-function CardMedia({ thumb, state }: MediaProps) {
+function CardMedia({ thumb, state, computed }: MediaProps) {
   if (!thumb) return null;
   return (
     <div className="card-media">
       <SiteThumb thumb={thumb} sizes={THUMB_SIZES} className="card-media__image" />
       <span className="card-media__shade" aria-hidden="true" />
-      {state ? (
-        <span className="card-media__badge" data-tone={state.kind}>
-          {state.badge}
-        </span>
-      ) : null}
+      <StateBadge state={state} computed={computed} />
       <span className="card-media__caption">{thumb.caption}</span>
     </div>
   );
 }
 
-function CardHead({ site, state, base }: Omit<Props, 'model' | 'onRetry'>) {
+function CardHead(props: Omit<Props, 'model' | 'onRetry'>) {
+  const { site, state, computed, base } = props;
   const i18n = useI18n();
   const { title, subtitle } = siteLabels(site);
   const thumb = thumbOf({ id: site.id, place: title }, base, i18n);
   return (
     <div className="card-block card-head">
-      <CardMedia thumb={thumb} state={state} />
+      <CardMedia thumb={thumb} state={state} computed={computed} />
       <p className="card-head__mission">{missionLine(i18n, site)}</p>
       <h2 className="card-head__name">{subtitle}</h2>
       {title === subtitle ? null : <p className="card-head__place">{title}</p>}

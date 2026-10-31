@@ -34,6 +34,8 @@ import { monthStrip } from '../../calendar/month-strip';
 import type { Player } from '../../calendar/time-player';
 import type { TimeState, TimeStore } from '../../calendar/time-store';
 import type { HoursLoader } from '../../phone/hours-cache';
+import { monthDiff } from '../../calendar/month-diff';
+import { useSiteHours, type HoursParts } from '../use-site-hours';
 import {
   LOADING,
   loadMonthHours,
@@ -85,21 +87,27 @@ export function useMonthHours(
 }
 
 /** What a calendar view needs from the page: shared by every view. */
-export interface CalendarParts {
+export interface CalendarParts extends HoursParts {
   readonly time: TimeStore;
   readonly player: Player;
-  readonly load: HoursLoader;
 }
 
-/** The instant, playing, the month's hours and its bars, for site `id`. */
+/**
+ * The instant, playing, the month's hours and its bars, for site `id`;
+ * and, under «Compare», where the bars disagree with the computed hours.
+ */
 export function useCalendar(parts: CalendarParts, id: string) {
   const state = useTime(parts.time);
   const playing = usePlaying(parts.player);
   const atMs = state?.atMs ?? null;
-  const { result, retry } = useMonthHours(parts.load, id, atMs);
+  const hours = useSiteHours(parts, id, atMs);
+  const { result, compare } = hours;
   const ready = atMs !== null && result.kind === 'ready';
   const strip = ready ? monthStrip(result.hours, atMs) : null;
-  return { state, playing, result, strip, retry };
+  const diff = ready && compare.kind === 'ready'
+    ? monthDiff(result.hours, compare.computed, atMs)
+    : null;
+  return { ...hours, state, playing, strip, diff };
 }
 
 export type Calendar = ReturnType<typeof useCalendar>;

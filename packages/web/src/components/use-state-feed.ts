@@ -35,9 +35,10 @@ import { createWatchedValue, type WatchedValue } from '../lib/watched-value';
 import { siteState } from '../phone/site-state';
 import type { SiteStore } from '../phone/site-store';
 import type { NowState } from '../phone/widget-types';
-import { useMonthHours, useTime, type CalendarParts } from './calendar/hooks';
+import { useTime, type CalendarParts } from './calendar/hooks';
 import { useI18n } from './i18n-context';
 import { useSelection } from './phone/hooks';
+import { useSiteHours } from './use-site-hours';
 
 /** The selected site's state, as a value the globe watches. */
 export function useStateFeed(
@@ -47,7 +48,7 @@ export function useStateFeed(
   const [feed] = useState(() => createWatchedValue<NowState | null>(null));
   const { id } = useSelection(store);
   const atMs = useTime(parts.time)?.atMs ?? null;
-  const { result: hours } = useMonthHours(parts.load, id, atMs);
+  const { result: hours } = useSiteHours(parts, id, atMs);
   const i18n = useI18n();
   const kind = siteState(hours, atMs, i18n)?.kind ?? null;
   useEffect(() => {

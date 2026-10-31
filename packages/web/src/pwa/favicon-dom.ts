@@ -30,7 +30,7 @@
 import type { FaviconDeps } from './live-favicon';
 import { FAVICON_SIZE } from './live-favicon';
 import { drawIcon } from './icon-draw';
-import { meanOrbitPhase } from './moon-phase';
+import { simPhase } from './moon-phase';
 import { frameUrl } from './phase-frames';
 
 /** The page's icon link (layouts/Base.astro) the favicon repoints. */
@@ -60,7 +60,7 @@ export function browserFavicon(base: string): FaviconDeps | null {
   canvas.width = FAVICON_SIZE;
   canvas.height = FAVICON_SIZE;
   return {
-    phase: meanOrbitPhase,
+    phase: simPhase,
     frame: frameLoader(base),
     paint: (picture) => {
       drawIcon(ctx, picture);

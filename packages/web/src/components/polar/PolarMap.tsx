@@ -44,6 +44,7 @@ import {
   polarMarkers,
   type PolarMarker,
 } from '../../polar/polar-markers';
+import type { SourceStore } from '../../source/data-source';
 import { useI18n } from '../i18n-context';
 import { Layers } from '../Layers';
 import { Graticule } from './Graticule';
@@ -58,6 +59,8 @@ interface Props {
   /** The site's base path, for the map image. */
   readonly base: string;
   readonly onPick: (id: string) => void;
+  /** The data source, for the Layers key's switch. */
+  readonly source: SourceStore;
 }
 
 const IMAGE = 'textures/moon-south-polar-2k.jpg';
@@ -91,7 +94,8 @@ function useMarkers(sites: readonly PhoneSite[]) {
   return { markers, label: i18n.t('polar.label') };
 }
 
-export function PolarMap({ sites, site, state, base, onPick }: Props) {
+export function PolarMap(props: Props) {
+  const { sites, site, state, base, onPick, source } = props;
   const { markers, label } = useMarkers(sites);
   const [disk, size] = useWidth<HTMLDivElement>();
   const chosen = markerOf(markers, site.id)?.id ?? null;
@@ -102,16 +106,15 @@ export function PolarMap({ sites, site, state, base, onPick }: Props) {
     const id = pickedSite(event.nativeEvent, root, placed);
     if (id) onPick(id);
   };
-  const src = `${base.replace(/\/?$/, '/')}${IMAGE}`;
   return (
     <section className="polar" aria-label={label}>
       <div className="polar__disk" ref={disk} onClick={click}>
-        <img className="polar__image" src={src} alt="" decoding="async" />
+        <img className="polar__image" src={`${base.replace(/\/?$/, '/')}${IMAGE}`} alt="" decoding="async" />
         <Graticule />
         <PolarMarkers {...{ markers, chosen, state, labels, badges }} />
       </div>
       {chosen === null ? <OffMap site={site} /> : null}
-      <Layers />
+      <Layers source={source} />
       <PolarKey badges={badges} />
     </section>
   );

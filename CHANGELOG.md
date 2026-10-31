@@ -3,6 +3,20 @@
 ## [Sin publicar]
 
 ### Añadido
+- Respuesta al instante con el cálculo propio y conmutador para compararlo con Horizons (VENT-36, opción C del lienzo,
+  aprobada por Javier): al elegir un sitio, la píldora, las tarjetas, la ficha y el calendario se pintan en el acto con
+  el Sol, la Tierra y la antena DSN que calcula la propia web, sin esperar a JPL Horizons; cuando llega Horizons, lo
+  sustituye. Mientras se ve el cálculo propio, el punto de estado de la píldora (y el del botón del sitio y la etiqueta
+  de la ficha en el PC) es un anillo hueco del color del estado, y el lector de pantalla añade «calculado»; al llegar
+  Horizons se rellena. Si Horizons falla, se sigue diciendo con honestidad que los datos no cargaron. Un conmutador
+  «Computed | Horizons | Compare» («Fuente de datos») elige de dónde salen los datos de toda la vista: en el PC, bajo
+  una línea fina en la leyenda «Layers»; en el móvil, en el panel de sitios junto a «Idioma». Por defecto «Horizons» y
+  la elección se recuerda en el dispositivo. Con «Computed» todo es cálculo propio (punto siempre hueco y la ficha dice
+  «calculado aquí»). Con «Compare» se ve Horizons y la cinta del calendario (y las columnas del calendario del móvil)
+  raya en blanco neutro las horas en que los dos cálculos no coinciden en Sol, Tierra o ventana, cuenta «3 h difieren
+  este mes» y la leyenda gana «Difiere»; si Horizons no está disponible, lo dice en vez de fingir que no hay
+  diferencias. Se maneja con teclado (flechas, Inicio, Fin) y está en los cinco idiomas. La fase de la Luna del icono
+  de la pestaña sale ahora del Sol del simulador: cae a menos de un cuarto de hora de las lunas nueva y llena reales.
 - Aplicación instalable (VENT-28, icono «J2» elegido por Javier): Ventana Lunar se instala en el móvil y en el PC con
   su icono, una Luna real (de los mapas LROC y LOLA de la NASA) dentro del anillo de la leyenda (Sol, ventana, Tierra).
   Cada idioma se instala como su propia app, con su descripción traducida, y en Android y en el escritorio el icono

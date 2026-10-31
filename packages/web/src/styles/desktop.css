@@ -202,6 +202,16 @@
   box-shadow: 0 0 0 1px rgba(242, 242, 244, 0.5);
 }
 
+/* Hollow while the state is the simulator's (VENT-36). */
+.card-media__badge[data-computed='true']::before {
+  background: transparent;
+  box-shadow: inset 0 0 0 1.5px var(--tone);
+}
+
+.card-media__badge[data-tone='none'][data-computed='true']::before {
+  box-shadow: inset 0 0 0 1.5px rgba(242, 242, 244, 0.5);
+}
+
 .card-media__caption {
   position: absolute;
   right: 10px;

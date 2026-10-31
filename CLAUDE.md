@@ -48,7 +48,19 @@ Every visible change follows `.claude/skills/apple-design/SKILL.md` (vendored fr
   sheet (closed, peek, half with four widgets, full with the site picker or the calendar) follows apple-design's sheet
   physics, and a floating tab bar switches views. One shared instant (`src/calendar/time-store.ts`: live on the clock by
   default, scrubbed or played) drives the globe's Sun, the widgets and the calendar (the strip under the globe on
-  desktop); the hours come from one cached request per site and month (`src/phone/hours-cache.ts`). On desktop
+  desktop); the hours come from one cached request per site and month (`src/phone/hours-cache.ts`). The answer is
+  instant (VENT-36): the views first show the simulator's hours for the same site and range (`computedHours`, cached
+  in `src/source/computed-hours.ts`, from the build-time site list), and Horizons replaces them when it arrives
+  (`src/source/month-view.ts`, `src/components/use-site-hours.ts`); a failed request stays an honest error. While the
+  view shows computed hours the state dot is hollow, a ring in the state's colour (phone pill, desktop site button and
+  site card badge), and the accessible name gains «computed»; it fills when Horizons arrives. A «Data source» switch,
+  «Computed | Horizons | Compare» (radiogroup in the segmented control's style, never a signal colour,
+  `src/components/source/SourceSwitch.tsx`), sits under a hairline in the desktop Layers key and in the phone's Sites
+  sheet grouped with the «Language» row; default Horizons, kept in `localStorage` (`src/source/data-source.ts`).
+  Computed: the simulator's hours always, dot hollow for good, card source «computed here». Compare: Horizons shown, and
+  the desktop strip and the phone Calendar sheet hatch in neutral white the hours where the two disagree on Sun, Earth
+  or window (`src/calendar/month-diff.ts`), with «N h differ this month» and a «Differs» legend key; without Horizons it
+  says so instead of hatching nothing. On desktop
   the site card sits beside the view and the header tabs switch the view by hash (`#globe`, `#polar-map`,
   `src/lib/view-tabs.ts`): the polar map is a south polar stereographic disk from 80° S
   (`src/lib/polar-projection.ts`, image from `scripts/moon_textures.py polar`). No card floats over the globe (VENT-33). On phones the
@@ -112,9 +124,9 @@ Every visible change follows `.claude/skills/apple-design/SKILL.md` (vendored fr
   has none.
 - **Live parts**: the tab's favicon is redrawn on a canvas (`src/pwa/live-favicon.ts`) with the Moon's phase at the
   shared instant and the ring emphasising the selected site's state (Neither or no data: the full legend), only when
-  the frame or the state changes, at most every 250 ms. The phase is `meanOrbitPhase` (`src/pwa/moon-phase.ts`, mean
-  orbits plus the largest periodic terms, within half an hour of the true phases), behind `PhaseSource` so VENT-36's
-  Sun can replace it. The globe's loading state (`GlobeSplash.tsx`) shows J2 with the same phase until the Moon's first
+  the frame or the state changes, at most every 250 ms. The phase is `simPhase` (`src/pwa/moon-phase.ts`, behind
+  `PhaseSource`): the simulator's sub-solar point against its sub-Earth point (VENT-36), within a quarter of an hour of
+  the true phases. The globe's loading state (`GlobeSplash.tsx`) shows J2 with the same phase until the Moon's first
   map is on the running scene (`onTextured`), or 6 s at most. A phase frame that fails to load leaves the ring alone and
   is asked again on the next update.
 - **Offline**: `scripts/service-worker.mjs` (an Astro integration) bundles `src/pwa/sw-worker.ts` into `dist/sw.js`

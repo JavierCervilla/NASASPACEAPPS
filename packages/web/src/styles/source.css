@@ -1,0 +1,123 @@
+/*
+ *   _   _       _                         _ _
+ *  | | | |_ __ (_)_   _____ _ __ ___  ___| | | ___
+ *  | | | | '_ \| \ \ / / _ \ '__/ __|/ _ \ | |/ _ \
+ *  | |_| | | | | |\ V /  __/ |  \__ \  __/ | |  __/
+ *   \___/|_| |_|_| \_/ \___|_|  |___/\___|_|_|\___|
+ *
+ *             =++==--::.
+ *         %%%%##**++=--:..  .
+ *      ##**#%@%%#***+=--::.   .
+ *    #**=+*#*#**#++++=-:::.. .  .
+ *   #++-====*@%+*++==--::...   .  .    Ventana Lunar
+ *  #+=-=--++==+===-+==--:..   .  .  .  Sun, Earth and landing
+ * #----====-------=-=---:..  .  .  .   windows at the lunar
+ * #+---+=====--=---==-::..     .  .  . south pole
+ * #*----==---==-=-=-:-....    .  .  .
+ * *#----===+*===--:-::...    .  .  .   Built for the NASA Space
+ *  *----=*-+*%*+=-:::....   .  .  .    Apps Challenge 2026,
+ *   *------=+*=--:::-:::.. .  .  .     Madrid. Not endorsed
+ *    %*===-=-==--==-:::.  .  .  .      by NASA.
+ *      *+:--+:--::::::.  .  .  .
+ *         -=:::...:..   .  .           (c) 2026 Universelle
+ *             :::.. .  .               SPDX-License-Identifier: MIT
+ */
+
+/*
+ * The data source switch (VENT-36, validated canvas option C): «Data
+ * source» and «Computed | Horizons | Compare» in the segmented control's
+ * style (phone.css), under a hairline in the desktop Layers key, and in
+ * the phone's Sites sheet grouped with the «Language» row. Neutral: it
+ * never wears a signal colour.
+ */
+.segmented [role='radio'][aria-checked='true'] {
+  background: var(--phone-segment-on);
+  box-shadow: var(--phone-segment-shadow);
+}
+
+.source-switch {
+  flex: 1 1 auto;
+  grid-template-columns: repeat(3, auto);
+  max-width: max-content;
+}
+
+.source-switch button {
+  padding: 0 10px;
+}
+
+.source-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px 12px;
+}
+
+.source-row svg {
+  flex: none;
+}
+
+.source-row__label {
+  flex: 1 0 auto;
+}
+
+/* Desktop: the Layers key's last row, under a hairline. */
+.globe-layers .source-row {
+  margin-top: 4px;
+  padding-top: 10px;
+  border-top: 1px solid var(--surface-edge);
+  font-size: 0.8125rem;
+  /* The key lets clicks through to the globe; the switch takes them. */
+  pointer-events: auto;
+}
+
+/* Phone: one card holding the «Language» row and this one. */
+.settings-group {
+  container-type: inline-size;
+  display: flex;
+  flex: none;
+  flex-direction: column;
+  border-radius: 14px;
+  background: var(--phone-card);
+}
+
+.settings-group .lang-row {
+  background: transparent;
+}
+
+.settings-group .lang-row:focus-visible {
+  outline-offset: -2px;
+}
+
+.settings-group .source-row {
+  min-height: 48px;
+  margin: 0 0 0 14px;
+  padding: 12px 14px 12px 0;
+  border-top: 1px solid var(--surface-edge);
+  font-size: 1rem;
+}
+
+/*
+ * Three segments and the label do not fit one phone row: the switch takes
+ * the row under the label, like the region control. Its columns follow
+ * their words and share the rest, so a long language keeps each whole.
+ */
+.settings-group .source-switch {
+  flex-basis: 100%;
+  max-width: none;
+}
+
+.settings-group .source-switch button {
+  padding: 0 4px;
+}
+
+/*
+ * Large text (200 %): the three segments no longer fit side by side, so
+ * they stack under the label, each whole. The em is the card's own, so
+ * the threshold grows with the text.
+ */
+@container (max-width: 20em) {
+  .settings-group .source-switch {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}

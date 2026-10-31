@@ -39,6 +39,9 @@ import { useEffect, useMemo, useState } from 'react';
 import type { Catalogue } from '../i18n/catalogue';
 import type { UiLocale } from '../i18n/locales';
 import { createI18n } from '../i18n/translate';
+import { localStore } from '../i18n/choice';
+import { cachedComputed, pointsOf } from '../source/computed-hours';
+import { createSourceStore } from '../source/data-source';
 import { followClock } from '../calendar/follow-clock';
 import { createPlayer } from '../calendar/time-player';
 import { createTimeStore } from '../calendar/time-store';
@@ -81,16 +84,21 @@ const VIEW_NAV = 'nav.views';
  * The shared instant (live on the browser's clock, which it follows once
  * the island runs), its player, and the hours loader with its cache. The
  * loader starts afresh each time the browser comes back online, so the
- * views ask for their hours again, quietly, over the old ones.
+ * views ask for their hours again, quietly, over the old ones. With them,
+ * the simulator's hours of the listed sites and the chosen data source.
  */
-function useCalendarParts(sitesUrl: string): CalendarParts {
+function useCalendarParts(
+  sitesUrl: string,
+  sites: readonly CardSite[],
+): CalendarParts {
   const [clock] = useState(() => {
     const time = createTimeStore(() => Date.now());
     const player = createPlayer(time, {
       setTimer: (fn, ms) => window.setTimeout(fn, ms),
       clearTimer: (id) => window.clearTimeout(id),
     });
-    return { time, player };
+    const computed = cachedComputed(pointsOf(sites));
+    return { time, player, computed, source: createSourceStore(localStore()) };
   });
   const load = useHoursLoader(sitesUrl);
   const parts = useMemo(() => ({ ...clock, load }), [clock, load]);
@@ -121,7 +129,7 @@ export default function LunarApp(props: Props) {
 function Island({ sitesUrl, base, selectedId, sites }: Props) {
   const [store] = useState(() => createSiteStore(selectedId));
   const [sheetEdge] = useState(() => createWatchedValue<number | null>(null));
-  const parts = useCalendarParts(sitesUrl);
+  const parts = useCalendarParts(sitesUrl, sites);
   const view = useView(VIEW_NAV);
   const offView = !usePhone() && view !== 'globe';
   const state = useStateFeed(store, parts);
@@ -134,7 +142,7 @@ function Island({ sitesUrl, base, selectedId, sites }: Props) {
     <>
       <section className="globe" aria-label={t('globe.section')} hidden={offView}>
         <Globe {...globe} />
-        <Layers />
+        <Layers source={parts.source} />
       </section>
       <DesktopShell {...{ sites, store, parts, base, view }} />
       <PhoneShell {...{ sites, store, sheetEdge, parts, base }} />

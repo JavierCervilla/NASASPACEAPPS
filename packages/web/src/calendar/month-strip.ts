@@ -59,12 +59,14 @@ export interface MonthStrip {
   readonly windowPct: number;
 }
 
-interface MonthSpan {
+/** A month: its first hour and how many hours it has. */
+export interface MonthSpan {
   readonly first: string;
   readonly hours: number;
 }
 
-function segments(
+/** The runs of `samples` where `holds`, as % of `month`. */
+export function segments(
   samples: readonly HourSample[],
   holds: (sample: HourSample) => boolean,
   month: MonthSpan,

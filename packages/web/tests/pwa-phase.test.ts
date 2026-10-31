@@ -24,29 +24,30 @@
  */
 
 /**
- * The Moon's phase for the live favicon and the loading state (VENT-28): the approximation lands on the true phases
+ * The Moon's phase for the live favicon and the loading state (VENT-28), from the simulator's Sun (VENT-36): it lands
+ * within a quarter of an hour of the true phases
  * (Meeus, «Astronomical Algorithms», ch. 49, worked out for these dates: new Moon 2026-11-09 07:01 UTC, full Moon
  * 2026-11-24 14:55 UTC, first quarter 2026-11-17, last quarter 2026-12-01), and each instant picks its frame.
  */
 import { describe, expect, it } from 'vitest';
-import { meanOrbitPhase } from '../src/pwa/moon-phase';
+import { simPhase } from '../src/pwa/moon-phase';
 import { frameIndex, frameUrl, PHASE_FRAMES } from '../src/pwa/phase-frames';
 
-const phase = (iso: string): number => meanOrbitPhase.phaseAt(Date.parse(iso));
+const phase = (iso: string): number => simPhase.phaseAt(Date.parse(iso));
 /** The distance between two phases around the month. */
 const apart = (a: number, b: number): number => Math.min(Math.abs(a - b), 1 - Math.abs(a - b));
-/** Half an hour, as a share of the synodic month. */
-const HALF_HOUR = 0.5 / (29.530588853 * 24);
+/** A quarter of an hour, as a share of the synodic month. */
+const QUARTER_HOUR = 0.25 / (29.530588853 * 24);
 
-describe('meanOrbitPhase', () => {
+describe('simPhase', () => {
   it.each([
     ['new Moon', '2026-11-09T07:01:18Z', 0],
     ['full Moon', '2026-11-24T14:55:32Z', 0.5],
     ['new Moon of October', '2026-10-10T15:49:06Z', 0],
     ['full Moon of October', '2026-10-26T04:12:54Z', 0.5],
     ['the reference new Moon of 2000', '2000-01-06T18:14:00Z', 0],
-  ])('%s, %s, is at %d within half an hour', (_, iso, expected) => {
-    expect(apart(phase(iso), expected)).toBeLessThan(HALF_HOUR);
+  ])('%s, %s, is at %d within a quarter of an hour', (_, iso, expected) => {
+    expect(apart(phase(iso), expected)).toBeLessThan(QUARTER_HOUR);
   });
 
   it('waxes between new and full, and wanes after', () => {
@@ -58,7 +59,7 @@ describe('meanOrbitPhase', () => {
 
   it('stays in [0, 1)', () => {
     for (let day = 0; day < 60; day += 1) {
-      const p = meanOrbitPhase.phaseAt(Date.UTC(2026, 10, 1) + day * 86_400_000);
+      const p = simPhase.phaseAt(Date.UTC(2026, 10, 1) + day * 86_400_000);
       expect(p).toBeGreaterThanOrEqual(0);
       expect(p).toBeLessThan(1);
     }

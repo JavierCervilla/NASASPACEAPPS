@@ -76,16 +76,17 @@ function usePhoneState({ sites, store, parts }: Props) {
   const time = useTime(parts.time);
   const i18n = useI18n();
   const at = time?.atMs ?? null;
-  const widgets = useSiteWidgets(parts.load, selection.id, at);
+  const widgets = useSiteWidgets(parts, selection.id, at);
   const when = time && !time.live ? formatInstant(i18n, time.atMs) : null;
   const panel = useSheetPanel();
-  const { result, hours } = widgets;
+  const { result, hours, computed } = widgets;
   const state = result.kind === 'ready' ? result.widgets.now.state : null;
   const status = hoursStatus(hours, at);
   const lines = stateLines(siteState(hours, at, i18n), status, i18n);
   const select = (id: string): void => store.select(id, 'list');
   const actions = sheetActions(panel.setDetent, select, panel.setView);
-  return { site, widgets, when, state, lines, ...panel, ...actions };
+  const pill = { state, lines, computed };
+  return { site, widgets, when, ...pill, ...panel, ...actions };
 }
 
 type PhoneState = ReturnType<typeof usePhoneState>;
@@ -139,6 +140,7 @@ function SheetBody(props: { phone: PhoneState } & Props) {
         onPick={phone.pick}
         onDone={phone.close}
         base={base}
+        source={parts.source}
       />
     );
   }
@@ -156,8 +158,8 @@ function PhoneUi(props: Props) {
     onCalendar: phone.calendar,
     onSites: phone.open,
   };
-  const { site, state, lines } = phone;
-  const pill = { site, state, lines, onOpenPicker: phone.open };
+  const { site, state, lines, computed } = phone;
+  const pill = { site, state, lines, computed, onOpenPicker: phone.open };
   return (
     <div className="phone">
       <div ref={scrim} className="phone-scrim" aria-hidden="true" />

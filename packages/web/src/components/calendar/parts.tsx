@@ -43,11 +43,17 @@ interface BarProps {
   readonly segments: readonly Segment[];
   /** Left to right (desktop strip) or top to bottom (phone columns). */
   readonly axis: 'horizontal' | 'vertical';
+  /** Under «Compare»: where the computed hours disagree, hatched. */
+  readonly differs?: readonly Segment[] | undefined;
   readonly children?: ReactNode;
 }
 
-/** The month as a bar: grey («neither»), coloured where the signal holds. */
-export function SignalBar({ tone, segments, axis, children }: BarProps) {
+/**
+ * The month as a bar: grey («neither»), coloured where the signal holds,
+ * hatched in neutral white where the two sources disagree.
+ */
+export function SignalBar(props: BarProps) {
+  const { tone, segments, axis, differs = [], children } = props;
   const across = axis === 'horizontal';
   const place = (s: Segment) =>
     across
@@ -57,6 +63,9 @@ export function SignalBar({ tone, segments, axis, children }: BarProps) {
     <div className="signal-bar" data-tone={tone} data-axis={axis}>
       {segments.map((s) => (
         <span key={s.startPct} className="signal-bar__on" style={place(s)} />
+      ))}
+      {differs.map((s) => (
+        <span key={`d${s.startPct}`} className="signal-bar__differs" style={place(s)} />
       ))}
       {children}
     </div>

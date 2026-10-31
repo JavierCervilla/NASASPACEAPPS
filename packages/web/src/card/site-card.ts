@@ -52,21 +52,30 @@ export type CardModel =
 
 /**
  * «November 2026 · JPL Horizons, 1 h step · Sun above 0°, Earth above
- * 3°»: the month counted, the data and the rules.
+ * 3°»: the month counted, the data and the rules; «computed here» in
+ * place of Horizons when the hours are the simulator's (VENT-36).
  */
-export function sourceLine(i18n: I18n, atMs: number): string {
-  return i18n.t('card.source', {
+export function sourceLine(
+  i18n: I18n,
+  atMs: number,
+  computed = false,
+): string {
+  return i18n.t(computed ? 'card.sourceComputed' : 'card.source', {
     month: monthLabel(i18n, atMs),
     sun: i18n.number(SUN_MIN_ELEVATION_DEG),
     earth: i18n.number(EARTH_MIN_ELEVATION_DEG),
   });
 }
 
-/** The card for the hour of `atMs`, from its month's `hours`. */
+/**
+ * The card for the hour of `atMs`, from its month's `hours`, which are
+ * the simulator's when `computed`.
+ */
 export function siteCard(
   hours: HoursResult,
   atMs: number,
   i18n: I18n,
+  computed = false,
 ): CardModel {
   const widgets = widgetsAt(hours, atMs, i18n);
   if (widgets.kind !== 'ready' || hours.kind !== 'ready') {
@@ -75,6 +84,6 @@ export function siteCard(
   const rows = monthFacts(hours.hours, atMs, i18n);
   if (!rows) return { kind: 'error' };
   const { sun, earth } = widgets.widgets;
-  const source = sourceLine(i18n, atMs);
+  const source = sourceLine(i18n, atMs, computed);
   return { kind: 'ready', sun, earth, rows, source };
 }

@@ -27,7 +27,8 @@
  * The phone's glass top bar: the title, the legend's rule in its colours
  * («Sun + Earth = window»), and the site pill that opens the site
  * picker: a status dot, the short name, and the state at the selected
- * instant with its time left, in the state's colour.
+ * instant with its time left, in the state's colour. The dot is hollow
+ * while the state is the simulator's (VENT-36), filled once from Horizons.
  */
 import type { Ref } from 'react';
 import { siteLabels, type PhoneSite } from '../../phone/phone-site';
@@ -45,6 +46,8 @@ interface Props {
    * (site-state.ts); the pill shows the longest that fits.
    */
   readonly lines: readonly string[];
+  /** Whether the state is the simulator's, not Horizons'. */
+  readonly computed: boolean;
   readonly onOpenPicker: () => void;
   /** The bar's element, which the full sheet stays under. */
   readonly ref?: Ref<HTMLElement>;
@@ -55,11 +58,13 @@ interface Props {
  * screen reader is the site's full name and the state, so co-located
  * sites (IM-2 and the Mons Mouton zone) never read the same.
  */
-function SitePill({ site, state, lines, onOpenPicker }: Props) {
+function SitePill(props: Props) {
+  const { site, state, lines, computed, onOpenPicker } = props;
   const { pill } = siteLabels(site);
   const { t } = useI18n();
   const tone = state ?? 'unknown';
-  const label = t('pill.label', { name: site.name, state: lines[0] ?? '' });
+  const named = { name: site.name, state: lines[0] ?? '' };
+  const label = t(computed ? 'pill.labelComputed' : 'pill.label', named);
   return (
     <button
       type="button"
@@ -67,7 +72,7 @@ function SitePill({ site, state, lines, onOpenPicker }: Props) {
       aria-label={label}
       onClick={onOpenPicker}
     >
-      <span className="signal-dot" data-state={state ?? 'loading'} />
+      <span className="signal-dot" data-state={state ?? 'loading'} data-computed={computed} />
       <span className="site-pill__names">
         <span className="site-pill__name">{pill}</span>
         <FitLine className="site-pill__state" tone={tone} lines={lines} />

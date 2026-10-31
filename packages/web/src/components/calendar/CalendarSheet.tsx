@@ -39,6 +39,7 @@ import {
   monthLabel,
 } from '../../calendar/instant-format';
 import { dayTicks, monthHours } from '../../calendar/month';
+import type { MonthDiff } from '../../calendar/month-diff';
 import { instantPct, type MonthStrip } from '../../calendar/month-strip';
 import { hourOfMonth, moveToHour } from '../../calendar/time-actions';
 import { formatPercent } from '../../i18n/format';
@@ -49,7 +50,7 @@ import type { NowState } from '../../phone/widget-types';
 import type { HoursResult } from '../../phone/widgets-loader';
 import { useI18n } from '../i18n-context';
 import { hourDrag } from './hour-drag';
-import { useCalendar, type CalendarParts } from './hooks';
+import { useCalendar, type Calendar, type CalendarParts } from './hooks';
 import {
   MonthArrows,
   NoWindowNote,
@@ -57,6 +58,7 @@ import {
   PlayButton,
   SignalBar,
 } from './parts';
+import { CompareNote } from './CompareNote';
 import { StripStatus } from './StripStatus';
 
 interface Props {
@@ -67,10 +69,12 @@ interface Props {
 }
 
 /**
- * «Sun 59 %», «Earth 58 %» and «Window 47 %» of the month, and a note
- * when the month has no window at all.
+ * «Sun 59 %», «Earth 58 %» and «Window 47 %» of the month, a note when
+ * the month has no window at all, and under «Compare» how many hours
+ * differ.
  */
-function Shares({ strip }: { readonly strip: MonthStrip | null }) {
+function Shares({ calendar }: { readonly calendar: Calendar }) {
+  const { strip } = calendar;
   const i18n = useI18n();
   const { t } = i18n;
   const shares = [
@@ -90,6 +94,7 @@ function Shares({ strip }: { readonly strip: MonthStrip | null }) {
         ))}
       </ul>
       <NoWindowNote strip={strip} className="calendar__note" />
+      <CompareNote calendar={calendar} className="calendar__compare" />
     </>
   );
 }
@@ -97,12 +102,15 @@ function Shares({ strip }: { readonly strip: MonthStrip | null }) {
 interface ColumnsProps {
   readonly parts: CalendarParts;
   readonly strip: MonthStrip;
+  /** Under «Compare»: where the sources disagree. */
+  readonly diff: MonthDiff | null;
   readonly atMs: number;
   readonly i18n: I18n;
 }
 
 /** The slider's role, range and value, and its keys. */
-function sliderProps({ parts, atMs, i18n }: Omit<ColumnsProps, 'strip'>) {
+function sliderProps(props: Omit<ColumnsProps, 'strip' | 'diff'>) {
+  const { parts, atMs, i18n } = props;
   const hour = hourOfMonth(atMs);
   const hours = monthHours(atMs);
   const move = (to: number): void => moveToHour(parts.time, atMs, to);
@@ -124,7 +132,7 @@ function sliderProps({ parts, atMs, i18n }: Omit<ColumnsProps, 'strip'>) {
 }
 
 /** The columns: a vertical slider over the month's hours. */
-function Columns({ parts, strip, atMs, i18n }: ColumnsProps) {
+function Columns({ parts, strip, diff, atMs, i18n }: ColumnsProps) {
   const top = `${instantPct(atMs)}%`;
   const slider = sliderProps({ parts, atMs, i18n });
   return (
@@ -134,9 +142,9 @@ function Columns({ parts, strip, atMs, i18n }: ColumnsProps) {
           <span key={day} style={{ top: `${pct}%` }}>{day}</span>
         ))}
       </div>
-      <SignalBar tone="sun" segments={strip.sun} axis="vertical" />
-      <SignalBar tone="earth" segments={strip.earth} axis="vertical" />
-      <SignalBar tone="window" segments={strip.window} axis="vertical" />
+      <SignalBar tone="sun" segments={strip.sun} axis="vertical" differs={diff?.sun} />
+      <SignalBar tone="earth" segments={strip.earth} axis="vertical" differs={diff?.earth} />
+      <SignalBar tone="window" segments={strip.window} axis="vertical" differs={diff?.window} />
       <span className="columns__line" style={{ top }} aria-hidden="true">
         <span className="columns__chip">{formatChip(atMs)}</span>
       </span>
@@ -185,7 +193,7 @@ export function CalendarSheet(props: Props) {
   const { parts, site } = props;
   const i18n = useI18n();
   const calendar = useCalendar(parts, site.id);
-  const { state: time, strip, playing, result } = calendar;
+  const { state: time, strip, diff, playing, result } = calendar;
   if (!time) return null;
   const { pill, pillDetail } = siteLabels(site);
   return (
@@ -196,9 +204,9 @@ export function CalendarSheet(props: Props) {
           <p>{pillDetail ? `${pill} · ${pillDetail}` : pill}</p>
         </div>
       </MonthArrows>
-      <Shares strip={strip} />
+      <Shares calendar={calendar} />
       {strip ? (
-        <Columns parts={parts} strip={strip} atMs={time.atMs} i18n={i18n} />
+        <Columns {...{ parts, strip, diff }} atMs={time.atMs} i18n={i18n} />
       ) : (
         <StripStatus calendar={calendar} />
       )}

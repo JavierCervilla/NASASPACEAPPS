@@ -126,6 +126,21 @@
       "tag": "built"
     },
     {
+      "id": "sky",
+      "type": "frontend",
+      "label": "Computed sky",
+      "sublabel": "sim computedHours",
+      "pos": [
+        70,
+        490
+      ],
+      "size": [
+        140,
+        60
+      ],
+      "tag": "built"
+    },
+    {
       "id": "i18n",
       "type": "frontend",
       "label": "Message catalogues",
@@ -239,6 +254,7 @@
       "label": "Web app (Astro + React)",
       "wraps": [
         "store",
+        "sky",
         "i18n",
         "calendar",
         "polar",
@@ -327,6 +343,13 @@
       "to": "sw",
       "label": "installs",
       "variant": "dashed"
+    },
+    {
+      "id": "instant-sky",
+      "from": "sky",
+      "to": "store",
+      "label": "instant",
+      "variant": "dashed"
     }
   ],
   "cards": [
@@ -352,7 +375,7 @@
       "title": "Web app",
       "items": [
         "One time store (live, scrub or play) and one site store, shared by every view",
-        "Views subscribe read-only; they never compute ephemerides",
+        "Views show the simulator's own sky at once (VENT-36: Sun, Earth, DSN from @ventana/sim) and Horizons when it arrives; a Data source switch picks Computed, Horizons or Compare",
         "Five languages (VENT-35): a static page per locale with hreflang, one catalogue each, Intl for numbers and dates; a lint rule and a parity test keep every string in all five",
         "MVP: calendar, polar map, site card; luxury: globes",
         "Built: the 3D globe (lazy-loaded, its Sun follows the instant, the selected site ringed, its state in the phone's site pill and a LOLA relief thumbnail, 1x and 2x, rendered offline by site_thumbs.py and committed, in the phone sheet and the desktop site card), the calendar strip, the site card, the polar map (header tabs by hash, keep the site and the instant) and the phone sheet with its calendar, all under one glass gate (Liquid refraction on capable Chromium, frosted elsewhere); one request per site and month (the month and its next 30 days), cached in the page",

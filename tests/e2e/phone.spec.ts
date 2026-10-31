@@ -200,13 +200,15 @@ test.describe('phone, 390x844', () => {
     await expect(zone).toBeVisible();
   });
 
-  test('shows skeletons while the API is slow, then an honest error when it fails', async ({ page }) => {
+  test('shows the computed widgets while the API is slow, then an honest error when it fails', async ({ page }) => {
     await page.clock.setFixedTime(NOW);
     let answer = (): void => undefined;
     await stubApi(page, { status: 502, hold: new Promise<void>((done) => (answer = done)) });
     await page.goto('./');
-    await expect(page.getByRole('list', { name: 'Loading this site' })).toHaveAttribute('aria-busy', 'true');
-    await expect(page.locator('.widget-skeleton')).toHaveCount(4);
+    // VENT-36: the simulator answers at once, with the pill's dot hollow, where there were skeletons.
+    await expect(page.locator('.widget')).toHaveCount(4);
+    await expect(page.locator('.widget-skeleton')).toHaveCount(0);
+    await expect(page.locator('.site-pill .signal-dot')).toHaveAttribute('data-computed', 'true');
     answer();
     await expect(page.getByRole('alert')).toContainText('could not load');
     await expect(page.getByRole('button', { name: 'Try again' })).toBeVisible();

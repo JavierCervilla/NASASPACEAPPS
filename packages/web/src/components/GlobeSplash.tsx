@@ -35,7 +35,7 @@
 import { useEffect, useState } from 'react';
 import type { TimeStore } from '../calendar/time-store';
 import type { GlobeStatus } from '../globe/boot';
-import { meanOrbitPhase } from '../pwa/moon-phase';
+import { simPhase } from '../pwa/moon-phase';
 import { frameIndex, frameUrl } from '../pwa/phase-frames';
 import { ARCS, TRACK } from '../pwa/ring';
 import { useTime } from './calendar/hooks';
@@ -98,7 +98,7 @@ export function GlobeSplash({ base, time, status, textured }: Props) {
   const done = useDone(status, textured);
   const atMs = useTime(time)?.atMs ?? null;
   const frame =
-    atMs === null ? null : frameIndex(meanOrbitPhase.phaseAt(atMs));
+    atMs === null ? null : frameIndex(simPhase.phaseAt(atMs));
   return (
     <div className="globe-splash" aria-hidden="true" data-done={done}>
       {frame === null ? null : (

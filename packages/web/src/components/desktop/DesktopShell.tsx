@@ -81,29 +81,30 @@ function useSlot(): HTMLElement | null {
  */
 function useCardState(calendar: Calendar) {
   const i18n = useI18n();
-  const { result } = calendar;
+  const { result, computed } = calendar;
   const atMs = calendar.state?.atMs;
   const now = atMs === undefined ? null : widgetsAt(result, atMs, i18n);
   const state = now?.kind === 'ready' ? now.widgets.now.state : null;
   const badge = siteState(result, atMs ?? null, i18n);
-  const model = atMs === undefined ? LOADING : siteCard(result, atMs, i18n);
-  return { state, badge, model };
+  const model =
+    atMs === undefined ? LOADING : siteCard(result, atMs, i18n, computed);
+  return { state, badge, model, computed };
 }
 
 function DesktopUi({ sites, store, parts, base, view }: Props) {
   const { id } = useSelection(store);
   const site = sites.find((s) => s.id === id) ?? unlistedSite(id);
   const calendar = useCalendar(parts, id);
-  const { state, badge, model } = useCardState(calendar);
+  const { state, badge, model, computed } = useCardState(calendar);
   const slot = useSlot();
   const pick = (picked: string): void => store.select(picked, 'list');
-  const menu = { sites, site, state, onPick: pick };
-  const map = { sites, site, state, base, onPick: pick };
+  const menu = { sites, site, state, computed, onPick: pick };
+  const map = { sites, site, state, base, onPick: pick, source: parts.source };
   return (
     <>
       {view === 'polar' ? <PolarMap {...map} /> : null}
       <SiteCard
-        {...{ site, model, base, state: badge }}
+        {...{ site, model, base, state: badge, computed }}
         onRetry={calendar.retry}
       />
       <CalendarStrip parts={parts} calendar={calendar} />

@@ -36,7 +36,8 @@ export type IconName =
   | 'horizon'
   | 'sites'
   | 'chevron'
-  | 'search';
+  | 'search'
+  | 'database';
 
 const STROKE = {
   fill: 'none',
@@ -52,6 +53,7 @@ const SHAPES: Readonly<Record<IconName, [number, ReactElement]>> = {
   horizon: [22, <g {...STROKE}><path d="M2 15h18" /><circle cx="14" cy="9" r="3" /></g>],
   sites: [22, <path {...STROKE} d="M5 6h12M5 11h12M5 16h8" />],
   chevron: [12, <path {...STROKE} d="M2 4l4 4 4-4" />],
+  database: [22, <g {...STROKE}><ellipse cx="11" cy="5.5" rx="7" ry="2.5" /><path d="M4 5.5v11c0 1.4 3.1 2.5 7 2.5s7-1.1 7-2.5v-11M4 11c0 1.4 3.1 2.5 7 2.5s7-1.1 7-2.5" strokeWidth="1.4" /></g>],
   search: [16, <g {...STROKE}><circle cx="7" cy="7" r="5" /><path d="M11 11l3.5 3.5" /></g>],
 };
 

@@ -160,7 +160,7 @@ test.describe('offline', () => {
 });
 
 test.describe('what the worker downloads', () => {
-  test('the install keeps only the shell; maps, thumbnails and phase frames only as the page uses them', async ({
+  test('the install keeps the offline set: pages, icons, every phase frame and thumbnail, the start maps', async ({
     context,
     page,
   }) => {
@@ -168,10 +168,27 @@ test.describe('what the worker downloads', () => {
     await open(context, page, '');
     await controlled(page);
     const kept = await keptFiles(page);
-    expect(kept).toEqual(expect.arrayContaining(['', 'es/', 'manifest.webmanifest', 'icons/icon-192.png']));
-    expect(kept.filter((f) => f.startsWith('icons/phase/')).length).toBeLessThanOrEqual(2);
-    expect(kept.filter((f) => /moon-lroc-(4|8)k/.test(f))).toEqual([]);
-    expect(kept.filter((f) => f.startsWith('thumbs/')).length).toBeLessThanOrEqual(2);
+    expect(kept).toEqual(
+      expect.arrayContaining([
+        '',
+        'es/',
+        'fr/',
+        'de/',
+        'it/',
+        'manifest.webmanifest',
+        'icons/icon-192.png',
+        'textures/moon-lroc-1k.jpg',
+        'textures/moon-lroc-2k.jpg',
+        'textures/moon-lola-normal-1k.jpg',
+        'textures/moon-lola-normal-2k.jpg',
+        'textures/moon-south-polar-2k.jpg',
+      ]),
+    );
+    expect(kept.filter((f) => f.startsWith('en-xa/'))).toEqual([]);
+    expect(kept.filter((f) => /^icons\/phase\/moon-\d{2}\.webp$/.test(f))).toHaveLength(30);
+    expect(kept.filter((f) => f.startsWith('thumbs/')).length).toBeGreaterThan(0);
+    // The sharper maps are kept only when the zoom asks for them.
+    expect(kept.filter((f) => /-(4|8)k\.jpg$/.test(f))).toEqual([]);
   });
 
   test('under Save-Data no worker is registered', async ({ context, page }) => {

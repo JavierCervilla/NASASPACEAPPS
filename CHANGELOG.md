@@ -13,9 +13,10 @@
   que el mapa de la Luna está puesto (nunca una esfera gris lisa). Sin conexión, la app abre con lo que ya se vio (las
   páginas, el mapa y los datos de las últimas consultas) y avisa «Sin conexión · datos del 31 de octubre de 2026» (en
   los cinco idiomas) bajo la barra superior, sin tapar el botón del sitio aunque el texto esté al 200 %; al volver la
-  red, actualiza los datos sin recargar. Al instalarse solo descarga lo imprescindible (las páginas y los iconos): los
-  mapas y las miniaturas se guardan cuando se usan, y con «Ahorro de datos» no descarga nada extra ni funciona sin
-  conexión. Lo que las plataformas no permiten: el icono de la
+  red, actualiza los datos sin recargar. Al instalarse descarga de una vez todo lo necesario para funcionar sin conexión
+  (las páginas en los cinco idiomas, los iconos y las fases de la Luna, las miniaturas de los sitios y los mapas de 1K,
+  2K y el polar), siempre por debajo de 5 MB: la compilación falla si se pasa. Los mapas de 4K y 8K se guardan cuando
+  el zoom los pide, y con «Ahorro de datos» no descarga nada extra ni funciona sin conexión. Lo que las plataformas no permiten: el icono de la
   pantalla de inicio no cambia una vez instalado (iOS nunca lo refresca), iOS no usa los accesos directos y, sin
   imágenes de arranque por tamaño de pantalla, enseña una pantalla lisa hasta que pinta la página.
 - La web en cinco idiomas (VENT-35, lienzos validados «LangDesktop» y «LangPhoneB»): inglés (por defecto), español,

@@ -72,6 +72,8 @@ function useGlobe(props: Props, i18n: I18n) {
   useEffect(() => {
     const el = host.current;
     if (!el) return undefined;
+    // A restarted globe waits for its own first map behind the splash.
+    setTextured(false);
     const warn = (message: string): void => console.warn(message);
     const anchors = () => pageAnchors(el);
     const options = { time, base, sitesUrl, store, sheetEdge, state };
@@ -80,8 +82,7 @@ function useGlobe(props: Props, i18n: I18n) {
     const markerName = (site: GlobeSite): string =>
       markerLabel(i18n, { ...site, name: localName(i18n, site.name) });
     const deps = { ...options, saveData, reducedMotion, warn, anchors };
-    const onTextured = (): void => setTextured(true);
-    const all = { ...deps, markerName, onTextured };
+    const all = { ...deps, markerName, onTextured: () => setTextured(true) };
     const start = startGlobe(el, all, setStatus, saveData);
     loader.current = start.load;
     return start.dispose;

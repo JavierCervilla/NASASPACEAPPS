@@ -31,7 +31,13 @@ import { mkdirSync, mkdtempSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { describe, expect, it, vi } from 'vitest';
-import { precached, precacheOf, requestPath } from '../scripts/service-worker.mjs';
+import {
+  assertPrecacheBudget,
+  PRECACHE_BUDGET,
+  precached,
+  precacheOf,
+  requestPath,
+} from '../scripts/service-worker.mjs';
 import { syncDate, syncedAt, syncUrl } from '../src/pwa/offline-status';
 import { registerServiceWorker, workerAt } from '../src/pwa/register-sw';
 import { API_ENTRIES, apiFirst } from '../src/pwa/sw-api';
@@ -115,12 +121,14 @@ const BUILD = {
   'thumbs/im2-athena-320.webp': 'th',
   'textures/moon-lroc-1k.jpg': '1k',
   'textures/moon-lroc-2k.jpg': '2k',
+  'textures/moon-south-polar-2k.jpg': 'polar',
+  'textures/moon-lroc-4k.jpg': '4k',
   'textures/moon-lroc-8k.jpg': '8k',
   'sw.js': 'worker',
 };
 
 describe('precache', () => {
-  it('caches only the shell at install: pages, build files, manifests and app icons; no map, thumbnail nor phase', () => {
+  it('caches the offline set at install: pages, build files, manifests, icons, phase frames, thumbnails, start maps', () => {
     expect(precacheOf(dist(BUILD)).precache.toSorted()).toEqual([
       '',
       '_astro/app.1.js',
@@ -130,12 +138,22 @@ describe('precache', () => {
       'favicon.ico',
       'icons/apple-touch-icon.png',
       'icons/icon-192.png',
+      'icons/phase/moon-00.webp',
+      'textures/moon-lroc-1k.jpg',
+      'textures/moon-lroc-2k.jpg',
+      'textures/moon-south-polar-2k.jpg',
+      'thumbs/im2-athena-320.webp',
     ]);
-    for (const file of ['en-xa/index.html', 'textures/moon-lroc-1k.jpg', 'thumbs/im2-athena-320.webp']) {
+    for (const file of ['en-xa/index.html', 'textures/moon-lroc-4k.jpg', 'textures/moon-lroc-8k.jpg', 'sw.js']) {
       expect(precached(file)).toBe(false);
     }
-    expect(precached('icons/phase/moon-00.webp')).toBe(false);
     expect(requestPath('de/index.html')).toBe('de/');
+  });
+
+  it('counts the bytes of the install set only', () => {
+    const precachedBodies = ['en', 'es', '{}', 'js', 'i', 't', 'w', 't', 'f', 'th', '1k', '2k', 'polar'];
+    const expected = precachedBodies.join('').length;
+    expect(precacheOf(dist(BUILD)).bytes).toBe(expected);
   });
 
   it('changes the digest, and so the cache name, when any file the worker may keep changes', () => {
@@ -145,6 +163,25 @@ describe('precache', () => {
     // Maps are kept at runtime under the same cache, so a new map must name a new cache.
     expect(precacheOf(dist({ ...BUILD, 'textures/moon-lroc-8k.jpg': 'other' })).digest).not.toBe(before);
     expect(precacheOf(dist({ ...BUILD, 'sw.js': 'other worker' })).digest).toBe(before);
+  });
+
+  it('fails the build over the 5 MB budget and passes at or under it', () => {
+    expect(PRECACHE_BUDGET).toBe(5 * 1024 * 1024);
+    expect(() => assertPrecacheBudget(PRECACHE_BUDGET + 1)).toThrow(/over its 5\.00 MB budget/);
+    expect(() => assertPrecacheBudget(PRECACHE_BUDGET)).not.toThrow();
+    expect(() => assertPrecacheBudget(PRECACHE_BUDGET - 1)).not.toThrow();
+  });
+
+  it('measures a real dist against the budget: an oversized thumbnail turns it red', () => {
+    const under = precacheOf(dist(BUILD)).bytes;
+    expect(() => assertPrecacheBudget(under)).not.toThrow();
+    const big = 'x'.repeat(PRECACHE_BUDGET);
+    const over = precacheOf(dist({ ...BUILD, 'thumbs/huge-640.webp': big })).bytes;
+    expect(over).toBeGreaterThan(PRECACHE_BUDGET);
+    expect(() => assertPrecacheBudget(over)).toThrow();
+    // A sharper map is never precached, so it never counts against the budget.
+    const zoom = precacheOf(dist({ ...BUILD, 'textures/moon-lroc-8k.jpg': big })).bytes;
+    expect(() => assertPrecacheBudget(zoom)).not.toThrow();
   });
 
   it('asks the server, not the HTTP cache, for every file at install', () => {

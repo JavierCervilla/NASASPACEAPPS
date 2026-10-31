@@ -111,13 +111,14 @@ Every visible change follows `.claude/skills/apple-design/SKILL.md` (vendored fr
   map is on the running scene (`onTextured`), or 6 s at most. A phase frame that fails to load leaves the ring alone and
   is asked again on the next update.
 - **Offline**: `scripts/service-worker.mjs` (an Astro integration) bundles `src/pwa/sw-worker.ts` into `dist/sw.js`
-  after every build, with the files it caches at install, the shell only (every locale's page except `/en-xa/`,
-  `_astro/`, the manifests, the app icons `icons/*.png`, `favicon.ico`, `favicon.svg` and the root
-  `apple-touch-icon.png`), fetched past the HTTP cache (`cache: 'reload'`), and the build's digest over every file the
-  worker may keep, which names the static cache (`ventana-static-<digest>`), so a deploy drops the old one. Maps,
-  thumbnails and phase frames are never precached: the worker keeps each one cache first the first time the page
-  fetches it, so offline works for what the visitor has seen and the install downloads nothing the device tier or
-  Save-Data would not. Under Save-Data the worker is not registered at all. Pages and API GETs are network first,
+  after every build, with the files it caches at install, the whole offline set (every locale's page except `/en-xa/`,
+  `_astro/`, the manifests, `icons/` with the 30 phase frames, every site thumbnail, the 1K and 2K maps, the polar map,
+  `favicon.ico`, `favicon.svg` and the root `apple-touch-icon.png`), fetched past the HTTP cache (`cache: 'reload'`),
+  and the build's digest over every file the worker may keep, which names the static cache (`ventana-static-<digest>`),
+  so a deploy drops the old one. The install set has a hard budget of 5 MB (`PRECACHE_BUDGET`, human decision
+  2026-10-31): the build logs the precache total and fails over it. The 4K and 8K maps, and any build file not
+  precached, are kept cache first the first time the page fetches them. Under Save-Data the worker is not registered
+  at all. Pages and API GETs are network first,
   build files cache first; the network's answer always wins (a copy that cannot be kept, a full quota, is skipped), only
   ok answers are kept, a page is kept under its URL without the query string and never as a redirected answer. The
   API's answers live in `ventana-api-v1`, stamped with when they came, the 24 latest only (`src/pwa/sw-api.ts`, like

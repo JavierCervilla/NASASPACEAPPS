@@ -29,8 +29,8 @@
  * `__SW_CONFIG__`: the build's digest and the files to cache at install.
  * The pages, network first, so a deploy is never hidden behind a stale
  * shell; the build's files, cache first, under a cache named after the
- * build: the shell at install, the rest (maps, thumbnails, phase frames)
- * the first time the page uses them; the API's GETs, network first,
+ * build: the offline set at install, the rest (the 4K and 8K maps) the
+ * first time the page uses them; the API's GETs, network first,
  * their last answers offline.
  */
 import { apiFirst } from './sw-api';
@@ -47,8 +47,9 @@ import { cacheFirst, networkFirst } from './sw-strategies';
 declare const __SW_CONFIG__: {
   readonly digest: string;
   /**
-   * Paths under the scope: the shell (pages, build files, manifests, app
-   * icons). Maps, thumbnails and phase frames are kept as they are used.
+   * Paths under the scope: the offline set (pages, build files, manifests,
+   * icons and phase frames, thumbnails, the 1K, 2K and polar maps). The
+   * 4K and 8K maps are kept as the zoom uses them.
    */
   readonly precache: readonly string[];
 };

@@ -5,12 +5,16 @@ The service worker (VENT-28) is `packages/web/src/pwa/sw-worker.ts`, bundled int
 
 | Cache | What | When |
 |---|---|---|
-| `ventana-static-<digest>` | Every locale's page (not `/en-xa/`), `_astro/`, the manifests, the app icons | At install |
-| `ventana-static-<digest>` | Maps, thumbnails, phase frames | The first time the page fetches each one |
+| `ventana-static-<digest>` | Every locale's page (not `/en-xa/`), `_astro/`, the manifests, the icons and the 30 phase frames, every site thumbnail, the 1K and 2K maps, the polar map | At install |
+| `ventana-static-<digest>` | The 4K and 8K maps, and any other build file not precached | The first time the page fetches each one |
 | `ventana-api-v1` | The API's GET answers, stamped with when they came | Each answer; the 24 latest only |
 
 The digest covers every file the worker may keep, so any change to the build names a new static cache and the old one is
 deleted when the new worker activates. Under Save-Data the worker is not registered.
+
+The install set has a hard budget: `PRECACHE_BUDGET` in `service-worker.mjs`, 5 MB (5 × 1024 × 1024 bytes; human
+decision, 2026-10-31). The build logs the precache total and fails when it goes over; to add to the install set past it,
+leave the new files to the runtime cache or raise the budget with the human.
 
 ## Kill switch
 

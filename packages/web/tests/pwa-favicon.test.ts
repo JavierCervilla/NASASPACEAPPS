@@ -179,6 +179,26 @@ describe('createLiveFavicon', () => {
     expect(shown).toEqual(['data:ring', 'data:15']);
   });
 
+  it('keeps a draw in flight when a running player repeats the same wish, so a slow frame still shows', async () => {
+    const pending: (() => void)[] = [];
+    const { deps, timers, shown } = fakeDeps(
+      (index) =>
+        new Promise((resolve) => {
+          pending.push(() => resolve({ index } as unknown as CanvasImageSource));
+        }),
+    );
+    const favicon = createLiveFavicon(deps);
+    favicon.update(0.5, 'sun');
+    for (let tick = 0; tick < 5 && shown.length === 0; tick += 1) {
+      for (const fn of timers.splice(0)) fn();
+      // The player's next frame arrives while the frame is still loading.
+      favicon.update(0.5, 'sun');
+      for (const load of pending.splice(0)) load();
+      await new Promise((resolve) => setTimeout(resolve, 0));
+    }
+    expect(shown).toEqual(['data:15']);
+  });
+
   it('draws nothing after dispose', async () => {
     const { deps, shown, flush } = fakeDeps();
     const favicon = createLiveFavicon(deps);

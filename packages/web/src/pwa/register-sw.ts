@@ -38,7 +38,7 @@ export function workerAt(base: string): { url: string; scope: string } {
 
 /**
  * Registers the worker when the browser has them and is not saving data
- * (its install downloads the shell of every locale); a failure is quiet.
+ * (its install downloads the offline set, under 5 MB); a failure is quiet.
  */
 export function registerServiceWorker(
   base: string,

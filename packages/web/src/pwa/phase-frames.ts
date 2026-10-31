@@ -26,7 +26,8 @@
 /**
  * The Moon's phase frames, rendered offline by scripts/app_icons.py:
  * PHASE_FRAMES WebP disks through one month, frame 0 new and frame
- * PHASE_FRAMES / 2 full. Only the current one is downloaded. Pure.
+ * PHASE_FRAMES / 2 full. The service worker precaches all of them at
+ * install, so the favicon follows the phase offline too. Pure.
  */
 
 export const PHASE_FRAMES = 30;

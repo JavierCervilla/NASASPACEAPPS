@@ -147,11 +147,16 @@
   box-shadow: var(--phone-bar-edge);
 }
 
+/*
+ * The titles take what the pill leaves, wrapping down to their longest
+ * word before the pill shortens its state (QA, PR #16).
+ */
 .phone-bar__titles {
   display: flex;
+  flex: 1 1 0;
   flex-direction: column;
   gap: 1px;
-  min-width: 0;
+  min-width: min-content;
 }
 
 .phone-bar__title {
@@ -193,11 +198,11 @@
 
 .site-pill {
   display: flex;
-  flex: none;
+  flex: 0 1 auto;
   align-items: center;
   gap: 8px;
+  min-width: 0;
   min-height: 44px;
-  max-width: 55%;
   padding: 6px 12px;
   border: 0;
   border-radius: 16px;
@@ -229,6 +234,45 @@
 
 /* The state with its time left, in the state's colour: «Window · 7 d left».
  * «Neither» and the notes (loading, unavailable) read as plain text. */
+/*
+ * The state shows the longest of its lines that fits (FitLine.tsx): it
+ * asks for the longest one's width through a zero-height copy, and
+ * measures each in a zero-size box, off the layout.
+ */
+.fit-line {
+  position: relative;
+  display: block;
+}
+
+.fit-line__size {
+  display: block;
+  height: 0;
+  max-width: 100%;
+  overflow: hidden;
+  visibility: hidden;
+}
+
+.fit-line__measure {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 0;
+  height: 0;
+  overflow: hidden;
+  visibility: hidden;
+}
+
+.fit-line__try {
+  display: block;
+  width: max-content;
+}
+
+.fit-line__shown {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
 .site-pill__state {
   font-size: 0.6875rem;
   line-height: 1.25;

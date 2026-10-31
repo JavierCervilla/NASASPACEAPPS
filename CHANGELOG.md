@@ -143,7 +143,9 @@
   no se podía pulsar. En el móvil, la píldora del sitio de la barra superior lleva el nombre corto en la primera línea
   («IM-2») y en la segunda el estado del instante elegido con el tiempo que le queda, en su color: «Window · 7 d left»,
   «Sun · …», «Earth · …» o «Neither · …» (horas cuando queda menos de un día; «30+ d» cuando dura más que los datos);
-  mientras llegan los datos dice «Loading…» y, si la API falla, «Data unavailable», en gris. El lector de pantalla oye
+  mientras llegan los datos dice «Loading…» y, si la API falla, «Data unavailable», en gris. Si falta sitio (pantallas
+  de 320 px o texto al 200 %), el título se parte primero y luego la píldora quita «left» y después el nombre del
+  estado, pero nunca el tiempo («Window · 23 h» o «23 h»). El lector de pantalla oye
   el nombre completo y el estado. El subtítulo de la barra pasa a ser la regla de la leyenda, «Sun + Earth = window»,
   cada palabra en su color (más oscuros en modo claro para leerse a 4,5:1), y se va la pista del gesto. La cabecera de
   la hoja lleva la vista del terreno LOLA junto al nombre. En el PC la vista del terreno encabeza la ficha del sitio de

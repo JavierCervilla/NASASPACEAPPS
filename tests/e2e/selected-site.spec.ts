@@ -37,12 +37,14 @@ const IM1 = '[data-site-id="im1-odysseus"]';
 const IM2 = '[data-site-id="im2-athena"]';
 const ring = (page: Page) => page.locator('.globe-ring');
 const pill = (page: Page) => page.locator('.site-pill');
+/** The state line the pill shows: the longest of its lines that fits (FitLine.tsx). */
+const shown = (page: Page) => pill(page).locator('.site-pill__state .fit-line__shown');
 const media = (page: Page) => page.locator('.card-media');
 const HOUR_MS = 3_600_000;
 
-async function open(page: Page, scheme: 'dark' | 'light' = 'dark'): Promise<void> {
+async function open(page: Page, scheme: 'dark' | 'light' = 'dark', at = NOW): Promise<void> {
   await page.emulateMedia({ reducedMotion: 'reduce', colorScheme: scheme });
-  await page.clock.setFixedTime(NOW);
+  await page.clock.setFixedTime(at);
   await stubApi(page);
   await page.goto('./');
   await expect(page.locator('.globe-markers')).toHaveAttribute('data-state', 'window');
@@ -225,7 +227,7 @@ test.describe('phone, 390x844', () => {
     await expect(page.locator('.globe-callout')).toHaveCount(0);
     await expect(pill(page)).toHaveAccessibleName('Change site, now Mons Mouton (IM-2 Athena): Window · 7 d left');
     await expect(pill(page).locator('.site-pill__name')).toHaveText('IM-2');
-    await expect(pill(page).locator('.site-pill__state')).toHaveText('Window · 7 d left');
+    await expect(shown(page)).toHaveText('Window · 7 d left');
     const rule = page.locator('.phone-bar__rule');
     await expect(rule).toHaveText('Sun + Earth = window');
     const colour = (tone: string) => rule.locator(`[data-tone="${tone}"]`).evaluate((el) => getComputedStyle(el).color);
@@ -251,8 +253,8 @@ test.describe('phone, 390x844', () => {
       await page.goto('./');
       const state = pill(page).locator('.site-pill__state');
       await expect(state).toHaveAttribute('data-tone', kind);
-      await expect(state).toHaveText(new RegExp(`^${words} · \\d+\\+ d left$`));
-      expect(await state.evaluate((el) => getComputedStyle(el).color)).toBe(colour);
+      await expect(shown(page)).toHaveText(new RegExp(`^${words} · \\d+\\+ d left$`));
+      expect(await shown(page).evaluate((el) => getComputedStyle(el).color)).toBe(colour);
       await expect(pill(page).locator('.signal-dot')).toHaveAttribute('data-state', kind);
     });
   }
@@ -262,9 +264,8 @@ test.describe('phone, 390x844', () => {
     await page.clock.setFixedTime(NOW);
     await stubApi(page, { status: 500 });
     await page.goto('./');
-    const state = pill(page).locator('.site-pill__state');
-    await expect(state).toHaveText('Data unavailable');
-    await expect(state).toHaveAttribute('data-tone', 'unknown');
+    await expect(shown(page)).toHaveText('Data unavailable');
+    await expect(pill(page).locator('.site-pill__state')).toHaveAttribute('data-tone', 'unknown');
   });
 
   test('the sheet\'s head carries the relief at half and at peek, and none for a site north of 80° S', async ({ page }) => {
@@ -290,26 +291,36 @@ test.describe('phone, 390x844', () => {
   });
 });
 
-for (const [width, height] of [[360, 780], [320, 640]] as const) {
-  test.describe(`phone, ${width}x${height}, no overflow`, () => {
+/** Whether `selector`'s text is all drawn: nothing scrolled out, no ellipsis. */
+const whole = (page: Page, selector: string) =>
+  page.locator(selector).first().evaluate((el) => el.scrollWidth <= el.clientWidth);
+
+// QA on PR #16: at 320 px, and at 390 px with 200 % text, the state was cut to «Window · 23 h…» and «Window · …».
+// The titles wrap first; the pill then drops «left», then the name, and always keeps the time. 29 November, 20:00:
+// IM-2's window has 23 h left, the longest «h» line QA saw cut.
+const LATE = new Date('2026-11-29T20:00:00Z');
+for (const [width, height, text, full] of [
+  [360, 780, 100, true],
+  [320, 640, 100, false],
+  [390, 844, 200, false],
+  [320, 640, 200, false],
+] as const) {
+  test.describe(`phone, ${width}x${height}, ${text} % text, no overflow`, () => {
     test.use({ viewport: { width, height }, hasTouch: true, isMobile: true });
 
-    test('the bar\'s title, rule and pill sit side by side inside the bar, and the page never scrolls sideways', async ({ page }) => {
-      await open(page);
-      await expect(pill(page).locator('.site-pill__state')).toHaveText('Window · 7 d left');
+    test('the bar\'s titles and pill sit side by side, the time left is drawn whole, and nothing scrolls sideways', async ({ page }) => {
+      await open(page, 'dark', LATE);
+      if (text !== 100) await page.addStyleTag({ content: `html { font-size: ${text}%; }` });
+      await expect(shown(page)).toHaveText(full ? 'Window · 23 h left' : /^(Window · )?23 h( left)?$/);
+      await expect.poll(() => whole(page, '.site-pill__state .fit-line__shown')).toBe(true);
       const boxOf = async (selector: string) => (await page.locator(selector).boundingBox())!;
       const [bar, titles, box] = [await boxOf('.phone-bar'), await boxOf('.phone-bar__titles'), await boxOf('.site-pill')];
-      expect(titles.x + titles.width).toBeLessThanOrEqual(box.x);
+      expect(titles.x + titles.width).toBeLessThanOrEqual(box.x + 0.5);
       expect(box.x + box.width).toBeLessThanOrEqual(bar.x + bar.width);
-      for (const selector of ['.phone-bar__title', '.phone-bar__rule']) {
-        expect(await page.locator(selector).evaluate((el) => el.scrollWidth <= el.clientWidth), selector).toBe(true);
+      for (const selector of ['.phone-bar__title', '.phone-bar__rule', '.site-pill__name']) {
+        expect(await whole(page, selector), selector).toBe(true);
       }
       expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
-      if (width >= 360) {
-        // From 360 px the state is never cut: no ellipsis.
-        const state = pill(page).locator('.site-pill__state');
-        expect(await state.evaluate((el) => el.scrollWidth <= el.clientWidth)).toBe(true);
-      }
     });
   });
 }
@@ -323,9 +334,8 @@ test.describe('phone, 360x780, the longest state', () => {
     await stubApi(page);
     await stubSky(page, -5, -2);
     await page.goto('./');
-    const state = pill(page).locator('.site-pill__state');
-    await expect(state).toHaveText(/^Neither · \d+\+ d left$/);
-    expect(await state.evaluate((el) => el.scrollWidth <= el.clientWidth)).toBe(true);
+    await expect(shown(page)).toHaveText(/^Neither · \d+\+ d left$/);
+    expect(await whole(page, '.site-pill__state .fit-line__shown')).toBe(true);
     const titles = (await page.locator('.phone-bar__titles').boundingBox())!;
     expect(titles.x + titles.width).toBeLessThanOrEqual((await pill(page).boundingBox())!.x);
   });

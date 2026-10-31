@@ -47,7 +47,8 @@ Every visible change follows `.claude/skills/apple-design/SKILL.md` (vendored fr
   (`src/lib/polar-projection.ts`, image from `scripts/moon_textures.py polar`). No card floats over the globe (VENT-33). On phones the
   top bar's subtitle is the legend's rule, «Sun + Earth = window», each word in its signal colour (`--bar-*-ink`,
   deeper on the light bar for 4.5:1), and the site pill shows the short name over the state at the shared instant with
-  its time left in its colour («Window · 7 d left», «Sun · …», «Earth · …», «Neither · …»; `src/phone/site-state.ts`),
+  its time left in its colour («Window · 7 d left», «Sun · …», «Earth · …», «Neither · …»; `src/phone/site-state.ts`;
+  the titles wrap first, then a narrow pill drops «left», then the name, never the time: `FitLine.tsx`),
   its accessible name the full site name and the state; the sheet's head carries the site's LOLA relief thumbnail. On
   desktop the thumbnail heads the site card, with the state badge and its frame, as a 96 px band on short windows.
   Thumbnails exist only south of 80° S (320 px, and 640 px through `srcset` for 2x screens; rendered offline by

@@ -36,7 +36,7 @@ import { sheetActions } from '../../phone/sheet-actions';
 import {
   hoursStatus,
   siteState,
-  stateLine,
+  stateLines,
 } from '../../phone/site-state';
 import type { SiteStore } from '../../phone/site-store';
 import { unlistedSite } from '../../phone/unlisted-site';
@@ -80,10 +80,10 @@ function usePhoneState({ sites, store, parts }: Props) {
   const { result } = widgets;
   const state = result.kind === 'ready' ? result.widgets.now.state : null;
   const { hours } = widgets;
-  const line = stateLine(siteState(hours, at), hoursStatus(hours, at));
+  const lines = stateLines(siteState(hours, at), hoursStatus(hours, at));
   const select = (id: string): void => store.select(id, 'list');
   const actions = sheetActions(panel.setDetent, select, panel.setView);
-  return { site, widgets, when, state, line, ...panel, ...actions };
+  return { site, widgets, when, state, lines, ...panel, ...actions };
 }
 
 type PhoneState = ReturnType<typeof usePhoneState>;
@@ -152,8 +152,8 @@ function PhoneUi(props: Props) {
     onCalendar: phone.calendar,
     onSites: phone.open,
   };
-  const { site, state, line } = phone;
-  const pill = { site, state, line, onOpenPicker: phone.open };
+  const { site, state, lines } = phone;
+  const pill = { site, state, lines, onOpenPicker: phone.open };
   return (
     <div className="phone">
       <div ref={scrim} className="phone-scrim" aria-hidden="true" />

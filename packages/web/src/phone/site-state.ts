@@ -42,8 +42,12 @@ export interface SiteState {
   readonly kind: NowState;
   /** On the desktop card's image: «Landing window now», «Neither». */
   readonly badge: string;
-  /** In the phone's pill, with the time left: «Window · 7 d left». */
-  readonly line: string;
+  /**
+   * In the phone's pill, longest first, so a narrow pill drops «left»,
+   * then the name, and never the time: «Window · 7 d left», «Window ·
+   * 7 d», «7 d».
+   */
+  readonly lines: readonly string[];
 }
 
 /**
@@ -109,7 +113,8 @@ export function siteState(
   if (!now) return null;
   const kind = nowState(now);
   const left = shortLeft(horizon, now);
-  return { kind, badge: BADGES[kind], line: `${LINES[kind]} · ${left} left` };
+  const short = `${LINES[kind]} · ${left}`;
+  return { kind, badge: BADGES[kind], lines: [`${short} left`, short, left] };
 }
 
 /** What the pill says while there is no state, by where the hours stand. */
@@ -121,10 +126,13 @@ const NO_STATE: Readonly<Record<HoursStatus, string>> = {
   outside: 'Outside the data window',
 };
 
-/** The pill's second line: the state with its time left, or why not. */
-export function stateLine(
+/**
+ * The pill's second line, longest first: the state with its time left,
+ * or why there is none.
+ */
+export function stateLines(
   state: SiteState | null,
   status: HoursStatus,
-): string {
-  return state ? state.line : NO_STATE[status];
+): readonly string[] {
+  return state ? state.lines : [NO_STATE[status]];
 }

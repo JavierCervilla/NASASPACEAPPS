@@ -25,7 +25,7 @@
 
 import type { HourSample } from '@ventana/sim';
 import { describe, expect, it } from 'vitest';
-import { hoursStatus, siteState, stateLine } from '../src/phone/site-state';
+import { hoursStatus, siteState, stateLines } from '../src/phone/site-state';
 import type { HoursResult } from '../src/phone/widgets-loader';
 import { thumbOf } from '../src/thumbs/thumbs';
 
@@ -54,13 +54,25 @@ describe('site state: the pill and the desktop badge', () => {
     [250, 'earth', 'Earth only', 'Earth · 2 d left'],
     [350, 'none', 'Neither', 'Neither · 30+ d left'],
   ])('at hour %i the state is %s: badge «%s», pill «%s»', (hour, kind, badge, line) => {
-    expect(siteState(READY, at(hour))).toEqual({ kind, badge, line });
+    expect(siteState(READY, at(hour))).toMatchObject({ kind, badge });
+    expect(siteState(READY, at(hour))?.lines[0]).toBe(line);
+  });
+
+  it('gives the pill shorter lines that drop «left», then the name, never the time', () => {
+    expect(siteState(READY, at(150))?.lines).toEqual(['Window · 2 d left', 'Window · 2 d', '2 d']);
+    expect(siteState(READY, at(350))?.lines).toEqual(['Neither · 30+ d left', 'Neither · 30+ d', '30+ d']);
+  });
+
+  it('turns hours into days at 24: 23 h left reads «23 h», 24 h reads «1 d»', () => {
+    // The window ends at hour 200.
+    expect(siteState(READY, at(177))?.lines[0]).toBe('Window · 23 h left');
+    expect(siteState(READY, at(176))?.lines[0]).toBe('Window · 1 d left');
   });
 
   it('says the time left in hours under a day, so the pill stays one short line', () => {
     // Hour 190: the window ends at hour 200.
-    expect(siteState(READY, at(190))?.line).toBe('Window · 10 h left');
-    expect(siteState(READY, at(199))?.line).toBe('Window · 1 h left');
+    expect(siteState(READY, at(190))?.lines[0]).toBe('Window · 10 h left');
+    expect(siteState(READY, at(199))?.lines[0]).toBe('Window · 1 h left');
   });
 
   it('has no state while the month loads, fails, is outside the data, or before the clock runs', () => {
@@ -79,11 +91,11 @@ describe('site state: the pill and the desktop badge', () => {
   });
 
   it('says why there is no state in the pill, never an empty line', () => {
-    expect(stateLine(siteState(READY, at(150)), 'ready')).toBe('Window · 2 d left');
-    expect(stateLine(null, 'pending')).toBe('Loading…');
-    expect(stateLine(null, 'error')).toBe('Data unavailable');
-    expect(stateLine(null, 'outside')).toBe('Outside the data window');
-    expect(stateLine(null, 'ready')).toBe('No data for this hour');
+    expect(stateLines(siteState(READY, at(150)), 'ready')[0]).toBe('Window · 2 d left');
+    expect(stateLines(null, 'pending')).toEqual(['Loading…']);
+    expect(stateLines(null, 'error')).toEqual(['Data unavailable']);
+    expect(stateLines(null, 'outside')).toEqual(['Outside the data window']);
+    expect(stateLines(null, 'ready')).toEqual(['No data for this hour']);
   });
 });
 

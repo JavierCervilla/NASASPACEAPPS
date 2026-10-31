@@ -32,14 +32,18 @@
 import type { Ref } from 'react';
 import { siteLabels, type PhoneSite } from '../../phone/phone-site';
 import type { NowState } from '../../phone/widget-types';
+import { FitLine } from './FitLine';
 import { Icon } from './Icon';
 
 interface Props {
   readonly site: PhoneSite;
   /** The site's state at the selected instant, once its data has loaded. */
   readonly state: NowState | null;
-  /** The state with its time left, or why there is none (site-state.ts). */
-  readonly line: string;
+  /**
+   * The state with its time left, or why there is none, longest first
+   * (site-state.ts); the pill shows the longest that fits.
+   */
+  readonly lines: readonly string[];
   readonly onOpenPicker: () => void;
   /** The bar's element, which the full sheet stays under. */
   readonly ref?: Ref<HTMLElement>;
@@ -50,20 +54,20 @@ interface Props {
  * screen reader is the site's full name and the state, so co-located
  * sites (IM-2 and the Mons Mouton zone) never read the same.
  */
-function SitePill({ site, state, line, onOpenPicker }: Props) {
+function SitePill({ site, state, lines, onOpenPicker }: Props) {
   const { pill } = siteLabels(site);
   const tone = state ?? 'unknown';
   return (
     <button
       type="button"
       className="site-pill"
-      aria-label={`Change site, now ${site.name}: ${line}`}
+      aria-label={`Change site, now ${site.name}: ${lines[0] ?? ''}`}
       onClick={onOpenPicker}
     >
       <span className="signal-dot" data-state={state ?? 'loading'} />
       <span className="site-pill__names">
         <span className="site-pill__name">{pill}</span>
-        <span className="site-pill__state" data-tone={tone}>{line}</span>
+        <FitLine className="site-pill__state" tone={tone} lines={lines} />
       </span>
       <Icon name="chevron" />
     </button>

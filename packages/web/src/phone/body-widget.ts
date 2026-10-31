@@ -61,7 +61,7 @@ export const EARTH: Body = {
  * How long `keeps` goes on holding from the hour `now` of `hours`: «7 d
  * 1 h», or «at least 7 d» when it outlasts them.
  */
-export function timeLeft(
+function timeLeft(
   hours: readonly HourSample[],
   now: HourSample,
   keeps: (sample: HourSample) => boolean,

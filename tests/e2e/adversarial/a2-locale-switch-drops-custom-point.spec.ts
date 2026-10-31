@@ -33,6 +33,8 @@ import { expect, test } from '@playwright/test';
 import { stubApi } from '../api-stub';
 
 const NOW = new Date('2026-11-23T18:00:00Z');
+/** The globe's start is not what this spec checks: a cold run starts a software-rendered globe in every worker. */
+const GLOBE_START_MS = 20_000;
 
 test.describe('desktop, 1440x900', () => {
   test.use({ viewport: { width: 1440, height: 900 } });
@@ -41,14 +43,14 @@ test.describe('desktop, 1440x900', () => {
     await page.clock.setFixedTime(NOW);
     await stubApi(page);
     await page.goto('./?lat=-85.87&lon=61.34');
-    await expect(page.locator('.globe-viewport[data-status="ready"]')).toBeVisible();
+    await expect(page.locator('.globe-viewport[data-status="ready"]')).toBeVisible({ timeout: GLOBE_START_MS });
     await expect(page.locator('.site-button__name')).toHaveText('Custom point');
 
     await page.getByRole('button', { name: /language/i }).click();
     // The Spanish item, by the English name it carries beside «Español».
     await page.getByRole('menuitemradio', { name: /Spanish$/ }).click();
     await page.waitForURL(/\/es\//);
-    await expect(page.locator('.globe-viewport[data-status="ready"]')).toBeVisible();
+    await expect(page.locator('.globe-viewport[data-status="ready"]')).toBeVisible({ timeout: GLOBE_START_MS });
 
     const params = new URL(page.url()).searchParams;
     expect({ lat: params.get('lat'), lon: params.get('lon') }).toEqual({ lat: '-85.87', lon: '61.34' });

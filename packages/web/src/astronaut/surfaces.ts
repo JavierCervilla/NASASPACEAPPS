@@ -33,7 +33,7 @@
  * points move, so a carry reads again what is under a still crosshair.
  */
 import type { LatLon } from '../lib/polar-projection';
-import { createWatchedValue } from '../lib/watched-value';
+import { createSurfaceMoves } from './surface-moves';
 
 export interface ClientPoint {
   readonly x: number;
@@ -69,14 +69,14 @@ const isShown = (surface: DropSurface): boolean =>
 
 export function createSurfaces(hitTest: HitTest): Surfaces {
   const list = new Set<DropSurface>();
-  const moved = createWatchedValue(0);
+  const moves = createSurfaceMoves(list);
   return {
     add: (surface) => {
       list.add(surface);
-      const stop = surface.subscribe?.(() => moved.set(moved.get() + 1));
+      const untrack = moves.track(surface);
       return () => {
         list.delete(surface);
-        stop?.();
+        untrack();
       };
     },
     at: (at) => {
@@ -87,6 +87,6 @@ export function createSurfaces(hitTest: HitTest): Surfaces {
       return { surface, point: surface.pointAt(at.x, at.y) };
     },
     shown: () => [...list].find(isShown) ?? null,
-    subscribe: moved.subscribe,
+    subscribe: moves.subscribe,
   };
 }

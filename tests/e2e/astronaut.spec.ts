@@ -39,6 +39,8 @@ import { expect, test, type Locator, type Page } from '@playwright/test';
 import { stubApi } from './api-stub';
 
 const NOW = new Date('2026-11-23T18:00:00Z');
+/** The globe's start is not what this spec checks: a cold run starts a software-rendered globe in every worker. */
+const GLOBE_START_MS = 20_000;
 const OUT = new URL('../../production/qa/evidence/', import.meta.url);
 const DATE = '2026-10-31';
 const CSP_SCRIPT = fileURLToPath(new URL('../../packages/web/scripts/csp-header.mjs', import.meta.url));
@@ -65,7 +67,7 @@ async function open(page: Page, path = './', hold?: Promise<void>): Promise<void
   await page.clock.setFixedTime(NOW);
   await stubApi(page, { pointHold: hold });
   await page.goto(path);
-  await expect(page.locator('.globe-viewport[data-status="ready"], .polar').first()).toBeVisible();
+  await expect(page.locator('.globe-viewport[data-status="ready"], .polar').first()).toBeVisible({ timeout: GLOBE_START_MS });
 }
 
 /** Where a figure's feet are: the middle of its picture, 95 % down. */

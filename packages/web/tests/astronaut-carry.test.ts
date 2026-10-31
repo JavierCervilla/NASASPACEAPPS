@@ -308,6 +308,34 @@ describe('surfaces', () => {
     expect(moon.listeners.size).toBe(0);
     stop();
   });
+
+  it('listen to no surface’s frames while nothing listens to them, so an idle globe costs nothing per frame', () => {
+    const moon = slidingMoon();
+    const later = slidingMoon();
+    const surfaces = createSurfaces(() => ({}) as Element);
+    surfaces.add(moon.surface);
+    expect(moon.listeners.size).toBe(0);
+    const heard = vi.fn();
+    const stop = surfaces.subscribe(heard);
+    surfaces.add(later.surface);
+    later.slide(1);
+    expect(heard).toHaveBeenCalledTimes(1);
+    stop();
+    expect(moon.listeners.size + later.listeners.size).toBe(0);
+    moon.slide(1);
+    expect(heard).toHaveBeenCalledTimes(1);
+  });
+
+  it('stop listening to the surfaces once a carry ends', () => {
+    const moon = slidingMoon();
+    const { carrier } = carrierOver(moon.surface);
+    expect(moon.listeners.size).toBe(0);
+    const session = carrier.lift({ mode: 'pointer', pointer: DOCK, feet: DOCK, touch: false, t: 0 });
+    expect(moon.listeners.size).toBe(1);
+    session?.move({ x: 200, y: 200 }, 16);
+    session?.release(32);
+    expect(moon.listeners.size).toBe(0);
+  });
 });
 
 describe('places', () => {

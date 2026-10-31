@@ -36,8 +36,10 @@ import { expect, test, type Page } from '@playwright/test';
 import { stubApi } from '../api-stub';
 
 const NOW = new Date('2026-11-23T18:00:00Z');
-/** Long enough for the orbit's springs to settle after the sheet drops to peek. */
-const REST_MS = 1500;
+/** The globe's start is not what this spec checks: a cold run starts a software-rendered globe in every worker. */
+const GLOBE_START_MS = 20_000;
+/** How often the resting globe and readout are read; three equal reads in a row are at rest. */
+const STILL_EVERY_MS = 200;
 /** Two grid steps: a finger that did not move must land on the point it rests on. */
 const TOLERANCE_DEG = 0.02;
 
@@ -50,8 +52,8 @@ async function open(page: Page): Promise<void> {
   await page.clock.setFixedTime(NOW);
   await stubApi(page);
   await page.goto('./');
-  await expect(page.locator('.globe-viewport[data-status="ready"]')).toBeVisible();
-  await expect(page.locator('.astro-phone-dock .astro-figure__image')).toBeVisible();
+  await expect(page.locator('.globe-viewport[data-status="ready"]')).toBeVisible({ timeout: GLOBE_START_MS });
+  await expect(page.locator('.astro-phone-dock .astro-figure__image')).toBeVisible({ timeout: GLOBE_START_MS });
 }
 
 /** «85.87° S, 61.34° E» as degrees, longitude east. */
@@ -65,20 +67,26 @@ function parseCoords(text: string): { lat: number; lon: number } {
 }
 
 /**
- * The carried readout once it has stopped changing (three reads 200 ms apart agree): the globe is at rest under the
- * crosshair, and the last pointer move has been read. A touch move reaches the page on the next frame, so a readout
- * read right after one still names the move before it (1 px is about 0.4° on this globe).
+ * The carried readout once the globe is at rest under the crosshair: the selected site's ring (placed after every
+ * drawn frame) and the readout both read the same three times in a row. The ring tells the orbit's springs have
+ * settled after the sheet dropped to peek, whatever the readout does; the readout tells the last pointer move has been
+ * read (a touch move reaches the page on the next frame, and 1 px is about 0.4° on this globe).
  */
 async function readoutAtRest(page: Page): Promise<string> {
-  const coords = page.locator('.astro-carry .astro-readout__coords');
-  let last = await coords.textContent();
+  const read = () =>
+    page.evaluate(() => {
+      const ring = document.querySelector<HTMLElement>('.globe-ring')?.style.transform ?? '';
+      const coords = document.querySelector('.astro-carry .astro-readout__coords')?.textContent ?? '';
+      return { ring, coords };
+    });
+  let last = await read();
   for (let still = 0; still < 3; ) {
-    await page.waitForTimeout(200);
-    const now = await coords.textContent();
-    still = now === last ? still + 1 : 0;
+    await page.waitForTimeout(STILL_EVERY_MS);
+    const now = await read();
+    still = now.ring === last.ring && now.coords === last.coords ? still + 1 : 0;
     last = now;
   }
-  return last ?? '';
+  return last.coords;
 }
 
 /** A finger from the dock to the Moon in three quick moves, then at rest; returns how to touch and where it rests. */
@@ -96,7 +104,6 @@ async function carryAndRest(page: Page) {
   }
   await expect(page.locator('.astro-carry')).toHaveAttribute('data-over', 'moon');
   await expect(page.locator('.sheet')).toHaveAttribute('data-detent', 'peek');
-  await page.waitForTimeout(REST_MS);
   await readoutAtRest(page);
   return { touch, to };
 }
@@ -115,6 +122,8 @@ test.describe('phone, 390x844', () => {
     await probe.touch('touchMove', probe.to);
     const truth = parseCoords(await readoutAtRest(page));
     await probe.touch('touchEnd');
+    // One globe at a time: the first page's globe would keep drawing beside the second's.
+    await page.close();
 
     // The same carry on a fresh page, let go at rest.
     const second = await context.newPage();

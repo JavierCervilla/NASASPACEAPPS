@@ -127,7 +127,8 @@ Every visible change follows `.claude/skills/apple-design/SKILL.md` (vendored fr
   to the sphere, `src/globe/globe-view.ts`) and the polar disk (inverse projection, `src/astronaut/polar-surface.ts`);
   a point belongs to the surface whose element is under it, so a floating panel is never the Moon. The point under
   the crosshair is read again whenever the Moon moves under a still pointer (the surfaces tell their drawn frames
-  through `Surfaces.subscribe`, and `carrier.ts` re-picks on each: a wheel zoom or a second finger mid-drag, the phone
+  through `Surfaces.subscribe`, bound only while a carry listens (`surface-moves.ts`), and `carrier.ts` re-picks on
+  each: a wheel zoom or a second finger mid-drag, the phone
   sheet re-framing the globe, a resize), and the drop reads it once more where the pointer is when let go
   (`carry-session.ts` `release()`), so readout, visor, drop, address and the Horizons request name one point. Off the Moon the
   readout says «Off the Moon · Let go and it walks home» and on release it walks back on critically damped springs

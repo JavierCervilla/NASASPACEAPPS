@@ -35,6 +35,8 @@ import { expect, test, type Locator, type Page } from '@playwright/test';
 import { stubApi } from '../api-stub';
 
 const NOW = new Date('2026-11-23T18:00:00Z');
+/** The globe's start is not what this spec checks: a cold run starts a software-rendered globe in every worker. */
+const GLOBE_START_MS = 20_000;
 /** The polar spec's tolerance between a drop target and the standing figure's feet. */
 const TOLERANCE_PX = 3;
 
@@ -78,8 +80,8 @@ test.describe('desktop, 1440x900', () => {
     await page.clock.setFixedTime(NOW);
     await stubApi(page);
     await page.goto('./');
-    await expect(page.locator('.globe-viewport[data-status="ready"]')).toBeVisible();
-    await expect(page.locator('.astro-dock .astro-figure__image')).toBeVisible();
+    await expect(page.locator('.globe-viewport[data-status="ready"]')).toBeVisible({ timeout: GLOBE_START_MS });
+    await expect(page.locator('.astro-dock .astro-figure__image')).toBeVisible({ timeout: GLOBE_START_MS });
 
     const middle = await centreOf(page, '.globe-viewport');
     const target = { x: middle.x + 60, y: middle.y + 40 };

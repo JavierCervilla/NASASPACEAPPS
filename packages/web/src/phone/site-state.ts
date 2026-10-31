@@ -103,13 +103,17 @@ function shortLeft(horizon: readonly HourSample[], now: HourSample) {
   return { hours, count: days === 0 ? hours : days, runsOn: left === null };
 }
 
-/** The state at the hour of `atMs`; null until its hours are known. */
+/**
+ * The state at the hour of `atMs`; null until its hours are known. `open`
+ * when the hours are the simulator's, which have no data window.
+ */
 export function siteState(
   hours: HoursResult,
   atMs: number | null,
   i18n: I18n,
+  open = false,
 ): SiteState | null {
-  const range = atMs === null ? null : widgetRange(atMs);
+  const range = atMs === null ? null : widgetRange(atMs, open);
   if (!range || hours.kind !== 'ready') return null;
   const horizon = samplesWithin(hours.hours, range.at, range.horizonEnd);
   const now = sampleAt(horizon, range.at);

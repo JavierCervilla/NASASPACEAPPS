@@ -60,7 +60,7 @@ export function monthDiff(
   atMs: number,
 ): MonthDiff {
   const other = new Map(computed.map((sample) => [sample.t, sample]));
-  const samples = monthSamples(horizons, atMs).filter((s) => other.has(s.t));
+  const samples = monthSamples(horizons, atMs);
   const differs = (signal: Signal) => (sample: HourSample) => {
     const twin = other.get(sample.t);
     return twin !== undefined && signal(sample) !== signal(twin);

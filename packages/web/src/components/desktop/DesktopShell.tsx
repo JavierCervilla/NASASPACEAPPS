@@ -51,6 +51,7 @@ import { useI18n } from '../i18n-context';
 import { LanguageMenu } from '../lang/LanguageMenu';
 import { usePhone, useSelection } from '../phone/hooks';
 import { PolarMap } from '../polar/PolarMap';
+import { SourceNotes } from '../source/SourceNotes';
 import { SiteCard } from './SiteCard';
 import { SiteMenu } from './SiteMenu';
 
@@ -76,35 +77,38 @@ function useSlot(): HTMLElement | null {
 }
 
 /**
- * The selected site's state, the card's badge and the card, at the
- * selected instant, from the month's hours.
+ * The selected site's state, the card's badge, the card and its notes on
+ * computed data, at the selected instant, from the month's hours.
  */
 function useCardState(calendar: Calendar) {
   const i18n = useI18n();
   const { result, computed } = calendar;
   const atMs = calendar.state?.atMs;
-  const now = atMs === undefined ? null : widgetsAt(result, atMs, i18n);
+  const now =
+    atMs === undefined ? null : widgetsAt(result, atMs, i18n, computed);
   const state = now?.kind === 'ready' ? now.widgets.now.state : null;
-  const badge = siteState(result, atMs ?? null, i18n);
+  const badge = siteState(result, atMs ?? null, i18n, computed);
   const model =
     atMs === undefined ? LOADING : siteCard(result, atMs, i18n, computed);
-  return { state, badge, model, computed };
+  const notes = <SourceNotes month={calendar} atMs={atMs ?? null} />;
+  return { state, badge, model, computed, notes };
 }
 
 function DesktopUi({ sites, store, parts, base, view }: Props) {
   const { id } = useSelection(store);
   const site = sites.find((s) => s.id === id) ?? unlistedSite(id);
   const calendar = useCalendar(parts, id);
-  const { state, badge, model, computed } = useCardState(calendar);
+  const { state, badge, model, computed, notes } = useCardState(calendar);
   const slot = useSlot();
   const pick = (picked: string): void => store.select(picked, 'list');
   const menu = { sites, site, state, computed, onPick: pick };
-  const map = { sites, site, state, base, onPick: pick, source: parts.source };
+  const { source } = parts;
+  const map = { sites, site, state, computed, base, onPick: pick, source };
   return (
     <>
       {view === 'polar' ? <PolarMap {...map} /> : null}
       <SiteCard
-        {...{ site, model, base, state: badge, computed }}
+        {...{ site, model, base, state: badge, computed, notes }}
         onRetry={calendar.retry}
       />
       <CalendarStrip parts={parts} calendar={calendar} />

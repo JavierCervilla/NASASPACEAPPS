@@ -51,16 +51,29 @@ Every visible change follows `.claude/skills/apple-design/SKILL.md` (vendored fr
   desktop); the hours come from one cached request per site and month (`src/phone/hours-cache.ts`). The answer is
   instant (VENT-36): the views first show the simulator's hours for the same site and range (`computedHours`, cached
   in `src/source/computed-hours.ts`, from the build-time site list), and Horizons replaces them when it arrives
-  (`src/source/month-view.ts`, `src/components/use-site-hours.ts`); a failed request stays an honest error. While the
-  view shows computed hours the state dot is hollow, a ring in the state's colour (phone pill, desktop site button and
-  site card badge), and the accessible name gains «computed»; it fills when Horizons arrives. A «Data source» switch,
+  (`src/source/month-view.ts`, `src/components/use-site-hours.ts`). When Horizons fails the computed hours stay, with
+  a quiet «Horizons unavailable: showing the computed sky» note and «Try again» (`src/components/source/SourceNotes.tsx`,
+  desktop site card, phone summary and Calendar sheet); only with nothing computed (a site without coordinates) is the failure an
+  honest error. While the view shows computed hours the state dot is hollow, a ring in the state's colour (phone pill,
+  desktop site button, site card badge, and the selected marker on the globe and the polar map), and the accessible name
+  gains «computed» (pill and desktop site button); it fills when Horizons arrives. Computed hours that stay (Computed
+  chosen, or Horizons down) carry a caption, the human's decision: «Computed by Ventana Lunar · approximate, within
+  0.05° of JPL Horizons» in the months the model was checked (Nov-Dec 2026), «… extrapolated, not checked against JPL
+  Horizons for this month» in any other (`src/source/computed-caption.ts`; the bound and the period are
+  `VALIDATED_ELEVATION_DEG`, `VALIDATED_FROM` and `VALIDATED_TO` in `packages/sim/src/accuracy.ts`, which
+  `packages/sim/tests/sky.test.ts` holds the model to), under the desktop card's figures, the phone summary and the
+  phone Calendar sheet. The computed cache is keyed by point and range, so a moved point is computed again. A «Data source» switch,
   «Computed | Horizons | Compare» (radiogroup in the segmented control's style, never a signal colour,
   `src/components/source/SourceSwitch.tsx`), sits under a hairline in the desktop Layers key and in the phone's Sites
   sheet grouped with the «Language» row; default Horizons, kept in `localStorage` (`src/source/data-source.ts`).
-  Computed: the simulator's hours always, dot hollow for good, card source «computed here». Compare: Horizons shown, and
-  the desktop strip and the phone Calendar sheet hatch in neutral white the hours where the two disagree on Sun, Earth
-  or window (`src/calendar/month-diff.ts`), with «N h differ this month» and a «Differs» legend key; without Horizons it
-  says so instead of hatching nothing. On desktop
+  Computed: the simulator's hours always, for any month (no data window: the month arrows go past 2026-2027),
+  dot hollow for good, card source «computed here». Horizons and Compare keep the API's window and say «Outside the
+  data window» beyond it. Compare: Horizons shown, and the desktop strip and the phone Calendar sheet hatch the hours
+  where the two disagree on Sun, Earth or window (`src/calendar/month-diff.ts`) in neutral white strokes on dark gaps,
+  at least 8 px wide on the strip, with «N h differ this month» and a «Differs» legend key (strip legend, and next to
+  the count in the Calendar sheet); without Horizons it says so instead of hatching nothing. The globe's marker layer
+  and the polar disk are their own stacking contexts, so the Layers key and every floating surface paint over the
+  markers and take their clicks. On desktop
   the site card sits beside the view and the header tabs switch the view by hash (`#globe`, `#polar-map`,
   `src/lib/view-tabs.ts`): the polar map is a south polar stereographic disk from 80° S
   (`src/lib/polar-projection.ts`, image from `scripts/moon_textures.py polar`). No card floats over the globe (VENT-33). On phones the

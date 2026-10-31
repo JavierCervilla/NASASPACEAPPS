@@ -75,12 +75,14 @@ function SiteButton(props: Props & { readonly popover: Anchor }) {
   const i18n = useI18n();
   const { title, subtitle } = siteLabels(site);
   const name = subtitle === title ? title : `${subtitle}, ${title}`;
+  // Like the phone pill: a hollow dot is said, not only drawn.
+  const label = computed ? 'site.changeComputed' : 'site.change';
   return (
     <button
       type="button"
       className="site-button"
       popoverTarget={POPOVER_ID}
-      aria-label={i18n.t('site.change', { name })}
+      aria-label={i18n.t(label, { name })}
       onClick={(e) => anchorUnder(e.currentTarget, popover.current)}
     >
       <span className="signal-dot" data-state={state ?? 'loading'} data-computed={computed} />

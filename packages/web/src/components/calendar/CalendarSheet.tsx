@@ -58,6 +58,7 @@ import {
   PlayButton,
   SignalBar,
 } from './parts';
+import { SourceNotes } from '../source/SourceNotes';
 import { CompareNote } from './CompareNote';
 import { StripStatus } from './StripStatus';
 
@@ -70,23 +71,22 @@ interface Props {
 
 /**
  * «Sun 59 %», «Earth 58 %» and «Window 47 %» of the month, a note when
- * the month has no window at all, and under «Compare» how many hours
- * differ.
+ * the month has no window at all, under «Compare» how many hours differ
+ * and the hatch's key, and the notes on computed data.
  */
 function Shares({ calendar }: { readonly calendar: Calendar }) {
-  const { strip } = calendar;
+  const { strip, state } = calendar;
   const i18n = useI18n();
-  const { t } = i18n;
   const shares = [
-    ['sun', t('signal.sun'), strip?.sunPct],
-    ['earth', t('signal.earth'), strip?.earthPct],
-    ['window', t('signal.window'), strip?.windowPct],
+    ['sun', i18n.t('signal.sun'), strip?.sunPct],
+    ['earth', i18n.t('signal.earth'), strip?.earthPct],
+    ['window', i18n.t('signal.window'), strip?.windowPct],
   ] as const;
   const value = (pct?: number) =>
     pct === undefined ? '–' : formatPercent(i18n, pct);
   return (
     <>
-      <ul className="calendar__shares" aria-label={t('calendar.shares')}>
+      <ul className="calendar__shares" aria-label={i18n.t('calendar.shares')}>
         {shares.map(([tone, label, pct]) => (
           <li key={tone} data-tone={tone}>
             {label} <b>{value(pct)}</b>
@@ -94,7 +94,8 @@ function Shares({ calendar }: { readonly calendar: Calendar }) {
         ))}
       </ul>
       <NoWindowNote strip={strip} className="calendar__note" />
-      <CompareNote calendar={calendar} className="calendar__compare" />
+      <CompareNote calendar={calendar} className="calendar__compare" keyed />
+      <SourceNotes month={calendar} atMs={state?.atMs ?? null} />
     </>
   );
 }

@@ -58,6 +58,11 @@ export {
   type GeodeticSite,
 } from './dsn-sites.ts';
 export { computedHours, skyAt, type Sky } from './sky.ts';
+export {
+  VALIDATED_ELEVATION_DEG,
+  VALIDATED_FROM,
+  VALIDATED_TO,
+} from './accuracy.ts';
 export { moonPosition, type MoonPosition } from './moon.ts';
 export { subEarthPoint } from './libration.ts';
 export { moonElevationFromDsn } from './dsn-sky.ts';

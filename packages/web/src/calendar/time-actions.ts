@@ -26,7 +26,8 @@
 /**
  * What the calendar's controls do to the selected instant: move it to an
  * hour of its month, by some hours (held inside the month, as a slider
- * is), or by whole months while the API has data for them.
+ * is), or by whole months while the API has data for them, or to any
+ * month when the view shows the simulator's hours (`open`).
  */
 import { HOUR_MS } from '@ventana/sim';
 import { widgetRange } from '../phone/widget-range';
@@ -46,11 +47,20 @@ export function moveToHour(time: TimeStore, atMs: number, hour: number) {
 }
 
 /** Whether the month `delta` months from `atMs` has data. */
-export function canShiftMonth(atMs: number, delta: number): boolean {
-  return widgetRange(shiftMonth(atMs, delta)) !== null;
+export function canShiftMonth(
+  atMs: number,
+  delta: number,
+  open = false,
+): boolean {
+  return widgetRange(shiftMonth(atMs, delta), open) !== null;
 }
 
 /** Moves the instant `delta` months, when that month has data. */
-export function moveMonths(time: TimeStore, atMs: number, delta: number) {
-  if (canShiftMonth(atMs, delta)) time.set(shiftMonth(atMs, delta));
+export function moveMonths(
+  time: TimeStore,
+  atMs: number,
+  delta: number,
+  open = false,
+) {
+  if (canShiftMonth(atMs, delta, open)) time.set(shiftMonth(atMs, delta));
 }

@@ -35,6 +35,7 @@
  * window. On a short screen the card scrolls, focusable only then, and fades at
  * each edge that hides more.
  */
+import type { ReactNode } from 'react';
 import { siteLabels } from '../../phone/phone-site';
 import type { SiteState } from '../../phone/site-state';
 import type { BodyWidget } from '../../phone/widget-types';
@@ -61,6 +62,11 @@ interface Props {
   readonly computed: boolean;
   /** The site's base path, for the image. */
   readonly base: string;
+  /**
+   * Under the figures: the computed caption and, when Horizons failed,
+   * the note that says so (VENT-36).
+   */
+  readonly notes?: ReactNode;
 }
 
 /** The card is 320 px wide, the whole width below 1024 px. */
@@ -85,7 +91,7 @@ function CardMedia({ thumb, state, computed }: MediaProps) {
   );
 }
 
-function CardHead(props: Omit<Props, 'model' | 'onRetry'>) {
+function CardHead(props: Omit<Props, 'model' | 'onRetry' | 'notes'>) {
   const { site, state, computed, base } = props;
   const i18n = useI18n();
   const { title, subtitle } = siteLabels(site);
@@ -132,7 +138,7 @@ function Figures({ model }: { readonly model: CardModel }) {
   );
 }
 
-export function SiteCard({ model, onRetry, ...head }: Props) {
+export function SiteCard({ model, onRetry, notes, ...head }: Props) {
   const [scroller, edges] = useScrollEdges<HTMLDivElement>();
   // Focusable only while it overflows, so the keyboard can scroll it on a
   // short screen; on a tall one it would be an empty tab stop.
@@ -151,6 +157,7 @@ export function SiteCard({ model, onRetry, ...head }: Props) {
       >
         <CardHead {...head} />
         <Figures model={model} />
+        {model.kind === 'ready' ? notes : null}
         <CardStatus kind={model.kind} onRetry={onRetry} />
       </div>
     </aside>

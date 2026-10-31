@@ -35,6 +35,7 @@ import type { Player } from '../../calendar/time-player';
 import type { TimeState, TimeStore } from '../../calendar/time-store';
 import type { HoursLoader } from '../../phone/hours-cache';
 import { monthDiff } from '../../calendar/month-diff';
+import { widgetRange } from '../../phone/widget-range';
 import { useSiteHours, type HoursParts } from '../use-site-hours';
 import {
   LOADING,
@@ -57,10 +58,14 @@ export function usePlaying(player: Player): boolean {
   return useSyncExternalStore(player.subscribe, player.playing, () => false);
 }
 
+/** What the API holds for a month with no data, known without asking. */
+const OUTSIDE = { kind: 'outside' } as const;
+
 /**
  * The hours of site `id` for the month of `atMs` (null: none yet). It asks
  * only when the site or the month changes, never on a new hour of the
- * same month; a retry asks again.
+ * same month; a retry asks again. A month outside the data window is
+ * `outside` at once, so nothing stands in for it while it «loads».
  */
 export function useMonthHours(
   load: HoursLoader,
@@ -82,7 +87,9 @@ export function useMonthHours(
     };
   }, [load, id, month, key]);
   const retry = (): void => setAttempt((n) => n + 1);
-  const result: HoursResult = kept?.key === key ? kept.value : LOADING;
+  const held = month !== null && widgetRange(month) === null;
+  const answer: HoursResult = kept?.key === key ? kept.value : LOADING;
+  const result: HoursResult = held ? OUTSIDE : answer;
   return { result, retry };
 }
 

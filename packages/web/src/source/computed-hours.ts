@@ -27,8 +27,9 @@
  * The simulator's hours for a site and range (`computedHours` of
  * `@ventana/sim`): the instant answer the views show before Horizons
  * arrives, and the other side of «Compare». A month takes tens of
- * milliseconds, so each site and range is computed once and kept, like
+ * milliseconds, so each point and range is computed once and kept, like
  * the API's (`phone/hours-cache.ts`). A site without coordinates has none.
+ * The simulator has no data window: any month has hours.
  */
 import {
   computedHours,
@@ -67,7 +68,11 @@ export function pointsOf(sites: readonly Located[]): PointOf {
 /** As many entries as the API's cache keeps. */
 const MAX_ENTRIES = 24;
 
-/** A loader that computes each site and range once. */
+/**
+ * A loader that computes each point and range once. The key is the point,
+ * not the id: the sky depends on where, and a site that moves (VENT-10's
+ * free pin) is computed again.
+ */
 export function cachedComputed(
   pointOf: PointOf,
   maxEntries = MAX_ENTRIES,
@@ -76,7 +81,8 @@ export function cachedComputed(
   return (id, range) => {
     const point = pointOf(id);
     if (!point) return null;
-    const key = `${id}|${range.from}|${range.to}`;
+    const where = `${point.latDeg},${point.lonEastDeg}`;
+    const key = `${where}|${range.from}|${range.to}`;
     const hit = kept.get(key);
     if (hit) return hit;
     const hours = computedHours(point, range.from, range.to);
@@ -88,14 +94,14 @@ export function cachedComputed(
 }
 
 /**
- * The computed hours of site `id` over the range the API is asked for the
- * month of `atMs`; null outside the data window.
+ * The computed hours of site `id` over the month of `atMs` and the 30
+ * days after it, as the API is asked for, in any year.
  */
 export function computedMonth(
   load: ComputedLoader,
   id: string,
   atMs: number,
 ): readonly HourSample[] | null {
-  const range = widgetRange(atMs);
+  const range = widgetRange(atMs, true);
   return range ? load(id, range) : null;
 }

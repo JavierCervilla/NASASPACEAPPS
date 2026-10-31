@@ -77,7 +77,7 @@ export function siteCard(
   i18n: I18n,
   computed = false,
 ): CardModel {
-  const widgets = widgetsAt(hours, atMs, i18n);
+  const widgets = widgetsAt(hours, atMs, i18n, computed);
   if (widgets.kind !== 'ready' || hours.kind !== 'ready') {
     return { kind: widgets.kind === 'ready' ? 'error' : widgets.kind };
   }

@@ -46,6 +46,7 @@ import { useI18n } from '../i18n-context';
 import { usePhone, useScrim, useSelection, useSiteWidgets } from './hooks';
 import { PhoneBar } from './PhoneBar';
 import { Sheet } from './Sheet';
+import { SourceNotes } from '../source/SourceNotes';
 import { SitesPanel } from './SitesPanel';
 import { SiteSummary } from './SiteSummary';
 import { TabBar } from './TabBar';
@@ -82,11 +83,12 @@ function usePhoneState({ sites, store, parts }: Props) {
   const { result, hours, computed } = widgets;
   const state = result.kind === 'ready' ? result.widgets.now.state : null;
   const status = hoursStatus(hours, at);
-  const lines = stateLines(siteState(hours, at, i18n), status, i18n);
+  const known = siteState(hours, at, i18n, computed);
+  const lines = stateLines(known, status, i18n);
   const select = (id: string): void => store.select(id, 'list');
   const actions = sheetActions(panel.setDetent, select, panel.setView);
   const pill = { state, lines, computed };
-  return { site, widgets, when, ...pill, ...panel, ...actions };
+  return { site, widgets, when, at, ...pill, ...panel, ...actions };
 }
 
 type PhoneState = ReturnType<typeof usePhoneState>;
@@ -145,7 +147,8 @@ function SheetBody(props: { phone: PhoneState } & Props) {
     );
   }
   const { result, retry: onRetry } = widgets;
-  return <SiteSummary {...{ site, result, onRetry, when, base }} />;
+  const notes = <SourceNotes month={widgets} atMs={phone.at} />;
+  return <SiteSummary {...{ site, result, onRetry, when, base, notes }} />;
 }
 
 function PhoneUi(props: Props) {

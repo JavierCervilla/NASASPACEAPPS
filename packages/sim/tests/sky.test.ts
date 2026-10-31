@@ -31,6 +31,7 @@ import { describe, expect, it } from 'vitest';
 import type { HorizonsRow } from '../src/horizons-csv.ts';
 import { DSN_COMPLEXES, DSN_SITES } from '../src/dsn-sites.ts';
 import { moonElevationFromDsn } from '../src/dsn-sky.ts';
+import { VALIDATED_ELEVATION_DEG, VALIDATED_FROM, VALIDATED_TO } from '../src/accuracy.ts';
 import { computedHours, skyAt } from '../src/sky.ts';
 import type { HourSample } from '../src/site.ts';
 import { wrapDeg } from '../src/sun.ts';
@@ -124,6 +125,13 @@ describe.each(Object.keys(POINTS) as (keyof typeof POINTS)[])('the sky at %s aga
     console.info(`Earth at ${name}: max |Δel| ${earth.el.toFixed(3)}°, max |Δaz| ${earth.az.toFixed(3)}°`);
     expect(earth.el).toBeLessThan(EARTH_EL_TOLERANCE_DEG);
     expect(earth.az).toBeLessThan(AZ_TOLERANCE_DEG);
+  });
+
+  // The bound and the period the web states to the visitor (src/accuracy.ts): checked here, so they cannot drift.
+  it(`keeps the Sun and the Earth within the stated ${VALIDATED_ELEVATION_DEG}° in elevation over the stated period`, () => {
+    const rows = fixtureRows(`sun-from-moon-${name}`);
+    expect([rows[0]?.t, rows.at(-1)?.t]).toEqual([VALIDATED_FROM, VALIDATED_TO]);
+    expect(Math.max(sun.el, earth.el)).toBeLessThan(VALIDATED_ELEVATION_DEG);
   });
 
   it('agrees with Horizons on Sun, Earth, window and DSN antenna away from transitions', () => {

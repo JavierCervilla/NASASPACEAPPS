@@ -132,7 +132,7 @@ function Island({ sitesUrl, base, selectedId, sites }: Props) {
   const parts = useCalendarParts(sitesUrl, sites);
   const view = useView(VIEW_NAV);
   const offView = !usePhone() && view !== 'globe';
-  const state = useStateFeed(store, parts);
+  const { feed: state, computed } = useStateFeed(store, parts);
   useLiveFavicon(base, parts.time, state);
   useSiteFromUrl(store, sites);
   const { t } = useI18n();
@@ -140,7 +140,7 @@ function Island({ sitesUrl, base, selectedId, sites }: Props) {
   const globe = { base, sitesUrl, store, sheetEdge, time, state };
   return (
     <>
-      <section className="globe" aria-label={t('globe.section')} hidden={offView}>
+      <section className="globe" aria-label={t('globe.section')} hidden={offView} data-computed={computed}>
         <Globe {...globe} />
         <Layers source={parts.source} />
       </section>

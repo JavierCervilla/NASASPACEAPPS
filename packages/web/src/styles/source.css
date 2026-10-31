@@ -121,3 +121,41 @@
     grid-template-columns: minmax(0, 1fr);
   }
 }
+
+/*
+ * Quiet notes under computed data (VENT-36, SourceNotes.tsx): the caption
+ * that says the hours are ours and approximate, and that Horizons is down.
+ * Secondary text, never a signal colour.
+ */
+.source-note {
+  margin: 0;
+  padding: 0 4px;
+  font-size: 0.75rem;
+  line-height: 1.35;
+  color: var(--text-secondary);
+}
+
+.source-note--down {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 8px;
+}
+
+.source-note__retry {
+  min-height: 44px;
+  padding: 0 4px;
+  border: 0;
+  background: none;
+  color: var(--text);
+  font: inherit;
+  font-weight: 600;
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+.calendar .source-note,
+.summary .source-note {
+  text-align: center;
+  justify-content: center;
+}

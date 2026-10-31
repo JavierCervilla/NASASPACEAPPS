@@ -67,9 +67,10 @@ export function useSelection(store: SiteStore): Selection {
 
 /**
  * The widgets of site `id` at the hour of `atMs` (null: not known yet),
- * the month's hours they come from, and whether those are the computed
- * ones. A new hour of the same month is worked out from the hours already
- * loaded: playing time never waits for the API; a retry asks again.
+ * the month's hours they come from, whether those are the computed ones
+ * and why (month-view.ts). A new hour of the same month is worked out
+ * from the hours already loaded: playing time never waits for the API; a
+ * retry asks again.
  */
 export function useSiteWidgets(
   parts: HoursParts,
@@ -77,8 +78,9 @@ export function useSiteWidgets(
   atMs: number | null,
 ) {
   const month = useSiteHours(parts, id, atMs);
-  const { result: hours, retry, computed } = month;
+  const { result: hours, computed } = month;
   const i18n = useI18n();
-  const result = atMs === null ? LOADING : widgetsAt(hours, atMs, i18n);
-  return { result, hours, retry, computed };
+  const result =
+    atMs === null ? LOADING : widgetsAt(hours, atMs, i18n, computed);
+  return { ...month, result, hours };
 }

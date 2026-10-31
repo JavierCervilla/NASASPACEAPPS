@@ -32,6 +32,9 @@
   "source.computed": "Calcolato",
   "source.horizons": "Horizons",
   "source.compare": "Confronta",
+  "source.down": "Horizons non disponibile: si mostra il cielo calcolato",
+  "source.caption": "Calcolato da Ventana Lunar · approssimato, entro {deg}° da JPL Horizons",
+  "source.captionExtrapolated": "Calcolato da Ventana Lunar · estrapolato, non verificato con JPL Horizons per questo mese",
   "marker.exact": "{name}, sito di atterraggio",
   "marker.zone": "{name}, zona approssimativa",
   "polar.sharedPlace": {
@@ -124,6 +127,7 @@
   "picker.empty": "Nessun sito corrisponde.",
   "picker.list": "Siti",
   "site.change": "Cambia sito, ora {name}",
+  "site.changeComputed": "Cambia sito, ora {name}, calcolato",
   "site.choose": "Scegli un sito",
   "widgets.loading": "Caricamento di questo sito",
   "widgets.rightNow": "In questo momento",

@@ -33,6 +33,7 @@ import type { ReactNode } from 'react';
 import type { MonthStrip, Segment } from '../../calendar/month-strip';
 import { canShiftMonth, moveMonths } from '../../calendar/time-actions';
 import { useI18n } from '../i18n-context';
+import { useDataSource } from '../use-site-hours';
 import type { CalendarParts } from './hooks';
 
 /** Which signal a bar shows; its colour is that signal's, and only it. */
@@ -79,16 +80,20 @@ interface MonthProps {
   readonly children: ReactNode;
 }
 
-/** ‹ the month › : the arrows move the instant a month, inside the data. */
+/**
+ * ‹ the month › : the arrows move the instant a month, inside the data;
+ * under «Computed», to any month (the simulator has no data window).
+ */
 export function MonthArrows({ parts, atMs, children }: MonthProps) {
   const { t } = useI18n();
+  const open = useDataSource(parts.source) === 'computed';
   const arrow = (delta: number, label: string, path: string) => (
     <button
       type="button"
       className="round-button"
       aria-label={label}
-      disabled={!canShiftMonth(atMs, delta)}
-      onClick={() => moveMonths(parts.time, atMs, delta)}
+      disabled={!canShiftMonth(atMs, delta, open)}
+      onClick={() => moveMonths(parts.time, atMs, delta, open)}
     >
       <svg width="12" height="12" viewBox="0 0 12 12" aria-hidden="true">
         <path d={path} fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />

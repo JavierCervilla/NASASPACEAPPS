@@ -59,9 +59,10 @@ export function useDataSource(source: SourceStore): DataSource {
 }
 
 /**
- * The month of `atMs` of site `id` as the views show it, and a retry of
- * the API's request. The computed hours are worked out once per site and
- * month, in the render: the answer is there before the API's.
+ * The month of `atMs` of site `id` as the views show it, the source it
+ * was chosen from, and a retry of the API's request. The computed hours
+ * are worked out once per site and month, in the render: the answer is
+ * there before the API's.
  */
 export function useSiteHours(
   parts: HoursParts,
@@ -75,5 +76,5 @@ export function useSiteHours(
     () => (month === null ? null : computedMonth(parts.computed, id, month)),
     [parts.computed, id, month],
   );
-  return { ...monthView(source, horizons, computed), retry };
+  return { ...monthView(source, horizons, computed), source, retry };
 }

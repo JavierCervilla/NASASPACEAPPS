@@ -56,6 +56,8 @@ interface Props {
   readonly sites: readonly PhoneSite[];
   readonly site: PhoneSite;
   readonly state: NowState | null;
+  /** Whether that state is the simulator's: the marker is hollow. */
+  readonly computed: boolean;
   /** The site's base path, for the map image. */
   readonly base: string;
   readonly onPick: (id: string) => void;
@@ -95,7 +97,7 @@ function useMarkers(sites: readonly PhoneSite[]) {
 }
 
 export function PolarMap(props: Props) {
-  const { sites, site, state, base, onPick, source } = props;
+  const { sites, site, state, computed, base, onPick, source } = props;
   const { markers, label } = useMarkers(sites);
   const [disk, size] = useWidth<HTMLDivElement>();
   const chosen = markerOf(markers, site.id)?.id ?? null;
@@ -107,7 +109,7 @@ export function PolarMap(props: Props) {
     if (id) onPick(id);
   };
   return (
-    <section className="polar" aria-label={label}>
+    <section className="polar" aria-label={label} data-computed={computed}>
       <div className="polar__disk" ref={disk} onClick={click}>
         <img className="polar__image" src={`${base.replace(/\/?$/, '/')}${IMAGE}`} alt="" decoding="async" />
         <Graticule />

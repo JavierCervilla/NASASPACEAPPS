@@ -32,6 +32,9 @@
   "source.computed": "Berechnet",
   "source.horizons": "Horizons",
   "source.compare": "Vergleichen",
+  "source.down": "Horizons nicht verfügbar: berechneter Himmel wird gezeigt",
+  "source.caption": "Berechnet von Ventana Lunar · ungefähr, höchstens {deg}° Abweichung von JPL Horizons",
+  "source.captionExtrapolated": "Berechnet von Ventana Lunar · extrapoliert, für diesen Monat nicht mit JPL Horizons geprüft",
   "marker.exact": "{name}, Landeplatz",
   "marker.zone": "{name}, ungefähres Gebiet",
   "polar.sharedPlace": {
@@ -121,6 +124,7 @@
   "picker.empty": "Keine passenden Landeplätze.",
   "picker.list": "Landeplätze",
   "site.change": "Landeplatz wechseln, aktuell {name}",
+  "site.changeComputed": "Landeplatz wechseln, aktuell {name}, berechnet",
   "site.choose": "Landeplatz wählen",
   "widgets.loading": "Dieser Landeplatz wird geladen",
   "widgets.rightNow": "Jetzt",

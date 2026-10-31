@@ -37,12 +37,14 @@ import { watchBand, type BandAnchors } from './band-watch';
 import { attachDevTools } from './dev-hook';
 import { bindDrag } from './drag';
 import { drawFrame } from './frame';
+import type { GlobeView } from './globe-view';
 import { SOUTH_POLE_VIEW } from './framing';
 import { FreeBandWatch } from './free-band';
 import { keyControls } from './key-controls';
 import { bindKeys, bindWheel } from './keys';
 import { createLoop, type Loop } from './loop';
 import { MarkerLayer } from './marker-layer';
+import { linkView } from './view-link';
 import type { GlobeSite } from './markers';
 import { addMoon } from './moon';
 import { createOrbit, type Orbit } from './orbit';
@@ -77,6 +79,11 @@ export interface GlobeOptions {
   readonly markerName: (site: GlobeSite) => string;
   /** The first map is on the Moon: the loading state may go. */
   readonly onTextured?: () => void;
+  /**
+   * Hears the globe as a place to drop the astronaut on, once mounted,
+   * and null once gone (VENT-10).
+   */
+  readonly onView?: (view: GlobeView | null) => void;
 }
 
 /** Keeps the canvas the host's size; redraws after a restored context. */
@@ -172,16 +179,17 @@ export function mountGlobe(host: HTMLElement, options: GlobeOptions) {
   const { store } = options;
   const pick = (id: string): void => store.select(id, 'globe');
   const markers = new MarkerLayer(host, store.get().id, invalidate, pick);
-  const tier = quality.tier;
-  const moon = addMoon(stage, { ...options, tier, onChange: invalidate });
-  const parts = { stage, orbit, markers, moon };
+  // The Moon takes its tier from the quality settings.
+  const moon = addMoon(stage, { ...options, ...quality, onChange: invalidate });
+  const link = linkView(stage, options.onView);
+  const parts = { stage, orbit, markers, moon, drawn: link.drawn };
   const loop = createLoop((dt) => drawFrame(parts, dt));
   const input = bindInput(host, orbit, loop, options.reducedMotion);
-  const { camera } = stage;
-  const globeParts = { markers, orbit, invalidate, camera };
+  const globeParts = { markers, orbit, invalidate, camera: stage.camera };
   const sites = bindSites(host, options, globeParts);
   const sun = bindSun(stage.scene, options.time, invalidate);
-  const unbind = [watchHost(host, stage, loop), ...input, sites, sun];
+  const watch = watchHost(host, stage, loop);
+  const unbind = [link.unlink, watch, ...input, sites, sun];
   void attachDevTools(stage.renderer, moon.textureBytes);
   return () => {
     loop.stop();

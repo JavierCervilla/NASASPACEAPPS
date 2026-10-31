@@ -34,12 +34,12 @@
  */
 import { useSyncExternalStore } from 'react';
 import { createPortal } from 'react-dom';
+import { selectedSite } from '../../astronaut/selected-site';
 import { siteCard } from '../../card/site-card';
 import type { CardSite } from '../../card/site-facts';
 import type { View } from '../../lib/view-tabs';
 import type { SiteStore } from '../../phone/site-store';
 import { siteState } from '../../phone/site-state';
-import { unlistedSite } from '../../phone/unlisted-site';
 import { LOADING, widgetsAt } from '../../phone/widgets-loader';
 import { CalendarStrip } from '../calendar/CalendarStrip';
 import {
@@ -96,7 +96,7 @@ function useCardState(calendar: Calendar) {
 
 function DesktopUi({ sites, store, parts, base, view }: Props) {
   const { id } = useSelection(store);
-  const site = sites.find((s) => s.id === id) ?? unlistedSite(id);
+  const site = selectedSite(sites, id, useI18n());
   const calendar = useCalendar(parts, id);
   const { state, badge, model, computed, notes } = useCardState(calendar);
   const slot = useSlot();

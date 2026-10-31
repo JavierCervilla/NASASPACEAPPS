@@ -24,13 +24,15 @@
  */
 
 import type { SourceStore } from '../source/data-source';
+import { Dock } from './astronaut/Dock';
 import { useI18n } from './i18n-context';
 import { SourceRow } from './source/SourceSwitch';
 
 /**
  * The key to the site markers, on the globe and on the polar map: a solid
  * dot is an exact touchdown, a dashed ring an approximate zone. Under a
- * hairline, the data source switch (VENT-36).
+ * hairline, the data source switch (VENT-36), and under another the
+ * astronaut's dock (VENT-10).
  */
 export function Layers({ source }: { readonly source: SourceStore }) {
   const { t } = useI18n();
@@ -43,6 +45,7 @@ export function Layers({ source }: { readonly source: SourceStore }) {
         <li className="soon"><span className="layer-key layer-key--rover" aria-hidden="true"></span>{t('layers.rovers')}</li>
       </ul>
       <SourceRow source={source} />
+      <Dock />
     </aside>
   );
 }

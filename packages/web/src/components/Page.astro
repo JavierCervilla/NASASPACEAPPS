@@ -49,6 +49,7 @@ import '../styles/polar.css';
 import '../styles/lang.css';
 import '../styles/source.css';
 import '../styles/offline.css';
+import '../styles/astronaut.css';
 
 interface Props {
   readonly locale: UiLocale;
@@ -64,7 +65,7 @@ const sitesUrl = `${import.meta.env.BASE_URL.replace(/\/$/, '')}/api/v1/sites`;
 
 // The site pickers, the polar map and the site card read the curated list
 // the API serves, built in, with its names in the page's language.
-const full = curated as Required<CardSite>[];
+const full = curated as Required<Omit<CardSite, 'custom'>>[];
 const sites: CardSite[] = full.map((s) => localSite(i18n, toCardSite(s)));
 
 // The globe and the polar map switch by hash (lib/view-tabs.ts); the

@@ -73,7 +73,11 @@ type Anchor = RefObject<HTMLDivElement | null>;
 function SiteButton(props: Props & { readonly popover: Anchor }) {
   const { site, state, computed, popover } = props;
   const i18n = useI18n();
-  const { title, subtitle } = siteLabels(site);
+  const labels = siteLabels(site);
+  // The custom point leads with its name, then the site it is near.
+  const [subtitle, title] = site.custom
+    ? [labels.title, site.custom.near]
+    : [labels.subtitle, labels.title];
   const name = subtitle === title ? title : `${subtitle}, ${title}`;
   // Like the phone pill: a hollow dot is said, not only drawn.
   const label = computed ? 'site.changeComputed' : 'site.change';

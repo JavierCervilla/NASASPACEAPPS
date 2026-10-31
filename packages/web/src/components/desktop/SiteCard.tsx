@@ -93,20 +93,23 @@ function CardMedia({ thumb, state, computed }: MediaProps) {
 
 /**
  * The head: the image with its badge or, without an image (north of
- * 80° S), the badge on its own at the top.
+ * 80° S, the custom point), the badge on its own at the top. The custom
+ * point leads with its name, then the site it is near.
  */
 function CardHead(props: Omit<Props, 'model' | 'onRetry' | 'notes'>) {
   const { site, state, computed, base } = props;
   const i18n = useI18n();
   const { title, subtitle } = siteLabels(site);
   const thumb = thumbOf({ id: site.id, place: title }, base, i18n);
+  const [name, place] = site.custom ? [title, subtitle] : [subtitle, title];
+  const mission = site.custom ? '' : missionLine(i18n, site);
   return (
     <div className="card-block card-head">
       <CardMedia thumb={thumb} state={state} computed={computed} />
       {thumb ? null : <StateBadge state={state} computed={computed} inHead />}
-      <p className="card-head__mission">{missionLine(i18n, site)}</p>
-      <h2 className="card-head__name">{subtitle}</h2>
-      {title === subtitle ? null : <p className="card-head__place">{title}</p>}
+      {mission ? <p className="card-head__mission">{mission}</p> : null}
+      <h2 className="card-head__name">{name}</h2>
+      {name === place ? null : <p className="card-head__place">{place}</p>}
       <p className="card-head__point">{pointLine(i18n, site)}</p>
     </div>
   );

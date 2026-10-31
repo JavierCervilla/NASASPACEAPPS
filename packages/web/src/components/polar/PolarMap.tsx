@@ -45,6 +45,8 @@ import {
   type PolarMarker,
 } from '../../polar/polar-markers';
 import type { SourceStore } from '../../source/data-source';
+import { onPolarMap } from '../../lib/polar-projection';
+import { PolarAstronaut } from '../astronaut/PolarAstronaut';
 import { useI18n } from '../i18n-context';
 import { Layers } from '../Layers';
 import { Graticule } from './Graticule';
@@ -68,12 +70,16 @@ interface Props {
 
 const IMAGE = 'textures/moon-south-polar-2k.jpg';
 
-/** The note for a selected site off the map: one without a marker. */
+/**
+ * The note for a selected site off the map: one without a marker, but
+ * the custom point only north of 80° S (it has no marker).
+ */
 function OffMap(props: { site: PhoneSite; chosen: string | null }) {
   const { site, chosen } = props;
   const { t } = useI18n();
-  if (chosen !== null) return null;
-  const name = siteLabels(site).subtitle;
+  if (chosen !== null || (site.custom && onPolarMap(site.lat))) return null;
+  const labels = siteLabels(site);
+  const name = site.custom ? labels.title : labels.subtitle;
   return (
     <p className="polar__note" role="status">
       {t('polar.offMap', { name })}
@@ -127,6 +133,7 @@ export function PolarMap(props: Props) {
         <img className="polar__image" src={`${base.replace(/\/?$/, '/')}${IMAGE}`} alt="" decoding="async" />
         <Graticule />
         <PolarMarkers {...{ markers, chosen, state, labels, badges }} />
+        <PolarAstronaut disk={disk} selected={site.id} onPick={onPick} />
       </div>
       <OffMap site={site} chosen={chosen} />
       <Layers source={source} />

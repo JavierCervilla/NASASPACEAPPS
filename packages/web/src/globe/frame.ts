@@ -40,6 +40,8 @@ export interface FrameParts {
   readonly markers: MarkerLayer;
   /** Fetches sharper maps as the zoom heads in. */
   readonly moon: Pick<Moon, 'track'>;
+  /** Hears that a frame was drawn (the standing astronaut follows it). */
+  readonly drawn?: () => void;
 }
 
 /** Maps a globe point to CSS px in the canvas, through the camera. */
@@ -63,5 +65,6 @@ export function drawFrame(parts: FrameParts, dt: number): boolean {
   aimCamera(stage.camera, pose);
   stage.renderer.render(stage.scene, stage.camera);
   markers.place(projector(stage), cameraPosition(pose));
+  parts.drawn?.();
   return moving;
 }

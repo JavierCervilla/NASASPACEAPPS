@@ -32,11 +32,20 @@ import type { TextKey } from '../i18n/catalogue';
 import type { I18n } from '../i18n/translate';
 import type { NowState } from './widget-types';
 
-/** The part of a site the phone sheet shows. */
+/**
+ * What names the custom point where the astronaut stands (VENT-10): the
+ * listed site nearest it, «Near Nobile Rim 1», and how far, «26 km».
+ */
+export interface CustomFacts {
+  readonly near: string;
+  readonly distance: string;
+}
+
+/** The part of a site the phone sheet shows; `custom` for the point. */
 export type PhoneSite = Pick<
   Site,
   'id' | 'name' | 'mission' | 'group' | 'lat' | 'lonEast' | 'approximate'
->;
+> & { readonly custom?: CustomFacts };
 
 /** Pill names longer than this fall back to the place name. */
 const SHORT_MAX_CHARS = 14;
@@ -74,8 +83,16 @@ export interface SiteLabels {
 /**
  * The names of a site. Co-located sites share a place («Mons Mouton»), so
  * the title always comes with a subtitle and the pill with a second line.
+ * The custom point is «Custom point», near its nearest site.
  */
-export function siteLabels(site: Pick<Site, 'name' | 'mission'>): SiteLabels {
+export function siteLabels(
+  site: Pick<PhoneSite, 'name' | 'mission' | 'custom'>,
+): SiteLabels {
+  if (site.custom) {
+    const { near, distance } = site.custom;
+    const subtitle = `${near} · ${distance}`;
+    return { title: site.name, subtitle, pill: site.name, pillDetail: '' };
+  }
   const { title, detail } = splitName(site.name);
   const subtitle = detail || site.mission;
   const pill = shortName(site);

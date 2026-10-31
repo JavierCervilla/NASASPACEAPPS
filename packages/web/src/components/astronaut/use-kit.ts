@@ -1,0 +1,101 @@
+/*
+ *   _   _       _                         _ _
+ *  | | | |_ __ (_)_   _____ _ __ ___  ___| | | ___
+ *  | | | | '_ \| \ \ / / _ \ '__/ __|/ _ \ | |/ _ \
+ *  | |_| | | | | |\ V /  __/ |  \__ \  __/ | |  __/
+ *   \___/|_| |_|_| \_/ \___|_|  |___/\___|_|_|\___|
+ *
+ *             =++==--::.
+ *         %%%%##**++=--:..  .
+ *      ##**#%@%%#***+=--::.   .
+ *    #**=+*#*#**#++++=-:::.. .  .
+ *   #++-====*@%+*++==--::...   .  .    Ventana Lunar
+ *  #+=-=--++==+===-+==--:..   .  .  .  Sun, Earth and landing
+ * #----====-------=-=---:..  .  .  .   windows at the lunar
+ * #+---+=====--=---==-::..     .  .  . south pole
+ * #*----==---==-=-=-:-....    .  .  .
+ * *#----===+*===--:-::...    .  .  .   Built for the NASA Space
+ *  *----=*-+*%*+=-:::....   .  .  .    Apps Challenge 2026,
+ *   *------=+*=--:::-:::.. .  .  .     Madrid. Not endorsed
+ *    %*===-=-==--==-:::.  .  .  .      by NASA.
+ *      *+:--+:--::::::.  .  .  .
+ *         -=:::...:..   .  .           (c) 2026 Universelle
+ *             :::.. .  .               SPDX-License-Identifier: MIT
+ */
+
+/**
+ * Makes the astronaut's shared parts once the island runs (VENT-10): the
+ * places, the carrier and the surfaces (astronaut/kit.ts); then opens the
+ * point the address names and draws the figure's pictures, unless the
+ * browser asks to save data.
+ */
+import { useEffect, useState } from 'react';
+import { loadFigures } from '../../astronaut/figure-load';
+import {
+  createKit,
+  type AstronautKit,
+  type KitDeps,
+} from '../../astronaut/kit';
+import type { Address } from '../../astronaut/places';
+import { selectedSite } from '../../astronaut/selected-site';
+import type { CardSite } from '../../card/site-facts';
+import type { I18n } from '../../i18n/translate';
+import { prefersSaveData } from '../../lib/viewport';
+import { useI18n } from '../i18n-context';
+
+const REDUCED_MOTION = '(prefers-reduced-motion: reduce)';
+
+/** The page's address; rewritten in place, keeping the path and hash. */
+const browserAddress: Address = {
+  search: () => location.search,
+  replace: (search) => {
+    const url = `${location.pathname}${search}${location.hash}`;
+    history.replaceState(history.state, '', url);
+  },
+};
+
+interface Options extends Pick<KitDeps, 'store' | 'time'> {
+  /** The selected site's state, as the views show it. */
+  readonly state: KitDeps['selectedState'];
+  readonly sites: readonly CardSite[];
+  /** The site's base path, for the model. */
+  readonly base: string;
+}
+
+/** The selected site's point, where the keyboard's carry starts. */
+function startPointOf(options: Options, i18n: I18n) {
+  return () => {
+    const id = options.store.get().id;
+    const site = selectedSite(options.sites, id, i18n);
+    const known = Number.isFinite(site.lat) && Number.isFinite(site.lonEast);
+    return known ? { lat: site.lat, lonEast: site.lonEast } : null;
+  };
+}
+
+/** Draws the figure's pictures, unless the browser asks to save data. */
+function useFigures(kit: AstronautKit, base: string): void {
+  useEffect(() => {
+    if (prefersSaveData()) return undefined;
+    let live = true;
+    void loadFigures(base).then((images) => live && kit.figures.set(images));
+    return () => void (live = false);
+  }, [kit, base]);
+}
+
+export function useAstronautKit(options: Options): AstronautKit {
+  const { sites, base } = options;
+  const i18n = useI18n();
+  const [kit] = useState(() => createKit({
+    ...options,
+    selectedState: options.state,
+    i18n,
+    address: browserAddress,
+    reducedMotion: () => matchMedia(REDUCED_MOTION).matches,
+    startPoint: startPointOf(options, i18n),
+  }));
+  useEffect(() => {
+    kit.places.restore(sites.map((site) => site.id));
+  }, [kit, sites]);
+  useFigures(kit, base);
+  return kit;
+}

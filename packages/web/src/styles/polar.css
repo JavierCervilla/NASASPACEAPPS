@@ -40,7 +40,11 @@
   overflow: hidden;
   container-type: size;
   color: var(--text);
-  /* The disk's side; the note beside it sizes itself from it too. */
+  /*
+   * The disk's side; the note beside it sizes itself from it too. Once
+   * the island runs it is fitted beside the keys, and moved sideways by
+   * --disk-shift (VENT-10, components/polar/use-disk-fit.ts).
+   */
   --disk: min(86cqw - 96px, 100cqh - 64px, 720px);
 }
 
@@ -52,6 +56,7 @@
 .polar__disk {
   position: relative;
   isolation: isolate;
+  translate: var(--disk-shift, 0) 0;
   width: var(--disk);
   aspect-ratio: 1;
   border-radius: 50%;

@@ -30,6 +30,10 @@
 :root {
   color-scheme: dark;
 
+  /* The desktop Layers key's width: the globe and the polar map keep
+     their Moon clear of it (VENT-10). */
+  --layers-w: 17rem;
+
   --bg: #07080b;
   --surface: rgba(28, 30, 36, 0.62);
   --surface-edge: rgba(255, 255, 255, 0.08);

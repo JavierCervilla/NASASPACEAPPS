@@ -33,7 +33,8 @@
  */
 import type { CalloutContent } from '../callout/callout-content';
 import {
-  dockCallout,
+  fitCallout,
+  type CalloutFit,
   type CalloutLayout,
 } from '../callout/callout-dock';
 import {
@@ -50,6 +51,7 @@ export class SiteCallout {
   readonly dom: CalloutDom = calloutDom();
   private content: CalloutContent | null = null;
   private readonly listeners = new Set<() => void>();
+  private fit: CalloutFit = { dock: null, compact: false, fullHeight: 0 };
   private layoutNow: CalloutLayout = {
     phone: false,
     hostWidth: 0,
@@ -81,7 +83,7 @@ export class SiteCallout {
    */
   band(): FreeBand {
     const { barBottom, hostWidth, hostHeight, cardWidth } = this.layoutNow;
-    const dock = this.content ? dockCallout(this.layoutNow) : null;
+    const dock = this.content ? this.fit.dock : null;
     const middle = hostWidth / 2;
     const spans =
       dock !== null && dock.left < middle && dock.left + cardWidth > middle;
@@ -97,7 +99,9 @@ export class SiteCallout {
 
   private draw(): void {
     const { card } = this.dom;
-    const dock = this.content ? dockCallout(this.layoutNow) : null;
+    if (this.content) this.fit = fitCallout(this.layoutNow, this.fit);
+    const dock = this.content ? this.fit.dock : null;
+    card.dataset['fit'] = this.fit.compact ? 'compact' : 'full';
     card.dataset['shown'] = String(dock !== null);
     for (const listener of this.listeners) listener();
     // Hidden, it stays where it last was, so it fades out in place.

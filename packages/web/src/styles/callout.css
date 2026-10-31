@@ -328,6 +328,21 @@
   }
 }
 
+/*
+ * The same compact card where the image card has no room above the
+ * Layers key (a short laptop window; callout-dock.ts, fitCallout).
+ */
+.globe-callout[data-fit='compact'] :is(
+  .globe-callout__media,
+  .globe-callout__tiles
+) {
+  display: none;
+}
+
+.globe-callout[data-fit='compact'] .globe-callout__pill {
+  display: inline-flex;
+}
+
 @media (max-width: 767.98px) {
   .globe-callout {
     flex-direction: row;

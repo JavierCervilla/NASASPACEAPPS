@@ -29,10 +29,11 @@
  * a fixed card at the bottom left of the globe, not beside its marker. On
  * a phone it rides 12 px above the sheet's top edge, or above the tab bar
  * when the sheet is lower; on a desktop it stands 14 px above the Layers
- * key, on its left edge, and hides when large text leaves no room there:
- * beside the key it would stand over the globe's middle and the selected
- * marker (QA F2), and the site card beside the globe already shows the
- * site. Pure, so it is tested alone.
+ * key, on its left edge. Where the image card has no room there (a short
+ * laptop window) it drops to the compact card, and where even that has
+ * none (large text) it hides: beside the key it would stand over the
+ * globe's middle and the selected marker (QA F2), and the site card beside
+ * the globe already shows the site. Pure, so it is tested alone.
  */
 
 /** A box in px from the globe host's top left. */
@@ -107,4 +108,38 @@ function desktopDock(layout: CalloutLayout): CalloutDock | null {
 /** Where the card docks for `layout`, or null when there is no room. */
 export function dockCallout(layout: CalloutLayout): CalloutDock | null {
   return layout.phone ? phoneDock(layout) : desktopDock(layout);
+}
+
+/** Which desktop card shows: the image card, or the compact one. */
+export interface CalloutFit {
+  readonly dock: CalloutDock | null;
+  readonly compact: boolean;
+  /** The image card's height, as last measured (0: not yet). */
+  readonly fullHeight: number;
+}
+
+/**
+ * The dock and the card for `layout`, from the last fit `was`. The
+ * layout's card size is the card as `was` drew it, so the image card's
+ * height is kept from when it was drawn: a compact card goes back to the
+ * image card once that height fits again. A switch hides the card until
+ * the new one is measured, unless the old one's dock still holds.
+ */
+export function fitCallout(
+  layout: CalloutLayout,
+  was: CalloutFit,
+): CalloutFit {
+  const { fullHeight } = was;
+  if (layout.phone) {
+    return { dock: dockCallout(layout), compact: false, fullHeight };
+  }
+  if (!was.compact) {
+    const dock = dockCallout(layout);
+    const height = layout.cardHeight;
+    const compact = dock === null && height > 0;
+    return { dock, compact, fullHeight: height };
+  }
+  const full = { ...layout, cardHeight: fullHeight };
+  const back = dockCallout(full) !== null;
+  return { dock: dockCallout(layout), compact: !back, fullHeight };
 }

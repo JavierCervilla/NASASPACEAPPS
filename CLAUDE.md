@@ -46,8 +46,9 @@ Every visible change follows `.claude/skills/apple-design/SKILL.md` (vendored fr
   `src/lib/view-tabs.ts`): the polar map is a south polar stereographic disk from 80° S
   (`src/lib/polar-projection.ts`, image from `scripts/moon_textures.py polar`). The selected site's callout is a card docked
   at the globe's bottom left (`src/callout/`, `src/callout/callout-dock.ts`, `src/globe/site-callout.ts`): the image
-  card on desktop, 14 px above the Layers key on its left edge (hidden when large text leaves no room there: the site
-  card beside the view shows the same site), and the compact card on phones, 12 px off the left edge and 12 px above
+  card on desktop, 14 px above the Layers key on its left edge (the compact card where a short window leaves the image
+  card no room there, `fitCallout`; hidden when large text leaves even that none: the site card beside the view shows
+  the same site), and the compact card on phones, 12 px off the left edge and 12 px above
   the sheet's top edge or the tab bar, riding the sheet as it is dragged and hiding at full height or wherever it would
   reach the top bar. So the card never covers the selected marker, the globe framing a site (at load and on a pick in
   the list) turns just enough to land it in the band between the top bar and the card (`src/globe/site-aim.ts`,

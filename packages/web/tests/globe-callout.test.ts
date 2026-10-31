@@ -28,7 +28,7 @@ import type { HourSample } from '@ventana/sim';
 import { readFileSync } from 'node:fs';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { calloutContent } from '../src/callout/callout-content';
-import { DESKTOP_GAP_PX, dockCallout, PHONE_GAP_PX, type CalloutLayout } from '../src/callout/callout-dock';
+import { DESKTOP_GAP_PX, dockCallout, fitCallout, PHONE_GAP_PX, type CalloutFit, type CalloutLayout } from '../src/callout/callout-dock';
 import { missionLines } from '../src/callout/mission-line';
 import { PHONE_MISSION_CHARS, PHONE_PLACE_CHARS, placeShort } from '../src/callout/phone-lines';
 import { thumbOf } from '../src/callout/thumbs';
@@ -285,6 +285,41 @@ describe('callout dock', () => {
   it('ignores the sheet on a desktop and the Layers key on a phone', () => {
     expect(dockCallout({ ...DESKTOP, sheetTop: 100 })).toEqual(dockCallout(DESKTOP));
     expect(dockCallout({ ...PHONE, layers: LAYERS })).toEqual(dockCallout(PHONE));
+  });
+});
+
+describe('callout fit', () => {
+  const FRESH: CalloutFit = { dock: null, compact: false, fullHeight: 0 };
+  // 1280x720: a 363 px globe, the Layers key's top at 280, a 306 px image card and a 98 px compact one.
+  const SHORT = { ...DESKTOP, hostHeight: 363, cardHeight: 306, layers: { left: 20, top: 280, right: 300, bottom: 343 } };
+
+  it('keeps the image card where it fits above the key', () => {
+    expect(fitCallout(DESKTOP, FRESH)).toEqual({ dock: { left: 20, bottom: 546 }, compact: false, fullHeight: 284 });
+  });
+
+  it('drops to the compact card on a short laptop window, hidden until it is measured, then docks it', () => {
+    const switched = fitCallout(SHORT, FRESH);
+    expect(switched).toEqual({ dock: null, compact: true, fullHeight: 306 });
+    const compact = fitCallout({ ...SHORT, cardHeight: 98 }, switched);
+    expect(compact).toEqual({ dock: { left: 20, bottom: 266 }, compact: true, fullHeight: 306 });
+    // Still too short for the image card: it stays compact.
+    expect(fitCallout({ ...SHORT, cardHeight: 98 }, compact)).toEqual(compact);
+  });
+
+  it('goes back to the image card once the window has room for it, keeping the compact dock until measured', () => {
+    const compact: CalloutFit = { dock: { left: 20, bottom: 266 }, compact: true, fullHeight: 306 };
+    const tall = { ...SHORT, hostHeight: 640, cardHeight: 98, layers: LAYERS };
+    expect(fitCallout(tall, compact)).toEqual({ dock: { left: 20, bottom: 546 }, compact: false, fullHeight: 306 });
+  });
+
+  it('hides when even the compact card has no room (large text), and waits for a measured card', () => {
+    const large = { ...DESKTOP, hostWidth: 896, hostHeight: 320, cardWidth: 528, cardHeight: 196, layers: { left: 20, top: 109, right: 306, bottom: 300 } };
+    expect(fitCallout(large, { dock: null, compact: true, fullHeight: 400 }).dock).toBeNull();
+    expect(fitCallout({ ...SHORT, cardHeight: 0 }, FRESH).compact).toBe(false);
+  });
+
+  it('never makes the phone card compact', () => {
+    expect(fitCallout({ ...PHONE, sheetTop: 500 }, { dock: null, compact: true, fullHeight: 306 })).toEqual({ dock: { left: 12, bottom: 488 }, compact: false, fullHeight: 306 });
   });
 });
 

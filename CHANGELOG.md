@@ -140,8 +140,9 @@
 ### Cambiado
 - La tarjeta del sitio sobre el globo ya no sigue a su punto al girar el globo (VENT-32, lienzos «FixedCalloutPhone»,
   «FixedCalloutPhoneClosed» y «FixedCalloutDesktop»): queda fija abajo a la izquierda. En el PC, encima de la leyenda
-  «Layers» y alineada con ella, con 14 px de separación (con el texto muy grande, si no cabe encima, se oculta: la
-  ficha del sitio a la derecha ya lo enseña). En el móvil, a 12 px del borde izquierdo y 12 px por encima del borde de la hoja, o de la barra de pestañas
+  «Layers» y alineada con ella, con 14 px de separación (en una ventana de portátil baja, como 1280x720, pasa a la
+  tarjeta compacta, sin imagen ni cuentas atrás; con el texto muy grande, si ni así cabe encima, se oculta: la ficha
+  del sitio a la derecha ya lo enseña). En el móvil, a 12 px del borde izquierdo y 12 px por encima del borde de la hoja, o de la barra de pestañas
   con la hoja cerrada; sigue a la hoja cuando se arrastra y se desvanece con la hoja abierta del todo o si fuese a tapar
   la barra superior. Se ve aunque el punto quede detrás del borde de la Luna. A cambio, el punto del sitio elegido lleva
   un anillo del color de su estado que late cada 2,4 s (quieto con «reducir movimiento»). Se retiran la línea que unía

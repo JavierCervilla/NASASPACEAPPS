@@ -39,6 +39,18 @@ const ring = (page: Page) => page.locator('.globe-ring');
 /** The sheet's top edge, in px from the top of the viewport. */
 const sheetTop = (page: Page) => page.locator('.sheet').evaluate((el) => Math.round(el.getBoundingClientRect().top));
 const HALF_TOP = 844 - 344;
+/**
+ * Waits until the card stands 12 px above the tab bar: the sheet reports its edge on the frame after it closes (the
+ * `inert` attribute comes first), and the card docks on that report.
+ */
+async function dockedAboveTabs(page: Page): Promise<void> {
+  const gap = () =>
+    page.evaluate(() => {
+      const card = document.querySelector('.globe-callout')!.getBoundingClientRect();
+      return Math.round(document.querySelector('.tab-bar')!.getBoundingClientRect().top - card.bottom);
+    });
+  await expect.poll(gap).toBe(12);
+}
 const part = (page: Page, name: string) => callout(page).locator(`.globe-callout__${name}`);
 /** A row's wording for one layout: `wide` on a desktop, `narrow` on a phone. */
 const wording = (page: Page, name: string, layout: 'wide' | 'narrow') => part(page, name).locator(`.globe-callout__${layout}`);
@@ -276,6 +288,7 @@ test.describe('phone, 390x844', () => {
     await page.getByRole('navigation', { name: 'Views' }).getByRole('button', { name: 'Globe' }).click();
     await expect(page.locator('.sheet')).toHaveAttribute('inert', '');
     await expect(callout(page)).toBeVisible();
+    await dockedAboveTabs(page);
     const image = callout(page).getByRole('img', { name: 'Mons Mouton from orbit, LOLA relief' });
     const box = await image.boundingBox();
     expect([box?.width, box?.height]).toEqual([84, 84]);
@@ -321,6 +334,7 @@ test.describe('phone, 390x844', () => {
     await page.getByRole('navigation', { name: 'Views' }).getByRole('button', { name: 'Globe' }).click();
     await expect(page.locator('.sheet')).toHaveAttribute('inert', '');
     await expect(callout(page)).toBeVisible();
+    await dockedAboveTabs(page);
     const before = await callout(page).boundingBox();
     await page.evaluate(() => {
       const card = document.querySelector<HTMLElement>('.globe-callout')!;
@@ -603,6 +617,27 @@ for (const [width, height] of [[1280, 800], [1440, 900]] as const) {
       await dialog.getByRole('button', { name: /^Statio Shiv Shakti/ }).click();
       await expect(callout(page)).toHaveAttribute('aria-label', 'Statio Shiv Shakti (Chandrayaan-3 Vikram)');
       expect(shared(await settledRing(page), (await callout(page).boundingBox())!), 'Statio Shiv Shakti').toBe(0);
+    });
+  });
+}
+
+// CI on edd4cc4: on a short laptop window the image card has no room above the Layers key; it shows as the compact
+// card there instead of hiding.
+for (const [width, height] of [[1024, 768], [1280, 720]] as const) {
+  test.describe(`desktop, ${width}x${height}, 100 % text`, () => {
+    test.use({ viewport: { width, height } });
+
+    test('shows the compact card above the Layers key, clear of the selected marker', async ({ page }) => {
+      await open(page);
+      await expect(callout(page)).toHaveAttribute('data-fit', 'compact');
+      await expect(callout(page)).toHaveAttribute('data-shown', 'true');
+      await expect(part(page, 'media')).toBeHidden();
+      await expect(part(page, 'pill')).toHaveText('Landing window · 7 d 1 h left');
+      const card = (await callout(page).boundingBox())!;
+      const layers = (await page.locator('section.globe .globe-layers').boundingBox())!;
+      expect(card.x).toBe(layers.x);
+      expect(Math.abs(card.y + card.height - (layers.y - 14))).toBeLessThanOrEqual(1);
+      expect(shared(await settledRing(page), card)).toBe(0);
     });
   });
 }

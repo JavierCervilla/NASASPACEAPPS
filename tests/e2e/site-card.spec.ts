@@ -227,7 +227,7 @@ for (const [width, height] of [[1280, 720], [1024, 768]] as const) {
       await expect(box).toHaveAttribute('tabindex', '0');
       await expect(box).toHaveAttribute('data-fade-bottom', 'true');
       await expect(box).toHaveAttribute('data-fade-top', 'false');
-      expect(await box.evaluate((el) => getComputedStyle(el).maskImage)).toMatch(/calc\(100% - 56px\)/);
+      expect(await box.evaluate((el) => getComputedStyle(el).maskImage)).toMatch(/calc\(100% - 24px\)/);
       // Tab from the header's last control reaches it, and the ring shows on the card.
       await box.focus();
       await expect(box).toBeFocused();

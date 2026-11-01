@@ -27,7 +27,7 @@ import { describe, expect, it, vi } from 'vitest';
 import { keyControls } from '../src/globe/key-controls';
 import { keyToMove } from '../src/globe/keys';
 import { createLoop } from '../src/globe/loop';
-import { createOrbit, poseOf } from '../src/globe/orbit';
+import { createOrbit, poseOf, stepOrbit } from '../src/globe/orbit';
 import { pointerControls } from '../src/globe/pointer-controls';
 import { SOUTH_POLE_VIEW } from '../src/globe/framing';
 
@@ -74,6 +74,40 @@ describe('pointerControls', () => {
     const slow = createOrbit(SOUTH_POLE_VIEW);
     pointerControls(slow, deps(false)).release(50, 0);
     expect(slow.lon.velocity).toBe(0);
+  });
+});
+
+describe('a press on the turning globe', () => {
+  it('stops a flick where it is, and says it did, once', () => {
+    const orbit = createOrbit(SOUTH_POLE_VIEW);
+    const d = deps(false);
+    const controls = pointerControls(orbit, d);
+    controls.release(800, 300);
+    stepOrbit(orbit, 0.05);
+    const at = poseOf(orbit);
+    expect(controls.press?.()).toBe(true);
+    expect(orbit.lon).toEqual({ value: at.lonEastDeg, velocity: 0, target: at.lonEastDeg });
+    expect(orbit.lat).toEqual({ value: at.latDeg, velocity: 0, target: at.latDeg });
+    expect(d.invalidate).toHaveBeenCalledTimes(2);
+    expect(controls.press?.()).toBe(false);
+  });
+
+  it('is nothing to stop on a globe at rest, after a slow release or a plain drag', () => {
+    const orbit = createOrbit(SOUTH_POLE_VIEW);
+    const controls = pointerControls(orbit, deps(false));
+    expect(controls.press?.()).toBe(false);
+    controls.release(50, 0);
+    expect(controls.press?.()).toBe(false);
+    controls.drag(40, 0);
+    expect(controls.press?.()).toBe(false);
+  });
+
+  it('is nothing to stop once the flick has settled', () => {
+    const orbit = createOrbit(SOUTH_POLE_VIEW);
+    const controls = pointerControls(orbit, deps(false));
+    controls.release(800, 0);
+    for (let i = 0; i < 600; i++) stepOrbit(orbit, 1 / 60);
+    expect(controls.press?.()).toBe(false);
   });
 });
 

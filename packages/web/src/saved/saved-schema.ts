@@ -29,8 +29,9 @@
  * the visitor's and can hold anything (an older or newer page, an edit by
  * hand), so every entry is checked and a bad one is dropped alone: an id
  * that is not its point's grid id (pin/custom-point.ts), a point off the
- * grid or off the Moon, a name that is empty, too long or not text. At
- * most {@link SAVED_CAP} are kept, one per point. Pure.
+ * grid or off the Moon, a name that is empty, too long or not text. One
+ * per point is kept; all are read, even past {@link SAVED_CAP} (an older
+ * page or an edit by hand), so a write never loses any. Pure.
  */
 import { customId, snapPoint } from '../pin/custom-point';
 
@@ -46,12 +47,14 @@ export interface SavedSite {
 }
 
 export const SAVED_VERSION = 1;
-/** The most sites kept; a save beyond it is refused with a message. */
+/** The most sites a save adds up to; beyond it one is refused. */
 export const SAVED_CAP = 50;
 /** The longest name, in UTF-16 units. */
 export const NAME_MAX = 60;
 
-const CONTROL = /\p{Cc}/gu;
+// Format characters too: bidi overrides and zero-width marks would make
+// one name look like another, or reorder the text around it.
+const CONTROL = /[\p{Cc}\p{Cf}]/gu;
 const SPACES = /\s+/g;
 
 /**
@@ -59,7 +62,9 @@ const SPACES = /\s+/g;
  * trimmed, at most {@link NAME_MAX} long; null when nothing is left.
  */
 export function cleanName(raw: string): string | null {
-  const folded = raw.replace(SPACES, ' ').replace(CONTROL, '').trim();
+  // Folded again: a format character between spaces leaves two.
+  const folded = raw.replace(SPACES, ' ').replace(CONTROL, '')
+    .replace(SPACES, ' ').trim();
   const name = folded.slice(0, NAME_MAX).trim();
   return name === '' ? null : name;
 }
@@ -95,7 +100,7 @@ export function parseSaved(text: string | null): SavedSite[] {
   for (const site of entries.map(toSite)) {
     if (site && !sites.has(site.id)) sites.set(site.id, site);
   }
-  return [...sites.values()].slice(0, SAVED_CAP);
+  return [...sites.values()];
 }
 
 /** The document that keeps `sites`. */

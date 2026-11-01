@@ -26,7 +26,7 @@
 /**
  * The sites saved on this device (VENT-37): the versioned schema read back
  * with every bad entry dropped, the cap, names cleaned, rename, delete and
- * its undo, and storage that refuses or is missing.
+ * its undo, storage that refuses or is missing, and two tabs on one storage.
  */
 import { describe, expect, it, vi } from 'vitest';
 import {
@@ -38,6 +38,7 @@ import {
   type SavedSite,
 } from '../src/saved/saved-schema';
 import { createSavedSites, SAVED_KEY } from '../src/saved/saved-sites';
+import { onStorageKey } from '../src/lib/storage-events';
 import { createUndo } from '../src/saved/undo';
 
 /** A storage that keeps strings in a map. */
@@ -101,12 +102,12 @@ describe('the saved sites schema', () => {
     expect(parseSaved(text)).toEqual([good]);
   });
 
-  it('keeps the first of two entries at one point, and at most the cap', () => {
+  it('keeps the first of two entries at one point, and reads past the cap', () => {
     const many = Array.from({ length: SAVED_CAP + 5 }, (_, i) =>
       entry({ lat: -80 - i / 10, lonEast: 10 }, `Site ${i}`));
     const text = JSON.stringify({ v: 1, sites: [entry(RIM, 'A'), entry(RIM, 'B'), ...many] });
     const read = parseSaved(text);
-    expect(read).toHaveLength(SAVED_CAP);
+    expect(read).toHaveLength(SAVED_CAP + 6);
     expect(read[0]?.name).toBe('A');
   });
 
@@ -115,6 +116,17 @@ describe('the saved sites schema', () => {
     expect(cleanName('a\u0000b')).toBe('ab');
     expect(cleanName('   ')).toBeNull();
     expect(cleanName('x'.repeat(NAME_MAX + 9))).toHaveLength(NAME_MAX);
+  });
+
+  it('takes out format characters: bidi controls and zero-width marks', () => {
+    const bidi = ['\u202a', '\u202b', '\u202c', '\u202d', '\u202e', '\u2066', '\u2067', '\u2068', '\u2069'];
+    const zeroWidth = ['\u200b', '\u200c', '\u200d', '\u200e', '\u200f'];
+    for (const mark of [...bidi, ...zeroWidth]) expect(cleanName(`Rim${mark}camp`)).toBe('Rimcamp');
+    expect(cleanName('Rim \u202e camp')).toBe('Rim camp');
+    expect(cleanName('\u202e\u200b')).toBeNull();
+    // Read back, a name with one is not this page's: the entry is dropped.
+    const spoofed = { ...entry(RIM), name: 'Rim\u202ecamp' };
+    expect(parseSaved(JSON.stringify({ v: 1, sites: [spoofed] }))).toEqual([]);
   });
 });
 
@@ -146,6 +158,24 @@ describe('the saved sites store', () => {
     expect(saved.get()).toHaveLength(SAVED_CAP);
   });
 
+  it('shows every site an older page kept past the cap, refuses a new one and drops none on a write', () => {
+    const many = Array.from({ length: SAVED_CAP + 5 }, (_, i) =>
+      entry({ lat: -80 - i / 10, lonEast: 10 }, `Site ${i}`));
+    const storage = memoryStorage({ [SAVED_KEY]: serializeSaved(many) });
+    const saved = createSavedSites(storage, () => 1);
+    expect(saved.get()).toHaveLength(SAVED_CAP + 5);
+    expect(saved.save(RIM, 'One more')).toEqual({ kind: 'full' });
+    saved.rename(many[0]!.id, 'Renamed');
+    expect(parseSaved(storage.kept.get(SAVED_KEY) ?? null)).toHaveLength(SAVED_CAP + 5);
+    const removed = saved.remove(many[3]!.id)!;
+    expect(parseSaved(storage.kept.get(SAVED_KEY) ?? null)).toHaveLength(SAVED_CAP + 4);
+    expect(saved.save(RIM, 'Still full')).toEqual({ kind: 'full' });
+    // An undo gives back what was there, cap or not.
+    expect(saved.restore(removed)).toBe(true);
+    expect(saved.get()).toHaveLength(SAVED_CAP + 5);
+    expect(saved.get()[3]?.id).toBe(many[3]!.id);
+  });
+
   it('renames, keeping the old name for an empty one', () => {
     const saved = createSavedSites(memoryStorage(), () => 1);
     saved.save(RIM, 'Rim');
@@ -170,12 +200,90 @@ describe('the saved sites store', () => {
     expect(listener).toHaveBeenCalledTimes(2);
   });
 
+  it('puts a deleted middle site back at its own index', () => {
+    const saved = createSavedSites(memoryStorage(), () => 1);
+    saved.save(RIDGE, 'Ridge');
+    saved.save(RIM, 'Rim');
+    saved.save({ lat: -88.2, lonEast: 170 }, 'Shackleton');
+    const removed = saved.remove('@-85.87,61.34')!;
+    expect(removed.index).toBe(1);
+    expect(saved.get().map(({ name }) => name)).toEqual(['Shackleton', 'Ridge']);
+    expect(saved.restore(removed)).toBe(true);
+    expect(saved.get().map(({ name }) => name)).toEqual(['Shackleton', 'Rim', 'Ridge']);
+  });
+
   it('works on for the page when storage refuses or is missing', () => {
     for (const storage of [refusing, null]) {
       const saved = createSavedSites(storage, () => 1);
       expect(saved.save(RIM, 'Rim').kind).toBe('saved');
       expect(saved.get()).toHaveLength(1);
     }
+  });
+});
+
+describe('two tabs on one storage', () => {
+  /** Two stores on one storage, as two tabs of the page are. */
+  function twoTabs() {
+    const storage = memoryStorage();
+    return { storage, a: createSavedSites(storage, () => 1), b: createSavedSites(storage, () => 2) };
+  }
+  const kept = (storage: ReturnType<typeof memoryStorage>) =>
+    parseSaved(storage.kept.get(SAVED_KEY) ?? null).map(({ name }) => name);
+
+  it('a save in one tab survives a save in the other', () => {
+    const { storage, a, b } = twoTabs();
+    a.save(RIM, 'Rim');
+    b.save(RIDGE, 'Ridge');
+    expect(kept(storage)).toEqual(['Ridge', 'Rim']);
+    expect(b.get().map(({ name }) => name)).toEqual(['Ridge', 'Rim']);
+  });
+
+  it('a save in one tab survives a delete, a rename and an undo in the other', () => {
+    const { storage, a, b } = twoTabs();
+    b.save(RIDGE, 'Ridge');
+    a.refresh();
+    a.save(RIM, 'Rim');
+    const removed = b.remove('@-84.20,-40.00')!;
+    expect(kept(storage)).toEqual(['Rim']);
+    b.restore(removed);
+    expect(kept(storage)).toEqual(['Rim', 'Ridge']);
+    a.save({ lat: -88.2, lonEast: 170 }, 'Shackleton');
+    b.rename('@-84.20,-40.00', 'Cabeus');
+    expect(kept(storage)).toEqual(['Shackleton', 'Rim', 'Cabeus']);
+  });
+
+  it('does not save one point twice from two tabs', () => {
+    const { storage, a, b } = twoTabs();
+    a.save(RIM, 'Rim');
+    expect(b.save(RIM, 'Rim again').kind).toBe('exists');
+    expect(kept(storage)).toEqual(['Rim']);
+  });
+
+  it('takes in the other tab on refresh, telling its listeners only on a change', () => {
+    const { a, b } = twoTabs();
+    const listener = vi.fn();
+    b.subscribe(listener);
+    a.save(RIM, 'Rim');
+    expect(b.get()).toEqual([]);
+    b.refresh();
+    expect(b.get().map(({ name }) => name)).toEqual(['Rim']);
+    b.refresh();
+    expect(listener).toHaveBeenCalledOnce();
+  });
+
+  it('refreshes on the storage event for its key, or a clear, and not for another key', () => {
+    const tab = new EventTarget();
+    const refresh = vi.fn();
+    const stop = onStorageKey(tab, SAVED_KEY, refresh);
+    const event = (key: string | null) => Object.assign(new Event('storage'), { key });
+    tab.dispatchEvent(event('ventana.layers'));
+    expect(refresh).not.toHaveBeenCalled();
+    tab.dispatchEvent(event(SAVED_KEY));
+    tab.dispatchEvent(event(null));
+    expect(refresh).toHaveBeenCalledTimes(2);
+    stop();
+    tab.dispatchEvent(event(SAVED_KEY));
+    expect(refresh).toHaveBeenCalledTimes(2);
   });
 });
 
@@ -198,7 +306,7 @@ describe('the undo of a delete', () => {
     const timers = manualTimers();
     const undo = createUndo(saved, timers.after);
     undo.offer(saved.remove('@-85.87,61.34')!);
-    expect(undo.current.get()?.site.name).toBe('Rim');
+    expect(undo.current.get()?.removed.map(({ site }) => site.name)).toEqual(['Rim']);
     expect(timers.pending[0]?.ms).toBe(5000);
     timers.run();
     expect(undo.current.get()).toBeNull();
@@ -227,22 +335,56 @@ describe('the undo of a delete', () => {
     undo.offer(saved.remove('@-85.87,61.34')!);
     undo.hold();
     timers.run();
-    expect(undo.current.get()?.site.name).toBe('Rim');
+    expect(undo.current.get()?.removed[0]?.site.name).toBe('Rim');
     undo.release();
     expect(timers.pending).toHaveLength(1);
     timers.run();
     expect(undo.current.get()).toBeNull();
   });
 
-  it('a new delete replaces the offer', () => {
+  it('a new delete joins the offer, and Undo puts every one back at its index', () => {
     const saved = createSavedSites(memoryStorage(), () => 1);
-    saved.save(RIM, 'Rim');
     saved.save(RIDGE, 'Ridge');
+    saved.save(RIM, 'Rim');
+    saved.save({ lat: -88.2, lonEast: 170 }, 'Shackleton');
+    saved.save({ lat: -89.5, lonEast: 0 }, 'Pole');
+    const timers = manualTimers();
+    const undo = createUndo(saved, timers.after);
+    undo.offer(saved.remove('@-88.20,170.00')!);
+    undo.offer(saved.remove('@-84.20,-40.00')!);
+    undo.offer(saved.remove('@-89.50,0.00')!);
+    expect(undo.current.get()?.removed.map(({ site }) => site.name)).toEqual(['Shackleton', 'Ridge', 'Pole']);
+    expect(saved.get().map(({ name }) => name)).toEqual(['Rim']);
+    // Each delete gives the whole time again.
+    expect(timers.pending).toHaveLength(3);
+    expect(undo.undo()).toBe(true);
+    expect(saved.get().map(({ name }) => name)).toEqual(['Pole', 'Shackleton', 'Rim', 'Ridge']);
+    expect(undo.current.get()).toBeNull();
+  });
+
+  it('forgets every delete once the time is up', () => {
+    const saved = createSavedSites(memoryStorage(), () => 1);
+    saved.save(RIDGE, 'Ridge');
+    saved.save(RIM, 'Rim');
     const timers = manualTimers();
     const undo = createUndo(saved, timers.after);
     undo.offer(saved.remove('@-85.87,61.34')!);
     undo.offer(saved.remove('@-84.20,-40.00')!);
-    expect(undo.current.get()?.site.name).toBe('Ridge');
+    timers.run();
+    expect(undo.current.get()).toBeNull();
+    expect(undo.undo()).toBe(false);
+    expect(saved.get()).toEqual([]);
+  });
+
+  it('says whether the last delete came from the keyboard', () => {
+    const saved = createSavedSites(memoryStorage(), () => 1);
+    saved.save(RIDGE, 'Ridge');
+    saved.save(RIM, 'Rim');
+    const undo = createUndo(saved, manualTimers().after);
+    undo.offer(saved.remove('@-85.87,61.34')!, true);
+    expect(undo.current.get()?.fromKeyboard).toBe(true);
+    undo.offer(saved.remove('@-84.20,-40.00')!);
+    expect(undo.current.get()?.fromKeyboard).toBe(false);
     undo.dismiss();
     expect(undo.current.get()).toBeNull();
   });

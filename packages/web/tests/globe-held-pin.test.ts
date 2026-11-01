@@ -31,6 +31,7 @@
 import { describe, expect, it, vi } from 'vitest';
 import { bindDrag } from '../src/globe/drag';
 import { bindPinch } from '../src/globe/pinch';
+import { pastSlop, PRESS_SLOP_PX } from '../src/lib/press-slop';
 import { createCarrier } from '../src/pin/carrier';
 import { bindPlacing } from '../src/pin/place-gesture';
 import { createSurfaces } from '../src/pin/surfaces';
@@ -48,8 +49,11 @@ function moonHost(): HTMLElement {
   return host;
 }
 
-/** A globe whose drag and pinch are spies, with the pin placed from the same host; `hold` fires the finger's hold. */
-function setUp() {
+/**
+ * A globe whose drag and pinch are spies, with the pin placed from the same host; `hold` fires the finger's hold.
+ * `coasting`: the globe still turns from a flick, so a press stops it (DragTarget.press).
+ */
+function setUp(coasting = false) {
   const host = moonHost();
   const surfaces = createSurfaces(() => ({}) as Element);
   surfaces.add({
@@ -57,10 +61,11 @@ function setUp() {
     pointAt: (x, y) => (Math.hypot(x - 200, y - 200) > 100 ? null : { lat: -(y / 10), lonEast: x / 10 }),
     place: (p) => ({ x: p.lonEast * 10, y: -p.lat * 10 }),
   });
+  const drop = vi.fn();
   const carrier = createCarrier({
     surfaces,
     stateAt: () => 'window' as const,
-    drop: vi.fn(),
+    drop,
     reducedMotion: () => false,
     frame: () => () => undefined,
   });
@@ -70,19 +75,19 @@ function setUp() {
     return () => void (hold = null);
   };
   bindPlacing(host, { carrier, surfaces, after, keys: new EventTarget() });
-  const turn = { drag: vi.fn(), release: vi.fn() };
+  const turn = { drag: vi.fn(), release: vi.fn(), press: vi.fn(() => coasting) };
   const zoom = vi.fn();
   bindDrag(host, turn);
   bindPinch(host, zoom);
-  return { host, carrier, turn, zoom, hold: () => hold?.() };
+  return { host, carrier, turn, zoom, drop, hold: () => hold?.() };
 }
 
 /** A touch pointer event of `kind` at `x`, `y`, cancelable like the browser's. */
-function touch(host: EventTarget, kind: string, at: { x: number; y: number; id?: number }): Event {
+function touch(host: EventTarget, kind: string, at: { x: number; y: number; id?: number }, type = 'touch'): Event {
   const event = Object.assign(new Event(kind, { cancelable: true }), {
     clientX: at.x,
     clientY: at.y,
-    pointerType: 'touch',
+    pointerType: type,
     pointerId: at.id ?? 1,
     isPrimary: (at.id ?? 1) === 1,
     button: 0,
@@ -109,6 +114,60 @@ describe('a finger that holds the pin', () => {
     for (let y = 250; y <= 290; y += 10) touch(host, 'pointermove', { x: 200, y });
     expect(carrier.current()).toBeNull();
     expect(turn.drag).toHaveBeenCalled();
+  });
+});
+
+/** A mouse pointer event of `kind` at `x`, `y`. */
+const mouse = (host: EventTarget, kind: string, at: { x: number; y: number }) => touch(host, kind, at, 'mouse');
+
+describe('one threshold for a click and a turn', () => {
+  it(`a press that travels exactly ${PRESS_SLOP_PX} px turns the globe and drops no pin`, () => {
+    const { host, turn, drop } = setUp();
+    mouse(host, 'pointerdown', { x: 200, y: 200 });
+    mouse(host, 'pointermove', { x: 200 + PRESS_SLOP_PX, y: 200 });
+    mouse(host, 'pointerup', { x: 200 + PRESS_SLOP_PX, y: 200 });
+    expect(turn.drag).toHaveBeenCalledOnce();
+    expect(drop).not.toHaveBeenCalled();
+  });
+
+  it('a press that travels less is a click: the pin drops, the globe does not turn', () => {
+    const { host, turn, drop } = setUp();
+    mouse(host, 'pointerdown', { x: 200, y: 200 });
+    mouse(host, 'pointermove', { x: 200 + PRESS_SLOP_PX - 0.5, y: 200 });
+    mouse(host, 'pointerup', { x: 200 + PRESS_SLOP_PX - 0.5, y: 200 });
+    expect(turn.drag).not.toHaveBeenCalled();
+    expect(drop).toHaveBeenCalledOnce();
+  });
+
+  it('a click is a drag by the same comparison the globe uses', () => {
+    expect(pastSlop({ x: 0, y: 0 }, { x: PRESS_SLOP_PX, y: 0 })).toBe(true);
+    expect(pastSlop({ x: 0, y: 0 }, { x: 3, y: 2.6 })).toBe(false);
+    expect(pastSlop({ x: 0, y: 0 }, { x: 3, y: 2.7 })).toBe(true);
+  });
+});
+
+describe('a press on a globe still turning from a flick', () => {
+  it('stops it, like Maps, and that click drops no pin', () => {
+    const { host, turn, drop } = setUp(true);
+    mouse(host, 'pointerdown', { x: 200, y: 200 });
+    mouse(host, 'pointerup', { x: 200, y: 200 });
+    expect(turn.press).toHaveBeenCalledOnce();
+    expect(drop).not.toHaveBeenCalled();
+  });
+
+  it('nor does a finger held there lift one', () => {
+    const { host, carrier, hold } = setUp(true);
+    touch(host, 'pointerdown', { x: 200, y: 240 });
+    hold();
+    expect(carrier.current()).toBeNull();
+  });
+
+  it('on a globe at rest the click drops the pin', () => {
+    const { host, turn, drop } = setUp(false);
+    mouse(host, 'pointerdown', { x: 200, y: 200 });
+    mouse(host, 'pointerup', { x: 200, y: 200 });
+    expect(turn.press).toHaveBeenCalledOnce();
+    expect(drop).toHaveBeenCalledOnce();
   });
 });
 

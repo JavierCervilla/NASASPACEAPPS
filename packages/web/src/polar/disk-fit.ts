@@ -26,7 +26,7 @@
 /**
  * The polar disk's size and place in its panel, clear of the keys that
  * float in the panel's corners (VENT-10: the Layers key covered part of
- * the disk at 1440 x 900, where the astronaut could not be dropped). The
+ * the disk at 1440 x 900, where nothing could be dropped there). The
  * disk stays vertically centred and as large as the panel allows; it
  * moves sideways, away from the keys, before it shrinks. Its edge labels
  * («90° W») need a strip beside it, clear of a key at their height. Pure.

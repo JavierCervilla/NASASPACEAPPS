@@ -27,7 +27,7 @@
  * Changing the interface's language: the choice is kept for the next visit
  * to `/`, and the browser goes to that locale's page with the same view
  * (the hash: `#globe`, `#polar-map`) and the same place: the address's own
- * parameters (`?site=`, the astronaut's `?lat&lon`, `?glass=`) go along,
+ * parameters (`?site=`, the pin's `?lat&lon`, `?glass=`) go along,
  * any other is left behind.
  */
 import { saveChoice, type ChoiceStorage } from './choice';

@@ -108,6 +108,20 @@ const key = (page: Page, view = '.globe') => page.locator(`${view} .globe-layers
 /** The marker buttons of a kind shown, other than the selected one. */
 const shownMarkers = (page: Page, css: string) => page.locator(`${css}[aria-pressed="false"]:visible`);
 
+/** The element's box once two reads 200 ms apart agree (as in phone.spec.ts). */
+async function settledBox(locator: Locator): Promise<void> {
+  let last = JSON.stringify(await locator.boundingBox());
+  await expect
+    .poll(async () => {
+      await locator.page().waitForTimeout(200);
+      const now = JSON.stringify(await locator.boundingBox());
+      const same = now === last;
+      last = now;
+      return same;
+    })
+    .toBe(true);
+}
+
 /** Opens the desktop site popover on its «Saved» segment. */
 async function openSaved(page: Page): Promise<Locator> {
   await page.locator('.site-button').click();
@@ -279,11 +293,68 @@ test.describe('desktop, 1440x900: saving a point', () => {
     await expect(page.getByRole('menuitem', { name: 'Delete' })).toBeFocused();
     await page.keyboard.press('Enter');
     await expect(page.getByRole('status').filter({ hasText: 'Deleted Cabeus camp' })).toBeVisible();
-    await expect(popover.getByRole('list', { name: 'Saved sites' }).getByRole('listitem')).toHaveCount(2);
-    // The toast is outside the popover: a click on Undo lets the popover go, as any click outside does.
+    const list = popover.getByRole('list', { name: 'Saved sites' });
+    await expect(list.getByRole('listitem')).toHaveCount(2);
+    // Deleted from the keyboard, the focus goes to Undo, outside the popover, which stays open.
+    const undo = page.locator('.undo-toast').getByRole('button', { name: 'Undo' });
+    await expect(undo).toBeFocused();
+    await page.keyboard.press('Enter');
+    await expect(popover).toBeVisible();
+    await expect(list.getByRole('listitem').nth(1)).toContainText('Cabeus camp');
+    await expect(popover.getByRole('button', { name: /^Cabeus camp/ })).toBeFocused();
+  });
+
+  test('keyboard only: the undo of a delete is one Tab away at most, and waits while focused; Escape lets it go', async ({ page }) => {
+    await open(page, './', SAVED);
+    const popover = await openSaved(page);
+    await popover.getByRole('button', { name: 'More for Cabeus ridge' }).focus();
+    await page.keyboard.press('Enter');
+    await expect(page.getByRole('menuitem', { name: 'Rename' })).toBeFocused();
+    await page.keyboard.press('End');
+    await page.keyboard.press('Enter');
+    const toast = page.locator('.undo-toast');
+    const undo = toast.getByRole('button', { name: 'Undo' });
+    await expect(undo).toBeFocused();
+    // Past the five seconds, the offer still waits while the focus is on it.
+    await page.waitForTimeout(5_500);
+    await expect(toast).toHaveAttribute('data-open', 'true');
+    await page.keyboard.press('Escape');
+    await expect(toast).toHaveAttribute('data-open', 'false');
+    await expect(popover).toBeVisible();
+    const list = popover.getByRole('list', { name: 'Saved sites' });
+    await expect(list.getByRole('listitem')).toHaveCount(2);
+    // The focus is on the row now where the deleted one stood.
+    await expect(popover.getByRole('button', { name: /^Shackleton rim/ })).toBeFocused();
+  });
+
+  test('pressing «Undo» with the pointer keeps the site popover open', async ({ page }) => {
+    await open(page, './', SAVED);
+    const popover = await openSaved(page);
+    await popover.getByRole('button', { name: 'More for Cabeus ridge' }).click();
+    await page.getByRole('menuitem', { name: 'Delete' }).click();
     await page.locator('.undo-toast').getByRole('button', { name: 'Undo' }).click();
-    const again = await openSaved(page);
-    await expect(again.getByRole('list', { name: 'Saved sites' }).getByRole('listitem').nth(1)).toContainText('Cabeus camp');
+    await expect(popover).toBeVisible();
+    const list = popover.getByRole('list', { name: 'Saved sites' });
+    await expect(list.getByRole('listitem')).toHaveCount(3);
+    await expect(list.getByRole('listitem').nth(1)).toContainText('Cabeus ridge');
+  });
+
+  test('two deletes in a row join one offer, «Deleted 2 sites», and Undo puts both back in place', async ({ page }) => {
+    await open(page, './', SAVED);
+    const popover = await openSaved(page);
+    const list = popover.getByRole('list', { name: 'Saved sites' });
+    for (const name of ['Cabeus ridge', 'Rim camp']) {
+      await popover.getByRole('button', { name: `More for ${name}` }).click();
+      await page.getByRole('menuitem', { name: 'Delete' }).click();
+    }
+    await expect(list.getByRole('listitem')).toHaveCount(1);
+    const toast = page.getByRole('status').filter({ hasText: 'Deleted 2 sites' });
+    await expect(toast).toBeVisible();
+    await toast.getByRole('button', { name: 'Undo' }).click();
+    await expect(list.getByRole('listitem')).toHaveCount(3);
+    const names = await list.locator('.site-row__title').allTextContents();
+    expect(names).toEqual(['Rim camp', 'Cabeus ridge', 'Shackleton rim']);
+    expect(await page.evaluate(() => localStorage.getItem('ventana.savedSites'))).toContain('Cabeus ridge');
   });
 
   test('Escape in the rename keeps the old name', async ({ page }) => {
@@ -353,6 +424,43 @@ test.describe('desktop, 1440x900: saving a point', () => {
   });
 });
 
+/** A saved name at the longest a name can be, 60 characters. */
+const LONG_NAME = 'Shackleton connecting ridge, sunlit camp for the polar night';
+
+for (const width of [1440, 1280]) {
+  test.describe(`desktop, ${width}x900: a long saved name`, () => {
+    test.use({ viewport: { width, height: 900 } });
+
+    test('stays on one header row, cut with an ellipsis and whole in the name and title; a row keeps its point whole', async ({ page }) => {
+      expect(LONG_NAME).toHaveLength(60);
+      await open(page, `./${POINT}`, [{ ...SAVED[0], name: LONG_NAME }, ...SAVED.slice(1)]);
+      const button = page.locator('.site-button');
+      const name = button.locator('.site-button__name');
+      await expect(name).toHaveText(LONG_NAME);
+      await expect(button).toHaveAccessibleName(new RegExp(LONG_NAME));
+      await expect(button).toHaveAttribute('title', new RegExp(LONG_NAME));
+      expect(await name.evaluate((el) => el.scrollWidth > el.clientWidth)).toBe(true);
+      expect(await name.evaluate((el) => getComputedStyle(el).textOverflow)).toBe('ellipsis');
+      // One row: the site button, the titles and the view tabs share a line.
+      const centre = async (css: string) => {
+        const box = (await page.locator(css).first().boundingBox())!;
+        return box.y + box.height / 2;
+      };
+      const tabs = await centre('.bar .views');
+      expect(Math.abs((await centre('.site-button')) - tabs)).toBeLessThan(8);
+      expect(Math.abs((await centre('.bar .titles')) - tabs)).toBeLessThan(8);
+      const bar = (await page.locator('.bar').boundingBox())!;
+      expect(bar.height).toBeLessThan(80);
+      const popover = await openSaved(page);
+      const coords = popover.locator('.saved-row__coords');
+      await expect(coords).toHaveCount(3);
+      for (const one of await coords.all()) {
+        expect(await one.evaluate((el) => el.getClientRects().length)).toBe(1);
+      }
+    });
+  });
+}
+
 test.describe('phone, 390x844: layers and saved sites', () => {
   test.use({ viewport: { width: 390, height: 844 }, hasTouch: true, isMobile: true });
 
@@ -402,7 +510,11 @@ test.describe('phone, 390x844: layers and saved sites', () => {
     // The picker opens on «Saved» while a saved site is selected.
     await expect(list.getByRole('listitem')).toHaveCount(3);
     await evidence(page, 'saved-list-phone');
-    await sheet.getByRole('button', { name: 'More for Cabeus ridge' }).click();
+    // The menu is placed under its button when it opens: the sheet must have stopped rising, or the menu lands where
+    // the button was, below the screen.
+    const more = sheet.getByRole('button', { name: 'More for Cabeus ridge' });
+    await settledBox(more);
+    await more.click();
     await page.getByRole('menuitem', { name: 'Delete' }).click();
     await expect(list.getByRole('listitem')).toHaveCount(2);
     const toast = page.locator('.undo-toast');

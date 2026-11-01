@@ -293,6 +293,16 @@
   comprobada en el lint.
 
 ### Corregido
+- Sitios guardados (VENT-37, revisión del Guardián). Dos pestañas abiertas ya no se pisan: guardar, renombrar o borrar
+  en una conserva lo hecho en la otra, y cada pestaña se pone al día sola, también con las capas encendidas o
+  apagadas. Borrar varios seguidos ofrece deshacerlos todos juntos («Deleted 2 sites · Undo») y cada uno vuelve a su
+  sitio. Quien borra con el teclado llega a «Undo» sin buscarlo (el foco va ahí y el tiempo se para mientras está), y
+  Esc lo descarta y vuelve a la lista. Pulsar «Undo» ya no cierra el desplegable de sitios del PC. Un nombre largo se
+  corta con puntos suspensivos en el botón de sitio y la cabecera del PC no salta a dos filas; las coordenadas de la
+  lista no dejan una «W» sola en otra línea. Una lista de más de 50 guardados de una versión anterior se ve entera y
+  ya no pierde ninguno al guardar. Los nombres ya no admiten caracteres invisibles de dirección de texto.
+- Pin (VENT-37): un clic sobre el globo que aún gira por inercia lo para, como en Mapas, sin soltar un pin; y un
+  movimiento de justo 4 px gira el globo sin soltar también un pin.
 - El astronauta caía en un punto que ya no estaba bajo la cruz (VENT-10, hallazgos de qa-adversario): el punto solo se
   leía al mover el puntero, así que si la Luna se movía bajo un dedo o un ratón quietos (la hoja del móvil bajando a
   reposo y el globo reencuadrándose, la rueda haciendo zoom mientras se arrastra, un segundo dedo girando el globo o

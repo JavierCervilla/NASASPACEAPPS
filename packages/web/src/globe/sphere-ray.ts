@@ -25,7 +25,7 @@
 
 /**
  * Where a ray from the camera meets the Moon: the nearer crossing of the
- * unit sphere, or null when it misses (the astronaut held off the Moon).
+ * unit sphere, or null when it misses (the pin carried off the Moon).
  * Pure maths, no Three.js.
  */
 import type { Vec3 } from './geo';

@@ -124,8 +124,10 @@ Every visible change follows `.claude/skills/apple-design/SKILL.md` (vendored fr
   (`src/pin/place-gesture.ts`, bound on each drop surface's element): a click on the globe or the polar disk drops it
   on the point under it (a mouse or a pen); a finger held still for 450 ms (`HOLD_MS`, `src/pin/place-press.ts`) lifts
   it under the finger, to drop in place or drag on, where it rides 64 px above the finger once the finger travels
-  (`heldOffset`, `src/pin/carry-geometry.ts`). A press that travels past 4 px still turns the globe and a short tap
-  does nothing; a press on a site marker or a button is theirs (the marker wins); a second finger is a pinch. Once a
+  (`heldOffset`, `src/pin/carry-geometry.ts`). A press that travels 4 px or more turns the globe and drops no pin (one
+  constant and one comparison for both, `PRESS_SLOP_PX` and `pastSlop` in `src/lib/press-slop.ts`), and a short tap
+  does nothing; a press on a globe still coasting from a flick stops it where it is, like Maps, and drops or lifts no
+  pin (`src/globe/flick-coast.ts`: the globe marks that `pointerdown` handled); a press on a site marker or a button is theirs (the marker wins); a second finger is a pinch. Once a
   held pin is lifted, the finger's moves are marked handled (`preventDefault` in the capture phase), so the globe's
   drag and pinch (`src/globe/drag.ts`, `pinch.ts`) skip them, and the context menu is refused while a finger is down.
   The standing pin (`src/components/pin/StandingPin.tsx`, placed after every globe frame) is a 44 px button: a press
@@ -185,7 +187,8 @@ Every visible change follows `.claude/skills/apple-design/SKILL.md` (vendored fr
   and «Approximate zones» show or hide their kind on the one marker layer, which keeps its cull and nearest-dot
   clicks; the selected site's marker always shows). `pointLayer` (`point-layer.ts`) draws a layer's points as 44 px
   buttons (`.globe-point`), hidden behind the limb, a click routed to the point nearest the pointer. The flags are
-  kept in `localStorage` (`ventana.layers`, read defensively by `kept-flags.ts`) and the polar map follows them
+  kept in `localStorage` (`ventana.layers`, read defensively by `kept-flags.ts`; each write starts from what storage
+  holds, and another tab's switch is taken in on the `storage` event, `applyFlags`) and the polar map follows them
   (`components/polar/use-polar-layers.ts`). The Layers key is switches (`components/saved/LayerToggles.tsx`: a
   checkbox with `role="switch"` per row, its key mark, the whole row its label; neutral track, never a signal colour):
   «Landing sites», «Approximate zones», «Saved sites N», «Ghost rovers · soon» off and disabled; on desktop in the key
@@ -196,7 +199,11 @@ Every visible change follows `.claude/skills/apple-design/SKILL.md` (vendored fr
   site» field, starting from «Near …», with «Kept on this device only». The saved sites (`src/saved/`) are a versioned
   document in `localStorage` (`ventana.savedSites`, `{ v: 1, sites }`), every entry checked on read and a bad one
   dropped alone (`saved-schema.ts`: id = its point's grid id, `@-85.87,61.34`, so stable and one per point; name
-  cleaned, at most 60), newest first, at most 50 (`SAVED_CAP`; a full list says so instead of saving). A saved site is
+  cleaned of control and format characters (bidi overrides, zero-width marks), at most 60), newest first, at most 50
+  (`SAVED_CAP`; a full list says so instead of saving; entries past it from older storage are all read and shown,
+  never dropped on a write). Every change starts from what storage holds then, merged by id, and another tab's change
+  is taken in on the `storage` event (`refresh`, `src/lib/storage-events.ts`), so two tabs never overwrite each
+  other. A saved site is
   the custom point under its name: `selectedSite(…, savedName)` names it, «Saved · near Nobile Rim 1 · 26 km» and «…
   saved on this device»; the address carries only `?lat&lon` (names stay on the device), and selecting a custom id in
   any way stands the pin there (`src/pin/places.ts`). The «Saved sites» layer (`components/saved/use-saved-layer.ts`)
@@ -206,7 +213,13 @@ Every visible change follows `.claude/skills/apple-design/SKILL.md` (vendored fr
   shared instant with its dot, the point and the check on the selected one, and a «…» menu (`RowMenu.tsx`, a WAI-ARIA
   menu in the browser's popover, on the top layer: Rename in place, Copy coordinates, said in the live region,
   Delete). A delete asks nothing: «Deleted <name> · Undo» (`UndoToast.tsx`, polite live region, 5 s, the time stopped
-  while the focus or the pointer is on it; `src/saved/undo.ts`) puts it back where it was. With none saved the segment
+  while the focus or the pointer is on it; `src/saved/undo.ts`) puts it back where it was. Deletes in a row join one
+  offer, «Deleted 2 sites», whose Undo puts every one back at its index. A delete from the keyboard sends the focus to
+  Undo; Undo then focuses the site put back and Escape lets the offer go and focuses the row in its place
+  (`undo-parts.ts`). Pressing Undo leaves the desktop site popover open: on pointerdown the button becomes a «show»
+  invoker of the open popover, so the browser's light dismiss counts it as inside. On desktop a long name is cut with an
+  ellipsis in the header's site button (13em; its place line 18em), whole in its accessible name and `title`, so the
+  header keeps one row at 1280 px; a row's point never wraps (`.saved-row__coords`). With none saved the segment
   shows «No saved sites yet» and how to save one. An unsaved custom point heads the other lists, checked, so the
   selection is always marked. Under the picker's title everything scrolls as one (`.picker__scroll`), so the phone
   sheet's settings never squeeze the list. The site popover opens and closes its list only on its own toggle, not on

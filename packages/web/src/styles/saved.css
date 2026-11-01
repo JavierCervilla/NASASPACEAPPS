@@ -371,6 +371,11 @@
   gap: 6px;
 }
 
+/* «84.20° S, 40.00° W» never leaves its «W» alone on a line. */
+.saved-row__coords {
+  white-space: nowrap;
+}
+
 .saved-row__more {
   flex: none;
   display: grid;

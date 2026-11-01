@@ -91,6 +91,7 @@ function SiteButton(props: Props & { readonly popover: Anchor }) {
       className="site-button"
       popoverTarget={POPOVER_ID}
       aria-label={i18n.t(label, { name })}
+      title={name}
       onClick={(e) => anchorUnder(e.currentTarget, popover.current)}
     >
       <span className="signal-dot" data-state={state ?? 'loading'} data-computed={computed} />

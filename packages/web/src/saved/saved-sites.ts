@@ -24,11 +24,14 @@
  */
 
 /**
- * The sites saved on this device (VENT-37): read once from storage, newest
- * first, kept again on every change. A save names a point of the Moon,
- * snapped to the server's grid, so a saved site is the custom point there
- * under a name; a point is saved once. Storage can be missing or refuse
- * access: then the sites hold for this page only and nothing breaks.
+ * The sites saved on this device (VENT-37), newest first. Another tab may
+ * change them at any time, so every change starts from what storage holds
+ * then (merged by id: a change touches only its own site) and `refresh`
+ * takes in another tab's change (the page calls it on `storage` events).
+ * A save names a point of the Moon, snapped to the server's grid, so a
+ * saved site is the custom point there under a name; a point is saved
+ * once. Storage can be missing or refuse access: then the sites hold for
+ * this page only and nothing breaks.
  */
 import type { ChoiceStorage } from '../i18n/choice';
 import type { LatLon } from '../lib/polar-projection';
@@ -71,19 +74,31 @@ export interface SavedSites extends Pick<
   remove(id: string): Removed | null;
   /** Puts a deleted site back where it was; false when it cannot be. */
   restore(removed: Removed): boolean;
+  /** Reads storage again: another tab may have changed it. */
+  refresh(): void;
 }
 
-function readSaved(storage: ChoiceStorage | null): SavedSite[] {
-  try {
-    return parseSaved(storage?.getItem(SAVED_KEY) ?? null);
-  } catch {
-    return [];
-  }
-}
-
-/** A watched list that keeps each new value in `storage`, if it can. */
+/**
+ * A watched list over `storage`: `fresh` is the latest list (storage's,
+ * or this page's when storage cannot be read) and `set` keeps a new one.
+ */
 function keptList(storage: ChoiceStorage | null) {
-  const list = createWatchedValue<readonly SavedSite[]>(readSaved(storage));
+  // Null when there is no storage or it refuses.
+  const readKept = (): SavedSite[] | null => {
+    if (!storage) return null;
+    try {
+      return parseSaved(storage.getItem(SAVED_KEY));
+    } catch {
+      return null;
+    }
+  };
+  const list = createWatchedValue<readonly SavedSite[]>(readKept() ?? []);
+  const fresh = (): readonly SavedSite[] => {
+    const kept = readKept();
+    const same = kept && serializeSaved(kept) === serializeSaved(list.get());
+    if (kept && !same) list.set(kept);
+    return list.get();
+  };
   const set = (sites: readonly SavedSite[]): void => {
     list.set(sites);
     try {
@@ -92,12 +107,17 @@ function keptList(storage: ChoiceStorage | null) {
       // Refused storage: the sites hold for this page only.
     }
   };
-  return { ...list, set };
+  return { get: list.get, subscribe: list.subscribe, fresh, set };
 }
 
-/** Saves `point` as `name` at the head of `list`, unless it cannot be. */
+type KeptList = ReturnType<typeof keptList>;
+
+/**
+ * Saves `point` as `name` at the head of `list`, unless it cannot be: a
+ * list at the cap (or past it, from older storage) takes no new site.
+ */
 function saveIn(
-  list: ReturnType<typeof keptList>,
+  list: KeptList,
   point: LatLon,
   name: string,
   now: () => number,
@@ -106,24 +126,34 @@ function saveIn(
   const clean = cleanName(name);
   if (!snapped || !clean) return { kind: 'invalid' };
   const id = customId(snapped);
-  const known = list.get().find((site) => site.id === id);
+  const sites = list.fresh();
+  const known = sites.find((site) => site.id === id);
   if (known) return { kind: 'exists', site: known };
-  if (list.get().length >= SAVED_CAP) return { kind: 'full' };
+  if (sites.length >= SAVED_CAP) return { kind: 'full' };
   const site = { id, name: clean, ...snapped, savedAt: now() };
-  list.set([site, ...list.get()]);
+  list.set([site, ...sites]);
   return { kind: 'saved', site };
 }
 
-/** Puts `removed` back at its place in `list`, if its point is free. */
-function restoreIn(
-  list: ReturnType<typeof keptList>,
-  { site, index }: Removed,
-): boolean {
-  const sites = list.get();
-  const taken = sites.some(({ id }) => id === site.id);
-  if (taken || sites.length >= SAVED_CAP) return false;
+/**
+ * Puts `removed` back at its place in `list`, if its point is free. An
+ * undo is never refused for the cap: it gives back what was there.
+ */
+function restoreIn(list: KeptList, { site, index }: Removed): boolean {
+  const sites = list.fresh();
+  if (sites.some(({ id }) => id === site.id)) return false;
   list.set([...sites.slice(0, index), site, ...sites.slice(index)]);
   return true;
+}
+
+/** Deletes `id` from `list`; null when it is not saved. */
+function removeIn(list: KeptList, id: string): Removed | null {
+  const sites = list.fresh();
+  const index = sites.findIndex((site) => site.id === id);
+  const site = sites[index];
+  if (!site) return null;
+  list.set(sites.filter((s) => s.id !== id));
+  return { site, index };
 }
 
 /** The saved sites in `storage`; `now` stamps each save. */
@@ -137,17 +167,13 @@ export function createSavedSites(
   const save = (point: LatLon, name: string) => saveIn(list, point, name, now);
   const rename = (id: string, name: string): void => {
     const clean = cleanName(name);
-    if (!clean || !find(id)) return;
-    list.set(list.get().map((s) => (s.id === id ? { ...s, name: clean } : s)));
+    const sites = list.fresh();
+    if (!clean || !sites.some((s) => s.id === id)) return;
+    list.set(sites.map((s) => (s.id === id ? { ...s, name: clean } : s)));
   };
-  const remove = (id: string): Removed | null => {
-    const index = list.get().findIndex((site) => site.id === id);
-    const site = list.get()[index];
-    if (!site) return null;
-    list.set(list.get().filter((s) => s.id !== id));
-    return { site, index };
-  };
+  const remove = (id: string) => removeIn(list, id);
   const restore = (removed: Removed) => restoreIn(list, removed);
+  const refresh = (): void => void list.fresh();
   const { get, subscribe } = list;
-  return { get, subscribe, find, save, rename, remove, restore };
+  return { get, subscribe, find, save, rename, remove, restore, refresh };
 }

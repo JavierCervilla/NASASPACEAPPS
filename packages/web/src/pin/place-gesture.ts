@@ -31,12 +31,15 @@
  * press on a site marker or a button is theirs, and a second finger is a
  * pinch. Once the pin is lifted, the finger's moves are marked handled
  * (`preventDefault`), so the globe under it stays still (drag.ts,
- * pinch.ts): the listeners here run first, in the capture phase.
+ * pinch.ts): the listeners here run first, in the capture phase. The other
+ * way round, a press that stopped the globe's flick is the globe's (it
+ * marks the `pointerdown` handled): it neither drops nor lifts a pin.
  */
 import type { Carrier } from './carrier';
 import {
   forget,
   HOLD_MS,
+  isClick,
   isControl,
   pointOf,
   travelled,
@@ -44,7 +47,7 @@ import {
 } from './place-press';
 import type { Surfaces } from './surfaces';
 
-export { HOLD_MS, PLACE_SLOP_PX } from './place-press';
+export { HOLD_MS, PRESS_SLOP_PX } from './place-press';
 
 export interface PlaceDeps {
   readonly carrier: Carrier;
@@ -58,7 +61,8 @@ export interface PlaceDeps {
 /** The finger rested long enough: the pin is lifted under it. */
 function hold(state: PressState, deps: PlaceDeps): void {
   const { press } = state;
-  if (!press || !deps.surfaces.at(press.from)?.point) return;
+  if (!press || press.down.defaultPrevented) return;
+  if (!deps.surfaces.at(press.from)?.point) return;
   const pointer = press.from;
   const t = performance.now();
   const start = { mode: 'hold', pointer, at: pointer, touch: true, t } as const;
@@ -76,7 +80,8 @@ function down(state: PressState, deps: PlaceDeps, event: PointerEvent) {
   const free = event.isPrimary && event.button === 0;
   if (!free || isControl(event.target) || deps.carrier.current()) return;
   const touch = event.pointerType === 'touch';
-  state.press = { id: event.pointerId, from: pointOf(event), touch };
+  const from = pointOf(event);
+  state.press = { id: event.pointerId, from, touch, down: event };
   if (touch) state.stopTimer = deps.after(() => hold(state, deps), HOLD_MS);
 }
 
@@ -98,7 +103,7 @@ function up(state: PressState, deps: PlaceDeps, event: PointerEvent): void {
     event.preventDefault();
     held.move(pointOf(event), event.timeStamp);
     held.release(event.timeStamp);
-  } else if (press && !press.touch && press.id === event.pointerId) {
+  } else if (isClick(press, event)) {
     const point = deps.surfaces.at(pointOf(event))?.point;
     if (point) deps.carrier.place(point);
   }

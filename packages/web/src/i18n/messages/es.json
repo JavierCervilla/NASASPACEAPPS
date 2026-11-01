@@ -273,6 +273,11 @@
   "saved.copied": "Coordenadas copiadas: {coords}",
   "saved.copyFailed": "No se pudieron copiar las coordenadas",
   "saved.deleted": "Borrado {name}",
+  "saved.deletedMany": {
+    "one": "Borrado {n} sitio",
+    "many": "Borrados {n} de sitios",
+    "other": "Borrados {n} sitios"
+  },
   "saved.undo": "Deshacer",
   "custom.saved": "Guardado",
   "custom.savedNear": "Guardado · cerca de {name}"

@@ -27,13 +27,20 @@
  * Makes the page's layers and saved sites once the island runs (VENT-37):
  * the registry starts on the flags kept from the last visit and keeps every
  * change; the saved sites are read from the device and drawn on the globe.
+ * Both follow what another tab keeps (`storage` events).
  */
 import { useEffect, useState } from 'react';
-import { keepFlags, readFlags } from '../../globe/layers/kept-flags';
+import {
+  applyFlags,
+  FLAGS_KEY,
+  keepFlags,
+  readFlags,
+} from '../../globe/layers/kept-flags';
 import { createLayerRegistry } from '../../globe/layers/registry';
 import { localStore } from '../../i18n/choice';
+import { onStorageKey } from '../../lib/storage-events';
 import { after } from '../../pin/clocks';
-import { createSavedSites } from '../../saved/saved-sites';
+import { createSavedSites, SAVED_KEY } from '../../saved/saved-sites';
 import { createUndo } from '../../saved/undo';
 import type { PinKit } from '../../pin/kit';
 import type { SiteStore } from '../../phone/site-store';
@@ -49,6 +56,9 @@ export function useCreateSavedKit(pin: PinKit, store: SiteStore): SavedKit {
     return { layers, saved, undo: createUndo(saved, after) };
   });
   useEffect(() => keepFlags(kit.layers, localStore()), [kit]);
+  useEffect(() => onStorageKey(window, SAVED_KEY, kit.saved.refresh), [kit]);
+  useEffect(() => onStorageKey(window, FLAGS_KEY, () =>
+    applyFlags(kit.layers, localStore())), [kit]);
   useEffect(() => kit.undo.dismiss, [kit]);
   useSavedGlobeLayer(kit, pin, store);
   return kit;

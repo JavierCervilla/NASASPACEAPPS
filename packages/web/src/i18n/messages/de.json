@@ -267,6 +267,10 @@
   "saved.copied": "Koordinaten kopiert: {coords}",
   "saved.copyFailed": "Die Koordinaten konnten nicht kopiert werden",
   "saved.deleted": "{name} gelöscht",
+  "saved.deletedMany": {
+    "one": "{n} Ort gelöscht",
+    "other": "{n} Orte gelöscht"
+  },
   "saved.undo": "Widerrufen",
   "custom.saved": "Gesichert",
   "custom.savedNear": "Gesichert · nahe {name}"

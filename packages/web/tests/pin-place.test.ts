@@ -31,7 +31,7 @@ import { createCarrier, type CarryEnd } from '../src/pin/carrier';
 import { TOUCH_LIFT_PX } from '../src/pin/carry-geometry';
 import { createPinHint, HINT_KEY, type HintStorage } from '../src/pin/first-hint';
 import { dropAtStart } from '../src/pin/key-carry';
-import { bindPlacing, HOLD_MS, PLACE_SLOP_PX } from '../src/pin/place-gesture';
+import { bindPlacing, HOLD_MS, PRESS_SLOP_PX } from '../src/pin/place-gesture';
 import { createSurfaces, type DropSurface } from '../src/pin/surfaces';
 import type { LatLon } from '../src/lib/polar-projection';
 
@@ -121,7 +121,7 @@ describe('a click on the Moon', () => {
   it('that travelled turned the globe: no pin', () => {
     const { moon, drop } = setUp();
     send(moon.host, 'pointerdown', { x: 200, y: 200 });
-    send(moon.host, 'pointermove', { x: 200 + PLACE_SLOP_PX + 1, y: 200 });
+    send(moon.host, 'pointermove', { x: 200 + PRESS_SLOP_PX + 1, y: 200 });
     send(moon.host, 'pointerup', { x: 200, y: 200 });
     expect(drop).not.toHaveBeenCalled();
   });
@@ -181,7 +181,7 @@ describe('a finger on the Moon', () => {
   it('that travels before the hold, or meets a second finger, is the globe’s', () => {
     const { moon, carrier, timer } = setUp();
     send(moon.host, 'pointerdown', touch(200, 200));
-    send(moon.host, 'pointermove', touch(200, 200 + PLACE_SLOP_PX + 1));
+    send(moon.host, 'pointermove', touch(200, 200 + PRESS_SLOP_PX + 1));
     expect(timer.pending()).toBe(false);
     send(moon.host, 'pointerup', touch(200, 205));
     send(moon.host, 'pointerdown', touch(200, 200));

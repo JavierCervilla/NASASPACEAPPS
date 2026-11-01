@@ -273,6 +273,11 @@
   "saved.copied": "Coordonnées copiées : {coords}",
   "saved.copyFailed": "Impossible de copier les coordonnées",
   "saved.deleted": "{name} supprimé",
+  "saved.deletedMany": {
+    "one": "{n} site supprimé",
+    "many": "{n} de sites supprimés",
+    "other": "{n} sites supprimés"
+  },
   "saved.undo": "Annuler",
   "custom.saved": "Enregistré",
   "custom.savedNear": "Enregistré · près de {name}"

@@ -29,7 +29,7 @@
  * changes it tells, and the flags kept on the device.
  */
 import { describe, expect, it, vi } from 'vitest';
-import { FLAGS_KEY, keepFlags, readFlags } from '../src/globe/layers/kept-flags';
+import { applyFlags, FLAGS_KEY, keepFlags, readFlags } from '../src/globe/layers/kept-flags';
 import { LAYER_IDS, LAYER_Z } from '../src/globe/layers/ids';
 import { createLayerRegistry } from '../src/globe/layers/registry';
 import { siteLayers } from '../src/globe/layers/site-layers';
@@ -157,5 +157,22 @@ describe('the flags kept on the device', () => {
     const refusing = { getItem: () => null, setItem: () => { throw new Error('denied'); } };
     keepFlags(layers, refusing);
     expect(() => layers.setVisible('saved-sites', true)).not.toThrow();
+  });
+
+  it('two tabs on one storage: a switch in one keeps the other\'s, and the other takes it in', () => {
+    const storage = memoryStorage();
+    const tabA = createLayerRegistry(readFlags(storage));
+    const tabB = createLayerRegistry(readFlags(storage));
+    keepFlags(tabA, storage);
+    keepFlags(tabB, storage);
+    tabA.setVisible('approximate-zones', false);
+    tabB.setVisible('saved-sites', false);
+    expect(JSON.parse(storage.kept.get(FLAGS_KEY)!)).toEqual({ 'approximate-zones': false, 'saved-sites': false });
+    expect(tabB.isVisible('approximate-zones')).toBe(true);
+    applyFlags(tabB, storage);
+    applyFlags(tabA, storage);
+    expect(tabB.isVisible('approximate-zones')).toBe(false);
+    expect(tabA.isVisible('saved-sites')).toBe(false);
+    expect(JSON.parse(storage.kept.get(FLAGS_KEY)!)).toEqual({ 'approximate-zones': false, 'saved-sites': false });
   });
 });

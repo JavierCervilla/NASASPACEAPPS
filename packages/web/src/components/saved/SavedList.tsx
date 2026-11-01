@@ -28,7 +28,8 @@
  * list» and «Empty»): the sites saved on this device, newest first, each
  * with its pin, name, state at the shared instant and point, and a «…»
  * menu (rename, copy the coordinates, delete). With none saved yet, how to
- * save one. A delete moves the focus to the row that takes its place.
+ * save one. A delete moves the focus to the row that takes its place, or,
+ * made from the keyboard, to the undo (UndoToast.tsx).
  */
 import { useRef } from 'react';
 import type { NowState } from '../../phone/widget-types';
@@ -77,7 +78,9 @@ export function SavedList({ selectedId, state, onPick }: Props) {
           selected={site.id === selectedId}
           state={state}
           onPick={onPick}
-          onDeleted={() => focusAfterDelete(list.current, index)}
+          onDeleted={(fromKeyboard) => {
+            if (!fromKeyboard) focusAfterDelete(list.current, index);
+          }}
         />
       ))}
     </ul>

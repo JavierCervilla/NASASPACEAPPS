@@ -69,7 +69,8 @@ function onMenuKeys(event: KeyboardEvent<HTMLDivElement>): void {
 interface Props {
   /** The site's name, for the button's accessible name. */
   readonly name: string;
-  readonly onAction: (action: RowAction) => void;
+  /** `fromKeyboard`: chosen with Enter or Space, not a pointer. */
+  readonly onAction: (action: RowAction, fromKeyboard: boolean) => void;
   readonly button: RefObject<HTMLButtonElement | null>;
 }
 
@@ -79,10 +80,10 @@ export function RowMenu({ name, onAction, button }: Props) {
   const menu = useRef<HTMLDivElement>(null);
   // The focus leaves the menu first, so hiding it restores nothing later
   // (over a rename field that has just taken the focus).
-  const choose = (action: RowAction): void => {
+  const choose = (action: RowAction, fromKeyboard: boolean): void => {
     button.current?.focus();
     menu.current?.hidePopover();
-    onAction(action);
+    onAction(action, fromKeyboard);
   };
   return (
     <>
@@ -91,7 +92,7 @@ export function RowMenu({ name, onAction, button }: Props) {
       </button>
       <div ref={menu} id={id} className="row-menu" popover="auto" role="menu" aria-label={i18n.t('saved.more', { name })} onKeyDown={onMenuKeys} onToggle={(e) => e.newState === 'open' && e.currentTarget.querySelector('button')?.focus()}>
         {ACTIONS.map((action) => (
-          <button key={action} type="button" role="menuitem" className="row-menu__item" data-action={action} onClick={() => choose(action)}>
+          <button key={action} type="button" role="menuitem" className="row-menu__item" data-action={action} onClick={(e) => choose(action, e.detail === 0)}>
             {i18n.t(NAMES[action])}
             <Icon name={action} />
           </button>

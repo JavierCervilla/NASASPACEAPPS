@@ -46,8 +46,8 @@ interface Props {
   /** The selected site's state, as the card shows it. */
   readonly state: NowState | null;
   readonly onPick: (id: string) => void;
-  /** The site was deleted: the list moves the focus on. */
-  readonly onDeleted: () => void;
+  /** The site was deleted: the list moves the focus on, or the undo. */
+  readonly onDeleted: (fromKeyboard: boolean) => void;
 }
 
 interface RenameProps {
@@ -85,13 +85,14 @@ function PickButton({ site, selected, state, onPick }: Props) {
   const coords = formatCoords(i18n, site.lat, site.lonEast);
   const word = shown ? i18n.t(STATE_WORDS[shown]) : '';
   return (
-    <button type="button" className="site-row saved-row__pick" aria-current={selected ? 'true' : undefined} onClick={() => onPick(site.id)}>
+    <button type="button" className="site-row saved-row__pick" data-saved-id={site.id} aria-current={selected ? 'true' : undefined} onClick={() => onPick(site.id)}>
       <span className="saved-glyph" data-state={shown ?? undefined} aria-hidden="true" />
       <span className="site-row__text">
         <span className="site-row__title">{site.name}</span>
         <span className="site-row__detail">
           {shown ? <span className="signal-dot" data-state={shown} aria-hidden="true" /> : null}
-          {[word, coords].filter(Boolean).join(' · ')}
+          {word ? `${word} · ` : null}
+          <span className="saved-row__coords">{coords}</span>
         </span>
       </span>
       {selected ? <Check /> : null}
@@ -104,8 +105,8 @@ export function SavedRow(props: Props) {
   const [renaming, setRenaming] = useState(false);
   const more = useRef<HTMLButtonElement>(null);
   const { act, rename } = useRowActions(site, onDeleted);
-  const onAction = (action: RowAction): void =>
-    action === 'rename' ? setRenaming(true) : act(action);
+  const onAction = (action: RowAction, fromKeyboard: boolean): void =>
+    action === 'rename' ? setRenaming(true) : act(action, fromKeyboard);
   const renamed = (name: string | null): void => {
     if (name !== null) rename(name);
     setRenaming(false);

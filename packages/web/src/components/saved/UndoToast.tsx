@@ -28,25 +28,58 @@
  * after a saved site is deleted, a glass pill above the tab bar (over the
  * calendar strip on desktop) offers it back for five seconds, said by a
  * polite live region. The region is always there, empty, so the message
- * is announced when it comes. Undo puts the site back where it was; the
- * time stops while the focus or the pointer is on it.
+ * is announced when it comes. Deletes in a row join one offer, «Deleted 2
+ * sites», and Undo puts every one back where it was. The time stops while
+ * the focus or the pointer is on it. A delete made from the keyboard sends
+ * the focus to Undo, so it is never out of reach (the time stops there);
+ * Undo then focuses the site put back, and Escape lets the offer go and
+ * focuses the row now in the deleted one's place. Pressing Undo leaves the
+ * desktop site popover open (undo-parts.ts).
  */
+import { useEffect, useRef, type KeyboardEvent } from 'react';
+import type { UndoOffer } from '../../saved/undo';
 import { useI18n } from '../i18n-context';
 import { useWatched } from '../pin/context';
-import { useSavedKit } from './context';
+import { useSavedKit, type SavedKit } from './context';
+import { focusSavedRow, keepPopoverOpen, undoMessage } from './undo-parts';
+
+/** The last delete on offer: where the focus goes back to. */
+const lastOf = (offer: UndoOffer | null) => offer?.removed.at(-1) ?? null;
+
+/** Undo, and Escape, each with the focus sent back to the list. */
+function useUndoActions(kit: SavedKit | null, offer: UndoOffer | null) {
+  const undo = (): void => {
+    const last = lastOf(offer);
+    kit?.undo.undo();
+    if (last) focusSavedRow(last.site.id, last.index);
+  };
+  const onKeyDown = (event: KeyboardEvent<HTMLDivElement>): void => {
+    const last = lastOf(offer);
+    if (event.key !== 'Escape' || !last) return;
+    // Handled here: Escape must not close the site popover too.
+    event.preventDefault();
+    event.stopPropagation();
+    kit?.undo.dismiss();
+    focusSavedRow(null, last.index);
+  };
+  return { undo, onKeyDown };
+}
 
 export function UndoToast() {
   const kit = useSavedKit();
   const i18n = useI18n();
   const offer = useWatched(kit?.undo.current ?? null, null);
+  const button = useRef<HTMLButtonElement>(null);
+  const { undo, onKeyDown } = useUndoActions(kit, offer);
+  useEffect(() => {
+    if (offer?.fromKeyboard) button.current?.focus();
+  }, [offer]);
   return (
-    <div className="undo-toast" role="status" data-open={offer !== null} onFocus={() => kit?.undo.hold()} onBlur={() => kit?.undo.release()} onPointerEnter={() => kit?.undo.hold()} onPointerLeave={() => kit?.undo.release()}>
+    <div className="undo-toast" role="status" data-open={offer !== null} onKeyDown={onKeyDown} onFocus={() => kit?.undo.hold()} onBlur={() => kit?.undo.release()} onPointerEnter={() => kit?.undo.hold()} onPointerLeave={() => kit?.undo.release()}>
       {offer ? (
         <>
-          <span className="undo-toast__text">
-            {i18n.t('saved.deleted', { name: offer.site.name })}
-          </span>
-          <button type="button" className="undo-toast__undo" onClick={() => kit?.undo.undo()}>
+          <span className="undo-toast__text">{undoMessage(i18n, offer)}</span>
+          <button ref={button} type="button" className="undo-toast__undo" onPointerDown={(e) => keepPopoverOpen(e.currentTarget)} onClick={undo}>
             {i18n.t('saved.undo')}
           </button>
         </>

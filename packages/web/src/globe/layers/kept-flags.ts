@@ -27,8 +27,11 @@
  * The layers' flags kept on the device (VENT-37): which layers the visitor
  * switched off stays so on the next visit. Read defensively (storage is the
  * visitor's): only well-formed ids with true or false, at most
- * {@link MAX_FLAGS} of them; anything else is ignored. Storage can be
- * missing or refuse access, and then nothing is kept and nothing breaks.
+ * {@link MAX_FLAGS} of them; anything else is ignored. Another tab may
+ * switch a layer too: each write starts from what storage holds then, and
+ * {@link applyFlags} takes in that tab's flags (on `storage` events).
+ * Storage can be missing or refuse access, and then nothing is kept and
+ * nothing breaks.
  */
 import type { ChoiceStorage } from '../../i18n/choice';
 import type { LayerRegistry } from './registry';
@@ -75,4 +78,13 @@ export function keepFlags(
       // Refused storage: the flags hold for this page only.
     }
   });
+}
+
+/** Sets `registry`'s flags to those kept in `storage` (another tab's). */
+export function applyFlags(
+  registry: Pick<LayerRegistry, 'setVisible'>,
+  storage: ChoiceStorage | null,
+): void {
+  const flags = Object.entries(readFlags(storage));
+  for (const [id, on] of flags) registry.setVisible(id, on);
 }

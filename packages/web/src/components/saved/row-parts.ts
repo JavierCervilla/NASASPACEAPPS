@@ -73,19 +73,28 @@ async function copyPoint(
   }
 }
 
-/** Copy and delete for `site`'s menu, and its rename. */
-export function useRowActions(site: SavedSite, onDeleted: () => void) {
+/**
+ * Copy and delete for `site`'s menu, and its rename. A delete from the
+ * keyboard tells the undo, which then takes the focus (UndoToast.tsx).
+ */
+export function useRowActions(
+  site: SavedSite,
+  onDeleted: (fromKeyboard: boolean) => void,
+) {
   const kit = useSavedKit();
   const pin = usePin();
   const i18n = useI18n();
-  const act = (action: Exclude<RowAction, 'rename'>): void => {
+  const act = (
+    action: Exclude<RowAction, 'rename'>,
+    fromKeyboard = false,
+  ): void => {
     if (action === 'copy') {
       void copyPoint(i18n, site, (text) => pin?.live.set(text));
       return;
     }
     const removed = kit?.saved.remove(site.id);
-    if (removed) kit?.undo.offer(removed);
-    onDeleted();
+    if (removed) kit?.undo.offer(removed, fromKeyboard);
+    onDeleted(fromKeyboard);
   };
   const rename = (name: string): void => kit?.saved.rename(site.id, name);
   return { act, rename };

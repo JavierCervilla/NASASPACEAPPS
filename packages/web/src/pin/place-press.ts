@@ -29,18 +29,23 @@
  * pin a held finger lifted, with how to forget it all. Pure but for the
  * session it cancels.
  */
+import { pastSlop } from '../lib/press-slop';
 import type { CarrySession } from './carry-session';
 import type { ClientPoint } from './surfaces';
 
 /** How long a finger rests on the Moon before it lifts a pin, ms. */
 export const HOLD_MS = 450;
-/** Travel past which a press turns the globe instead (drag.ts), px. */
-export const PLACE_SLOP_PX = 4;
+export { PRESS_SLOP_PX } from '../lib/press-slop';
 
 export interface Press {
   readonly id: number;
   readonly from: ClientPoint;
   readonly touch: boolean;
+  /**
+   * The press's `pointerdown`, which the globe marks handled when the
+   * press stopped its flick (drag.ts): that press places no pin.
+   */
+  readonly down: Event;
 }
 
 export interface PressState {
@@ -62,12 +67,17 @@ export const isControl = (target: EventTarget | null): boolean => {
   return el?.closest?.('button, [data-site-id]') != null;
 };
 
-/** Whether `event` travelled past the slop from where `press` began. */
-export const travelled = (press: Press, event: PointerEvent): boolean => {
-  const to = pointOf(event);
-  const { from } = press;
-  return Math.hypot(to.x - from.x, to.y - from.y) > PLACE_SLOP_PX;
-};
+/** Whether `event` travelled as far as a drag from where `press` began. */
+export const travelled = (press: Press, event: PointerEvent): boolean =>
+  pastSlop(press.from, pointOf(event));
+
+/** Whether `up` ends a mouse or pen click the globe did not take. */
+export const isClick = (
+  press: Press | null,
+  up: PointerEvent,
+): press is Press =>
+  !!press && !press.touch && press.id === up.pointerId &&
+  !press.down.defaultPrevented;
 
 /** Forgets the press; a lifted pin springs back if `cancel`. */
 export function forget(state: PressState, cancel = false): void {

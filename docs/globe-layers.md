@@ -94,5 +94,7 @@ A layer with nothing to draw on the globe (a flag the polar map or a list reads)
 - `saved-sites`: the sites saved on this device, silver pins (look C), registered by the page
   (`components/saved/use-saved-layer.ts`) with `pointLayer`; the selected one is left to the standing pin.
 
-Tests: `packages/web/tests/globe-layers.test.ts` (registry, site layers, kept flags) and
+Tests: `packages/web/tests/globe-layers.test.ts` (registry, site layers, kept flags, two tabs on one storage),
+`packages/web/tests/globe-layer-bind.test.ts` (the binder's mount, `z` order, flags, frames and teardown; the point
+layer's buttons, placing, clicks and unmount) and
 `tests/e2e/saved-sites.spec.ts` (each switch on the globe and the polar map, kept across a reload).

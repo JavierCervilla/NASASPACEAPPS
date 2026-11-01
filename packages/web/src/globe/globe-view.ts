@@ -24,7 +24,7 @@
  */
 
 /**
- * The globe as a place to drop the astronaut on (VENT-10): the Moon's
+ * The globe as a place to drop the pin on (VENT-10, VENT-37): the Moon's
  * point under a pointer, by a ray from the camera through the canvas, and
  * where a point of the Moon shows on the page, or null behind the limb.
  * Both in client px, so the page can hold the globe and the polar map

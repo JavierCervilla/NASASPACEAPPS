@@ -27,7 +27,8 @@
  * The desktop site card beside the view (validated canvas «Globe view»): the
  * site's LOLA relief image south of 80° S, with the state at the selected
  * instant and the ground it spans (VENT-33, canvas «DeskThumbH1440»); the
- * mission, its agency and date, the site, its point and how exact it is;
+ * mission, its agency and date, the site, its point and how exact it is,
+ * and whether NASA's maps put it in shadow (VENT-39);
  * «Sunset in» and «Earthset in» (or «…rise in») for the selected instant with
  * each body's elevation; who listens on Earth (VENT-7); and the month's
  * shares, longest window and longest night, with where the figures come
@@ -51,6 +52,7 @@ import { ListeningBlock, ListeningWaiting } from '../dsn/ListeningBlock';
 import type { Dsn } from '../dsn/use-dsn';
 import { useI18n } from '../i18n-context';
 import { SaveButton, SaveName } from '../saved/SaveControl';
+import { ShadowNote } from '../shadow/ShadowNote';
 import { SiteThumb } from '../SiteThumb';
 import { CardPoint } from './CardPoint';
 import { CardStatus } from './CardStatus';
@@ -122,6 +124,7 @@ function CardHead(props: Omit<Props, 'model' | 'onRetry' | 'notes' | 'dsn'>) {
         <p className="card-head__place">{place}</p>
       )}
       <CardPoint {...pointLine(i18n, site)} />
+      <ShadowNote shadow={site.shadow} short className="card-head__shadow" />
       <SaveName site={site} />
     </div>
   );

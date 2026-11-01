@@ -301,5 +301,14 @@
   },
   "saved.undo": "Widerrufen",
   "custom.saved": "Gesichert",
-  "custom.savedNear": "Gesichert · nahe {name}"
+  "custom.savedNear": "Gesichert · nahe {name}",
+  "body.sun": "Sonne",
+  "body.noSun": "Keine Sonne",
+  "body.permanentShadow": "Ewiger Schatten",
+  "shadow.psrTitle": "Ewiger Schatten · kein Landepunkt",
+  "shadow.psrBody": "Laut den Karten der NASA liegt dieser Punkt auf einem Kraterboden, den die Sonne nie erreicht.",
+  "shadow.psrTitleShort": "Ewiger Schatten",
+  "shadow.dimTitle": "Kraterboden · wenig Sonne",
+  "shadow.dimBody": "Laut den Karten der NASA hat dieser Punkt im Mittel {share} Sonne.",
+  "shadow.sunSource": "Sonne nach der NASA-Karte des ewigen Schattens (LRO LOLA, Mazarico 2011)"
 }

@@ -69,12 +69,18 @@ interface Props {
   readonly state: NowState | null;
 }
 
+interface SharesProps {
+  readonly calendar: Calendar;
+  /** The site's shadow, for the Sun's source (VENT-39). */
+  readonly shadow: PhoneSite['shadow'];
+}
+
 /**
  * «Sun 59 %», «Earth 58 %» and «Window 47 %» of the month, a note when
  * the month has no window at all, under «Compare» how many hours differ
  * and the hatch's key, and the notes on computed data.
  */
-function Shares({ calendar }: { readonly calendar: Calendar }) {
+function Shares({ calendar, ...shade }: SharesProps) {
   const { strip, state } = calendar;
   const i18n = useI18n();
   const shares = [
@@ -95,7 +101,7 @@ function Shares({ calendar }: { readonly calendar: Calendar }) {
       </ul>
       <NoWindowNote strip={strip} className="calendar__note" />
       <CompareNote calendar={calendar} className="calendar__compare" keyed />
-      <SourceNotes month={calendar} atMs={state?.atMs ?? null} />
+      <SourceNotes month={calendar} atMs={state?.atMs ?? null} {...shade} />
     </>
   );
 }
@@ -205,7 +211,7 @@ export function CalendarSheet(props: Props) {
           <p>{pillDetail ? `${pill} · ${pillDetail}` : pill}</p>
         </div>
       </MonthArrows>
-      <Shares calendar={calendar} />
+      <Shares calendar={calendar} shadow={site.shadow} />
       {strip ? (
         <Columns {...{ parts, strip, diff }} atMs={time.atMs} i18n={i18n} />
       ) : (

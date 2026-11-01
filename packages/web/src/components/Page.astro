@@ -35,7 +35,7 @@ import GlassFilter from './GlassFilter.astro';
 import LocaleHead from './LocaleHead.astro';
 import LunarApp from './LunarApp';
 import Base from '../layouts/Base.astro';
-import { toCardSite, type CardSite } from '../card/site-facts';
+import { toCardSite, type ListedSite } from '../card/site-facts';
 import { catalogueOf } from '../i18n/catalogues';
 import type { UiLocale } from '../i18n/locales';
 import { localSite } from '../i18n/site-names';
@@ -65,8 +65,8 @@ const sitesUrl = `${import.meta.env.BASE_URL.replace(/\/$/, '')}/api/v1/sites`;
 
 // The site pickers, the polar map and the site card read the curated list
 // the API serves, built in, with its names in the page's language.
-const full = curated as Required<Omit<CardSite, 'custom'>>[];
-const sites: CardSite[] = full.map((s) => localSite(i18n, toCardSite(s)));
+const full = curated as ListedSite[];
+const sites = full.map((s) => localSite(i18n, toCardSite(s)));
 
 // The views switch by hash (lib/view-tabs.ts); the island marks the
 // current one. Horizon is a later trajectory.

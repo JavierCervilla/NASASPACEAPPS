@@ -23,6 +23,7 @@
  *             :::.. .  .               SPDX-License-Identifier: MIT
  */
 
+import { readFile } from 'node:fs/promises';
 import { describe, expect, it } from 'vitest';
 import { DEFAULT_SITES_FILE, loadSites, parseSites } from '../src/sites.ts';
 
@@ -86,10 +87,59 @@ describe('curated sites file', () => {
   });
 });
 
+// NASA's illumination maps read at every curated site south of 80 deg S (VENT-39), with their provenance.
+const PSR_FLAGS = new URL('../../sim/data/psr-flags.json', import.meta.url);
+interface PsrFlag {
+  readonly id: string;
+  readonly lat: number;
+  readonly lon: number;
+  readonly avgSun: number;
+  readonly psrShare: number;
+  readonly onPsrFloor: boolean;
+}
+const flags = (JSON.parse(await readFile(PSR_FLAGS, 'utf8')) as { sites: PsrFlag[] }).sites;
+
+describe('shadow of the curated sites (VENT-39)', () => {
+  it('lists every curated site south of 80 deg S at its own point', () => {
+    const south = sites.filter((s) => s.lat < -80);
+    expect(flags.map((f) => f.id).sort()).toEqual(south.map((s) => s.id).sort());
+    for (const flag of flags) {
+      const site = south.find((s) => s.id === flag.id);
+      expect([flag.lat, flag.lon]).toEqual([site?.lat, site?.lonEast]);
+    }
+  });
+
+  it('marks in permanent shadow exactly the sites on a PSR floor, with no Sun on average', () => {
+    const psr = sites.filter((s) => s.shadow?.kind === 'psr').map((s) => s.id).sort();
+    expect(psr).toEqual(flags.filter((f) => f.onPsrFloor).map((f) => f.id).sort());
+    expect(psr).toEqual(['artemis-de-gerlache-rim-2', 'artemis-haworth', 'artemis-slater-plain', 'change7-target']);
+    for (const flag of flags.filter((f) => f.onPsrFloor)) expect(flag.avgSun).toBe(0);
+  });
+
+  it('marks only the Cabeus B point as a dim floor, with the share the map gives', () => {
+    const dim = sites.filter((s) => s.shadow?.kind === 'dimFloor');
+    expect(dim.map((s) => s.id)).toEqual(['artemis-peak-near-cabeus-b']);
+    const flag = flags.find((f) => f.id === 'artemis-peak-near-cabeus-b');
+    expect(dim[0]?.shadow?.avgSun).toBe(flag?.avgSun);
+  });
+
+  it('marks only approximate sites, and cites the NASA product', () => {
+    for (const site of sites.filter((s) => s.shadow)) {
+      expect(site.approximate).toBe(true);
+      expect(site.shadow?.source.url).toBe('https://pgda.gsfc.nasa.gov/products/69');
+    }
+  });
+});
+
 describe('parseSites', () => {
 
   it('accepts a valid entry', () => {
     expect(parseSites([SITE])).toEqual([SITE]);
+  });
+
+  it('accepts a shadow of a known kind', () => {
+    const shadow = { kind: 'psr', avgSun: 0, source: SITE.sources[0] };
+    expect(parseSites([{ ...SITE, shadow }])).toEqual([{ ...SITE, shadow }]);
   });
 
   it.each([
@@ -101,6 +151,9 @@ describe('parseSites', () => {
     [{ ...SITE, group: 'north_pole' }, /"group"/],
     [{ ...SITE, approximate: 'yes' }, /"approximate"/],
     [{ ...SITE, statusDate: undefined }, /"statusDate"/],
+    [{ ...SITE, shadow: { kind: 'dark', avgSun: 0, source: SITE.sources[0] } }, /"shadow"/],
+    [{ ...SITE, shadow: { kind: 'psr', avgSun: 1.5, source: SITE.sources[0] } }, /"shadow"/],
+    [{ ...SITE, shadow: { kind: 'psr', avgSun: 0 } }, /"shadow"/],
   ])('rejects an invalid entry %#', (entry, message) => {
     expect(() => parseSites([entry])).toThrow(message);
   });

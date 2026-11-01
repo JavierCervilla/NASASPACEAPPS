@@ -301,5 +301,14 @@
   },
   "saved.undo": "Undo",
   "custom.saved": "Saved",
-  "custom.savedNear": "Saved · near {name}"
+  "custom.savedNear": "Saved · near {name}",
+  "body.sun": "Sun",
+  "body.noSun": "No Sun",
+  "body.permanentShadow": "Permanent shadow",
+  "shadow.psrTitle": "Permanent shadow · not a landing point",
+  "shadow.psrBody": "NASA's maps put this point on a crater floor the Sun never reaches.",
+  "shadow.psrTitleShort": "Permanent shadow",
+  "shadow.dimTitle": "Crater floor · little Sun",
+  "shadow.dimBody": "NASA's maps give this point {share} of the Sun on average.",
+  "shadow.sunSource": "Sun from NASA's permanent-shadow map (LRO LOLA, Mazarico 2011)"
 }

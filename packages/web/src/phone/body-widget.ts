@@ -84,8 +84,21 @@ function timeLeft(
 }
 
 /**
+ * The Sun's widget where the terrain hides it (VENT-39): no time to wait
+ * for and no elevation worth showing, since it never rises there.
+ */
+function noSunWidget(i18n: I18n): BodyWidget {
+  return {
+    label: i18n.t('body.sun'),
+    value: i18n.t('body.noSun'),
+    detail: i18n.t('body.permanentShadow'),
+  };
+}
+
+/**
  * The widget of `body` for the hour `now` (a sample of `hours`): how long
- * until it sets, or rises when it is down, and its elevation.
+ * until it sets, or rises when it is down, and its elevation; for the Sun
+ * in permanent shadow, that there is none.
  */
 export function bodyWidget(
   body: Body,
@@ -93,6 +106,7 @@ export function bodyWidget(
   now: HourSample,
   i18n: I18n,
 ): BodyWidget {
+  if (body.id === 'sun' && now.sunHidden === true) return noSunWidget(i18n);
   const up = body.up(now);
   const keeps = (sample: HourSample): boolean => body.up(sample) === up;
   const value = timeLeft(hours, now, keeps, i18n);

@@ -48,9 +48,14 @@ export const EARTH_MIN_ELEVATION_DEG = 3;
  */
 export const DSN_MIN_ELEVATION_DEG = 10;
 
-/** Whether the Sun is up at a sample. */
-export function hasSun(sample: Pick<HourSample, 'sunEl'>): boolean {
-  return sample.sunEl > SUN_MIN_ELEVATION_DEG;
+/**
+ * Whether the Sun is up at a sample: never where the terrain hides it
+ * (`sunHidden`, permanent shadow).
+ */
+export function hasSun(
+  sample: Pick<HourSample, 'sunEl' | 'sunHidden'>,
+): boolean {
+  return sample.sunHidden !== true && sample.sunEl > SUN_MIN_ELEVATION_DEG;
 }
 
 /** Whether the Earth is high enough for communication at a sample. */
@@ -59,7 +64,9 @@ export function hasEarth(sample: Pick<HourSample, 'earthEl'>): boolean {
 }
 
 /** Whether a sample is a landing window: Sun and Earth at once. */
-export function isWindow(sample: Pick<HourSample, 'sunEl' | 'earthEl'>): boolean {
+export function isWindow(
+  sample: Pick<HourSample, 'sunEl' | 'sunHidden' | 'earthEl'>,
+): boolean {
   return hasSun(sample) && hasEarth(sample);
 }
 

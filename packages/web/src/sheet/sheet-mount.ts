@@ -26,12 +26,14 @@
 /**
  * Mounts the sheet's physics on its element: the state, the frame loop
  * that draws it, the drag gestures (on the sheet, and on the edge that
- * opens it when closed), the viewport resize and the top bar's height,
- * which the full sheet stays under.
+ * opens it when closed), the viewport resize, the top bar's height,
+ * which the full sheet stays under, and the note that lifts the half
+ * sheet (sheet-lift.ts).
  */
 import { createLoop, type Loop } from '../globe/loop';
 import { bindSheetDrag } from './sheet-drag';
 import { edgeDragTarget } from './sheet-edge-drag';
+import { halfLiftPx, watchLift } from './sheet-lift';
 import { SheetMotion } from './sheet-motion';
 import {
   detentsFor,
@@ -113,34 +115,44 @@ function bindDrags(el: HTMLElement, parts: DragParts): () => void {
 
 /**
  * The canvas's layout, with the full sheet `BAR_GAP_PX` under `bar`'s
- * bottom edge when the bar outgrows the canvas's (large text).
+ * bottom edge when the bar outgrows the canvas's (large text), and the
+ * half sheet raised by what lifts it in `el`.
  */
-function layoutUnder(bar: HTMLElement | null): SheetLayout {
+function layoutUnder(el: HTMLElement, bar: HTMLElement | null): SheetLayout {
   const bottom = bar ? bar.getBoundingClientRect().bottom : 0;
   const fullGapPx = Math.max(SHEET_LAYOUT.fullGapPx, bottom + BAR_GAP_PX);
-  return { ...SHEET_LAYOUT, fullGapPx };
+  const halfPx = SHEET_LAYOUT.halfPx + halfLiftPx(el);
+  return { ...SHEET_LAYOUT, fullGapPx, halfPx };
 }
 
 /**
- * Moves the sheet to its detent again when the viewport resizes, or when
- * the bar's height moves the full detent; returns the unwatch function.
+ * Moves the sheet to its detent again when the viewport resizes, when
+ * the bar's height moves the full detent, or when the lift of the half
+ * sheet it rests at changes; returns the unwatch function.
  */
 function watchLayout(
+  el: HTMLElement,
   bar: HTMLElement | null,
   state: SheetState,
   motion: SheetMotion,
 ) {
   const resize = (): void => motion.moveTo(state.detent);
   const fullMoved = (): boolean =>
-    layoutUnder(bar).fullGapPx !== state.detents.full;
+    layoutUnder(el, bar).fullGapPx !== state.detents.full;
   const barResized = (): void => {
     if (fullMoved()) resize();
   };
   const observer = new ResizeObserver(barResized);
   if (bar) observer.observe(bar);
+  // Only the half detent moves with the lift; the others read it on the
+  // next move.
+  const unwatchLift = watchLift(el, () => {
+    if (state.detent === 'half') resize();
+  });
   window.addEventListener('resize', resize);
   return (): void => {
     observer.disconnect();
+    unwatchLift();
     window.removeEventListener('resize', resize);
   };
 }
@@ -151,7 +163,7 @@ export function mountSheet(
   options: SheetMountOptions,
 ): MountedSheet {
   const heightPx = (): number => window.innerHeight;
-  const layout = (): SheetLayout => layoutUnder(options.bar);
+  const layout = (): SheetLayout => layoutUnder(el, options.bar);
   const detents = detentsFor(heightPx(), layout());
   const state = createSheetState(detents, options.start);
   const loop = sheetLoop(el, state, options);
@@ -160,7 +172,7 @@ export function mountSheet(
   const deps = { heightPx, layout, reducedMotion, invalidate, onDetent };
   const motion = new SheetMotion(state, deps);
   const unbind = bindDrags(el, { state, motion, options });
-  const unwatch = watchLayout(options.bar, state, motion);
+  const unwatch = watchLayout(el, options.bar, state, motion);
   placeSheet(el, state.axis.value, state.detents);
   invalidate();
   const dispose = (): void => {

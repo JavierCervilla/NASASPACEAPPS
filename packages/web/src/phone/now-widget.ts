@@ -45,7 +45,7 @@ export function nowTitle(i18n: I18n, state: NowState): string {
 
 /** The state of one hour: Sun and Earth, one of them, or neither. */
 export function nowState(
-  sample: Pick<HourSample, 'sunEl' | 'earthEl'>,
+  sample: Pick<HourSample, 'sunEl' | 'sunHidden' | 'earthEl'>,
 ): NowState {
   const sun = hasSun(sample);
   const earth = hasEarth(sample);
@@ -56,7 +56,7 @@ export function nowState(
 
 /** The widget for `sample`, with the share of `month` with a window. */
 export function nowWidget(
-  sample: Pick<HourSample, 'sunEl' | 'earthEl'>,
+  sample: Pick<HourSample, 'sunEl' | 'sunHidden' | 'earthEl'>,
   windowPct: number,
   month: string,
   i18n: I18n,

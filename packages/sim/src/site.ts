@@ -54,6 +54,27 @@ export interface SourceRef {
  */
 export type SiteGroup = 'south_pole' | 'apollo' | 'other';
 
+/**
+ * How NASA's illumination maps classify a site's point (VENT-39): `psr` on
+ * the floor of a permanently shadowed region (LPSR = 1, average Sun 0), so
+ * the Sun is never up there whatever its elevation over a smooth horizon;
+ * `dimFloor` a crater floor that is not in permanent shadow but gets little
+ * Sun.
+ */
+export type ShadowKind = 'psr' | 'dimFloor';
+
+/** What NASA's illumination maps say about a site's point (VENT-39). */
+export interface SiteShadow {
+  readonly kind: ShadowKind;
+  /**
+   * Average fraction of time with some of the Sun's disc in view, 0-1, read
+   * at the point from AVGVISIB_75S_120M (Mazarico et al. 2011).
+   */
+  readonly avgSun: number;
+  /** The map it was read from. */
+  readonly source: SourceRef;
+}
+
 /** Metadata of a landing site on the lunar surface. */
 export interface Site {
   /** Stable identifier, URL-safe (used in `/api/v1/sites/:id`). */
@@ -97,6 +118,11 @@ export interface Site {
   readonly coordinateNote: string;
   /** Sources backing the metadata and the coordinates. */
   readonly sources: readonly SourceRef[];
+  /**
+   * Set when NASA's illumination maps put the point in permanent shadow or
+   * on a dim crater floor (VENT-39); absent for every other site.
+   */
+  readonly shadow?: SiteShadow;
 }
 
 /** What a lander at a site sees in one hour of model time. */
@@ -115,6 +141,12 @@ export interface HourSample {
   readonly earthAz: number;
   /** DSN complex listening to the Moon in that hour, or `null` when none is. */
   readonly dsn: DsnComplex | null;
+  /**
+   * `true` when the terrain hides the Sun whatever `sunEl` says: the site is
+   * in permanent shadow (VENT-39, {@link SiteShadow}). `sunEl` stays the
+   * Sun's elevation over a smooth horizon.
+   */
+  readonly sunHidden?: boolean;
 }
 
 /**

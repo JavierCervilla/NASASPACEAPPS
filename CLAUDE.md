@@ -225,6 +225,28 @@ Every visible change follows `.claude/skills/apple-design/SKILL.md` (vendored fr
   selection is always marked. Under the picker's title everything scrolls as one (`.picker__scroll`), so the phone
   sheet's settings never squeeze the list. The site popover opens and closes its list only on its own toggle, not on
   a nested menu's.
+- **Sites in permanent shadow** (VENT-39, canvas option B, the human's decision). NASA's illumination maps (PGDA
+  product 69, LRO LOLA, Mazarico et al. 2011; sources, sha256 and the scales read from the PDS labels in `ASSETS.md`)
+  put four approximate sites on a permanently shadowed crater floor: Shackleton (`change7-target`), Haworth, de
+  Gerlache Rim 2 and Slater Plain. Their published coordinates stay. The site contract has an optional `shadow`
+  (`{ kind: 'psr' | 'dimFloor', avgSun, source }`, `packages/sim/src/site.ts`, checked by the server's
+  `site-shadow.ts`), set in `packages/server/data/sites.json` for those four (`psr`) and for «Peak near Cabeus B»
+  (`dimFloor`, 11 % average Sun, not PSR). For a `psr` site the Sun answer follows the map, never up: `shadowedHours`
+  (`packages/sim/src/shadow.ts`) marks every hour `sunHidden`, which `hasSun` honours, and the web applies it to both
+  the API's and the computed hours where the views take them (`src/source/shadowed-hours.ts`, wired in
+  `LunarApp.tsx`), so state, pill, badge, markers, month figures, the strip and the DSN block agree; `sunEl` and the
+  Earth stay as computed or from Horizons. The Sun widget then reads «Sun · No Sun · Permanent shadow»
+  (`phone/body-widget.ts`). A neutral note under the name (`components/shadow/ShadowNote.tsx`, `card/shadow-note.ts`,
+  `styles/shadow.css`, never a signal colour): «Permanent shadow · not a landing point» and «NASA's maps put this
+  point on a crater floor the Sun never reaches.» on the phone sheet, «Permanent shadow» alone on the desktop card,
+  whose precision line already says «not a landing point»; «Crater floor · little Sun» and «NASA's maps give this
+  point 11 % of the Sun on average.» for Cabeus B, with no override. The Sun's source joins the computed caption on
+  one line (or stands alone with Horizons): «Sun from NASA's permanent-shadow map (LRO LOLA, Mazarico 2011)». The
+  phone's half sheet does not scroll, so it rises by the note's height and the gap before it
+  (`src/sheet/sheet-lift.ts`, `data-sheet-lift`), at any width and text size. For the Mooner session,
+  `packages/sim/data/psr-flags.json` lists every curated site south of 80° S with `{id, lat, lon, avgSun, psrShare,
+  onPsrFloor}` and a provenance header; `packages/server/tests/sites.test.ts` holds `sites.json` to it. Held by
+  `tests/e2e/shadow.spec.ts`.
 - **DSN mode** (VENT-7, canvases «DsnA» and «DsnC», approved A + C, no DSN row in the calendar, «No link» first, to
   the minute). The complex listening is the simulator's (`activeDsn` over `moonElevationFromDsn` for the three
   `DSN_SITES`), worked out once per UTC day as minute-aligned spans (`packages/sim/src/dsn-timeline.ts`: sampled every
@@ -302,7 +324,7 @@ Every visible change follows `.claude/skills/apple-design/SKILL.md` (vendored fr
   `favicon.ico`, `favicon.svg` and the root `apple-touch-icon.png`), fetched past the HTTP cache (`cache: 'reload'`),
   and the build's digest over every file the worker may keep, which names the static cache (`ventana-static-<digest>`),
   so a deploy drops the old one. The install set has a hard budget of 5 MB (`PRECACHE_BUDGET`, human decision
-  2026-10-31): the build logs the precache total and fails over it (4.57 MB with VENT-37's saved sites; 4.52 MB when it left the astronaut's sprites out, 4.60 MB with them). The 4K and 8K maps, and any build file not
+  2026-10-31): the build logs the precache total and fails over it (4.63 MB with VENT-39's shadow notes; 4.57 MB with VENT-37's saved sites; 4.52 MB when it left the astronaut's sprites out, 4.60 MB with them). The 4K and 8K maps, and any build file not
   precached, are kept cache first the first time the page fetches them. Under Save-Data the worker is not registered
   at all. Pages and API GETs are network first,
   build files cache first; the network's answer always wins (a copy that cannot be kept, a full quota, is skipped), only

@@ -309,5 +309,14 @@
   },
   "saved.undo": "Annuler",
   "custom.saved": "Enregistré",
-  "custom.savedNear": "Enregistré · près de {name}"
+  "custom.savedNear": "Enregistré · près de {name}",
+  "body.sun": "Soleil",
+  "body.noSun": "Pas de Soleil",
+  "body.permanentShadow": "Ombre permanente",
+  "shadow.psrTitle": "Ombre permanente · pas un point d'atterrissage",
+  "shadow.psrBody": "Les cartes de la NASA placent ce point au fond d'un cratère que le Soleil n'atteint jamais.",
+  "shadow.psrTitleShort": "Ombre permanente",
+  "shadow.dimTitle": "Fond de cratère · peu de Soleil",
+  "shadow.dimBody": "Les cartes de la NASA donnent à ce point {share} de Soleil en moyenne.",
+  "shadow.sunSource": "Soleil d'après la carte d'ombre permanente de la NASA (LRO LOLA, Mazarico 2011)"
 }

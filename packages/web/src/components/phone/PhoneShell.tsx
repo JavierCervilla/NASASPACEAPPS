@@ -150,7 +150,7 @@ function SheetBody(props: { phone: PhoneState } & Props) {
   }
   if (view === 'dsn') return <DsnSheet dsn={dsn} />;
   const { result, retry: onRetry } = widgets;
-  const source = { month: widgets, atMs: phone.at };
+  const source = { month: widgets, atMs: phone.at, shadow: site.shadow };
   const notes = <SourceCaption {...source} />;
   const summary = { site, result, onRetry, when, base, notes, dsn };
   return <SiteSummary {...summary} status={<SourceDown {...source} />} />;

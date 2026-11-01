@@ -22,10 +22,23 @@ epic: `VENT-1` (Dashboard project «Ventana Lunar», prefix `VENT`).
   `skyAt(point, ms)` gives one instant, `computedHours(point, fromIso, lastIso)` the server's `HourSample[]` (both ends
   included), a month in about 11 ms. Against Horizons, hourly over Nov-Dec 2026 (`tests/sky.test.ts`): Sun 0.04° in
   elevation and 0.17° in azimuth, Earth 0.03° and 0.02°, Moon from the DSN 0.007° and 0.04°; Sun, Earth, window and
-  antenna agree every hour except within one hour of a transition.
+  antenna agree every hour except within one hour of a transition. It also knows the terrain (VENT-40,
+  `docs/terrain-api.md`): `terrainHorizon` ray-marches LOLA elevation grids handed in with their PDS georeference
+  (`dem-grid.ts`, polar stereographic or simple cylindrical, through a `dnAt` accessor) into a `HorizonProfile` (720
+  bins of 0.5°, int16 hundredths of a degree, base64 by `encodeProfile`), and `terrainHours` marks each hour's
+  `sunAboveTerrain`, `sunDisc` (`sunDiscVisible`) and `earthAboveTerrain`, which `hasSun`, `hasEarth` and `earthLink`
+  honour (the Sun may be up below 0° on a ridge; `sunHidden` still wins). The curated sites south of 80° S ship their
+  profiles (`packages/sim/data/horizons.json`, observer 2 m, from `packages/server/scripts/terrain-horizons.ts`), held
+  to NASA's AVGVISIB map by `tests/terrain-validation.test.ts`; the web applies them with the shadow
+  (`src/source/shadowed-hours.ts`, `terrain-profiles.ts`) to both sources' hours. A custom point keeps the smooth
+  sphere until the web asks `/api/v1/horizon` (not wired yet).
 - **Backend** (`packages/server`, Node + Hono; decided 2026-10-29): one service on Dokploy serves all site data, for the
   curated sites and for custom coordinates. It queries JPL Horizons and caches the responses on disk, because Horizons
-  is slow and rate limited and the spec wants answers in under 3 s. The browser never calls Horizons directly.
+  is slow and rate limited and the spec wants answers in under 3 s. The browser never calls Horizons directly. It
+  also answers the terrain horizon of any point, `GET /api/v1/horizon?lat&lon[&height]` (VENT-40), from the LOLA tiers
+  present in `TERRAIN_DIR` (catalogue `packages/server/data/terrain-catalogue.json`, fetched by
+  `packages/server/scripts/fetch-terrain.ts`, never in git or the image; without it the route answers 503), reading
+  only the grid blocks its rays cross: `docs/terrain-api.md`.
 - **Deploy**: Dokploy builds the `Dockerfile` (static build served by nginx, `nginx.conf`) from `main`, at the domain
   root (`SITE_BASE` sets a sub-path if ever needed). The API has its own `packages/server/Dockerfile` (built from the
   repo root, port 3000). Operate it with the framework's `dokploy` skill.

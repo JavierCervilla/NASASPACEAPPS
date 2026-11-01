@@ -26,7 +26,8 @@
 /**
  * The sites NASA's illumination maps put in shadow (VENT-39, canvas option B), at the canvas instant, 22 November
  * 2026 20:00 UTC. Haworth sits on a permanently shadowed crater floor: a quiet note says so, and its Sun answer
- * follows the map, never up, whether the hours are computed or from Horizons, while the Earth stays as computed. The
+ * follows the map, never up, whether the hours are computed or from Horizons. Its Earth follows the crater's terrain
+ * horizon (VENT-40): the walls hide it all November, though it stands 8.5° over the smooth sphere's horizon. The
  * Cabeus B point only gets a note. On phones the half sheet rises by the note, so the four widgets keep clear of the
  * tab bar.
  */
@@ -71,7 +72,7 @@ async function fact(page: Page, label: string): Promise<string> {
 test.describe('desktop, 1440x900', () => {
   test.use({ viewport: { width: 1440, height: 900 } });
 
-  test('Haworth, computed: the note, no Sun all month, no window, Earth only at the instant', async ({ page }) => {
+  test('Haworth, computed: the note, no Sun all month, no window, the Earth behind the crater walls', async ({ page }) => {
     await open(page, 'artemis-haworth');
     const note = card(page).getByRole('note');
     await expect(note).toHaveText(`Permanent shadow${PSR_BODY}`);
@@ -82,9 +83,9 @@ test.describe('desktop, 1440x900', () => {
     expect(await fact(page, 'Hours with Sun')).toBe('0 %');
     expect(await fact(page, 'Landing window')).toBe('0 %');
     expect(await fact(page, 'Longest window')).toBe('None');
-    expect(await fact(page, 'Hours with Earth')).not.toBe('0 %');
-    await expect(page.locator('.site-button .signal-dot')).toHaveAttribute('data-state', 'earth');
-    await expect(card(page).locator('.card-media__badge')).toContainText('Earth only');
+    expect(await fact(page, 'Hours with Earth')).toBe('0 %');
+    await expect(page.locator('.site-button .signal-dot')).toHaveAttribute('data-state', 'none');
+    await expect(card(page).locator('.card-media__badge')).toContainText('Neither');
     await expect(strip(page).getByRole('img', { name: 'Sun: 0 % of November 2026' })).toBeVisible();
     await expect(strip(page).getByRole('img', { name: 'Window: 0 % of November 2026' })).toBeVisible();
     await expect(strip(page).getByText('No landing window this month')).toBeVisible();
@@ -141,14 +142,14 @@ for (const width of [360, 390]) {
   test.describe(`phone, ${width}x844`, () => {
     test.use({ viewport: { width, height: 844 }, hasTouch: true, isMobile: true });
 
-    test('Haworth: the note, Earth only, no Sun, and the half sheet raised by the note', async ({ page }) => {
+    test('Haworth: the note, neither Sun nor Earth, and the half sheet raised by the note', async ({ page }) => {
       await open(page, 'artemis-haworth');
       const note = sheet(page).getByRole('note');
       await expect(note).toHaveText(`Permanent shadow · not a landing point${PSR_BODY}`);
-      await expect(widgets(page).nth(0)).toContainText('Earth only');
+      await expect(widgets(page).nth(0)).toContainText('No window');
       await expect(widgets(page).nth(0)).toContainText('0 % of November');
       await expect(widgets(page).nth(1)).toHaveText('SunNo SunPermanent shadow');
-      await expect(page.getByRole('button', { name: /^Change site, now Haworth .*: Earth · / })).toBeVisible();
+      await expect(page.getByRole('button', { name: /^Change site, now Haworth .*: Neither · / })).toBeVisible();
       const { lift, room } = await liftAndNote(page);
       expect(Math.abs(lift - room)).toBeLessThanOrEqual(1);
       await evidence(page, `phone-${width}-haworth`);

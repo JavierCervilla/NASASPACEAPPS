@@ -47,6 +47,7 @@ import {
   shadowedLoader,
   shadowsOf,
 } from '../source/shadowed-hours';
+import { shippedTerrain } from '../source/terrain-profiles';
 import { createSourceStore } from '../source/data-source';
 import { followClock } from '../calendar/follow-clock';
 import { createPlayer } from '../calendar/time-player';
@@ -97,7 +98,7 @@ const VIEW_NAV = 'nav.views';
  * views ask for their hours again, quietly, over the old ones. With them,
  * the simulator's hours of the listed sites and the chosen data source.
  * Both sources' hours carry the Sun answer of the sites in permanent
- * shadow (VENT-39).
+ * shadow (VENT-39) and the curated sites' terrain horizon (VENT-40).
  */
 function useCalendarParts(
   sitesUrl: string,
@@ -109,16 +110,16 @@ function useCalendarParts(
       setTimer: (fn, ms) => window.setTimeout(fn, ms),
       clearTimer: (id) => window.clearTimeout(id),
     });
-    const shadowOf = shadowsOf(sites);
+    const [shadowOf, terrainOf] = [shadowsOf(sites), shippedTerrain()];
     const raw = cachedComputed(pointsOf(sites));
-    const computed = shadowedComputed(raw, shadowOf);
+    const computed = shadowedComputed(raw, shadowOf, terrainOf);
     const source = createSourceStore(localStore());
-    return { time, player, computed, source, shadowOf };
+    return { time, player, computed, source, shadowOf, terrainOf };
   });
   const api = useHoursLoader(sitesUrl);
   const parts = useMemo(() => {
-    const { shadowOf, ...rest } = clock;
-    return { ...rest, load: shadowedLoader(api, shadowOf) };
+    const { shadowOf, terrainOf, ...rest } = clock;
+    return { ...rest, load: shadowedLoader(api, shadowOf, terrainOf) };
   }, [clock, api]);
   useEffect(() => followClock(clock.time, browserHourClock()), [clock]);
   useEffect(() => clock.player.pause, [clock]);

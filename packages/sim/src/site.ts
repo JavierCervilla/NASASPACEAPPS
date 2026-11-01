@@ -147,6 +147,20 @@ export interface HourSample {
    * Sun's elevation over a smooth horizon.
    */
   readonly sunHidden?: boolean;
+  /**
+   * Set when the hour was read against the site's terrain (VENT-40,
+   * `terrainHours`): whether the Sun's centre stands above the relief at
+   * its azimuth. It decides the Sun instead of `sunEl > 0`, both ways: a
+   * ridge may see the Sun below 0°. `sunHidden` still wins.
+   */
+  readonly sunAboveTerrain?: boolean;
+  /** With the terrain: the fraction (0-1) of the Sun's disc above it. */
+  readonly sunDisc?: number;
+  /**
+   * With the terrain: whether the Earth's centre stands above the relief
+   * at its azimuth. The Earth also needs its elevation over 3°.
+   */
+  readonly earthAboveTerrain?: boolean;
 }
 
 /**

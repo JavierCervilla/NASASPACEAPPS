@@ -30,7 +30,11 @@
  * are still read), HORIZONS_POINTS_CACHE_MB (byte cap of `points/`, least
  * recently used tables evicted first; default 512), SITES_FILE (default
  * packages/server/data/sites.json) and WARM_CACHE (`0` skips the start-up cache
- * warm-up; tests never run this file, so they never warm).
+ * warm-up; tests never run this file, so they never warm). Terrain (VENT-40,
+ * docs/terrain-api.md): TERRAIN_DIR (the LOLA grids; unset, /horizon answers
+ * 503), TERRAIN_CACHE_DIR (default ./.cache/terrain), TERRAIN_CACHE_MB (its
+ * byte cap, default 256), TERRAIN_BLOCKS_MB (grid blocks kept in memory,
+ * default 192) and TERRAIN_MAX_RUNNING (horizons computed at once, default 2).
  */
 import { serve } from '@hono/node-server';
 import { createApp } from './app.ts';
@@ -41,6 +45,7 @@ import {
   type FetchLike,
 } from './horizons/client.ts';
 import { DEFAULT_SITES_FILE, loadSites } from './sites.ts';
+import { openTerrain } from './terrain/terrain-config.ts';
 import { warmCache } from './warmup.ts';
 
 const DEFAULT_PORT = 3000;
@@ -65,11 +70,13 @@ const horizons = createHorizonsClient({
   maxPointsBytes: pointsCacheBytes(process.env['HORIZONS_POINTS_CACHE_MB']),
 });
 const sites = await loadSites(process.env['SITES_FILE'] ?? DEFAULT_SITES_FILE);
+const terrain = await openTerrain(process.env);
 const app = createApp({
   horizons,
   pointsCache: horizons.points,
   sites,
   now: Date.now,
+  terrain,
 });
 const server = serve({ fetch: app.fetch, port }, (info) => {
   process.stdout.write(`server listening on port ${info.port}\n`);

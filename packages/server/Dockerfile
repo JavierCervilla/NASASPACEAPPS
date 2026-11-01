@@ -30,7 +30,9 @@ RUN npm ci --omit=dev -w @ventana/server && npm cache clean --force
 COPY --from=build /app/packages/sim/dist packages/sim/dist
 COPY --from=build /app/packages/server/dist packages/server/dist
 COPY packages/server/data packages/server/data
-RUN mkdir -p /var/cache/horizons && chown node:node /var/cache/horizons
+# The terrain horizons' answers (VENT-40); the LOLA grids themselves live on a volume set by TERRAIN_DIR, never here.
+ENV TERRAIN_CACHE_DIR=/var/cache/terrain
+RUN mkdir -p /var/cache/horizons /var/cache/terrain && chown node:node /var/cache/horizons /var/cache/terrain
 USER node
 EXPOSE 3000
 # node is the one HTTP client this image is sure to keep. Unhealthy on a non-2xx answer, an error or 3 s of silence.

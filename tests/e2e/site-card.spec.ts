@@ -63,16 +63,18 @@ test.describe('desktop site card and polar map, 1440x900', () => {
     await expect(card(page).getByRole('heading', { name: 'IM-2 Athena' })).toBeVisible();
     await expect(card(page).getByText('Intuitive Machines / NASA CLPS · landed 6 Mar 2025')).toBeVisible();
     await expect(card(page).getByText('84.79° S, 29.20° E · exact touchdown')).toBeVisible();
-    // Real hours: the same values the canvas and the phone widgets show.
-    await expect(tile(page, /^Sunset in$/)).toContainText('7 d 1 h');
+    // Real hours: the same values the canvas and the phone widgets show. With IM-2's terrain horizon (VENT-40) the
+    // Sun sets 2 h later than over the smooth sphere: the site stands 5.3 km up and sees below 0°.
+    await expect(tile(page, /^Sunset in$/)).toContainText('7 d 3 h');
     await expect(tile(page, /^Sunset in$/)).toContainText('Sun 6.4° up');
     await expect(tile(page, /^Earthset in$/)).toContainText('7 d 10 h');
     await expect(tile(page, /^Earthset in$/)).toContainText('Earth 10.6° up');
-    expect(await fact(page, 'Hours with Sun')).toBe('59 %');
+    // The terrain (VENT-40) hides the Sun in 6 % of November's hours and stretches the long window by 2 h.
+    expect(await fact(page, 'Hours with Sun')).toBe('53 %');
     expect(await fact(page, 'Hours with Earth')).toBe('58 %');
     expect(await fact(page, 'Landing window')).toBe('48 %');
-    expect(await fact(page, 'Longest window')).toBe('14 d 1 h');
-    expect(await fact(page, 'Longest night')).toBe('12 d');
+    expect(await fact(page, 'Longest window')).toBe('14 d 3 h');
+    expect(await fact(page, 'Longest night')).toBe('14 d');
     await expect(card(page).getByText('November 2026 · JPL Horizons, 1 h step · Sun above 0°, Earth above 3°')).toBeVisible();
     // The card sits to the right of the globe, as on the canvas.
     const globe = await page.getByRole('region', { name: 'Lunar globe' }).boundingBox();
@@ -82,11 +84,10 @@ test.describe('desktop site card and polar map, 1440x900', () => {
 
   test('moving the slider moves the card countdowns with it', async ({ page }) => {
     await open(page);
-    await expect(tile(page, /^Sunset in$/)).toContainText('7 d 1 h');
+    await expect(tile(page, /^Sunset in$/)).toContainText('7 d 3 h');
     await slider(page).focus();
     await page.keyboard.press('ArrowRight');
-    await expect(tile(page, /^Sunset in$/)).toContainText('7 d');
-    await expect(tile(page, /^Sunset in$/)).not.toContainText('7 d 1 h');
+    await expect(tile(page, /^Sunset in$/)).toContainText('7 d 2 h');
     await expect(tile(page, /^Earthset in$/)).toContainText('7 d 9 h');
   });
 

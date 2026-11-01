@@ -50,22 +50,32 @@ export const DSN_MIN_ELEVATION_DEG = 10;
 
 /**
  * Whether the Sun is up at a sample: never where the terrain hides it
- * (`sunHidden`, permanent shadow).
+ * (`sunHidden`, permanent shadow); where the hour was read against the
+ * terrain (`sunAboveTerrain`), its centre over the relief; else over 0°.
  */
 export function hasSun(
-  sample: Pick<HourSample, 'sunEl' | 'sunHidden'>,
+  sample: Pick<HourSample, 'sunEl' | 'sunHidden' | 'sunAboveTerrain'>,
 ): boolean {
-  return sample.sunHidden !== true && sample.sunEl > SUN_MIN_ELEVATION_DEG;
+  if (sample.sunHidden === true) return false;
+  return sample.sunAboveTerrain ?? sample.sunEl > SUN_MIN_ELEVATION_DEG;
 }
 
-/** Whether the Earth is high enough for communication at a sample. */
-export function hasEarth(sample: Pick<HourSample, 'earthEl'>): boolean {
-  return sample.earthEl > EARTH_MIN_ELEVATION_DEG;
+/**
+ * Whether the Earth is high enough for communication at a sample, and not
+ * behind the terrain when the hour was read against it.
+ */
+export function hasEarth(
+  sample: Pick<HourSample, 'earthEl' | 'earthAboveTerrain'>,
+): boolean {
+  return earthLink(sample.earthEl, sample.earthAboveTerrain) === 'link';
 }
 
 /** Whether a sample is a landing window: Sun and Earth at once. */
 export function isWindow(
-  sample: Pick<HourSample, 'sunEl' | 'sunHidden' | 'earthEl'>,
+  sample: Pick<
+    HourSample,
+    'sunEl' | 'sunHidden' | 'sunAboveTerrain' | 'earthEl' | 'earthAboveTerrain'
+  >,
 ): boolean {
   return hasSun(sample) && hasEarth(sample);
 }
@@ -97,8 +107,15 @@ export function activeDsn(
  */
 export type EarthLink = 'link' | 'low' | 'below';
 
-/** The {@link EarthLink} at an Earth elevation, degrees. */
-export function earthLink(earthElDeg: number): EarthLink {
+/**
+ * The {@link EarthLink} at an Earth elevation, degrees; `below` whatever
+ * the elevation when the terrain hides the Earth (`aboveTerrain` false).
+ */
+export function earthLink(
+  earthElDeg: number,
+  aboveTerrain?: boolean,
+): EarthLink {
+  if (aboveTerrain === false) return 'below';
   if (earthElDeg > EARTH_MIN_ELEVATION_DEG) return 'link';
   return earthElDeg > 0 ? 'low' : 'below';
 }

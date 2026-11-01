@@ -100,9 +100,10 @@ test.describe('phone, 390x844', () => {
     const widgets = page.getByRole('list', { name: 'This site now' }).getByRole('listitem');
     await expect(widgets).toHaveCount(4);
     await expect(widgets.nth(0)).toContainText('Landing window');
-    // Real JPL Horizons data for IM-2: the window share of November and the sunset a week later, on 30 November.
+    // Real JPL Horizons data for IM-2: the window share of November and the sunset a week later, on 30 November,
+    // read against IM-2's terrain horizon (VENT-40): the site sees below 0°, so the Sun sets 2 h after the smooth sphere's.
     await expect(widgets.nth(0)).toContainText('48 % of November');
-    await expect(widgets.nth(1)).toContainText('Sunset in7 d 1 h');
+    await expect(widgets.nth(1)).toContainText('Sunset in7 d 3 h');
     await expect(widgets.nth(1)).toContainText('Sun 6.4° up');
     await expect(widgets.nth(2)).toContainText('Earth 10.6° up');
     await expect(widgets.nth(3)).toContainText('Robledo');
@@ -234,10 +235,11 @@ test.describe('phone, 390x844', () => {
     await stubApi(page);
     await page.goto('./');
     const sunset = page.locator('.widget').nth(1);
-    await expect(sunset).toContainText('Sunset in7 d 1 h');
+    // IM-2's terrain horizon (VENT-40): the Sun sets 2 h after the smooth sphere's.
+    await expect(sunset).toContainText('Sunset in7 d 3 h');
     await page.clock.runFor('01:30');
     await expect(sunset).toContainText('Sunset in7 d');
-    await expect(sunset).not.toContainText('7 d 1 h');
+    await expect(sunset).not.toContainText('7 d 3 h');
   });
 
   test('Horizon says soon and does nothing', async ({ page }) => {
@@ -258,9 +260,9 @@ test.describe('phone, 390x844', () => {
     await expect.poll(() => sheetTop(page)).toBe(FULL_TOP);
     await expect(tabs(page).getByRole('button', { name: 'Calendar', exact: true })).toHaveAttribute('aria-current', 'true');
     await expect(page.locator('.sheet')).toHaveAttribute('aria-label', 'Calendar');
-    // Real JPL Horizons data for IM-2 in November 2026.
+    // Real JPL Horizons data for IM-2 in November 2026, read against its terrain horizon (VENT-40).
     const shares = page.getByRole('list', { name: 'Share of the month' });
-    await expect(shares).toContainText('Sun 59 %');
+    await expect(shares).toContainText('Sun 53 %');
     await expect(shares).toContainText('Earth 58 %');
     await expect(shares).toContainText('Window 48 %');
     const slider = page.getByRole('slider', { name: 'Selected hour' });

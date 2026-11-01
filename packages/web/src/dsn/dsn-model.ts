@@ -48,15 +48,21 @@ export interface DsnModel extends DsnOutlook {
   readonly moonElDeg: number | null;
 }
 
-/** The block at `atMs`, from spans covering it and the site's Earth. */
+/**
+ * The block at `atMs`, from spans covering it and the site's Earth: its
+ * elevation, and whether it stands above the site's terrain (VENT-40;
+ * undefined when the hour was not read against the terrain).
+ */
 export function dsnModel(
   spans: readonly DsnSpan[],
   atMs: number,
   earthElDeg: number | null,
+  earthAboveTerrain?: boolean,
 ): DsnModel {
   const outlook = dsnOutlook(spans, atMs);
   const { active } = outlook;
   const moonElDeg = active ? dsnElevations(atMs)[active] : null;
-  const link = earthElDeg === null ? null : earthLink(earthElDeg);
+  const link =
+    earthElDeg === null ? null : earthLink(earthElDeg, earthAboveTerrain);
   return { ...outlook, atMs, link, moonElDeg };
 }

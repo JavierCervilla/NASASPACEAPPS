@@ -29,8 +29,8 @@
 // dist/sw.js at the base.
 //
 // Cached at install, the whole offline set: every locale's page (not the pseudo-locale's), the build's scripts and
-// styles, the manifests, the icons with the 30 phase frames, every site thumbnail, the 1K and 2K maps and the polar
-// map. The sharper maps (4K, 8K) are left to the runtime cache: the zoom asks for them, and most visits never do.
+// styles, the manifests, the icons with the 30 phase frames, every site thumbnail, the 1K and 2K maps, the polar
+// map and the astronaut's model. The sharper maps (4K, 8K) are left to the runtime cache: the zoom asks for them, and most visits never do.
 // The install set has a hard budget, PRECACHE_BUDGET: a build over it fails (human decision, 2026-10-31: under 5 MB
 // is fine for this app).
 import { createHash } from 'node:crypto';

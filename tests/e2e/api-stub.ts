@@ -24,8 +24,9 @@
  */
 
 /**
- * Stubs the API for the phone runs: the real site list (packages/server/data/sites.json) and the ephemeris of
- * `/api/v1/sites/:id?from&to`. IM-2 answers from a real slice of the live API (fixtures/im2-athena-2026-11.json,
+ * Stubs the API for the phone runs: the real site list (packages/server/data/sites.json), the ephemeris of
+ * `/api/v1/sites/:id?from&to`, and that of any point, `/api/v1/ephemeris?lat&lon&from&to` (VENT-10). IM-2 answers
+ * from a real slice of the live API (fixtures/im2-athena-2026-11.json,
  * 1 November to 23 December 2026 18:00 UTC, recorded 2026-10-30); every other site answers one fixed sky. So the
  * widgets read the same in every run, and IM-2's read as the real Moon does.
  */
@@ -95,14 +96,33 @@ interface StubOptions {
   readonly status?: number;
   /** The site route answers only once this settles: a slow API. */
   readonly hold?: Promise<void>;
+  /** The route for any point (the astronaut's custom point) answers only once this settles. */
+  readonly pointHold?: Promise<void> | undefined;
+}
+
+/** The sky every custom point gets from the stub: a landing window, so Horizons' answer is told from the sky's. */
+export const POINT_SKY: Sky = { sunEl: 4, earthEl: 6, dsn: 'canberra' };
+
+/** The ephemeris of `/api/v1/ephemeris?lat&lon&from&to`: answered alone, not wrapped in `{ site, ephemeris }`. */
+function pointBody(url: URL): unknown {
+  const from = bound(url.searchParams.get('from'), false);
+  const to = bound(url.searchParams.get('to'), true);
+  const lat = Number(url.searchParams.get('lat'));
+  const lonEast = Number(url.searchParams.get('lon'));
+  return { lat, lonEast, hours: constantHours(POINT_SKY, from, to) };
 }
 
 /**
  * Answers the site list and each site's range. On a context, the routes also answer the service worker's requests
  * (pwa.spec.ts); on a page they do not, so the other specs run with service workers blocked (playwright.config.ts).
  */
-export async function stubApi(page: Page | BrowserContext, { status = 200, hold }: StubOptions = {}): Promise<void> {
+export async function stubApi(page: Page | BrowserContext, { status = 200, hold, pointHold }: StubOptions = {}): Promise<void> {
   await page.route('**/api/v1/sites', (route) => route.fulfill({ json: { sites: SITES } }));
+  await page.route(/\/api\/v1\/ephemeris\?/, async (route: Route) => {
+    await pointHold;
+    if (status !== 200) return route.fulfill({ status, json: { error: 'down' } });
+    return route.fulfill({ json: pointBody(new URL(route.request().url())) });
+  });
   await page.route(/\/api\/v1\/sites\/[^/?]+\?/, async (route: Route) => {
     await hold;
     if (status !== 200) return route.fulfill({ status, json: { error: 'down' } });

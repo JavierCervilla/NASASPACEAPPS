@@ -47,6 +47,8 @@ interface Props {
   readonly edge: RefObject<HTMLElement | null>;
   /** The top bar the full sheet stays under. */
   readonly bar: RefObject<HTMLElement | null>;
+  /** The foot's row (tab bar and dock) that half and peek stay above. */
+  readonly foot: RefObject<HTMLElement | null>;
   readonly children: ReactNode;
 }
 
@@ -74,10 +76,10 @@ function useMountedSheet(
     const onOpenness = (v: number): void => latest.current.onOpenness(v);
     const onEdge = (top: number): void => latest.current.onEdge(top);
     const start = reported.current;
-    const edge = latest.current.edge.current;
-    const bar = latest.current.bar.current;
+    const { edge, bar, foot } = latest.current;
     sheet.current = mountSheet(node, {
-      start, reducedMotion, onDetent, onOpenness, onEdge, canDrag, edge, bar,
+      start, reducedMotion, onDetent, onOpenness, onEdge, canDrag,
+      edge: edge.current, bar: bar.current, foot: foot.current,
     });
     return sheet.current.dispose;
   }, [el, latest, reported]);

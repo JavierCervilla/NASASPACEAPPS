@@ -24,9 +24,10 @@
  */
 
 /**
- * The state's badge on the site card's image: the state's dot and word in
- * its colour. While the state is the simulator's (VENT-36) the dot is
- * hollow and a screen reader hears «computed» after the state.
+ * The state's badge on the site card's image, or at the top of its head
+ * when there is no image: the state's dot and word in its colour. While
+ * the state is the simulator's (VENT-36) the dot is hollow and a screen
+ * reader hears «computed» after the state.
  */
 import type { SiteState } from '../../phone/site-state';
 import { useI18n } from '../i18n-context';
@@ -34,14 +35,20 @@ import { useI18n } from '../i18n-context';
 interface Props {
   readonly state: SiteState | null;
   readonly computed: boolean;
+  /** In the card's head, for a site without an image. */
+  readonly inHead?: boolean;
 }
 
-export function StateBadge({ state, computed }: Props) {
+export function StateBadge({ state, computed, inHead }: Props) {
   const { t } = useI18n();
   if (!state) return null;
   const spoken = t('state.computed', { state: state.badge });
   return (
-    <span className="card-media__badge" data-tone={state.kind} data-computed={computed}>
+    <span
+      className={`card-media__badge${inHead ? ' card-head__badge' : ''}`}
+      data-tone={state.kind}
+      data-computed={computed}
+    >
       <span aria-hidden={computed}>{state.badge}</span>
       {computed ? <span className="visually-hidden">{spoken}</span> : null}
     </span>

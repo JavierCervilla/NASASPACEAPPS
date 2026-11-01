@@ -5042,14 +5042,15 @@
         <path data-edge-from="pipeline" data-edge-to="data" data-edge-label="computes" data-edge-key="2" data-edge-id="compute-data" data-composition-points="420,330;520,330" d="M 420 330 L 520 330" class="a-emphasis" stroke-width="1.8" marker-end="url(#arrowhead-emphasis)"/>
         <path data-edge-from="data" data-edge-to="store" data-edge-label="fetch" data-edge-key="3" data-edge-id="fetch-data" data-composition-points="590,360;590,490" d="M 590 360 L 590 490" class="a-emphasis" stroke-width="1.8" marker-end="url(#arrowhead-emphasis)"/>
         <path data-edge-from="actions" data-edge-to="pages" data-edge-label="deploys" data-edge-key="4" data-edge-id="deploy-pages" data-composition-points="900,323;1000,323" d="M 900 323 L 1000 323" class="a-emphasis" stroke-width="1.8" marker-end="url(#arrowhead-emphasis)"/>
-        <path data-edge-from="pages" data-edge-to="store" data-edge-label="serves app" data-edge-key="5" data-edge-id="serve-app" data-composition-points="1000,337;976,337;976,506;660,506" d="M 1000 337 L 984 337 Q 976 337 976 345 L 976 498 Q 976 506 968 506 L 660 506" class="a-default" stroke-width="1.5" marker-end="url(#arrowhead)"/>
+        <path data-edge-from="pages" data-edge-to="store" data-edge-label="serves app" data-edge-key="5" data-edge-id="serve-app" data-composition-points="1000,337;976,337;976,515.3333333333334;660,515.3333333333334" d="M 1000 337 L 984 337 Q 976 337 976 345 L 976 507.33333333333337 Q 976 515.3333333333334 968 515.3333333333334 L 660 515.3333333333334" class="a-default" stroke-width="1.5" marker-end="url(#arrowhead)"/>
         <path data-edge-from="store" data-edge-to="calendar" data-edge-key="6" data-edge-id="sub-calendar" data-composition-points="520,520;234,520;234,710;210,710" d="M 520 520 L 242 520 Q 234 520 234 528 L 234 702 Q 234 710 226 710 L 210 710" class="a-default" stroke-width="1.5" marker-end="url(#arrowhead)"/>
         <path data-edge-from="store" data-edge-to="polar" data-edge-key="7" data-edge-id="sub-polar" data-composition-points="520,534;477.5,534;477.5,710;435,710" d="M 520 534 L 485.5 534 Q 477.5 534 477.5 542 L 477.5 702 Q 477.5 710 469.5 710 L 435 710" class="a-default" stroke-width="1.5" marker-end="url(#arrowhead)"/>
         <path data-edge-from="store" data-edge-to="sitecard" data-edge-key="8" data-edge-id="sub-sitecard" data-composition-points="590,550;590,680" d="M 590 550 L 590 680" class="a-default" stroke-width="1.5" marker-end="url(#arrowhead)"/>
         <path data-edge-from="store" data-edge-to="moon3d" data-edge-key="9" data-edge-id="sub-moon3d" data-composition-points="660,534;702.5,534;702.5,710;745,710" d="M 660 534 L 694.5 534 Q 702.5 534 702.5 542 L 702.5 702 Q 702.5 710 710.5 710 L 745 710" class="a-default" stroke-width="1.5" marker-end="url(#arrowhead)"/>
-        <path data-edge-from="store" data-edge-to="dsn" data-edge-key="10" data-edge-id="sub-dsn" data-composition-points="660,520;946,520;946,710;970,710" d="M 660 520 L 938 520 Q 946 520 946 528 L 946 702 Q 946 710 954 710 L 970 710" class="a-dashed" stroke-width="1.5" marker-end="url(#arrowhead-dashed)"/>
+        <path data-edge-from="store" data-edge-to="dsn" data-edge-key="10" data-edge-id="sub-dsn" data-composition-points="660,524.6666666666666;946,524.6666666666666;946,710;970,710" d="M 660 524.6666666666666 L 938 524.6666666666666 Q 946 524.6666666666666 946 532.6666666666666 L 946 702 Q 946 710 954 710 L 970 710" class="a-dashed" stroke-width="1.5" marker-end="url(#arrowhead-dashed)"/>
         <path data-edge-from="pages" data-edge-to="sw" data-edge-label="installs" data-edge-key="11" data-edge-id="install-sw" data-composition-points="1070,300;1070,170" d="M 1070 300 L 1070 170" class="a-dashed" stroke-width="1.5" marker-end="url(#arrowhead-dashed)"/>
         <path data-edge-from="sky" data-edge-to="store" data-edge-label="instant" data-edge-key="12" data-edge-id="instant-sky" data-composition-points="210,506;520,506" d="M 210 506 L 520 506" class="a-dashed" stroke-width="1.5" marker-end="url(#arrowhead-dashed)"/>
+        <path data-edge-from="astronaut" data-edge-to="store" data-edge-label="custom point" data-edge-key="13" data-edge-id="drop-point" data-composition-points="760,140;710,140;710,506;660,506" d="M 760 140 L 718 140 Q 710 140 710 148 L 710 498 Q 710 506 702 506 L 660 506" class="a-dashed" stroke-width="1.5" marker-end="url(#arrowhead-dashed)"/>
 
         <!-- Components -->
         <g id="node-horizons" data-node-id="horizons" data-node-label="JPL Horizons API" tabindex="0" role="button" aria-label="Focus JPL Horizons API, NASA/JPL ephemerides, Architecture component" aria-pressed="false" data-node-kind="external" data-node-sublabel="NASA/JPL ephemerides" data-node-context="Architecture component">
@@ -5256,6 +5257,21 @@
         <text data-detail="fine" x="1040" y="732" class="t-frontend" font-size="7" text-anchor="middle">luxury</text>
         </g>
 
+        <g id="node-astronaut" data-node-id="astronaut" data-node-label="Apollo astronaut" tabindex="0" role="button" aria-label="Focus Apollo astronaut, drag to a custom point, Architecture component" aria-pressed="false" data-node-kind="frontend" data-node-sublabel="drag to a custom point" data-node-tag="built" data-node-context="Architecture component">
+          <title>Apollo astronaut · drag to a custom point · Architecture component · built</title>
+          <rect x="760" y="110" width="140" height="60" rx="6" class="c-mask"/>
+          <rect x="760" y="110" width="140" height="60" rx="6" class="c-frontend" stroke-width="1.5"/>
+          <g aria-hidden="true" data-semantic-sigil="frontend" class="semantic-sigil s-frontend" transform="translate(766 116) scale(0.6875)">
+            <rect x="2" y="3" width="12" height="10" rx="2"/>
+            <path d="M2 6.5h12"/>
+            <circle cx="4.1" cy="4.8" r=".7" class="sigil-fill"/>
+            <circle cx="6.3" cy="4.8" r=".7" class="sigil-fill"/>
+          </g>
+          <text data-node-label="" data-detail-anchor="" x="830" y="138" class="t-primary" font-size="11" font-weight="600" text-anchor="middle">Apollo astronaut</text>
+        <text data-detail="context" x="830" y="154" class="t-muted" font-size="9" text-anchor="middle">drag to a custom point</text>
+        <text data-detail="fine" x="830" y="162" class="t-frontend" font-size="7" text-anchor="middle">built</text>
+        </g>
+
         <!-- Connection labels -->
         <g data-detail="context" data-edge-from="horizons" data-edge-to="pipeline" data-edge-label="az/el series" data-edge-key="0" data-edge-id="query-horizons">
           <rect x="196.2" y="310" width="67.6" height="14" rx="3" class="c-mask"/>
@@ -5278,8 +5294,8 @@
           <text x="950" y="313" class="t-backend" font-size="8" text-anchor="middle">deploys</text>
         </g>
         <g data-detail="context" data-edge-from="pages" data-edge-to="store" data-edge-label="serves app" data-edge-key="5" data-edge-id="serve-app">
-          <rect x="947" y="401.5" width="58" height="14" rx="3" class="c-mask"/>
-          <text x="976" y="411.5" class="t-muted" font-size="8" text-anchor="middle">serves app</text>
+          <rect x="947" y="406.1666666666667" width="58" height="14" rx="3" class="c-mask"/>
+          <text x="976" y="416.1666666666667" class="t-muted" font-size="8" text-anchor="middle">serves app</text>
         </g>
 
 
@@ -5293,6 +5309,10 @@
         <g data-detail="context" data-edge-from="sky" data-edge-to="store" data-edge-label="instant" data-edge-key="12" data-edge-id="instant-sky">
           <rect x="343.2" y="486" width="43.6" height="14" rx="3" class="c-mask"/>
           <text x="365" y="496" class="t-messagebus" font-size="8" text-anchor="middle">instant</text>
+        </g>
+        <g data-detail="context" data-edge-from="astronaut" data-edge-to="store" data-edge-label="custom point" data-edge-key="13" data-edge-id="drop-point">
+          <rect x="676.2" y="303" width="67.6" height="14" rx="3" class="c-mask"/>
+          <text x="710" y="313" class="t-messagebus" font-size="8" text-anchor="middle">custom point</text>
         </g>
 
         <!-- Boundary labels (foreground masks keep routes out of titles) -->
@@ -5534,6 +5554,7 @@
           <li>&bull; MVP: calendar, polar map, site card; luxury: globes</li>
           <li>&bull; Built: the 3D globe (lazy-loaded, its Sun follows the instant, the selected site ringed, its state in the phone&#39;s site pill and a LOLA relief thumbnail, 1x and 2x, rendered offline by site_thumbs.py and committed, in the phone sheet and the desktop site card), the calendar strip, the site card, the polar map (header tabs by hash, keep the site and the instant) and the phone sheet with its calendar, all under one glass gate (Liquid refraction on capable Chromium, frosted elsewhere); one request per site and month (the month and its next 30 days), cached in the page</li>
           <li>&bull; Installable (VENT-28): a manifest per locale with the J2 icon and site shortcuts, a live favicon with the Moon&#39;s phase and the site&#39;s state, and a service worker (build-versioned cache, pages and API network first) that opens the app offline with its last data</li>
+          <li>&bull; VENT-10: the Apollo astronaut, dragged onto the globe or the polar map, makes any point the selected site (?lat&amp;lon), answered at once by the simulator and then by Horizons</li>
         </ul>
       </div>
     </div>

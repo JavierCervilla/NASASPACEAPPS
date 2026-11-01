@@ -45,11 +45,14 @@ import {
   type PolarMarker,
 } from '../../polar/polar-markers';
 import type { SourceStore } from '../../source/data-source';
+import { onPolarMap } from '../../lib/polar-projection';
+import { PolarAstronaut } from '../astronaut/PolarAstronaut';
 import { useI18n } from '../i18n-context';
 import { Layers } from '../Layers';
 import { Graticule } from './Graticule';
 import { PolarKey } from './PolarKey';
 import { PolarMarkers } from './PolarMarkers';
+import { useDiskFit } from './use-disk-fit';
 import { useWidth } from './use-width';
 
 interface Props {
@@ -67,9 +70,16 @@ interface Props {
 
 const IMAGE = 'textures/moon-south-polar-2k.jpg';
 
-function OffMap({ site }: { readonly site: PhoneSite }) {
+/**
+ * The note for a selected site off the map: one without a marker, but
+ * the custom point only north of 80° S (it has no marker).
+ */
+function OffMap(props: { site: PhoneSite; chosen: string | null }) {
+  const { site, chosen } = props;
   const { t } = useI18n();
-  const name = siteLabels(site).subtitle;
+  if (chosen !== null || (site.custom && onPolarMap(site.lat))) return null;
+  const labels = siteLabels(site);
+  const name = site.custom ? labels.title : labels.subtitle;
   return (
     <p className="polar__note" role="status">
       {t('polar.offMap', { name })}
@@ -96,26 +106,36 @@ function useMarkers(sites: readonly PhoneSite[]) {
   return { markers, label: i18n.t('polar.label') };
 }
 
+/** A click on the disk picks the dot nearest it, as on the globe. */
+function pickHandler(
+  markers: readonly PolarMarker[],
+  size: number,
+  onPick: (id: string) => void,
+) {
+  return (event: MouseEvent<HTMLDivElement>): void => {
+    const placed = markers.map(({ id, at }) => ({ id, at: toPx(at, size) }));
+    const id = pickedSite(event.nativeEvent, event.currentTarget, placed);
+    if (id) onPick(id);
+  };
+}
+
 export function PolarMap(props: Props) {
   const { sites, site, state, computed, base, onPick, source } = props;
   const { markers, label } = useMarkers(sites);
   const [disk, size] = useWidth<HTMLDivElement>();
   const chosen = markerOf(markers, site.id)?.id ?? null;
   const { labels, badges } = layout(markers, size, chosen);
-  const click = (event: MouseEvent<HTMLDivElement>): void => {
-    const placed = markers.map(({ id, at }) => ({ id, at: toPx(at, size) }));
-    const root = event.currentTarget;
-    const id = pickedSite(event.nativeEvent, root, placed);
-    if (id) onPick(id);
-  };
+  const panel = useDiskFit();
+  const click = pickHandler(markers, size, onPick);
   return (
-    <section className="polar" aria-label={label} data-computed={computed}>
+    <section ref={panel} className="polar" aria-label={label} data-computed={computed}>
       <div className="polar__disk" ref={disk} onClick={click}>
         <img className="polar__image" src={`${base.replace(/\/?$/, '/')}${IMAGE}`} alt="" decoding="async" />
         <Graticule />
         <PolarMarkers {...{ markers, chosen, state, labels, badges }} />
+        <PolarAstronaut disk={disk} selected={site.id} onPick={onPick} />
       </div>
-      {chosen === null ? <OffMap site={site} /> : null}
+      <OffMap site={site} chosen={chosen} />
       <Layers source={source} />
       <PolarKey badges={badges} />
     </section>

@@ -36,6 +36,7 @@ import {
   type HourSample,
   type SelenographicPoint,
 } from '@ventana/sim';
+import { customPointOf } from '../astronaut/custom-point';
 import type { HoursRange } from '../phone/site-hours';
 import { widgetRange } from '../phone/widget-range';
 
@@ -54,7 +55,10 @@ interface Located {
   readonly lonEast: number;
 }
 
-/** The point of each of `sites` that has coordinates. */
+/**
+ * The point of each of `sites` that has coordinates, and of the custom
+ * point, whose id carries it (VENT-10).
+ */
 export function pointsOf(sites: readonly Located[]): PointOf {
   const points = new Map<string, SelenographicPoint>();
   for (const { id, lat, lonEast } of sites) {
@@ -62,7 +66,11 @@ export function pointsOf(sites: readonly Located[]): PointOf {
       points.set(id, { latDeg: lat, lonEastDeg: lonEast });
     }
   }
-  return (id) => points.get(id) ?? null;
+  return (id) => {
+    const custom = customPointOf(id);
+    if (custom) return { latDeg: custom.lat, lonEastDeg: custom.lonEast };
+    return points.get(id) ?? null;
+  };
 }
 
 /** As many entries as the API's cache keeps. */

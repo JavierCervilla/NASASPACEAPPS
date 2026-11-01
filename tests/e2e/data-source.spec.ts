@@ -40,6 +40,8 @@ type Box = { x: number; y: number; width: number; height: number };
 import { SITES, stubApi } from './api-stub';
 
 const NOW = new Date('2026-11-23T18:00:00Z');
+/** The page's island hydrating is not what this spec checks: a cold, loaded run can take seconds. */
+const HYDRATED_MS = 20_000;
 const DIST = fileURLToPath(new URL('../../packages/web/dist', import.meta.url));
 const CSP_SCRIPT = fileURLToPath(new URL('../../packages/web/scripts/csp-header.mjs', import.meta.url));
 const OUT = new URL('../../production/qa/evidence/', import.meta.url);
@@ -79,6 +81,9 @@ async function open(page: Page, query = ''): Promise<void> {
   await page.emulateMedia({ reducedMotion: 'reduce', colorScheme: 'dark' });
   await page.clock.setFixedTime(NOW);
   await page.goto(`./${query}`);
+  // The switch is in the server-rendered HTML: a click before React hydrates it is lost, and the source stays Horizons.
+  // Astro removes the island's `ssr` attribute once it has hydrated (smoke.spec.ts).
+  await expect(page.locator('astro-island')).not.toHaveAttribute('ssr', { timeout: HYDRATED_MS });
 }
 
 /** The CSP nginx sends for the built site (packages/web/scripts/csp-header.mjs, as the Dockerfile runs it). */
@@ -415,14 +420,19 @@ for (const viewport of [
         .filter({ hasText: 'Horizons unavailable: showing the computed sky' })
         .getByRole('button', { name: 'Try again' });
 
-    /** The retry's box is clear of the tab bar and the screen's bottom, and a tap lands on it. */
+    /**
+     * The retry's box is clear of the tab bar, of the astronaut's dock (which wraps above the bar on a narrow phone or
+     * with large text, VENT-10) and of the screen's bottom, and a tap lands on it.
+     */
     async function expectReachable(page: Page): Promise<void> {
       const retry = retryIn(page);
       await expect(retry).toBeInViewport({ ratio: 1 });
-      const tabs = (await page.getByRole('navigation', { name: 'Views' }).boundingBox())!;
+      const tabs = page.getByRole('navigation', { name: 'Views' });
+      const dock = page.locator('.astro-phone-dock');
       await expect.poll(async () => {
         const box = (await retry.boundingBox())!;
-        return box.y + box.height <= tabs.y;
+        const foot = Math.min((await tabs.boundingBox())!.y, (await dock.boundingBox())!.y);
+        return box.y + box.height <= foot;
       }).toBe(true);
       expect(await hitAtCentre(retry)).toBe(true);
     }
@@ -570,11 +580,29 @@ test.describe('desktop, 1280x720: floating surfaces over the markers', () => {
     await evidence(page, 'desktop-1280-es-layers');
   });
 
+  // Verificador on PR #20: since VENT-10 the disk is fitted clear of the key (polar/disk-fit.ts), so at the common
+  // desktop sizes the stacking check below had nothing left to sample. Say that the two are apart there.
+  test('on the polar map at 1280x720 and 1440x900, the Layers key and the disk do not overlap', async ({ page }) => {
+    await stubApi(page);
+    for (const viewport of [{ width: 1280, height: 720 }, { width: 1440, height: 900 }]) {
+      await page.setViewportSize(viewport);
+      await open(page, 'es/#polar-map');
+      await expect(page.locator('.polar-marker').first()).toBeVisible();
+      const key = (await page.locator('.polar .globe-layers').boundingBox())!;
+      const disk = (await page.locator('.polar__disk').boundingBox())!;
+      const apart =
+        key.x + key.width <= disk.x || disk.x + disk.width <= key.x || key.y + key.height <= disk.y || disk.y + disk.height <= key.y;
+      expect(apart, `${viewport.width}x${viewport.height}`).toBe(true);
+    }
+  });
+
   // Verificador on PR #19: the polar disk is its own stacking context too, or its image and markers paint over the
-  // Layers key where the two overlap (at 1280x720 the key's top right corner sits over the disk).
+  // Layers key where the two overlap. At 1024x768 the disk, at its smallest, still reaches under the key: there the key
+  // is on top.
   test('on the polar map, the Layers key is on top of the disk wherever they overlap, and Compare takes the click', async ({
     page,
   }) => {
+    await page.setViewportSize({ width: 1024, height: 768 });
     await stubApi(page);
     await open(page, 'es/#polar-map');
     const layers = '.polar .globe-layers';
@@ -599,6 +627,7 @@ test.describe('desktop, 1280x720: floating surfaces over the markers', () => {
       }
       return { hits, sampled: right > left && bottom > top };
     }, layers);
+    // The check has something to look at: the two do overlap at this size.
     expect(covered.sampled).toBe(true);
     expect(covered.hits).toEqual([]);
     const compare = switchIn(page, layers).getByRole('radio', { name: 'Comparar' });
@@ -609,7 +638,7 @@ test.describe('desktop, 1280x720: floating surfaces over the markers', () => {
     await compare.click();
     await expect(compare).toHaveAttribute('aria-checked', 'true');
     await expect(page.locator('.site-button')).toHaveAttribute('aria-label', site!);
-    await evidence(page, 'desktop-1280-es-polar-layers');
+    await evidence(page, 'desktop-1024-es-polar-layers');
   });
 
   test('no marker paints over the site card, the calendar strip or the header', async ({ page }) => {

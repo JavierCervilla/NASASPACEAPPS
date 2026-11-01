@@ -79,7 +79,7 @@ export function SiteSummary(props: Props) {
         <SiteThumb thumb={thumb} sizes={THUMB_SIZES} className="summary__thumb" />
         <h2 className="summary__name">{title}</h2>
         <p className="summary__meta">
-          {subtitle === title ? null : (
+          {!subtitle || subtitle === title ? null : (
             <span className="summary__subtitle">{subtitle}</span>
           )}
           <Coords site={site} />

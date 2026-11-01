@@ -29,6 +29,8 @@
  * compute the rest with `@ventana/sim`.
  */
 import type { DsnComplex, HourSample } from '@ventana/sim';
+import { customPointOf } from '../astronaut/custom-point';
+import { asSiteBody, pointHoursUrl } from '../astronaut/point-hours';
 import { isSiteId, tooLarge } from '../lib/api-limits';
 import type { WidgetRange } from './widget-range';
 
@@ -91,18 +93,26 @@ export function hoursUrl(sitesUrl: string, id: string, range: HoursRange) {
   return `${sitesUrl}/${encodeURIComponent(id)}?${query.toString()}`;
 }
 
-/** The site's hours; throws with the reason when they cannot load. */
+/**
+ * The site's hours; throws with the reason when they cannot load. The
+ * custom point's come from the API's route for any point (VENT-10).
+ */
 export async function loadSiteHours(
   source: HoursSource,
   id: string,
   range: HoursRange,
 ): Promise<HourSample[]> {
-  const response = await source.fetch(hoursUrl(source.sitesUrl, id, range), {
+  const point = customPointOf(id);
+  const url = point
+    ? pointHoursUrl(source.sitesUrl, point, range)
+    : hoursUrl(source.sitesUrl, id, range);
+  const response = await source.fetch(url, {
     headers: { accept: 'application/json' },
   });
   if (!response.ok) throw new Error(`HTTP ${response.status}`);
   if (tooLarge(response)) throw new Error('the body is too large');
-  const hours = parseHours(await response.json().catch(() => null));
+  const body: unknown = await response.json().catch(() => null);
+  const hours = parseHours(point ? asSiteBody(body) : body);
   if (!hours) throw new Error('the body was not the expected shape');
   return hours;
 }

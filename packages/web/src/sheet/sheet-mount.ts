@@ -26,8 +26,9 @@
 /**
  * Mounts the sheet's physics on its element: the state, the frame loop
  * that draws it, the drag gestures (on the sheet, and on the edge that
- * opens it when closed), the viewport resize and the top bar's height,
- * which the full sheet stays under.
+ * opens it when closed), the viewport resize, the top bar's height,
+ * which the full sheet stays under, and the foot's, which half and peek
+ * stay above.
  */
 import { createLoop, type Loop } from '../globe/loop';
 import { bindSheetDrag } from './sheet-drag';
@@ -60,7 +61,15 @@ export interface SheetMountOptions {
   readonly edge: HTMLElement | null;
   /** The top bar the full sheet stays under; null: the canvas's gap. */
   readonly bar: HTMLElement | null;
+  /**
+   * The row at the screen's foot that holds the tab bar (`edge`) and the
+   * astronaut's dock (VENT-10); null: the tab bar alone.
+   */
+  readonly foot: HTMLElement | null;
 }
+
+/** The elements the detents are measured from. */
+type Frame = Pick<SheetMountOptions, 'bar' | 'edge' | 'foot'>;
 
 /** Room the full sheet keeps under the top bar. */
 const BAR_GAP_PX = 12;
@@ -111,31 +120,38 @@ function bindDrags(el: HTMLElement, parts: DragParts): () => void {
 
 /**
  * The canvas's layout, with the full sheet `BAR_GAP_PX` under `bar`'s
- * bottom edge when the bar outgrows the canvas's (large text).
+ * bottom edge when the bar outgrows the canvas's (large text), and half
+ * and peek raised by as much as the foot rises above the tab bar: when
+ * the dock wraps over the bar's end (a narrow phone, large text), what
+ * they show stays clear of it as it stays clear of the bar.
  */
-function layoutUnder(bar: HTMLElement | null): SheetLayout {
+function layoutUnder({ bar, edge, foot }: Frame): SheetLayout {
   const bottom = bar ? bar.getBoundingClientRect().bottom : 0;
   const fullGapPx = Math.max(SHEET_LAYOUT.fullGapPx, bottom + BAR_GAP_PX);
-  return { ...SHEET_LAYOUT, fullGapPx };
+  const top = (el: HTMLElement | null) => el?.getBoundingClientRect().top;
+  const rise = Math.max(0, (top(edge) ?? 0) - (top(foot) ?? Infinity));
+  const halfPx = SHEET_LAYOUT.halfPx + rise;
+  const peekPx = SHEET_LAYOUT.peekPx + rise;
+  return { ...SHEET_LAYOUT, fullGapPx, halfPx, peekPx };
 }
 
 /**
  * Moves the sheet to its detent again when the viewport resizes, or when
- * the bar's height moves the full detent; returns the unwatch function.
+ * the bar's or the foot's height moves a detent; returns the unwatch
+ * function.
  */
-function watchLayout(
-  bar: HTMLElement | null,
-  state: SheetState,
-  motion: SheetMotion,
-) {
+function watchLayout(frame: Frame, state: SheetState, motion: SheetMotion) {
   const resize = (): void => motion.moveTo(state.detent);
-  const fullMoved = (): boolean =>
-    layoutUnder(bar).fullGapPx !== state.detents.full;
+  const moved = (): boolean => {
+    const next = detentsFor(window.innerHeight, layoutUnder(frame));
+    const now = state.detents;
+    return next.full !== now.full || next.half !== now.half;
+  };
   const barResized = (): void => {
-    if (fullMoved()) resize();
+    if (moved()) resize();
   };
   const observer = new ResizeObserver(barResized);
-  if (bar) observer.observe(bar);
+  for (const el of [frame.bar, frame.foot]) if (el) observer.observe(el);
   window.addEventListener('resize', resize);
   return (): void => {
     observer.disconnect();
@@ -149,7 +165,7 @@ export function mountSheet(
   options: SheetMountOptions,
 ): MountedSheet {
   const heightPx = (): number => window.innerHeight;
-  const layout = (): SheetLayout => layoutUnder(options.bar);
+  const layout = (): SheetLayout => layoutUnder(options);
   const detents = detentsFor(heightPx(), layout());
   const state = createSheetState(detents, options.start);
   const loop = sheetLoop(el, state, options);
@@ -158,7 +174,7 @@ export function mountSheet(
   const deps = { heightPx, layout, reducedMotion, invalidate, onDetent };
   const motion = new SheetMotion(state, deps);
   const unbind = bindDrags(el, { state, motion, options });
-  const unwatch = watchLayout(options.bar, state, motion);
+  const unwatch = watchLayout(options, state, motion);
   placeSheet(el, state.axis.value, state.detents);
   invalidate();
   const dispose = (): void => {

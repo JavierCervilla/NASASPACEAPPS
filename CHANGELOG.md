@@ -3,6 +3,28 @@
 ## [Sin publicar]
 
 ### Añadido
+- Astronauta del Apolo arrastrable a cualquier punto de la Luna (VENT-10, opción A + B del lienzo, aprobada por
+  Javier): el modelo «Astronaut» de la NASA (dominio público), con los brazos bajados y sin la insignia de la NASA ni el parche de misión (las banderas de EE. UU. se quedan),
+  espera en un hueco al final de la leyenda «Layers» del PC («Drag me anywhere») y en un botón redondo de cristal junto
+  a la barra de pestañas del móvil. Se coge con el ratón o el dedo y sigue a la mano desde donde se agarró (en el móvil,
+  por encima del dedo, y la hoja baja a reposo mientras tanto), inclinado y con su sombra, con una cruz en el punto de
+  caída y una etiqueta con las coordenadas y el estado de ese punto en el instante elegido; el visor toma el color del
+  estado (plata neutro en el hueco y fuera de la Luna). Funciona sobre el globo y sobre el mapa polar. Fuera de la Luna
+  dice «Off the Moon · Let go and it walks home» y, al soltarlo, vuelve a casa con un muelle sin rebote; Esc cancela.
+  Al soltarlo en la Luna, el punto pasa a ser el sitio elegido: «Custom point», «Near <sitio más cercano> · N km» y sus
+  coordenadas, con la respuesta al instante del cálculo propio (punto hueco) y la de Horizons para esas coordenadas
+  cuando llega (punto relleno). El astronauta se queda de pie en el punto y se puede volver a coger allí; el hueco dice
+  «On the Moon» y con un clic (un toque en pantallas táctiles) vuelve a casa y se elige otra vez el sitio de antes. En
+  el mapa polar, los nombres de los sitios se leen por encima del astronauta cuando está de pie a su lado. El punto
+  entra en la dirección (`?lat=…&lon=…`, junto a `?site=`), así que se comparte y sobrevive a una recarga; al elegir
+  un sitio de la lista el punto sale de la dirección, para que una recarga abra lo que se ve. Solo valen números
+  decimales simples dentro de rango (latitud ±90°, longitud de -180° a 360° este); cualquier otra cosa se ignora. Con teclado: Intro sobre el hueco
+  lo coge, las flechas lo mueven (con Mayúsculas, a pasos grandes), Intro lo suelta y Esc lo devuelve, y el lector de
+  pantalla oye cada paso; al soltarlo dice dónde ha quedado y cómo volver a moverlo. Con movimiento reducido va derecho y se desvanece en vez de volar. En los cinco idiomas.
+  Las imágenes del astronauta vienen dibujadas de antemano (una sola imagen de 77 kB con las dos posturas y los cinco
+  colores del visor, idéntica píxel a píxel a lo que antes se dibujaba en el navegador): la página ya no descarga el
+  modelo 3D ni lo dibuja al cargar, así que el astronauta no gasta nada mientras arranca el globo; en un móvil estrecho o con texto grande, donde el botón del astronauta sube sobre la barra de pestañas, la
+  hoja sube lo mismo para que el botón no tape «Reintentar» ni las tarjetas.
 - Respuesta al instante con el cálculo propio y conmutador para compararlo con Horizons (VENT-36, opción C del lienzo,
   aprobada por Javier): al elegir un sitio, la píldora, las tarjetas, la ficha y el calendario se pintan en el acto con
   el Sol, la Tierra y la antena DSN que calcula la propia web, sin esperar a JPL Horizons; cuando llega Horizons, lo
@@ -229,6 +251,23 @@
   comprobada en el lint.
 
 ### Corregido
+- El astronauta caía en un punto que ya no estaba bajo la cruz (VENT-10, hallazgos de qa-adversario): el punto solo se
+  leía al mover el puntero, así que si la Luna se movía bajo un dedo o un ratón quietos (la hoja del móvil bajando a
+  reposo y el globo reencuadrándose, la rueda haciendo zoom mientras se arrastra, un segundo dedo girando el globo o
+  la ventana cambiando de tamaño) la etiqueta, el visor, la caída, la dirección, la ficha y la consulta a Horizons
+  usaban un punto viejo, a entre 1° y 17° de la cruz en el móvil. Ahora el punto se vuelve a leer en cada fotograma
+  del globo mientras se lleva el astronauta y otra vez al soltarlo, donde esté el puntero; el zoom con la rueda o los
+  dos dedos sigue permitido durante el arrastre, para afinar dónde soltarlo.
+- Cambiar de idioma ya no pierde el sitio ni el punto del astronauta: la página del nuevo idioma se abre con el mismo
+  `?site=`, `?lat&lon` y `?glass=` de la dirección, además de la misma vista (VENT-10, hallazgo de qa-adversario).
+- La estrella oscura del polo sur del globo, justo bajo IM-2 (VENT-10): la esfera se junta en el polo en un abanico de
+  triángulos finos y la textura se pintaba en gajos. Ahora cada píxel lee el mapa por su propio punto de la esfera, sin
+  costura en el meridiano de 180° y sin halo borroso en los polos.
+- A 1440×900 la leyenda «Layers» tapaba parte de la Luna en el globo y del disco del mapa polar (VENT-10): ahora es
+  una columna estrecha que queda al lado de la Luna, y el disco polar se coloca junto a las leyendas, apartándose antes
+  de encogerse, así que toda la Luna a la vista admite al astronauta.
+- La ficha del PC de un sitio sin imagen (al norte de 80° S, y el punto propio) no mostraba la etiqueta de estado
+  (VENT-10): ahora encabeza la ficha cuando no hay imagen.
 - La tarjeta del sitio sobre el globo ya no parpadea al arrastrar el globo con el zoom cerca (VENT-31, visto en Brave
   para Android con IM-1): cuando dos lados quedaban casi igual de bien, la tarjeta saltaba de uno a otro en cada
   fotograma y parecía estar en dos sitios. Ahora se queda en su lado mientras ese lado no tape nada y solo cambia si

@@ -47,6 +47,7 @@ completa está en el documento «Ventana Lunar · Especificación y roadmap».
   favicon con la fase real de la Luna y el estado del sitio, pantalla de carga con la fase, y uso sin conexión con los
   últimos datos (VENT-28)
 - [ ] Modo DSN con Goldstone, Canberra y Robledo (VENT-7)
-- [ ] Coordenadas a medida: cualquier lat/lon (VENT-10)
+- [x] Coordenadas a medida: cualquier lat/lon, con el astronauta del Apolo que se arrastra a cualquier punto del
+  globo o del mapa polar, y el punto en la dirección para compartirlo (VENT-10)
 - [ ] Comparador de sitios o exportar a .ics (VENT-8)
 - [ ] Página del proyecto, vídeo de 30 s y pitch; envío antes de las 20:00 (VENT-9)

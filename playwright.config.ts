@@ -26,7 +26,8 @@
 import { defineConfig } from '@playwright/test';
 
 const base = (process.env.SITE_BASE ?? '/').replace(/\/$/, '');
-const port = 4321;
+// PW_PORT picks another port when 4321 is taken (another preview, a second checkout).
+const port = Number(process.env.PW_PORT ?? 4321);
 
 export default defineConfig({
   testDir: 'tests/e2e',

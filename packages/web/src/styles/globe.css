@@ -274,10 +274,16 @@
   }
 }
 
+/*
+ * A narrow column (VENT-10): beside the globe's Moon and the polar disk,
+ * never over them, so all of the Moon in view takes the astronaut.
+ */
 .globe-layers {
   position: absolute;
   left: 20px;
   bottom: 20px;
+  box-sizing: border-box;
+  width: var(--layers-w);
   display: flex;
   flex-direction: column;
   gap: 6px;
@@ -300,7 +306,8 @@
 
 .globe-layers ul {
   display: flex;
-  gap: 14px;
+  flex-direction: column;
+  gap: 6px;
   margin: 0;
   padding: 0;
   list-style: none;

@@ -72,8 +72,12 @@ export function missionLine(i18n: I18n, site: CardSite): string {
   return [site.agency, ...status].filter(Boolean).join(' · ');
 }
 
-/** How exact a site's point is, from its kind and its mission's status. */
+/**
+ * How exact a site's point is, from its kind and its mission's status;
+ * the custom point is where the astronaut was dropped.
+ */
 function precision(i18n: I18n, site: CardSite): string {
+  if (site.custom) return i18n.t('precision.dropped');
   if (site.approximate) return i18n.t('precision.zone');
   const status = site.status ?? '';
   if (status.startsWith('landed')) return i18n.t('precision.exact');
@@ -91,7 +95,7 @@ export function pointLine(i18n: I18n, site: CardSite): string {
 }
 
 /** The slim card site of a full one, as the page passes it to the island. */
-export function toCardSite(site: Required<CardSite>): CardSite {
+export function toCardSite(site: Required<Omit<CardSite, 'custom'>>): CardSite {
   const { agency, status, statusDate } = site;
   return { ...toPhoneSite(site), agency, status, statusDate };
 }

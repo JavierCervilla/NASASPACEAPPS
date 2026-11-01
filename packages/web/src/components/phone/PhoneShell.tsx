@@ -25,10 +25,12 @@
 
 /**
  * The phone layout over the globe: the glass top bar, the bottom sheet
- * (site summary with widgets, the site picker or the calendar) and the
- * floating tab bar. Rendered only below the phone breakpoint.
+ * (site summary with widgets, the site picker or the calendar), the
+ * floating tab bar and, beside it, the astronaut's dock (VENT-10).
+ * Rendered only below the phone breakpoint.
  */
 import { useEffect, useRef } from 'react';
+import { selectedSite } from '../../astronaut/selected-site';
 import { formatInstant } from '../../calendar/instant-format';
 import type { WatchedValue } from '../../lib/watched-value';
 import type { PhoneSite } from '../../phone/phone-site';
@@ -39,9 +41,9 @@ import {
   stateLines,
 } from '../../phone/site-state';
 import type { SiteStore } from '../../phone/site-store';
-import { unlistedSite } from '../../phone/unlisted-site';
 import { CalendarSheet } from '../calendar/CalendarSheet';
 import { useTime, type CalendarParts } from '../calendar/hooks';
+import { useSheetAside } from '../astronaut/use-sheet-aside';
 import { useI18n } from '../i18n-context';
 import { usePhone, useScrim, useSelection, useSiteWidgets } from './hooks';
 import { PhoneBar } from './PhoneBar';
@@ -49,7 +51,7 @@ import { Sheet } from './Sheet';
 import { SourceCaption, SourceDown } from '../source/SourceNotes';
 import { SitesPanel } from './SitesPanel';
 import { SiteSummary } from './SiteSummary';
-import { TabBar } from './TabBar';
+import { DockBar } from './DockBar';
 import { useSheetPanel } from './use-sheet-detent';
 
 interface Props {
@@ -72,10 +74,9 @@ interface Props {
  */
 function usePhoneState({ sites, store, parts }: Props) {
   const selection = useSelection(store);
-  const site =
-    sites.find((s) => s.id === selection.id) ?? unlistedSite(selection.id);
-  const time = useTime(parts.time);
   const i18n = useI18n();
+  const site = selectedSite(sites, selection.id, i18n);
+  const time = useTime(parts.time);
   const at = time?.atMs ?? null;
   const widgets = useSiteWidgets(parts, selection.id, at);
   const when = time && !time.live ? formatInstant(i18n, time.atMs) : null;
@@ -108,6 +109,7 @@ function useSheetWiring(
 ) {
   const tabs = useRef<HTMLElement>(null);
   const bar = useRef<HTMLElement>(null);
+  const foot = useRef<HTMLDivElement>(null);
   const { t } = useI18n();
   useEffect(() => () => sheetEdge.set(null), [sheetEdge]);
   const atFull = phone.detent === 'full';
@@ -119,8 +121,10 @@ function useSheetWiring(
     onEdge: sheetEdge.set,
     edge: tabs,
     bar,
+    foot,
   };
-  return { tabs, bar, current: atFull ? phone.view : 'globe', sheet } as const;
+  const current = atFull ? phone.view : 'globe';
+  return { tabs, bar, foot, current, sheet } as const;
 }
 
 /**
@@ -157,7 +161,7 @@ function PhoneUi(props: Props) {
   const phone = usePhoneState(props);
   const [scrim, dim] = useScrim();
   const wiring = useSheetWiring(phone, props.sheetEdge, dim);
-  const { tabs, bar, current, sheet } = wiring;
+  const { tabs, bar, foot, current, sheet } = wiring;
   const tabActions = {
     onGlobe: phone.close,
     onCalendar: phone.calendar,
@@ -165,6 +169,7 @@ function PhoneUi(props: Props) {
   };
   const { site, state, lines, computed } = phone;
   const pill = { site, state, lines, computed, onOpenPicker: phone.open };
+  useSheetAside(phone.detent, phone.setDetent);
   return (
     <div className="phone">
       <div ref={scrim} className="phone-scrim" aria-hidden="true" />
@@ -172,7 +177,7 @@ function PhoneUi(props: Props) {
       <Sheet {...sheet}>
         <SheetBody phone={phone} {...props} />
       </Sheet>
-      <TabBar ref={tabs} current={current} {...tabActions} />
+      <DockBar tabs={tabs} foot={foot} current={current} {...tabActions} />
     </div>
   );
 }

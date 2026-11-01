@@ -45,11 +45,13 @@ import { createSourceStore } from '../source/data-source';
 import { followClock } from '../calendar/follow-clock';
 import { createPlayer } from '../calendar/time-player';
 import { createTimeStore } from '../calendar/time-store';
-import { siteFromSearch } from '../lib/site-param';
 import { createWatchedValue } from '../lib/watched-value';
 import { browserHourClock } from '../phone/hour-clock';
 import type { CardSite } from '../card/site-facts';
-import { createSiteStore, type SiteStore } from '../phone/site-store';
+import { createSiteStore } from '../phone/site-store';
+import { AstronautLayers } from './astronaut/AstronautLayers';
+import { AstronautContext } from './astronaut/context';
+import { useAstronautKit } from './astronaut/use-kit';
 import type { CalendarParts } from './calendar/hooks';
 import { DesktopShell } from './desktop/DesktopShell';
 import { useView } from './desktop/use-view';
@@ -107,15 +109,6 @@ function useCalendarParts(
   return parts;
 }
 
-/** Opens the site a link names (`?site=`), once the island runs. */
-function useSiteFromUrl(store: SiteStore, sites: readonly CardSite[]) {
-  useEffect(() => {
-    const ids = sites.map((site) => site.id);
-    const id = siteFromSearch(location.search, ids);
-    if (id) store.select(id, 'list');
-  }, [store, sites]);
-}
-
 export default function LunarApp(props: Props) {
   const { locale, messages } = props;
   const [i18n] = useState(() => createI18n(locale, messages));
@@ -134,12 +127,13 @@ function Island({ sitesUrl, base, selectedId, sites }: Props) {
   const offView = !usePhone() && view !== 'globe';
   const { feed: state, computed } = useStateFeed(store, parts);
   useLiveFavicon(base, parts.time, state);
-  useSiteFromUrl(store, sites);
-  const { t } = useI18n();
   const time = parts.time;
+  // The address's `?site=` and `?lat&lon` open once the kit runs.
+  const kit = useAstronautKit({ store, time, state, sites });
+  const { t } = useI18n();
   const globe = { base, sitesUrl, store, sheetEdge, time, state };
   return (
-    <>
+    <AstronautContext value={kit}>
       <section className="globe" aria-label={t('globe.section')} hidden={offView} data-computed={computed}>
         <Globe {...globe} />
         <Layers source={parts.source} />
@@ -147,6 +141,7 @@ function Island({ sitesUrl, base, selectedId, sites }: Props) {
       <DesktopShell {...{ sites, store, parts, base, view }} />
       <PhoneShell {...{ sites, store, sheetEdge, parts, base }} />
       <OfflineNotice base={base} />
-    </>
+      <AstronautLayers />
+    </AstronautContext>
   );
 }

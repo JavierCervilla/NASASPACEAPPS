@@ -212,6 +212,13 @@
   box-shadow: inset 0 0 0 1.5px rgba(242, 242, 244, 0.5);
 }
 
+/* Without an image the badge heads the card's text (VENT-10). */
+.card-head__badge {
+  position: static;
+  align-self: flex-start;
+  margin-bottom: 6px;
+}
+
 /*
  * Top right, on its own dark backing: at the bottom it met the state's
  * badge once the text grew (QA on PR #19, 200 % text).

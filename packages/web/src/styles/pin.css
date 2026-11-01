@@ -1,0 +1,486 @@
+/*
+ *   _   _       _                         _ _
+ *  | | | |_ __ (_)_   _____ _ __ ___  ___| | | ___
+ *  | | | | '_ \| \ \ / / _ \ '__/ __|/ _ \ | |/ _ \
+ *  | |_| | | | | |\ V /  __/ |  \__ \  __/ | |  __/
+ *   \___/|_| |_|_| \_/ \___|_|  |___/\___|_|_|\___|
+ *
+ *             =++==--::.
+ *         %%%%##**++=--:..  .
+ *      ##**#%@%%#***+=--::.   .
+ *    #**=+*#*#**#++++=-:::.. .  .
+ *   #++-====*@%+*++==--::...   .  .    Ventana Lunar
+ *  #+=-=--++==+===-+==--:..   .  .  .  Sun, Earth and landing
+ * #----====-------=-=---:..  .  .  .   windows at the lunar
+ * #+---+=====--=---==-::..     .  .  . south pole
+ * #*----==---==-=-=-:-....    .  .  .
+ * *#----===+*===--:-::...    .  .  .   Built for the NASA Space
+ *  *----=*-+*%*+=-:::....   .  .  .    Apps Challenge 2026,
+ *   *------=+*=--:::-:::.. .  .  .     Madrid. Not endorsed
+ *    %*===-=-==--==-:::.  .  .  .      by NASA.
+ *      *+:--+:--::::::.  .  .  .
+ *         -=:::...:..   .  .           (c) 2026 Universelle
+ *             :::.. .  .               SPDX-License-Identifier: MIT
+ */
+
+/*
+ * The pin (VENT-37, validated canvas «Pin C»): a ring with a dot at its
+ * centre, the exact point, and no stem. It stands on its point on the
+ * globe or the polar map, is carried lifted over everything with the
+ * readout beside it, and «Drop a pin» and the first-time hint say how to
+ * place it. The dot and the ring around it wear the state's colour (the
+ * legend's meaning); a solid ring and its dot always tell it from an
+ * approximate zone, which is a dashed ring without a dot.
+ */
+
+/* Each drop and lift settles on a critically damped spring (0.4 s). */
+.pin,
+.pin-carry {
+  --spring: linear(0, 0.118, 0.329, 0.527, 0.682, 0.793, 0.868, 0.917, 0.949, 0.969, 0.981, 0.989, 0.993, 0.996, 0.998, 0.999, 1);
+  --tone: #f2f2f4;
+}
+
+.pin[data-state='window'],
+.pin-carry[data-state='window'] { --tone: var(--signal-window); }
+.pin[data-state='sun'],
+.pin-carry[data-state='sun'] { --tone: var(--signal-sun); }
+.pin[data-state='earth'],
+.pin-carry[data-state='earth'] { --tone: var(--signal-earth); }
+/* «Neither» is a dark grey: the halo takes the marker's light edge. */
+.pin[data-state='none'],
+.pin-carry[data-state='none'] { --tone: var(--signal-none); --halo: rgba(242, 242, 244, 0.6); }
+
+/* The pin standing on its point; its target keeps 44 px. */
+.pin {
+  position: absolute;
+  left: 0;
+  top: 0;
+  z-index: 4;
+  width: 44px;
+  height: 44px;
+  margin: -22px 0 0 -22px;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: none;
+  cursor: grab;
+  touch-action: none;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.pin:focus-visible {
+  outline: 2px solid var(--marker);
+  outline-offset: 0;
+}
+
+.pin[data-shown='false'] {
+  visibility: hidden;
+}
+
+/* Carried: it stays, unseen, so the keyboard's focus stays with it. */
+.pin[data-carried='true'] {
+  opacity: 0;
+  pointer-events: none;
+}
+
+/* The ring, dark inside so the dot reads on a bright crater wall. */
+.pin__mark,
+.pin-carry__pin {
+  position: absolute;
+  box-sizing: border-box;
+  border-radius: 50%;
+  background: rgba(7, 8, 11, 0.55);
+  box-shadow:
+    inset 0 0 0 2.5px #ffffff,
+    0 0 0 1px rgba(0, 0, 0, 0.45),
+    0 1px 4px rgba(0, 0, 0, 0.5);
+}
+
+.pin__mark {
+  left: 12px;
+  top: 12px;
+  width: 20px;
+  height: 20px;
+}
+
+/* The dot: the exact point, in the state's colour. */
+.pin__mark::before,
+.pin-carry__pin::before {
+  content: '';
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 8px;
+  height: 8px;
+  margin: -4px 0 0 -4px;
+  border-radius: 50%;
+  box-sizing: border-box;
+  background: var(--tone);
+}
+
+/*
+ * While the state is the simulator's (VENT-36) the dot is hollow, a ring
+ * in the state's colour, like the pill's dot.
+ */
+:is(.globe, .polar)[data-computed='true'] .pin__mark::before {
+  background: transparent;
+  border: 2px solid var(--tone);
+}
+
+/* «Neither» on the dark ring: its dot takes a light edge. */
+.pin[data-state='none'] .pin__mark::before {
+  box-shadow: 0 0 0 1px rgba(242, 242, 244, 0.6);
+}
+
+/* The state's ring around the selected pin, as on a selected marker. */
+.pin__mark::after {
+  content: '';
+  position: absolute;
+  inset: -6px;
+  box-sizing: border-box;
+  border-radius: 50%;
+  border: 2px solid var(--halo, var(--tone));
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--halo, var(--tone)) 18%, transparent);
+}
+
+.pin[data-state='unknown'] .pin__mark::after {
+  content: none;
+}
+
+/* The carried pin: lifted, a little larger, its centre on the point. */
+.pin-carry {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  pointer-events: none;
+}
+
+.pin-carry > * {
+  position: absolute;
+  left: 0;
+  top: 0;
+  will-change: transform;
+}
+
+.pin-carry__pin {
+  width: 28px;
+  height: 28px;
+  margin: -14px 0 0 -14px;
+  box-shadow:
+    inset 0 0 0 2.5px #ffffff,
+    0 0 0 1px rgba(0, 0, 0, 0.45),
+    0 8px 14px rgba(0, 0, 0, 0.45);
+}
+
+.pin-carry__pin::before {
+  width: 10px;
+  height: 10px;
+  margin: -5px 0 0 -5px;
+}
+
+/* Off the Moon there is no point: the dot is gone, the ring dims. */
+.pin-carry[data-over='off'] .pin-carry__pin {
+  opacity: 0.6;
+}
+
+.pin-carry[data-over='off'] .pin-carry__pin::before {
+  content: none;
+}
+
+.pin-readout {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin: -72px 0 0 24px;
+  padding: 8px 12px;
+  border-radius: 12px;
+  background: var(--surface);
+  backdrop-filter: blur(20px);
+  box-shadow: inset 0 0 0 1px var(--surface-edge);
+  color: var(--text);
+  font-size: 0.9375rem;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  overflow-wrap: anywhere;
+}
+
+.pin-readout[data-side='left'] {
+  translate: calc(-100% - 48px) 0;
+}
+
+.pin-readout__state {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--readout-tone);
+}
+
+.pin-readout__state::before {
+  content: '';
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  box-shadow: inset 0 0 0 1.5px var(--readout-tone);
+}
+
+.pin-readout__state[data-tone='window'] { --readout-tone: var(--signal-window-ink); }
+.pin-readout__state[data-tone='sun'] { --readout-tone: var(--signal-sun-ink); }
+.pin-readout__state[data-tone='earth'] { --readout-tone: var(--signal-earth-ink); }
+.pin-readout__state[data-tone='none'] { --readout-tone: var(--text-muted); }
+
+.pin-readout__off {
+  color: var(--text-muted);
+  font-weight: 500;
+}
+
+/* «Drop a pin» at the end of the desktop Layers key. */
+.pin-drop {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 44px;
+  margin-top: 4px;
+  padding: 0 4px;
+  border: 0;
+  border-top: 1px solid var(--surface-edge);
+  background: none;
+  color: var(--text);
+  font: inherit;
+  font-size: 0.9375rem;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  text-align: left;
+  cursor: pointer;
+  /* The key lets clicks through to the globe; this button takes them. */
+  pointer-events: auto;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.pin-drop svg {
+  flex: none;
+}
+
+.pin-drop__label {
+  flex: 1;
+  min-width: 0;
+}
+
+.pin-drop:focus-visible {
+  outline: 2px solid var(--marker);
+  outline-offset: 2px;
+}
+
+/* On the phone's Sites sheet it is a row like «Language» (lang.css). */
+.pin-drop--row {
+  flex: none;
+  gap: 12px;
+  min-height: 48px;
+  margin: 0;
+  padding: 0 14px;
+  border: 0;
+  border-radius: 14px;
+  /* Its settings group (source.css) draws the card. */
+  background: transparent;
+  font-size: 1rem;
+  font-weight: 400;
+  letter-spacing: normal;
+}
+
+.pin-drop--row:focus-visible {
+  outline-color: var(--text);
+  outline-offset: -2px;
+}
+
+/* Response on the press (apple-design §1). */
+.pin-drop:active {
+  transform: scale(0.97);
+  transition: transform var(--dur-press) ease-out;
+}
+
+/* The first-time hint: one line over the Moon, then gone for good. */
+.pin-hint {
+  position: absolute;
+  top: 20px;
+  left: 50%;
+  z-index: 6;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  box-sizing: border-box;
+  max-width: calc(100% - 40px);
+  padding: 4px 4px 4px 14px;
+  border-radius: 22px;
+  background: var(--surface);
+  backdrop-filter: blur(20px);
+  box-shadow: inset 0 0 0 1px var(--surface-edge);
+  color: var(--text);
+  transform: translateX(-50%);
+}
+
+.pin-hint svg {
+  flex: none;
+}
+
+.pin-hint__text {
+  margin: 0;
+  min-width: 0;
+  font-size: 0.9375rem;
+  line-height: 1.3;
+}
+
+/* The hint names the pointer in use: click with a mouse, hold by touch. */
+.pin-hint__coarse {
+  display: none;
+}
+
+@media (pointer: coarse) {
+  .pin-hint__fine {
+    display: none;
+  }
+
+  .pin-hint__coarse {
+    display: inline;
+  }
+}
+
+/* A 44 px target around a 32 px disc, drawn behind the ✕. */
+.pin-hint__close {
+  position: relative;
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 44px;
+  height: 44px;
+  margin: -4px;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: none;
+  color: var(--text-muted);
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.pin-hint__close::before {
+  content: '';
+  position: absolute;
+  inset: 6px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.pin-hint__close svg {
+  position: relative;
+}
+
+.pin-hint__close:focus-visible {
+  outline: 2px solid var(--marker);
+  outline-offset: 2px;
+}
+
+/* On the polar map, in the panel's top corner, clear of the disk. */
+.polar .pin-hint {
+  left: 20px;
+  transform: none;
+}
+
+/* Phones: under the glass top bar, measured (components/pin/PinHint.tsx). */
+@media (max-width: 767px) {
+  .pin-hint {
+    position: fixed;
+    top: var(--top, 100px);
+    left: 12px;
+    right: 12px;
+    z-index: 4;
+    max-width: none;
+    transform: none;
+    background: var(--phone-tabs);
+    box-shadow: var(--phone-bar-edge);
+  }
+
+  .pin-hint__text {
+    flex: 1;
+    font-size: 0.875rem;
+  }
+}
+
+@media (prefers-color-scheme: light) {
+  .pin-hint__close::before {
+    background: rgba(0, 0, 0, 0.06);
+  }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .pin__mark {
+    animation: pin-drop 600ms var(--spring) both;
+  }
+
+  .pin__mark::after {
+    animation: pin-halo 2.4s cubic-bezier(0.2, 0.7, 0.3, 1) infinite;
+  }
+
+  .pin-carry[data-phase='carry'] .pin-carry__pin {
+    animation: pin-lift 600ms var(--spring) both;
+  }
+}
+
+/* Dropped: it comes down onto its point. */
+@keyframes pin-drop {
+  from {
+    translate: 0 -14px;
+    scale: 1.4;
+    opacity: 0;
+  }
+}
+
+/*
+ * Lifted: it grows out of the point. `scale`, not `transform`, which
+ * places it (components/pin/CarryLayer.tsx).
+ */
+@keyframes pin-lift {
+  from {
+    scale: 0.7;
+  }
+}
+
+@keyframes pin-halo {
+  0% {
+    transform: scale(0.8);
+    opacity: 1;
+  }
+
+  70%,
+  100% {
+    transform: scale(1.35);
+    opacity: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pin-carry {
+    transition: opacity 160ms ease;
+  }
+
+  .pin-carry[data-phase='return'] {
+    opacity: 0;
+  }
+
+  .pin-drop:active {
+    transform: none;
+  }
+}
+
+@media (prefers-reduced-transparency: reduce) {
+  .pin-readout,
+  .pin-hint {
+    backdrop-filter: none;
+    background: var(--surface-solid, #15161b);
+  }
+}
+
+@media (prefers-contrast: more) {
+  .pin-readout,
+  .pin-hint {
+    border: 1px solid var(--surface-edge);
+  }
+}

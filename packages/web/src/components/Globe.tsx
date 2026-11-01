@@ -36,7 +36,7 @@ import { prefersSaveData } from '../lib/viewport';
 import type { SiteStore } from '../phone/site-store';
 import type { NowState } from '../phone/widget-types';
 import { useTime } from './calendar/hooks';
-import { GlobeAstronaut } from './astronaut/GlobeAstronaut';
+import { GlobePin } from './pin/GlobePin';
 import { GlobeSplash } from './GlobeSplash';
 import { useI18n } from './i18n-context';
 import { useGlobeSignals } from './use-globe-signals';
@@ -147,7 +147,7 @@ export default function Globe(props: Props) {
       </p>
       {kind === 'deferred' ? <LoadButton onLoad={load} /> : null}
       <GlobeSplash {...props} textured={textured} status={kind} />
-      <GlobeAstronaut host={host} view={view} store={props.store} />
+      <GlobePin host={host} view={view} store={props.store} />
     </>
   );
 }

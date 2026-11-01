@@ -39,7 +39,7 @@ const POINTS = new Map<string, typeof SITES>();
 for (const site of SITES) POINTS.set(`${site.lat},${site.lonEast}`, [...(POINTS.get(`${site.lat},${site.lonEast}`) ?? []), site]);
 const ZONE_POINTS = [...POINTS.values()].filter((group) => group.every((s) => s.approximate));
 // Under CI's parallel software-rendered pages the globe can take longer than the default 5 s to place its first
-// markers; this wait is a start-up precondition, not an assertion (same bound as astronaut.spec.ts).
+// markers; this wait is a start-up precondition, not an assertion (same bound as pin.spec.ts).
 const GLOBE_START_MS = 20_000;
 const IM1 = '[data-site-id="im1-odysseus"]';
 const IM2 = '[data-site-id="im2-athena"]';

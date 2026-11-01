@@ -26,7 +26,8 @@
 /**
  * The Sites sheet at full (validated canvas «LangPhoneB»): the site
  * picker with a «Language · English ›» row under its title, grouped with
- * the «Data source» switch (VENT-36, canvas option C). The row
+ * the «Data source» switch (VENT-36, canvas option C), and above them
+ * «Drop a pin» (VENT-37), the way to the pin without a press. The row
  * pushes the language list into the sheet with a Back control, as an iOS
  * navigation push: the picker slides left as the list comes in from the
  * right, and Back (or Escape) slides them home and gives the focus back
@@ -37,6 +38,7 @@ import { AUTONYMS, isLocale } from '../../i18n/locales';
 import type { SourceStore } from '../../source/data-source';
 import { useI18n } from '../i18n-context';
 import { LanguageList } from '../lang/LanguageList';
+import { DropPin } from '../pin/DropPin';
 import { SourceRow } from '../source/SourceSwitch';
 import { Icon } from './Icon';
 import { SitePicker, type PickerProps } from './SitePicker';
@@ -88,6 +90,27 @@ function useFocusOnReturn(row: RefObject<HTMLElement | null>, pushed: boolean) {
   }, [row, pushed]);
 }
 
+interface SettingsProps {
+  readonly row: Ref<HTMLButtonElement>;
+  readonly source: SourceStore;
+  readonly onOpen: () => void;
+}
+
+/** Under the title: «Drop a pin», then the language and the data source. */
+function Settings({ row, source, onOpen }: SettingsProps) {
+  return (
+    <>
+      <div className="settings-group">
+        <DropPin variant="row" />
+      </div>
+      <div className="settings-group">
+        <LanguageRow ref={row} onOpen={onOpen} />
+        <SourceRow source={source} icon={<Icon name="database" />} />
+      </div>
+    </>
+  );
+}
+
 interface PanelProps extends PickerProps {
   readonly base: string;
   readonly source: SourceStore;
@@ -102,10 +125,7 @@ export function SitesPanel(props: PanelProps) {
   useFocusOnReturn(row, pushed);
   const back = (): void => setPushed(false);
   const languageRow = (
-    <div className="settings-group">
-      <LanguageRow ref={row} onOpen={() => setPushed(true)} />
-      <SourceRow source={source} icon={<Icon name="database" />} />
-    </div>
+    <Settings row={row} source={source} onOpen={() => setPushed(true)} />
   );
   return (
     <div ref={stack} className="push" data-pushed={pushed} data-at={at}>

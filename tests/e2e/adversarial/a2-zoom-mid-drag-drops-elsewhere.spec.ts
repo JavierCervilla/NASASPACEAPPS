@@ -29,7 +29,8 @@
  * events), so the Moon grows under a crosshair that has not moved. The carry reads the point only on pointer moves
  * (carry-session.ts move()), so the readout keeps the old point and the drop lands on it, far from the crosshair.
  * On desktop nothing turns the globe after a drop, so the standing figure's feet are on the dropped point: they must
- * be where the crosshair was when the button came up.
+ * be where the crosshair was when the button came up. Since VENT-37 the pin is what is carried (dropped by a click,
+ * then dragged from where it stands), its centre is the crosshair, and the standing pin's centre is its feet.
  */
 import { expect, test, type Locator, type Page } from '@playwright/test';
 import { stubApi } from '../api-stub';
@@ -45,10 +46,10 @@ interface Point {
   readonly y: number;
 }
 
-/** Where a figure's feet are: the middle of its picture, 95 % down. */
-async function feetOf(figure: Locator): Promise<Point> {
-  const box = (await figure.boundingBox())!;
-  return { x: box.x + box.width / 2, y: box.y + box.height * 0.95 };
+/** Where a pin's point is: the middle of its box. */
+async function feetOf(pin: Locator): Promise<Point> {
+  const box = (await pin.boundingBox())!;
+  return { x: box.x + box.width / 2, y: box.y + box.height / 2 };
 }
 
 /**
@@ -57,7 +58,7 @@ async function feetOf(figure: Locator): Promise<Point> {
  * read right after one still names the move before it (1 px is about 0.4° on this globe).
  */
 async function readoutAtRest(page: Page): Promise<string> {
-  const coords = page.locator('.astro-carry .astro-readout__coords');
+  const coords = page.locator('.pin-carry .pin-readout__coords');
   let last = await coords.textContent();
   for (let still = 0; still < 3; ) {
     await page.waitForTimeout(200);
@@ -76,31 +77,33 @@ async function centreOf(page: Page, selector: string): Promise<Point> {
 test.describe('desktop, 1440x900', () => {
   test.use({ viewport: { width: 1440, height: 900 } });
 
-  test('A2 · zooming with the wheel while carrying, the astronaut lands under the crosshair', async ({ page }) => {
+  test('A2 · zooming with the wheel while carrying, the pin lands under the crosshair', async ({ page }) => {
     await page.clock.setFixedTime(NOW);
     await stubApi(page);
     await page.goto('./');
     await expect(page.locator('.globe-viewport[data-status="ready"]')).toBeVisible({ timeout: GLOBE_START_MS });
-    await expect(page.locator('.astro-dock .astro-figure__image')).toBeVisible({ timeout: GLOBE_START_MS });
 
     const middle = await centreOf(page, '.globe-viewport');
     const target = { x: middle.x + 60, y: middle.y + 40 };
-    const start = await feetOf(page.locator('.astro-dock .astro-figure'));
+    // The pin, dropped by a click where the globe's middle is, then carried from there.
+    await page.mouse.click(middle.x - 60, middle.y - 40);
+    await expect(page.locator('.pin')).toBeVisible();
+    const start = await feetOf(page.locator('.pin'));
     await page.mouse.move(start.x, start.y);
     await page.mouse.down();
     await page.mouse.move(target.x, target.y, { steps: 8 });
-    await expect(page.locator('.astro-carry')).toHaveAttribute('data-over', 'moon');
+    await expect(page.locator('.pin-carry')).toHaveAttribute('data-over', 'moon');
     // Zoom in to place it more precisely, the button still down and the mouse still.
     await page.mouse.wheel(0, -300);
     await page.waitForTimeout(1200);
     await readoutAtRest(page);
-    const cross = await centreOf(page, '.astro-carry .astro-carry__cross');
+    const cross = await centreOf(page, '.pin-carry .pin-carry__pin');
     await page.mouse.up();
 
-    await expect(page.locator('.astro-carry')).toHaveCount(0);
-    const pin = page.locator('.astro-pin');
+    await expect(page.locator('.pin-carry')).toHaveCount(0);
+    const pin = page.locator('.pin');
     await expect(pin).toBeVisible();
-    const feet = await feetOf(pin.locator('.astro-figure'));
+    const feet = await feetOf(pin);
     expect(Math.abs(feet.x - cross.x)).toBeLessThan(TOLERANCE_PX);
     expect(Math.abs(feet.y - cross.y)).toBeLessThan(TOLERANCE_PX);
   });

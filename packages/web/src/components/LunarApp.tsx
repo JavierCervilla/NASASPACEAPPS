@@ -49,9 +49,9 @@ import { createWatchedValue } from '../lib/watched-value';
 import { browserHourClock } from '../phone/hour-clock';
 import type { CardSite } from '../card/site-facts';
 import { createSiteStore } from '../phone/site-store';
-import { AstronautLayers } from './astronaut/AstronautLayers';
-import { AstronautContext } from './astronaut/context';
-import { useAstronautKit } from './astronaut/use-kit';
+import { PinLayers } from './pin/PinLayers';
+import { PinContext } from './pin/context';
+import { useCreatePinKit } from './pin/use-kit';
 import type { CalendarParts } from './calendar/hooks';
 import { DesktopShell } from './desktop/DesktopShell';
 import { useView } from './desktop/use-view';
@@ -129,11 +129,11 @@ function Island({ sitesUrl, base, selectedId, sites }: Props) {
   useLiveFavicon(base, parts.time, state);
   const time = parts.time;
   // The address's `?site=` and `?lat&lon` open once the kit runs.
-  const kit = useAstronautKit({ store, time, state, sites });
+  const kit = useCreatePinKit({ store, time, state, sites });
   const { t } = useI18n();
   const globe = { base, sitesUrl, store, sheetEdge, time, state };
   return (
-    <AstronautContext value={kit}>
+    <PinContext value={kit}>
       <section className="globe" aria-label={t('globe.section')} hidden={offView} data-computed={computed}>
         <Globe {...globe} />
         <Layers source={parts.source} />
@@ -141,7 +141,7 @@ function Island({ sitesUrl, base, selectedId, sites }: Props) {
       <DesktopShell {...{ sites, store, parts, base, view }} />
       <PhoneShell {...{ sites, store, sheetEdge, parts, base }} />
       <OfflineNotice base={base} />
-      <AstronautLayers />
-    </AstronautContext>
+      <PinLayers />
+    </PinContext>
   );
 }

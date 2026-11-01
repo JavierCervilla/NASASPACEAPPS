@@ -34,7 +34,7 @@
  */
 import { useSyncExternalStore } from 'react';
 import { createPortal } from 'react-dom';
-import { selectedSite } from '../../astronaut/selected-site';
+import { selectedSite } from '../../pin/selected-site';
 import { siteCard } from '../../card/site-card';
 import type { CardSite } from '../../card/site-facts';
 import type { View } from '../../lib/view-tabs';

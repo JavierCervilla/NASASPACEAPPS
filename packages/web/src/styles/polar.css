@@ -221,8 +221,8 @@
 }
 
 /*
- * Over the standing astronaut (.astro-pin, z-index 4), so a site's name
- * stays readable beside it; the label takes no pointer, so the figure
+ * Over the standing pin (.pin, z-index 4), so a site's name
+ * stays readable beside it; the label takes no pointer, so the pin
  * under it can still be picked up.
  */
 .polar-label {

@@ -46,7 +46,8 @@ import {
 } from '../../polar/polar-markers';
 import type { SourceStore } from '../../source/data-source';
 import { onPolarMap } from '../../lib/polar-projection';
-import { PolarAstronaut } from '../astronaut/PolarAstronaut';
+import { PinHint } from '../pin/PinHint';
+import { PolarPin } from '../pin/PolarPin';
 import { useI18n } from '../i18n-context';
 import { Layers } from '../Layers';
 import { Graticule } from './Graticule';
@@ -133,11 +134,12 @@ export function PolarMap(props: Props) {
         <img className="polar__image" src={`${base.replace(/\/?$/, '/')}${IMAGE}`} alt="" decoding="async" draggable={false} />
         <Graticule />
         <PolarMarkers {...{ markers, chosen, state, labels, badges }} />
-        <PolarAstronaut disk={disk} selected={site.id} onPick={onPick} />
+        <PolarPin disk={disk} selected={site.id} onPick={onPick} />
       </div>
       <OffMap site={site} chosen={chosen} />
       <Layers source={source} />
       <PolarKey badges={badges} />
+      <PinHint />
     </section>
   );
 }

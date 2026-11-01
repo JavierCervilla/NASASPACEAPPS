@@ -27,7 +27,8 @@
  * Drag to rotate, with Pointer Events. A press only becomes a drag past a
  * few pixels (apple-design's hysteresis), so a click on a site marker stays a
  * click; from then on the pointer is captured and the globe follows it 1:1.
- * A second finger ends the drag: two fingers pinch.
+ * A second finger ends the drag: two fingers pinch. A move already
+ * handled (a finger holding the pin, pin/place-gesture.ts) is not a drag.
  */
 import { VelocityTracker } from './velocity';
 
@@ -73,7 +74,9 @@ class DragGesture {
 
   move(event: PointerEvent): void {
     const { start } = this;
-    if (!start || event.pointerId !== start.id) return;
+    if (!start || event.pointerId !== start.id || event.defaultPrevented) {
+      return;
+    }
     const moved = Math.hypot(event.clientX - start.x, event.clientY - start.y);
     if (!this.dragging && moved < DRAG_THRESHOLD_PX) return;
     if (!this.dragging) {

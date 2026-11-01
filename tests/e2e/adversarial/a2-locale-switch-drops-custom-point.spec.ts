@@ -26,8 +26,8 @@
 /**
  * Adversarial repro, VENT-10, class A2 (state lost on navigation). Promise: the dropped point lives in the address
  * (`?lat&lon`) so it survives a reload and can be shared. Changing the interface language goes to the locale's page
- * with the hash only (i18n/switch.ts, localeHref), so the astronaut goes home and the custom point is gone: the person
- * changed the language, not the place.
+ * with the hash only (i18n/switch.ts, localeHref), so the pin (the astronaut until VENT-37) and the custom point are
+ * gone: the person changed the language, not the place.
  */
 import { expect, test } from '@playwright/test';
 import { stubApi } from '../api-stub';
@@ -39,7 +39,7 @@ const GLOBE_START_MS = 20_000;
 test.describe('desktop, 1440x900', () => {
   test.use({ viewport: { width: 1440, height: 900 } });
 
-  test('A2 · switching the language keeps the astronaut on its custom point', async ({ page }) => {
+  test('A2 · switching the language keeps the pin on its custom point', async ({ page }) => {
     await page.clock.setFixedTime(NOW);
     await stubApi(page);
     await page.goto('./?lat=-85.87&lon=61.34');
@@ -54,6 +54,6 @@ test.describe('desktop, 1440x900', () => {
 
     const params = new URL(page.url()).searchParams;
     expect({ lat: params.get('lat'), lon: params.get('lon') }).toEqual({ lat: '-85.87', lon: '61.34' });
-    await expect(page.locator('.astro-dock')).toHaveAttribute('data-status', 'away');
+    await expect(page.locator('.pin')).toBeVisible();
   });
 });

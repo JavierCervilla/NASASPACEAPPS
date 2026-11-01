@@ -24,7 +24,8 @@
  */
 
 /**
- * The phone shell's line icons, drawn from the validated canvas. They
+ * The phone shell's line icons, drawn from the validated canvas (the pin,
+ * VENT-37: a ring with its centre dot, canvas «Pin C»). They
  * take the text colour (`currentColor`) and are hidden from assistive
  * technology: the control around them carries the name.
  */
@@ -37,7 +38,8 @@ export type IconName =
   | 'sites'
   | 'chevron'
   | 'search'
-  | 'database';
+  | 'database'
+  | 'pin';
 
 const STROKE = {
   fill: 'none',
@@ -54,6 +56,7 @@ const SHAPES: Readonly<Record<IconName, [number, ReactElement]>> = {
   sites: [22, <path {...STROKE} d="M5 6h12M5 11h12M5 16h8" />],
   chevron: [12, <path {...STROKE} d="M2 4l4 4 4-4" />],
   database: [22, <g {...STROKE}><ellipse cx="11" cy="5.5" rx="7" ry="2.5" /><path d="M4 5.5v11c0 1.4 3.1 2.5 7 2.5s7-1.1 7-2.5v-11M4 11c0 1.4 3.1 2.5 7 2.5s7-1.1 7-2.5" strokeWidth="1.4" /></g>],
+  pin: [22, <g {...STROKE}><circle cx="11" cy="11" r="6.5" /><circle cx="11" cy="11" r="2.4" fill="currentColor" stroke="none" /></g>],
   search: [16, <g {...STROKE}><circle cx="7" cy="7" r="5" /><path d="M11 11l3.5 3.5" /></g>],
 };
 

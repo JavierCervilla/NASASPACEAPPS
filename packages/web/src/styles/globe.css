@@ -276,7 +276,7 @@
 
 /*
  * A narrow column (VENT-10): beside the globe's Moon and the polar disk,
- * never over them, so all of the Moon in view takes the astronaut.
+ * never over them, so all of the Moon in view takes the pin.
  */
 .globe-layers {
   position: absolute;

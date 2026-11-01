@@ -29,7 +29,8 @@
  * map, the window resized mid-drag moves and shrinks the disk away from a still pointer, but the polar surface does not
  * tell the carry that its points moved, so the readout keeps naming a point of the Moon (and its state, on the visor)
  * while the crosshair is over the empty panel. Letting go there walks it home, which is right; the readout said
- * otherwise until then.
+ * otherwise until then. Since VENT-37 the pin is what is carried, from the point it stands on (opened from the
+ * address), and off the Moon it says «Off the Moon · Let go to cancel» and springs back.
  */
 import { expect, test, type Locator, type Page } from '@playwright/test';
 import { stubApi } from '../api-stub';
@@ -43,10 +44,10 @@ interface Point {
   readonly y: number;
 }
 
-/** Where a figure's feet are: the middle of its picture, 95 % down. */
-async function feetOf(figure: Locator): Promise<Point> {
-  const box = (await figure.boundingBox())!;
-  return { x: box.x + box.width / 2, y: box.y + box.height * 0.95 };
+/** Where a pin's point is: the middle of its box. */
+async function feetOf(pin: Locator): Promise<Point> {
+  const box = (await pin.boundingBox())!;
+  return { x: box.x + box.width / 2, y: box.y + box.height / 2 };
 }
 
 /** Counts the animation frames the page asks for, from its first script on (`window.__frames`). */
@@ -94,30 +95,33 @@ test.describe('desktop, 1440x900, polar map', () => {
     await page.clock.setFixedTime(NOW);
     await stubApi(page);
     await countFrames(page);
-    await page.goto('./#polar-map');
+    // A pin near the pole, towards 90° E.
+    await page.goto('./?lat=-88&lon=90#polar-map');
     await expect(page.locator('.polar__disk')).toBeVisible();
-    await expect(page.locator('.polar .astro-dock .astro-figure__image')).toBeVisible({ timeout: 20_000 });
+    await expect(page.locator('.polar .pin')).toBeVisible({ timeout: 20_000 });
     await atRest(page);
 
     const centre = await centreOf(page, '.polar__disk');
     const target = { x: centre.x + 120, y: centre.y + 60 };
-    const start = await feetOf(page.locator('.polar .astro-dock .astro-figure'));
+    const start = await feetOf(page.locator('.polar .pin'));
     await page.mouse.move(start.x, start.y);
     await page.mouse.down();
     await page.mouse.move(target.x, target.y, { steps: 8 });
-    const carried = page.locator('.astro-carry');
+    const carried = page.locator('.pin-carry');
     await expect(carried).toHaveAttribute('data-over', 'moon');
 
     // A smaller window: the disk shrinks and moves, the pointer and the crosshair stay.
     await page.setViewportSize({ width: 1200, height: 760 });
     const disk = (await page.locator('.polar__disk').boundingBox())!;
-    const cross = await centreOf(page, '.astro-carry .astro-carry__cross');
+    const cross = await centreOf(page, '.pin-carry .pin-carry__pin');
     const fromDisk = Math.hypot(cross.x - (disk.x + disk.width / 2), cross.y - (disk.y + disk.height / 2));
     expect(fromDisk).toBeGreaterThan(disk.width / 2 + 20);
 
     await expect(carried).toHaveAttribute('data-over', 'off');
-    await expect(carried.locator('.astro-readout')).toHaveText('Off the Moon · Let go and it walks home');
+    await expect(carried.locator('.pin-readout')).toHaveText('Off the Moon · Let go to cancel');
     await page.mouse.up();
-    await expect(page.locator('.astro-pin')).toHaveCount(0);
+    // Nothing was dropped: the pin is back on the point it stood on.
+    await expect(carried).toHaveCount(0);
+    expect(new URL(page.url()).searchParams.get('lat')).toBe('-88.00');
   });
 });

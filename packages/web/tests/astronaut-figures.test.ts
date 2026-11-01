@@ -24,8 +24,10 @@
  */
 
 // The astronaut's sprite sheet (VENT-10), baked offline by scripts/astronaut-figures.mjs: its manifest, the file it
-// names, the colours it was baked with and the CSS that picks a cell must all agree, or the figure would show the
-// wrong pose or visor. Re-baking is `node packages/web/scripts/astronaut-figures.mjs`; `--check` proves the bytes.
+// names and the colours it was baked with must all agree, or the figure would show the wrong pose or visor.
+// Re-baking is `node packages/web/scripts/astronaut-figures.mjs`; `--check` proves the bytes. Since VENT-37 the page
+// shows no astronaut (a pin selects points): the sheet is kept for VENT-34, which brings the CSS that picks a cell
+// back, and its check with it.
 import { createHash } from 'node:crypto';
 import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
@@ -44,7 +46,6 @@ const MANIFEST = JSON.parse(read('../src/astronaut/figures.json').toString('utf8
   sha256: string;
 };
 const TOKENS = read('../src/styles/tokens.css').toString('utf8');
-const CSS = read('../src/styles/astronaut.css').toString('utf8');
 
 /** The size a VP8L (lossless WebP) file declares in its header. */
 function webpSize(bytes: Buffer): { width: number; height: number; lossless: boolean } {
@@ -72,15 +73,5 @@ describe('the astronaut sprite sheet (VENT-10)', () => {
   it.each(Object.entries(VISOR_TOKENS))('was baked with the %s visor in %s as tokens.css sets it', (state, token) => {
     const value = new RegExp(`${token}:\\s*(#[0-9a-f]{6})\\s*;`, 'i').exec(TOKENS)?.[1]?.toLowerCase();
     expect(MANIFEST.colours[state]).toBe(value);
-  });
-
-  it('is picked cell by cell in the CSS: 500 % x 200 %, a quarter per column and the carry row below', () => {
-    expect(CSS).toContain(`url('../astronaut/${MANIFEST.file}')`);
-    expect(CSS).toContain(`background-size: ${VISORS.length * 100}% ${POSES.length * 100}%;`);
-    expect(CSS).toContain(".astro-figure[data-pose='carry'] { --cell-y: 100%; }");
-    VISORS.slice(1).forEach((visor, i) => {
-      const x = ((i + 1) * 100) / (VISORS.length - 1);
-      expect(CSS).toContain(`.astro-figure[data-visor='${visor}'] { --cell-x: ${x}%; }`);
-    });
   });
 });

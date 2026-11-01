@@ -36,7 +36,7 @@ import {
   type HourSample,
   type SelenographicPoint,
 } from '@ventana/sim';
-import { customPointOf } from '../astronaut/custom-point';
+import { customPointOf } from '../pin/custom-point';
 import type { HoursRange } from '../phone/site-hours';
 import { widgetRange } from '../phone/widget-range';
 

@@ -25,10 +25,8 @@
 
 /**
  * The app feel (VENT-38): a long press on the interface selects no text (no Android search panel, no iOS callout,
- * no tap flash), while the site search and the coordinates stay selectable; and the astronaut, a little smaller,
- * still offers a 44 px target and stands with its feet on the point.
- *
- * `CAPTURE_EVIDENCE=1` also keeps screenshots in production/qa/evidence/.
+ * no tap flash), while the site search and the coordinates stay selectable; and the pin that picks a point (VENT-37,
+ * which replaced the astronaut) still offers a 44 px target with its centre on the point.
  */
 import { expect, test, type Locator, type Page } from '@playwright/test';
 import { stubApi } from './api-stub';
@@ -36,22 +34,11 @@ import { stubApi } from './api-stub';
 const NOW = new Date('2026-11-23T18:00:00Z');
 /** The globe's start is not what this spec checks: a cold run starts a software-rendered globe in every worker. */
 const GLOBE_START_MS = 20_000;
-const OUT = new URL('../../production/qa/evidence/', import.meta.url);
-const DATE = '2026-11-01';
 /** The smallest target a finger hits reliably (apple-design, WCAG 2.5.5). */
 const MIN_TARGET_PX = 44;
-/** The figure's drawn heights since VENT-38 (were 44, 84 and 56 px). */
-const DOCK_FIGURE_PX = 36;
-const PIN_FIGURE_PX = 46;
-/** The pictures are 180 x 220. */
-const ASPECT = 180 / 220;
 /** A dropped point, in the address. */
 const POINT = '?lat=-85.87&lon=61.34';
 
-async function evidence(page: Page, name: string): Promise<void> {
-  if (!process.env.CAPTURE_EVIDENCE) return;
-  await page.screenshot({ path: new URL(`${DATE}-vent-38-${name}.png`, OUT).pathname });
-}
 
 async function open(page: Page, path = './'): Promise<void> {
   await page.clock.setFixedTime(NOW);
@@ -130,11 +117,16 @@ const selectAll = (target: Locator) =>
     return chosen.toString();
   });
 
-/** Draws the figure's size and checks its target and its aspect. */
-async function expectFigure(figure: Locator, height: number): Promise<void> {
-  const box = (await figure.boundingBox())!;
-  expect(Math.abs(box.height - height)).toBeLessThan(0.5);
-  expect(Math.abs(box.width - height * ASPECT)).toBeLessThan(0.5);
+/** The pin's mark (ring and dot) sits at the middle of its target: the point. */
+async function expectCentred(pin: Locator): Promise<void> {
+  await expect.poll(async () => {
+    const mark = (await pin.locator('.pin__mark').boundingBox())!;
+    const target = (await pin.boundingBox())!;
+    return Math.max(
+      Math.abs(mark.x + mark.width / 2 - (target.x + target.width / 2)),
+      Math.abs(mark.y + mark.height / 2 - (target.y + target.height / 2)),
+    );
+  }).toBeLessThan(0.5);
 }
 
 async function expectTarget(target: Locator): Promise<void> {
@@ -146,8 +138,8 @@ async function expectTarget(target: Locator): Promise<void> {
 test.describe('phone, 390x844: no text selection on the interface', () => {
   test.use({ viewport: { width: 390, height: 844 }, hasTouch: true, isMobile: true });
 
-  test('the title, the pill, the sheet\'s card, a widget and the dock refuse text selection', async ({ page }) => {
-    await open(page);
+  test('the title, the pill, the sheet\'s card, a widget and the pin refuse text selection', async ({ page }) => {
+    await open(page, `./${POINT}`);
     await expect(page.locator('.widget').first()).toBeVisible();
     for (const words of [page.locator('.phone-bar__title'), page.locator('.summary__name'), page.locator('.widget__label').first()]) {
       expect(await doubleClickSelects(page, words)).toBe('');
@@ -155,13 +147,13 @@ test.describe('phone, 390x844: no text selection on the interface', () => {
     const css = await shippedCss(page);
     expect(css).toMatch(/body\{[^}]*-webkit-touch-callout:none/);
     expect(css).toMatch(/body\{[^}]*-webkit-tap-highlight-color:transparent/);
-    expect(await refusesContextMenu(page.locator('.astro-phone-dock'))).toBe(true);
+    expect(await refusesContextMenu(page.locator('.pin'))).toBe(true);
     const targets = [
       page.locator('.phone-bar__title'),
       page.locator('.site-pill__name'),
       page.locator('.summary__name'),
       page.locator('.widget').first(),
-      page.locator('.astro-phone-dock'),
+      page.locator('.pin'),
     ];
     for (const target of targets) {
       expect(await feel(target)).toEqual({ select: 'none', highlight: 'rgba(0, 0, 0, 0)' });
@@ -195,20 +187,12 @@ test.describe('phone, 390x844: no text selection on the interface', () => {
     await expectNotDraggable(page, page.locator('.summary__thumb img, img.summary__thumb'));
   });
 
-  test('the astronaut is smaller, in its 44 px targets, docked and standing', async ({ page }) => {
+  test('the pin keeps its 44 px target, its centre on the point', async ({ page }) => {
     await open(page, `./${POINT}`);
-    const pin = page.locator('.astro-pin');
+    const pin = page.locator('.pin');
     await expect(pin).toBeVisible();
-    await evidence(page, 'phone-standing');
-    await expectFigure(pin.locator('.astro-figure'), PIN_FIGURE_PX);
     await expectTarget(pin);
-    await page.getByRole('button', { name: 'Astronaut on the Moon: bring it home' }).click();
-    const dock = page.locator('.astro-phone-dock');
-    await expect(dock).toHaveAttribute('data-status', 'home');
-    await expect(dock.locator('.astro-figure__image')).toBeVisible();
-    await evidence(page, 'phone-dock');
-    await expectFigure(dock.locator('.astro-figure'), DOCK_FIGURE_PX);
-    await expectTarget(dock);
+    await expectCentred(pin);
   });
 });
 
@@ -241,24 +225,12 @@ test.describe('desktop, 1440x900: no text selection on the interface', () => {
     await expectNotDraggable(page, page.locator('.polar__image'));
   });
 
-  test('the astronaut is smaller, in its 44 px targets, docked and standing', async ({ page }) => {
+  test('the pin keeps its 44 px target, its centre on the point, and refuses the menu', async ({ page }) => {
     await open(page, `./${POINT}`);
-    const pin = page.locator('.astro-pin');
+    const pin = page.locator('.pin');
     await expect(pin).toBeVisible();
-    await evidence(page, 'desktop-standing');
-    await expectFigure(pin.locator('.astro-figure'), PIN_FIGURE_PX);
     await expectTarget(pin);
+    await expectCentred(pin);
     expect(await refusesContextMenu(pin)).toBe(true);
-    // The feet stand on the point: the pin's anchor, at the middle of its wider target.
-    const figure = (await pin.locator('.astro-figure').boundingBox())!;
-    const target = (await pin.boundingBox())!;
-    expect(Math.abs(figure.x + figure.width / 2 - (target.x + target.width / 2))).toBeLessThan(0.5);
-    await page.getByRole('button', { name: 'Astronaut on the Moon: bring it home' }).click();
-    const well = page.locator('.astro-dock__well');
-    await expect(page.locator('.astro-dock')).toHaveAttribute('data-status', 'home');
-    await expect(well.locator('.astro-figure__image')).toBeVisible();
-    await evidence(page, 'desktop-dock');
-    await expectFigure(well.locator('.astro-figure'), DOCK_FIGURE_PX);
-    await expectTarget(well);
   });
 });

@@ -24,13 +24,13 @@
  */
 
 /**
- * The desktop layout around the globe: the polar map in its place when
- * that tab is chosen, the site card beside the view, the calendar strip
- * under both, and the site button in the page header (a slot the page
- * leaves for it, filled once the island runs, so the static page never
- * shows a stale site or instant). The card and the strip share one load
- * of the month's hours, so a retry refreshes both. Rendered only from the
- * phone breakpoint up.
+ * The desktop layout around the globe: the polar map or the DSN view in
+ * its place when that tab is chosen, the site card beside the view, the
+ * calendar strip under both, and the site button in the page header (a
+ * slot the page leaves for it, filled once the island runs, so the static
+ * page never shows a stale site or instant). The card and the strip share
+ * one load of the month's hours, so a retry refreshes both. Rendered only
+ * from the phone breakpoint up.
  */
 import { useSyncExternalStore } from 'react';
 import { createPortal } from 'react-dom';
@@ -42,6 +42,8 @@ import type { SiteStore } from '../../phone/site-store';
 import { siteState } from '../../phone/site-state';
 import { LOADING, widgetsAt } from '../../phone/widgets-loader';
 import { CalendarStrip } from '../calendar/CalendarStrip';
+import { DsnView } from '../dsn/DsnView';
+import { useDsn } from '../dsn/use-dsn';
 import {
   useCalendar,
   type Calendar,
@@ -100,6 +102,8 @@ function DesktopUi({ sites, store, parts, base, view }: Props) {
   const site = selectedSite(sites, id, useI18n(), useSavedName());
   const calendar = useCalendar(parts, id);
   const { state, badge, model, computed, notes } = useCardState(calendar);
+  const atMs = calendar.state?.atMs ?? null;
+  const dsn = useDsn(site, atMs, calendar.result);
   const slot = useSlot();
   const pick = (picked: string): void => store.select(picked, 'list');
   const menu = { sites, site, state, computed, onPick: pick };
@@ -108,8 +112,9 @@ function DesktopUi({ sites, store, parts, base, view }: Props) {
   return (
     <>
       {view === 'polar' ? <PolarMap {...map} /> : null}
+      {view === 'dsn' ? <DsnView dsn={dsn} /> : null}
       <SiteCard
-        {...{ site, model, base, state: badge, computed, notes }}
+        {...{ site, model, base, state: badge, computed, notes, dsn }}
         onRetry={calendar.retry}
       />
       <CalendarStrip parts={parts} calendar={calendar} />

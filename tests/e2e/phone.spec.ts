@@ -180,7 +180,8 @@ test.describe('phone, 390x844', () => {
     await page.getByRole('list', { name: 'Sites' }).getByRole('button', { name: /^Mare Tranquillitatis/ }).click();
     await expect(page.getByRole('button', { name: /^Change site, now Mare Tranquillitatis \(Tranquility Base\) \(Apollo 11\): Neither · / })).toBeVisible();
     await expect(page.locator('.widget').first()).toContainText('No window');
-    await expect(page.locator('.widget').nth(3)).toContainText('No antenna');
+    // Apollo 11's stub has the Earth under the horizon: no link comes first (VENT-7).
+    await expect(page.locator('.widget').nth(3)).toContainText('No link');
     await expect(page.locator('[data-site-id="apollo11"]')).toHaveAttribute('aria-pressed', 'true');
     await expect(page.locator('.globe-markers')).toHaveAttribute('data-state', 'none');
     await expect.poll(() => sheetTop(page)).toBe(HALF_TOP);

@@ -82,3 +82,16 @@ export function activeDsn(
   }
   return best;
 }
+
+/**
+ * Whether a lander can talk to the Earth at an Earth elevation in degrees:
+ * `link` above {@link EARTH_MIN_ELEVATION_DEG}; without it, `low` when the
+ * Earth is up but under that, `below` when it is under the horizon.
+ */
+export type EarthLink = 'link' | 'low' | 'below';
+
+/** The {@link EarthLink} at an Earth elevation, degrees. */
+export function earthLink(earthElDeg: number): EarthLink {
+  if (earthElDeg > EARTH_MIN_ELEVATION_DEG) return 'link';
+  return earthElDeg > 0 ? 'low' : 'below';
+}

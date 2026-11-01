@@ -102,6 +102,28 @@
   --signal-earth-ink: #4a9cff;
   --signal-window-ink: #3ddc84;
 
+  /*
+   * The DSN (VENT-7): never one of the four signal colours, so it reads as
+   * its own thing. The Earth stays dark in both themes, a body in space
+   * like the Moon; the antenna listening is white with a soft glow.
+   */
+  --dsn-earth-ocean: #1a1d24;
+  --dsn-earth-land: #a7adb8;
+  --dsn-earth-night: rgba(4, 5, 8, 0.5);
+  --dsn-earth-air: rgba(220, 226, 235, 0.2);
+  --dsn-earth-limb: rgba(0, 0, 0, 0.5);
+  --dsn-accent: #ffffff;
+  --dsn-accent-glow: rgba(255, 255, 255, 0.7);
+  --dsn-station: rgba(200, 202, 210, 0.75);
+  --dsn-ring: rgba(235, 238, 244, 0.6);
+  --dsn-label: #f2f2f4;
+  /* The band's track, the Moon above 10° and the antenna listening. */
+  --dsn-band-track: rgba(255, 255, 255, 0.07);
+  --dsn-band-above: rgba(242, 242, 244, 0.26);
+  --dsn-band-active: #f2f2f4;
+  --dsn-playhead: #f2f2f4;
+  --dsn-on-playhead: #07080b;
+
   /* Springs follow apple-design defaults: critically damped, response 0.3-0.4 s. */
   --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
   --dur-press: 100ms;
@@ -146,6 +168,12 @@
 
     --sky: radial-gradient(120% 90% at 50% 40%, #151821 0%, #07080b 70%);
     --marker: #ffffff;
+
+    --dsn-band-track: rgba(0, 0, 0, 0.06);
+    --dsn-band-above: rgba(28, 28, 30, 0.2);
+    --dsn-band-active: #1c1c1e;
+    --dsn-playhead: #1c1c1e;
+    --dsn-on-playhead: #ffffff;
 
     --signal-sun-ink: #9a5a00;
     --signal-earth-ink: #0062cc;

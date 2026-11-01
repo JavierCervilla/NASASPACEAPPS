@@ -53,8 +53,9 @@ Every visible change follows `.claude/skills/apple-design/SKILL.md` (vendored fr
   capped), one finger turns it and two pinch; a glass top bar holds the title and the site pill, a draggable bottom
   sheet (closed, peek, half with four widgets, full with the site picker or the calendar) follows apple-design's sheet
   physics, and a floating tab bar switches views. One shared instant (`src/calendar/time-store.ts`: live on the clock by
-  default, scrubbed or played) drives the globe's Sun, the widgets and the calendar (the strip under the globe on
-  desktop); the hours come from one cached request per site and month (`src/phone/hours-cache.ts`). The answer is
+  default, following it to the minute and again when a hidden page comes back, `src/calendar/follow-clock.ts`, so the DSN
+  handoff shows when it happens; scrubbed or played) drives the globe's Sun, the widgets and the calendar (the strip
+  under the globe on desktop); what is worked out per hour or month stays keyed by them; the hours come from one cached request per site and month (`src/phone/hours-cache.ts`). The answer is
   instant (VENT-36): the views first show the simulator's hours for the same site and range (`computedHours`, cached
   in `src/source/computed-hours.ts`, from the build-time site list), and Horizons replaces them when it arrives
   (`src/source/month-view.ts`, `src/components/use-site-hours.ts`). When Horizons fails the computed hours stay, with
@@ -85,7 +86,7 @@ Every visible change follows `.claude/skills/apple-design/SKILL.md` (vendored fr
   the count in the Calendar sheet); without Horizons it says so instead of hatching nothing. The globe's marker layer
   and the polar disk are their own stacking contexts, so the Layers key and every floating surface paint over the
   markers and take their clicks. On desktop
-  the site card sits beside the view and the header tabs switch the view by hash (`#globe`, `#polar-map`,
+  the site card sits beside the view and the header tabs switch the view by hash (`#globe`, `#polar-map`, `#dsn`,
   `src/lib/view-tabs.ts`): the polar map is a south polar stereographic disk from 80° S
   (`src/lib/polar-projection.ts`, image from `scripts/moon_textures.py polar`). No card floats over the globe (VENT-33). On phones the
   top bar's subtitle is the legend's rule, «Sun + Earth = window», each word in its signal colour (`--bar-*-ink`,
@@ -224,6 +225,41 @@ Every visible change follows `.claude/skills/apple-design/SKILL.md` (vendored fr
   selection is always marked. Under the picker's title everything scrolls as one (`.picker__scroll`), so the phone
   sheet's settings never squeeze the list. The site popover opens and closes its list only on its own toggle, not on
   a nested menu's.
+- **DSN mode** (VENT-7, canvases «DsnA» and «DsnC», approved A + C, no DSN row in the calendar, «No link» first, to
+  the minute). The complex listening is the simulator's (`activeDsn` over `moonElevationFromDsn` for the three
+  `DSN_SITES`), worked out once per UTC day as minute-aligned spans (`packages/sim/src/dsn-timeline.ts`: sampled every
+  5 min, each change bisected to its first whole minute, `minute-runs.ts`) and read at the instant by `dsnOutlook`
+  (`dsn-outlook.ts`: active, handoff, next turn); it does not depend on the lunar site. Against the Horizons fixtures
+  it names the same complex every hour except within an hour of a handoff (`packages/sim/tests/dsn.test.ts`). At the
+  canvas instant (IM-2, 2026-11-22 20:00 UTC): Robledo, Moon at 52.3°, Goldstone at 02:16, Canberra at 10:58. The link
+  comes first: the site's Earth elevation, from the hour the views show (Horizons or computed) or the simulator before
+  they arrive (`components/dsn/use-dsn.ts`), against 3° (`earthLink` in `visibility.ts`: `link`, `low`, `below`).
+  None of it runs before the page has started: `useDsn` waits for an idle moment after the first paint (2 s at most,
+  `src/lib/after-start.ts`), the block holding its height until then, so the globe starts as fast as without it.
+  **A**: a «Listening on Earth» block after the Sunset/Earthset tiles of the desktop card (`ListeningBlock.tsx`) and the
+  phone's fourth widget (`DsnCard.tsx`, in place of the old hourly antenna widget): a small Earth as the Moon sees it
+  (centred on the sub-lunar point), the complex (short name: Robledo), «Madrid · Moon at 52°», «~6 h left» (whole hours
+  from an hour, minutes under it), «Next: Goldstone tomorrow at 02:16 UTC» (the day, by Intl, only when it is not the
+  instant's UTC day; times on the 24-hour UTC clock, through Intl, `src/dsn/clock-text.ts`); without a link «No link», «Earth below the horizon» or «Earth too low here (needs 3°)», then
+  «Robledo would listen» (`src/dsn/dsn-text.ts`). **C**: the «DSN» view, a header tab after «Polar map» and a phone tab
+  after «Calendar» (five tabs; at under 400 px they take 10 px labels so the pseudo-locale fits at 360 px;
+  `src/phone/view-actions.ts`: DSN sets `#dsn` with the sheet at half, Globe leaves it): the big Earth looking from
+  48° west of the Moon at 15° N, so the antenna the Moon is moving toward is in sight, with «Moon overhead», the dashed
+  «Moon above 10°» ring (79° around the sub-lunar point) and labelled antennas; the complex by its whole name
+  («Robledo de Chavela»), the other two with «Moon below horizon · next at 02:16»; and the 24 h band of the instant's
+  UTC day (`src/dsn/day-band.ts`, `DsnBand.tsx`): a row per complex, grey where it sees the Moon above 10°, white where
+  it listens, the playhead with its time chip at the shared instant, each row named for a screen reader («Robledo de
+  Chavela: listening 00:00–01:22, 16:10–24:00»). On phones the globe hides under the DSN view's Earth and the sheet
+  holds the headline and the band. The Earth (`src/dsn/earth-picture.ts`, `EarthFigure.tsx`): an SVG, graphite ocean,
+  land as silver dots from a 1° Natural Earth mask (`src/dsn/land.json`, 6 kB, `scripts/earth-land.mjs`, ASSETS.md),
+  the night side from the Earth's real sub-solar point (`earthSubSolarPoint`, `subLunarPoint` in
+  `packages/sim/src/earth-view.ts`), the active antenna white with a soft glow that breathes three times when it starts
+  listening, then rests lit (an endless loop kept every page drawing frames; still under reduced motion; held while
+  the phone sheet moves, `data-moving`, so the move keeps its frames), labels in HTML over it (so they follow the text size),
+  each moved sideways to stay inside the picture (`src/dsn/label-shift.ts`, `components/dsn/use-label-fit.ts`, through
+  a `--label-shift` property set in the CSSOM, so at 200 % text on a phone no label leaves the screen). Never the signal
+  colours: `--dsn-*` tokens; the Earth and the DSN view's panel stay dark in both themes. The month's figures add «Hours with DSN» (hours with any complex
+  listening, `card/month-facts.ts`).
 - **Five interface languages** (VENT-35): English (the default and the fallback), Spanish, French, German and Italian,
   each on its own static route (`/`, `/es/`, `/fr/`, `/de/`, `/it/`; `pages/[locale]/index.astro`) with `<html lang>`,
   `hreflang` links and `x-default` → `/`. This replaces the Language rule below for the interface only: every word a

@@ -45,14 +45,14 @@ const DAY_MS = 86_400_000;
 const J2000_MS = 946_728_000_000;
 
 /** Greenwich mean sidereal time at Unix time `ms`, degrees. */
-function gmstDeg(ms: number): number {
+export function gmstDeg(ms: number): number {
   const days = (ms - J2000_MS) / DAY_MS;
   const t = days / 36_525;
   return 280.460_618_37 + 360.985_647_366_29 * days + 0.000_387_933 * t * t;
 }
 
 /** The Moon's geocentric equatorial vector of date, km. */
-function moonEquatorialKm(moon: MoonPosition): Vec3 {
+export function moonEquatorialKm(moon: MoonPosition): Vec3 {
   const eps = (23.439_291 - 0.013_004_2 * moon.centuries) * DEG;
   const [x, y, z] = unitVector(moon.latDeg, moon.lonDeg);
   const d = moon.distanceKm;

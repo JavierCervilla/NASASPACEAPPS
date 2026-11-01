@@ -68,7 +68,7 @@ function centuriesSinceJ2000(ms: number): number {
 }
 
 /** The Sun's true geometric ecliptic longitude, in degrees (Meeus 25). */
-function sunTrueLongitude(t: number): number {
+export function sunTrueLongitude(t: number): number {
   const meanLongitude = 280.46646 + 36_000.76983 * t;
   const anomaly = (357.52911 + 35_999.05029 * t) * DEG;
   const centre =

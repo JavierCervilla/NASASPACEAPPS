@@ -25,7 +25,6 @@
 
 import { describe, expect, it, vi } from 'vitest';
 import { bodyWidget, EARTH, SUN } from '../src/phone/body-widget';
-import { dsnWidget } from '../src/phone/dsn-widget';
 import { formatCoords } from '../src/i18n/format';
 import { formatAtLeast, formatDuration, formatElevation, formatShare } from '../src/phone/format';
 import { widgetRange, type WidgetRange } from '../src/phone/widget-range';
@@ -114,28 +113,6 @@ describe('bodyWidget', () => {
   });
 });
 
-describe('dsnWidget', () => {
-  it('names the listening complex and how long it stays', () => {
-    const hours = hoursOf(30, { sunEl: () => 5, earthEl: () => 5, dsn: (h) => (h < 12 ? 'madrid' : 'goldstone') });
-    expect(dsnWidget(hours, hours[0]!, EN)).toEqual({ value: 'Robledo', detail: 'Madrid · ~12 h left' });
-  });
-
-  it('says when the next complex picks the Moon up', () => {
-    const hours = hoursOf(30, { sunEl: () => 5, earthEl: () => 5, dsn: (h) => (h < 3 ? null : 'canberra') });
-    expect(dsnWidget(hours, hours[0]!, EN)).toEqual({ value: 'No antenna', detail: 'Canberra in ~3 h' });
-  });
-
-  it('says so when no complex listens for the rest of the range', () => {
-    const hours = hoursOf(5, { sunEl: () => 5, earthEl: () => 5 });
-    expect(dsnWidget(hours, hours[0]!, EN)).toEqual({ value: 'No antenna', detail: 'None for at least 5 h' });
-  });
-
-  it('says «at least» when the complex outlasts the range', () => {
-    const hours = hoursOf(5, { sunEl: () => 5, earthEl: () => 5, dsn: () => 'goldstone' });
-    expect(dsnWidget(hours, hours[0]!, EN)).toEqual({ value: 'Goldstone', detail: 'California · at least 5 h left' });
-  });
-});
-
 describe('siteWidgets', () => {
   const hours = hoursOf(48, { sunEl: upUntil(24), earthEl: () => 10, dsn: () => 'canberra' });
   /** A range over the 48 hours, its month the first 24 and its horizon from `at` to the end. */
@@ -147,12 +124,11 @@ describe('siteWidgets', () => {
     horizonEnd: hourAt(47),
   });
 
-  it('builds the four widgets at the reference hour', () => {
+  it('builds the three hourly widgets at the reference hour (the DSN block reads the simulator, VENT-7)', () => {
     const widgets = siteWidgets(hours, rangeAt(20), EN);
     expect(widgets?.now).toEqual({ state: 'window', title: 'Landing window', detail: '100 % of November' });
     expect(widgets?.sun.value).toBe('4 h');
     expect(widgets?.earth.value).toBe('at least 1 d');
-    expect(widgets?.dsn.value).toBe('Canberra');
   });
 
   it('counts the share over the month only and the countdowns over the horizon only', () => {

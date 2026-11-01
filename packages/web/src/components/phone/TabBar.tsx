@@ -24,9 +24,10 @@
  */
 
 /**
- * The floating tab bar: Globe, Calendar, Horizon and Sites. Horizon says
- * «soon» until its view exists; Calendar opens the calendar, Sites the
- * picker, and Globe closes the sheet. Dragging up from it opens a closed
+ * The floating tab bar: Globe, Calendar, DSN, Horizon and Sites. Horizon
+ * says «soon» until its view exists; Calendar opens the calendar, DSN the
+ * DSN view (VENT-7, canvas «DsnC»), Sites the picker, and Globe closes the
+ * sheet. Dragging up from it opens a closed
  * sheet.
  */
 import type { Ref } from 'react';
@@ -40,10 +41,11 @@ interface Props {
   readonly current: TabView;
   readonly onGlobe: () => void;
   readonly onCalendar: () => void;
+  readonly onDsn: () => void;
   readonly onSites: () => void;
 }
 
-export type TabView = 'globe' | 'calendar' | 'sites';
+export type TabView = 'globe' | 'calendar' | 'dsn' | 'sites';
 
 interface Tab {
   readonly icon: IconName;
@@ -72,12 +74,13 @@ function TabButton({ icon, label, current, onClick }: Tab) {
 }
 
 export function TabBar(props: Props) {
-  const { ref, current, onGlobe, onCalendar, onSites } = props;
+  const { ref, current, onGlobe, onCalendar, onDsn, onSites } = props;
   const { t } = useI18n();
   return (
     <nav ref={ref} className="tab-bar" aria-label={t('tabs.label')}>
       <TabButton icon="globe" label={t('tabs.globe')} current={current === 'globe'} onClick={onGlobe} />
       <TabButton icon="calendar" label={t('tabs.calendar')} current={current === 'calendar'} onClick={onCalendar} />
+      <TabButton icon="dsn" label={t('tabs.dsn')} current={current === 'dsn'} onClick={onDsn} />
       <TabButton icon="horizon" label={t('tabs.horizon')} />
       <TabButton icon="sites" label={t('tabs.sites')} current={current === 'sites'} onClick={onSites} />
     </nav>

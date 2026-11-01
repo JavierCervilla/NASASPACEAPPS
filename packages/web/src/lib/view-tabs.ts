@@ -24,24 +24,27 @@
  */
 
 /**
- * The header's view tabs: Globe and Polar map are links to `#globe` and
- * `#polar-map`, so a switch is a hash change, never a page load, and the
+ * The header's view tabs: Globe, Polar map and DSN are links to `#globe`,
+ * `#polar-map` and `#dsn` (VENT-7; the phone's DSN tab sets it too), so a
+ * switch is a hash change, never a page load, and the
  * selected site and instant carry over; the back button goes back a view.
  * No hash (the page as first opened) is the globe. Before the island runs,
  * the links still change the hash, and the island reads it when it does.
  */
 
-export type View = 'globe' | 'polar';
+export type View = 'globe' | 'polar' | 'dsn';
 
 /** The hash of each view's link (pages/index.astro). */
 export const VIEW_HASH: Readonly<Record<View, string>> = {
   globe: '#globe',
   polar: '#polar-map',
+  dsn: '#dsn',
 };
 
 /** The view a location hash names; anything else is the globe. */
 export function viewOfHash(hash: string): View {
-  return hash === VIEW_HASH.polar ? 'polar' : 'globe';
+  if (hash === VIEW_HASH.polar) return 'polar';
+  return hash === VIEW_HASH.dsn ? 'dsn' : 'globe';
 }
 
 /**
@@ -56,4 +59,12 @@ export function markCurrentTab(nav: ParentNode, view: View): void {
       link.removeAttribute('aria-current');
     }
   }
+}
+
+/**
+ * Shows `view` by setting its hash on `place` (the page's `location`), as
+ * the header's links do; nothing when it already shows.
+ */
+export function goToView(place: { hash: string }, view: View): void {
+  if (place.hash !== VIEW_HASH[view]) place.hash = VIEW_HASH[view];
 }

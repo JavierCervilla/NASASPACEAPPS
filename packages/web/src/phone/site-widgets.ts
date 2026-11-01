@@ -25,8 +25,8 @@
 
 /**
  * The four phone widgets of a site, from the hourly samples of its
- * {@link WidgetRange}. «Right now», the countdowns and the DSN antenna read
- * the rolling horizon; the month's window share (`computeRangeMetrics` in
+ * {@link WidgetRange}. «Right now» and the countdowns read the rolling
+ * horizon; the month's window share (`computeRangeMetrics` in
  * `@ventana/sim`) reads the calendar month only.
  */
 import {
@@ -38,7 +38,6 @@ import {
 import { monthName } from '../i18n/format';
 import type { I18n } from '../i18n/translate';
 import { bodyWidget, EARTH, SUN } from './body-widget';
-import { dsnWidget } from './dsn-widget';
 import { nowWidget } from './now-widget';
 import type { WidgetRange } from './widget-range';
 import type { SiteWidgets } from './widget-types';
@@ -88,6 +87,5 @@ export function siteWidgets(
     now: nowWidget(now, windowPct, monthOf, i18n),
     sun: bodyWidget(SUN, horizon, now, i18n),
     earth: bodyWidget(EARTH, horizon, now, i18n),
-    dsn: dsnWidget(horizon, now, i18n),
   };
 }

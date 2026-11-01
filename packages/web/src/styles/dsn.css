@@ -1,0 +1,520 @@
+/*
+ *   _   _       _                         _ _
+ *  | | | |_ __ (_)_   _____ _ __ ___  ___| | | ___
+ *  | | | | '_ \| \ \ / / _ \ '__/ __|/ _ \ | |/ _ \
+ *  | |_| | | | | |\ V /  __/ |  \__ \  __/ | |  __/
+ *   \___/|_| |_|_| \_/ \___|_|  |___/\___|_|_|\___|
+ *
+ *             =++==--::.
+ *         %%%%##**++=--:..  .
+ *      ##**#%@%%#***+=--::.   .
+ *    #**=+*#*#**#++++=-:::.. .  .
+ *   #++-====*@%+*++==--::...   .  .    Ventana Lunar
+ *  #+=-=--++==+===-+==--:..   .  .  .  Sun, Earth and landing
+ * #----====-------=-=---:..  .  .  .   windows at the lunar
+ * #+---+=====--=---==-::..     .  .  . south pole
+ * #*----==---==-=-=-:-....    .  .  .
+ * *#----===+*===--:-::...    .  .  .   Built for the NASA Space
+ *  *----=*-+*%*+=-:::....   .  .  .    Apps Challenge 2026,
+ *   *------=+*=--:::-:::.. .  .  .     Madrid. Not endorsed
+ *    %*===-=-==--==-:::.  .  .  .      by NASA.
+ *      *+:--+:--::::::.  .  .  .
+ *         -=:::...:..   .  .           (c) 2026 Universelle
+ *             :::.. .  .               SPDX-License-Identifier: MIT
+ */
+
+/*
+ * The DSN mode (VENT-7, canvases «DsnA» and «DsnC»): the Earth as the Moon
+ * sees it, the «Listening on Earth» block of the desktop card and the
+ * phone's widget, the desktop DSN view and the phone's, and the 24 h band.
+ * Neutral greys and white only (tokens.css, --dsn-*): the four signal
+ * colours keep their meaning.
+ */
+
+/* The Earth picture: an SVG that fills its box, labels over it. */
+.dsn-earth {
+  position: relative;
+  flex: none;
+  aspect-ratio: 1;
+}
+
+.dsn-earth svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.dsn-earth__air {
+  fill: none;
+  stroke: var(--dsn-earth-air);
+  stroke-width: 1.5%;
+}
+
+.dsn-earth__ocean { fill: var(--dsn-earth-ocean); }
+
+.dsn-earth__land {
+  fill: none;
+  stroke: var(--dsn-earth-land);
+  stroke-linecap: round;
+}
+
+.dsn-earth__night { fill: var(--dsn-earth-night); }
+
+.dsn-stop--glow { stop-color: var(--dsn-accent-glow); }
+.dsn-stop--clear { stop-color: transparent; stop-opacity: 0; }
+.dsn-stop--limb { stop-color: var(--dsn-earth-limb); }
+
+.dsn-earth__ring {
+  fill: none;
+  stroke: var(--dsn-ring);
+  stroke-width: 1.2;
+  stroke-dasharray: 4 4;
+}
+
+.dsn-earth__station {
+  fill: rgba(7, 8, 11, 0.6);
+  stroke: var(--dsn-station);
+}
+
+.dsn-earth__station--sees { stroke: var(--dsn-accent); }
+.dsn-earth__dot,
+.dsn-earth__moon-dot { fill: var(--dsn-accent); }
+
+.dsn-earth__halo,
+.dsn-earth__moon circle:first-child {
+  fill: none;
+  stroke: var(--dsn-accent);
+  stroke-opacity: 0.7;
+}
+
+/*
+ * The listening antenna's glow breathes, slowly, three times each time an
+ * antenna starts listening or the picture comes, then rests lit: a loop
+ * that never ends keeps the page drawing frames for good (about a tenth of
+ * a core in a software-rendered browser, and a phone's battery). Still
+ * under reduced motion.
+ */
+@media (prefers-reduced-motion: no-preference) {
+  .dsn-earth__glow {
+    animation: dsn-glow 3.2s ease-in-out 3;
+    transform-box: fill-box;
+    transform-origin: center;
+  }
+}
+
+/*
+ * Held while the phone sheet moves (sheet-mount.ts): breathing inside a
+ * moving sheet makes each of its frames a repaint, and slows the move.
+ */
+.sheet[data-moving] .dsn-earth__glow {
+  animation-play-state: paused;
+}
+
+@keyframes dsn-glow {
+  50% {
+    opacity: 0.55;
+    transform: scale(0.85);
+  }
+}
+
+.dsn-earth__labels {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+/* --label-shift keeps a label inside the picture (use-label-fit.ts). */
+.dsn-earth__label {
+  position: absolute;
+  translate: calc(var(--label-shift, 0px) - 50%) 0.7rem;
+  font-size: 0.75rem;
+  line-height: 1.2;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  white-space: nowrap;
+  color: var(--dsn-label);
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.9);
+}
+
+.dsn-earth__label--moon { font-weight: 500; }
+
+.dsn-earth__label--ring {
+  translate: calc(var(--label-shift, 0px) - 50%) -1.6rem;
+  font-weight: 500;
+}
+
+/* A · the desktop card's block. */
+.dsn-block {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 16px;
+}
+
+/* Holds the block's usual height until the DSN is worked out, after the
+   globe has started (use-dsn.ts), so the card below does not jump. */
+.dsn-block--waiting { min-height: 11.75rem; }
+
+.dsn-block__head {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  margin: 0;
+  font-size: 0.8125rem;
+  line-height: 1.3;
+}
+
+.dsn-block__tag {
+  color: var(--text-muted);
+  font-size: 0.6875rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+}
+
+.dsn-block__body {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.dsn-block .dsn-earth { width: 5.5rem; }
+
+.dsn-block__text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+  margin: 0;
+}
+
+.dsn-block__title {
+  font-size: 1.5rem;
+  line-height: 1.15;
+  font-weight: 700;
+  letter-spacing: -0.025em;
+  overflow-wrap: anywhere;
+}
+
+.dsn-block__line {
+  font-size: 0.875rem;
+  line-height: 1.3;
+  color: var(--text-secondary);
+}
+
+.dsn-block__line--muted,
+.dsn-block__next {
+  color: var(--text-muted);
+}
+
+.dsn-block__next {
+  margin: 0;
+  padding-top: 10px;
+  border-top: 1px solid var(--surface-edge);
+  font-size: 0.8125rem;
+  line-height: 1.3;
+}
+
+/* A · the phone's widget: the small Earth in its top right corner. */
+.widget--dsn {
+  position: relative;
+  padding-right: 14px;
+}
+
+.widget--dsn .dsn-earth {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  width: 2.75rem;
+}
+
+.widget--dsn .widget__label { padding-right: 2.75rem; }
+.widget--dsn .widget__value { padding-right: 2.5rem; overflow-wrap: anywhere; }
+.widget--dsn .widget__detail[data-second='true'] { color: var(--text-secondary); }
+
+/* C · the desktop view, in the view's place. */
+.dsn-view {
+  position: relative;
+  min-width: 0;
+  min-height: 320px;
+  border-radius: 18px;
+  background: var(--sky);
+  color: var(--dsn-label);
+  overflow: auto;
+  container-type: size;
+  /* The panel is space, dark in both themes: its words and band are too. */
+  --text: #f2f2f4;
+  --text-muted: #9a9ca6;
+  --text-secondary: #c7c8ce;
+  --surface-edge: rgba(255, 255, 255, 0.1);
+  --dsn-band-track: rgba(255, 255, 255, 0.07);
+  --dsn-band-above: rgba(242, 242, 244, 0.26);
+  --dsn-band-active: #f2f2f4;
+  --dsn-playhead: #f2f2f4;
+  --dsn-on-playhead: #07080b;
+}
+
+/*
+ * The Earth and the words side by side when the panel is wide enough,
+ * one over the other when it is not (a narrow window, 200 % text); the
+ * panel scrolls when they outgrow it.
+ */
+.dsn-view__layout {
+  display: grid;
+  grid-template-columns: auto minmax(16rem, 1fr);
+  align-items: center;
+  gap: 12px 40px;
+  min-height: 100%;
+  padding: 2.25rem 40px 20px;
+  box-sizing: border-box;
+}
+
+@container (max-width: 52rem) {
+  .dsn-view__layout {
+    grid-template-columns: minmax(0, 1fr);
+    justify-items: stretch;
+  }
+}
+
+@media (min-width: 768px) {
+  .dsn-view { grid-area: view; }
+}
+
+.dsn-view .dsn-view__layout > .dsn-earth {
+  width: min(26rem, 100cqh - 16rem, 40cqw);
+  min-width: 12rem;
+  justify-self: center;
+}
+
+.dsn-view__side {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  min-width: 0;
+}
+
+.dsn-view .dsn-band { grid-column: 1 / -1; }
+
+.dsn-headline {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.dsn-headline p { margin: 0; }
+
+.dsn-headline__kicker {
+  font-size: 0.8125rem;
+  line-height: 1.3;
+  color: var(--text-muted);
+}
+
+.dsn-headline__title {
+  margin: 0;
+  font-size: 2.25rem;
+  line-height: 1.1;
+  font-weight: 700;
+  letter-spacing: -0.03em;
+  overflow-wrap: anywhere;
+}
+
+.dsn-headline__line {
+  font-size: 0.9375rem;
+  line-height: 1.35;
+  color: var(--text-secondary);
+}
+
+.dsn-headline__next {
+  font-size: 0.875rem;
+  line-height: 1.35;
+  color: var(--text-muted);
+}
+
+.dsn-stations {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin: 0;
+  padding: 12px 0 0;
+  border-top: 1px solid var(--surface-edge);
+  list-style: none;
+  font-size: 0.875rem;
+  line-height: 1.3;
+}
+
+.dsn-stations li {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 2px 16px;
+}
+
+.dsn-stations b { font-weight: 600; }
+.dsn-stations__status { color: var(--text-muted); }
+
+/* The 24 h band. */
+.dsn-band {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  min-width: 0;
+}
+
+.dsn-band__head {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 4px 16px;
+}
+
+.dsn-band__day {
+  font-size: 0.9375rem;
+  font-weight: 600;
+}
+
+.dsn-band__legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 14px;
+  font-size: 0.8125rem;
+  color: var(--text-muted);
+}
+
+.dsn-band__legend > span {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.dsn-band__key {
+  width: 10px;
+  height: 10px;
+  border-radius: 3px;
+  background: var(--dsn-band-above);
+}
+
+.dsn-band__key--active { background: var(--dsn-band-active); }
+
+.dsn-band__grid {
+  position: relative;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+  gap: 12px 16px;
+  padding-top: 1.75rem;
+}
+
+.dsn-band__name {
+  font-size: 0.875rem;
+  color: var(--text-secondary);
+}
+
+.dsn-band__name[data-now='true'] {
+  color: var(--text);
+  font-weight: 600;
+}
+
+.dsn-band__track {
+  position: relative;
+  height: 14px;
+  border-radius: 7px;
+  background: var(--dsn-band-track);
+  overflow: hidden;
+}
+
+.dsn-band__above,
+.dsn-band__active {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  background: var(--dsn-band-above);
+}
+
+.dsn-band__active { background: var(--dsn-band-active); }
+
+/* Over the tracks' column, from the first row to the last. */
+.dsn-band__lane {
+  position: absolute;
+  inset: 0 0 1.5rem;
+  grid-column: 2;
+  pointer-events: none;
+}
+
+.dsn-band__playhead {
+  position: absolute;
+  top: 0.25rem;
+  bottom: 0;
+  width: 2px;
+  margin-left: -1px;
+  background: var(--dsn-playhead);
+}
+
+.dsn-band__chip {
+  position: absolute;
+  top: -0.25rem;
+  left: 50%;
+  translate: -50% -50%;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: var(--dsn-playhead);
+  color: var(--dsn-on-playhead);
+  font-size: 0.75rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.dsn-band__hours {
+  position: relative;
+  grid-column: 2;
+  height: 1rem;
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.dsn-band__hours > span {
+  position: absolute;
+  translate: -50% 0;
+}
+
+.dsn-band__hours > span:first-child { translate: 0 0; }
+.dsn-band__hours > span:last-child { translate: -100% 0; }
+
+/* C · the phone: the Earth over the screen, above the sheet at half. */
+.dsn-stage {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  display: flex;
+  justify-content: center;
+  padding: calc(env(safe-area-inset-top) + 116px) 24px 0;
+  background: var(--sky);
+  color: var(--dsn-label);
+}
+
+.dsn-stage .dsn-earth {
+  width: min(100%, 100dvh - 344px - 150px, 22rem);
+  height: fit-content;
+}
+
+/* The sheet at half holds the headline and the band above the tab bar. */
+.dsn-sheet {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 0 4px;
+}
+
+.dsn-sheet .dsn-headline__title { font-size: 1.5rem; }
+.dsn-sheet .dsn-headline__next,
+.dsn-sheet .dsn-band__day { display: none; }
+.dsn-sheet .dsn-band { gap: 6px; }
+.dsn-sheet .dsn-band__grid { gap: 8px 12px; }
+.dsn-sheet .dsn-band__track { height: 12px; }
+
+/* More contrast: the band's parts and the hairlines stand out. */
+@media (prefers-contrast: more) {
+  .dsn-band__above { background: var(--text-muted); }
+  .dsn-band__track { box-shadow: inset 0 0 0 1px var(--surface-edge); }
+}

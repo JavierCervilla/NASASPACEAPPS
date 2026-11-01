@@ -26,12 +26,14 @@
 /**
  * The four widgets of the selected site (validated canvas «Phone · globe +
  * widgets»): right now (or at the chosen instant), sunset, earthset and
- * the listening DSN antenna.
+ * the listening DSN antenna (VENT-7: the simulator's, to the minute).
  * Skeletons while the API answers; an honest error when it does not, and
  * an honest state when the current hour is outside the data window.
  */
 import type { ReactNode } from 'react';
 import type { WidgetsResult } from '../../phone/widgets-loader';
+import { DsnCard } from '../dsn/DsnCard';
+import type { Dsn } from '../dsn/use-dsn';
 import { useI18n } from '../i18n-context';
 
 interface CardProps {
@@ -95,28 +97,29 @@ interface Props {
   readonly onRetry: () => void;
   /** The chosen instant, «Mon 23 Nov · 18:00 UTC»; null: live, now. */
   readonly when: string | null;
+  /** The DSN at the instant; null until it is known. */
+  readonly dsn: Dsn | null;
 }
 
-export function Widgets({ result, onRetry, when }: Props) {
+export function Widgets({ result, onRetry, when, dsn }: Props) {
   const { t } = useI18n();
   if (result.kind === 'loading') return <Skeletons />;
   if (result.kind === 'error') return <Failure onRetry={onRetry} />;
   if (result.kind === 'outside') return <Outside />;
-  const { now, sun, earth, dsn } = result.widgets;
+  const { now, sun, earth } = result.widgets;
   const label = (
     <>
       <span className="signal-dot" data-state={now.state} />
       {when ?? t('widgets.rightNow')}
     </>
   );
-  const listening = { ...dsn, label: t('widgets.listening') };
   const name = when ? t('widgets.at', { when }) : t('widgets.now');
   return (
     <ul className="widgets" aria-label={name}>
       <Card widget={{ ...now, label, value: now.title }} tone={now.state} />
       <Card widget={sun} tone="sun" big />
       <Card widget={earth} tone="earth" big />
-      <Card widget={listening} tone="muted" />
+      {dsn ? <DsnCard dsn={dsn} /> : <li className="widget-skeleton" aria-hidden="true" />}
     </ul>
   );
 }

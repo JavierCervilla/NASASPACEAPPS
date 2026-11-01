@@ -3,6 +3,23 @@
 ## [Sin publicar]
 
 ### Añadido
+- Modo DSN: qué antena de la Red del Espacio Profundo escucha (VENT-7; opciones A y C del lienzo, aprobadas por
+  Javier, sin fila DSN en el calendario y al minuto). En la ficha del PC y en la cuarta tarjeta del móvil, el bloque
+  «Listening on Earth» enseña una Tierra pequeña vista desde la Luna, en plata y grafito con su terminador real y las
+  tres estaciones (la que escucha, blanca y con un halo suave que late tres veces cuando empieza a escuchar), y dice
+  qué complejo escucha, a qué altura ve la Luna, cuánto le queda y quién sigue: «Robledo · Madrid · Moon at 52° · ~6 h
+  left», «Next: Goldstone tomorrow at 02:16 UTC» (el día solo cuando el relevo cae en otro día UTC). Se calcula
+  después de que arranque el globo, así que la página abre tan rápido como antes. Los
+  relevos se calculan al minuto con el simulador y coinciden con los de Horizons salvo a menos de una hora de un
+  relevo. Si la Tierra está bajo el horizonte del sitio o por debajo de 3°, lo primero es «No link», con el motivo
+  («Earth below the horizon» o «Earth too low here (needs 3°)»), y después qué complejo escucharía. Funciona igual con
+  los sitios de la lista, el pin y los sitios guardados, y sigue al instante elegido al arrastrar o reproducir. Nueva
+  vista «DSN»: una pestaña tras «Polar map» en el PC y una pestaña en la barra del móvil, con la Tierra grande, la
+  marca «Moon overhead», el anillo «Moon above 10°», las estaciones con nombre y la banda de 24 h del día (UTC) con
+  los tramos en que cada una ve la Luna por encima de 10°, los tramos en que escucha y la marca del instante. Las
+  cifras del mes suman «Hours with DSN». Nunca usa los cuatro colores de señal; tema claro, movimiento reducido (el
+  halo no late) y los cinco idiomas.
+
 - Capas del globo como interruptores y sitios guardados (VENT-37, parte 2; opciones del lienzo aprobadas por Javier).
   La leyenda «Layers» del PC y un grupo «Layers» nuevo en la hoja «Sites» del móvil son ahora interruptores, cada uno
   con su marca: «Landing sites», «Approximate zones», «Saved sites» con cuántos hay y «Ghost rovers · soon» apagado.
@@ -293,6 +310,13 @@
   comprobada en el lint.
 
 ### Corregido
+- Modo DSN (VENT-7, pase adversario del cierre del MVP). Con la página abierta y la hora en directo, el instante sigue
+  ahora al reloj minuto a minuto (y se pone al día al volver a una pestaña oculta): el relevo de antenas se ve en el
+  minuto en que ocurre, en la ficha, en la vista «DSN» y en la tarjeta del móvil, en vez de seguir diciendo «Robledo ·
+  16 min left» hasta la hora siguiente. Con el texto al 200 % en el móvil, las etiquetas de la Tierra de la vista
+  «DSN» («Moon overhead», «Goldstone»…) se desplazan hacia dentro y ya no se salen de la pantalla.
+- La tarjeta de antena del móvil decía «Robledo · ~2 h left» aunque el sitio no tuviera enlace con la Tierra (Tierra
+  bajo el horizonte); ahora dice «No link» primero (VENT-7).
 - Sitios guardados (VENT-37, revisión del Guardián). Dos pestañas abiertas ya no se pisan: guardar, renombrar o borrar
   en una conserva lo hecho en la otra, y cada pestaña se pone al día sola, también con las capas encendidas o
   apagadas. Borrar varios seguidos ofrece deshacerlos todos juntos («Deleted 2 sites · Undo») y cada uno vuelve a su

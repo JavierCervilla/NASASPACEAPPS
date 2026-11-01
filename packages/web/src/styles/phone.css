@@ -813,7 +813,7 @@
   align-items: center;
   gap: 2px;
   flex: 0 1 auto;
-  min-width: min(64px, 22vw - 8px);
+  min-width: min(64px, 18vw - 8px);
   padding: 6px 10px;
   border: 0;
   border-radius: 22px;
@@ -837,6 +837,18 @@
 @media (max-width: 359.98px) {
   .tab {
     padding: 6px 6px;
+  }
+}
+
+/*
+ * Five tabs since the DSN view (VENT-7): on a narrow phone the labels take
+ * the 10 pt of iOS tab bars and the tabs pull in, so even the pseudo-locale's
+ * longer words stay on one line at 360 px.
+ */
+@media (max-width: 399.98px) {
+  .tab {
+    padding-inline: 4px;
+    font-size: 0.625rem;
   }
 }
 

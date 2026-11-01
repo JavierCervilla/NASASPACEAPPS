@@ -91,8 +91,8 @@ test.describe('desktop site card and polar map, 1440x900', () => {
   });
 
   test('the card fits, so its scroll box is no tab stop and no group', async ({ page }) => {
-    // The relief heading the card (VENT-33) makes it scroll at 900 px: a 1080 px screen holds it all.
-    await page.setViewportSize({ width: 1440, height: 1080 });
+    // The relief heading the card (VENT-33) and the DSN block (VENT-7) make it scroll at 900 px: a 1280 px screen holds it all.
+    await page.setViewportSize({ width: 1440, height: 1280 });
     await open(page);
     await expect(card(page).getByText('Longest night')).toBeAttached();
     const box = card(page).locator('.site-card__scroll');
@@ -227,7 +227,7 @@ for (const [width, height] of [[1280, 720], [1024, 768]] as const) {
       await expect(box).toHaveAttribute('tabindex', '0');
       await expect(box).toHaveAttribute('data-fade-bottom', 'true');
       await expect(box).toHaveAttribute('data-fade-top', 'false');
-      expect(await box.evaluate((el) => getComputedStyle(el).maskImage)).toMatch(/calc\(100% - 56px\)/);
+      expect(await box.evaluate((el) => getComputedStyle(el).maskImage)).toMatch(/calc\(100% - 24px\)/);
       // Tab from the header's last control reaches it, and the ring shows on the card.
       await box.focus();
       await expect(box).toBeFocused();

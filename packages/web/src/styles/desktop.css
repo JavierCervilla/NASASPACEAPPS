@@ -84,7 +84,7 @@
 }
 
 .site-card__scroll[data-fade-bottom='true'] {
-  --fade-bottom: 56px;
+  --fade-bottom: 24px;
 }
 
 /* The mask would clip a ring on the scroll box: the card wears it. */

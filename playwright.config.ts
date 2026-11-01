@@ -31,6 +31,10 @@ const port = Number(process.env.PW_PORT ?? 4321);
 
 export default defineConfig({
   testDir: 'tests/e2e',
+  // The self-hosted runners are shared with Mooner's CI: four workers each
+  // leave headroom for two suites and a build on one machine (agreed
+  // 2026-11-01). Local runs keep Playwright's default.
+  ...(process.env.CI ? { workers: 4 } : {}),
   use: {
     // The production build registers a service worker (VENT-28), which would answer the API before the specs' page
     // routes see it. Only pwa.spec.ts lets it run.

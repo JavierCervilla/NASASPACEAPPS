@@ -109,11 +109,12 @@ describe('month facts', () => {
     expect(monthSamples(NOVEMBER, AT)).toHaveLength(720);
   });
 
-  it('lists the shares, the longest window and the longest night', () => {
+  it('lists the shares (DSN too, VENT-7), the longest window and the longest night', () => {
     expect(monthFacts(NOVEMBER, AT, EN)).toEqual([
       { label: 'Hours with Sun', value: '42 %' },
       { label: 'Hours with Earth', value: '72 %' },
       { label: 'Landing window', value: '14 %', tone: 'window' },
+      { label: 'Hours with DSN', value: '0 %' },
       { label: 'Longest window', value: '4 d 4 h' },
       { label: 'Longest night', value: '17 d 12 h' },
     ]);
@@ -122,8 +123,8 @@ describe('month facts', () => {
   it('says so when the month has no window and no night', () => {
     const sunny = hours(720, () => ({ sunEl: 5, earthEl: -2 }));
     const rows = monthFacts(sunny, AT, EN);
-    expect(rows?.[3]).toEqual({ label: 'Longest window', value: 'None' });
-    expect(rows?.[4]).toEqual({ label: 'Longest night', value: 'No night' });
+    expect(rows?.[4]).toEqual({ label: 'Longest window', value: 'None' });
+    expect(rows?.[5]).toEqual({ label: 'Longest night', value: 'No night' });
   });
 
   it('has nothing for a month the hours do not reach', () => {
@@ -154,7 +155,7 @@ describe('site card states', () => {
     expect(card.sun).toEqual({ label: 'Sunset in', value: '2 d 2 h', detail: 'Sun 5.0° up' });
     expect(card.earth.label).toBe('Earthset in');
     expect(card.earth.value).toMatch(/^at least/);
-    expect(card.rows).toHaveLength(5);
+    expect(card.rows).toHaveLength(6);
     expect(card.source).toMatch(/^November 2026 · /);
   });
 

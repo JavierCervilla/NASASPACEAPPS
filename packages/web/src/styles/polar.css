@@ -23,6 +23,9 @@
  *             :::.. .  .               SPDX-License-Identifier: MIT
  */
 
+/* The DSN view and its blocks (VENT-7), the polar map's sibling view. */
+@import './dsn.css';
+
 /*
  * The polar map view (validated canvas «Polar map»): the south pole disk
  * from 80° S with its grid, labels and site markers, in a dark panel the

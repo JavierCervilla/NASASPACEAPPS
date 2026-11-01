@@ -24,12 +24,11 @@
  */
 
 /**
- * Tells the phone widgets when the hour they show has passed: at the top
- * of each hour, and when a page that was hidden comes back in a later hour
- * (a hidden tab may hold its timers back). The clock, the timers and the
- * page visibility are injected.
+ * Tells when a step of the clock (an hour, a minute) has passed: at each
+ * step's boundary, and when a page that was hidden comes back in a later
+ * step (a hidden tab may hold its timers back). The clock, the timers and
+ * the page visibility are injected.
  */
-import { HOUR_MS } from '@ventana/sim';
 
 export interface HourClockDeps {
   readonly now: () => number;
@@ -43,29 +42,30 @@ export interface HourClockDeps {
 }
 
 /**
- * Calls `onHour` each time the current UTC hour changes; returns the
- * function that stops watching.
+ * Calls `onStep` each time the clock enters a new step of `stepMs` (from
+ * the Unix epoch, so whole UTC hours or minutes); returns the function
+ * that stops watching.
  */
-export function watchHour(
+export function watchClock(
   deps: HourClockDeps,
-  onHour: () => void,
+  stepMs: number,
+  onStep: () => void,
 ): () => void {
-  const hourOf = (ms: number): number => Math.floor(ms / HOUR_MS);
-  let shown = hourOf(deps.now());
+  let shown = Math.floor(deps.now() / stepMs);
   let timer = 0;
   const check = (): void => {
     deps.clearTimer(timer);
-    const hour = hourOf(deps.now());
-    if (hour !== shown) {
-      shown = hour;
-      onHour();
+    const step = Math.floor(deps.now() / stepMs);
+    if (step !== shown) {
+      shown = step;
+      onStep();
     }
-    timer = deps.setTimer(check, (hour + 1) * HOUR_MS - deps.now());
+    timer = deps.setTimer(check, (step + 1) * stepMs - deps.now());
   };
+  check();
   const unlisten = deps.page.onVisibilityChange(() => {
     if (deps.page.visible()) check();
   });
-  timer = deps.setTimer(check, (shown + 1) * HOUR_MS - deps.now());
   return () => {
     deps.clearTimer(timer);
     unlisten();

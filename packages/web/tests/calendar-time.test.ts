@@ -30,26 +30,47 @@ import { createTimeStore } from '../src/calendar/time-store';
 import type { HourClockDeps } from '../src/phone/hour-clock';
 
 const HOUR = 3_600_000;
+const MINUTE = 60_000;
 const NOW = Date.parse('2026-11-23T18:20:00Z');
 
 /** Timers that run only when the test says so. */
 function manualTimers() {
-  const due = new Map<number, () => void>();
+  const due = new Map<number, { fn: () => void; ms: number }>();
   let next = 1;
   return {
-    setTimer: (fn: () => void) => {
-      due.set(next, fn);
+    setTimer: (fn: () => void, ms: number) => {
+      due.set(next, { fn, ms });
       return next++;
     },
     clearTimer: (id: number) => void due.delete(id),
     /** Runs every timer pending now, once. */
     tick: () => {
-      const fns = [...due.values()];
+      const timers = [...due.values()];
       due.clear();
-      fns.forEach((fn) => fn());
+      timers.forEach((timer) => timer.fn());
     },
     pending: () => due.size,
+    /** The delays the pending timers were set with. */
+    delays: () => [...due.values()].map((timer) => timer.ms),
   };
+}
+
+/** A page visibility the test flips by hand. */
+function fakePage() {
+  let visible = true;
+  const listeners = new Set<() => void>();
+  const page: HourClockDeps['page'] = {
+    visible: () => visible,
+    onVisibilityChange: (fn) => {
+      listeners.add(fn);
+      return () => void listeners.delete(fn);
+    },
+  };
+  const set = (next: boolean): void => {
+    visible = next;
+    listeners.forEach((fn) => fn());
+  };
+  return { page, set };
 }
 
 describe('time store', () => {
@@ -107,6 +128,49 @@ describe('followClock', () => {
     clock.advance(HOUR);
     clock.timers.tick();
     expect(store.get()).toEqual({ atMs: NOW + HOUR, live: true });
+  });
+
+  it('moves a live instant at each whole minute (a DSN handoff)', () => {
+    const clock = fakeClock(NOW);
+    const store = createTimeStore(clock.deps.now);
+    followClock(store, clock.deps);
+    clock.advance(MINUTE);
+    clock.timers.tick();
+    expect(store.get()).toEqual({ atMs: NOW + MINUTE, live: true });
+    clock.advance(19 * MINUTE);
+    clock.timers.tick();
+    expect(store.get()).toEqual({ atMs: NOW + 20 * MINUTE, live: true });
+  });
+
+  it('arms the next timer for the next whole minute', () => {
+    const clock = fakeClock(NOW + 20_000);
+    followClock(createTimeStore(clock.deps.now), clock.deps);
+    expect(clock.timers.delays()).toEqual([MINUTE - 20_000]);
+  });
+
+  it('catches up when a hidden page comes back in a later minute', () => {
+    const clock = fakeClock(NOW);
+    const page = fakePage();
+    const store = createTimeStore(clock.deps.now);
+    followClock(store, { ...clock.deps, page: page.page });
+    page.set(false);
+    clock.advance(7 * MINUTE);
+    expect(store.get().atMs).toBe(NOW);
+    page.set(true);
+    expect(store.get()).toEqual({ atMs: NOW + 7 * MINUTE, live: true });
+  });
+
+  it('stays put when the page comes back within the same minute', () => {
+    const clock = fakeClock(NOW);
+    const page = fakePage();
+    const store = createTimeStore(clock.deps.now);
+    const listener = vi.fn();
+    followClock(store, { ...clock.deps, page: page.page });
+    store.subscribe(listener);
+    page.set(false);
+    clock.advance(30_000);
+    page.set(true);
+    expect(listener).not.toHaveBeenCalled();
   });
 
   it('leaves a chosen instant alone', () => {

@@ -310,6 +310,11 @@
   comprobada en el lint.
 
 ### Corregido
+- Modo DSN (VENT-7, pase adversario del cierre del MVP). Con la página abierta y la hora en directo, el instante sigue
+  ahora al reloj minuto a minuto (y se pone al día al volver a una pestaña oculta): el relevo de antenas se ve en el
+  minuto en que ocurre, en la ficha, en la vista «DSN» y en la tarjeta del móvil, en vez de seguir diciendo «Robledo ·
+  16 min left» hasta la hora siguiente. Con el texto al 200 % en el móvil, las etiquetas de la Tierra de la vista
+  «DSN» («Moon overhead», «Goldstone»…) se desplazan hacia dentro y ya no se salen de la pantalla.
 - La tarjeta de antena del móvil decía «Robledo · ~2 h left» aunque el sitio no tuviera enlace con la Tierra (Tierra
   bajo el horizonte); ahora dice «No link» primero (VENT-7).
 - Sitios guardados (VENT-37, revisión del Guardián). Dos pestañas abiertas ya no se pisan: guardar, renombrar o borrar

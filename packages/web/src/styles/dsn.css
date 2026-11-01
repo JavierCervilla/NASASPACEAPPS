@@ -123,9 +123,10 @@
   pointer-events: none;
 }
 
+/* --label-shift keeps a label inside the picture (use-label-fit.ts). */
 .dsn-earth__label {
   position: absolute;
-  translate: -50% 0.7rem;
+  translate: calc(var(--label-shift, 0px) - 50%) 0.7rem;
   font-size: 0.75rem;
   line-height: 1.2;
   font-weight: 600;
@@ -138,7 +139,7 @@
 .dsn-earth__label--moon { font-weight: 500; }
 
 .dsn-earth__label--ring {
-  translate: -50% -1.6rem;
+  translate: calc(var(--label-shift, 0px) - 50%) -1.6rem;
   font-weight: 500;
 }
 

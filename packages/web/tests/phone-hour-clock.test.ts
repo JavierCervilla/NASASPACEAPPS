@@ -23,9 +23,9 @@
  *             :::.. .  .               SPDX-License-Identifier: MIT
  */
 
-import { HOUR_MS } from '@ventana/sim';
+import { HOUR_MS, MINUTE_MS } from '@ventana/sim';
 import { describe, expect, it, vi } from 'vitest';
-import { watchHour, type HourClockDeps } from '../src/phone/hour-clock';
+import { watchClock, type HourClockDeps } from '../src/phone/hour-clock';
 
 const START = Date.parse('2026-11-23T18:40:00Z');
 
@@ -68,11 +68,11 @@ function fakeDeps() {
   return { deps, advanceTo, setVisibility, timers, listeners };
 }
 
-describe('watchHour', () => {
+describe('watchClock', () => {
   it('calls back at the top of each hour, and not before', () => {
     const fake = fakeDeps();
     const onHour = vi.fn();
-    watchHour(fake.deps, onHour);
+    watchClock(fake.deps, HOUR_MS, onHour);
     fake.advanceTo(Date.parse('2026-11-23T18:59:59Z'));
     expect(onHour).not.toHaveBeenCalled();
     fake.advanceTo(Date.parse('2026-11-23T19:00:00Z'));
@@ -84,7 +84,7 @@ describe('watchHour', () => {
   it('calls back when the page becomes visible in a later hour', () => {
     const fake = fakeDeps();
     const onHour = vi.fn();
-    watchHour(fake.deps, onHour);
+    watchClock(fake.deps, HOUR_MS, onHour);
     fake.setVisibility('hidden');
     // A hidden tab may hold its timers back: the clock moves without them firing.
     fake.timers.clear();
@@ -100,17 +100,29 @@ describe('watchHour', () => {
   it('stays quiet when the page comes back within the same hour', () => {
     const fake = fakeDeps();
     const onHour = vi.fn();
-    watchHour(fake.deps, onHour);
+    watchClock(fake.deps, HOUR_MS, onHour);
     fake.setVisibility('hidden');
     fake.advanceTo(START + 60_000);
     fake.setVisibility('visible');
     expect(onHour).not.toHaveBeenCalled();
   });
 
+  it('calls back at each whole minute with a minute step', () => {
+    const fake = fakeDeps();
+    const onMinute = vi.fn();
+    watchClock(fake.deps, MINUTE_MS, onMinute);
+    fake.advanceTo(Date.parse('2026-11-23T18:40:59Z'));
+    expect(onMinute).not.toHaveBeenCalled();
+    fake.advanceTo(Date.parse('2026-11-23T18:41:00Z'));
+    expect(onMinute).toHaveBeenCalledOnce();
+    fake.advanceTo(Date.parse('2026-11-23T18:42:00Z'));
+    expect(onMinute).toHaveBeenCalledTimes(2);
+  });
+
   it('stops: no timer and no listener left', () => {
     const fake = fakeDeps();
     const onHour = vi.fn();
-    watchHour(fake.deps, onHour)();
+    watchClock(fake.deps, HOUR_MS, onHour)();
     expect(fake.timers.size).toBe(0);
     expect(fake.listeners.size).toBe(0);
     fake.advanceTo(START + HOUR_MS);

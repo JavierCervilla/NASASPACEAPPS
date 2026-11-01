@@ -53,8 +53,9 @@ Every visible change follows `.claude/skills/apple-design/SKILL.md` (vendored fr
   capped), one finger turns it and two pinch; a glass top bar holds the title and the site pill, a draggable bottom
   sheet (closed, peek, half with four widgets, full with the site picker or the calendar) follows apple-design's sheet
   physics, and a floating tab bar switches views. One shared instant (`src/calendar/time-store.ts`: live on the clock by
-  default, scrubbed or played) drives the globe's Sun, the widgets and the calendar (the strip under the globe on
-  desktop); the hours come from one cached request per site and month (`src/phone/hours-cache.ts`). The answer is
+  default, following it to the minute and again when a hidden page comes back, `src/calendar/follow-clock.ts`, so the DSN
+  handoff shows when it happens; scrubbed or played) drives the globe's Sun, the widgets and the calendar (the strip
+  under the globe on desktop); what is worked out per hour or month stays keyed by them; the hours come from one cached request per site and month (`src/phone/hours-cache.ts`). The answer is
   instant (VENT-36): the views first show the simulator's hours for the same site and range (`computedHours`, cached
   in `src/source/computed-hours.ts`, from the build-time site list), and Horizons replaces them when it arrives
   (`src/source/month-view.ts`, `src/components/use-site-hours.ts`). When Horizons fails the computed hours stay, with
@@ -254,8 +255,10 @@ Every visible change follows `.claude/skills/apple-design/SKILL.md` (vendored fr
   the night side from the Earth's real sub-solar point (`earthSubSolarPoint`, `subLunarPoint` in
   `packages/sim/src/earth-view.ts`), the active antenna white with a soft glow that breathes three times when it starts
   listening, then rests lit (an endless loop kept every page drawing frames; still under reduced motion; held while
-  the phone sheet moves, `data-moving`, so the move keeps its frames), labels in HTML over it (so they follow the text size). Never the signal colours: `--dsn-*` tokens; the Earth
-  and the DSN view's panel stay dark in both themes. The month's figures add «Hours with DSN» (hours with any complex
+  the phone sheet moves, `data-moving`, so the move keeps its frames), labels in HTML over it (so they follow the text size),
+  each moved sideways to stay inside the picture (`src/dsn/label-shift.ts`, `components/dsn/use-label-fit.ts`, through
+  a `--label-shift` property set in the CSSOM, so at 200 % text on a phone no label leaves the screen). Never the signal
+  colours: `--dsn-*` tokens; the Earth and the DSN view's panel stay dark in both themes. The month's figures add «Hours with DSN» (hours with any complex
   listening, `card/month-facts.ts`).
 - **Five interface languages** (VENT-35): English (the default and the fallback), Spanish, French, German and Italian,
   each on its own static route (`/`, `/es/`, `/fr/`, `/de/`, `/it/`; `pages/[locale]/index.astro`) with `<html lang>`,

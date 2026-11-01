@@ -46,11 +46,16 @@ export function useSiteHorizon(store: HorizonStore, id: string): SiteHorizon {
 export interface BoxSize {
   readonly width: number;
   readonly height: number;
+  /** The element's font size, px, which follows the text size. */
+  readonly fontPx: number;
 }
 
-const UNMEASURED: BoxSize = { width: 0, height: 0 };
+const UNMEASURED: BoxSize = { width: 0, height: 0, fontPx: 10 };
 
-/** A ref to attach, and the element's content box (0 until measured). */
+/**
+ * A ref to attach, and the element's content box and font size (0 by 0
+ * until measured).
+ */
 export function useBoxSize<T extends HTMLElement>(): [
   RefObject<T | null>,
   BoxSize,
@@ -62,10 +67,11 @@ export function useBoxSize<T extends HTMLElement>(): [
     if (!el) return undefined;
     const observer = new ResizeObserver(() => {
       const [width, height] = [el.clientWidth, el.clientHeight];
+      const fontPx = parseFloat(getComputedStyle(el).fontSize) || 10;
       setSize((was) =>
-        was.width === width && was.height === height
+        was.width === width && was.height === height && was.fontPx === fontPx
           ? was
-          : { width, height },
+          : { width, height, fontPx },
       );
     });
     observer.observe(el);

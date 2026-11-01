@@ -12,9 +12,10 @@
   palabras honestas: «Sun 0.1° below level · Over the ridge», «Earth 8.5° up · Behind the terrain», y el bloque DSN da
   «Behind the terrain» como motivo de que no haya enlace; la línea de la ficha pasa a «Sun and Earth over the terrain,
   Earth 3° up». Nueva franja «Horizon» en la ficha del PC y en la hoja del móvil: la silueta del relieve alrededor del
-  sitio con el norte en el centro (S W N E S), su exageración vertical («Height ×7»), el Sol y la Tierra en su sitio
-  en el instante elegido (atenuados y con «· hidden» cuando el relieve los tapa), su fuente («LOLA terrain (NASA
-  LRO), 20 m») y una descripción para lectores de pantalla. Al soltar el pin en cualquier punto, la franja enseña
+  sitio con el norte en el centro (S W N E S), su fuente y su exageración vertical en la cabecera («LOLA · 20 m ·
+  Height ×5», fija para cada sitio: no cambia al mover la hora ni con el ancho de la pantalla), el Sol y la Tierra en
+  su sitio en el instante elegido (atenuados y con «· hidden» cuando el relieve los tapa; si se salen de la escala,
+  quedan en el borde con una flecha, y sus etiquetas nunca se pisan) y una descripción para lectores de pantalla. Al soltar el pin en cualquier punto, la franja enseña
   primero el horizonte liso («Smooth horizon · real terrain loading») y lo cambia por el relieve real en cuanto
   responde la API; si el servidor no tiene relieve para ese punto, se queda el liso con una nota discreta («Real
   terrain unavailable here»). Nueva ruta de la API, `GET /api/v1/horizon?lat&lon`, que calcula el horizonte de

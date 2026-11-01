@@ -273,12 +273,16 @@ Every visible change follows `.claude/skills/apple-design/SKILL.md` (vendored fr
   strip (`components/horizon/HorizonStrip.tsx`, pure parts in `src/horizon/`): under the desktop card's two tiles and
   over the phone sheet's widgets, the site's whole horizon with north in the centre (S W N E S, `strip-scale.ts`), the
   LOLA skyline in neutral line art over the dashed level, stretched by the «Height ×N» it states (degrees per px across
-  over degrees per px up), the Sun and the Earth of the hour the views show at the shared instant (`hour-sky.ts`, so
-  the strip never disagrees with the tiles) in their signal colours, dimmed under the skyline and labelled «· hidden»
-  where it hides them (`strip-marks.ts`), and its source in the foot: «LOLA terrain (NASA LRO), 20 m» (the shipped
+  over degrees per px up; the site's, from its profile alone, so it holds while the time is scrubbed and across the
+  page's strip widths, lowered only on a strip wider than 8:1), the Sun and the Earth of the hour the views show at the
+  shared instant (`hour-sky.ts`, so the strip never disagrees with the tiles) in their signal colours, dimmed under the
+  skyline and labelled «· hidden» where it hides them (`strip-marks.ts`); a body past the scale is pinned inside its
+  edge under a caret (`StripDot.tsx`), and two labels that would touch go to opposite sides of their dots, or stack
+  where an edge leaves no room (`strip-labels.ts`, `label-box.ts`). Its source sits in the head beside the stretch,
+  as mock B has it: «LOLA · 20 m · Height ×5», whole for a screen reader («LOLA terrain (NASA LRO), 20 m»; the shipped
   profiles' near band, `SHIPPED_RESOLUTION_M`; a fetched one's finest tier), «Smooth horizon · real terrain loading»
-  while a custom point's comes, «Smooth horizon» with «Real terrain unavailable here» when it cannot, «Smooth horizon»
-  alone for a listed site north of 80° S. The SVG fills a box the component measures (`use-horizon.ts`), so nothing
+  while a custom point's comes, «Smooth horizon» with «Real terrain unavailable here» under the compass when it cannot,
+  «Smooth horizon» alone for a listed site north of 80° S. The SVG fills a box the component measures (`use-horizon.ts`), so nothing
   sets a style attribute (CSP); its text alternative says which way each body is, on eight points of the compass, and
   whether the terrain hides it (`horizon-alt.ts`). Styles in `src/styles/horizon.css` (light theme and more contrast
   included). Held by `tests/e2e/horizon.spec.ts` (IM-2 on the ridge on 2026-11-30 20:00 UTC, Haworth's hidden Earth on

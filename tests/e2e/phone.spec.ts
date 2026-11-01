@@ -62,7 +62,7 @@ const tabs = (page: Page) => page.getByRole('navigation', { name: 'Views' });
 
 /** A closed sheet is off-screen, inert, and nothing in it takes focus. */
 async function expectClosed(page: Page): Promise<void> {
-  await expect.poll(() => sheetTop(page)).toBe(CLOSED_TOP);
+  await expectRestsAt(page, CLOSED_TOP);
   await expect(page.locator('.sheet')).toHaveAttribute('inert', '');
   const focusable = await page.locator('.sheet__grabber').evaluate((el) => {
     (el as HTMLElement).focus();
@@ -88,6 +88,20 @@ async function dragUpFromTabBar(page: Page, { release = true } = {}): Promise<vo
 const sheetTop = (page: Page) => page.locator('.sheet').evaluate((el) => Math.round(el.getBoundingClientRect().top));
 
 /**
+ * Waits until the sheet's spring has stopped (`data-moving` cleared, src/sheet/sheet-mount.ts) with its top edge at
+ * `top`. Under CPU load the frames come up to 2 s apart and each step is capped at 1/20 s (MAX_DT_S in
+ * src/globe/loop.ts), so the move can outlast the default 5 s poll: the wait is for the spring, not for a time.
+ */
+async function expectRestsAt(page: Page, top: number): Promise<void> {
+  const rest = () =>
+    page.locator('.sheet').evaluate((el) => ({
+      moving: el.hasAttribute('data-moving'),
+      top: Math.round(el.getBoundingClientRect().top),
+    }));
+  await expect.poll(rest, { timeout: 30_000 }).toEqual({ moving: false, top });
+}
+
+/**
  * How far the sheet's top edge is from where half rests: high enough that its content's lowest line clears the tab
  * bar by 12 px, and never under 344 px shown (VENT-40, src/sheet/sheet-lift.ts).
  */
@@ -107,7 +121,11 @@ const offHalf = (page: Page) =>
 
 /** Waits until the sheet rests at half; its top edge then. */
 async function expectHalf(page: Page): Promise<number> {
-  await expect.poll(() => offHalf(page)).toBeLessThanOrEqual(1);
+  const moving = () => page.locator('.sheet').evaluate((el) => el.hasAttribute('data-moving'));
+  // As in expectRestsAt: the spring may outlast the default poll under CPU load.
+  await expect
+    .poll(async () => ((await moving()) ? Number.POSITIVE_INFINITY : offHalf(page)), { timeout: 30_000 })
+    .toBeLessThanOrEqual(1);
   return sheetTop(page);
 }
 
@@ -146,7 +164,7 @@ test.describe('phone, 390x844', () => {
     await page.mouse.move(195, 200, { steps: 4 });
     await page.mouse.up();
     await expect(page.getByRole('heading', { name: 'Landing sites' })).toBeVisible();
-    await expect.poll(() => sheetTop(page)).toBe(FULL_TOP);
+    await expectRestsAt(page, FULL_TOP);
     await expect(page.getByRole('navigation', { name: 'Views' }).getByRole('button', { name: 'Sites' })).toHaveAttribute('aria-current', 'true');
   });
 
@@ -172,7 +190,7 @@ test.describe('phone, 390x844', () => {
     // Under reduced motion the sheet lands at once, without a spring.
     expect(await sheetTop(page)).toBe(FULL_TOP);
     await page.getByRole('button', { name: /^Sheet full height/ }).press('Enter');
-    await expect.poll(() => sheetTop(page)).toBe(PEEK_TOP);
+    await expectRestsAt(page, PEEK_TOP);
   });
 
   test('search spans every region and names it; with the query cleared the region control filters', async ({ page }) => {
@@ -280,7 +298,7 @@ test.describe('phone, 390x844', () => {
     await open(page);
     await tabs(page).getByRole('button', { name: 'Calendar', exact: true }).click();
     await expect(page.getByRole('heading', { name: 'November 2026' })).toBeVisible();
-    await expect.poll(() => sheetTop(page)).toBe(FULL_TOP);
+    await expectRestsAt(page, FULL_TOP);
     await expect(tabs(page).getByRole('button', { name: 'Calendar', exact: true })).toHaveAttribute('aria-current', 'true');
     await expect(page.locator('.sheet')).toHaveAttribute('aria-label', 'Calendar');
     // Real JPL Horizons data for IM-2 in November 2026, read against its terrain horizon (VENT-40).
@@ -298,7 +316,7 @@ test.describe('phone, 390x844', () => {
   }) => {
     await open(page);
     await tabs(page).getByRole('button', { name: 'Calendar', exact: true }).click();
-    await expect.poll(() => sheetTop(page)).toBe(FULL_TOP);
+    await expectRestsAt(page, FULL_TOP);
     await page.evaluate(() => {
       document.documentElement.style.fontSize = '200%';
     });
@@ -307,7 +325,11 @@ test.describe('phone, 390x844', () => {
       return (box?.y ?? 0) + (box?.height ?? 0);
     };
     const bar = page.locator('.phone-bar');
-    await expect.poll(async () => (await sheetTop(page)) >= (await bottomOf(bar))).toBe(true);
+    // The grown top bar moves the full detent: wait for the spring to stop there, as in expectRestsAt.
+    const moving = () => page.locator('.sheet').evaluate((el) => el.hasAttribute('data-moving'));
+    await expect
+      .poll(async () => !(await moving()) && (await sheetTop(page)) >= (await bottomOf(bar)), { timeout: 30_000 })
+      .toBe(true);
     await settledBox(page.locator('.sheet'));
     const barBottom = await bottomOf(bar);
     for (const name of ['Previous month', 'Next month']) {
@@ -356,7 +378,7 @@ test.describe('phone, 390x844', () => {
     await open(page);
     await tabs(page).getByRole('button', { name: 'Calendar', exact: true }).click();
     const slider = page.getByRole('slider', { name: 'Selected hour' });
-    await expect.poll(() => sheetTop(page)).toBe(FULL_TOP);
+    await expectRestsAt(page, FULL_TOP);
     const box = await slider.boundingBox();
     if (!box) throw new Error('no columns');
     const x = box.x + box.width / 2;
@@ -440,7 +462,7 @@ test.describe('phone, 390x844', () => {
       await expectClosed(page);
       await page.getByRole('button', { name: /^Change site, now/ }).click();
       await expect(page.getByRole('heading', { name: 'Landing sites' })).toBeVisible();
-      await expect.poll(() => sheetTop(page)).toBe(FULL_TOP);
+      await expectRestsAt(page, FULL_TOP);
       await expect(page.locator('.sheet')).not.toHaveAttribute('inert');
       expect(errors).toEqual([]);
     });
@@ -454,7 +476,7 @@ test.describe('phone, 390x844', () => {
       await tabs(page).getByRole('button', { name: 'Sites' }).click();
       await expect(page.getByRole('heading', { name: 'Landing sites' })).toBeVisible();
       // The picker is visible while the spring is still carrying the sheet up.
-      await expect.poll(() => sheetTop(page)).toBe(FULL_TOP);
+      await expectRestsAt(page, FULL_TOP);
     });
 
     test('Done in the picker closes it', async ({ page }) => {
@@ -477,7 +499,7 @@ test.describe('phone, 390x844', () => {
       await expect(page.getByRole('heading', { name: 'Landing sites' })).toHaveCount(0);
       await tabs(page).getByRole('button', { name: 'Sites' }).click();
       await expect(page.getByRole('heading', { name: 'Landing sites' })).toBeVisible();
-      await expect.poll(() => sheetTop(page)).toBe(FULL_TOP);
+      await expectRestsAt(page, FULL_TOP);
     });
 
     test('a drag up from the tab bar does nothing while the sheet is open', async ({ page }) => {
@@ -516,7 +538,7 @@ test.describe('phone, 390x844', () => {
       await open(page);
       await page.getByRole('button', { name: /^Sheet half height/ }).press('Enter');
       await page.getByRole('button', { name: /^Sheet full height/ }).press('Enter');
-      await expect.poll(() => sheetTop(page)).toBe(PEEK_TOP);
+      await expectRestsAt(page, PEEK_TOP);
       const head = await page.locator('.summary__head').boundingBox();
       const bar = await tabs(page).boundingBox();
       expect((head?.y ?? 0) + (head?.height ?? 0)).toBeLessThanOrEqual((bar?.y ?? 0) - 8);

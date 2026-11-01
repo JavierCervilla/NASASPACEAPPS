@@ -328,6 +328,7 @@
   "horizon.title": "Orizzonte",
   "horizon.height": "Altezza ×{n}",
   "horizon.source": "Rilievo LOLA (NASA LRO), {res} m",
+  "horizon.sourceShort": "LOLA · {res} m",
   "horizon.loading": "Orizzonte liscio · rilievo reale in caricamento",
   "horizon.smooth": "Orizzonte liscio",
   "horizon.unavailable": "Rilievo reale non disponibile qui",

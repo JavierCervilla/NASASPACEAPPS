@@ -38,9 +38,12 @@ import { directionOf, horizonAlt } from '../src/horizon/horizon-alt';
 import { createHorizonStore, type HorizonSources } from '../src/horizon/horizon-store';
 import { hourSky } from '../src/horizon/hour-sky';
 import { horizonFetch, horizonOf, pointHorizonUrl, type KnownHorizon } from '../src/horizon/point-horizon';
-import { bodiesAt, stripMarks } from '../src/horizon/strip-marks';
+import { boxOf } from '../src/horizon/label-box';
+import { placeLabels } from '../src/horizon/strip-labels';
+import { EDGE_INSET, bodiesAt, stripMarks } from '../src/horizon/strip-marks';
 import { stripModel } from '../src/horizon/strip-model';
-import { skyline, stripScale, xOfAz, yOfEl } from '../src/horizon/strip-scale';
+import { stripScale, xOfAz, yOfEl } from '../src/horizon/strip-scale';
+import { skyline } from '../src/horizon/strip-skyline';
 import { terrainWords } from '../src/phone/terrain-words';
 import { SHIPPED_RESOLUTION_M, shippedTerrain } from '../src/source/terrain-profiles';
 import { dsnSpans, toMs } from '@ventana/sim';
@@ -156,9 +159,9 @@ describe('strip-scale', () => {
     expect([180, 270, 0, 90, 179.999].map((az) => Math.round(xOfAz(az, 360)))).toEqual([0, 90, 180, 270, 360]);
   });
 
-  it('holds the level, the terrain and the bodies, and states the stretch', () => {
-    const scale = stripScale(profileOf(0, { from: 10, to: 20, deg: 4 }), [-1, 2], 360, 50);
-    expect(scale.lo).toBeLessThan(-1);
+  it('holds the level and the terrain, and states the stretch it draws', () => {
+    const scale = stripScale(profileOf(0, { from: 10, to: 20, deg: 4 }), 360, 50);
+    expect(scale.lo).toBeLessThan(0);
     expect(scale.hi).toBeGreaterThan(4);
     // 1° per px across; (hi - lo) / 50 degrees per px up.
     expect(scale.exaggeration).toBeCloseTo(50 / (scale.hi - scale.lo));
@@ -166,12 +169,29 @@ describe('strip-scale', () => {
     expect(yOfEl(scale, scale.lo)).toBe(50);
   });
 
-  it('lets a body stretch the scale only so far', () => {
-    expect(stripScale(undefined, [60], 360, 50).hi).toBeLessThan(16);
+  it('keeps the site\'s stretch at every usual strip width, a whole number from 2 up', () => {
+    // QA on PR #25: ×4 then ×3 on IM-2 while scrubbing, ×7 then ×8 between phone widths.
+    const im2 = shippedTerrain()('im2-athena')!;
+    const sizes = [[256, 46], [290, 52], [330, 52], [370, 52], [256, 92]] as const;
+    const stretches = sizes.map(([w, h]) => stripScale(im2, w, h).exaggeration);
+    expect(new Set(stretches).size).toBe(1);
+    expect(Number.isInteger(stretches[0])).toBe(true);
+    // Every one of them still holds the whole skyline.
+    for (const [w, h] of sizes) {
+      const scale = stripScale(im2, w, h);
+      expect(Math.max(...im2.centiDeg) / 100).toBeLessThan(scale.hi);
+      expect(Math.min(...im2.centiDeg) / 100).toBeGreaterThan(scale.lo);
+    }
   });
 
+  it('lowers the stretch on a strip wider than any the page draws, so the terrain still fits', () => {
+    const wall = profileOf(0, { from: 10, to: 20, deg: 4 });
+    const wide = stripScale(wall, 1200, 40);
+    expect(wide.exaggeration).toBeLessThan(stripScale(wall, 300, 52).exaggeration);
+    expect(wide.hi).toBeGreaterThan(4);
+  });
   it('draws the skyline from south through north back to south', () => {
-    const scale = stripScale(profileOf(0, { from: 0, to: 0, deg: 3 }), [], 720, 40);
+    const scale = stripScale(profileOf(0, { from: 0, to: 0, deg: 3 }), 720, 40);
     const points = skyline(profileOf(0, { from: 0, to: 0, deg: 3 }), scale).split(' ');
     expect(points).toHaveLength(721);
     // The 3° bin at north stands in the middle, above the rest.
@@ -193,13 +213,63 @@ describe('strip-marks', () => {
     expect([sun?.visible, earth?.visible]).toEqual([false, true]);
   });
 
-  it('puts labels beside their dots, to the left near the right edge, and pulls two close ones apart', () => {
-    const scale = stripScale(undefined, [1, 1], 360, 50);
-    const near = stripMarks(bodiesAt(hour({ sunEl: 1, sunAz: 0, earthEl: 1, earthAz: 2 })), scale);
-    expect(Math.abs((near[0]?.labelY ?? 0) - (near[1]?.labelY ?? 0))).toBeGreaterThanOrEqual(12);
-    const edge = stripMarks(bodiesAt(hour({ sunAz: 170 })), scale);
-    expect(edge[0]?.anchor).toBe('end');
-    expect(edge[1]?.anchor).toBe('start');
+  it('pins a body past the scale inside the edge it went past, without moving the scale', () => {
+    const scale = stripScale(profileOf(0.5), 300, 52);
+    const [sun, earth] = stripMarks(bodiesAt(hour({ sunEl: -40, earthEl: 60 })), scale);
+    expect([sun?.offScale, sun?.y]).toEqual(['below', 52 - EDGE_INSET]);
+    expect([earth?.offScale, earth?.y]).toEqual(['above', EDGE_INSET]);
+    const on = stripMarks(bodiesAt(hour({ sunEl: 0.5, earthEl: 0.5 })), scale);
+    expect(on.map((m) => m.offScale)).toEqual([null, null]);
+  });
+});
+
+describe('strip-labels', () => {
+  const frame = { width: 300, height: 52, fontPx: 10 };
+  const at = (x: number, y: number, label: string) => ({ x, y, label });
+  const boxes = (items: ReturnType<typeof at>[]) =>
+    placeLabels(items, frame).map((place, i) => boxOf(items[i]!, place, frame));
+  const overlap = ([a, b]: ReturnType<typeof boxOf>[]) =>
+    a!.left < b!.right && b!.left < a!.right && a!.top < b!.bottom && b!.top < a!.bottom;
+
+  it('puts a label right of its dot, and left of it near the right edge', () => {
+    const [mid, edge] = placeLabels([at(100, 20, 'Sun'), at(290, 20, 'Earth')], frame);
+    expect([mid?.anchor, mid?.labelX]).toEqual(['start', 109]);
+    expect([edge?.anchor, edge?.labelX]).toEqual(['end', 281]);
+  });
+
+  it('parts two close labels to opposite sides of their dots', () => {
+    // QA on PR #25: «Earth · hidden» over «Sun» at Haworth, the two dots 18 px apart.
+    const items = [at(160, 26, 'Sun · hidden'), at(142, 18, 'Earth · hidden')];
+    const places = placeLabels(items, frame);
+    expect(places.map((p) => p.anchor)).toEqual(['start', 'end']);
+    expect(overlap(boxes(items))).toBe(false);
+  });
+
+  it('stacks them inside the strip where an edge leaves no room for that', () => {
+    for (const [x, y] of [[4, 2], [296, 50], [150, 26]] as const) {
+      const items = [at(x, y, 'Sun · hidden'), at(x + 1, y, 'Earth · hidden')];
+      const placed = boxes(items);
+      expect(overlap(placed)).toBe(false);
+      for (const box of placed) {
+        expect(box.left).toBeGreaterThanOrEqual(0);
+        expect(box.right).toBeLessThanOrEqual(frame.width);
+      }
+      if (x !== 150) {
+        for (const box of placed) {
+          expect(box.top).toBeGreaterThanOrEqual(0);
+          expect(box.bottom).toBeLessThanOrEqual(frame.height);
+        }
+      }
+    }
+  });
+
+  it('leaves labels that do not touch where they are', () => {
+    const places = placeLabels([at(50, 20, 'Sun'), at(250, 20, 'Earth')], frame);
+    // The baseline centres the label's ascent and descent on the dot.
+    expect(places.map((p) => [p.anchor, p.labelY])).toEqual([
+      ['start', 22.75],
+      ['start', 22.75],
+    ]);
   });
 });
 
@@ -231,7 +301,7 @@ describe('horizon words', () => {
 });
 
 describe('stripModel', () => {
-  const size = { width: 320, height: 52 };
+  const size = { width: 320, height: 52, fontPx: 10 };
 
   it('over terrain: the skyline, «Height ×N», the LOLA source at its resolution, hidden labels', () => {
     const horizon = { kind: 'terrain', profile: profileOf(0.5, { from: 80, to: 100, deg: 10 }), resolutionM: 20 } as const;
@@ -239,6 +309,7 @@ describe('stripModel', () => {
     expect(model.skyline).not.toBeNull();
     expect(model.stretch).toMatch(/^Height ×\d+(\.\d)?$/);
     expect(model.source).toBe('LOLA terrain (NASA LRO), 20 m');
+    expect(model.sourceShort).toBe('LOLA · 20 m');
     expect(model.note).toBeNull();
     expect(model.marks.map((m) => m.label)).toEqual(['Sun', 'Earth · hidden']);
   });
@@ -246,13 +317,21 @@ describe('stripModel', () => {
   it('a custom point while its terrain loads, and when it cannot', () => {
     const loading = stripModel(EN, { kind: 'loading' }, hour({}), size);
     expect([loading.skyline, loading.stretch, loading.source]).toEqual([null, null, 'Smooth horizon · real terrain loading']);
+    expect(loading.sourceShort).toBe(loading.source);
     const down = stripModel(EN, { kind: 'unavailable' }, hour({}), size);
     expect([down.source, down.note]).toEqual(['Smooth horizon', 'Real terrain unavailable here']);
   });
 
+  it('keeps the stretch while the time is scrubbed, whatever the bodies do', () => {
+    const horizon = { kind: 'terrain', profile: profileOf(0.5, { from: 80, to: 100, deg: 3 }), resolutionM: 20 } as const;
+    const skies = [hour({ sunEl: -1.5, earthEl: 0.2 }), hour({ sunEl: 1.6, earthEl: 9.5 }), hour({ sunEl: 0, earthEl: -3 })];
+    const stretches = skies.map((sky) => stripModel(EN, horizon, sky, size).stretch);
+    expect(new Set(stretches).size).toBe(1);
+  });
+
   it('states no stretch before the strip is measured, and draws no body before the hours come', () => {
     const horizon = { kind: 'terrain', profile: profileOf(1), resolutionM: 20 } as const;
-    expect(stripModel(EN, horizon, null, { width: 0, height: 0 }).stretch).toBeNull();
+    expect(stripModel(EN, horizon, null, { width: 0, height: 0, fontPx: 10 }).stretch).toBeNull();
     expect(stripModel(EN, horizon, null, size).marks).toEqual([]);
   });
 });

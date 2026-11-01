@@ -28,7 +28,7 @@
  * synthetic terrain written to a temporary directory: a 500 m crater wall
  * at the south pole on a 20 m polar grid, and a coarse tiled globe.
  */
-import { mkdtemp, rm } from 'node:fs/promises';
+import { mkdtemp, readFile, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { decodeProfile, demHeightAt, horizonAt } from '@ventana/sim';
@@ -162,6 +162,18 @@ describe('the shipped catalogue', () => {
     const catalogue = await loadCatalogue(DEFAULT_CATALOGUE_FILE);
     expect(catalogue.tiers.length).toBe(9);
     expect(catalogue.bands.map((b) => b.untilM)).toEqual([6_000, 150_000, 200_000]);
+  });
+
+  it("matches the shipped profiles' header, file for file (terrain-horizons.ts --check without the grids)", async () => {
+    const catalogue = await loadCatalogue(DEFAULT_CATALOGUE_FILE);
+    const shipped = JSON.parse(
+      await readFile(new URL('../../sim/data/horizons.json', import.meta.url), 'utf8'),
+    ) as { sources: { tier: string; sha256: string | null }[] };
+    expect(shipped.sources.length).toBeGreaterThan(0);
+    for (const { tier, ...file } of shipped.sources) {
+      expect(file.sha256).toMatch(/^[0-9a-f]{64}$/);
+      expect(catalogue.tiers.find((t) => t.id === tier)?.files[0]).toEqual(file);
+    }
   });
 });
 

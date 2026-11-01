@@ -320,6 +320,7 @@
   "horizon.title": "Horizon",
   "horizon.height": "Height ×{n}",
   "horizon.source": "LOLA terrain (NASA LRO), {res} m",
+  "horizon.sourceShort": "LOLA · {res} m",
   "horizon.loading": "Smooth horizon · real terrain loading",
   "horizon.smooth": "Smooth horizon",
   "horizon.unavailable": "Real terrain unavailable here",

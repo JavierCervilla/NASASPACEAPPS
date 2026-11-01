@@ -78,7 +78,7 @@
    "label": "https://pds-geosciences.wustl.edu/lro/lro-l-lola-3-rdr-v1/lrolol_1xxx/data/lola_gdr/cylindrical/img/ldem_128.lbl",
    "labelSha256": "85b1901def6901ee8a50415384f17a71e773af2d979beb7245fd6ac4d5e1671b",
    "bytes": 2123366400,
-   "sha256": null,
+   "sha256": "0e4fea9b863e3255f58de15ccbd2bb8b1e248cb09217fd55d23ed37489f764b4",
    "row": 0,
    "col": 0
   }

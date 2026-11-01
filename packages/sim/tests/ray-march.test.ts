@@ -160,3 +160,49 @@ describe('terrainHorizon on a simple cylindrical grid', () => {
     expect(horizonAt(result.profile, 90)).toBeLessThanOrEqual(top);
   });
 });
+
+describe('pixelOf on a polar grid, as the PDS labels place it', () => {
+  // LOLA polar labels: radius r = 2R tan(45° - |lat| / 2) from the pole.
+  // South (LDEM_80S_*): 0° E is up (line falls), 90° E right (sample rises).
+  // North (LDEM_80N_*): 0° E is down (line rises), 90° E right.
+  const MPP = 20;
+  const r = (lat: number): number =>
+    (2 * R * Math.tan(((45 - Math.abs(lat) / 2) * Math.PI) / 180)) / MPP;
+  function polar(pole: 'south' | 'north'): DemGrid {
+    const meta = {
+      id: pole,
+      lines: SIZE,
+      samples: SIZE,
+      metresPerDn: 0.5,
+      radiusM: R,
+      projection: {
+        kind: 'polar' as const,
+        pole,
+        poleLine: POLE,
+        poleSample: POLE,
+        metresPerPixel: MPP,
+      },
+    };
+    return arrayGrid(meta, new Int16Array(SIZE * SIZE));
+  }
+
+  it('south: 0° E above the pole, 90° E to its right', () => {
+    const grid = polar('south');
+    const [l0, s0] = pixelOf(grid, unitVector(-89.9, 0));
+    expect(l0).toBeCloseTo(POLE - r(-89.9), 6);
+    expect(s0).toBeCloseTo(POLE, 6);
+    const [l90, s90] = pixelOf(grid, unitVector(-89.9, 90));
+    expect(l90).toBeCloseTo(POLE, 6);
+    expect(s90).toBeCloseTo(POLE + r(-89.9), 6);
+  });
+
+  it('north: 0° E below the pole, 90° E to its right', () => {
+    const grid = polar('north');
+    const [l0, s0] = pixelOf(grid, unitVector(89.9, 0));
+    expect(l0).toBeCloseTo(POLE + r(89.9), 6);
+    expect(s0).toBeCloseTo(POLE, 6);
+    const [l90, s90] = pixelOf(grid, unitVector(89.9, 90));
+    expect(l90).toBeCloseTo(POLE, 6);
+    expect(s90).toBeCloseTo(POLE + r(89.9), 6);
+  });
+});

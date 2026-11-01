@@ -156,6 +156,8 @@ const tabBar = (page: Page) => page.getByRole('navigation').last();
 async function fit(page: Page): Promise<{ gap: number; shown: number }> {
   await expect(page.getByRole('list').filter({ has: page.locator('.widget') }).first()).toBeVisible();
   await page.waitForTimeout(900);
+  // Under CPU load the sheet's spring can outlast any fixed wait: read it once it has stopped (sheet-mount.ts).
+  await expect(sheet(page)).not.toHaveAttribute('data-moving', { timeout: 30_000 });
   const tabsTop = (await tabBar(page).boundingBox())!.y;
   const bottom = await sheet(page)
     .locator('[data-sheet-fit]')

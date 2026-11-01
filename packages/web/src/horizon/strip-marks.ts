@@ -27,8 +27,8 @@
  * The Sun and the Earth on the horizon strip (VENT-40): where each stands
  * at the shared instant, whether the horizon hides it (the terrain's
  * where one is known, else the smooth sphere's 0°; never a Sun in
- * permanent shadow), and where its label goes: beside the dot, to the
- * left near the right edge, two close labels pulled apart. Pure.
+ * permanent shadow), and, for a body past the strip's scale, its dot
+ * pinned inside the edge it went past. Pure.
  */
 import {
   isAboveTerrain,
@@ -50,16 +50,15 @@ export interface BodyAt {
 export interface StripMark extends BodyAt {
   readonly x: number;
   readonly y: number;
-  readonly labelX: number;
-  readonly labelY: number;
-  readonly anchor: 'start' | 'end';
+  /** Past the top or the bottom of the scale; null: on it. */
+  readonly offScale: 'above' | 'below' | null;
 }
 
-/** Room a label needs from the right edge, and between two labels. */
-const LABEL_ROOM = { right: 72, across: 76, up: 12 } as const;
-/** The label's gap from its dot, and its baseline under the centre. */
-const LABEL_GAP = 9;
-const BASELINE = 3.5;
+/**
+ * How far inside the edge a dot past the scale is pinned, px: room for
+ * the caret beyond it (`StripDot`).
+ */
+export const EDGE_INSET = 11;
 
 type Sky = Pick<
   HourSample,
@@ -82,35 +81,26 @@ export function bodiesAt(sky: Sky, profile?: HorizonProfile): BodyAt[] {
   ];
 }
 
-/** The mark of `body` on `scale`, its label beside it. */
+/** Which edge of `scale` the elevation `elDeg` went past, if any. */
+function offScaleOf(scale: StripScale, elDeg: number): StripMark['offScale'] {
+  if (elDeg > scale.hi) return 'above';
+  return elDeg < scale.lo ? 'below' : null;
+}
+
+/** The mark of `body` on `scale`; past an edge, pinned inside it. */
 function markOf(body: BodyAt, scale: StripScale): StripMark {
-  const x = xOfAz(body.azDeg, scale.width);
-  const y = yOfEl(scale, body.elDeg);
-  const right = x < scale.width - LABEL_ROOM.right;
-  const labelX = right ? x + LABEL_GAP : x - LABEL_GAP;
-  const anchor = right ? 'start' : 'end';
-  return { ...body, x, y, labelX, labelY: y + BASELINE, anchor };
+  const offScale = offScaleOf(scale, body.elDeg);
+  const inset = Math.min(EDGE_INSET, scale.height / 2);
+  let y = yOfEl(scale, body.elDeg);
+  if (offScale === 'above') y = inset;
+  if (offScale === 'below') y = scale.height - inset;
+  return { ...body, x: xOfAz(body.azDeg, scale.width), y, offScale };
 }
 
-/** `a` and `b` with their labels moved apart when they would touch. */
-function apart(a: StripMark, b: StripMark): [StripMark, StripMark] {
-  const near = Math.abs(a.labelX - b.labelX) < LABEL_ROOM.across;
-  const short = LABEL_ROOM.up - Math.abs(a.labelY - b.labelY);
-  if (!near || short <= 0) return [a, b];
-  const shift = a.labelY <= b.labelY ? short / 2 : -short / 2;
-  return [
-    { ...a, labelY: a.labelY - shift },
-    { ...b, labelY: b.labelY + shift },
-  ];
-}
-
-/** The marks of `bodies` on `scale`, labels clear of each other. */
+/** The marks of `bodies` on `scale`. */
 export function stripMarks(
   bodies: readonly BodyAt[],
   scale: StripScale,
 ): StripMark[] {
-  const marks = bodies.map((body) => markOf(body, scale));
-  const [first, second] = marks;
-  if (!first || !second) return marks;
-  return apart(first, second);
+  return bodies.map((body) => markOf(body, scale));
 }

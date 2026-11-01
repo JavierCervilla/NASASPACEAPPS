@@ -29,18 +29,20 @@
  * skyline from LOLA in neutral line art over the level, stretched by the
  * «Height ×N» it states; the Sun and the Earth at the shared instant in
  * their signal colours, dimmed under the skyline and labelled «· hidden»
- * where it hides them. A custom point shows the smooth sphere's flat
- * horizon until its terrain comes. An SVG with a text alternative; its
- * box is measured, so nothing sets a style attribute (CSP).
+ * where it hides them (`StripDot`). The source sits in the head, short
+ * beside the stretch, so the strip ends at its compass. A custom point
+ * shows the smooth sphere's flat horizon until its terrain comes. An SVG
+ * with a text alternative; its box is measured, so nothing sets a style
+ * attribute (CSP).
  */
 import type { SiteHorizon } from '../../horizon/horizon-store';
 import type { HourSky } from '../../horizon/hour-sky';
 import {
   stripModel,
-  type LabelledMark,
   type StripModel,
 } from '../../horizon/strip-model';
 import { useI18n } from '../i18n-context';
+import { Dot } from './StripDot';
 import { useBoxSize } from './use-horizon';
 
 interface Props {
@@ -48,20 +50,6 @@ interface Props {
   /** The Sun and the Earth at the hour shown; null: not yet. */
   readonly sky: HourSky | null;
   readonly className: string;
-}
-
-/** A body's dot, under the skyline when hidden. */
-function Dot({ mark }: { readonly mark: LabelledMark }) {
-  return (
-    <circle
-      className="horizon__body"
-      data-body={mark.id}
-      data-hidden={!mark.visible}
-      cx={mark.x}
-      cy={mark.y}
-      r={mark.visible ? 5.5 : 4.5}
-    />
-  );
 }
 
 /** The ground under the skyline, or under the level when smooth. */
@@ -120,6 +108,18 @@ function Compass() {
   );
 }
 
+/** The head's source and stretch: short to see, whole to hear. */
+function Source({ model }: { readonly model: StripModel }) {
+  const seen = [model.sourceShort, model.stretch].filter(Boolean);
+  const heard = [model.source, model.stretch].filter(Boolean);
+  return (
+    <>
+      <span className="horizon__source" aria-hidden="true">{seen.join(' · ')}</span>
+      <span className="visually-hidden">{heard.join(' · ')}</span>
+    </>
+  );
+}
+
 export function HorizonStrip({ horizon, sky, className }: Props) {
   const i18n = useI18n();
   const [box, size] = useBoxSize<HTMLDivElement>();
@@ -128,16 +128,13 @@ export function HorizonStrip({ horizon, sky, className }: Props) {
     <section className={`horizon ${className}`} aria-label={i18n.t('horizon.title')} data-horizon={horizon.kind}>
       <p className="horizon__head">
         <span className="horizon__title">{i18n.t('horizon.title')}</span>
-        {model.stretch ? <span>{model.stretch}</span> : null}
+        <Source model={model} />
       </p>
       <div className="horizon__plot" ref={box}>
         {size.width > 0 && size.height > 0 ? <Plot model={model} /> : null}
       </div>
       <Compass />
-      <p className="horizon__foot">
-        <span>{model.source}</span>
-        {model.note ? <span className="horizon__note">{model.note}</span> : null}
-      </p>
+      {model.note ? <p className="horizon__foot horizon__note">{model.note}</p> : null}
     </section>
   );
 }

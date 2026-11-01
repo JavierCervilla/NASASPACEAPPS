@@ -320,6 +320,7 @@
   "horizon.title": "Horizont",
   "horizon.height": "Höhe ×{n}",
   "horizon.source": "LOLA-Gelände (NASA LRO), {res} m",
+  "horizon.sourceShort": "LOLA · {res} m",
   "horizon.loading": "Glatter Horizont · echtes Gelände lädt",
   "horizon.smooth": "Glatter Horizont",
   "horizon.unavailable": "Echtes Gelände hier nicht verfügbar",

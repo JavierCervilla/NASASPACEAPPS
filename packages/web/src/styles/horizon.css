@@ -79,9 +79,15 @@
   letter-spacing: 0.02em;
 }
 
+.horizon__source {
+  text-align: end;
+}
+
+/* The labels' size: the strip measures it to keep two labels apart. */
 .horizon__plot {
   position: relative;
   height: 3.25rem;
+  font-size: 0.625rem;
 }
 
 .horizon--card .horizon__plot {
@@ -134,6 +140,9 @@
 
 .horizon__body[data-body='sun'] { fill: var(--signal-sun); }
 .horizon__body[data-body='earth'] { fill: var(--signal-earth); }
+
+.horizon__off[data-body='sun'] { fill: var(--signal-sun); }
+.horizon__off[data-body='earth'] { fill: var(--signal-earth); }
 
 .horizon__body[data-hidden='true'] {
   stroke: none;

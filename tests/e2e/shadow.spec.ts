@@ -128,6 +128,8 @@ async function clearance(page: Page): Promise<number> {
   await expect(widgets(page)).toHaveCount(4);
   await expect(sheet(page).getByRole('note')).toBeVisible();
   await page.waitForTimeout(800);
+  // Under CPU load the sheet's spring can outlast any fixed wait: read it once it has stopped (sheet-mount.ts).
+  await expect(sheet(page)).not.toHaveAttribute('data-moving', { timeout: 30_000 });
   const bottom = await sheet(page)
     .locator('[data-sheet-fit]')
     .evaluate((el) => Math.max(...[...el.children].map((c) => c.getBoundingClientRect().bottom)));

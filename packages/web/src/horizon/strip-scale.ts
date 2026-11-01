@@ -28,7 +28,11 @@
  * of azimuth across its width with north in the centre (S W N E S), and
  * the terrain's elevation up its height, stretched so the relief reads:
  * the stretch is the strip's «Height ×N», degrees per pixel across over
- * degrees per pixel up. Pure.
+ * degrees per pixel up. The stretch is the site's: it follows from its
+ * profile alone, never from the instant or where the Sun and the Earth
+ * stand (a body past the scale is pinned to its edge instead), so it
+ * holds while the time is scrubbed and across the usual strip widths.
+ * Pure.
  */
 import {
   CENTIDEG_PER_DEG,
@@ -45,9 +49,14 @@ export interface StripScale {
   readonly exaggeration: number;
 }
 
-/** The elevations a body may stretch the scale to, degrees. */
-const BODY_REACH = { lo: -5, hi: 12 } as const;
-/** Room above and below what is drawn: a share of the span, plus. */
+/**
+ * The widest strip, width over height, a site's stretch is chosen for:
+ * the desktop card's (about 6.3) and the phone sheet's up to 430 px
+ * (about 7.1) are narrower, so they keep it and get more sky; a wider
+ * strip lowers it until the terrain fits.
+ */
+const REF_ASPECT = 8;
+/** Room above and below the terrain: a share of its span, plus. */
 const PAD_SHARE = 0.18;
 const PAD_DEG = 0.2;
 /** The smooth sphere's strip spans at least ±1°. */
@@ -65,53 +74,46 @@ export function yOfEl(scale: StripScale, elDeg: number): number {
   return Math.min(scale.height, Math.max(0, scale.height * (1 - share)));
 }
 
-/** The lowest and highest bin of `profile`, degrees. */
-function extremes(profile: HorizonProfile): [number, number] {
-  let [lo, hi] = [Infinity, -Infinity];
-  for (const value of profile.centiDeg) {
-    lo = Math.min(lo, value);
-    hi = Math.max(hi, value);
+/**
+ * The elevations the strip must hold for `profile`, degrees: the level
+ * and the terrain (the smooth sphere's ±1° without one), padded.
+ */
+function terrainRange(profile?: HorizonProfile): [number, number] {
+  let [lo, hi] = [-SMOOTH_SPAN_DEG, SMOOTH_SPAN_DEG];
+  if (profile) {
+    [lo, hi] = [0, 0];
+    for (const value of profile.centiDeg) {
+      lo = Math.min(lo, value / CENTIDEG_PER_DEG);
+      hi = Math.max(hi, value / CENTIDEG_PER_DEG);
+    }
   }
-  return [lo / CENTIDEG_PER_DEG, hi / CENTIDEG_PER_DEG];
+  const pad = (hi - lo) * PAD_SHARE + PAD_DEG;
+  return [lo - pad, hi + pad];
+}
+
+/** `ex` rounded down: whole from 2 up, to a tenth under it. */
+function roundDown(ex: number): number {
+  return ex >= 2 ? Math.floor(ex) : Math.max(0.1, Math.floor(ex * 10) / 10);
 }
 
 /**
- * The scale of a `width` x `height` strip that holds the level (0°), the
- * terrain of `profile` (the smooth sphere's ±1° without one) and the
- * elevations of the bodies, as far as {@link BODY_REACH}.
+ * The scale of a `width` x `height` strip for `profile` (undefined: the
+ * smooth sphere): the bottom just under the terrain, the stretch the
+ * site's, and whatever height is left over given to the sky.
  */
 export function stripScale(
   profile: HorizonProfile | undefined,
-  bodyEls: readonly number[],
   width: number,
   height: number,
 ): StripScale {
-  const smooth: [number, number] = [-SMOOTH_SPAN_DEG, SMOOTH_SPAN_DEG];
-  let [lo, hi] = profile ? extremes(profile) : smooth;
-  [lo, hi] = [Math.min(lo, 0), Math.max(hi, 0)];
-  for (const el of bodyEls) {
-    const reach = Math.min(BODY_REACH.hi, Math.max(BODY_REACH.lo, el));
-    [lo, hi] = [Math.min(lo, reach), Math.max(hi, reach)];
+  const [lo, top] = terrainRange(profile);
+  const site = roundDown(360 / (REF_ASPECT * (top - lo)));
+  if (width <= 0 || height <= 0) {
+    return { width, height, lo, hi: top, exaggeration: site };
   }
-  const pad = (hi - lo) * PAD_SHARE + PAD_DEG;
-  [lo, hi] = [lo - pad, hi + pad];
-  const exaggeration = (360 / width) / ((hi - lo) / height);
+  const degPerPxAcross = 360 / width;
+  const fits = degPerPxAcross / ((top - lo) / height);
+  const exaggeration = fits < site ? roundDown(fits) : site;
+  const hi = lo + (degPerPxAcross * height) / exaggeration;
   return { width, height, lo, hi, exaggeration };
-}
-
-/**
- * The terrain's skyline from south to south through north, as SVG
- * points «x,y x,y …», one per bin and the first again at the end.
- */
-export function skyline(profile: HorizonProfile, scale: StripScale): string {
-  const values = profile.centiDeg;
-  const n = values.length;
-  const points: string[] = [];
-  for (let k = 0; k <= n; k++) {
-    const bin = (k + n / 2) % n;
-    const el = (values[bin] ?? 0) / CENTIDEG_PER_DEG;
-    const x = (k / n) * scale.width;
-    points.push(`${x.toFixed(1)},${yOfEl(scale, el).toFixed(1)}`);
-  }
-  return points.join(' ');
 }

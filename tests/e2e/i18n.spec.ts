@@ -53,7 +53,8 @@ async function open(page: Page, path: string): Promise<void> {
   await page.clock.setFixedTime(NOW);
   await stubApi(page);
   await page.goto(`./${path}`);
-  await expect(page.locator('.globe-markers')).toHaveAttribute('data-state', 'window');
+  // Start-up precondition: under CI's parallel software-rendered pages the globe can need more than 5 s.
+  await expect(page.locator('.globe-markers')).toHaveAttribute('data-state', 'window', { timeout: 20_000 });
 }
 
 /** The path part of the page's URL under the base: `es/` for /es/. */

@@ -38,6 +38,9 @@ const SITES = JSON.parse(readFileSync(new URL('../../packages/server/data/sites.
 const POINTS = new Map<string, typeof SITES>();
 for (const site of SITES) POINTS.set(`${site.lat},${site.lonEast}`, [...(POINTS.get(`${site.lat},${site.lonEast}`) ?? []), site]);
 const ZONE_POINTS = [...POINTS.values()].filter((group) => group.every((s) => s.approximate));
+// Under CI's parallel software-rendered pages the globe can take longer than the default 5 s to place its first
+// markers; this wait is a start-up precondition, not an assertion (same bound as astronaut.spec.ts).
+const GLOBE_START_MS = 20_000;
 const IM1 = '[data-site-id="im1-odysseus"]';
 const IM2 = '[data-site-id="im2-athena"]';
 // A merged zone (Griffin-1 and Nobile Rims 1 and 2) whose ring falls inside IM-2's hit box at the opening view.
@@ -138,7 +141,7 @@ test.describe('desktop, 1440x900', () => {
     await page.emulateMedia({ reducedMotion: 'reduce' });
     await stubApi(page);
     await page.goto('./');
-    await expect(page.locator(IM1)).toHaveAttribute('style', /translate3d/);
+    await expect(page.locator(IM1)).toHaveAttribute('style', /translate3d/, { timeout: GLOBE_START_MS });
     const at = await centreOf(page, IM1);
     await page.mouse.click(at.x, at.y);
     await expect(page.getByRole('complementary', { name: 'Site card' }).getByRole('heading', { name: 'IM-1 Odysseus' })).toBeVisible();
@@ -152,7 +155,7 @@ test.describe('desktop, 1440x900', () => {
     await page.emulateMedia({ reducedMotion: 'reduce' });
     await stubApi(page);
     await page.goto('./');
-    await expect(page.locator(IM1)).toHaveAttribute('style', /translate3d/);
+    await expect(page.locator(IM1)).toHaveAttribute('style', /translate3d/, { timeout: GLOBE_START_MS });
     // Under the calendar strip the opening globe is small: IM-1 and IM-2 sit closer than a 44 px box, so the box of
     // the selected IM-2 (stacked on top) covers IM-1's dot. The click still goes to the dot nearest the pointer.
     const im1 = await centreOf(page, IM1);
@@ -178,7 +181,7 @@ test.describe('desktop, 1440x900', () => {
     await page.emulateMedia({ reducedMotion: 'reduce' });
     await stubApi(page);
     await page.goto('./');
-    await expect(page.locator(IM2)).toHaveAttribute('style', /translate3d/);
+    await expect(page.locator(IM2)).toHaveAttribute('style', /translate3d/, { timeout: GLOBE_START_MS });
     await expect(page.locator(NOBILE)).toHaveCount(1);
     await expect(page.locator(NOBILE)).toBeHidden();
     await expect(page.locator('.globe-marker')).toHaveCount(POINTS.size);
@@ -205,7 +208,7 @@ test.describe('desktop, 1440x900', () => {
     await page.emulateMedia({ reducedMotion: 'reduce' });
     await stubApi(page);
     await page.goto('./');
-    await expect(page.locator(IM2)).toHaveAttribute('style', /translate3d/);
+    await expect(page.locator(IM2)).toHaveAttribute('style', /translate3d/, { timeout: GLOBE_START_MS });
     const before = await page.locator(IM2).evaluate((el) => (el as HTMLElement).style.transform);
     const viewport = page.getByRole('application', { name: 'The Moon, seen over its south pole' });
     await expect(viewport).toHaveAttribute('aria-describedby', 'globe-help');

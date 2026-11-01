@@ -31,6 +31,7 @@
 import type { I18n } from '../i18n/translate';
 
 const MINUTE_MS = 60_000;
+const DAY_MS = 86_400_000;
 const MINUTES_PER_HOUR = 60;
 
 /** «02:16»: the UTC hour and minute of `ms`, 24-hour clock. */
@@ -42,6 +43,17 @@ export function clockText(i18n: I18n, ms: number): string {
     timeZone: 'UTC',
   } as const;
   return new Intl.DateTimeFormat(i18n.tag, options).format(ms);
+}
+
+/**
+ * «tomorrow»: the UTC day of `ms` from the UTC day of `fromMs`, by Intl;
+ * empty on the same day.
+ */
+export function dayText(i18n: I18n, fromMs: number, ms: number): string {
+  const days = Math.floor(ms / DAY_MS) - Math.floor(fromMs / DAY_MS);
+  if (days === 0) return '';
+  const words = new Intl.RelativeTimeFormat(i18n.tag, { numeric: 'auto' });
+  return words.format(days, 'day');
 }
 
 /** «~6 h left», «16 min left»: what is left of `ms`. */

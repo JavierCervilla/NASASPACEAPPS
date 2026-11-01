@@ -77,7 +77,8 @@ async function open(page: Page, path = './', saved?: readonly object[]): Promise
     }
   }, sites);
   await page.goto(path);
-  await expect(page.locator('.globe-viewport[data-status="ready"], .polar').first()).toBeVisible({ timeout: GLOBE_START_MS });
+  // `:visible`: on the polar map the globe still starts, hidden, and comes first in the page.
+  await expect(page.locator('.globe-viewport[data-status="ready"]:visible, .polar:visible').first()).toBeVisible({ timeout: GLOBE_START_MS });
 }
 
 /** The CSP nginx sends for the built site, as data-source.spec.ts serves it. */

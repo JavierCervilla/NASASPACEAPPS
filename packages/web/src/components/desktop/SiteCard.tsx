@@ -47,7 +47,7 @@ import {
   type CardSite,
 } from '../../card/site-facts';
 import type { CardModel } from '../../card/site-card';
-import { ListeningBlock } from '../dsn/ListeningBlock';
+import { ListeningBlock, ListeningWaiting } from '../dsn/ListeningBlock';
 import type { Dsn } from '../dsn/use-dsn';
 import { useI18n } from '../i18n-context';
 import { SaveButton, SaveName } from '../saved/SaveControl';
@@ -150,7 +150,7 @@ function Figures({ model, dsn }: FiguresProps) {
         <Tile widget={model.sun} tone="sun" />
         <Tile widget={model.earth} tone="earth" />
       </div>
-      {dsn ? <ListeningBlock dsn={dsn} /> : null}
+      {dsn ? <ListeningBlock dsn={dsn} /> : <ListeningWaiting />}
       <dl className="card-block card-facts">
         {model.rows.map(({ label, value, tone }) => (
           <div key={label}>

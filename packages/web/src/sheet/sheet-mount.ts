@@ -79,6 +79,8 @@ function sheetLoop(
   return createLoop((dt) => {
     const moving = stepSheet(state, dt);
     placeSheet(el, state.axis.value, state.detents);
+    // CSS pauses what loops inside while the sheet moves (styles/dsn.css).
+    el.toggleAttribute('data-moving', moving);
     report.onOpenness(openness(state.detents, state.axis.value));
     report.onEdge(state.axis.value);
     return moving;

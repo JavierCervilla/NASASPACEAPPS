@@ -233,11 +233,13 @@ Every visible change follows `.claude/skills/apple-design/SKILL.md` (vendored fr
   canvas instant (IM-2, 2026-11-22 20:00 UTC): Robledo, Moon at 52.3°, Goldstone at 02:16, Canberra at 10:58. The link
   comes first: the site's Earth elevation, from the hour the views show (Horizons or computed) or the simulator before
   they arrive (`components/dsn/use-dsn.ts`), against 3° (`earthLink` in `visibility.ts`: `link`, `low`, `below`).
+  None of it runs before the page has started: `useDsn` waits for an idle moment after the first paint (2 s at most,
+  `src/lib/after-start.ts`), the block holding its height until then, so the globe starts as fast as without it.
   **A**: a «Listening on Earth» block after the Sunset/Earthset tiles of the desktop card (`ListeningBlock.tsx`) and the
   phone's fourth widget (`DsnCard.tsx`, in place of the old hourly antenna widget): a small Earth as the Moon sees it
   (centred on the sub-lunar point), the complex (short name: Robledo), «Madrid · Moon at 52°», «~6 h left» (whole hours
-  from an hour, minutes under it), «Next: Goldstone at 02:16 UTC» (times on the 24-hour UTC clock, through Intl,
-  `src/dsn/clock-text.ts`); without a link «No link», «Earth below the horizon» or «Earth too low here (needs 3°)», then
+  from an hour, minutes under it), «Next: Goldstone tomorrow at 02:16 UTC» (the day, by Intl, only when it is not the
+  instant's UTC day; times on the 24-hour UTC clock, through Intl, `src/dsn/clock-text.ts`); without a link «No link», «Earth below the horizon» or «Earth too low here (needs 3°)», then
   «Robledo would listen» (`src/dsn/dsn-text.ts`). **C**: the «DSN» view, a header tab after «Polar map» and a phone tab
   after «Calendar» (five tabs; at under 400 px they take 10 px labels so the pseudo-locale fits at 360 px;
   `src/phone/view-actions.ts`: DSN sets `#dsn` with the sheet at half, Globe leaves it): the big Earth looking from
@@ -250,8 +252,9 @@ Every visible change follows `.claude/skills/apple-design/SKILL.md` (vendored fr
   holds the headline and the band. The Earth (`src/dsn/earth-picture.ts`, `EarthFigure.tsx`): an SVG, graphite ocean,
   land as silver dots from a 1° Natural Earth mask (`src/dsn/land.json`, 6 kB, `scripts/earth-land.mjs`, ASSETS.md),
   the night side from the Earth's real sub-solar point (`earthSubSolarPoint`, `subLunarPoint` in
-  `packages/sim/src/earth-view.ts`), the active antenna white with a soft glow that breathes (still under reduced
-  motion), labels in HTML over it (so they follow the text size). Never the signal colours: `--dsn-*` tokens; the Earth
+  `packages/sim/src/earth-view.ts`), the active antenna white with a soft glow that breathes three times when it starts
+  listening, then rests lit (an endless loop kept every page drawing frames; still under reduced motion; held while
+  the phone sheet moves, `data-moving`, so the move keeps its frames), labels in HTML over it (so they follow the text size). Never the signal colours: `--dsn-*` tokens; the Earth
   and the DSN view's panel stay dark in both themes. The month's figures add «Hours with DSN» (hours with any complex
   listening, `card/month-facts.ts`).
 - **Five interface languages** (VENT-35): English (the default and the fallback), Spanish, French, German and Italian,

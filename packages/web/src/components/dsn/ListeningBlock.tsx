@@ -56,6 +56,14 @@ function Lines({ dsn }: { readonly dsn: Dsn }) {
   );
 }
 
+/**
+ * The block's quiet place, its size, until the DSN is worked out after
+ * start-up (`useDsn`), so the card does not jump when it comes.
+ */
+export function ListeningWaiting() {
+  return <div className="card-block dsn-block dsn-block--waiting" aria-hidden="true" />;
+}
+
 export function ListeningBlock({ dsn }: { readonly dsn: Dsn }) {
   const i18n = useI18n();
   const { model, text, state } = dsn;

@@ -74,7 +74,8 @@ async function open(page: Page, path = './', hold?: Promise<void>): Promise<void
   await page.clock.setFixedTime(NOW);
   await stubApi(page, { pointHold: hold });
   await page.goto(path);
-  await expect(page.locator('.globe-viewport[data-status="ready"], .polar').first()).toBeVisible({ timeout: GLOBE_START_MS });
+  // `:visible`: on the polar map the globe still starts, hidden, and comes first in the page.
+  await expect(page.locator('.globe-viewport[data-status="ready"]:visible, .polar:visible').first()).toBeVisible({ timeout: GLOBE_START_MS });
 }
 
 /** The middle of an element's box. */

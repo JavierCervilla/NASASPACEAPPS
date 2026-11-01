@@ -113,6 +113,7 @@
     "other": "{n} min left"
   },
   "dsn.nextAt": "Next: {name} at {time} UTC",
+  "dsn.nextOn": "Next: {name} {day} at {time} UTC",
   "dsn.noLink": "No link",
   "dsn.reasonBelow": "Earth below the horizon",
   "dsn.reasonLow": "Earth too low here (needs {deg})",

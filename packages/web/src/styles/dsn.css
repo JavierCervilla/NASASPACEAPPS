@@ -87,13 +87,27 @@
   stroke-opacity: 0.7;
 }
 
-/* The listening antenna's glow breathes, slowly; still under reduced motion. */
+/*
+ * The listening antenna's glow breathes, slowly, three times each time an
+ * antenna starts listening or the picture comes, then rests lit: a loop
+ * that never ends keeps the page drawing frames for good (about a tenth of
+ * a core in a software-rendered browser, and a phone's battery). Still
+ * under reduced motion.
+ */
 @media (prefers-reduced-motion: no-preference) {
   .dsn-earth__glow {
-    animation: dsn-glow 3.2s ease-in-out infinite;
+    animation: dsn-glow 3.2s ease-in-out 3;
     transform-box: fill-box;
     transform-origin: center;
   }
+}
+
+/*
+ * Held while the phone sheet moves (sheet-mount.ts): breathing inside a
+ * moving sheet makes each of its frames a repaint, and slows the move.
+ */
+.sheet[data-moving] .dsn-earth__glow {
+  animation-play-state: paused;
 }
 
 @keyframes dsn-glow {
@@ -135,6 +149,10 @@
   gap: 12px;
   padding: 16px;
 }
+
+/* Holds the block's usual height until the DSN is worked out, after the
+   globe has started (use-dsn.ts), so the card below does not jump. */
+.dsn-block--waiting { min-height: 11.75rem; }
 
 .dsn-block__head {
   display: flex;

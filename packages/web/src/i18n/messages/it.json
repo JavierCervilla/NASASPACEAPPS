@@ -117,6 +117,7 @@
     "other": "ancora {n} min"
   },
   "dsn.nextAt": "Poi: {name} alle {time} UTC",
+  "dsn.nextOn": "Poi: {name} {day} alle {time} UTC",
   "dsn.noLink": "Nessun collegamento",
   "dsn.reasonBelow": "Terra sotto l’orizzonte",
   "dsn.reasonLow": "Terra troppo bassa qui (servono {deg})",

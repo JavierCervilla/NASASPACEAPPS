@@ -46,7 +46,7 @@ const spans = dsnSpans(DAY, DAY + 2 * DAY_MS);
 const NO_LINK_AT = toMs('2026-11-14T18:00:00Z');
 
 describe('dsnText', () => {
-  it('names Robledo with the Moon at 52°, about 6 h left and Goldstone next at 02:16 UTC', () => {
+  it('names Robledo with the Moon at 52°, about 6 h left and Goldstone next tomorrow at 02:16 UTC', () => {
     const text = dsnText(dsnModel(spans, CANVAS, 10.2), EN);
     expect(text).toMatchObject({
       kind: 'listening',
@@ -55,8 +55,19 @@ describe('dsnText', () => {
       moon: 'Moon at 52°',
       moonShort: 'Moon 52°',
       left: '~6 h left',
-      next: 'Next: Goldstone at 02:16 UTC',
+      next: 'Next: Goldstone tomorrow at 02:16 UTC',
     });
+  });
+
+  it('adds the day only when the next turn is on another UTC day', () => {
+    const lateOnDay = toMs('2026-11-22T23:59:00Z');
+    expect(dsnText(dsnModel(spans, lateOnDay, 10), EN).next).toBe('Next: Goldstone tomorrow at 02:16 UTC');
+    const sameDay = toMs('2026-11-23T00:30:00Z');
+    expect(dsnText(dsnModel(spans, sameDay, 10), EN).next).toBe('Next: Goldstone at 02:16 UTC');
+    const words = { es: 'Después: Goldstone mañana a las 02:16 UTC', fr: 'Ensuite : Goldstone demain à 02:16 UTC', de: 'Danach: Goldstone morgen um 02:16 UTC', it: 'Poi: Goldstone domani alle 02:16 UTC' } as const;
+    for (const [locale, next] of Object.entries(words)) {
+      expect(dsnText(dsnModel(spans, lateOnDay, 10), i18nOf(locale as keyof typeof words)).next).toBe(next);
+    }
   });
 
   it('counts the minutes in the last hour, to the minute', () => {

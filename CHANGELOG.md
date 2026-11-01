@@ -6,8 +6,10 @@
 - Modo DSN: qué antena de la Red del Espacio Profundo escucha (VENT-7; opciones A y C del lienzo, aprobadas por
   Javier, sin fila DSN en el calendario y al minuto). En la ficha del PC y en la cuarta tarjeta del móvil, el bloque
   «Listening on Earth» enseña una Tierra pequeña vista desde la Luna, en plata y grafito con su terminador real y las
-  tres estaciones (la que escucha, blanca y con un halo suave), y dice qué complejo escucha, a qué altura ve la Luna,
-  cuánto le queda y quién sigue: «Robledo · Madrid · Moon at 52° · ~6 h left», «Next: Goldstone at 02:16 UTC». Los
+  tres estaciones (la que escucha, blanca y con un halo suave que late tres veces cuando empieza a escuchar), y dice
+  qué complejo escucha, a qué altura ve la Luna, cuánto le queda y quién sigue: «Robledo · Madrid · Moon at 52° · ~6 h
+  left», «Next: Goldstone tomorrow at 02:16 UTC» (el día solo cuando el relevo cae en otro día UTC). Se calcula
+  después de que arranque el globo, así que la página abre tan rápido como antes. Los
   relevos se calculan al minuto con el simulador y coinciden con los de Horizons salvo a menos de una hora de un
   relevo. Si la Tierra está bajo el horizonte del sitio o por debajo de 3°, lo primero es «No link», con el motivo
   («Earth below the horizon» o «Earth too low here (needs 3°)»), y después qué complejo escucharía. Funciona igual con

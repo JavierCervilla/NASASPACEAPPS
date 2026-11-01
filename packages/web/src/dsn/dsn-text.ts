@@ -31,7 +31,7 @@
  */
 import { EARTH_MIN_ELEVATION_DEG } from '@ventana/sim';
 import type { I18n } from '../i18n/translate';
-import { clockText, degText, leftText } from './clock-text';
+import { clockText, dayText, degText, leftText } from './clock-text';
 import type { DsnModel } from './dsn-model';
 import { STATIONS } from './stations';
 
@@ -46,7 +46,10 @@ export interface DsnText {
   readonly moonShort: string;
   /** «~6 h left»; empty when unknown or without a link. */
   readonly left: string;
-  /** «Next: Goldstone at 02:16 UTC»; empty when unknown. */
+  /**
+   * «Next: Goldstone at 02:16 UTC», with the day when it is not the
+   * instant's UTC day («… tomorrow at 02:16 UTC»); empty when unknown.
+   */
   readonly next: string;
   /** Without a link: why, and «Robledo would listen». */
   readonly reason: string;
@@ -55,11 +58,15 @@ export interface DsnText {
 
 const EMPTY = { place: '', moon: '', moonShort: '', left: '', next: '' };
 
-/** «Next: Goldstone at 02:16 UTC», or empty. */
+/** «Next: Goldstone at 02:16 UTC», «… tomorrow at …», or empty. */
 function nextLine(model: DsnModel, i18n: I18n): string {
   if (!model.next) return '';
-  const name = STATIONS[model.next.complex].short;
-  return i18n.t('dsn.nextAt', { name, time: clockText(i18n, model.next.startMs) });
+  const { complex, startMs } = model.next;
+  const name = STATIONS[complex].short;
+  const time = clockText(i18n, startMs);
+  const day = dayText(i18n, model.atMs, startMs);
+  if (!day) return i18n.t('dsn.nextAt', { name, time });
+  return i18n.t('dsn.nextOn', { name, day, time });
 }
 
 function noLink(model: DsnModel, i18n: I18n): DsnText {

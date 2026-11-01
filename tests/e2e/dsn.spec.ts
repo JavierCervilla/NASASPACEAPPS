@@ -82,12 +82,12 @@ async function fact(page: Page, label: string): Promise<string> {
 test.describe('desktop, 1440x900', () => {
   test.use({ viewport: { width: 1440, height: 900 } });
 
-  test('A · the card says Robledo listens, the Moon at 52°, ~6 h left, Goldstone next at 02:16 UTC', async ({ page }) => {
+  test('A · the card says Robledo listens, the Moon at 52°, ~6 h left, Goldstone next tomorrow at 02:16 UTC', async ({ page }) => {
     await open(page);
     await expect(block(page)).toContainText('Robledo');
     await expect(block(page)).toContainText('Madrid · Moon at 52°');
     await expect(block(page)).toContainText('~6 h left');
-    await expect(block(page)).toContainText('Next: Goldstone at 02:16 UTC');
+    await expect(block(page)).toContainText('Next: Goldstone tomorrow at 02:16 UTC');
     await expect(block(page).getByRole('img', { name: 'The Earth seen from the Moon, Sun 22 Nov · 20:00 UTC' })).toBeVisible();
     expect(await fact(page, 'Hours with DSN')).toMatch(/^\d+ %$/);
     await block(page).scrollIntoViewIfNeeded();
@@ -103,7 +103,7 @@ test.describe('desktop, 1440x900', () => {
     await expect(page.locator('section.globe')).toBeHidden();
     await expect(view(page).getByRole('heading', { name: 'Robledo de Chavela' })).toBeVisible();
     await expect(view(page)).toContainText('Madrid · Moon at 52° · ~6 h left');
-    await expect(view(page)).toContainText('Next: Goldstone at 02:16 UTC');
+    await expect(view(page)).toContainText('Next: Goldstone tomorrow at 02:16 UTC');
     await expect(view(page).locator('.dsn-stations')).toContainText('Goldstone California');
     await expect(view(page).locator('.dsn-stations')).toContainText('Moon below horizon · next at 02:16');
     await expect(view(page).locator('.dsn-stations')).toContainText('Canberra Australia');

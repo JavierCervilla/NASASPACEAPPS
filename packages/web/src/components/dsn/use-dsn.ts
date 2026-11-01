@@ -28,7 +28,10 @@
  * model and words, and the spans the views draw from. The complex comes from
  * the simulator, worked out once per UTC day; the Earth's elevation from the
  * hour of the month's hours the views show, or from the simulator when they
- * have not come yet (a site without coordinates waits for them).
+ * have not come yet (a site without coordinates waits for them). None of
+ * it runs before the page has started (`useStarted`), so the globe starts
+ * first, and it is worked out again only when the instant, the site's point
+ * or the hours change, not on every render.
  */
 import {
   HOUR_MS,
@@ -37,7 +40,7 @@ import {
   type DsnSpan,
   type DsnState,
 } from '@ventana/sim';
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { createDsnDays } from '../../dsn/dsn-days';
 import { dsnModel, type DsnModel } from '../../dsn/dsn-model';
 import { dsnText, type DsnText } from '../../dsn/dsn-text';
@@ -45,6 +48,7 @@ import type { PhoneSite } from '../../phone/phone-site';
 import { sampleAt } from '../../phone/site-widgets';
 import type { HoursResult } from '../../phone/widgets-loader';
 import { useI18n } from '../i18n-context';
+import { useStarted } from '../use-started';
 
 export interface Dsn {
   readonly model: DsnModel;
@@ -58,7 +62,7 @@ const SILENT: DsnState = { active: null, above: [] };
 
 /** The site's Earth elevation at the hour of `atMs`, or null. */
 function earthElevation(
-  site: PhoneSite,
+  site: Pick<PhoneSite, 'lat' | 'lonEast'>,
   atMs: number,
   hours: HoursResult,
 ): number | null {
@@ -70,7 +74,7 @@ function earthElevation(
   return skyAt({ latDeg: lat, lonEastDeg: lonEast }, atMs).earthEl;
 }
 
-/** The DSN at `atMs` for `site`; null before the instant is known. */
+/** The DSN at `atMs` for `site`; null before it is known. */
 export function useDsn(
   site: PhoneSite,
   atMs: number | null,
@@ -78,10 +82,15 @@ export function useDsn(
 ): Dsn | null {
   const [days] = useState(createDsnDays);
   const i18n = useI18n();
-  if (atMs === null) return null;
-  const spans = days.spansFor(atMs);
-  const model = dsnModel(spans, atMs, earthElevation(site, atMs, hours));
-  const span = spans.find((s) => atMs >= s.startMs && atMs < s.endMs);
-  const state = span ? { active: span.active, above: span.above } : SILENT;
-  return { model, text: dsnText(model, i18n), spans, state };
+  const started = useStarted();
+  const { lat, lonEast } = site;
+  return useMemo(() => {
+    if (!started || atMs === null) return null;
+    const point = { lat, lonEast };
+    const spans = days.spansFor(atMs);
+    const model = dsnModel(spans, atMs, earthElevation(point, atMs, hours));
+    const span = spans.find((s) => atMs >= s.startMs && atMs < s.endMs);
+    const state = span ? { active: span.active, above: span.above } : SILENT;
+    return { model, text: dsnText(model, i18n), spans, state };
+  }, [started, days, atMs, lat, lonEast, hours, i18n]);
 }

@@ -295,4 +295,9 @@ five entries of `packages/server/data/sites.json`.
   AVGVISIB is 0 at the point, NASA's definition of permanent shadow (Mazarico, E. et al. 2011, Icarus 211,
   1066-1081). The 250 m radius and the 0.5 share are our choice, not a NASA standard. The 120 m values were read a
   second time, independently, from the same files before they were committed, and agree for all 14 sites.
+- **Crater floor with little Sun** (`dimFloor`, only «Peak near Cabeus B»): not PSR, but AVGVISIB is 0.11 at the
+  point, which the 80 m LOLA DEM puts on the floor of Cabeus B rather than on a peak. Flagging a site whose average
+  Sun is below 0.2 is our choice, not a NASA standard; for scale, Gläser et al. 2018 give 0.77-0.88 for the best-lit
+  south polar regions, and the 120 m map's highest value is 0.896. A `dimFloor` site only gets the note; its hours
+  are not overridden.
 - **Licence**: NASA data, not subject to copyright in the United States; credit NASA/GSFC, the LOLA team.

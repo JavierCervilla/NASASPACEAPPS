@@ -309,5 +309,14 @@
   },
   "saved.undo": "Annulla",
   "custom.saved": "Salvato",
-  "custom.savedNear": "Salvato · vicino a {name}"
+  "custom.savedNear": "Salvato · vicino a {name}",
+  "body.sun": "Sole",
+  "body.noSun": "Niente Sole",
+  "body.permanentShadow": "Ombra permanente",
+  "shadow.psrTitle": "Ombra permanente · non è un punto di atterraggio",
+  "shadow.psrBody": "Le mappe della NASA pongono questo punto sul fondo di un cratere che il Sole non raggiunge mai.",
+  "shadow.psrTitleShort": "Ombra permanente",
+  "shadow.dimTitle": "Fondo di cratere · poco Sole",
+  "shadow.dimBody": "Le mappe della NASA danno a questo punto in media il {share} di Sole.",
+  "shadow.sunSource": "Sole secondo la mappa dell'ombra permanente della NASA (LRO LOLA, Mazarico 2011)"
 }

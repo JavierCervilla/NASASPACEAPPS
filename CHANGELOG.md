@@ -3,6 +3,21 @@
 ## [Sin publicar]
 
 ### Añadido
+- Sitios en sombra permanente (VENT-39; opción B del lienzo, aprobada por Javier). Según los mapas de iluminación de
+  NASA (LRO LOLA, Mazarico et al. 2011, producto 69 de PGDA), cuatro de los sitios aproximados caen en el fondo de un
+  cráter al que nunca llega el Sol: Shackleton (Chang'e-7), Haworth, de Gerlache Rim 2 y Slater Plain. Sus
+  coordenadas no se mueven; bajo el nombre, en la ficha del PC y en la cabecera de la hoja del móvil, una nota neutra
+  dice «Permanent shadow · not a landing point» y «NASA's maps put this point on a crater floor the Sun never
+  reaches.» (en el PC, solo «Permanent shadow», porque la línea de precisión ya dice que no es un punto de
+  aterrizaje). En esos cuatro el Sol sigue al mapa de NASA y no sale nunca, con el cielo calculado y con el de
+  Horizons: el estado, la píldora, la tarjeta del Sol («No Sun · Permanent shadow»), las cifras del mes (Sol 0 %,
+  ventana 0 %), la cinta del calendario, el marcador del globo y del mapa polar y el bloque DSN cuadran entre sí, y la
+  Tierra queda como estaba, así que el estado es «Earth only» o «Neither». La fuente del Sol se cita en la misma línea
+  que la nota del cálculo: «Sun from NASA's permanent-shadow map (LRO LOLA, Mazarico 2011)». «Peak near Cabeus B» no
+  está en sombra permanente, pero su punto recibe un 11 % de Sol de media: solo lleva la nota «Crater floor · little
+  Sun». En el móvil, la hoja a media altura sube lo que mide la nota, así que las cuatro tarjetas siguen donde
+  estaban. Para el equipo Mooner, `packages/sim/data/psr-flags.json` lista los 14 sitios al sur de 80° S con su Sol
+  medio, su fracción en sombra permanente y la procedencia de cada mapa (URL y sha256). En los cinco idiomas.
 - Modo DSN: qué antena de la Red del Espacio Profundo escucha (VENT-7; opciones A y C del lienzo, aprobadas por
   Javier, sin fila DSN en el calendario y al minuto). En la ficha del PC y en la cuarta tarjeta del móvil, el bloque
   «Listening on Earth» enseña una Tierra pequeña vista desde la Luna, en plata y grafito con su terminador real y las

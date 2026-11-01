@@ -42,6 +42,11 @@ import type { UiLocale } from '../i18n/locales';
 import { createI18n } from '../i18n/translate';
 import { localStore } from '../i18n/choice';
 import { cachedComputed, pointsOf } from '../source/computed-hours';
+import {
+  shadowedComputed,
+  shadowedLoader,
+  shadowsOf,
+} from '../source/shadowed-hours';
 import { createSourceStore } from '../source/data-source';
 import { followClock } from '../calendar/follow-clock';
 import { createPlayer } from '../calendar/time-player';
@@ -91,6 +96,8 @@ const VIEW_NAV = 'nav.views';
  * loader starts afresh each time the browser comes back online, so the
  * views ask for their hours again, quietly, over the old ones. With them,
  * the simulator's hours of the listed sites and the chosen data source.
+ * Both sources' hours carry the Sun answer of the sites in permanent
+ * shadow (VENT-39).
  */
 function useCalendarParts(
   sitesUrl: string,
@@ -102,11 +109,17 @@ function useCalendarParts(
       setTimer: (fn, ms) => window.setTimeout(fn, ms),
       clearTimer: (id) => window.clearTimeout(id),
     });
-    const computed = cachedComputed(pointsOf(sites));
-    return { time, player, computed, source: createSourceStore(localStore()) };
+    const shadowOf = shadowsOf(sites);
+    const raw = cachedComputed(pointsOf(sites));
+    const computed = shadowedComputed(raw, shadowOf);
+    const source = createSourceStore(localStore());
+    return { time, player, computed, source, shadowOf };
   });
-  const load = useHoursLoader(sitesUrl);
-  const parts = useMemo(() => ({ ...clock, load }), [clock, load]);
+  const api = useHoursLoader(sitesUrl);
+  const parts = useMemo(() => {
+    const { shadowOf, ...rest } = clock;
+    return { ...rest, load: shadowedLoader(api, shadowOf) };
+  }, [clock, api]);
   useEffect(() => followClock(clock.time, browserHourClock()), [clock]);
   useEffect(() => clock.player.pause, [clock]);
   return parts;

@@ -33,6 +33,8 @@ completa está en el documento «Ventana Lunar · Especificación y roadmap».
 - [ ] Revisión de las traducciones por personas nativas antes del 13 de noviembre (VENT-35)
 - [x] Cálculo propio del Sol, la Tierra y la antena DSN en el simulador, validado contra Horizons; la web lo enseña al
   instante y un conmutador «Computed | Horizons | Compare» permite compararlos (VENT-36)
+- [x] Sitios aproximados en sombra permanente según los mapas de NASA: nota en la ficha y en la hoja, y el Sol nunca
+  sale en Shackleton (Chang'e-7), Haworth, de Gerlache Rim 2 y Slater Plain; nota de «poco Sol» en Cabeus B (VENT-39)
 
 ## Lujo y entrega (código congelado el domingo 15 a las 15:30)
 

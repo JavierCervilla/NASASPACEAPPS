@@ -127,7 +127,16 @@
         "label": "IAU/USGS Gazetteer of Planetary Nomenclature (proxy coordinate)",
         "url": "https://asc-planetarynames-data.s3.us-west-2.amazonaws.com/MOON_nomenclature_center_pts.zip"
       }
-    ]
+    ],
+    "shadow": {
+      "kind": "psr",
+      "avgSun": 0.0,
+      "source": {
+        "label": "NASA PGDA product 69, LRO LOLA illumination maps (Mazarico et al. 2011)",
+        "url": "https://pgda.gsfc.nasa.gov/products/69",
+        "note": "LPSR_75S_120M = 1 and AVGVISIB_75S_120M = 0 at this point; 100 % of the 20 m PSR map (LPSR_80S_20MPP_ADJ) within 250 m is permanent shadow"
+      }
+    }
   },
   {
     "id": "bluemoon-mk1-pathfinder",
@@ -214,7 +223,16 @@
         "label": "IAU/USGS Gazetteer of Planetary Nomenclature (proxy coordinate)",
         "url": "https://asc-planetarynames-data.s3.us-west-2.amazonaws.com/MOON_nomenclature_center_pts.zip"
       }
-    ]
+    ],
+    "shadow": {
+      "kind": "dimFloor",
+      "avgSun": 0.1078,
+      "source": {
+        "label": "NASA PGDA product 69, LRO LOLA illumination maps (Mazarico et al. 2011)",
+        "url": "https://pgda.gsfc.nasa.gov/products/69",
+        "note": "AVGVISIB_75S_120M = 0.1078 and LPSR_75S_120M = 0 at this point: not permanent shadow, but little Sun"
+      }
+    }
   },
   {
     "id": "artemis-haworth",
@@ -247,7 +265,16 @@
         "label": "IAU/USGS Gazetteer of Planetary Nomenclature (proxy coordinate)",
         "url": "https://asc-planetarynames-data.s3.us-west-2.amazonaws.com/MOON_nomenclature_center_pts.zip"
       }
-    ]
+    ],
+    "shadow": {
+      "kind": "psr",
+      "avgSun": 0.0,
+      "source": {
+        "label": "NASA PGDA product 69, LRO LOLA illumination maps (Mazarico et al. 2011)",
+        "url": "https://pgda.gsfc.nasa.gov/products/69",
+        "note": "LPSR_75S_120M = 1 and AVGVISIB_75S_120M = 0 at this point; 100 % of the 20 m PSR map (LPSR_80S_20MPP_ADJ) within 250 m is permanent shadow"
+      }
+    }
   },
   {
     "id": "artemis-malapert-massif",
@@ -445,7 +472,16 @@
         "label": "IAU/USGS Gazetteer of Planetary Nomenclature (proxy coordinate)",
         "url": "https://asc-planetarynames-data.s3.us-west-2.amazonaws.com/MOON_nomenclature_center_pts.zip"
       }
-    ]
+    ],
+    "shadow": {
+      "kind": "psr",
+      "avgSun": 0.0,
+      "source": {
+        "label": "NASA PGDA product 69, LRO LOLA illumination maps (Mazarico et al. 2011)",
+        "url": "https://pgda.gsfc.nasa.gov/products/69",
+        "note": "LPSR_75S_120M = 1 and AVGVISIB_75S_120M = 0 at this point; 100 % of the 20 m PSR map (LPSR_80S_20MPP_ADJ) within 250 m is permanent shadow"
+      }
+    }
   },
   {
     "id": "artemis-slater-plain",
@@ -478,7 +514,16 @@
         "label": "IAU/USGS Gazetteer of Planetary Nomenclature (proxy coordinate)",
         "url": "https://asc-planetarynames-data.s3.us-west-2.amazonaws.com/MOON_nomenclature_center_pts.zip"
       }
-    ]
+    ],
+    "shadow": {
+      "kind": "psr",
+      "avgSun": 0.0,
+      "source": {
+        "label": "NASA PGDA product 69, LRO LOLA illumination maps (Mazarico et al. 2011)",
+        "url": "https://pgda.gsfc.nasa.gov/products/69",
+        "note": "LPSR_75S_120M = 1 and AVGVISIB_75S_120M = 0 at this point; 100 % of the 20 m PSR map (LPSR_80S_20MPP_ADJ) within 250 m is permanent shadow"
+      }
+    }
   },
   {
     "id": "apollo11",

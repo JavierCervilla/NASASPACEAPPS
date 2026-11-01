@@ -32,6 +32,8 @@
  * a retry. The caption waits while the computed hours only stand in for
  * Horizons.
  */
+import type { SiteShadow } from '@ventana/sim';
+import { captionLine } from '../../card/shadow-note';
 import { computedCaption } from '../../source/computed-caption';
 import { useI18n } from '../i18n-context';
 
@@ -49,6 +51,11 @@ interface Props {
    * before the clock runs, and then there are no notes.
    */
   readonly atMs: number | null;
+  /**
+   * The site's shadow: in permanent shadow the caption also says where
+   * the Sun comes from, on the same line (VENT-39).
+   */
+  readonly shadow?: SiteShadow | undefined;
 }
 
 function HorizonsDown({ onRetry }: { readonly onRetry: () => void }) {
@@ -72,15 +79,18 @@ export function SourceDown({ month, atMs }: Props) {
   return <HorizonsDown onRetry={month.retry} />;
 }
 
-/** Only the caption, once the computed hours are the answer. */
-export function SourceCaption({ month, atMs }: Props) {
+/**
+ * Only the caption: the computed one once the computed hours are the
+ * answer, and the Sun's source at a site in permanent shadow.
+ */
+export function SourceCaption({ month, atMs, shadow }: Props) {
   const i18n = useI18n();
-  if (atMs === null || !month.computed || month.provisional) return null;
-  return (
-    <p className="source-note source-note--caption">
-      {computedCaption(i18n, atMs)}
-    </p>
-  );
+  if (atMs === null) return null;
+  const stays = month.computed && !month.provisional;
+  const computed = stays ? computedCaption(i18n, atMs) : null;
+  const line = captionLine(i18n, computed, shadow);
+  if (line === null) return null;
+  return <p className="source-note source-note--caption">{line}</p>;
 }
 
 export function SourceNotes(props: Props) {

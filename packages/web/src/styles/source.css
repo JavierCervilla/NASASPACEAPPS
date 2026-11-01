@@ -24,6 +24,12 @@
  */
 
 /*
+ * The shadow note of the sites NASA's maps mark (VENT-39), whose caption
+ * line joins the source notes here.
+ */
+@import './shadow.css';
+
+/*
  * The data source switch (VENT-36, validated canvas option C): «Data
  * source» and «Computed | Horizons | Compare» in the segmented control's
  * style (phone.css), under a hairline in the desktop Layers key, and in

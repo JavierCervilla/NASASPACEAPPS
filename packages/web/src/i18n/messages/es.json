@@ -309,5 +309,14 @@
   },
   "saved.undo": "Deshacer",
   "custom.saved": "Guardado",
-  "custom.savedNear": "Guardado · cerca de {name}"
+  "custom.savedNear": "Guardado · cerca de {name}",
+  "body.sun": "Sol",
+  "body.noSun": "Sin Sol",
+  "body.permanentShadow": "Sombra permanente",
+  "shadow.psrTitle": "Sombra permanente · no es un punto de aterrizaje",
+  "shadow.psrBody": "Los mapas de la NASA sitúan este punto en el fondo de un cráter al que nunca llega el Sol.",
+  "shadow.psrTitleShort": "Sombra permanente",
+  "shadow.dimTitle": "Fondo de cráter · poco Sol",
+  "shadow.dimBody": "Los mapas de la NASA dan a este punto un {share} de Sol de media.",
+  "shadow.sunSource": "Sol según el mapa de sombra permanente de la NASA (LRO LOLA, Mazarico 2011)"
 }

@@ -105,8 +105,12 @@ export function pointLine(i18n: I18n, site: CardSite): PointLine {
   return { coords, note: precision(i18n, site) };
 }
 
+/** A site of the curated list: every field, the shadow when it has one. */
+export type ListedSite = Required<Omit<CardSite, 'custom' | 'shadow'>> &
+  Pick<CardSite, 'shadow'>;
+
 /** The slim card site of a full one, as the page passes it to the island. */
-export function toCardSite(site: Required<Omit<CardSite, 'custom'>>): CardSite {
+export function toCardSite(site: ListedSite): CardSite {
   const { agency, status, statusDate } = site;
   return { ...toPhoneSite(site), agency, status, statusDate };
 }

@@ -1,0 +1,152 @@
+{
+  "about": "NASA's illumination maps read at every curated site south of 80 deg S (VENT-39), for the Mooner session and for the shadow field of packages/server/data/sites.json. Not used at run time.",
+  "generated": "2026-11-01",
+  "method": "Nearest pixel of each map at the site's point, south polar stereographic on a 1737.4 km sphere (longitude 0 up). avgSun: AVGVISIB_75S_120M = DN * 0.00004 + 0.0 (its PDS label), the average fraction of time with some of the Sun's disc in view over an 18.6-year cycle. psrShare: fraction of the LPSR_80S_20MPP_ADJ pixels (20 m, values 0 or 1) within 250 m of the point. onPsrFloor: psrShare >= 0.5; for these four points LPSR_75S_120M = DN * 0.000025 + 0.5 (its PDS label) is 1 and avgSun is 0, NASA's definition of permanent shadow. The 250 m radius and the 0.5 share are our choice, not a NASA standard.",
+  "reference": "Mazarico, E., Neumann, G. A., Smith, D. E., Zuber, M. T., Torrence, M. H. (2011), Illumination conditions of the lunar polar regions using LOLA topography, Icarus 211, 1066-1081.",
+  "sources": [
+    {
+      "file": "AVGVISIB_75S_120M_201608.IMG",
+      "url": "http://imbrium.mit.edu/EXTRAS/ILLUMINATION/IMG/AVGVISIB_75S_120M_201608.IMG",
+      "product": "https://pgda.gsfc.nasa.gov/products/69",
+      "sha256": "a354543b62871227a5066077f5ac61ed7e8dabd5268eb5a5aa4b147aa5bba61e"
+    },
+    {
+      "file": "AVGVISIB_75S_120M_201608.LBL",
+      "url": "http://imbrium.mit.edu/EXTRAS/ILLUMINATION/IMG/AVGVISIB_75S_120M_201608.LBL",
+      "product": "https://pgda.gsfc.nasa.gov/products/69",
+      "sha256": "1b597f85822c20e349469c9499e7bd85a48efc3a23b9dd9d82b658e59192883c"
+    },
+    {
+      "file": "LPSR_75S_120M_201608.IMG",
+      "url": "http://imbrium.mit.edu/EXTRAS/ILLUMINATION/IMG/LPSR_75S_120M_201608.IMG",
+      "product": "https://pgda.gsfc.nasa.gov/products/69",
+      "sha256": "f47c537432528ca6852e94d11c2c0ca08e2dcd972ef73d20ea2270ea8e6beff4"
+    },
+    {
+      "file": "LPSR_75S_120M_201608.LBL",
+      "url": "http://imbrium.mit.edu/EXTRAS/ILLUMINATION/IMG/LPSR_75S_120M_201608.LBL",
+      "product": "https://pgda.gsfc.nasa.gov/products/69",
+      "sha256": "510fa0cacf894568ac900d8bf2cbacaf201800abcc86a87c7bb53b45bb574c73"
+    },
+    {
+      "file": "LPSR_80S_20MPP_ADJ.TIF",
+      "url": "https://pgda.gsfc.nasa.gov/data/LOLA_20mpp/LPSR_80S_20MPP_ADJ.TIF",
+      "product": "https://pgda.gsfc.nasa.gov/products/90",
+      "sha256": "ad95311b81db773039af441dd66a017f024327858c6e0314b8c92bf2f470834e"
+    }
+  ],
+  "sites": [
+    {
+      "id": "im1-odysseus",
+      "lat": -80.13,
+      "lon": 1.44,
+      "avgSun": 0.3557,
+      "psrShare": 0.0,
+      "onPsrFloor": false
+    },
+    {
+      "id": "im2-athena",
+      "lat": -84.7906,
+      "lon": 29.1957,
+      "avgSun": 0.4684,
+      "psrShare": 0.0,
+      "onPsrFloor": false
+    },
+    {
+      "id": "change7-target",
+      "lat": -89.67,
+      "lon": 129.78,
+      "avgSun": 0.0,
+      "psrShare": 1.0,
+      "onPsrFloor": true
+    },
+    {
+      "id": "bluemoon-mk1-pathfinder",
+      "lat": -89.684,
+      "lon": -163.261,
+      "avgSun": 0.6591,
+      "psrShare": 0.0021,
+      "onPsrFloor": false
+    },
+    {
+      "id": "griffin1-nobile",
+      "lat": -85.2752,
+      "lon": 53.2725,
+      "avgSun": 0.3567,
+      "psrShare": 0.0,
+      "onPsrFloor": false
+    },
+    {
+      "id": "artemis-peak-near-cabeus-b",
+      "lat": -82.2587,
+      "lon": -54.5846,
+      "avgSun": 0.1078,
+      "psrShare": 0.0309,
+      "onPsrFloor": false
+    },
+    {
+      "id": "artemis-haworth",
+      "lat": -87.45,
+      "lon": -5.17,
+      "avgSun": 0.0,
+      "psrShare": 1.0,
+      "onPsrFloor": true
+    },
+    {
+      "id": "artemis-malapert-massif",
+      "lat": -85.98,
+      "lon": -1.67,
+      "avgSun": 0.4284,
+      "psrShare": 0.0041,
+      "onPsrFloor": false
+    },
+    {
+      "id": "artemis-mons-mouton-plateau",
+      "lat": -84.6,
+      "lon": 31.0,
+      "avgSun": 0.3393,
+      "psrShare": 0.0163,
+      "onPsrFloor": false
+    },
+    {
+      "id": "artemis-mons-mouton",
+      "lat": -84.6,
+      "lon": 31.0,
+      "avgSun": 0.3393,
+      "psrShare": 0.0163,
+      "onPsrFloor": false
+    },
+    {
+      "id": "artemis-nobile-rim-1",
+      "lat": -85.2752,
+      "lon": 53.2725,
+      "avgSun": 0.3567,
+      "psrShare": 0.0,
+      "onPsrFloor": false
+    },
+    {
+      "id": "artemis-nobile-rim-2",
+      "lat": -85.2752,
+      "lon": 53.2725,
+      "avgSun": 0.3567,
+      "psrShare": 0.0,
+      "onPsrFloor": false
+    },
+    {
+      "id": "artemis-de-gerlache-rim-2",
+      "lat": -88.4849,
+      "lon": -88.3447,
+      "avgSun": 0.0,
+      "psrShare": 1.0,
+      "onPsrFloor": true
+    },
+    {
+      "id": "artemis-slater-plain",
+      "lat": -88.0792,
+      "lon": 111.2881,
+      "avgSun": 0.0,
+      "psrShare": 1.0,
+      "onPsrFloor": true
+    }
+  ]
+}

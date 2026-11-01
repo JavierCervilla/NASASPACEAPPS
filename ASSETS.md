@@ -264,3 +264,35 @@ list (Mons Mouton uses Mons Mouton Plateau's; Nobile Rims 1 and 2 use Griffin-1'
 - **How it was made**: `node packages/web/scripts/earth-land.mjs land-110m.json` decodes the TopoJSON arcs (no
   dependency), tests the centre of every 1° cell against the land rings (even-odd) and fills every cell south of 84° S,
   where Antarctica's ring closes along the pole. Deterministic: the same input writes the same bytes.
+
+## Permanent shadow flags (VENT-39)
+
+| File | What | sha256 of the source |
+|---|---|---|
+| `packages/sim/data/psr-flags.json` | NASA's illumination maps read at the 14 curated sites south of 80° S | see below |
+
+No map ships: only the values read at each site, in `packages/sim/data/psr-flags.json` and in the `shadow` field of
+five entries of `packages/server/data/sites.json`.
+
+- **Source**: NASA PGDA product 69, LRO LOLA illumination maps (https://pgda.gsfc.nasa.gov/products/69), files under
+  http://imbrium.mit.edu/EXTRAS/ILLUMINATION/IMG/, and PGDA product 90 (https://pgda.gsfc.nasa.gov/products/90) for
+  the 20 m PSR map, downloaded on 2026-11-01:
+
+  | File | sha256 |
+  |---|---|
+  | `AVGVISIB_75S_120M_201608.IMG` | `a354543b62871227a5066077f5ac61ed7e8dabd5268eb5a5aa4b147aa5bba61e` |
+  | `AVGVISIB_75S_120M_201608.LBL` | `1b597f85822c20e349469c9499e7bd85a48efc3a23b9dd9d82b658e59192883c` |
+  | `LPSR_75S_120M_201608.IMG` | `f47c537432528ca6852e94d11c2c0ca08e2dcd972ef73d20ea2270ea8e6beff4` |
+  | `LPSR_75S_120M_201608.LBL` | `510fa0cacf894568ac900d8bf2cbacaf201800abcc86a87c7bb53b45bb574c73` |
+  | `LPSR_80S_20MPP_ADJ.TIF` (https://pgda.gsfc.nasa.gov/data/LOLA_20mpp/LPSR_80S_20MPP_ADJ.TIF) | `ad95311b81db773039af441dd66a017f024327858c6e0314b8c92bf2f470834e` |
+
+- **Scales, from the PDS labels**: `AVERAGE_VISIBILITY = DN * 0.00004 + 0.0` (AVGVISIB, 16-bit LSB integers, the
+  average fraction of time with some of the Sun's disc in view over an 18.6-year cycle) and `PERMANENT_SHADOW = DN *
+  0.000025 + 0.5` (LPSR, 0 or 1). Both are 7624 x 7624 polar stereographic grids at 120 m/pixel on a 1737.4 km sphere,
+  projection offset 3811.5 pixels.
+- **How it was read**: nearest pixel at each site's point, longitude 0 up. A site is on a PSR floor when at least half
+  of the 20 m PSR pixels within 250 m are permanent shadow; for the four marked sites LPSR_75S_120M is 1 and
+  AVGVISIB is 0 at the point, NASA's definition of permanent shadow (Mazarico, E. et al. 2011, Icarus 211,
+  1066-1081). The 250 m radius and the 0.5 share are our choice, not a NASA standard. The 120 m values were read a
+  second time, independently, from the same files before they were committed, and agree for all 14 sites.
+- **Licence**: NASA data, not subject to copyright in the United States; credit NASA/GSFC, the LOLA team.

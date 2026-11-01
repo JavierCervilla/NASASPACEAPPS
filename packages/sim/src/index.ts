@@ -32,8 +32,10 @@ export type {
   Ephemeris,
   HourSample,
   RangeMetrics,
+  ShadowKind,
   Site,
   SiteGroup,
+  SiteShadow,
   SourceRef,
   TimeBlock,
 } from './site.ts';
@@ -91,3 +93,4 @@ export {
   type EarthPoint,
 } from './earth-view.ts';
 export { MINUTE_MS } from './minute-runs.ts';
+export { inPermanentShadow, shadowedHours } from './shadow.ts';

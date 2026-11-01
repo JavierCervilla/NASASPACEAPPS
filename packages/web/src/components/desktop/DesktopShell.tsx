@@ -83,7 +83,7 @@ function useSlot(): HTMLElement | null {
  * The selected site's state, the card's badge, the card and its notes on
  * computed data, at the selected instant, from the month's hours.
  */
-function useCardState(calendar: Calendar) {
+function useCardState(calendar: Calendar, site: CardSite) {
   const i18n = useI18n();
   const { result, computed } = calendar;
   const atMs = calendar.state?.atMs;
@@ -93,7 +93,9 @@ function useCardState(calendar: Calendar) {
   const badge = siteState(result, atMs ?? null, i18n, computed);
   const model =
     atMs === undefined ? LOADING : siteCard(result, atMs, i18n, computed);
-  const notes = <SourceNotes month={calendar} atMs={atMs ?? null} />;
+  const notes = (
+    <SourceNotes month={calendar} atMs={atMs ?? null} shadow={site.shadow} />
+  );
   return { state, badge, model, computed, notes };
 }
 
@@ -101,7 +103,7 @@ function DesktopUi({ sites, store, parts, base, view }: Props) {
   const { id } = useSelection(store);
   const site = selectedSite(sites, id, useI18n(), useSavedName());
   const calendar = useCalendar(parts, id);
-  const { state, badge, model, computed, notes } = useCardState(calendar);
+  const { state, badge, model, computed, notes } = useCardState(calendar, site);
   const atMs = calendar.state?.atMs ?? null;
   const dsn = useDsn(site, atMs, calendar.result);
   const slot = useSlot();

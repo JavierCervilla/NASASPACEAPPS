@@ -26,6 +26,7 @@
 /** The landing sites file: metadata of every site the API knows by id. */
 import { readFile } from 'node:fs/promises';
 import type { Site, SiteGroup, SourceRef } from '@ventana/sim';
+import { isShadow } from './site-shadow.ts';
 
 /**
  * Default location of the sites file, next to the compiled or source code:
@@ -61,6 +62,7 @@ function checkSite(value: unknown, index: number): Site {
   if (typeof v.lat !== 'number' || v.lat < -90 || v.lat > 90) fail('lat');
   if (typeof v.lonEast !== 'number' || v.lonEast < -180 || v.lonEast > 360) fail('lonEast');
   if (!Array.isArray(v.sources) || !v.sources.every(isSource)) fail('sources');
+  if (!isShadow(v.shadow, isSource)) fail('shadow');
   return v as Site;
 }
 

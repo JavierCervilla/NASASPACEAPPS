@@ -43,10 +43,14 @@ export interface CustomFacts {
   readonly saved?: boolean;
 }
 
-/** The part of a site the phone sheet shows; `custom` for the point. */
+/**
+ * The part of a site the phone sheet shows; `custom` for the point, and
+ * `shadow` when NASA's maps put it in shadow (VENT-39).
+ */
 export type PhoneSite = Pick<
   Site,
-  'id' | 'name' | 'mission' | 'group' | 'lat' | 'lonEast' | 'approximate'
+  | 'id' | 'name' | 'mission' | 'group' | 'lat' | 'lonEast' | 'approximate'
+  | 'shadow'
 > & { readonly custom?: CustomFacts };
 
 /** Pill names longer than this fall back to the place name. */
@@ -106,7 +110,8 @@ export function siteLabels(
 /** The slim site of a full one, as the page passes it to the island. */
 export function toPhoneSite(site: PhoneSite): PhoneSite {
   const { id, name, mission, group, lat, lonEast, approximate } = site;
-  return { id, name, mission, group, lat, lonEast, approximate };
+  const slim = { id, name, mission, group, lat, lonEast, approximate };
+  return site.shadow ? { ...slim, shadow: site.shadow } : slim;
 }
 
 const NOW_WORDS: Readonly<Record<NowState, TextKey>> = {

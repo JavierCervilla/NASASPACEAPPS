@@ -26,7 +26,8 @@
 /**
  * The sheet at peek and half: the site's LOLA relief thumbnail (south of
  * 80° S), its name with what tells it apart (IM-2 and the Mons Mouton
- * zone share a place), its coordinates and the widgets; for the custom
+ * zone share a place), its coordinates, the note when NASA's maps put it
+ * in shadow (VENT-39) and the widgets; for the custom
  * point, «Save» and, once saved, its name field (VENT-37).
  */
 import type { ReactNode } from 'react';
@@ -37,6 +38,7 @@ import type { Dsn } from '../dsn/use-dsn';
 import { thumbOf } from '../../thumbs/thumbs';
 import { useI18n } from '../i18n-context';
 import { SaveButton, SaveName } from '../saved/SaveControl';
+import { ShadowNote } from '../shadow/ShadowNote';
 import { SiteThumb } from '../SiteThumb';
 import { Widgets } from './Widgets';
 
@@ -98,6 +100,7 @@ export function SiteSummary(props: Props) {
   return (
     <div className="summary">
       <SummaryHead site={site} base={base} />
+      <ShadowNote shadow={site.shadow} className="summary__shadow" liftsSheet />
       <SaveName site={site} />
       {ready ? status : null}
       <Widgets result={result} onRetry={onRetry} when={when} dsn={dsn} />

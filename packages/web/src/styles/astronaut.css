@@ -30,11 +30,13 @@
  * readout, and the figure standing on its point. The pictures are 180 x
  * 220 with the feet at 50 % x 95 % (src/astronaut/figure-types.ts), the
  * cells of one sprite sheet baked offline (scripts/astronaut-figures.mjs):
- * rows stand, carry; columns silver, window, Sun, Earth, neither.
+ * rows stand, carry; columns silver, window, Sun, Earth, neither. Drawn
+ * smaller than the cells (VENT-38: 36 px docked, 70 carried, 46
+ * standing), so the downsampled picture stays sharp.
  */
 
 .astro-figure {
-  --figure-h: 44px;
+  --figure-h: 36px;
   position: relative;
   display: block;
   width: calc(var(--figure-h) * 180 / 220);
@@ -143,11 +145,11 @@
   position: absolute;
   left: 50%;
   bottom: 6px;
-  width: 20px;
-  height: 36px;
-  margin-left: -10px;
+  width: 16px;
+  height: 30px;
+  margin-left: -8px;
   border: 1.5px dashed rgba(255, 255, 255, 0.3);
-  border-radius: 10px 10px 6px 6px;
+  border-radius: 8px 8px 5px 5px;
 }
 
 .astro-dock[data-status='away'] .astro-dock__well,
@@ -252,20 +254,20 @@
 }
 
 .astro-carry__figure {
-  --figure-h: 84px;
+  --figure-h: 70px;
   margin: calc(var(--figure-h) * -0.95) 0 0 calc(var(--figure-h) * -90 / 220);
   transform-origin: 50% 95%;
   filter: drop-shadow(0 10px 14px rgba(0, 0, 0, 0.45));
 }
 
 .astro-carry__figure .astro-figure {
-  --figure-h: 84px;
+  --figure-h: 70px;
 }
 
 .astro-carry__shadow {
-  width: 40px;
-  height: 10px;
-  margin: -5px 0 0 -20px;
+  width: 34px;
+  height: 8px;
+  margin: -4px 0 0 -17px;
   border-radius: 50%;
   background: rgba(0, 0, 0, 0.45);
   filter: blur(3px);
@@ -287,7 +289,7 @@
   display: flex;
   flex-direction: column;
   gap: 2px;
-  margin: -80px 0 0 46px;
+  margin: -68px 0 0 46px;
   padding: 8px 12px;
   border-radius: 12px;
   background: var(--surface);
@@ -330,15 +332,17 @@
 }
 
 /* The figure standing on its point, on the globe or the polar map. */
+/* Wider than the figure, so the target keeps 44 px (VENT-38). */
 .astro-pin {
-  --figure-h: 56px;
+  --figure-h: 46px;
+  --pin-w: max(44px, calc(var(--figure-h) * 180 / 220));
   position: absolute;
   left: 0;
   top: 0;
   z-index: 4;
-  width: calc(var(--figure-h) * 180 / 220);
+  width: var(--pin-w);
   height: var(--figure-h);
-  margin: calc(var(--figure-h) * -0.95) 0 0 calc(var(--figure-h) * -90 / 220);
+  margin: calc(var(--figure-h) * -0.95) 0 0 calc(var(--pin-w) / -2);
   padding: 0;
   border: 0;
   background: none;
@@ -348,7 +352,8 @@
 }
 
 .astro-pin .astro-figure {
-  --figure-h: 56px;
+  --figure-h: 46px;
+  margin: 0 auto;
 }
 
 /* Its ground ring, in the colour of the state there. */
@@ -357,9 +362,9 @@
   position: absolute;
   left: 50%;
   top: 95%;
-  width: 28px;
-  height: 9px;
-  margin: -4.5px 0 0 -14px;
+  width: 24px;
+  height: 8px;
+  margin: -4px 0 0 -12px;
   border-radius: 50%;
   box-shadow: 0 0 0 2px var(--tone, rgba(255, 255, 255, 0.6));
 }

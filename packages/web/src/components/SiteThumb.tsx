@@ -60,6 +60,7 @@ function ThumbImage({ thumb, sizes, className }: Props & { thumb: Thumb }) {
       width={THUMB_PX}
       height={THUMB_PX}
       decoding="async"
+      draggable={false}
       data-ready={ready}
       onLoad={() => setReady(true)}
     />

@@ -130,7 +130,7 @@ export function PolarMap(props: Props) {
   return (
     <section ref={panel} className="polar" aria-label={label} data-computed={computed}>
       <div className="polar__disk" ref={disk} onClick={click}>
-        <img className="polar__image" src={`${base.replace(/\/?$/, '/')}${IMAGE}`} alt="" decoding="async" />
+        <img className="polar__image" src={`${base.replace(/\/?$/, '/')}${IMAGE}`} alt="" decoding="async" draggable={false} />
         <Graticule />
         <PolarMarkers {...{ markers, chosen, state, labels, badges }} />
         <PolarAstronaut disk={disk} selected={site.id} onPick={onPick} />

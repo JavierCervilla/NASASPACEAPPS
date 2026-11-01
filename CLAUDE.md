@@ -41,6 +41,12 @@ Every visible change follows `.claude/skills/apple-design/SKILL.md` (vendored fr
   them for decoration.
 - System font; tracking and leading change with size. Springs critically damped by default. Honour
   `prefers-reduced-motion`, `prefers-reduced-transparency` and `prefers-contrast`.
+- It feels like an app, not a document (VENT-38): `body` sets `user-select: none`, `-webkit-touch-callout: none` and
+  a transparent tap highlight (`src/styles/global.css`), so a long press selects no text (no Android search panel)
+  and opens no iOS callout; images are not draggable. Selectable again: text fields (`input` other than range,
+  `textarea`) and the coordinates (`.card-head__point`, `.summary__coords`), the one datum worth pasting elsewhere.
+  The astronaut's dock and standing figure refuse the context menu, so a long press stays the start of a carry
+  (`no-context-menu.ts`). Held by `tests/e2e/app-feel.spec.ts`.
 - Must run on a laptop without a dedicated GPU (globe: 64-segment sphere, 2K texture to start, LOLA relief as a normal
   map; sharper maps load only as the zoom needs them: 4K, then 8K on the high tier, see `src/globe/texture-lod.ts`).
   Phones (below 768 px): the globe fills the screen at the low or medium tier (1K texture, up to 4K on zoom, pixel ratio
@@ -121,8 +127,9 @@ Every visible change follows `.claude/skills/apple-design/SKILL.md` (vendored fr
   (rows) times five visor colours (columns: silver and the four signal colours, theme-independent). The page has no
   runtime renderer for it: `Figure.tsx` shows a cell of the sheet as a CSS background (`styles/astronaut.css` picks it
   by `data-pose` and `data-visor`; the sheet is a hashed `_astro/` file), before hydration and under Save-Data a plain
-  silhouette, so the figure costs no draw call and no CPU while the globe starts. Its dock ends the desktop
-  Layers key («Drag me anywhere») and is a round glass button beside the phone's tab bar
+  silhouette, so the figure costs no draw call and no CPU while the globe starts. It is drawn smaller than its cells
+  (VENT-38): 36 px tall docked, 70 px carried, 46 px standing, whose button stays 44 px wide around it. Its dock ends
+  the desktop Layers key («Drag me anywhere») and is a round glass button beside the phone's tab bar
   (`src/components/astronaut/`). A press lifts it (Pointer
   Events with capture; the feet keep the grab offset, at least 64 px above a finger); it leans with the hand's speed,
   with its shadow, a crosshair on the drop point and a readout of the point and its state at the shared instant

@@ -272,6 +272,13 @@
   line-height: 1.35;
 }
 
+/* The coordinates stay selectable: worth pasting elsewhere (VENT-38). */
+.card-head__point {
+  -webkit-user-select: text;
+  user-select: text;
+  -webkit-touch-callout: default;
+}
+
 .card-tiles {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));

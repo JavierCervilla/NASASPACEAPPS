@@ -3,6 +3,15 @@
 ## [Sin publicar]
 
 ### Añadido
+- Sensación de app (VENT-38, petición de Javier): mantener pulsado el título, la cápsula del sitio, la hoja, las
+  tarjetas o cualquier otra parte de la interfaz ya no selecciona texto ni abre la búsqueda de Google en Android ni el
+  menú de iOS, y tocar no deja destello azul. Siguen seleccionables el campo de búsqueda de sitios y las coordenadas
+  del sitio (en la ficha del PC y en la hoja del móvil), para poder copiarlas. Las imágenes no se arrastran y mantener
+  pulsado el astronauta ya no abre el menú contextual, así que siempre empieza a cogerlo. El lector de pantalla lee
+  lo mismo que antes.
+- Astronauta algo más pequeño (VENT-38, «igual un poquito más pequeño sería mejor», Javier): un 18 % menos en el
+  hueco, al llevarlo y de pie en el punto (36, 70 y 46 px de alto), en PC y móvil; los botones siguen midiendo al
+  menos 44 px y los pies siguen cayendo justo en la cruz.
 - Astronauta del Apolo arrastrable a cualquier punto de la Luna (VENT-10, opción A + B del lienzo, aprobada por
   Javier): el modelo «Astronaut» de la NASA (dominio público), con los brazos bajados y sin la insignia de la NASA ni el parche de misión (las banderas de EE. UU. se quedan),
   espera en un hueco al final de la leyenda «Layers» del PC («Drag me anywhere») y en un botón redondo de cristal junto

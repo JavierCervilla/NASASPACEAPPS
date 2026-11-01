@@ -26,9 +26,10 @@
 /**
  * The sites NASA's illumination maps put in shadow (VENT-39, canvas option B), at the canvas instant, 22 November
  * 2026 20:00 UTC. Haworth sits on a permanently shadowed crater floor: a quiet note says so, and its Sun answer
- * follows the map, never up, whether the hours are computed or from Horizons, while the Earth stays as computed. The
- * Cabeus B point only gets a note. On phones the half sheet rises by the note, so the four widgets keep clear of the
- * tab bar.
+ * follows the map, never up, whether the hours are computed or from Horizons. Its Earth follows the crater's terrain
+ * horizon (VENT-40): the walls hide it all November, though it stands 8.5° over the smooth sphere's horizon. The
+ * Cabeus B point only gets a note. On phones the half sheet rises until its content, the note included, clears the tab
+ * bar by 12 px (VENT-40), so the four widgets keep clear of it.
  */
 import { expect, test, type Page } from '@playwright/test';
 import { stubApi } from './api-stub';
@@ -71,7 +72,7 @@ async function fact(page: Page, label: string): Promise<string> {
 test.describe('desktop, 1440x900', () => {
   test.use({ viewport: { width: 1440, height: 900 } });
 
-  test('Haworth, computed: the note, no Sun all month, no window, Earth only at the instant', async ({ page }) => {
+  test('Haworth, computed: the note, no Sun all month, no window, the Earth behind the crater walls', async ({ page }) => {
     await open(page, 'artemis-haworth');
     const note = card(page).getByRole('note');
     await expect(note).toHaveText(`Permanent shadow${PSR_BODY}`);
@@ -82,9 +83,9 @@ test.describe('desktop, 1440x900', () => {
     expect(await fact(page, 'Hours with Sun')).toBe('0 %');
     expect(await fact(page, 'Landing window')).toBe('0 %');
     expect(await fact(page, 'Longest window')).toBe('None');
-    expect(await fact(page, 'Hours with Earth')).not.toBe('0 %');
-    await expect(page.locator('.site-button .signal-dot')).toHaveAttribute('data-state', 'earth');
-    await expect(card(page).locator('.card-media__badge')).toContainText('Earth only');
+    expect(await fact(page, 'Hours with Earth')).toBe('0 %');
+    await expect(page.locator('.site-button .signal-dot')).toHaveAttribute('data-state', 'none');
+    await expect(card(page).locator('.card-media__badge')).toContainText('Neither');
     await expect(strip(page).getByRole('img', { name: 'Sun: 0 % of November 2026' })).toBeVisible();
     await expect(strip(page).getByRole('img', { name: 'Window: 0 % of November 2026' })).toBeVisible();
     await expect(strip(page).getByText('No landing window this month')).toBeVisible();
@@ -122,44 +123,43 @@ test.describe('desktop, 1440x900', () => {
 const sheet = (page: Page) => page.locator('.sheet');
 const widgets = (page: Page) => page.getByRole('list', { name: 'This site now' }).getByRole('listitem');
 const tabBar = (page: Page) => page.getByRole('navigation', { name: 'Views' });
-// The half sheet shows 344 px at an unmarked site (src/sheet/sheet-physics.ts); the summary's gap is 12 px.
-const HALF_PX = 344;
-const GAP_PX = 12;
-
-/** How far the half sheet rose over its usual place, and the note's room (its height and the gap), once at rest. */
-async function liftAndNote(page: Page): Promise<{ lift: number; room: number }> {
+/** Once the half sheet rests: how far its content's lowest line is above the tab bar (src/sheet/sheet-lift.ts). */
+async function clearance(page: Page): Promise<number> {
   await expect(widgets(page)).toHaveCount(4);
   await expect(sheet(page).getByRole('note')).toBeVisible();
   await page.waitForTimeout(800);
-  const height = page.viewportSize()!.height;
-  const top = (await sheet(page).boundingBox())!.y;
-  const note = (await sheet(page).getByRole('note').boundingBox())!.height;
-  return { lift: height - HALF_PX - top, room: note + GAP_PX };
+  // Under CPU load the sheet's spring can outlast any fixed wait: read it once it has stopped (sheet-mount.ts).
+  await expect(sheet(page)).not.toHaveAttribute('data-moving', { timeout: 30_000 });
+  const bottom = await sheet(page)
+    .locator('[data-sheet-fit]')
+    .evaluate((el) => Math.max(...[...el.children].map((c) => c.getBoundingClientRect().bottom)));
+  return (await tabBar(page).boundingBox())!.y - bottom;
 }
+
+/** The content clears the tab bar by 12 px, give or take a pixel. */
+const clearsTabBar = (gap: number) => expect(Math.abs(gap - 12)).toBeLessThanOrEqual(1.5);
 
 for (const width of [360, 390]) {
   test.describe(`phone, ${width}x844`, () => {
     test.use({ viewport: { width, height: 844 }, hasTouch: true, isMobile: true });
 
-    test('Haworth: the note, Earth only, no Sun, and the half sheet raised by the note', async ({ page }) => {
+    test('Haworth: the note, neither Sun nor Earth, and the half sheet raised to fit it', async ({ page }) => {
       await open(page, 'artemis-haworth');
       const note = sheet(page).getByRole('note');
       await expect(note).toHaveText(`Permanent shadow · not a landing point${PSR_BODY}`);
-      await expect(widgets(page).nth(0)).toContainText('Earth only');
+      await expect(widgets(page).nth(0)).toContainText('No window');
       await expect(widgets(page).nth(0)).toContainText('0 % of November');
       await expect(widgets(page).nth(1)).toHaveText('SunNo SunPermanent shadow');
-      await expect(page.getByRole('button', { name: /^Change site, now Haworth .*: Earth · / })).toBeVisible();
-      const { lift, room } = await liftAndNote(page);
-      expect(Math.abs(lift - room)).toBeLessThanOrEqual(1);
+      await expect(page.getByRole('button', { name: /^Change site, now Haworth .*: Neither · / })).toBeVisible();
+      clearsTabBar(await clearance(page));
       await evidence(page, `phone-${width}-haworth`);
     });
 
-    test('Cabeus B: the note only, and the half sheet raised by it', async ({ page }) => {
+    test('Cabeus B: the note only, and the half sheet raised to fit it', async ({ page }) => {
       await open(page, 'artemis-peak-near-cabeus-b');
       await expect(sheet(page).getByRole('note')).toContainText('Crater floor · little Sun');
       await expect(widgets(page).nth(1)).not.toContainText('No Sun');
-      const { lift, room } = await liftAndNote(page);
-      expect(Math.abs(lift - room)).toBeLessThanOrEqual(1);
+      clearsTabBar(await clearance(page));
     });
   });
 }
@@ -169,19 +169,21 @@ test.describe('phone, 390x844', () => {
 
   test('Haworth keeps its four widgets above the tab bar, as an unmarked site does', async ({ page }) => {
     await open(page, 'artemis-haworth');
-    await liftAndNote(page);
+    clearsTabBar(await clearance(page));
     const bottoms = await widgets(page).evaluateAll((els) => els.map((el) => el.getBoundingClientRect().bottom));
     expect(Math.max(...bottoms)).toBeLessThanOrEqual((await tabBar(page).boundingBox())!.y);
   });
 
-  test('at 200 % text the half sheet rises by the taller note', async ({ page }) => {
+  test('at 200 % text the half sheet fits the taller note, or stands as high as the full sheet', async ({ page }) => {
     await open(page, 'artemis-haworth');
     await page.evaluate(() => {
       document.documentElement.style.fontSize = '200%';
     });
-    const { lift, room } = await liftAndNote(page);
-    expect(room).toBeGreaterThan(100);
-    expect(Math.abs(lift - room)).toBeLessThanOrEqual(1);
+    const gap = await clearance(page);
+    const top = (await sheet(page).boundingBox())!.y;
+    const bar = (await page.locator('.phone-bar').boundingBox())!;
+    // Either the content clears the tab bar, or the sheet stands as high as it goes, 12 px under the top bar.
+    expect(gap >= 10.5 || top <= Math.max(96, bar.y + bar.height + 12) + 1.5).toBe(true);
     await evidence(page, 'phone-390-haworth-200-text');
   });
 });

@@ -38,7 +38,9 @@ completa está en el documento «Ventana Lunar · Especificación y roadmap».
 
 ## Lujo y entrega (código congelado el domingo 15 a las 15:30)
 
-- [ ] Horizonte real con el relieve LOLA (VENT-11)
+- [x] Horizonte real con el relieve LOLA (VENT-11, hecho en VENT-40): el Sol y la Tierra contra el relieve de cada
+  sitio, horizontes de los sitios al sur de 80° S dentro de la web, ruta `/api/v1/horizon` para cualquier punto,
+  franja «Horizon» con la silueta en la ficha y en la hoja, y palabras honestas cuando decide el relieve
 - [x] Globo lunar 3D con el terminador del Sol real y los sitios de la API (VENT-6); la luz sigue al instante elegido
   en la cinta de calendario (VENT-4)
 - [x] Versión móvil: globo, hoja inferior con cuatro tarjetas (ventana, Sol, Tierra, antena DSN) y selector de sitios

@@ -303,9 +303,10 @@ const whole = (page: Page, selector: string) =>
   page.locator(selector).first().evaluate((el) => el.scrollWidth <= el.clientWidth);
 
 // QA on PR #16: at 320 px, and at 390 px with 200 % text, the state was cut to «Window · 23 h…» and «Window · …».
-// The titles wrap first; the pill then drops «left», then the name, and always keeps the time. 29 November, 20:00:
-// IM-2's window has 23 h left, the longest «h» line QA saw cut.
-const LATE = new Date('2026-11-29T20:00:00Z');
+// The titles wrap first; the pill then drops «left», then the name, and always keeps the time. 29 November, 22:00:
+// IM-2's window has 23 h left, the longest «h» line QA saw cut. (20:00 before VENT-40: IM-2's terrain horizon sees the
+// Sun set 2 h later, at 21:00 on 30 November.)
+const LATE = new Date('2026-11-29T22:00:00Z');
 for (const [width, height, text, full] of [
   [360, 780, 100, true],
   [320, 640, 100, false],
@@ -371,8 +372,14 @@ for (const [width, height] of [[360, 780], [390, 844]] as const) {
 
     test('at load, with the sheet at half', async ({ page }) => {
       await open(page);
-      // Half shows 344 px: nothing beside the tab bar raises it since the astronaut's dock left (VENT-37).
-      await expect.poll(() => page.locator('.sheet').evaluate((el) => Math.round(el.getBoundingClientRect().top))).toBe(height - 344);
+      // Half rises over its 344 px until the summary, horizon strip included (VENT-40), clears the tab bar.
+      const sheetTop = () => page.locator('.sheet').evaluate((el) => Math.round(el.getBoundingClientRect().top));
+      const risenAndStill = async () => {
+        const first = await sheetTop();
+        await page.waitForTimeout(200);
+        return first < height - 344 && first === (await sheetTop());
+      };
+      await expect.poll(risenAndStill).toBe(true);
       await expectInBand(page, 'IM-2 at load');
     });
 

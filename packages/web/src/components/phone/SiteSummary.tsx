@@ -27,7 +27,8 @@
  * The sheet at peek and half: the site's LOLA relief thumbnail (south of
  * 80° S), its name with what tells it apart (IM-2 and the Mons Mouton
  * zone share a place), its coordinates, the note when NASA's maps put it
- * in shadow (VENT-39) and the widgets; for the custom
+ * in shadow (VENT-39), the horizon strip (VENT-40) and the widgets; the
+ * half sheet rises to fit it all (`data-sheet-fit`). For the custom
  * point, «Save» and, once saved, its name field (VENT-37).
  */
 import type { ReactNode } from 'react';
@@ -54,6 +55,8 @@ interface Props {
   readonly status?: ReactNode;
   /** Under the widgets: the computed caption. */
   readonly notes?: ReactNode;
+  /** Over the widgets: the site's horizon strip. */
+  readonly horizon?: ReactNode;
   /** The DSN at the instant, for the fourth widget. */
   readonly dsn: Dsn | null;
 }
@@ -98,11 +101,12 @@ export function SiteSummary(props: Props) {
   const { site, result, onRetry, when, base, status, notes, dsn } = props;
   const ready = result.kind === 'ready';
   return (
-    <div className="summary">
+    <div className="summary" data-sheet-fit="">
       <SummaryHead site={site} base={base} />
-      <ShadowNote shadow={site.shadow} className="summary__shadow" liftsSheet />
+      <ShadowNote shadow={site.shadow} className="summary__shadow" />
       <SaveName site={site} />
       {ready ? status : null}
+      {props.horizon}
       <Widgets result={result} onRetry={onRetry} when={when} dsn={dsn} />
       {ready ? notes : null}
     </div>

@@ -5037,21 +5037,22 @@
         <rect data-graph-role="structural-frame" data-composition-frame-kind="region" data-composition-frame-id="2" data-composition-frame-label="Web app (Astro + React)" x="40" y="460" width="1130" height="300" rx="12" class="c-region" stroke-width="1"/>
 
         <!-- Connection paths (before components for correct z-order) -->
-        <path data-edge-from="horizons" data-edge-to="pipeline" data-edge-label="az/el series" data-edge-key="0" data-edge-id="query-horizons" data-composition-points="180,330;280,330" d="M 180 330 L 280 330" class="a-emphasis" stroke-width="1.8" marker-end="url(#arrowhead-emphasis)"/>
-        <path data-edge-from="pipeline" data-edge-to="cache" data-edge-label="reuse" data-edge-key="1" data-edge-id="disk-cache" data-composition-points="350,300;350,170" d="M 350 300 L 350 170" class="a-dashed" stroke-width="1.5" marker-end="url(#arrowhead-dashed)"/>
-        <path data-edge-from="pipeline" data-edge-to="data" data-edge-label="computes" data-edge-key="2" data-edge-id="compute-data" data-composition-points="420,330;520,330" d="M 420 330 L 520 330" class="a-emphasis" stroke-width="1.8" marker-end="url(#arrowhead-emphasis)"/>
-        <path data-edge-from="data" data-edge-to="store" data-edge-label="fetch" data-edge-key="3" data-edge-id="fetch-data" data-composition-points="590,360;590,490" d="M 590 360 L 590 490" class="a-emphasis" stroke-width="1.8" marker-end="url(#arrowhead-emphasis)"/>
-        <path data-edge-from="actions" data-edge-to="pages" data-edge-label="deploys" data-edge-key="4" data-edge-id="deploy-pages" data-composition-points="900,323;1000,323" d="M 900 323 L 1000 323" class="a-emphasis" stroke-width="1.8" marker-end="url(#arrowhead-emphasis)"/>
-        <path data-edge-from="pages" data-edge-to="store" data-edge-label="serves app" data-edge-key="5" data-edge-id="serve-app" data-composition-points="1000,337;976,337;976,515.3333333333334;660,515.3333333333334" d="M 1000 337 L 984 337 Q 976 337 976 345 L 976 507.33333333333337 Q 976 515.3333333333334 968 515.3333333333334 L 660 515.3333333333334" class="a-default" stroke-width="1.5" marker-end="url(#arrowhead)"/>
-        <path data-edge-from="store" data-edge-to="calendar" data-edge-key="6" data-edge-id="sub-calendar" data-composition-points="520,520;234,520;234,710;210,710" d="M 520 520 L 242 520 Q 234 520 234 528 L 234 702 Q 234 710 226 710 L 210 710" class="a-default" stroke-width="1.5" marker-end="url(#arrowhead)"/>
-        <path data-edge-from="store" data-edge-to="polar" data-edge-key="7" data-edge-id="sub-polar" data-composition-points="520,534;477.5,534;477.5,710;435,710" d="M 520 534 L 485.5 534 Q 477.5 534 477.5 542 L 477.5 702 Q 477.5 710 469.5 710 L 435 710" class="a-default" stroke-width="1.5" marker-end="url(#arrowhead)"/>
-        <path data-edge-from="store" data-edge-to="sitecard" data-edge-key="8" data-edge-id="sub-sitecard" data-composition-points="590,550;590,680" d="M 590 550 L 590 680" class="a-default" stroke-width="1.5" marker-end="url(#arrowhead)"/>
-        <path data-edge-from="store" data-edge-to="moon3d" data-edge-key="9" data-edge-id="sub-moon3d" data-composition-points="660,534;702.5,534;702.5,710;745,710" d="M 660 534 L 694.5 534 Q 702.5 534 702.5 542 L 702.5 702 Q 702.5 710 710.5 710 L 745 710" class="a-default" stroke-width="1.5" marker-end="url(#arrowhead)"/>
-        <path data-edge-from="store" data-edge-to="dsn" data-edge-key="10" data-edge-id="sub-dsn" data-composition-points="660,524.6666666666666;946,524.6666666666666;946,710;970,710" d="M 660 524.6666666666666 L 938 524.6666666666666 Q 946 524.6666666666666 946 532.6666666666666 L 946 702 Q 946 710 954 710 L 970 710" class="a-default" stroke-width="1.5" marker-end="url(#arrowhead)"/>
-        <path data-edge-from="pages" data-edge-to="sw" data-edge-label="installs" data-edge-key="11" data-edge-id="install-sw" data-composition-points="1070,300;1070,170" d="M 1070 300 L 1070 170" class="a-dashed" stroke-width="1.5" marker-end="url(#arrowhead-dashed)"/>
-        <path data-edge-from="sky" data-edge-to="store" data-edge-label="instant" data-edge-key="12" data-edge-id="instant-sky" data-composition-points="210,506;520,506" d="M 210 506 L 520 506" class="a-dashed" stroke-width="1.5" marker-end="url(#arrowhead-dashed)"/>
-        <path data-edge-from="pin" data-edge-to="store" data-edge-label="custom point" data-edge-key="13" data-edge-id="drop-point" data-composition-points="760,147;710,147;710,506;660,506" d="M 760 147 L 718 147 Q 710 147 710 155 L 710 498 Q 710 506 702 506 L 660 506" class="a-dashed" stroke-width="1.5" marker-end="url(#arrowhead-dashed)"/>
-        <path data-edge-from="pin" data-edge-to="layers" data-edge-label="saves" data-edge-key="14" data-edge-id="save-point" data-composition-points="760,133;660,133" d="M 760 133 L 660 133" class="a-dashed" stroke-width="1.5" marker-end="url(#arrowhead-dashed)"/>
+        <path data-edge-from="horizons" data-edge-to="pipeline" data-edge-label="az/el series" data-edge-key="0" data-edge-id="query-horizons" data-composition-points="180,337;280,337" d="M 180 337 L 280 337" class="a-emphasis" stroke-width="1.8" marker-end="url(#arrowhead-emphasis)"/>
+        <path data-edge-from="lola" data-edge-to="pipeline" data-edge-label="horizon rays" data-edge-key="1" data-edge-id="horizon-rays" data-composition-points="180,140;230,140;230,323;280,323" d="M 180 140 L 222 140 Q 230 140 230 148 L 230 315 Q 230 323 238 323 L 280 323" class="a-dashed" stroke-width="1.5" marker-end="url(#arrowhead-dashed)"/>
+        <path data-edge-from="pipeline" data-edge-to="cache" data-edge-label="reuse" data-edge-key="2" data-edge-id="disk-cache" data-composition-points="350,300;350,170" d="M 350 300 L 350 170" class="a-dashed" stroke-width="1.5" marker-end="url(#arrowhead-dashed)"/>
+        <path data-edge-from="pipeline" data-edge-to="data" data-edge-label="computes" data-edge-key="3" data-edge-id="compute-data" data-composition-points="420,330;520,330" d="M 420 330 L 520 330" class="a-emphasis" stroke-width="1.8" marker-end="url(#arrowhead-emphasis)"/>
+        <path data-edge-from="data" data-edge-to="store" data-edge-label="fetch" data-edge-key="4" data-edge-id="fetch-data" data-composition-points="590,360;590,490" d="M 590 360 L 590 490" class="a-emphasis" stroke-width="1.8" marker-end="url(#arrowhead-emphasis)"/>
+        <path data-edge-from="actions" data-edge-to="pages" data-edge-label="deploys" data-edge-key="5" data-edge-id="deploy-pages" data-composition-points="900,323;1000,323" d="M 900 323 L 1000 323" class="a-emphasis" stroke-width="1.8" marker-end="url(#arrowhead-emphasis)"/>
+        <path data-edge-from="pages" data-edge-to="store" data-edge-label="serves app" data-edge-key="6" data-edge-id="serve-app" data-composition-points="1000,337;976,337;976,515.3333333333334;660,515.3333333333334" d="M 1000 337 L 984 337 Q 976 337 976 345 L 976 507.33333333333337 Q 976 515.3333333333334 968 515.3333333333334 L 660 515.3333333333334" class="a-default" stroke-width="1.5" marker-end="url(#arrowhead)"/>
+        <path data-edge-from="store" data-edge-to="calendar" data-edge-key="7" data-edge-id="sub-calendar" data-composition-points="520,520;234,520;234,710;210,710" d="M 520 520 L 242 520 Q 234 520 234 528 L 234 702 Q 234 710 226 710 L 210 710" class="a-default" stroke-width="1.5" marker-end="url(#arrowhead)"/>
+        <path data-edge-from="store" data-edge-to="polar" data-edge-key="8" data-edge-id="sub-polar" data-composition-points="520,534;477.5,534;477.5,710;435,710" d="M 520 534 L 485.5 534 Q 477.5 534 477.5 542 L 477.5 702 Q 477.5 710 469.5 710 L 435 710" class="a-default" stroke-width="1.5" marker-end="url(#arrowhead)"/>
+        <path data-edge-from="store" data-edge-to="sitecard" data-edge-key="9" data-edge-id="sub-sitecard" data-composition-points="590,550;590,680" d="M 590 550 L 590 680" class="a-default" stroke-width="1.5" marker-end="url(#arrowhead)"/>
+        <path data-edge-from="store" data-edge-to="moon3d" data-edge-key="10" data-edge-id="sub-moon3d" data-composition-points="660,534;702.5,534;702.5,710;745,710" d="M 660 534 L 694.5 534 Q 702.5 534 702.5 542 L 702.5 702 Q 702.5 710 710.5 710 L 745 710" class="a-default" stroke-width="1.5" marker-end="url(#arrowhead)"/>
+        <path data-edge-from="store" data-edge-to="dsn" data-edge-key="11" data-edge-id="sub-dsn" data-composition-points="660,524.6666666666666;946,524.6666666666666;946,710;970,710" d="M 660 524.6666666666666 L 938 524.6666666666666 Q 946 524.6666666666666 946 532.6666666666666 L 946 702 Q 946 710 954 710 L 970 710" class="a-default" stroke-width="1.5" marker-end="url(#arrowhead)"/>
+        <path data-edge-from="pages" data-edge-to="sw" data-edge-label="installs" data-edge-key="12" data-edge-id="install-sw" data-composition-points="1070,300;1070,170" d="M 1070 300 L 1070 170" class="a-dashed" stroke-width="1.5" marker-end="url(#arrowhead-dashed)"/>
+        <path data-edge-from="sky" data-edge-to="store" data-edge-label="instant" data-edge-key="13" data-edge-id="instant-sky" data-composition-points="210,506;520,506" d="M 210 506 L 520 506" class="a-dashed" stroke-width="1.5" marker-end="url(#arrowhead-dashed)"/>
+        <path data-edge-from="pin" data-edge-to="store" data-edge-label="custom point" data-edge-key="14" data-edge-id="drop-point" data-composition-points="760,147;710,147;710,506;660,506" d="M 760 147 L 718 147 Q 710 147 710 155 L 710 498 Q 710 506 702 506 L 660 506" class="a-dashed" stroke-width="1.5" marker-end="url(#arrowhead-dashed)"/>
+        <path data-edge-from="pin" data-edge-to="layers" data-edge-label="saves" data-edge-key="15" data-edge-id="save-point" data-composition-points="760,133;660,133" d="M 760 133 L 660 133" class="a-dashed" stroke-width="1.5" marker-end="url(#arrowhead-dashed)"/>
 
         <!-- Components -->
         <g id="node-horizons" data-node-id="horizons" data-node-label="JPL Horizons API" tabindex="0" role="button" aria-label="Focus JPL Horizons API, NASA/JPL ephemerides, Architecture component" aria-pressed="false" data-node-kind="external" data-node-sublabel="NASA/JPL ephemerides" data-node-context="Architecture component">
@@ -5064,6 +5065,18 @@
           </g>
           <text data-node-label="" data-detail-anchor="" x="110" y="328" class="t-primary" font-size="11" font-weight="600" text-anchor="middle">JPL Horizons API</text>
         <text data-detail="context" x="110" y="344" class="t-muted" font-size="9" text-anchor="middle">NASA/JPL ephemerides</text>
+        </g>
+
+        <g id="node-lola" data-node-id="lola" data-node-label="LOLA terrain" tabindex="0" role="button" aria-label="Focus LOLA terrain, DEM tiers on a volume, Architecture component" aria-pressed="false" data-node-kind="database" data-node-sublabel="DEM tiers on a volume" data-node-context="Architecture component">
+          <title>LOLA terrain · DEM tiers on a volume · Architecture component</title>
+          <rect x="40" y="110" width="140" height="60" rx="6" class="c-mask"/>
+          <rect x="40" y="110" width="140" height="60" rx="6" class="c-database" stroke-width="1.5"/>
+          <g aria-hidden="true" data-semantic-sigil="database" class="semantic-sigil s-database" transform="translate(46 116) scale(0.6875)">
+            <ellipse cx="8" cy="4" rx="5" ry="2"/>
+            <path d="M3 4v8c0 1.1 2.2 2 5 2s5-.9 5-2V4M3 8c0 1.1 2.2 2 5 2s5-.9 5-2"/>
+          </g>
+          <text data-node-label="" data-detail-anchor="" x="110" y="138" class="t-primary" font-size="11" font-weight="600" text-anchor="middle">LOLA terrain</text>
+        <text data-detail="context" x="110" y="154" class="t-muted" font-size="9" text-anchor="middle">DEM tiers on a volume</text>
         </g>
 
         <g id="node-cache" data-node-id="cache" data-node-label="Horizons cache" tabindex="0" role="button" aria-label="Focus Horizons cache, responses on disk, Backend (Dokploy, no login)" aria-pressed="false" data-node-kind="database" data-node-sublabel="responses on disk" data-node-context="Backend (Dokploy, no login)">
@@ -5213,8 +5226,8 @@
         <text data-detail="fine" x="365" y="732" class="t-frontend" font-size="7" text-anchor="middle">built</text>
         </g>
 
-        <g id="node-sitecard" data-node-id="sitecard" data-node-label="Site card" tabindex="0" role="button" aria-label="Focus Site card, countdowns + month, Web app (Astro + React)" aria-pressed="false" data-node-kind="frontend" data-node-sublabel="countdowns + month" data-node-tag="built" data-node-context="Web app (Astro + React)">
-          <title>Site card · countdowns + month · Web app (Astro + React) · built</title>
+        <g id="node-sitecard" data-node-id="sitecard" data-node-label="Site card" tabindex="0" role="button" aria-label="Focus Site card, countdowns + horizon, Web app (Astro + React)" aria-pressed="false" data-node-kind="frontend" data-node-sublabel="countdowns + horizon" data-node-tag="built" data-node-context="Web app (Astro + React)">
+          <title>Site card · countdowns + horizon · Web app (Astro + React) · built</title>
           <rect x="520" y="680" width="140" height="60" rx="6" class="c-mask"/>
           <rect x="520" y="680" width="140" height="60" rx="6" class="c-frontend" stroke-width="1.5"/>
           <g aria-hidden="true" data-semantic-sigil="frontend" class="semantic-sigil s-frontend" transform="translate(526 686) scale(0.6875)">
@@ -5224,7 +5237,7 @@
             <circle cx="6.3" cy="4.8" r=".7" class="sigil-fill"/>
           </g>
           <text data-node-label="" data-detail-anchor="" x="590" y="708" class="t-primary" font-size="11" font-weight="600" text-anchor="middle">Site card</text>
-        <text data-detail="context" x="590" y="724" class="t-muted" font-size="9" text-anchor="middle">countdowns + month</text>
+        <text data-detail="context" x="590" y="724" class="t-muted" font-size="9" text-anchor="middle">countdowns + horizon</text>
         <text data-detail="fine" x="590" y="732" class="t-frontend" font-size="7" text-anchor="middle">built</text>
         </g>
 
@@ -5290,26 +5303,30 @@
 
         <!-- Connection labels -->
         <g data-detail="context" data-edge-from="horizons" data-edge-to="pipeline" data-edge-label="az/el series" data-edge-key="0" data-edge-id="query-horizons">
-          <rect x="196.2" y="310" width="67.6" height="14" rx="3" class="c-mask"/>
-          <text x="230" y="320" class="t-backend" font-size="8" text-anchor="middle">az/el series</text>
+          <rect x="196.2" y="337" width="67.6" height="14" rx="3" class="c-mask"/>
+          <text x="230" y="347" class="t-backend" font-size="8" text-anchor="middle">az/el series</text>
         </g>
-        <g data-detail="context" data-edge-from="pipeline" data-edge-to="cache" data-edge-label="reuse" data-edge-key="1" data-edge-id="disk-cache">
+        <g data-detail="context" data-edge-from="lola" data-edge-to="pipeline" data-edge-label="horizon rays" data-edge-key="1" data-edge-id="horizon-rays">
+          <rect x="196.2" y="211.5" width="67.6" height="14" rx="3" class="c-mask"/>
+          <text x="230" y="221.5" class="t-messagebus" font-size="8" text-anchor="middle">horizon rays</text>
+        </g>
+        <g data-detail="context" data-edge-from="pipeline" data-edge-to="cache" data-edge-label="reuse" data-edge-key="2" data-edge-id="disk-cache">
           <rect x="333" y="225" width="34" height="14" rx="3" class="c-mask"/>
           <text x="350" y="235" class="t-messagebus" font-size="8" text-anchor="middle">reuse</text>
         </g>
-        <g data-detail="context" data-edge-from="pipeline" data-edge-to="data" data-edge-label="computes" data-edge-key="2" data-edge-id="compute-data">
+        <g data-detail="context" data-edge-from="pipeline" data-edge-to="data" data-edge-label="computes" data-edge-key="3" data-edge-id="compute-data">
           <rect x="445.8" y="310" width="48.4" height="14" rx="3" class="c-mask"/>
           <text x="470" y="320" class="t-backend" font-size="8" text-anchor="middle">computes</text>
         </g>
-        <g data-detail="context" data-edge-from="data" data-edge-to="store" data-edge-label="fetch" data-edge-key="3" data-edge-id="fetch-data">
+        <g data-detail="context" data-edge-from="data" data-edge-to="store" data-edge-label="fetch" data-edge-key="4" data-edge-id="fetch-data">
           <rect x="573" y="364" width="34" height="14" rx="3" class="c-mask"/>
           <text x="590" y="374" class="t-backend" font-size="8" text-anchor="middle">fetch</text>
         </g>
-        <g data-detail="context" data-edge-from="actions" data-edge-to="pages" data-edge-label="deploys" data-edge-key="4" data-edge-id="deploy-pages">
+        <g data-detail="context" data-edge-from="actions" data-edge-to="pages" data-edge-label="deploys" data-edge-key="5" data-edge-id="deploy-pages">
           <rect x="928.2" y="303" width="43.6" height="14" rx="3" class="c-mask"/>
           <text x="950" y="313" class="t-backend" font-size="8" text-anchor="middle">deploys</text>
         </g>
-        <g data-detail="context" data-edge-from="pages" data-edge-to="store" data-edge-label="serves app" data-edge-key="5" data-edge-id="serve-app">
+        <g data-detail="context" data-edge-from="pages" data-edge-to="store" data-edge-label="serves app" data-edge-key="6" data-edge-id="serve-app">
           <rect x="947" y="406.1666666666667" width="58" height="14" rx="3" class="c-mask"/>
           <text x="976" y="416.1666666666667" class="t-muted" font-size="8" text-anchor="middle">serves app</text>
         </g>
@@ -5318,19 +5335,19 @@
 
 
 
-        <g data-detail="context" data-edge-from="pages" data-edge-to="sw" data-edge-label="installs" data-edge-key="11" data-edge-id="install-sw">
+        <g data-detail="context" data-edge-from="pages" data-edge-to="sw" data-edge-label="installs" data-edge-key="12" data-edge-id="install-sw">
           <rect x="1045.8" y="280" width="48.4" height="14" rx="3" class="c-mask"/>
           <text x="1070" y="290" class="t-messagebus" font-size="8" text-anchor="middle">installs</text>
         </g>
-        <g data-detail="context" data-edge-from="sky" data-edge-to="store" data-edge-label="instant" data-edge-key="12" data-edge-id="instant-sky">
+        <g data-detail="context" data-edge-from="sky" data-edge-to="store" data-edge-label="instant" data-edge-key="13" data-edge-id="instant-sky">
           <rect x="343.2" y="486" width="43.6" height="14" rx="3" class="c-mask"/>
           <text x="365" y="496" class="t-messagebus" font-size="8" text-anchor="middle">instant</text>
         </g>
-        <g data-detail="context" data-edge-from="pin" data-edge-to="store" data-edge-label="custom point" data-edge-key="13" data-edge-id="drop-point">
+        <g data-detail="context" data-edge-from="pin" data-edge-to="store" data-edge-label="custom point" data-edge-key="14" data-edge-id="drop-point">
           <rect x="676.2" y="306.5" width="67.6" height="14" rx="3" class="c-mask"/>
           <text x="710" y="316.5" class="t-messagebus" font-size="8" text-anchor="middle">custom point</text>
         </g>
-        <g data-detail="context" data-edge-from="pin" data-edge-to="layers" data-edge-label="saves" data-edge-key="14" data-edge-id="save-point">
+        <g data-detail="context" data-edge-from="pin" data-edge-to="layers" data-edge-label="saves" data-edge-key="15" data-edge-id="save-point">
           <rect x="693" y="113" width="34" height="14" rx="3" class="c-mask"/>
           <text x="710" y="123" class="t-messagebus" font-size="8" text-anchor="middle">saves</text>
         </g>

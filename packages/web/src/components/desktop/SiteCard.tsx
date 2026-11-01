@@ -30,7 +30,8 @@
  * mission, its agency and date, the site, its point and how exact it is,
  * and whether NASA's maps put it in shadow (VENT-39);
  * «Sunset in» and «Earthset in» (or «…rise in») for the selected instant with
- * each body's elevation; who listens on Earth (VENT-7); and the month's
+ * each body's elevation and where the terrain decides; the horizon strip
+ * (VENT-40); who listens on Earth (VENT-7); and the month's
  * shares, longest window and longest night, with where the figures come
  * from. Grey blocks while the month loads, an honest error with «Try
  * again», and an honest state outside the data window. On a short screen
@@ -76,6 +77,8 @@ interface Props {
   readonly notes?: ReactNode;
   /** The DSN at the instant (VENT-7); null until it is known. */
   readonly dsn: Dsn | null;
+  /** Under the tiles: the site's horizon strip (VENT-40). */
+  readonly horizon?: ReactNode;
 }
 
 /** The card is 320 px wide, the whole width below 1024 px. */
@@ -106,7 +109,9 @@ function CardMedia({ thumb, state, computed }: MediaProps) {
  * point leads with its name, then the site it is near, with «Save» at the
  * top right and, once saved, its name field (VENT-37).
  */
-function CardHead(props: Omit<Props, 'model' | 'onRetry' | 'notes' | 'dsn'>) {
+type HeadProps = Omit<Props, 'model' | 'onRetry' | 'notes' | 'dsn' | 'horizon'>;
+
+function CardHead(props: HeadProps) {
   const { site, state, computed, base } = props;
   const i18n = useI18n();
   const { title, subtitle } = siteLabels(site);
@@ -136,16 +141,16 @@ function Tile({ widget, tone }: { widget: BodyWidget; tone: string }) {
       <span className="card-tile__label" data-tone={tone}>{widget.label}</span>
       <span className="card-tile__value">{widget.value}</span>
       <span className="card-tile__detail">{widget.detail}</span>
+      {widget.terrain ? (
+        <span className="card-tile__detail">{widget.terrain}</span>
+      ) : null}
     </div>
   );
 }
 
-interface FiguresProps {
-  readonly model: CardModel;
-  readonly dsn: Dsn | null;
-}
+type FiguresProps = Pick<Props, 'model' | 'dsn' | 'horizon'>;
 
-function Figures({ model, dsn }: FiguresProps) {
+function Figures({ model, dsn, horizon }: FiguresProps) {
   if (model.kind !== 'ready') return null;
   return (
     <>
@@ -153,6 +158,7 @@ function Figures({ model, dsn }: FiguresProps) {
         <Tile widget={model.sun} tone="sun" />
         <Tile widget={model.earth} tone="earth" />
       </div>
+      {horizon}
       {dsn ? <ListeningBlock dsn={dsn} /> : <ListeningWaiting />}
       <dl className="card-block card-facts">
         {model.rows.map(({ label, value, tone }) => (
@@ -167,7 +173,8 @@ function Figures({ model, dsn }: FiguresProps) {
   );
 }
 
-export function SiteCard({ model, onRetry, notes, dsn, ...head }: Props) {
+export function SiteCard(props: Props) {
+  const { model, onRetry, notes, dsn, horizon, ...head } = props;
   const [scroller, edges] = useScrollEdges<HTMLDivElement>();
   // Focusable only while it overflows, so the keyboard can scroll it on a
   // short screen; on a tall one it would be an empty tab stop.
@@ -185,7 +192,7 @@ export function SiteCard({ model, onRetry, notes, dsn, ...head }: Props) {
         data-fade-bottom={edges.bottom}
       >
         <CardHead {...head} />
-        <Figures model={model} dsn={dsn} />
+        <Figures model={model} dsn={dsn} horizon={horizon} />
         {model.kind === 'ready' ? notes : null}
         <CardStatus kind={model.kind} onRetry={onRetry} />
       </div>

@@ -55,6 +55,8 @@ import { usePhone, useSelection } from '../phone/hooks';
 import { PolarMap } from '../polar/PolarMap';
 import { useSavedName } from '../saved/use-saved-name';
 import { SourceNotes } from '../source/SourceNotes';
+import { SiteHorizon } from '../horizon/SiteHorizon';
+import type { HorizonStore } from '../../horizon/horizon-store';
 import { SiteCard } from './SiteCard';
 import { SiteMenu } from './SiteMenu';
 
@@ -80,10 +82,15 @@ function useSlot(): HTMLElement | null {
 }
 
 /**
- * The selected site's state, the card's badge, the card and its notes on
- * computed data, at the selected instant, from the month's hours.
+ * The selected site's state, the card's badge, the card, its notes on
+ * computed data and its horizon strip, at the selected instant, from the
+ * month's hours.
  */
-function useCardState(calendar: Calendar, site: CardSite) {
+function useCardState(
+  calendar: Calendar,
+  site: CardSite,
+  horizons: HorizonStore,
+) {
   const i18n = useI18n();
   const { result, computed } = calendar;
   const atMs = calendar.state?.atMs;
@@ -96,29 +103,29 @@ function useCardState(calendar: Calendar, site: CardSite) {
   const notes = (
     <SourceNotes month={calendar} atMs={atMs ?? null} shadow={site.shadow} />
   );
-  return { state, badge, model, computed, notes };
+  const strip = { site, atMs: atMs ?? null, hours: result, horizons };
+  const horizon = <SiteHorizon {...strip} className="card-block horizon--card" />;
+  return { state, badge, model, computed, notes, horizon };
 }
 
 function DesktopUi({ sites, store, parts, base, view }: Props) {
   const { id } = useSelection(store);
   const site = selectedSite(sites, id, useI18n(), useSavedName());
   const calendar = useCalendar(parts, id);
-  const { state, badge, model, computed, notes } = useCardState(calendar, site);
+  const card = useCardState(calendar, site, parts.horizons);
+  const { state, computed } = card;
   const atMs = calendar.state?.atMs ?? null;
   const dsn = useDsn(site, atMs, calendar.result);
   const slot = useSlot();
   const pick = (picked: string): void => store.select(picked, 'list');
   const menu = { sites, site, state, computed, onPick: pick };
-  const { source } = parts;
-  const map = { sites, site, state, computed, base, onPick: pick, source };
+  const map = { ...menu, base, source: parts.source };
   return (
     <>
       {view === 'polar' ? <PolarMap {...map} /> : null}
       {view === 'dsn' ? <DsnView dsn={dsn} /> : null}
-      <SiteCard
-        {...{ site, model, base, state: badge, computed, notes, dsn }}
-        onRetry={calendar.retry}
-      />
+      <SiteCard {...card} {...{ site, base, dsn }} state={card.badge}
+        onRetry={calendar.retry} />
       <CalendarStrip parts={parts} calendar={calendar} />
       {slot ? createPortal(<SiteMenu {...menu} />, slot) : null}
     </>

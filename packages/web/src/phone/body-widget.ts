@@ -37,7 +37,8 @@ import {
 } from '@ventana/sim';
 import type { TextKey } from '../i18n/catalogue';
 import type { I18n } from '../i18n/translate';
-import { formatAtLeast, formatDuration, formatElevation } from './format';
+import { formatAtLeast, formatDuration } from './format';
+import { terrainWords } from './terrain-words';
 import type { BodyWidget } from './widget-types';
 
 /** The Sun or the Earth, as a widget sees it. */
@@ -111,6 +112,6 @@ export function bodyWidget(
   const keeps = (sample: HourSample): boolean => body.up(sample) === up;
   const value = timeLeft(hours, now, keeps, i18n);
   const label = i18n.t(up ? body.sets : body.rises);
-  const detail = formatElevation(i18n, body.id, body.elevation(now));
-  return { label, value, detail };
+  const { detail, terrain } = terrainWords(body.id, now, i18n);
+  return terrain ? { label, value, detail, terrain } : { label, value, detail };
 }

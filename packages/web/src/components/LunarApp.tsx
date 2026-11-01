@@ -36,7 +36,13 @@
  * site's state, which its marker on the globe wears; and the globe's
  * layers with the sites saved on this device (VENT-37).
  */
-import { useEffect, useMemo, useState, type ComponentProps } from 'react';
+import {
+  useEffect,
+  useMemo,
+  useState,
+  useSyncExternalStore,
+  type ComponentProps,
+} from 'react';
 import type { Catalogue } from '../i18n/catalogue';
 import type { UiLocale } from '../i18n/locales';
 import { createI18n } from '../i18n/translate';
@@ -47,6 +53,12 @@ import {
   shadowedLoader,
   shadowsOf,
 } from '../source/shadowed-hours';
+import {
+  SHIPPED_RESOLUTION_M,
+  shippedTerrain,
+} from '../source/terrain-profiles';
+import { createHorizonStore } from '../horizon/horizon-store';
+import { horizonFetch } from '../horizon/point-horizon';
 import { createSourceStore } from '../source/data-source';
 import { followClock } from '../calendar/follow-clock';
 import { createPlayer } from '../calendar/time-player';
@@ -90,6 +102,23 @@ interface Props {
 /** The header's view tabs (components/Page.astro). */
 const VIEW_NAV = 'nav.views';
 
+/** The page's shared stores, made once. */
+function createClock(sitesUrl: string, sites: readonly CardSite[]) {
+  const time = createTimeStore(() => Date.now());
+  const player = createPlayer(time, {
+    setTimer: (fn, ms) => window.setTimeout(fn, ms),
+    clearTimer: (id) => window.clearTimeout(id),
+  });
+  const horizons = createHorizonStore({
+    shipped: shippedTerrain(),
+    shippedResolutionM: SHIPPED_RESOLUTION_M,
+    fetchHorizon: horizonFetch(globalThis.fetch.bind(globalThis), sitesUrl),
+  });
+  const raw = cachedComputed(pointsOf(sites));
+  const source = createSourceStore(localStore());
+  return { time, player, raw, source, shadowOf: shadowsOf(sites), horizons };
+}
+
 /**
  * The shared instant (live on the browser's clock, which it follows once
  * the island runs), its player, and the hours loader with its cache. The
@@ -97,29 +126,28 @@ const VIEW_NAV = 'nav.views';
  * views ask for their hours again, quietly, over the old ones. With them,
  * the simulator's hours of the listed sites and the chosen data source.
  * Both sources' hours carry the Sun answer of the sites in permanent
- * shadow (VENT-39).
+ * shadow (VENT-39) and each site's terrain horizon (VENT-40): the
+ * curated sites' at once, a custom point's once the API answers, when
+ * the loaders are made again so the views read the hours anew.
  */
 function useCalendarParts(
   sitesUrl: string,
   sites: readonly CardSite[],
 ): CalendarParts {
-  const [clock] = useState(() => {
-    const time = createTimeStore(() => Date.now());
-    const player = createPlayer(time, {
-      setTimer: (fn, ms) => window.setTimeout(fn, ms),
-      clearTimer: (id) => window.clearTimeout(id),
-    });
-    const shadowOf = shadowsOf(sites);
-    const raw = cachedComputed(pointsOf(sites));
-    const computed = shadowedComputed(raw, shadowOf);
-    const source = createSourceStore(localStore());
-    return { time, player, computed, source, shadowOf };
-  });
+  const [clock] = useState(() => createClock(sitesUrl, sites));
   const api = useHoursLoader(sitesUrl);
+  const { terrain } = clock.horizons;
+  const terrainOf = useSyncExternalStore(
+    terrain.subscribe,
+    terrain.get,
+    terrain.get,
+  );
   const parts = useMemo(() => {
-    const { shadowOf, ...rest } = clock;
-    return { ...rest, load: shadowedLoader(api, shadowOf) };
-  }, [clock, api]);
+    const { shadowOf, raw, ...rest } = clock;
+    const computed = shadowedComputed(raw, shadowOf, terrainOf);
+    const load = shadowedLoader(api, shadowOf, terrainOf);
+    return { ...rest, computed, load };
+  }, [clock, api, terrainOf]);
   useEffect(() => followClock(clock.time, browserHourClock()), [clock]);
   useEffect(() => clock.player.pause, [clock]);
   return parts;

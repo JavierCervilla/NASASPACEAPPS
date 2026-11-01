@@ -69,10 +69,19 @@ function nextLine(model: DsnModel, i18n: I18n): string {
   return i18n.t('dsn.nextOn', { name, day, time });
 }
 
+/**
+ * Why there is no link: the terrain where it hides an Earth that is up
+ * (VENT-40), else too low or under the horizon.
+ */
+function reasonOf(model: DsnModel, i18n: I18n): string {
+  if (model.behindTerrain) return i18n.t('terrain.behind');
+  if (model.link !== 'low') return i18n.t('dsn.reasonBelow');
+  const deg = degText(i18n, EARTH_MIN_ELEVATION_DEG);
+  return i18n.t('dsn.reasonLow', { deg });
+}
+
 function noLink(model: DsnModel, i18n: I18n): DsnText {
-  const reason = model.link === 'low'
-    ? i18n.t('dsn.reasonLow', { deg: degText(i18n, EARTH_MIN_ELEVATION_DEG) })
-    : i18n.t('dsn.reasonBelow');
+  const reason = reasonOf(model, i18n);
   const would = model.active
     ? i18n.t('dsn.wouldListen', { name: STATIONS[model.active].short })
     : i18n.t('dsn.noneWould');

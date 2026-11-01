@@ -39,6 +39,7 @@ import {
   toIso,
   type DsnSpan,
   type DsnState,
+  type HourSample,
 } from '@ventana/sim';
 import { useMemo, useState } from 'react';
 import { createDsnDays } from '../../dsn/dsn-days';
@@ -60,18 +61,23 @@ export interface Dsn {
 
 const SILENT: DsnState = { active: null, above: [] };
 
-/** The site's Earth elevation at the hour of `atMs`, or null. */
-function earthElevation(
+type SiteEarth = Pick<HourSample, 'earthEl' | 'earthAboveTerrain'>;
+
+/**
+ * The site's Earth at the hour of `atMs` (its elevation, and whether it
+ * clears the terrain when the hour was read against it), or null.
+ */
+function earthAt(
   site: Pick<PhoneSite, 'lat' | 'lonEast'>,
   atMs: number,
   hours: HoursResult,
-): number | null {
+): SiteEarth | null {
   const hour = toIso(Math.floor(atMs / HOUR_MS) * HOUR_MS);
   const sample = hours.kind === 'ready' ? sampleAt(hours.hours, hour) : null;
-  if (sample) return sample.earthEl;
+  if (sample) return sample;
   const { lat, lonEast } = site;
   if (!Number.isFinite(lat) || !Number.isFinite(lonEast)) return null;
-  return skyAt({ latDeg: lat, lonEastDeg: lonEast }, atMs).earthEl;
+  return skyAt({ latDeg: lat, lonEastDeg: lonEast }, atMs);
 }
 
 /** The DSN at `atMs` for `site`; null before it is known. */
@@ -88,7 +94,13 @@ export function useDsn(
     if (!started || atMs === null) return null;
     const point = { lat, lonEast };
     const spans = days.spansFor(atMs);
-    const model = dsnModel(spans, atMs, earthElevation(point, atMs, hours));
+    const earth = earthAt(point, atMs, hours);
+    const model = dsnModel(
+      spans,
+      atMs,
+      earth?.earthEl ?? null,
+      earth?.earthAboveTerrain,
+    );
     const span = spans.find((s) => atMs >= s.startMs && atMs < s.endMs);
     const state = span ? { active: span.active, above: span.above } : SILENT;
     return { model, text: dsnText(model, i18n), spans, state };

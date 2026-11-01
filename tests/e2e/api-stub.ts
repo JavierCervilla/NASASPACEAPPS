@@ -25,7 +25,8 @@
 
 /**
  * Stubs the API for the phone runs: the real site list (packages/server/data/sites.json), the ephemeris of
- * `/api/v1/sites/:id?from&to`, and that of any point, `/api/v1/ephemeris?lat&lon&from&to` (VENT-10). IM-2 answers
+ * `/api/v1/sites/:id?from&to`, and that of any point, `/api/v1/ephemeris?lat&lon&from&to` (VENT-10); on request, a
+ * point's terrain horizon, `/api/v1/horizon?lat&lon` (VENT-40). IM-2 answers
  * from a real slice of the live API (fixtures/im2-athena-2026-11.json,
  * 1 November to 23 December 2026 18:00 UTC, recorded 2026-10-30); every other site answers one fixed sky. So the
  * widgets read the same in every run, and IM-2's read as the real Moon does.
@@ -98,6 +99,55 @@ interface StubOptions {
   readonly hold?: Promise<void>;
   /** The route for any point (the astronaut's custom point) answers only once this settles. */
   readonly pointHold?: Promise<void> | undefined;
+  /** Answers `/api/v1/horizon` (VENT-40); without it the route is left alone, as before. */
+  readonly horizon?: HorizonStub | undefined;
+}
+
+/** How the stub answers a point's terrain horizon. */
+export interface HorizonStub {
+  /** Other than 200 it answers an error (503: no terrain on the server). */
+  readonly status?: number;
+  /** It answers only once this settles. */
+  readonly hold?: Promise<void>;
+}
+
+/**
+ * The terrain every point gets from the stub: 0.5° all around, and a wall 12° high from 300° to 330° of azimuth, which
+ * hides an Earth in the north-west (at 85.50° S 40.00° E on 22 November 2026 20:00 UTC it stands 9.1° up at 314°) and
+ * leaves the Sun (5.7° up at 339°).
+ */
+export const STUB_WALL = { fromDeg: 300, toDeg: 330, deg: 12, baseDeg: 0.5 } as const;
+
+/** The stub's profile, 720 bins of 0.5° as little-endian int16 hundredths of a degree, in base64 (decodeProfile). */
+function wallProfile(): string {
+  const bytes = Buffer.alloc(720 * 2);
+  for (let i = 0; i < 720; i++) {
+    const az = i * 0.5;
+    const inWall = az >= STUB_WALL.fromDeg && az <= STUB_WALL.toDeg;
+    bytes.writeInt16LE(Math.round((inWall ? STUB_WALL.deg : STUB_WALL.baseDeg) * 100), i * 2);
+  }
+  return bytes.toString('base64');
+}
+
+/** The body of `/api/v1/horizon?lat&lon` (docs/terrain-api.md), read at 20 m nearest. */
+function horizonBody(url: URL): unknown {
+  const lat = Number(url.searchParams.get('lat'));
+  const lonEast = Number(url.searchParams.get('lon'));
+  const tiers = [
+    { id: 'polar-south-20m', resolutionM: 20, share: 0.13 },
+    { id: 'polar-south-80m', resolutionM: 80, share: 0.87 },
+  ];
+  return { lat, lonEast, heightM: 2, bins: 720, profile: wallProfile(), groundM: 1000, coverage: 1, tiers };
+}
+
+/** Routes `/api/v1/horizon` as `stub` says. */
+async function stubHorizon(page: Page | BrowserContext, stub: HorizonStub): Promise<void> {
+  await page.route(/\/api\/v1\/horizon\?/, async (route: Route) => {
+    await stub.hold;
+    const { status = 200 } = stub;
+    if (status !== 200) return route.fulfill({ status, json: { error: 'no terrain' } });
+    return route.fulfill({ json: horizonBody(new URL(route.request().url())) });
+  });
 }
 
 /** The sky every custom point gets from the stub: a landing window, so Horizons' answer is told from the sky's. */
@@ -116,8 +166,12 @@ function pointBody(url: URL): unknown {
  * Answers the site list and each site's range. On a context, the routes also answer the service worker's requests
  * (pwa.spec.ts); on a page they do not, so the other specs run with service workers blocked (playwright.config.ts).
  */
-export async function stubApi(page: Page | BrowserContext, { status = 200, hold, pointHold }: StubOptions = {}): Promise<void> {
+export async function stubApi(
+  page: Page | BrowserContext,
+  { status = 200, hold, pointHold, horizon }: StubOptions = {},
+): Promise<void> {
   await page.route('**/api/v1/sites', (route) => route.fulfill({ json: { sites: SITES } }));
+  if (horizon) await stubHorizon(page, horizon);
   await page.route(/\/api\/v1\/ephemeris\?/, async (route: Route) => {
     await pointHold;
     if (status !== 200) return route.fulfill({ status, json: { error: 'down' } });

@@ -46,6 +46,8 @@ import {
   roundToGrid,
   type RawEphemerisParams,
 } from './params.ts';
+import type { HorizonSource } from './terrain/horizon-cache.ts';
+import { horizonResponse } from './terrain/horizon-route.ts';
 
 /**
  * What the API needs from the outside world, injected so tests can replace it.
@@ -67,6 +69,11 @@ export interface AppDeps {
    * {@link createMissLimiter} with its defaults.
    */
   readonly missLimiter?: MissLimiter;
+  /**
+   * The terrain's horizons (VENT-40); absent when the server has no LOLA
+   * grids, and then /horizon answers 503.
+   */
+  readonly terrain?: HorizonSource | undefined;
 }
 
 /** {@link AppDeps} with the limiter chosen, shared by every route. */
@@ -162,6 +169,9 @@ function createV1(deps: RouteDeps): Hono {
   // Any point: lat and lon (east longitude) in degrees, from and to as UTC
   // dates or whole hours, optional at.
   v1.get('/ephemeris', (c) => ephemerisResponse(c, deps, c.req.query()));
+
+  // Any point: lat and lon (east longitude) in degrees, optional height.
+  v1.get('/horizon', (c) => horizonResponse(c, deps.terrain, deps.missLimiter));
 
   v1.get('/sites', (c) => c.json({ sites: deps.sites }));
 

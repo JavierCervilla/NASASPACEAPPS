@@ -3,6 +3,26 @@
 ## [Sin publicar]
 
 ### Añadido
+- Horizonte real con el relieve LOLA (VENT-40; opción B del lienzo, aprobada por Javier). El Sol y la Tierra ya no se
+  miden contra un horizonte liso a 0°, sino contra el relieve de verdad que rodea cada sitio, calculado con las mallas
+  de altura LOLA de NASA (LRO): un sitio en lo alto de una cresta ve el Sol aunque esté un poco por debajo de la
+  horizontal, y el fondo de un cráter pierde la Tierra tras sus paredes aunque esté a 8° de altura. Los 14 sitios de
+  la lista al sur de 80° S llevan su horizonte dentro de la web, así que responden al instante y sin conexión (en
+  IM-2 el Sol se pone 2 h más tarde; en Haworth la Tierra se oculta todo noviembre). Las tarjetas lo dicen con
+  palabras honestas: «Sun 0.1° below level · Over the ridge», «Earth 8.5° up · Behind the terrain», y el bloque DSN da
+  «Behind the terrain» como motivo de que no haya enlace; la línea de la ficha pasa a «Sun and Earth over the terrain,
+  Earth 3° up». Nueva franja «Horizon» en la ficha del PC y en la hoja del móvil: la silueta del relieve alrededor del
+  sitio con el norte en el centro (S W N E S), su fuente y su exageración vertical en la cabecera («LOLA · 20 m ·
+  Height ×5», fija para cada sitio: no cambia al mover la hora ni con el ancho de la pantalla), el Sol y la Tierra en
+  su sitio en el instante elegido (atenuados y con «· hidden» cuando el relieve los tapa; si se salen de la escala,
+  quedan en el borde con una flecha, y sus etiquetas nunca se pisan) y una descripción para lectores de pantalla. Al soltar el pin en cualquier punto, la franja enseña
+  primero el horizonte liso («Smooth horizon · real terrain loading») y lo cambia por el relieve real en cuanto
+  responde la API; si el servidor no tiene relieve para ese punto, se queda el liso con una nota discreta («Real
+  terrain unavailable here»). Nueva ruta de la API, `GET /api/v1/horizon?lat&lon`, que calcula el horizonte de
+  cualquier punto de la Luna leyendo solo los trozos de las mallas que cruzan sus rayos (documentada en
+  `docs/terrain-api.md`). En el móvil, la hoja a media altura sube hasta que su contenido queda 12 px por encima de la
+  barra de pestañas, a cualquier ancho, idioma y tamaño de letra (arregla el solape que había a 360 px). En los cinco
+  idiomas.
 - Sitios en sombra permanente (VENT-39; opción B del lienzo, aprobada por Javier). Según los mapas de iluminación de
   NASA (LRO LOLA, Mazarico et al. 2011, producto 69 de PGDA), cuatro de los sitios aproximados caen en el fondo de un
   cráter al que nunca llega el Sol: Shackleton (Chang'e-7), Haworth, de Gerlache Rim 2 y Slater Plain. Sus

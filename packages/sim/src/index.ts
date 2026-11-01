@@ -94,3 +94,28 @@ export {
 } from './earth-view.ts';
 export { MINUTE_MS } from './minute-runs.ts';
 export { inPermanentShadow, shadowedHours } from './shadow.ts';
+export {
+  CENTIDEG_PER_DEG,
+  horizonAt,
+  isAboveTerrain,
+  quantiseDeg,
+  type HorizonProfile,
+} from './terrain-profile.ts';
+export { decodeProfile, encodeProfile } from './terrain-codec.ts';
+export { SUN_RADIUS_DEG, sunDiscVisible } from './sun-disc.ts';
+export {
+  arrayGrid,
+  demHeightAt,
+  pixelOf,
+  type CylindricalProjection,
+  type DemGrid,
+  type PolarProjection,
+} from './dem-grid.ts';
+export {
+  HORIZON_BINS,
+  terrainHorizon,
+  type DemBand,
+  type Observer,
+  type TerrainHorizon,
+} from './ray-march.ts';
+export { terrainHours } from './terrain-hours.ts';

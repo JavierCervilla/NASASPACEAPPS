@@ -301,3 +301,65 @@ five entries of `packages/server/data/sites.json`.
   south polar regions, and the 120 m map's highest value is 0.896. A `dimFloor` site only gets the note; its hours
   are not overridden.
 - **Licence**: NASA data, not subject to copyright in the United States; credit NASA/GSFC, the LOLA team.
+
+## Terrain horizons (VENT-40)
+
+| File | What | sha256 |
+|---|---|---|
+| `packages/sim/data/horizons.json` | the terrain horizon of the 14 curated sites south of 80° S (11 points), 26 292 bytes | `a6bf18c38b452a1b5d3bde32aee3cfc2bd302a0fb83eb61900a70c229097583b` |
+| `packages/server/data/terrain-catalogue.json` | the LOLA tiers the server may read: every file's URL, label, size and sha256 | see below |
+
+No elevation grid ships: only the profiles, and the catalogue of what the server reads from its volume
+(`docs/terrain-api.md`).
+
+- **Source**: the LOLA gridded elevation products of the PDS Geosciences Node, data set LRO-L-LOLA-4-GDR-V1.0
+  (https://pds-geosciences.wustl.edu/lro/lro-l-lola-3-rdr-v1/lrolol_1xxx/data/lola_gdr/), folders `polar/img/` and
+  `cylindrical/img/`, read on 2026-11-01. The directory listings (sha256 of the HTML as read: `polar/img/`
+  `8e5e68d8501256b3341efd2a4404619d58e793251d55f267995ff8469c2c30b6`, `cylindrical/img/`
+  `6911328ed457632b390dea0966b41b3252b75efeecb3c801c1ab72c0747a572b`) give each file's size; each `.lbl` (its sha256
+  in the catalogue) gives the size in pixels, the 16-bit LSB integer type, height = DN x 0.5 m above a 1737.4 km
+  sphere, and the projection offsets the code uses as given. This closes the realism study's gap: its 80 m and 240 m
+  grids are `polar/img/ldem_80s_80m.img` and `polar/img/ldem_75s_240m.img`, the same bytes (sha256 below).
+- **Files the shipped profiles were computed from** (downloaded whole):
+
+  | File | Bytes | sha256 |
+  |---|---|---|
+  | `polar/img/ldem_80s_20m.img` | 1 848 320 000 | `db44c3b2444acff1af528301c8a6988934b490249aceff0ac55668bdf3eab365` |
+  | `polar/img/ldem_80s_80m.img` | 115 520 000 | `e6591eeea35402ca5e124ca00f5bf0774381a2d4fa919144b455d82b8ff65fdc` |
+  | `polar/img/ldem_75s_240m.img` | 29 062 688 | `d031efe2611b17dfbf3c158f5e15dc04cd5719349dcbf6384bb21fd97697c490` |
+  | `cylindrical/img/ldem_128.img` | 2 123 366 400 | `0e4fea9b863e3255f58de15ccbd2bb8b1e248cb09217fd55d23ed37489f764b4` |
+
+  The 20 m file's lines 7000-7499 hash to the site thumbnails' chunk `ldem_80s_20m.lines-07000.bin` above.
+- **The other tiers' sha256** (in the catalogue): the PDS publishes no checksum, so every file was streamed whole
+  from its URL on 2026-11-01 and hashed without being kept. 22 of the 24 files were hashed by two independent fetches
+  that agree (or by a fetch and a download); `ldem_80n_20m.img` and `ldem_512_45s_00s_000_090.img` by one fetch,
+  resumed with HTTP Range after a reset. `scripts/fetch-terrain.ts` refuses a file that does not match.
+- **How it was made**: `node packages/server/scripts/terrain-horizons.ts --dir <volume>` (and `--check`, which
+  recomputes and compares byte for byte). The ray-march (`terrainHorizon` of `@ventana/sim`) casts 720 rays (every
+  0.5°) along great circles on the 1737.4 km sphere, curvature included, stopping every 20 m to 6 km on LDEM_80S_20M,
+  every 80 m to 150 km on LDEM_80S_80M and every 240 m to 200 km on LDEM_75S_240M, with LDEM_128 where a ray leaves
+  them (only IM-1's, at 80.13° S: 99.7 % of its stops covered, 100 % at every other point). Heights are bilinear; the
+  horizon in each direction is the highest elevation angle along the ray, stored in hundredths of a degree.
+- **Our choices**: the observer 2 m above the ground (a lander deck; the height only changes the near field, a far
+  ridge stands at nearly the same angle from 2 m or 10 m), the 0.5° bins (finer than the 0.53° Sun; storing 0.25°
+  bins moves the long-term Sun share by at most 0.02 points), the bands and steps above (the realism study's), and the
+  Sun's mean radius 0.26645° (IAU 2015 B3 nominal solar radius at one IAU 2012 au; it varies by about 1.7 % over the
+  year).
+- **Checked**: against the realism study's NumPy `horizon.py` at its 11 points, at most 0.0104° apart in any bin (the
+  quantisation step). Against NASA's AVGVISIB_75S_120M (VENT-39's values, `psr-flags.json`), the share of an 18.6-year
+  cycle with some of the Sun's disc above the horizon (`tests/terrain-validation.test.ts`, every 7 h):
+
+  | Site | Ours | NASA | Difference |
+  |---|---|---|---|
+  | IM-2 | 46.9 % | 46.8 % | +0.04 |
+  | Nobile (Griffin-1, Rims 1 and 2) | 35.6 % | 35.7 % | -0.05 |
+  | Peak near Cabeus B | 10.6 % | 10.8 % | -0.16 |
+  | Mons Mouton | 33.3 % | 33.9 % | -0.59 |
+  | Shackleton, Haworth, de Gerlache Rim 2, Slater Plain | 0 % | 0 % | 0 |
+  | IM-1 | 39.6 % | 35.6 % | +4.0: NASA's map itself runs from 33 to 40 % in the next 120 m pixels |
+  | Malapert Massif | 34.5 % | 42.8 % | -8.3: a 7° local slope the 20 m grid sees; the 80 m grid alone gives 42.1 % |
+  | Connecting ridge (Blue Moon MK1) | 80.3 % | 65.9 % | +14.3: a narrow ridge the 120 m grid smooths; NASA gives 89.6 % within 1 km |
+
+  Within 1 point at 8 of the 11 points; the three outliers are documented, not tuned.
+- **Licence**: NASA data, not subject to copyright in the United States; credit NASA/GSFC, the LOLA team, via the PDS
+  Geosciences Node.

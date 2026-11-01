@@ -153,8 +153,9 @@ test.describe('desktop calendar strip, 1440x900', () => {
   test('draws the month as three bars from the hourly data, under a globe that still renders', async ({ page }) => {
     await open(page);
     await expect(strip(page).getByRole('heading', { name: 'November 2026' })).toBeVisible();
-    // Real shares of November 2026 for IM-2, as the phone widgets read them.
-    await expect(strip(page).getByRole('img', { name: 'Sun: 59 % of November 2026' })).toBeVisible();
+    // Real shares of November 2026 for IM-2, as the phone widgets read them, read against IM-2's terrain horizon
+    // (VENT-40): the relief hides the Sun in 6 % of the month's hours.
+    await expect(strip(page).getByRole('img', { name: 'Sun: 53 % of November 2026' })).toBeVisible();
     await expect(strip(page).getByRole('img', { name: 'Earth: 58 % of November 2026' })).toBeVisible();
     await expect(strip(page).getByRole('img', { name: 'Window: 48 % of November 2026' })).toBeVisible();
     await expect(strip(page).locator('.signal-bar__on')).not.toHaveCount(0);

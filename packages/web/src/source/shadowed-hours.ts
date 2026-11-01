@@ -25,20 +25,25 @@
 
 /**
  * The Sun answer of the sites NASA's maps put in permanent shadow
- * (VENT-39), applied where the views take their hours from: both the
- * API's (Horizons) and the simulator's go through `shadowedHours` of
- * `@ventana/sim`, so the state, the widgets, the month's figures, the
- * calendar and the markers all see the Sun down there in every hour. Each
- * array of hours is shadowed once, so a view that asks again gets the same
- * array back.
+ * (VENT-39), and every site's terrain horizon where one is known
+ * (VENT-40), applied where the views take their hours from: both the
+ * API's (Horizons) and the simulator's go through `shadowedHours` and then
+ * `terrainHours` of `@ventana/sim`, so the state, the widgets, the month's
+ * figures, the calendar and the markers all see the same Sun and Earth.
+ * Each array of hours is corrected once per site and profile, so a view
+ * that asks again gets the same array back, and a profile that arrives
+ * later (a custom point's) is applied on the next ask.
  */
 import {
   shadowedHours,
+  terrainHours,
+  type HorizonProfile,
   type HourSample,
   type SiteShadow,
 } from '@ventana/sim';
 import type { HoursLoader } from '../phone/hours-cache';
 import type { ComputedLoader } from './computed-hours';
+import { NO_TERRAIN, type TerrainOf } from './terrain-profiles';
 
 /** What NASA's maps say about each site, by id; undefined: nothing. */
 export type ShadowOf = (id: string) => SiteShadow | undefined;
@@ -57,39 +62,51 @@ type Shade = (
   hours: readonly HourSample[],
 ) => readonly HourSample[];
 
-type Shaded = Map<string, readonly HourSample[]>;
+interface Corrected {
+  readonly profile: HorizonProfile | undefined;
+  readonly hours: readonly HourSample[];
+}
 
-/** Shadows each array of hours once per site, keyed by the array itself. */
-function onceEach(shadowOf: ShadowOf): Shade {
+type Shaded = Map<string, Corrected>;
+
+/**
+ * Corrects each array of hours once per site and profile, keyed by the
+ * array itself.
+ */
+function onceEach(shadowOf: ShadowOf, terrainOf: TerrainOf): Shade {
   const done = new WeakMap<readonly HourSample[], Shaded>();
   return (id, hours) => {
     const bySite: Shaded = done.get(hours) ?? new Map();
     done.set(hours, bySite);
+    const profile = terrainOf(id);
     const kept = bySite.get(id);
-    if (kept) return kept;
+    if (kept && kept.profile === profile) return kept.hours;
     const shaded = shadowedHours(hours, shadowOf(id));
-    bySite.set(id, shaded);
-    return shaded;
+    const corrected = terrainHours(shaded, profile);
+    bySite.set(id, { profile, hours: corrected });
+    return corrected;
   };
 }
 
-/** The simulator's hours of `load`, with each site's shadow applied. */
+/** The simulator's hours of `load`, each site's shadow and terrain applied. */
 export function shadowedComputed(
   load: ComputedLoader,
   shadowOf: ShadowOf,
+  terrainOf: TerrainOf = NO_TERRAIN,
 ): ComputedLoader {
-  const shade = onceEach(shadowOf);
+  const shade = onceEach(shadowOf, terrainOf);
   return (id, range) => {
     const hours = load(id, range);
     return hours ? shade(id, hours) : null;
   };
 }
 
-/** The API's hours of `load`, with each site's shadow applied. */
+/** The API's hours of `load`, each site's shadow and terrain applied. */
 export function shadowedLoader(
   load: HoursLoader,
   shadowOf: ShadowOf,
+  terrainOf: TerrainOf = NO_TERRAIN,
 ): HoursLoader {
-  const shade = onceEach(shadowOf);
+  const shade = onceEach(shadowOf, terrainOf);
   return async (id, range) => [...shade(id, await load(id, range))];
 }

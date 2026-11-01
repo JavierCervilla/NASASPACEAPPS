@@ -28,6 +28,7 @@
  * line joins the source notes here.
  */
 @import './shadow.css';
+@import './horizon.css';
 
 /*
  * The data source switch (VENT-36, validated canvas option C): «Data

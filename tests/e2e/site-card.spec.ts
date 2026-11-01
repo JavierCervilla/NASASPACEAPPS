@@ -63,17 +63,22 @@ test.describe('desktop site card and polar map, 1440x900', () => {
     await expect(card(page).getByRole('heading', { name: 'IM-2 Athena' })).toBeVisible();
     await expect(card(page).getByText('Intuitive Machines / NASA CLPS · landed 6 Mar 2025')).toBeVisible();
     await expect(card(page).getByText('84.79° S, 29.20° E · exact touchdown')).toBeVisible();
-    // Real hours: the same values the canvas and the phone widgets show.
-    await expect(tile(page, /^Sunset in$/)).toContainText('7 d 1 h');
+    // Real hours: the same values the canvas and the phone widgets show. With IM-2's terrain horizon (VENT-40) the
+    // Sun sets 2 h later than over the smooth sphere: the site stands 5.3 km up and sees below 0°.
+    await expect(tile(page, /^Sunset in$/)).toContainText('7 d 3 h');
     await expect(tile(page, /^Sunset in$/)).toContainText('Sun 6.4° up');
     await expect(tile(page, /^Earthset in$/)).toContainText('7 d 10 h');
     await expect(tile(page, /^Earthset in$/)).toContainText('Earth 10.6° up');
-    expect(await fact(page, 'Hours with Sun')).toBe('59 %');
+    // The terrain (VENT-40) hides the Sun in 6 % of November's hours and stretches the long window by 2 h.
+    expect(await fact(page, 'Hours with Sun')).toBe('53 %');
     expect(await fact(page, 'Hours with Earth')).toBe('58 %');
     expect(await fact(page, 'Landing window')).toBe('48 %');
-    expect(await fact(page, 'Longest window')).toBe('14 d 1 h');
-    expect(await fact(page, 'Longest night')).toBe('12 d');
-    await expect(card(page).getByText('November 2026 · JPL Horizons, 1 h step · Sun above 0°, Earth above 3°')).toBeVisible();
+    expect(await fact(page, 'Longest window')).toBe('14 d 3 h');
+    expect(await fact(page, 'Longest night')).toBe('14 d');
+    // Its hours are read against its terrain (VENT-40): the rule says so.
+    await expect(
+      card(page).getByText('November 2026 · JPL Horizons, 1 h step · Sun and Earth over the terrain, Earth 3° up'),
+    ).toBeVisible();
     // The card sits to the right of the globe, as on the canvas.
     const globe = await page.getByRole('region', { name: 'Lunar globe' }).boundingBox();
     const aside = await card(page).boundingBox();
@@ -82,17 +87,17 @@ test.describe('desktop site card and polar map, 1440x900', () => {
 
   test('moving the slider moves the card countdowns with it', async ({ page }) => {
     await open(page);
-    await expect(tile(page, /^Sunset in$/)).toContainText('7 d 1 h');
+    await expect(tile(page, /^Sunset in$/)).toContainText('7 d 3 h');
     await slider(page).focus();
     await page.keyboard.press('ArrowRight');
-    await expect(tile(page, /^Sunset in$/)).toContainText('7 d');
-    await expect(tile(page, /^Sunset in$/)).not.toContainText('7 d 1 h');
+    await expect(tile(page, /^Sunset in$/)).toContainText('7 d 2 h');
     await expect(tile(page, /^Earthset in$/)).toContainText('7 d 9 h');
   });
 
   test('the card fits, so its scroll box is no tab stop and no group', async ({ page }) => {
-    // The relief heading the card (VENT-33) and the DSN block (VENT-7) make it scroll at 900 px: a 1280 px screen holds it all.
-    await page.setViewportSize({ width: 1440, height: 1280 });
+    // The relief heading the card (VENT-33), the DSN block (VENT-7) and the horizon strip (VENT-40) make it scroll at
+    // 900 px: a 1440 px screen holds it all.
+    await page.setViewportSize({ width: 1440, height: 1440 });
     await open(page);
     await expect(card(page).getByText('Longest night')).toBeAttached();
     const box = card(page).locator('.site-card__scroll');

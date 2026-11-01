@@ -24,55 +24,87 @@
  */
 
 /**
- * The room the half sheet adds for what marks the site (VENT-39): the
- * half detent shows the name and the four widgets and does not scroll, so
- * a note under the name (`data-sheet-lift`) raises it by the note's
- * height and the gap before it, and the widgets stay above the tab bar
- * at any width and text size. Only marked sites carry such a note.
+ * The room the half sheet adds for what it holds (VENT-39, VENT-40): the
+ * half detent shows the site's summary and does not scroll, so it rises
+ * until the summary's last line (`data-sheet-fit`, measured from its
+ * content's bottom) clears the tab bar by 12 px, at any width, language
+ * and text size: a shadow note, the horizon strip and long words all
+ * count. It never sinks below its usual height.
  */
 
-/** The selector of what lifts the half sheet. */
-const LIFT = '[data-sheet-lift]';
+/** The selector of what the half sheet fits. */
+const FIT = '[data-sheet-fit]';
 
-/** The px the half sheet rises for what `sheet` holds; 0 without it. */
-export function halfLiftPx(sheet: HTMLElement): number {
-  const lift = sheet.querySelector<HTMLElement>(LIFT);
-  if (!lift) return 0;
-  const parent = lift.parentElement;
-  const gap = parent ? Number.parseFloat(getComputedStyle(parent).rowGap) : 0;
-  return lift.getBoundingClientRect().height + (Number.isFinite(gap) ? gap : 0);
-}
+/** Room kept between the content's bottom and the tab bar. */
+const TAB_GAP_PX = 12;
 
-/** Keeps `sizes` on the element that lifts `sheet`, as it comes and goes. */
-function followLift(sheet: HTMLElement, sizes: ResizeObserver): () => void {
-  let watched: Element | null = null;
-  return () => {
-    const lift = sheet.querySelector(LIFT);
-    if (lift === watched) return;
-    if (watched) sizes.unobserve(watched);
-    if (lift) sizes.observe(lift);
-    watched = lift;
-  };
+/** The bottom of the lowest laid-out child of `el`, or its own. */
+function contentBottom(el: Element): number {
+  const boxes = [...el.children].map((child) => child.getBoundingClientRect());
+  const shown = boxes.filter((box) => box.height > 0);
+  if (shown.length === 0) return el.getBoundingClientRect().bottom;
+  return Math.max(...shown.map((box) => box.bottom));
 }
 
 /**
- * Calls `changed` whenever the lift of `sheet` changes: a marked site's
- * note comes or goes with the site or the view the sheet holds, or it
- * resizes (the text size, the width); returns the unwatch function.
+ * The px the half sheet must rise over `basePx` (its usual visible
+ * height) for what `sheet` holds to clear `tabs`; 0 without either.
  */
-export function watchLift(
+export function halfLiftPx(
   sheet: HTMLElement,
-  changed: () => void,
-): () => void {
-  let last = halfLiftPx(sheet);
-  const check = (): void => {
-    const now = halfLiftPx(sheet);
+  tabs: HTMLElement | null,
+  basePx: number,
+): number {
+  const fit = sheet.querySelector(FIT);
+  if (!fit || !tabs) return 0;
+  const below = window.innerHeight - tabs.getBoundingClientRect().top;
+  const reach = contentBottom(fit) - sheet.getBoundingClientRect().top;
+  return Math.max(0, Math.ceil(reach + TAB_GAP_PX + below - basePx));
+}
+
+/** Keeps `sizes` on what `sheet` fits, as it comes and goes. */
+function followFit(sheet: HTMLElement, sizes: ResizeObserver): () => void {
+  let watched: Element | null = null;
+  return () => {
+    const fit = sheet.querySelector(FIT);
+    if (fit === watched) return;
+    if (watched) sizes.unobserve(watched);
+    if (fit) sizes.observe(fit);
+    watched = fit;
+  };
+}
+
+/** A check that calls `changed` when what `measure` reads has changed. */
+function whenChanged(measure: () => number, changed: () => void) {
+  let last = measure();
+  return (): void => {
+    const now = measure();
     if (now === last) return;
     last = now;
     changed();
   };
+}
+
+/**
+ * Calls `changed` whenever the lift `measure` reads changes: the content
+ * comes or goes with the site or the view the sheet holds, or it or the
+ * tab bar resizes (the text size, the width); returns the unwatch
+ * function.
+ */
+export function watchLift(
+  sheet: HTMLElement,
+  tabs: HTMLElement | null,
+  measure: () => number,
+  changed: () => void,
+): () => void {
+  // Without content to fit the sheet is leaving half (for the picker or
+  // the calendar at full): nothing to move it back for.
+  const check = whenChanged(measure, () => {
+    if (sheet.querySelector(FIT)) changed();
+  });
   const sizes = new ResizeObserver(check);
-  const follow = followLift(sheet, sizes);
+  if (tabs) sizes.observe(tabs);
+  const follow = followFit(sheet, sizes);
   const mutations = new MutationObserver(() => {
     follow();
     check();

@@ -37,11 +37,6 @@ interface Props {
   /** Without «not a landing point», which the line above already says. */
   readonly short?: boolean;
   readonly className?: string;
-  /**
-   * The phone's half sheet rises by the note's height, so the four
-   * widgets stay above the tab bar (sheet/sheet-lift.ts).
-   */
-  readonly liftsSheet?: boolean;
 }
 
 /** A crater in section: the rim, its floor shaded. */
@@ -55,7 +50,7 @@ function CraterIcon() {
 }
 
 export function ShadowNote(props: Props) {
-  const { shadow, short = false, className = '', liftsSheet = false } = props;
+  const { shadow, short = false, className = '' } = props;
   const note = shadowNote(useI18n(), shadow, short);
   if (!note) return null;
   return (
@@ -63,7 +58,6 @@ export function ShadowNote(props: Props) {
       className={`shadow-note ${className}`.trim()}
       role="note"
       data-shadow={note.kind}
-      data-sheet-lift={liftsSheet ? '' : undefined}
     >
       <CraterIcon />
       <div>

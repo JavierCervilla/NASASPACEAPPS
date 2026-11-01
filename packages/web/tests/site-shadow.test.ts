@@ -130,16 +130,37 @@ describe('shadowed loaders', () => {
 describe('halfLiftPx', () => {
   afterEach(() => vi.unstubAllGlobals());
 
-  const sheetWith = (lift: object | null) =>
-    ({ querySelector: () => lift }) as unknown as HTMLElement;
+  // At 844 px tall, the tab bar's top at 761 px: 83 px of it and under.
+  const TABS = { getBoundingClientRect: () => ({ top: 761 }) } as unknown as HTMLElement;
+  const box = (top: number, bottom: number) => ({ getBoundingClientRect: () => ({ top, bottom, height: bottom - top }) });
 
-  it("is the note's height and the gap before it", () => {
-    vi.stubGlobal('getComputedStyle', () => ({ rowGap: '12px' }));
-    const note = { parentElement: {}, getBoundingClientRect: () => ({ height: 54 }) };
-    expect(halfLiftPx(sheetWith(note))).toBe(66);
+  /** A sheet whose top edge is at `top`, holding `fit` (or nothing to fit). */
+  const sheetAt = (top: number, fit: object | null) =>
+    ({ querySelector: () => fit, getBoundingClientRect: () => ({ top }) }) as unknown as HTMLElement;
+
+  /** What the sheet fits: its children's boxes, and its own. */
+  const fitOf = (...children: object[]) => ({ children, ...box(0, 0) });
+
+  it('rises until the content\'s lowest line clears the tab bar by 12 px', () => {
+    vi.stubGlobal('window', { innerHeight: 844 });
+    // The content ends 490 px under the sheet's top: 490 + 12 + 83 = 585 px shown, 241 over the usual 344.
+    const sheet = sheetAt(300, fitOf(box(300, 400), box(410, 790), box(0, 0)));
+    expect(halfLiftPx(sheet, TABS, 344)).toBe(241);
   });
 
-  it('is 0 without a note', () => {
-    expect(halfLiftPx(sheetWith(null))).toBe(0);
+  it('reads the same wherever the sheet rests: the content moves with it', () => {
+    vi.stubGlobal('window', { innerHeight: 844 });
+    expect(halfLiftPx(sheetAt(100, fitOf(box(110, 590))), TABS, 344)).toBe(241);
+  });
+
+  it('never sinks under its usual height', () => {
+    vi.stubGlobal('window', { innerHeight: 844 });
+    expect(halfLiftPx(sheetAt(500, fitOf(box(500, 640))), TABS, 344)).toBe(0);
+  });
+
+  it('is 0 without content to fit or without a tab bar', () => {
+    vi.stubGlobal('window', { innerHeight: 844 });
+    expect(halfLiftPx(sheetAt(300, null), TABS, 344)).toBe(0);
+    expect(halfLiftPx(sheetAt(300, fitOf(box(300, 900))), null, 344)).toBe(0);
   });
 });

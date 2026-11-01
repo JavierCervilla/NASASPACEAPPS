@@ -32,6 +32,14 @@
 import { decodeProfile, type HorizonProfile } from '@ventana/sim';
 import shipped from '../../../sim/data/horizons.json';
 
+/**
+ * The resolution the shipped profiles were seen at, metres: the step of
+ * the nearest band, which reads LOLA's 20 m polar grid (every shipped
+ * point is south of 80° S, inside it).
+ */
+export const SHIPPED_RESOLUTION_M: number =
+  shipped.method.bands[0]?.stepM ?? Number.NaN;
+
 /** The terrain's horizon of each site, by id; undefined: none known. */
 export type TerrainOf = (id: string) => HorizonProfile | undefined;
 

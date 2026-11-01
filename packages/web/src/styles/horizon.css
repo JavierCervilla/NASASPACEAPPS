@@ -1,0 +1,190 @@
+/*
+ *   _   _       _                         _ _
+ *  | | | |_ __ (_)_   _____ _ __ ___  ___| | | ___
+ *  | | | | '_ \| \ \ / / _ \ '__/ __|/ _ \ | |/ _ \
+ *  | |_| | | | | |\ V /  __/ |  \__ \  __/ | |  __/
+ *   \___/|_| |_|_| \_/ \___|_|  |___/\___|_|_|\___|
+ *
+ *             =++==--::.
+ *         %%%%##**++=--:..  .
+ *      ##**#%@%%#***+=--::.   .
+ *    #**=+*#*#**#++++=-:::.. .  .
+ *   #++-====*@%+*++==--::...   .  .    Ventana Lunar
+ *  #+=-=--++==+===-+==--:..   .  .  .  Sun, Earth and landing
+ * #----====-------=-=---:..  .  .  .   windows at the lunar
+ * #+---+=====--=---==-::..     .  .  . south pole
+ * #*----==---==-=-=-:-....    .  .  .
+ * *#----===+*===--:-::...    .  .  .   Built for the NASA Space
+ *  *----=*-+*%*+=-:::....   .  .  .    Apps Challenge 2026,
+ *   *------=+*=--:::-:::.. .  .  .     Madrid. Not endorsed
+ *    %*===-=-==--==-:::.  .  .  .      by NASA.
+ *      *+:--+:--::::::.  .  .  .
+ *         -=:::...:..   .  .           (c) 2026 Universelle
+ *             :::.. .  .               SPDX-License-Identifier: MIT
+ */
+
+/*
+ * The horizon strip (VENT-40, canvas option B): in the desktop card under
+ * the two tiles and in the phone sheet over the widgets. Neutral line art
+ * over the level; the signal colours only on the Sun's and the Earth's
+ * dots, dimmed under the skyline where the terrain hides them. Sizes in
+ * rem, so the strip and its words follow the text size; the SVG fills a
+ * box the component measures, so nothing sets a style attribute (CSP).
+ */
+.horizon {
+  --horizon-line: rgba(242, 242, 244, 0.7);
+  --horizon-level: rgba(255, 255, 255, 0.28);
+  --horizon-ground: rgba(52, 54, 62, 0.72);
+  --horizon-halo: rgba(16, 17, 22, 0.92);
+  --horizon-dot-edge: rgba(7, 8, 11, 0.9);
+
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+}
+
+.horizon--card {
+  padding: 12px 16px 10px;
+}
+
+/* In the phone sheet, a card like the widgets under it, full width. */
+.horizon--sheet {
+  padding: 10px 14px 8px;
+  border-radius: 18px;
+  background: var(--phone-card);
+}
+
+.horizon__head,
+.horizon__foot {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 2px 12px;
+  margin: 0;
+  font-size: 0.75rem;
+  line-height: 1.3;
+  letter-spacing: 0.01em;
+  color: var(--text-muted);
+}
+
+.horizon__title {
+  font-weight: 600;
+  color: var(--text-secondary);
+}
+
+.horizon__foot {
+  justify-content: flex-start;
+  font-size: 0.6875rem;
+  letter-spacing: 0.02em;
+}
+
+.horizon__plot {
+  position: relative;
+  height: 3.25rem;
+}
+
+.horizon--card .horizon__plot {
+  height: 2.875rem;
+}
+
+.horizon__svg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+}
+
+.horizon__level {
+  stroke: var(--horizon-level);
+  stroke-width: 1;
+  stroke-dasharray: 2 3;
+}
+
+.horizon__level-label,
+.horizon__label {
+  font-size: 0.625rem;
+  fill: var(--text-muted);
+}
+
+.horizon__label {
+  fill: var(--text-secondary);
+  paint-order: stroke;
+  stroke: var(--horizon-halo);
+  stroke-width: 3px;
+  stroke-linejoin: round;
+}
+
+.horizon__ground {
+  fill: var(--horizon-ground);
+}
+
+.horizon__skyline {
+  fill: none;
+  stroke: var(--horizon-line);
+  stroke-width: 1.1;
+  stroke-linejoin: round;
+}
+
+.horizon__body {
+  stroke: var(--horizon-dot-edge);
+  stroke-width: 2;
+}
+
+.horizon__body[data-body='sun'] { fill: var(--signal-sun); }
+.horizon__body[data-body='earth'] { fill: var(--signal-earth); }
+
+.horizon__body[data-hidden='true'] {
+  stroke: none;
+  opacity: 0.9;
+}
+
+.horizon__compass {
+  position: relative;
+  height: 1.1em;
+  margin: -2px 0 0;
+  font-size: 0.625rem;
+  line-height: 1.1;
+  letter-spacing: 0.04em;
+  color: var(--text-muted);
+}
+
+/* S W N E S at each quarter of the width; the two ends sit inside. */
+.horizon__compass > span {
+  position: absolute;
+  top: 0;
+  transform: translateX(-50%);
+}
+
+.horizon__compass > span:nth-child(1) { left: 0; transform: none; }
+.horizon__compass > span:nth-child(2) { left: 25%; }
+.horizon__compass > span:nth-child(3) { left: 50%; }
+.horizon__compass > span:nth-child(4) { left: 75%; }
+.horizon__compass > span:nth-child(5) { right: 0; transform: none; }
+
+@media (prefers-color-scheme: light) {
+  .horizon {
+    --horizon-line: rgba(28, 28, 30, 0.7);
+    --horizon-level: rgba(0, 0, 0, 0.3);
+    --horizon-ground: rgba(120, 120, 128, 0.22);
+    --horizon-halo: rgba(255, 255, 255, 0.92);
+    --horizon-dot-edge: rgba(255, 255, 255, 0.9);
+  }
+}
+
+@media (prefers-contrast: more) {
+  .horizon--sheet {
+    border: 1px solid var(--surface-edge);
+  }
+
+  .horizon__skyline {
+    stroke: var(--text);
+  }
+
+  .horizon__head,
+  .horizon__foot,
+  .horizon__compass {
+    color: var(--text-secondary);
+  }
+}

@@ -54,6 +54,7 @@ import { usePhone, useScrim, useSelection, useSiteWidgets } from './hooks';
 import { PhoneBar } from './PhoneBar';
 import { Sheet } from './Sheet';
 import { SourceCaption, SourceDown } from '../source/SourceNotes';
+import { SiteHorizon } from '../horizon/SiteHorizon';
 import { SitesPanel } from './SitesPanel';
 import { SiteSummary } from './SiteSummary';
 import { TabBar } from './TabBar';
@@ -152,7 +153,11 @@ function SheetBody(props: { phone: PhoneState } & Props) {
   const { result, retry: onRetry } = widgets;
   const source = { month: widgets, atMs: phone.at, shadow: site.shadow };
   const notes = <SourceCaption {...source} />;
-  const summary = { site, result, onRetry, when, base, notes, dsn };
+  const strip = { site, atMs: phone.at, hours: widgets.hours };
+  const horizon = (
+    <SiteHorizon horizons={parts.horizons} {...strip} className="horizon--sheet" />
+  );
+  const summary = { site, result, onRetry, when, base, notes, dsn, horizon };
   return <SiteSummary {...summary} status={<SourceDown {...source} />} />;
 }
 

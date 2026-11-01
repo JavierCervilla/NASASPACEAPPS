@@ -75,7 +75,10 @@ test.describe('desktop site card and polar map, 1440x900', () => {
     expect(await fact(page, 'Landing window')).toBe('48 %');
     expect(await fact(page, 'Longest window')).toBe('14 d 3 h');
     expect(await fact(page, 'Longest night')).toBe('14 d');
-    await expect(card(page).getByText('November 2026 · JPL Horizons, 1 h step · Sun above 0°, Earth above 3°')).toBeVisible();
+    // Its hours are read against its terrain (VENT-40): the rule says so.
+    await expect(
+      card(page).getByText('November 2026 · JPL Horizons, 1 h step · Sun and Earth over the terrain, Earth 3° up'),
+    ).toBeVisible();
     // The card sits to the right of the globe, as on the canvas.
     const globe = await page.getByRole('region', { name: 'Lunar globe' }).boundingBox();
     const aside = await card(page).boundingBox();
@@ -92,8 +95,9 @@ test.describe('desktop site card and polar map, 1440x900', () => {
   });
 
   test('the card fits, so its scroll box is no tab stop and no group', async ({ page }) => {
-    // The relief heading the card (VENT-33) and the DSN block (VENT-7) make it scroll at 900 px: a 1280 px screen holds it all.
-    await page.setViewportSize({ width: 1440, height: 1280 });
+    // The relief heading the card (VENT-33), the DSN block (VENT-7) and the horizon strip (VENT-40) make it scroll at
+    // 900 px: a 1440 px screen holds it all.
+    await page.setViewportSize({ width: 1440, height: 1440 });
     await open(page);
     await expect(card(page).getByText('Longest night')).toBeAttached();
     const box = card(page).locator('.site-card__scroll');

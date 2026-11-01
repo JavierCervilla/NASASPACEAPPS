@@ -372,8 +372,14 @@ for (const [width, height] of [[360, 780], [390, 844]] as const) {
 
     test('at load, with the sheet at half', async ({ page }) => {
       await open(page);
-      // Half shows 344 px: nothing beside the tab bar raises it since the astronaut's dock left (VENT-37).
-      await expect.poll(() => page.locator('.sheet').evaluate((el) => Math.round(el.getBoundingClientRect().top))).toBe(height - 344);
+      // Half rises over its 344 px until the summary, horizon strip included (VENT-40), clears the tab bar.
+      const sheetTop = () => page.locator('.sheet').evaluate((el) => Math.round(el.getBoundingClientRect().top));
+      const risenAndStill = async () => {
+        const first = await sheetTop();
+        await page.waitForTimeout(200);
+        return first < height - 344 && first === (await sheetTop());
+      };
+      await expect.poll(risenAndStill).toBe(true);
       await expectInBand(page, 'IM-2 at load');
     });
 

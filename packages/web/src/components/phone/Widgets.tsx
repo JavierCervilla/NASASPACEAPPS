@@ -41,6 +41,7 @@ interface CardProps {
     readonly label: ReactNode;
     readonly value: string;
     readonly detail: string;
+    readonly terrain?: string | undefined;
   };
   /** Which signal colour the label takes; `muted` for none. */
   readonly tone: string;
@@ -49,7 +50,7 @@ interface CardProps {
 }
 
 function Card({ widget, tone, big = false }: CardProps) {
-  const { label, value, detail } = widget;
+  const { label, value, detail, terrain } = widget;
   return (
     <li className="widget">
       <span className="widget__label" data-tone={tone}>{label}</span>
@@ -57,6 +58,7 @@ function Card({ widget, tone, big = false }: CardProps) {
         {value}
       </span>
       <span className="widget__detail">{detail}</span>
+      {terrain ? <span className="widget__detail">{terrain}</span> : null}
     </li>
   );
 }

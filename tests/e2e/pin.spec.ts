@@ -628,6 +628,22 @@ test.describe('phone, 390x844: the pin', () => {
    * near a marker to the marker, whose press is the site's, not the pin's.
    */
   async function onTheMoon(page: Page): Promise<Point> {
+    // The globe may still be turning the site into the band over the sheet, which rises to fit its content (VENT-40):
+    // a point is only «under the finger» once the Moon stands still.
+    const ringAt = async () => {
+      const box = await page.locator('.globe-ring').boundingBox();
+      return box ? `${Math.round(box.x)},${Math.round(box.y)}` : '';
+    };
+    await expect
+      .poll(
+        async () => {
+          const before = await ringAt();
+          await page.waitForTimeout(250);
+          return before !== '' && before === (await ringAt());
+        },
+        { timeout: 15_000 },
+      )
+      .toBe(true);
     const ring = (await page.locator('.globe-ring').boundingBox())!;
     const from = { x: ring.x + ring.width / 2, y: ring.y + ring.height / 2 };
     return page.evaluate((from) => {

@@ -30,8 +30,7 @@ import { stubApi } from './api-stub';
 const GLOBE_ASSET = /\/_astro\/globe\.[^/]*\.js$|\/textures\/moon-lroc-/;
 // The canvas's date, so the widgets read the same in every run; IM-2 answers real data for it (api-stub.ts).
 const NOW = new Date('2026-11-23T18:00:00Z');
-// Where the sheet's top edge rests at 390x844: half shows 344 px, full sits under the 96 px of the top bar.
-const HALF_TOP = 844 - 344;
+// Where the sheet's top edge rests at 390x844: full sits under the 96 px of the top bar; half, see `expectHalf`.
 const FULL_TOP = 96;
 // Peek shows 156 px: the name and the coordinates, clear of the tab bar.
 const PEEK_TOP = 844 - 156;
@@ -88,6 +87,30 @@ async function dragUpFromTabBar(page: Page, { release = true } = {}): Promise<vo
 
 const sheetTop = (page: Page) => page.locator('.sheet').evaluate((el) => Math.round(el.getBoundingClientRect().top));
 
+/**
+ * How far the sheet's top edge is from where half rests: high enough that its content's lowest line clears the tab
+ * bar by 12 px, and never under 344 px shown (VENT-40, src/sheet/sheet-lift.ts).
+ */
+const offHalf = (page: Page) =>
+  page.evaluate(() => {
+    const sheet = document.querySelector('.sheet');
+    const tabs = document.querySelector('.tab-bar');
+    if (!sheet || !tabs) return Number.POSITIVE_INFINITY;
+    const top = sheet.getBoundingClientRect().top;
+    const fit = sheet.querySelector('[data-sheet-fit]');
+    const boxes = fit ? [...fit.children].map((c) => c.getBoundingClientRect()).filter((b) => b.height > 0) : [];
+    const reach = boxes.length ? Math.max(...boxes.map((b) => b.bottom)) - top : 0;
+    const tabsTop = tabs.getBoundingClientRect().top;
+    const shown = Math.max(344, Math.ceil(reach + 12 + innerHeight - tabsTop));
+    return Math.abs(Math.round(top) - Math.round(innerHeight - shown));
+  });
+
+/** Waits until the sheet rests at half; its top edge then. */
+async function expectHalf(page: Page): Promise<number> {
+  await expect.poll(() => offHalf(page)).toBeLessThanOrEqual(1);
+  return sheetTop(page);
+}
+
 test.describe('phone, 390x844', () => {
   test.use({ viewport: { width: 390, height: 844 }, hasTouch: true, isMobile: true });
 
@@ -107,7 +130,7 @@ test.describe('phone, 390x844', () => {
     await expect(widgets.nth(1)).toContainText('Sun 6.4° up');
     await expect(widgets.nth(2)).toContainText('Earth 10.6° up');
     await expect(widgets.nth(3)).toContainText('Robledo');
-    await expect.poll(() => sheetTop(page)).toBe(HALF_TOP);
+    await expectHalf(page);
     // No card floats over the globe (VENT-33): the pill carries the state, the ring marks the site.
     await expect(page.locator('.globe-callout')).toHaveCount(0);
     await expect(page.locator('.globe-markers')).toHaveAttribute('data-state', 'window');
@@ -116,10 +139,10 @@ test.describe('phone, 390x844', () => {
   test('dragging the sheet up reaches the site picker', async ({ page }) => {
     await open(page);
     await expect(page.locator('.widget')).toHaveCount(4);
-    await expect.poll(() => sheetTop(page)).toBe(HALF_TOP);
-    await page.mouse.move(195, HALF_TOP + 40);
+    const half = await expectHalf(page);
+    await page.mouse.move(195, half + 40);
     await page.mouse.down();
-    await page.mouse.move(195, HALF_TOP - 100, { steps: 8 });
+    await page.mouse.move(195, half - 100, { steps: 8 });
     await page.mouse.move(195, 200, { steps: 4 });
     await page.mouse.up();
     await expect(page.getByRole('heading', { name: 'Landing sites' })).toBeVisible();
@@ -135,7 +158,7 @@ test.describe('phone, 390x844', () => {
     const bar = await page.locator('.sheet__bar').boundingBox();
     expect([bar?.width, bar?.height]).toEqual([36, 5]);
     // The pill stays 12 px below the sheet's top edge, where the 24 px grabber had it.
-    expect(Math.round((bar?.y ?? 0) + 2.5 - HALF_TOP)).toBe(12);
+    expect(Math.round((bar?.y ?? 0) + 2.5 - (await expectHalf(page)))).toBe(12);
   });
 
   test('the grabber is a button that cycles the detents from the keyboard', async ({ page }) => {
@@ -185,7 +208,7 @@ test.describe('phone, 390x844', () => {
     await expect(page.locator('.widget').nth(3)).toContainText('No link');
     await expect(page.locator('[data-site-id="apollo11"]')).toHaveAttribute('aria-pressed', 'true');
     await expect(page.locator('.globe-markers')).toHaveAttribute('data-state', 'none');
-    await expect.poll(() => sheetTop(page)).toBe(HALF_TOP);
+    await expectHalf(page);
   });
 
   test('reaches the Mons Mouton zone that the globe hides under IM-2', async ({ page }) => {
@@ -249,7 +272,7 @@ test.describe('phone, 390x844', () => {
     // Playwright treats aria-disabled as disabled and would wait: the tap is forced, as a finger would.
     await horizon.click({ force: true });
     await expect(page.locator('.widget')).toHaveCount(4);
-    await expect.poll(() => sheetTop(page)).toBe(HALF_TOP);
+    await expectHalf(page);
     await expect(tabs(page).getByRole('button', { name: 'Calendar', exact: true })).not.toHaveAttribute('aria-disabled');
   });
 
@@ -408,10 +431,10 @@ test.describe('phone, 390x844', () => {
       page.on('pageerror', (e) => errors.push(e.message));
       page.on('console', (m) => m.type() === 'error' && errors.push(m.text()));
       await open(page);
-      await expect.poll(() => sheetTop(page)).toBe(HALF_TOP);
-      await page.mouse.move(195, HALF_TOP + 6);
+      const half = await expectHalf(page);
+      await page.mouse.move(195, half + 6);
       await page.mouse.down();
-      await page.mouse.move(195, HALF_TOP + 120, { steps: 6 });
+      await page.mouse.move(195, half + 120, { steps: 6 });
       await page.mouse.move(195, 840, { steps: 6 });
       await page.mouse.up();
       await expectClosed(page);
@@ -448,7 +471,7 @@ test.describe('phone, 390x844', () => {
       await tabs(page).getByRole('button', { name: 'Globe' }).click();
       await expectClosed(page);
       await dragUpFromTabBar(page);
-      await expect.poll(() => sheetTop(page)).toBe(HALF_TOP);
+      await expectHalf(page);
       await expect(page.locator('.widget')).toHaveCount(4);
       // The drag did not press the tab under the finger.
       await expect(page.getByRole('heading', { name: 'Landing sites' })).toHaveCount(0);
@@ -459,13 +482,13 @@ test.describe('phone, 390x844', () => {
 
     test('a drag up from the tab bar does nothing while the sheet is open', async ({ page }) => {
       await open(page);
-      await expect.poll(() => sheetTop(page)).toBe(HALF_TOP);
+      const half = await expectHalf(page);
       // Mid-drag, before the release: an edge drag would have carried the sheet up under the finger.
       await dragUpFromTabBar(page, { release: false });
-      expect(await sheetTop(page)).toBe(HALF_TOP);
+      expect(await sheetTop(page)).toBe(half);
       await page.mouse.up();
       await page.waitForTimeout(600);
-      expect(await sheetTop(page)).toBe(HALF_TOP);
+      expect(await sheetTop(page)).toBe(half);
       await expect(page.getByRole('heading', { name: 'Landing sites' })).toHaveCount(0);
     });
 
@@ -474,7 +497,7 @@ test.describe('phone, 390x844', () => {
       await open(page);
       const marker = page.locator('[data-site-id="im2-athena"]');
       await expect(marker).toBeVisible();
-      await expect.poll(() => sheetTop(page)).toBe(HALF_TOP);
+      await expectHalf(page);
       // Measure only once the globe has placed the marker: on a slow runner the first frame can still be moving it.
       const before = await settledBox(marker);
       await tabs(page).getByRole('button', { name: 'Globe' }).click();

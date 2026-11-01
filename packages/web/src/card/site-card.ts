@@ -50,17 +50,27 @@ export type CardModel =
       readonly source: string;
     };
 
+/** The source line's message, by whether computed and over terrain. */
+const SOURCE_KEYS = {
+  smooth: ['card.source', 'card.sourceComputed'],
+  terrain: ['card.sourceTerrain', 'card.sourceComputedTerrain'],
+} as const;
+
 /**
  * «November 2026 · JPL Horizons, 1 h step · Sun above 0°, Earth above
  * 3°»: the month counted, the data and the rules; «computed here» in
- * place of Horizons when the hours are the simulator's (VENT-36).
+ * place of Horizons when the hours are the simulator's (VENT-36). Where
+ * the hours were read against the terrain (VENT-40) the rule is «Sun
+ * and Earth over the terrain, Earth 3° up».
  */
 export function sourceLine(
   i18n: I18n,
   atMs: number,
   computed = false,
+  terrain = false,
 ): string {
-  return i18n.t(computed ? 'card.sourceComputed' : 'card.source', {
+  const keys = SOURCE_KEYS[terrain ? 'terrain' : 'smooth'];
+  return i18n.t(keys[computed ? 1 : 0], {
     month: monthLabel(i18n, atMs),
     sun: i18n.number(SUN_MIN_ELEVATION_DEG),
     earth: i18n.number(EARTH_MIN_ELEVATION_DEG),
@@ -84,6 +94,7 @@ export function siteCard(
   const rows = monthFacts(hours.hours, atMs, i18n);
   if (!rows) return { kind: 'error' };
   const { sun, earth } = widgets.widgets;
-  const source = sourceLine(i18n, atMs, computed);
+  const terrain = hours.hours.some((h) => h.sunAboveTerrain !== undefined);
+  const source = sourceLine(i18n, atMs, computed, terrain);
   return { kind: 'ready', sun, earth, rows, source };
 }

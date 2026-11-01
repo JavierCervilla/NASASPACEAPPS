@@ -34,6 +34,7 @@ import { monthStrip } from '../../calendar/month-strip';
 import type { Player } from '../../calendar/time-player';
 import type { TimeState, TimeStore } from '../../calendar/time-store';
 import type { HoursLoader } from '../../phone/hours-cache';
+import type { HorizonStore } from '../../horizon/horizon-store';
 import { monthDiff } from '../../calendar/month-diff';
 import { widgetRange } from '../../phone/widget-range';
 import { useSiteHours, type HoursParts } from '../use-site-hours';
@@ -97,6 +98,8 @@ export function useMonthHours(
 export interface CalendarParts extends HoursParts {
   readonly time: TimeStore;
   readonly player: Player;
+  /** Each site's terrain horizon (VENT-40). */
+  readonly horizons: HorizonStore;
 }
 
 /**

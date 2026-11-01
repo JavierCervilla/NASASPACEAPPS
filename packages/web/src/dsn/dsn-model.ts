@@ -46,6 +46,8 @@ export interface DsnModel extends DsnOutlook {
   readonly link: EarthLink | null;
   /** The Moon's elevation over the active complex, degrees. */
   readonly moonElDeg: number | null;
+  /** The Earth is up but the site's terrain hides it (VENT-40). */
+  readonly behindTerrain: boolean;
 }
 
 /**
@@ -64,5 +66,7 @@ export function dsnModel(
   const moonElDeg = active ? dsnElevations(atMs)[active] : null;
   const link =
     earthElDeg === null ? null : earthLink(earthElDeg, earthAboveTerrain);
-  return { ...outlook, atMs, link, moonElDeg };
+  const behindTerrain =
+    earthAboveTerrain === false && earthElDeg !== null && earthElDeg > 0;
+  return { ...outlook, atMs, link, moonElDeg, behindTerrain };
 }

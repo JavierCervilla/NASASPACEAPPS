@@ -31,7 +31,10 @@ epic: `VENT-1` (Dashboard project «Ventana Lunar», prefix `VENT`).
   profiles (`packages/sim/data/horizons.json`, observer 2 m, from `packages/server/scripts/terrain-horizons.ts`), held
   to NASA's AVGVISIB map by `tests/terrain-validation.test.ts`; the web applies them with the shadow
   (`src/source/shadowed-hours.ts`, `terrain-profiles.ts`) to both sources' hours. A custom point keeps the smooth
-  sphere until the web asks `/api/v1/horizon` (not wired yet).
+  sphere until `/api/v1/horizon` answers (`src/horizon/point-horizon.ts`, asked once per point by the horizon store,
+  `src/horizon/horizon-store.ts`, which hands out a new `TerrainOf` on every change so the views read the hours
+  again); on an error or a 503 it keeps the smooth sphere for good, and offline the service worker's API cache
+  applies.
 - **Backend** (`packages/server`, Node + Hono; decided 2026-10-29): one service on Dokploy serves all site data, for the
   curated sites and for custom coordinates. It queries JPL Horizons and caches the responses on disk, because Horizons
   is slow and rate limited and the spec wants answers in under 3 s. The browser never calls Horizons directly. It
@@ -255,11 +258,31 @@ Every visible change follows `.claude/skills/apple-design/SKILL.md` (vendored fr
   whose precision line already says «not a landing point»; «Crater floor · little Sun» and «NASA's maps give this
   point 11 % of the Sun on average.» for Cabeus B, with no override. The Sun's source joins the computed caption on
   one line (or stands alone with Horizons): «Sun from NASA's permanent-shadow map (LRO LOLA, Mazarico 2011)». The
-  phone's half sheet does not scroll, so it rises by the note's height and the gap before it
-  (`src/sheet/sheet-lift.ts`, `data-sheet-lift`), at any width and text size. For the Mooner session,
+  phone's half sheet does not scroll, so it rises (never under its 344 px) until the summary's lowest line
+  (`data-sheet-fit`, measured from the content's bottom) clears the tab bar by 12 px, at any width, language and text
+  size (`src/sheet/sheet-lift.ts`; at 200 % text on a phone it stops at the full detent). For the Mooner session,
   `packages/sim/data/psr-flags.json` lists every curated site south of 80° S with `{id, lat, lon, avgSun, psrShare,
   onPsrFloor}` and a provenance header; `packages/server/tests/sites.test.ts` holds `sites.json` to it. Held by
   `tests/e2e/shadow.spec.ts`.
+- **The real horizon in the interface** (VENT-40, canvas option B, the human's decision). Where the terrain decides,
+  the tiles say so (`src/phone/terrain-words.ts`): under the level a body reads «Sun 0.1° below level», and a second
+  line adds «Over the ridge» (a Sun seen under the level) or «Behind the terrain» (a body up but hidden; never a
+  feature the data cannot name, such as a crater rim); the DSN block's reason is «Behind the terrain» when the terrain,
+  not the 0° level, hides an Earth that is up (`dsn-model.ts` `behindTerrain`); and the card's rule becomes «Sun and
+  Earth over the terrain, Earth 3° up» once its hours were read against a profile (`card/site-card.ts`). The horizon
+  strip (`components/horizon/HorizonStrip.tsx`, pure parts in `src/horizon/`): under the desktop card's two tiles and
+  over the phone sheet's widgets, the site's whole horizon with north in the centre (S W N E S, `strip-scale.ts`), the
+  LOLA skyline in neutral line art over the dashed level, stretched by the «Height ×N» it states (degrees per px across
+  over degrees per px up), the Sun and the Earth of the hour the views show at the shared instant (`hour-sky.ts`, so
+  the strip never disagrees with the tiles) in their signal colours, dimmed under the skyline and labelled «· hidden»
+  where it hides them (`strip-marks.ts`), and its source in the foot: «LOLA terrain (NASA LRO), 20 m» (the shipped
+  profiles' near band, `SHIPPED_RESOLUTION_M`; a fetched one's finest tier), «Smooth horizon · real terrain loading»
+  while a custom point's comes, «Smooth horizon» with «Real terrain unavailable here» when it cannot, «Smooth horizon»
+  alone for a listed site north of 80° S. The SVG fills a box the component measures (`use-horizon.ts`), so nothing
+  sets a style attribute (CSP); its text alternative says which way each body is, on eight points of the compass, and
+  whether the terrain hides it (`horizon-alt.ts`). Styles in `src/styles/horizon.css` (light theme and more contrast
+  included). Held by `tests/e2e/horizon.spec.ts` (IM-2 on the ridge on 2026-11-30 20:00 UTC, Haworth's hidden Earth on
+  2026-11-22 20:00 UTC, the pin with a stubbed `/api/v1/horizon`, the sheet's fit) and `tests/horizon-strip.test.ts`.
 - **DSN mode** (VENT-7, canvases «DsnA» and «DsnC», approved A + C, no DSN row in the calendar, «No link» first, to
   the minute). The complex listening is the simulator's (`activeDsn` over `moonElevationFromDsn` for the three
   `DSN_SITES`), worked out once per UTC day as minute-aligned spans (`packages/sim/src/dsn-timeline.ts`: sampled every
@@ -337,7 +360,7 @@ Every visible change follows `.claude/skills/apple-design/SKILL.md` (vendored fr
   `favicon.ico`, `favicon.svg` and the root `apple-touch-icon.png`), fetched past the HTTP cache (`cache: 'reload'`),
   and the build's digest over every file the worker may keep, which names the static cache (`ventana-static-<digest>`),
   so a deploy drops the old one. The install set has a hard budget of 5 MB (`PRECACHE_BUDGET`, human decision
-  2026-10-31): the build logs the precache total and fails over it (4.63 MB with VENT-39's shadow notes; 4.57 MB with VENT-37's saved sites; 4.52 MB when it left the astronaut's sprites out, 4.60 MB with them). The 4K and 8K maps, and any build file not
+  2026-10-31): the build logs the precache total and fails over it (4.68 MB with VENT-40's horizon strip; 4.63 MB with VENT-39's shadow notes; 4.57 MB with VENT-37's saved sites; 4.52 MB when it left the astronaut's sprites out, 4.60 MB with them). The 4K and 8K maps, and any build file not
   precached, are kept cache first the first time the page fetches them. Under Save-Data the worker is not registered
   at all. Pages and API GETs are network first,
   build files cache first; the network's answer always wins (a copy that cannot be kept, a full quota, is skipped), only

@@ -203,7 +203,7 @@
       "id": "sitecard",
       "type": "frontend",
       "label": "Site card",
-      "sublabel": "countdowns + month",
+      "sublabel": "countdowns + horizon",
       "pos": [
         520,
         680

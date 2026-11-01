@@ -44,6 +44,11 @@ export interface BodyWidget {
   readonly value: string;
   /** «Sun 6.4° up». */
   readonly detail: string;
+  /**
+   * Where the terrain decides (VENT-40): «Over the ridge» or «Behind the
+   * terrain»; absent elsewhere.
+   */
+  readonly terrain?: string;
 }
 
 export interface SiteWidgets {

@@ -26,7 +26,8 @@
 /**
  * Two-finger pinch to zoom, with Pointer Events: the zoom follows the
  * change of distance between the fingers, 1:1 (apple-design §2). The drag
- * gesture steps aside when the second finger lands (drag.ts).
+ * gesture steps aside when the second finger lands (drag.ts). A move
+ * already handled (a finger holding the pin) does not zoom.
  */
 
 type PointerType =
@@ -64,7 +65,7 @@ class PinchTracker {
 
   /** A finger moves: the zoom follows the new spread. */
   move(event: PointerEvent): void {
-    if (!this.points.has(event.pointerId)) return;
+    if (!this.points.has(event.pointerId) || event.defaultPrevented) return;
     const point = { x: event.clientX, y: event.clientY };
     this.points.set(event.pointerId, point);
     const next = spreadOf(this.points);

@@ -45,8 +45,8 @@ Every visible change follows `.claude/skills/apple-design/SKILL.md` (vendored fr
   a transparent tap highlight (`src/styles/global.css`), so a long press selects no text (no Android search panel)
   and opens no iOS callout; images are not draggable. Selectable again: text fields (`input` other than range,
   `textarea`) and the coordinates (`.card-head__point`, `.summary__coords`), the one datum worth pasting elsewhere.
-  The astronaut's dock and standing figure refuse the context menu, so a long press stays the start of a carry
-  (`no-context-menu.ts`). Held by `tests/e2e/app-feel.spec.ts`.
+  The pin refuses the context menu, so a long press stays the start of a carry (`no-context-menu.ts`), and so does the
+  Moon while a finger is down on it (`src/pin/place-gesture.ts`). Held by `tests/e2e/app-feel.spec.ts`.
 - Must run on a laptop without a dedicated GPU (globe: 64-segment sphere, 2K texture to start, LOLA relief as a normal
   map; sharper maps load only as the zoom needs them: 4K, then 8K on the high tier, see `src/globe/texture-lod.ts`).
   Phones (below 768 px): the globe fills the screen at the low or medium tier (1K texture, up to 4K on zoom, pixel ratio
@@ -118,54 +118,112 @@ Every visible change follows `.claude/skills/apple-design/SKILL.md` (vendored fr
   and again from the first press, since an idle page redraws nothing under the glass); a slow probe switches to frosted
   live and for the session. `?glass=liquid|frosted` forces a mode, except that `?glass=liquid` never overrides
   reduced transparency or more contrast.
-- **The astronaut** (VENT-10, canvas «Astro A + B»): NASA's «Astronaut» model (`packages/web/models/astronaut.glb` and
-  its suit texture beside it, `astronaut-suit.webp`, built by `packages/web/scripts/astronaut.mjs`: arms lowered, the
-  NASA insignia and the mission patch covered with fabric (the US flags stay), materials `suit` and `visor`) is a build
-  input only, never shipped: `scripts/astronaut-figures.mjs` bakes it offline, in Playwright's Chromium pinned to
-  SwiftShader (byte-stable; `--check` re-bakes and compares), into one lossless sprite sheet,
-  `src/astronaut/figures.webp` (77 kB, manifest `figures.json`, held by `tests/astronaut-figures.test.ts`): two poses
-  (rows) times five visor colours (columns: silver and the four signal colours, theme-independent). The page has no
-  runtime renderer for it: `Figure.tsx` shows a cell of the sheet as a CSS background (`styles/astronaut.css` picks it
-  by `data-pose` and `data-visor`; the sheet is a hashed `_astro/` file), before hydration and under Save-Data a plain
-  silhouette, so the figure costs no draw call and no CPU while the globe starts. It is drawn smaller than its cells
-  (VENT-38): 36 px tall docked, 70 px carried, 46 px standing, whose button stays 44 px wide around it. Its dock ends
-  the desktop Layers key («Drag me anywhere») and is a round glass button beside the phone's tab bar
-  (`src/components/astronaut/`). A press lifts it (Pointer
-  Events with capture; the feet keep the grab offset, at least 64 px above a finger); it leans with the hand's speed,
-  with its shadow, a crosshair on the drop point and a readout of the point and its state at the shared instant
-  (`skyAt`, one instant per move, `src/astronaut/sky-state.ts`); the visor wears that state, neutral silver at home and
-  off the Moon. The drop surfaces register themselves (`src/astronaut/surfaces.ts`): the globe (a ray from the camera
-  to the sphere, `src/globe/globe-view.ts`) and the polar disk (inverse projection, `src/astronaut/polar-surface.ts`);
-  a point belongs to the surface whose element is under it, so a floating panel is never the Moon. The point under
-  the crosshair is read again whenever the Moon moves under a still pointer (the surfaces tell their drawn frames
-  through `Surfaces.subscribe`, bound only while a carry listens (`surface-moves.ts`), and `carrier.ts` re-picks on
-  each: a wheel zoom or a second finger mid-drag, the phone
-  sheet re-framing the globe, a resize), and the drop reads it once more where the pointer is when let go
-  (`carry-session.ts` `release()`), so readout, visor, drop, address and the Horizons request name one point. Off the Moon the
-  readout says «Off the Moon · Let go and it walks home» and on release it walks back on critically damped springs
-  from the hand's velocity; Escape cancels. On the phone the sheet drops to peek while it is carried, and opens at half
-  on a drop. Where the phone dock wraps above the tab bar (360 px, large text) half and peek rise by as much, so the
-  dock never covers what they show (`src/sheet/sheet-mount.ts`). Dropped, the point (snapped to the server's 0.01°
-  grid, `src/astronaut/custom-point.ts`) becomes the selected site under an id that carries it (`@-85.87,61.34`):
-  «Custom point», «Near <nearest listed site> · N km»
-  (great circle, `src/astronaut/nearest-site.ts`; of sites within 0.5 km of the nearest, the shortest name; no
-  subtitle when no listed site has coordinates), computed at once and then from `/api/v1/ephemeris?lat&lon`
-  (`src/astronaut/point-hours.ts`), and it stands there (`StandingAstronaut.tsx`, placed after every globe frame), to
-  be lifted again; the dock says «On the Moon» and a click (a tap under `(pointer: coarse)`, by CSS) brings it home
-  and reselects the listed site chosen before. On the polar map the site labels and number badges paint over the
-  standing figure (z-index 5 over 4), so a name beside it stays readable. The address carries the point,
-  `?lat=…&lon=…` beside `?site=` (`src/astronaut/point-param.ts`: plain decimals only, latitude within ±90°, east
-  longitude from -180° to 360° like the API, wrapped; anything else is ignored, never clamped), so it is shareable
-  and reloads; picking a listed site takes the point out again and moves an existing `?site=` to that site
-  (`src/astronaut/places.ts`), so a reload opens what is shown. Keyboard: Enter on the dock (or on the standing
-  figure) lifts it over the selected site, the arrows move it in screen steps (Shift: bigger), Enter drops, Escape
+- **The pin** (VENT-37, canvas «Pin C»; it replaced VENT-10's astronaut as the way to pick a point, the human's
+  decision: the astronaut did not look professional as a selector): a ring with a dot at its centre, the exact point,
+  and no stem; a solid ring and its dot always tell it from an approximate zone's dashed ring. Placing it
+  (`src/pin/place-gesture.ts`, bound on each drop surface's element): a click on the globe or the polar disk drops it
+  on the point under it (a mouse or a pen); a finger held still for 450 ms (`HOLD_MS`, `src/pin/place-press.ts`) lifts
+  it under the finger, to drop in place or drag on, where it rides 64 px above the finger once the finger travels
+  (`heldOffset`, `src/pin/carry-geometry.ts`). A press that travels 4 px or more turns the globe and drops no pin (one
+  constant and one comparison for both, `PRESS_SLOP_PX` and `pastSlop` in `src/lib/press-slop.ts`), and a short tap
+  does nothing; a press on a globe still coasting from a flick stops it where it is, like Maps, and drops or lifts no
+  pin (`src/globe/flick-coast.ts`: the globe marks that `pointerdown` handled); a press on a site marker or a button is theirs (the marker wins); a second finger is a pinch. Once a
+  held pin is lifted, the finger's moves are marked handled (`preventDefault` in the capture phase), so the globe's
+  drag and pinch (`src/globe/drag.ts`, `pinch.ts`) skip them, and the context menu is refused while a finger is down.
+  The standing pin (`src/components/pin/StandingPin.tsx`, placed after every globe frame) is a 44 px button: a press
+  lifts it again (Pointer Events with capture, 1:1 from where it was grabbed, at least 64 px above a finger); its dot
+  wears the state at the shared instant in its colour, hollow while the state is the simulator's, with the state's
+  ring around it pulsing as on a selected marker (2.4 s; still under reduced motion); each drop plays a short fall on
+  a critically damped spring (CSS `linear()`, none under reduced motion). Carried (`CarryLayer.tsx`), it is a larger
+  ring with the readout beside it, the point and its state (`skyAt`, one instant per move, `src/pin/sky-state.ts`), or
+  «Off the Moon · Let go to cancel», and it springs back on critically damped springs from the hand's velocity;
+  Escape cancels. The drop surfaces register themselves (`src/pin/surfaces.ts`): the globe (a ray from the camera to
+  the sphere, `src/globe/globe-view.ts`) and the polar disk (inverse projection, `src/pin/polar-surface.ts`); a point
+  belongs to the surface whose element is under it, so a floating panel is never the Moon. The point under the pin is
+  read again whenever the Moon moves under a still pointer (the surfaces tell their drawn frames through
+  `Surfaces.subscribe`, bound only while a carry listens (`surface-moves.ts`), and `carrier.ts` re-picks on each: a
+  wheel zoom or a second finger mid-drag, the phone sheet re-framing the globe, a resize), and the drop reads it once
+  more where the pointer is when let go (`carry-session.ts` `release()`), so readout, pin, drop, address and the
+  Horizons request name one point. On the phone the sheet drops to peek while the standing pin is carried (not for a
+  held finger, which already chose its point: a moving sheet would re-frame the globe under it), and opens at half on
+  a drop. Dropped, the point (snapped to the server's 0.01° grid, `src/pin/custom-point.ts`) becomes the selected
+  site under an id that carries it (`@-85.87,61.34`): «Custom point», «Near <nearest listed site> · N km» (great
+  circle, `src/pin/nearest-site.ts`; of sites within 0.5 km of the nearest, the shortest name; no subtitle when no
+  listed site has coordinates), «… · pinned here», computed at once and then from `/api/v1/ephemeris?lat&lon`
+  (`src/pin/point-hours.ts`). On the polar map the site labels and number badges paint over the pin (z-index 5 over
+  4), and a label across the pin's ring keeps its place on a dark backing (`labelsOverPins`,
+  `src/polar/label-layout.ts`; VENT-37), so a name beside it stays readable. The address carries the point, `?lat=…&lon=…` beside `?site=`
+  (`src/pin/point-param.ts`: plain decimals only, latitude within ±90°, east longitude from -180° to 360° like the API,
+  wrapped; anything else is ignored, never clamped), so it is shareable and reloads; picking a listed site (in the
+  list or on a marker) takes the pin away and the point out of the address, and moves an existing `?site=` to that
+  site (`src/pin/places.ts`), so a reload opens what is shown. «Drop a pin» (`DropPin.tsx`) ends the desktop Layers
+  key and heads the phone's Sites sheet: a click drops the pin at once on the selected site (or mid view); Enter or
+  Space lifts it there for the keyboard, the arrows move it in screen steps (Shift: bigger), Enter drops, Escape
   cancels, and a polite live region says each step; the drop says where it landed and how to move it again (Enter on
-  the standing figure), while the focus stays on the dock, which then brings it home. Reduced motion: upright, no lean, a fade instead of the walk. The
-  desktop Layers key is a 17rem column (`--layers-w`) clear of the globe's Moon, and the polar disk is fitted beside
-  the keys in its panel (`src/polar/disk-fit.ts`). The Moon's maps are sampled by sphere point, not by the vertices'
-  UVs (`src/globe/pole-uv.ts`), so the south pole shows no star; its gradient choices (the 180° seam, the polar cap)
-  are scalar GLSL (`GRADIENT_GLSL`) that `tests/globe-pole.test.ts` runs as JavaScript. A site card without an image shows its state badge in
-  its head.
+  the pin), while the focus stays on the button. The first-time hint (`PinHint.tsx`, `src/pin/first-hint.ts`): «Click
+  the Moon to drop a pin», or «Touch and hold the Moon to drop a pin» under `(pointer: coarse)` (by CSS), over the
+  globe and in the polar panel's corner on desktop, under the top bar on phones (measured); on desktop it keeps to the room
+  right of the Layers key's column (in rem, so it holds at 200 % text), centred over the globe and in the polar
+  panel's top right corner, so it never covers the key; gone after the first drop
+  or its ✕, kept in `localStorage` (`ventana.pinHint`, refused storage only brings it back next visit). The
+  astronaut's assets stay for VENT-34, where it comes back (dropped, it takes you to the 3D terrain), and nothing in
+  the page imports them, so none ships: NASA's «Astronaut» model (`packages/web/models/astronaut.glb` and its suit
+  texture `astronaut-suit.webp`, built by `packages/web/scripts/astronaut.mjs`: arms lowered, the NASA insignia and
+  the mission patch covered with fabric, the US flags kept) and its offline bake, `scripts/astronaut-figures.mjs`
+  (Playwright's Chromium pinned to SwiftShader, byte-stable; `--check` re-bakes and compares), into the lossless
+  sprite sheet `src/astronaut/figures.webp` (77 kB, manifest `figures.json`, held by
+  `tests/astronaut-figures.test.ts`): two poses times five visor colours. The desktop Layers key is a 17rem column
+  (`--layers-w`) clear of the globe's Moon, and the polar disk is fitted beside the keys in its panel
+  (`src/polar/disk-fit.ts`). The Moon's maps are sampled by sphere point, not by the vertices' UVs
+  (`src/globe/pole-uv.ts`), so the south pole shows no star; its gradient choices (the 180° seam, the polar cap) are
+  scalar GLSL (`GRADIENT_GLSL`) that `tests/globe-pole.test.ts` runs as JavaScript. A site card without an image shows
+  its state badge in its head.
+- **Globe layers and saved sites** (VENT-37 part 2, canvases «Layers», «Save A», «Saved list», «DeleteUndo»,
+  «Empty»). The globe draws through a layer registry (`src/globe/layers/`, API and example for other teams in
+  `docs/globe-layers.md`): `createLayerRegistry` (pure: register with an id, a `z` and a visible flag, unregister,
+  `setVisible`, `isVisible`, `list` by `z`, `subscribe`), owned by the page and passed to the globe, which mounts it
+  from its first frame (`bind.ts`: one root per layer over the canvas, in `z` order, hidden while the layer is, each
+  its own stacking context at z-index 0) and registers the two site layers on it (`site-layers.ts`: «Landing sites»
+  and «Approximate zones» show or hide their kind on the one marker layer, which keeps its cull and nearest-dot
+  clicks; the selected site's marker always shows). `pointLayer` (`point-layer.ts`) draws a layer's points as 44 px
+  buttons (`.globe-point`), hidden behind the limb, a click routed to the point nearest the pointer. The flags are
+  kept in `localStorage` (`ventana.layers`, read defensively by `kept-flags.ts`; each write starts from what storage
+  holds, and another tab's switch is taken in on the `storage` event, `applyFlags`) and the polar map follows them
+  (`components/polar/use-polar-layers.ts`). The Layers key is switches (`components/saved/LayerToggles.tsx`: a
+  checkbox with `role="switch"` per row, its key mark, the whole row its label; neutral track, never a signal colour):
+  «Landing sites», «Approximate zones», «Saved sites N», «Ghost rovers · soon» off and disabled; on desktop in the key
+  (which scrolls when taller than its view), on phones as a «Layers» group in the Sites sheet, where an empty «Saved
+  sites» row says «Drop a pin on the Moon and tap Save to keep a site here». Saving (option A,
+  `components/saved/SaveControl.tsx`): «Save» with a bookmark in the head of the desktop card and of the phone sheet
+  for a custom point; saved it reads «Saved» (bookmark filled; a press deletes it, with the undo) and a «Name this
+  site» field, starting from «Near …», with «Kept on this device only». The saved sites (`src/saved/`) are a versioned
+  document in `localStorage` (`ventana.savedSites`, `{ v: 1, sites }`), every entry checked on read and a bad one
+  dropped alone (`saved-schema.ts`: id = its point's grid id, `@-85.87,61.34`, so stable and one per point; name
+  cleaned of control and format characters (bidi overrides, zero-width marks), at most 60), newest first, at most 50
+  (`SAVED_CAP`; a full list says so instead of saving; entries past it from older storage are all read and shown,
+  never dropped on a write). Every change starts from what storage holds then, merged by id, and another tab's change
+  is taken in on the `storage` event (`refresh`, `src/lib/storage-events.ts`), so two tabs never overwrite each
+  other. A saved site is
+  the custom point under its name: `selectedSite(…, savedName)` names it, «Saved · near Nobile Rim 1 · 26 km» and «…
+  saved on this device»; the address carries only `?lat&lon` (names stay on the device), and selecting a custom id in
+  any way stands the pin there (`src/pin/places.ts`). The «Saved sites» layer (`components/saved/use-saved-layer.ts`)
+  draws them as silver pins C, smaller, on the globe and the polar map (`PolarSaved.tsx`); the selected one is the
+  standing pin, in its state. The site lists (phone Sites sheet, desktop popover, `SitePicker.tsx`) gain a «Saved N»
+  segment (`PickerRegions.tsx`), opened when a saved site is selected: rows with the pin, the name, the state at the
+  shared instant with its dot, the point and the check on the selected one, and a «…» menu (`RowMenu.tsx`, a WAI-ARIA
+  menu in the browser's popover, on the top layer: Rename in place, Copy coordinates, said in the live region,
+  Delete). A delete asks nothing: «Deleted <name> · Undo» (`UndoToast.tsx`, polite live region, 5 s, the time stopped
+  while the focus or the pointer is on it; `src/saved/undo.ts`) puts it back where it was. Deletes in a row join one
+  offer, «Deleted 2 sites», whose Undo puts every one back at its index. A delete from the keyboard sends the focus to
+  Undo; Undo then focuses the site put back and Escape lets the offer go and focuses the row in its place
+  (`undo-parts.ts`). Pressing Undo leaves the desktop site popover open: on pointerdown the button becomes a «show»
+  invoker of the open popover, so the browser's light dismiss counts it as inside. On desktop a long name is cut with an
+  ellipsis in the header's site button (13em; its place line 18em), whole in its accessible name and `title`, so the
+  header keeps one row at 1280 px; a row's point never wraps (`.saved-row__coords`). With none saved the segment
+  shows «No saved sites yet» and how to save one. An unsaved custom point heads the other lists, checked, so the
+  selection is always marked. Under the picker's title everything scrolls as one (`.picker__scroll`), so the phone
+  sheet's settings never squeeze the list. The site popover opens and closes its list only on its own toggle, not on
+  a nested menu's.
 - **Five interface languages** (VENT-35): English (the default and the fallback), Spanish, French, German and Italian,
   each on its own static route (`/`, `/es/`, `/fr/`, `/de/`, `/it/`; `pages/[locale]/index.astro`) with `<html lang>`,
   `hreflang` links and `x-default` → `/`. This replaces the Language rule below for the interface only: every word a
@@ -205,10 +263,10 @@ Every visible change follows `.claude/skills/apple-design/SKILL.md` (vendored fr
 - **Offline**: `scripts/service-worker.mjs` (an Astro integration) bundles `src/pwa/sw-worker.ts` into `dist/sw.js`
   after every build, with the files it caches at install, the whole offline set (every locale's page except `/en-xa/`,
   `_astro/`, the manifests, `icons/` with the 30 phase frames, every site thumbnail, the 1K and 2K maps, the polar map,
-  `favicon.ico`, `favicon.svg` and the root `apple-touch-icon.png`; the astronaut's sprite sheet is in `_astro/`), fetched past the HTTP cache (`cache: 'reload'`),
+  `favicon.ico`, `favicon.svg` and the root `apple-touch-icon.png`), fetched past the HTTP cache (`cache: 'reload'`),
   and the build's digest over every file the worker may keep, which names the static cache (`ventana-static-<digest>`),
   so a deploy drops the old one. The install set has a hard budget of 5 MB (`PRECACHE_BUDGET`, human decision
-  2026-10-31): the build logs the precache total and fails over it (4.60 MB with the astronaut's baked sprites, VENT-10). The 4K and 8K maps, and any build file not
+  2026-10-31): the build logs the precache total and fails over it (4.57 MB with VENT-37's saved sites; 4.52 MB when it left the astronaut's sprites out, 4.60 MB with them). The 4K and 8K maps, and any build file not
   precached, are kept cache first the first time the page fetches them. Under Save-Data the worker is not registered
   at all. Pages and API GETs are network first,
   build files cache first; the network's answer always wins (a copy that cannot be kept, a full quota, is skipped), only

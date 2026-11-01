@@ -32,13 +32,21 @@
  * overlap, a click goes to the dot nearest the pointer (marker-hit.ts).
  * Sites that share a point share one marker. The selected site's marker
  * wears a pulsing ring, hidden with its marker, and both take the
- * colour of its state at the selected instant.
+ * colour of its state at the selected instant. Each kind of marker (exact
+ * point, approximate zone) can be hidden as a whole, its globe layer
+ * switched off (VENT-37, layers/site-layers.ts); the selected site's
+ * marker always shows, so the ring never loses its marker.
  */
 import { isFacing, latLonToVector, type Vec3 } from './geo';
 import { markerButton } from './marker-button';
-import { cullZones } from './marker-cull';
+import { cullZones, inLayers } from './marker-cull';
 import { pickedSite, type PlacedMarker } from './marker-hit';
-import { mergeColocated, type GlobeSite, type MarkerSite } from './markers';
+import {
+  mergeColocated,
+  type GlobeSite,
+  type MarkerKind,
+  type MarkerSite,
+} from './markers';
 
 /** Screen position, in px from the host's top left, of a globe point. */
 export type Projector = (point: Vec3) => { x: number; y: number };
@@ -52,6 +60,11 @@ interface Marker {
 export class MarkerLayer {
   private markers: Marker[] = [];
   private selected: string | null;
+  /**
+   * The kinds whose markers show, from the next frame; the selected one
+   * shows regardless (its layer's switch, layers/site-layers.ts).
+   */
+  readonly kinds = new Set<MarkerKind>(['exact', 'zone']);
   /** The markers shown at the last frame, where a click is routed. */
   private placed: PlacedMarker[] = [];
   /**
@@ -118,7 +131,7 @@ export class MarkerLayer {
 
   /** Moves every marker and the ring to where `project` puts them. */
   place(project: Projector, eye: Vec3): void {
-    const facing = this.markers
+    const facing = inLayers(this.markers, this.kinds, this.selected)
       .filter(({ point }) => isFacing(point, eye))
       .map((marker) => ({
         marker,

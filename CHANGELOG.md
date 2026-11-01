@@ -3,6 +3,35 @@
 ## [Sin publicar]
 
 ### Añadido
+- Capas del globo como interruptores y sitios guardados (VENT-37, parte 2; opciones del lienzo aprobadas por Javier).
+  La leyenda «Layers» del PC y un grupo «Layers» nuevo en la hoja «Sites» del móvil son ahora interruptores, cada uno
+  con su marca: «Landing sites», «Approximate zones», «Saved sites» con cuántos hay y «Ghost rovers · soon» apagado.
+  Apagar una capa quita sus marcadores del globo y del mapa polar (el sitio elegido siempre se ve) y se recuerda en el
+  dispositivo. Con un pin puesto, «Save» (con un marcador de libro) en la ficha del PC y en la cabecera de la hoja del
+  móvil lo guarda: pasa a «Saved», con un campo «Name this site» que empieza en «Near …» y la nota «Kept on this device
+  only»; se guardan hasta 50, solo en el dispositivo y sin cuenta. Los guardados se ven como pines plateados más
+  pequeños en el globo y en el mapa polar, y la lista de sitios (hoja del móvil y desplegable del PC) tiene una
+  pestaña «Saved N» con su estado, coordenadas y un menú «…» para renombrar, copiar las coordenadas o borrar; borrar
+  no pregunta y ofrece «Deleted … · Undo» durante cinco segundos. Sin guardados, la pestaña explica cómo guardar uno.
+  La lista marca ahora el punto propio o guardado elegido, las etiquetas del mapa polar ya no se pisan con el aro del
+  pin, y con el texto al 200 % la pista de la primera vez ya no tapa la leyenda «Layers». Para el equipo Mooner, una
+  API de capas del globo (añadir, quitar, mostrar, ocultar y ordenar capas de puntos o de objetos 3D), sin interfaz de
+  Ventana dentro y documentada con un ejemplo en `docs/globe-layers.md`. En los cinco idiomas.
+- Pin para elegir cualquier punto de la Luna (VENT-37, parte 1; pin «C» del lienzo, elegido por Javier): un aro con un
+  punto en el centro, que es el punto exacto, sin mástil, y que nunca se confunde con las zonas aproximadas (aro
+  discontinuo sin punto). En el PC basta un clic en el globo o en el mapa polar; en el móvil, mantener el dedo quieto
+  sobre la Luna medio segundo lo levanta bajo el dedo, y se suelta ahí mismo o se arrastra (sube por encima del dedo
+  para que se vea el punto). Un toque corto o un arrastre siguen girando el globo y un clic en un sitio sigue
+  eligiéndolo. Una vez puesto, el pin se vuelve a coger y se arrastra con la etiqueta de coordenadas y estado en vivo;
+  fuera de la Luna dice «Off the Moon · Let go to cancel» y vuelve con un muelle sin rebote, y Esc cancela. Su punto
+  central toma el color del estado (hueco mientras es el cálculo propio, relleno cuando llega Horizons) con el aro de
+  estado alrededor, como el sitio elegido, y al caer baja con un muelle corto (sin animación con movimiento reducido).
+  Todo lo del punto propio se mantiene: «Custom point», «Near …», la dirección `?lat&lon`, Horizons y la lectura en
+  la ficha («pinned here»). Elegir un sitio de la lista o del globo quita el pin. Para teclado y lector de pantalla,
+  «Drop a pin» al final de la leyenda «Layers» del PC y arriba de la hoja «Sites» del móvil: un clic lo pone en el
+  sitio elegido; con Intro se mueve con las flechas e Intro lo suelta, anunciado en voz alta. La primera vez, una
+  línea lo explica («Click the Moon to drop a pin» en el PC, «Touch and hold the Moon to drop a pin» en el móvil) y
+  desaparece con su ✕ o al poner el primer pin, para siempre en ese dispositivo. En los cinco idiomas.
 - Sensación de app (VENT-38, petición de Javier): mantener pulsado el título, la cápsula del sitio, la hoja, las
   tarjetas o cualquier otra parte de la interfaz ya no selecciona texto ni abre la búsqueda de Google en Android ni el
   menú de iOS, y tocar no deja destello azul. Siguen seleccionables el campo de búsqueda de sitios y las coordenadas
@@ -223,6 +252,10 @@
 - Imágenes Docker fijadas por digest, acciones del CI fijadas por commit y descargas verificadas con su checksum.
 
 ### Cambiado
+- El astronauta deja de ser el selector de puntos (VENT-37, decisión de Javier: «no queda profesional como
+  selector»): se van su hueco en la leyenda «Layers» y su botón junto a la barra de pestañas del móvil, y con ellos la
+  subida de la hoja a 360 px que los esquivaba. El modelo y su hoja de figuras se quedan en el repositorio para
+  VENT-34, donde vuelve; ya no se descargan (la instalación sin conexión baja de 4,60 a 4,52 MB).
 - Fuera la tarjeta flotante del globo (VENT-33, lienzos «PillStateP1…», «SheetThumbD», «DeskThumbH1440» y
   «DeskThumbH1280», tras la auditoría de UX): tapaba entre el 18 % y el 32 % de la Luna, repetía el nombre y el estado y
   no se podía pulsar. En el móvil, la píldora del sitio de la barra superior lleva el nombre corto en la primera línea
@@ -260,6 +293,16 @@
   comprobada en el lint.
 
 ### Corregido
+- Sitios guardados (VENT-37, revisión del Guardián). Dos pestañas abiertas ya no se pisan: guardar, renombrar o borrar
+  en una conserva lo hecho en la otra, y cada pestaña se pone al día sola, también con las capas encendidas o
+  apagadas. Borrar varios seguidos ofrece deshacerlos todos juntos («Deleted 2 sites · Undo») y cada uno vuelve a su
+  sitio. Quien borra con el teclado llega a «Undo» sin buscarlo (el foco va ahí y el tiempo se para mientras está), y
+  Esc lo descarta y vuelve a la lista. Pulsar «Undo» ya no cierra el desplegable de sitios del PC. Un nombre largo se
+  corta con puntos suspensivos en el botón de sitio y la cabecera del PC no salta a dos filas; las coordenadas de la
+  lista no dejan una «W» sola en otra línea. Una lista de más de 50 guardados de una versión anterior se ve entera y
+  ya no pierde ninguno al guardar. Los nombres ya no admiten caracteres invisibles de dirección de texto.
+- Pin (VENT-37): un clic sobre el globo que aún gira por inercia lo para, como en Mapas, sin soltar un pin; y un
+  movimiento de justo 4 px gira el globo sin soltar también un pin.
 - El astronauta caía en un punto que ya no estaba bajo la cruz (VENT-10, hallazgos de qa-adversario): el punto solo se
   leía al mover el puntero, así que si la Luna se movía bajo un dedo o un ratón quietos (la hoja del móvil bajando a
   reposo y el globo reencuadrándose, la rueda haciendo zoom mientras se arrastra, un segundo dedo girando el globo o

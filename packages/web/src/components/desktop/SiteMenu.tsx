@@ -91,6 +91,7 @@ function SiteButton(props: Props & { readonly popover: Anchor }) {
       className="site-button"
       popoverTarget={POPOVER_ID}
       aria-label={i18n.t(label, { name })}
+      title={name}
       onClick={(e) => anchorUnder(e.currentTarget, popover.current)}
     >
       <span className="signal-dot" data-state={state ?? 'loading'} data-computed={computed} />
@@ -103,7 +104,9 @@ function SiteButton(props: Props & { readonly popover: Anchor }) {
 
 /**
  * The popover, holding the picker only while open: each opening starts
- * with an empty search on the selected site's region.
+ * with an empty search on the selected site's region. A saved site's «…»
+ * menu inside is a popover too (VENT-37), whose toggle React passes up
+ * here: only the popover's own opens and closes the picker.
  */
 function SitePopover(props: Props & { readonly popover: Anchor }) {
   const { popover, sites, site, state } = props;
@@ -123,7 +126,7 @@ function SitePopover(props: Props & { readonly popover: Anchor }) {
       popover="auto"
       role="dialog"
       aria-label={t('site.choose')}
-      onToggle={(e) => setOpen(e.newState === 'open')}
+      onToggle={(e) => e.target === e.currentTarget && setOpen(e.newState === 'open')}
     >
       {open ? <SitePicker {...picker} /> : null}
     </div>

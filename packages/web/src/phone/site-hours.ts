@@ -29,8 +29,8 @@
  * compute the rest with `@ventana/sim`.
  */
 import type { DsnComplex, HourSample } from '@ventana/sim';
-import { customPointOf } from '../astronaut/custom-point';
-import { asSiteBody, pointHoursUrl } from '../astronaut/point-hours';
+import { customPointOf } from '../pin/custom-point';
+import { asSiteBody, pointHoursUrl } from '../pin/point-hours';
 import { isSiteId, tooLarge } from '../lib/api-limits';
 import type { WidgetRange } from './widget-range';
 

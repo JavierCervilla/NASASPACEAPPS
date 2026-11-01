@@ -420,19 +420,14 @@ for (const viewport of [
         .filter({ hasText: 'Horizons unavailable: showing the computed sky' })
         .getByRole('button', { name: 'Try again' });
 
-    /**
-     * The retry's box is clear of the tab bar, of the astronaut's dock (which wraps above the bar on a narrow phone or
-     * with large text, VENT-10) and of the screen's bottom, and a tap lands on it.
-     */
+    /** The retry's box is clear of the tab bar and the screen's bottom, and a tap lands on it. */
     async function expectReachable(page: Page): Promise<void> {
       const retry = retryIn(page);
       await expect(retry).toBeInViewport({ ratio: 1 });
       const tabs = page.getByRole('navigation', { name: 'Views' });
-      const dock = page.locator('.astro-phone-dock');
       await expect.poll(async () => {
         const box = (await retry.boundingBox())!;
-        const foot = Math.min((await tabs.boundingBox())!.y, (await dock.boundingBox())!.y);
-        return box.y + box.height <= foot;
+        return box.y + box.height <= (await tabs.boundingBox())!.y;
       }).toBe(true);
       expect(await hitAtCentre(retry)).toBe(true);
     }

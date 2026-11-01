@@ -231,12 +231,27 @@
       "tag": "luxury"
     },
     {
-      "id": "astronaut",
+      "id": "pin",
       "type": "frontend",
-      "label": "Apollo astronaut",
-      "sublabel": "drag to a custom point",
+      "label": "Pin",
+      "sublabel": "click: a custom point",
       "pos": [
         760,
+        110
+      ],
+      "size": [
+        140,
+        60
+      ],
+      "tag": "built"
+    },
+    {
+      "id": "layers",
+      "type": "frontend",
+      "label": "Globe layers",
+      "sublabel": "registry + saved sites",
+      "pos": [
+        520,
         110
       ],
       "size": [
@@ -368,9 +383,16 @@
     },
     {
       "id": "drop-point",
-      "from": "astronaut",
+      "from": "pin",
       "to": "store",
       "label": "custom point",
+      "variant": "dashed"
+    },
+    {
+      "id": "save-point",
+      "from": "pin",
+      "to": "layers",
+      "label": "saves",
       "variant": "dashed"
     }
   ],
@@ -402,7 +424,8 @@
         "MVP: calendar, polar map, site card; luxury: globes",
         "Built: the 3D globe (lazy-loaded, its Sun follows the instant, the selected site ringed, its state in the phone's site pill and a LOLA relief thumbnail, 1x and 2x, rendered offline by site_thumbs.py and committed, in the phone sheet and the desktop site card), the calendar strip, the site card, the polar map (header tabs by hash, keep the site and the instant) and the phone sheet with its calendar, all under one glass gate (Liquid refraction on capable Chromium, frosted elsewhere); one request per site and month (the month and its next 30 days), cached in the page",
         "Installable (VENT-28): a manifest per locale with the J2 icon and site shortcuts, a live favicon with the Moon's phase and the site's state, and a service worker (build-versioned cache, pages and API network first) that opens the app offline with its last data",
-        "VENT-10: the Apollo astronaut, dragged onto the globe or the polar map, makes any point the selected site (?lat&lon), answered at once by the simulator and then by Horizons"
+        "VENT-10, VENT-37: a pin, dropped by a click (or a held finger) on the globe or the polar map and dragged to adjust, makes any point the selected site (?lat&lon), answered at once by the simulator and then by Horizons; the astronaut's assets wait for VENT-34",
+        "Globe layers (VENT-37): a registry of layers (id, z, visible) the globe mounts; landing sites, zones and the sites saved on this device are layers, switched from the Layers key and kept on the device; API for other teams in docs/globe-layers.md"
       ]
     }
   ]

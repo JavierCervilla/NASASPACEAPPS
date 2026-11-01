@@ -34,7 +34,7 @@
  */
 import { useSyncExternalStore } from 'react';
 import { createPortal } from 'react-dom';
-import { selectedSite } from '../../astronaut/selected-site';
+import { selectedSite } from '../../pin/selected-site';
 import { siteCard } from '../../card/site-card';
 import type { CardSite } from '../../card/site-facts';
 import type { View } from '../../lib/view-tabs';
@@ -51,6 +51,7 @@ import { useI18n } from '../i18n-context';
 import { LanguageMenu } from '../lang/LanguageMenu';
 import { usePhone, useSelection } from '../phone/hooks';
 import { PolarMap } from '../polar/PolarMap';
+import { useSavedName } from '../saved/use-saved-name';
 import { SourceNotes } from '../source/SourceNotes';
 import { SiteCard } from './SiteCard';
 import { SiteMenu } from './SiteMenu';
@@ -96,7 +97,7 @@ function useCardState(calendar: Calendar) {
 
 function DesktopUi({ sites, store, parts, base, view }: Props) {
   const { id } = useSelection(store);
-  const site = selectedSite(sites, id, useI18n());
+  const site = selectedSite(sites, id, useI18n(), useSavedName());
   const calendar = useCalendar(parts, id);
   const { state, badge, model, computed, notes } = useCardState(calendar);
   const slot = useSlot();

@@ -30,6 +30,21 @@
  * placed first. Positions are never offset, and a hidden zone shows again
  * once zooming in pulls it apart. Pure, so it is tested without a page.
  */
+import { markerKind, type MarkerKind, type MarkerSite } from './markers';
+
+/**
+ * The markers whose kind's layer shows (VENT-37), and the selected one
+ * whatever its kind, so the selection never loses its marker.
+ */
+export function inLayers<T extends { site: MarkerSite }>(
+  markers: readonly T[],
+  kinds: ReadonlySet<MarkerKind>,
+  selectedId: string | null,
+): T[] {
+  return markers.filter(
+    ({ site }) => kinds.has(markerKind(site)) || site.id === selectedId,
+  );
+}
 
 /** A point on screen, in px. */
 export interface ScreenPoint {

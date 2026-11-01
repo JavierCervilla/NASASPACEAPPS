@@ -31,7 +31,9 @@
  * (it always shows, on its right), then exact sites, then zones. A zone
  * whose dot sits on an exact site's (within a click's reach) never takes a
  * label there, so the label beside a landed site's dot is that site's.
- * Markers left without a label get a number (polar/badge-layout.ts).
+ * Markers left without a label get a number (polar/badge-layout.ts). A
+ * label that crosses the standing pin's ring (VENT-37) stays where it is,
+ * on top, and is told so, so it can wear a backing that keeps it readable.
  * Label widths are estimated from their length, so this is pure and
  * tested without a page.
  */
@@ -53,6 +55,8 @@ export type Side = 'right' | 'left';
 /** Label metrics at 12 px (polar.css): px per character, height. */
 const CHAR_PX = 6.6;
 const LABEL_HEIGHT_PX = 16;
+/** Half the standing pin's ring with its halo (pin.css: 32 px + 4 px). */
+export const PIN_HALF_PX = 20;
 /** The gap from a dot's centre to its label; the selected dot is larger. */
 const LABEL_GAP_PX = 10;
 const SELECTED_GAP_PX = 18;
@@ -116,4 +120,28 @@ export function visibleLabels(
     shown.set(marker.id, side);
   }
   return shown;
+}
+
+/** The labels laid out on a map: the markers, their sides, the selected. */
+export interface LabelLayout {
+  readonly markers: readonly Labelled[];
+  readonly labels: ReadonlyMap<string, Side>;
+  readonly size: number;
+  readonly selectedId: string | null;
+}
+
+/** The shown labels (ids) whose box crosses the ring of a pin at `pins`. */
+export function labelsOverPins(
+  layout: LabelLayout,
+  pins: readonly MapPoint[],
+): Set<string> {
+  const { markers, labels, size, selectedId } = layout;
+  const rings = pins.map((pin) => dotBox(toPx(pin, size), PIN_HALF_PX));
+  const over = markers.filter((marker) => {
+    const side = labels.get(marker.id);
+    if (!side) return false;
+    const box = labelBox(marker, size, marker.id === selectedId, side);
+    return rings.some((ring) => overlaps(ring, box));
+  });
+  return new Set(over.map(({ id }) => id));
 }

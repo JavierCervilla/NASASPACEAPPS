@@ -29,6 +29,7 @@
  */
 import { Vector2, Vector3 } from 'three';
 import { cameraPosition } from './framing';
+import type { Vec3 } from './geo';
 import type { Projector, MarkerLayer } from './marker-layer';
 import type { Moon } from './moon';
 import { poseOf, stepOrbit, type Orbit } from './orbit';
@@ -40,7 +41,9 @@ export interface FrameParts {
   readonly markers: MarkerLayer;
   /** Fetches sharper maps as the zoom heads in. */
   readonly moon: Pick<Moon, 'track'>;
-  /** Hears that a frame was drawn (the standing astronaut follows it). */
+  /** The registry's layers (layers/bind.ts), placed after the markers. */
+  readonly layers?: { place(project: Projector, eye: Vec3): void };
+  /** Hears that a frame was drawn (the standing pin follows it). */
   readonly drawn?: () => void;
 }
 
@@ -64,7 +67,10 @@ export function drawFrame(parts: FrameParts, dt: number): boolean {
   const pose = poseOf(orbit);
   aimCamera(stage.camera, pose);
   stage.renderer.render(stage.scene, stage.camera);
-  markers.place(projector(stage), cameraPosition(pose));
+  const project = projector(stage);
+  const eye = cameraPosition(pose);
+  markers.place(project, eye);
+  parts.layers?.place(project, eye);
   parts.drawn?.();
   return moving;
 }

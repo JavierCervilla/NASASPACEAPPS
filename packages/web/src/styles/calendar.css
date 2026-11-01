@@ -412,6 +412,11 @@
 }
 
 .site-button__name {
+  /* A saved name runs to 60 characters: cut, so the header keeps one row
+     (the whole name is the button's accessible name and title). */
+  max-width: 13em;
+  overflow: hidden;
+  text-overflow: ellipsis;
   font-size: 0.9375rem;
   font-weight: 600;
   letter-spacing: -0.012em;
@@ -419,6 +424,9 @@
 }
 
 .site-button__place {
+  max-width: 18em;
+  overflow: hidden;
+  text-overflow: ellipsis;
   font-size: 0.8125rem;
   color: var(--text-muted);
   white-space: nowrap;

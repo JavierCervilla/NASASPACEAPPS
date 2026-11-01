@@ -25,8 +25,8 @@
 
 /**
  * What the mounted globe tells the page: that its first map is on the
- * Moon (the loading state may go), and its view, where the astronaut is
- * dropped and stands (VENT-10). `restart` forgets the map when the globe
+ * Moon (the loading state may go), and its view, where the pin is dropped
+ * and stands (VENT-37). `restart` forgets the map when the globe
  * starts again.
  */
 import { useMemo, useState } from 'react';

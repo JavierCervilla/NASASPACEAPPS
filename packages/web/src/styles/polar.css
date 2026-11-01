@@ -221,8 +221,8 @@
 }
 
 /*
- * Over the standing astronaut (.astro-pin, z-index 4), so a site's name
- * stays readable beside it; the label takes no pointer, so the figure
+ * Over the standing pin (.pin, z-index 4), so a site's name
+ * stays readable beside it; the label takes no pointer, so the pin
  * under it can still be picked up.
  */
 .polar-label {
@@ -247,6 +247,19 @@
 /* Where the right is taken, the label sits on its dot's left. */
 .polar-label[data-side='left'] {
   translate: calc(-100% - 12px) -50%;
+}
+
+/*
+ * A label across the standing pin's ring (VENT-37, label-layout.ts
+ * `labelsOverPins`) keeps its place on top, on a dark backing, so neither
+ * the ring nor the Moon under it blurs the name.
+ */
+.polar-label[data-over-pin='true'] {
+  margin: -1px -5px;
+  padding: 1px 5px;
+  border-radius: 6px;
+  background: rgba(7, 8, 11, 0.8);
+  color: #f2f2f4;
 }
 
 /*

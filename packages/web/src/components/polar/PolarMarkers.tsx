@@ -29,7 +29,8 @@
  * dashed ring for an approximate zone. The selected one takes its state's
  * colour at the selected instant (the legend's); the labels that fit show
  * beside their dots (polar/label-layout.ts), and the others wear a number
- * the map's key names (polar/badge-layout.ts).
+ * the map's key names (polar/badge-layout.ts). A label over the standing
+ * pin wears a dark backing (VENT-37).
  */
 import { markerKind, markerLabel } from '../../globe/markers';
 import type { Badge } from '../../polar/badge-layout';
@@ -47,6 +48,8 @@ interface Props {
   readonly labels: ReadonlyMap<string, Side>;
   /** The numbers of the markers without a label. */
   readonly badges: readonly Badge[];
+  /** The ids whose labels cross the standing pin (VENT-37). */
+  readonly overPin?: ReadonlySet<string> | undefined;
 }
 
 const placeOf = ({ at }: PolarMarker) => ({
@@ -75,9 +78,9 @@ function MarkerButton({ marker, selected, state }: MarkerProps) {
   );
 }
 
-type LabelProps = Pick<Props, 'markers' | 'labels' | 'chosen'>;
+type LabelProps = Pick<Props, 'markers' | 'labels' | 'chosen' | 'overPin'>;
 
-function MarkerLabels({ markers, labels, chosen }: LabelProps) {
+function MarkerLabels({ markers, labels, chosen, overPin }: LabelProps) {
   return markers.map((marker) => {
     const side = labels.get(marker.id);
     return side ? (
@@ -86,6 +89,7 @@ function MarkerLabels({ markers, labels, chosen }: LabelProps) {
         className="polar-label"
         data-selected={marker.id === chosen}
         data-side={side}
+        data-over-pin={overPin?.has(marker.id) || undefined}
         style={placeOf(marker)}
         aria-hidden="true"
         data-site-id={marker.id}
@@ -118,7 +122,7 @@ function MarkerBadges({ markers, badges }: BadgeProps) {
 }
 
 export function PolarMarkers(props: Props) {
-  const { markers, chosen, state, labels, badges } = props;
+  const { markers, chosen, state, labels, badges, overPin } = props;
   return (
     <>
       {markers.map((marker) => (
@@ -129,7 +133,7 @@ export function PolarMarkers(props: Props) {
           state={state}
         />
       ))}
-      <MarkerLabels markers={markers} labels={labels} chosen={chosen} />
+      <MarkerLabels {...{ markers, labels, chosen, overPin }} />
       <MarkerBadges markers={markers} badges={badges} />
     </>
   );

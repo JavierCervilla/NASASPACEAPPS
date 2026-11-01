@@ -49,5 +49,9 @@ completa está en el documento «Ventana Lunar · Especificación y roadmap».
 - [ ] Modo DSN con Goldstone, Canberra y Robledo (VENT-7)
 - [x] Coordenadas a medida: cualquier lat/lon, con el astronauta del Apolo que se arrastra a cualquier punto del
   globo o del mapa polar, y el punto en la dirección para compartirlo (VENT-10)
+- [x] Pin sobrio en lugar del astronauta para elegir un punto: clic en el PC, mantener pulsado en el móvil, «Drop a
+  pin» para teclado y pista la primera vez (VENT-37, parte 1)
+- [x] Capas del globo como interruptores y sitios guardados en el dispositivo, con la API de capas documentada para
+  Mooner (`docs/globe-layers.md`) (VENT-37, parte 2)
 - [ ] Comparador de sitios o exportar a .ics (VENT-8)
 - [ ] Página del proyecto, vídeo de 30 s y pitch; envío antes de las 20:00 (VENT-9)

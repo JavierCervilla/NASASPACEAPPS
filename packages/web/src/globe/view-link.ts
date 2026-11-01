@@ -25,8 +25,8 @@
 
 /**
  * Hands the globe's view (globe-view.ts) to the page while the globe is
- * mounted (VENT-10), and tells it after each drawn frame, so the
- * astronaut standing on the Moon follows the globe as it turns.
+ * mounted (VENT-10), and tells it after each drawn frame, so the pin
+ * standing on the Moon follows the globe as it turns (VENT-37).
  */
 import { createWatchedValue } from '../lib/watched-value';
 import { globeView, type GlobeView } from './globe-view';

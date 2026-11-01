@@ -206,16 +206,17 @@ list (Mons Mouton uses Mons Mouton Plateau's; Nobile Rims 1 and 2 use Griffin-1'
 |---|---|---|
 | `packages/web/models/astronaut.glb` | glTF 2.0 binary, 4 122 vertices, 6 381 triangles, no texture inside, 138 880 bytes; build input only, never shipped | `977be426b398161cde6a15fa70dfccc9d434d8dcffc86099e4c2f23e2f28c70e` |
 | `packages/web/models/astronaut-suit.webp` | the suit texture, 512 x 512 WebP, 11 630 bytes; build input only, never shipped | `c362b0560504a1a6f93059c1466bd08a05846b16746b2522110a4afca7aef312` |
-| `packages/web/src/astronaut/figures.webp` | the sprite sheet the page shows, 900 x 440 lossless WebP (2 rows x 5 columns of 180 x 220), 76 642 bytes | `1b4b694ce7a15550b660022d670c8bedec4259377dee66b40fc9a5a5e6df6a22` |
+| `packages/web/src/astronaut/figures.webp` | the sprite sheet, kept for VENT-34 and not shipped since VENT-37, 900 x 440 lossless WebP (2 rows x 5 columns of 180 x 220), 76 642 bytes | `1b4b694ce7a15550b660022d670c8bedec4259377dee66b40fc9a5a5e6df6a22` |
 | `packages/web/src/astronaut/figures.json` | its manifest: layout, cell, visor colours, size and sha256 of the sheet | `553f54dcf34ef67c3a87d2d781695d11b8d3dd64a97ed59adf5d186e01959beb` |
 
 - **Source**: NASA 3D Resources, «Astronaut» (`3D Models/Astronaut/Astronaut.glb`, https://github.com/nasa/NASA-3D-Resources/tree/master/3D%20Models/Astronaut,
   commit `11ebb4ee043715aefbba6aeec8a61746fad67fa7` of 2025-06-03), 762 988 bytes, sha256
   `d18c141410542b935113d1c25a9271d90c40d44015a64295b7b68a30f0ce2820`. An Apollo-era suit with its backpack, Draco
   compressed, with a 1024 x 1024 suit texture.
-- **What it is**: the astronaut you drag onto the Moon. It is drawn offline, in two poses and with the visor in each
-  state colour, into one sprite sheet (`figures.webp`) that the page shows as a plain image: the page loads neither the
-  model nor three.js for it, and the figure costs no draw call.
+- **What it is**: the astronaut that was dragged onto the Moon (VENT-10). It is drawn offline, in two poses and with the
+  visor in each state colour, into one sprite sheet (`figures.webp`) that the page showed as a plain image. Since VENT-37
+  a pin picks points and nothing imports the sheet, so the build ships neither it nor the model; both stay here for
+  VENT-34, where the astronaut comes back (dropped, it takes you to the 3D terrain).
 - **Licence**: NASA, public domain under the NASA media usage guidelines
   (https://www.nasa.gov/nasa-brand-center/images-and-media/). NASA does not endorse Ventana Lunar. The guidelines do not
   let the NASA insignia be used, so the build covers the «meatball» on the backpack with the fabric next to it. It also

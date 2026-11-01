@@ -25,12 +25,11 @@
 
 /**
  * The phone layout over the globe: the glass top bar, the bottom sheet
- * (site summary with widgets, the site picker or the calendar), the
- * floating tab bar and, beside it, the astronaut's dock (VENT-10).
- * Rendered only below the phone breakpoint.
+ * (site summary with widgets, the site picker or the calendar) and the
+ * floating tab bar. Rendered only below the phone breakpoint.
  */
 import { useEffect, useRef } from 'react';
-import { selectedSite } from '../../astronaut/selected-site';
+import { selectedSite } from '../../pin/selected-site';
 import { formatInstant } from '../../calendar/instant-format';
 import type { WatchedValue } from '../../lib/watched-value';
 import type { PhoneSite } from '../../phone/phone-site';
@@ -43,7 +42,8 @@ import {
 import type { SiteStore } from '../../phone/site-store';
 import { CalendarSheet } from '../calendar/CalendarSheet';
 import { useTime, type CalendarParts } from '../calendar/hooks';
-import { useSheetAside } from '../astronaut/use-sheet-aside';
+import { useSheetAside } from '../pin/use-sheet-aside';
+import { useSavedName } from '../saved/use-saved-name';
 import { useI18n } from '../i18n-context';
 import { usePhone, useScrim, useSelection, useSiteWidgets } from './hooks';
 import { PhoneBar } from './PhoneBar';
@@ -51,7 +51,7 @@ import { Sheet } from './Sheet';
 import { SourceCaption, SourceDown } from '../source/SourceNotes';
 import { SitesPanel } from './SitesPanel';
 import { SiteSummary } from './SiteSummary';
-import { DockBar } from './DockBar';
+import { TabBar } from './TabBar';
 import { useSheetPanel } from './use-sheet-detent';
 
 interface Props {
@@ -75,7 +75,7 @@ interface Props {
 function usePhoneState({ sites, store, parts }: Props) {
   const selection = useSelection(store);
   const i18n = useI18n();
-  const site = selectedSite(sites, selection.id, i18n);
+  const site = selectedSite(sites, selection.id, i18n, useSavedName());
   const time = useTime(parts.time);
   const at = time?.atMs ?? null;
   const widgets = useSiteWidgets(parts, selection.id, at);
@@ -109,7 +109,6 @@ function useSheetWiring(
 ) {
   const tabs = useRef<HTMLElement>(null);
   const bar = useRef<HTMLElement>(null);
-  const foot = useRef<HTMLDivElement>(null);
   const { t } = useI18n();
   useEffect(() => () => sheetEdge.set(null), [sheetEdge]);
   const atFull = phone.detent === 'full';
@@ -121,10 +120,9 @@ function useSheetWiring(
     onEdge: sheetEdge.set,
     edge: tabs,
     bar,
-    foot,
   };
   const current = atFull ? phone.view : 'globe';
-  return { tabs, bar, foot, current, sheet } as const;
+  return { tabs, bar, current, sheet } as const;
 }
 
 /**
@@ -161,7 +159,7 @@ function PhoneUi(props: Props) {
   const phone = usePhoneState(props);
   const [scrim, dim] = useScrim();
   const wiring = useSheetWiring(phone, props.sheetEdge, dim);
-  const { tabs, bar, foot, current, sheet } = wiring;
+  const { tabs, bar, current, sheet } = wiring;
   const tabActions = {
     onGlobe: phone.close,
     onCalendar: phone.calendar,
@@ -177,7 +175,7 @@ function PhoneUi(props: Props) {
       <Sheet {...sheet}>
         <SheetBody phone={phone} {...props} />
       </Sheet>
-      <DockBar tabs={tabs} foot={foot} current={current} {...tabActions} />
+      <TabBar ref={tabs} current={current} {...tabActions} />
     </div>
   );
 }

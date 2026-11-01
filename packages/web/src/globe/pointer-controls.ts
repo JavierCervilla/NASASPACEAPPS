@@ -26,10 +26,11 @@
 /**
  * Drags become orbit moves: pixels to degrees, 1:1 at the centre of the
  * disc. A release becomes momentum only when the pointer was flicked, and
- * never under prefers-reduced-motion.
+ * never under prefers-reduced-motion; a press stops that flick.
  */
 import type { ControlDeps } from './control-deps';
 import type { DragTarget } from './drag';
+import { flickCoast } from './flick-coast';
 import { degreesPerPixel } from './framing';
 import { flingOrbit, moveOrbit, type Orbit } from './orbit';
 
@@ -40,7 +41,9 @@ const FLICK_MIN_PX_S = 120;
 export function pointerControls(orbit: Orbit, deps: ControlDeps): DragTarget {
   const scale = (): number =>
     degreesPerPixel(orbit.distance.value, deps.heightPx());
+  const coast = flickCoast(orbit, deps);
   return {
+    press: coast.press,
     drag: (dx, dy) => {
       const k = scale();
       const delta = { latDeg: dy * k, lonEastDeg: -dx * k, distance: 0 };
@@ -51,6 +54,7 @@ export function pointerControls(orbit: Orbit, deps: ControlDeps): DragTarget {
       if (deps.reducedMotion() || Math.hypot(vx, vy) < FLICK_MIN_PX_S) return;
       const k = scale();
       flingOrbit(orbit, { latDeg: vy * k, lonEastDeg: -vx * k });
+      coast.flung();
       deps.invalidate();
     },
   };

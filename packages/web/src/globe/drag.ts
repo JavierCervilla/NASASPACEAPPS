@@ -27,8 +27,12 @@
  * Drag to rotate, with Pointer Events. A press only becomes a drag past a
  * few pixels (apple-design's hysteresis), so a click on a site marker stays a
  * click; from then on the pointer is captured and the globe follows it 1:1.
- * A second finger ends the drag: two fingers pinch.
+ * A second finger ends the drag: two fingers pinch. A move already
+ * handled (a finger holding the pin, pin/place-gesture.ts) is not a drag.
+ * A press on a globe still turning from a flick stops it where it is, like
+ * Maps, and marks its `pointerdown` handled: that press drops no pin.
  */
+import { pastSlop } from '../lib/press-slop';
 import { VelocityTracker } from './velocity';
 
 type PointerType =
@@ -37,13 +41,12 @@ type PointerType =
   | 'pointerup'
   | 'pointercancel';
 
-/** Pixels the pointer moves before a press becomes a drag. */
-const DRAG_THRESHOLD_PX = 4;
-
 /** What the globe does with a drag; deltas and velocities are in px. */
 export interface DragTarget {
   drag(dxPx: number, dyPx: number): void;
   release(vxPx: number, vyPx: number): void;
+  /** A press landed: stop any flick; true when one was stopped. */
+  press?(): boolean;
 }
 
 class DragGesture {
@@ -59,6 +62,7 @@ class DragGesture {
 
   down(event: PointerEvent): void {
     if (event.button !== 0) return;
+    if (this.target.press?.()) event.preventDefault();
     if (this.start) {
       // A second finger: a pinch (pinch.ts), so the drag lets go.
       this.start = null;
@@ -73,9 +77,11 @@ class DragGesture {
 
   move(event: PointerEvent): void {
     const { start } = this;
-    if (!start || event.pointerId !== start.id) return;
-    const moved = Math.hypot(event.clientX - start.x, event.clientY - start.y);
-    if (!this.dragging && moved < DRAG_THRESHOLD_PX) return;
+    if (!start || event.pointerId !== start.id || event.defaultPrevented) {
+      return;
+    }
+    const at = { x: event.clientX, y: event.clientY };
+    if (!this.dragging && !pastSlop(start, at)) return;
     if (!this.dragging) {
       this.dragging = true;
       this.el.setPointerCapture(event.pointerId);

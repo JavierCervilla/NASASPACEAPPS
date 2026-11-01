@@ -47,6 +47,7 @@ import {
 } from '../../card/site-facts';
 import type { CardModel } from '../../card/site-card';
 import { useI18n } from '../i18n-context';
+import { SaveButton, SaveName } from '../saved/SaveControl';
 import { SiteThumb } from '../SiteThumb';
 import { CardPoint } from './CardPoint';
 import { CardStatus } from './CardStatus';
@@ -95,7 +96,8 @@ function CardMedia({ thumb, state, computed }: MediaProps) {
 /**
  * The head: the image with its badge or, without an image (north of
  * 80° S, the custom point), the badge on its own at the top. The custom
- * point leads with its name, then the site it is near.
+ * point leads with its name, then the site it is near, with «Save» at the
+ * top right and, once saved, its name field (VENT-37).
  */
 function CardHead(props: Omit<Props, 'model' | 'onRetry' | 'notes'>) {
   const { site, state, computed, base } = props;
@@ -108,12 +110,14 @@ function CardHead(props: Omit<Props, 'model' | 'onRetry' | 'notes'>) {
     <div className="card-block card-head">
       <CardMedia thumb={thumb} state={state} computed={computed} />
       {thumb ? null : <StateBadge state={state} computed={computed} inHead />}
+      <SaveButton site={site} />
       {mission ? <p className="card-head__mission">{mission}</p> : null}
       <h2 className="card-head__name">{name}</h2>
       {!place || name === place ? null : (
         <p className="card-head__place">{place}</p>
       )}
       <CardPoint {...pointLine(i18n, site)} />
+      <SaveName site={site} />
     </div>
   );
 }

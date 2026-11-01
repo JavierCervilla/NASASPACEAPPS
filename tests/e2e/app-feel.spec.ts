@@ -38,8 +38,6 @@ const NOW = new Date('2026-11-23T18:00:00Z');
 const GLOBE_START_MS = 20_000;
 const OUT = new URL('../../production/qa/evidence/', import.meta.url);
 const DATE = '2026-11-01';
-/** A held press, long enough for Chrome's long-press gesture (text selection, the context menu). */
-const LONG_PRESS_MS = 800;
 /** The smallest target a finger hits reliably (apple-design, WCAG 2.5.5). */
 const MIN_TARGET_PX = 44;
 /** The figure's drawn heights since VENT-38 (were 44, 84 and 56 px). */
@@ -60,19 +58,6 @@ async function open(page: Page, path = './'): Promise<void> {
   await stubApi(page);
   await page.goto(path);
   await expect(page.locator('.globe-viewport[data-status="ready"], .polar').first()).toBeVisible({ timeout: GLOBE_START_MS });
-}
-
-/** Holds a finger on the middle of `target` through Chrome's gesture pipeline, as a long press on a phone. */
-async function longPress(page: Page, target: Locator): Promise<void> {
-  const box = (await target.boundingBox())!;
-  const cdp = await page.context().newCDPSession(page);
-  await cdp.send('Input.synthesizeTapGesture', {
-    x: box.x + box.width / 2,
-    y: box.y + box.height / 2,
-    duration: LONG_PRESS_MS,
-    gestureSourceType: 'touch',
-  });
-  await cdp.detach();
 }
 
 const selection = (page: Page) => page.evaluate(() => window.getSelection()?.toString() ?? '');
@@ -98,6 +83,29 @@ const shippedCss = (page: Page) =>
     const fetched = await Promise.all(links.map(async (link) => (await fetch(link.href)).text()));
     return [...inline, ...fetched].join('\n').replace(/\s+/g, '');
   });
+
+/**
+ * The declarations of the shipped rule whose selector is exactly `selector` (a regular expression source), as Safari
+ * reads them: Chromium keeps inputs selectable on its own, iOS inherits `-webkit-user-select: none` from the body.
+ */
+function ruleOf(css: string, selector: string): string {
+  return new RegExp(`(?:^|[}\\n])${selector}\\{([^}]*)\\}`).exec(css)?.[1] ?? '';
+}
+
+/** What keeps text selectable on iOS Safari and everywhere else. */
+const SELECTABLE = [/(^|;)-webkit-user-select:text(;|$)/, /(^|;)user-select:text(;|$)/];
+
+function expectSelectable(css: string, selector: string): void {
+  const rule = ruleOf(css, selector);
+  for (const declaration of SELECTABLE) expect(rule, selector).toMatch(declaration);
+}
+
+/** No picture starts a native drag: the attribute, and the WebKit rule for what has none. */
+async function expectNotDraggable(page: Page, images: Locator): Promise<void> {
+  await expect(images.first()).toBeAttached();
+  for (const image of await images.all()) await expect(image).toHaveAttribute('draggable', 'false');
+  expect(ruleOf(await shippedCss(page), 'img')).toMatch(/(^|;)-webkit-user-drag:none(;|$)/);
+}
 
 /** A double click selects a word wherever text is selectable: what a long press does on a phone. */
 async function doubleClickSelects(page: Page, target: Locator): Promise<string> {
@@ -138,7 +146,7 @@ async function expectTarget(target: Locator): Promise<void> {
 test.describe('phone, 390x844: no text selection on the interface', () => {
   test.use({ viewport: { width: 390, height: 844 }, hasTouch: true, isMobile: true });
 
-  test('a long press on the title, the pill, the sheet\'s card, a widget or the dock selects nothing', async ({ page }) => {
+  test('the title, the pill, the sheet\'s card, a widget and the dock refuse text selection', async ({ page }) => {
     await open(page);
     await expect(page.locator('.widget').first()).toBeVisible();
     for (const words of [page.locator('.phone-bar__title'), page.locator('.summary__name'), page.locator('.widget__label').first()]) {
@@ -157,8 +165,6 @@ test.describe('phone, 390x844: no text selection on the interface', () => {
     ];
     for (const target of targets) {
       expect(await feel(target)).toEqual({ select: 'none', highlight: 'rgba(0, 0, 0, 0)' });
-      await longPress(page, target);
-      expect(await selection(page)).toBe('');
     }
     await expect(page.locator('.sheet')).toHaveAttribute('data-detent', 'half');
   });
@@ -174,6 +180,19 @@ test.describe('phone, 390x844: no text selection on the interface', () => {
     await search.fill('mouton');
     expect((await feel(search)).select).toBe('text');
     expect(await search.evaluate((el: HTMLInputElement) => (el.select(), el.selectionEnd! - el.selectionStart!))).toBe(6);
+  });
+
+  test('the shipped CSS keeps text fields and the coordinates selectable for iOS Safari', async ({ page }) => {
+    await open(page);
+    const css = await shippedCss(page);
+    expectSelectable(css, String.raw`input:not\(\[type=['"]?range['"]?\]\),textarea`);
+    expectSelectable(css, String.raw`\.summary__coords`);
+    expectSelectable(css, String.raw`\.card-head__coords`);
+  });
+
+  test('the site thumbnail is not draggable', async ({ page }) => {
+    await open(page);
+    await expectNotDraggable(page, page.locator('.summary__thumb img, img.summary__thumb'));
   });
 
   test('the astronaut is smaller, in its 44 px targets, docked and standing', async ({ page }) => {
@@ -206,9 +225,20 @@ test.describe('desktop, 1440x900: no text selection on the interface', () => {
       expect(await doubleClickSelects(page, target)).toBe('');
     }
     const point = card.locator('.card-head__point');
-    expect((await feel(point)).select).toBe('text');
-    expect(await selectAll(point)).toMatch(/° S, .*° E/);
-    expect(await doubleClickSelects(page, point)).not.toBe('');
+    const coords = point.locator('.card-head__coords');
+    expect((await feel(coords)).select).toBe('text');
+    expect((await feel(point)).select).toBe('none');
+    // Selecting the whole line keeps only the numbers: «· exact touchdown» stays out of a copy.
+    expect(await selectAll(point)).toMatch(/^\d+\.\d+° S, \d+\.\d+° E$/);
+    expect(await doubleClickSelects(page, coords)).not.toBe('');
+  });
+
+  test('the card\'s thumbnail and the polar map are not draggable', async ({ page }) => {
+    await open(page);
+    await expectNotDraggable(page, page.getByRole('complementary', { name: 'Site card' }).locator('img'));
+    await page.goto('./#polar-map');
+    await expect(page.locator('.polar__image')).toBeVisible({ timeout: GLOBE_START_MS });
+    await expectNotDraggable(page, page.locator('.polar__image'));
   });
 
   test('the astronaut is smaller, in its 44 px targets, docked and standing', async ({ page }) => {

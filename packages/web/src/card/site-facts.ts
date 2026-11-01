@@ -72,6 +72,12 @@ export function missionLine(i18n: I18n, site: CardSite): string {
   return [site.agency, ...status].filter(Boolean).join(' · ');
 }
 
+/** A site's point line: its coordinates and how exact they are. */
+export interface PointLine {
+  readonly coords: string;
+  readonly note: string;
+}
+
 /**
  * How exact a site's point is, from its kind and its mission's status;
  * the custom point is where the astronaut was dropped.
@@ -86,12 +92,16 @@ function precision(i18n: I18n, site: CardSite): string {
   );
 }
 
-/** «84.79° S, 29.20° E · exact touchdown»; no point: the precision alone. */
-export function pointLine(i18n: I18n, site: CardSite): string {
+/**
+ * «84.79° S, 29.20° E» and «exact touchdown», apart so only the
+ * coordinates are selectable (VENT-38); no point: no coordinates, and
+ * the note says so.
+ */
+export function pointLine(i18n: I18n, site: CardSite): PointLine {
   const known = Number.isFinite(site.lat) && Number.isFinite(site.lonEast);
-  if (!known) return i18n.t('card.noCoords');
+  if (!known) return { coords: '', note: i18n.t('card.noCoords') };
   const coords = formatCoords(i18n, site.lat, site.lonEast);
-  return `${coords} · ${precision(i18n, site)}`;
+  return { coords, note: precision(i18n, site) };
 }
 
 /** The slim card site of a full one, as the page passes it to the island. */

@@ -48,6 +48,7 @@ import {
 import type { CardModel } from '../../card/site-card';
 import { useI18n } from '../i18n-context';
 import { SiteThumb } from '../SiteThumb';
+import { CardPoint } from './CardPoint';
 import { CardStatus } from './CardStatus';
 import { StateBadge } from './StateBadge';
 import { useScrollEdges } from './use-scroll-edges';
@@ -112,7 +113,7 @@ function CardHead(props: Omit<Props, 'model' | 'onRetry' | 'notes'>) {
       {!place || name === place ? null : (
         <p className="card-head__place">{place}</p>
       )}
-      <p className="card-head__point">{pointLine(i18n, site)}</p>
+      <CardPoint {...pointLine(i18n, site)} />
     </div>
   );
 }

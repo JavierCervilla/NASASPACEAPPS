@@ -150,7 +150,7 @@ describe('the custom point as a site', () => {
       pill: 'Custom point',
       pillDetail: '',
     });
-    expect(pointLine(EN, custom)).toBe('85.87° S, 61.34° E · dropped here');
+    expect(pointLine(EN, custom)).toEqual({ coords: '85.87° S, 61.34° E', note: 'dropped here' });
   });
 
   it('has no «Near» subtitle when no listed site has coordinates', () => {

@@ -83,18 +83,19 @@ describe('site card head', () => {
   });
 
   it('says how exact the point is', () => {
-    expect(pointLine(EN, IM2)).toBe('84.79° S, 29.20° E · exact touchdown');
-    expect(pointLine(EN, { ...IM2, approximate: true, status: 'candidate region' })).toBe(
-      '84.79° S, 29.20° E · approximate zone, not a landing point',
-    );
-    expect(pointLine(EN, { ...IM2, status: 'crashed 2025-06-05 (failed landing)' })).toContain('impact point');
-    expect(pointLine(EN, { ...IM2, status: 'planned' })).toContain('published target');
+    expect(pointLine(EN, IM2)).toEqual({ coords: '84.79° S, 29.20° E', note: 'exact touchdown' });
+    expect(pointLine(EN, { ...IM2, approximate: true, status: 'candidate region' })).toEqual({
+      coords: '84.79° S, 29.20° E',
+      note: 'approximate zone, not a landing point',
+    });
+    expect(pointLine(EN, { ...IM2, status: 'crashed 2025-06-05 (failed landing)' }).note).toBe('impact point');
+    expect(pointLine(EN, { ...IM2, status: 'planned' }).note).toContain('published target');
   });
 
   it('copes with a site the build does not hold', () => {
     const unlisted = unlistedSite('new-site');
     expect(missionLine(EN, unlisted)).toBe('');
-    expect(pointLine(EN, unlisted)).toBe('Coordinates not in this build');
+    expect(pointLine(EN, unlisted)).toEqual({ coords: '', note: 'Coordinates not in this build' });
   });
 
   it('keeps only what the card reads of a full site', () => {

@@ -472,6 +472,10 @@
 .summary__coords {
   font-variant-numeric: tabular-nums;
   white-space: nowrap;
+  /* Selectable: worth pasting elsewhere (VENT-38). */
+  -webkit-user-select: text;
+  user-select: text;
+  -webkit-touch-callout: default;
 }
 
 /* Widgets */

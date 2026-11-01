@@ -35,6 +35,7 @@ import type { AstronautKit } from '../../astronaut/kit';
 import { useI18n } from '../i18n-context';
 import { useAstronaut, useWatched } from './context';
 import { liftHandlers } from './lift-handlers';
+import { noContextMenu } from './no-context-menu';
 
 export type DockStatus = 'home' | 'carry' | 'away';
 
@@ -83,6 +84,7 @@ export function useDock() {
     label: t(key),
     onClick,
     onKeyDown: home?.onKeyDown,
+    onContextMenu: noContextMenu,
     onPointerDown: (event: PointerEvent<HTMLElement>) => {
       pressed.current = status;
       home?.onPointerDown(event);

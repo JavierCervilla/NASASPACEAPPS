@@ -32,6 +32,7 @@ import type { KeyboardEvent, PointerEvent } from 'react';
 import type { AstronautKit } from '../../astronaut/kit';
 import { carryFromPointer } from '../../astronaut/pointer-carry';
 import { feetOf } from './feet';
+import { noContextMenu } from './no-context-menu';
 
 /** Whether `event` is Enter or Space; its default is then prevented. */
 export function isActivation(event: KeyboardEvent): boolean {
@@ -58,5 +59,6 @@ export function liftHandlers(kit: AstronautKit, onTap: () => void) {
     onKeyDown: (event: KeyboardEvent<HTMLElement>): void => {
       if (isActivation(event)) kit.keys(figureFeet(event.currentTarget));
     },
+    onContextMenu: noContextMenu,
   };
 }

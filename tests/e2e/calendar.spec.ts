@@ -84,7 +84,8 @@ test.describe('desktop calendar strip, 1440x900', () => {
   test('the header view tabs are 44 px tall targets', async ({ page }) => {
     await open(page);
     const tabs = page.getByRole('navigation', { name: 'View' }).locator('> *');
-    await expect(tabs).toHaveCount(3);
+    // Globe, Polar map, DSN (VENT-7) and Horizon.
+    await expect(tabs).toHaveCount(4);
     for (const box of await tabs.evaluateAll((els) => els.map((el) => el.getBoundingClientRect().height))) {
       expect(box).toBeGreaterThanOrEqual(44);
     }

@@ -68,11 +68,12 @@ const sitesUrl = `${import.meta.env.BASE_URL.replace(/\/$/, '')}/api/v1/sites`;
 const full = curated as Required<Omit<CardSite, 'custom'>>[];
 const sites: CardSite[] = full.map((s) => localSite(i18n, toCardSite(s)));
 
-// The globe and the polar map switch by hash (lib/view-tabs.ts); the
-// island marks the current one. Horizon is a later trajectory.
+// The views switch by hash (lib/view-tabs.ts); the island marks the
+// current one. Horizon is a later trajectory.
 const views = [
   { label: t('view.globe'), view: 'globe', current: true },
   { label: t('view.polar'), view: 'polar', current: false },
+  { label: t('view.dsn'), view: 'dsn', current: false },
   { label: t('view.horizon'), view: null, current: false },
 ] as const;
 ---
@@ -93,9 +94,7 @@ const views = [
           {
             views.map(({ label, view, current }) =>
               view ? (
-                <a
-                  href={VIEW_HASH[view]}
-                  data-view={view}
+                <a href={VIEW_HASH[view]} data-view={view}
                   aria-current={current ? 'page' : undefined}
                 >
                   {label}
@@ -177,12 +176,13 @@ const views = [
     background: var(--fill);
   }
 
-  /* A 44 px tall target (apple-design). */
+  /* A 44 px tall target (apple-design); four tabs since the DSN view
+     (VENT-7), so they pull in on a 1280 px screen to keep one header row. */
   .views > * {
     display: flex;
     align-items: center;
     min-height: 44px;
-    padding: 0 16px;
+    padding: 0 clamp(12px, 2.5vw - 20px, 16px);
     border-radius: 8px;
     font-size: 0.875rem;
     font-weight: 600;

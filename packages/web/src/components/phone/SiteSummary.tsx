@@ -33,6 +33,7 @@ import type { ReactNode } from 'react';
 import { formatCoords } from '../../i18n/format';
 import { siteLabels, type PhoneSite } from '../../phone/phone-site';
 import type { WidgetsResult } from '../../phone/widgets-loader';
+import type { Dsn } from '../dsn/use-dsn';
 import { thumbOf } from '../../thumbs/thumbs';
 import { useI18n } from '../i18n-context';
 import { SaveButton, SaveName } from '../saved/SaveControl';
@@ -51,6 +52,8 @@ interface Props {
   readonly status?: ReactNode;
   /** Under the widgets: the computed caption. */
   readonly notes?: ReactNode;
+  /** The DSN at the instant, for the fourth widget. */
+  readonly dsn: Dsn | null;
 }
 
 /** Drawn at 40 px: the 320 px file covers any phone's density. */
@@ -90,14 +93,14 @@ function SummaryHead({ site, base }: Pick<Props, 'site' | 'base'>) {
 }
 
 export function SiteSummary(props: Props) {
-  const { site, result, onRetry, when, base, status, notes } = props;
+  const { site, result, onRetry, when, base, status, notes, dsn } = props;
   const ready = result.kind === 'ready';
   return (
     <div className="summary">
       <SummaryHead site={site} base={base} />
       <SaveName site={site} />
       {ready ? status : null}
-      <Widgets result={result} onRetry={onRetry} when={when} />
+      <Widgets result={result} onRetry={onRetry} when={when} dsn={dsn} />
       {ready ? notes : null}
     </div>
   );

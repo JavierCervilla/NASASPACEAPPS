@@ -29,11 +29,12 @@
  * instant and the ground it spans (VENT-33, canvas «DeskThumbH1440»); the
  * mission, its agency and date, the site, its point and how exact it is;
  * «Sunset in» and «Earthset in» (or «…rise in») for the selected instant with
- * each body's elevation; and the month's shares, longest window and longest
- * night, with where the figures come from. Grey blocks while the month loads,
- * an honest error with «Try again», and an honest state outside the data
- * window. On a short screen the card scrolls, focusable only then, and fades at
- * each edge that hides more.
+ * each body's elevation; who listens on Earth (VENT-7); and the month's
+ * shares, longest window and longest night, with where the figures come
+ * from. Grey blocks while the month loads, an honest error with «Try
+ * again», and an honest state outside the data window. On a short screen
+ * the card scrolls, focusable only then, and fades at each edge that hides
+ * more.
  */
 import type { ReactNode } from 'react';
 import { siteLabels } from '../../phone/phone-site';
@@ -46,6 +47,8 @@ import {
   type CardSite,
 } from '../../card/site-facts';
 import type { CardModel } from '../../card/site-card';
+import { ListeningBlock } from '../dsn/ListeningBlock';
+import type { Dsn } from '../dsn/use-dsn';
 import { useI18n } from '../i18n-context';
 import { SaveButton, SaveName } from '../saved/SaveControl';
 import { SiteThumb } from '../SiteThumb';
@@ -69,6 +72,8 @@ interface Props {
    * the note that says so (VENT-36).
    */
   readonly notes?: ReactNode;
+  /** The DSN at the instant (VENT-7); null until it is known. */
+  readonly dsn: Dsn | null;
 }
 
 /** The card is 320 px wide, the whole width below 1024 px. */
@@ -99,7 +104,7 @@ function CardMedia({ thumb, state, computed }: MediaProps) {
  * point leads with its name, then the site it is near, with «Save» at the
  * top right and, once saved, its name field (VENT-37).
  */
-function CardHead(props: Omit<Props, 'model' | 'onRetry' | 'notes'>) {
+function CardHead(props: Omit<Props, 'model' | 'onRetry' | 'notes' | 'dsn'>) {
   const { site, state, computed, base } = props;
   const i18n = useI18n();
   const { title, subtitle } = siteLabels(site);
@@ -132,7 +137,12 @@ function Tile({ widget, tone }: { widget: BodyWidget; tone: string }) {
   );
 }
 
-function Figures({ model }: { readonly model: CardModel }) {
+interface FiguresProps {
+  readonly model: CardModel;
+  readonly dsn: Dsn | null;
+}
+
+function Figures({ model, dsn }: FiguresProps) {
   if (model.kind !== 'ready') return null;
   return (
     <>
@@ -140,6 +150,7 @@ function Figures({ model }: { readonly model: CardModel }) {
         <Tile widget={model.sun} tone="sun" />
         <Tile widget={model.earth} tone="earth" />
       </div>
+      {dsn ? <ListeningBlock dsn={dsn} /> : null}
       <dl className="card-block card-facts">
         {model.rows.map(({ label, value, tone }) => (
           <div key={label}>
@@ -153,7 +164,7 @@ function Figures({ model }: { readonly model: CardModel }) {
   );
 }
 
-export function SiteCard({ model, onRetry, notes, ...head }: Props) {
+export function SiteCard({ model, onRetry, notes, dsn, ...head }: Props) {
   const [scroller, edges] = useScrollEdges<HTMLDivElement>();
   // Focusable only while it overflows, so the keyboard can scroll it on a
   // short screen; on a tall one it would be an empty tab stop.
@@ -171,7 +182,7 @@ export function SiteCard({ model, onRetry, notes, ...head }: Props) {
         data-fade-bottom={edges.bottom}
       >
         <CardHead {...head} />
-        <Figures model={model} />
+        <Figures model={model} dsn={dsn} />
         {model.kind === 'ready' ? notes : null}
         <CardStatus kind={model.kind} onRetry={onRetry} />
       </div>

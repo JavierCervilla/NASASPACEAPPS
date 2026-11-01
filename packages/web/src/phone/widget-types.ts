@@ -46,17 +46,8 @@ export interface BodyWidget {
   readonly detail: string;
 }
 
-/** The Deep Space Network complex listening to the Moon. */
-export interface DsnWidget {
-  /** «Robledo», or «No antenna». */
-  readonly value: string;
-  /** «Madrid · ~12 h left», or when the next one picks up. */
-  readonly detail: string;
-}
-
 export interface SiteWidgets {
   readonly now: NowWidget;
   readonly sun: BodyWidget;
   readonly earth: BodyWidget;
-  readonly dsn: DsnWidget;
 }

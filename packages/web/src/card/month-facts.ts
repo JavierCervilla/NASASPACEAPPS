@@ -25,9 +25,10 @@
 
 /**
  * The site card's figures for the visible month: the shares of hours with
- * Sun, with Earth and with both (the landing window), the longest window
- * and the longest night. The rules and the counting are `@ventana/sim`'s
- * (`computeRangeMetrics`), the same the calendar bars use. Pure.
+ * Sun, with Earth and with both (the landing window), the share with a DSN
+ * complex listening (VENT-7), the longest window and the longest night.
+ * The rules and the counting are `@ventana/sim`'s (`computeRangeMetrics`),
+ * the same the calendar bars use. Pure.
  */
 import { computeRangeMetrics, type HourSample } from '@ventana/sim';
 import { monthSamples } from '../calendar/month-samples';
@@ -41,6 +42,10 @@ export interface FactRow {
   readonly value: string;
   readonly tone?: 'window';
 }
+
+/** The share of `samples` with a DSN complex listening, 0-100. */
+const dsnShare = (samples: readonly HourSample[]): number =>
+  (samples.filter((s) => s.dsn !== null).length / samples.length) * 100;
 
 /** The figures of the month of `atMs`; null when `hours` hold none of it. */
 export function monthFacts(
@@ -62,6 +67,7 @@ export function monthFacts(
     { label: t('facts.sun'), value: share(metrics.sunPct) },
     { label: t('facts.earth'), value: share(metrics.earthPct) },
     { label: t('facts.window'), value: share(metrics.windowPct), tone: 'window' },
+    { label: t('facts.dsn'), value: share(dsnShare(samples)) },
     { label: t('facts.longestWindow'), value: span(longest, t('facts.noWindow')) },
     { label: t('facts.longestNight'), value: span(night, t('facts.noNight')) },
   ];

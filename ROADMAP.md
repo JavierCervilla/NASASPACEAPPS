@@ -46,7 +46,8 @@ completa está en el documento «Ventana Lunar · Especificación y roadmap».
 - [x] Aplicación instalable (PWA) con el icono J2: manifiesto por idioma con accesos directos a sitios destacados,
   favicon con la fase real de la Luna y el estado del sitio, pantalla de carga con la fase, y uso sin conexión con los
   últimos datos (VENT-28)
-- [ ] Modo DSN con Goldstone, Canberra y Robledo (VENT-7)
+- [x] Modo DSN con Goldstone, Canberra y Robledo: bloque «Listening on Earth» en la ficha y el móvil, vista «DSN»
+  con la Tierra vista desde la Luna y la banda de 24 h, relevos al minuto y «No link» primero (VENT-7)
 - [x] Coordenadas a medida: cualquier lat/lon, con el astronauta del Apolo que se arrastra a cualquier punto del
   globo o del mapa polar, y el punto en la dirección para compartirlo (VENT-10)
 - [x] Pin sobrio en lugar del astronauta para elegir un punto: clic en el PC, mantener pulsado en el móvil, «Drop a

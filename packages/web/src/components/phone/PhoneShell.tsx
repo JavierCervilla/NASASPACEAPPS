@@ -25,15 +25,18 @@
 
 /**
  * The phone layout over the globe: the glass top bar, the bottom sheet
- * (site summary with widgets, the site picker or the calendar) and the
- * floating tab bar. Rendered only below the phone breakpoint.
+ * (site summary with widgets, the site picker, the calendar, or who
+ * listens on Earth in the DSN view, VENT-7) and the floating tab bar.
+ * Rendered only below the phone breakpoint.
  */
 import { useEffect, useRef } from 'react';
 import { selectedSite } from '../../pin/selected-site';
 import { formatInstant } from '../../calendar/instant-format';
+import type { View } from '../../lib/view-tabs';
 import type { WatchedValue } from '../../lib/watched-value';
 import type { PhoneSite } from '../../phone/phone-site';
 import { sheetActions } from '../../phone/sheet-actions';
+import { viewActions } from '../../phone/view-actions';
 import {
   hoursStatus,
   siteState,
@@ -41,6 +44,8 @@ import {
 } from '../../phone/site-state';
 import type { SiteStore } from '../../phone/site-store';
 import { CalendarSheet } from '../calendar/CalendarSheet';
+import { DsnSheet, DsnStage } from '../dsn/DsnPhone';
+import { useDsn } from '../dsn/use-dsn';
 import { useTime, type CalendarParts } from '../calendar/hooks';
 import { useSheetAside } from '../pin/use-sheet-aside';
 import { useSavedName } from '../saved/use-saved-name';
@@ -63,6 +68,8 @@ interface Props {
   readonly parts: CalendarParts;
   /** The site's base path, for the site's thumbnail. */
   readonly base: string;
+  /** The view the address names: the DSN view has its own tab here. */
+  readonly view: View;
 }
 
 /**
@@ -89,7 +96,8 @@ function usePhoneState({ sites, store, parts }: Props) {
   const select = (id: string): void => store.select(id, 'list');
   const actions = sheetActions(panel.setDetent, select, panel.setView);
   const pill = { state, lines, computed };
-  return { site, widgets, when, at, ...pill, ...panel, ...actions };
+  const dsn = useDsn(site, at, hours);
+  return { site, widgets, when, at, dsn, ...pill, ...panel, ...actions };
 }
 
 type PhoneState = ReturnType<typeof usePhoneState>;
@@ -104,7 +112,7 @@ const SHEET_LABELS = { sites: 'site.choose', calendar: 'sheet.calendar' } as con
  */
 function useSheetWiring(
   phone: PhoneState,
-  sheetEdge: Props['sheetEdge'],
+  { sheetEdge, view }: Pick<Props, 'sheetEdge' | 'view'>,
   dim: (value: number) => void,
 ) {
   const tabs = useRef<HTMLElement>(null);
@@ -121,7 +129,7 @@ function useSheetWiring(
     edge: tabs,
     bar,
   };
-  const current = atFull ? phone.view : 'globe';
+  const current = atFull ? phone.view : view === 'dsn' ? 'dsn' : 'globe';
   return { tabs, bar, current, sheet } as const;
 }
 
@@ -130,38 +138,31 @@ function useSheetWiring(
  * summary.
  */
 function SheetBody(props: { phone: PhoneState } & Props) {
-  const { phone, sites, parts, base } = props;
-  const { site, state, widgets, when } = phone;
+  const { phone, sites, parts, base, view } = props;
+  const { site, state, widgets, when, dsn } = phone;
   if (phone.detent === 'full' && phone.view === 'calendar') {
     return <CalendarSheet parts={parts} site={site} state={state} />;
   }
   if (phone.detent === 'full') {
-    return (
-      <SitesPanel
-        sites={sites}
-        selected={site}
-        state={state}
-        onPick={phone.pick}
-        onDone={phone.close}
-        base={base}
-        source={parts.source}
-      />
-    );
+    const { pick: onPick, close: onDone } = phone;
+    const panel = { sites, selected: site, state, onPick, onDone, base };
+    return <SitesPanel {...panel} source={parts.source} />;
   }
+  if (view === 'dsn') return <DsnSheet dsn={dsn} />;
   const { result, retry: onRetry } = widgets;
   const source = { month: widgets, atMs: phone.at };
   const notes = <SourceCaption {...source} />;
-  const summary = { site, result, onRetry, when, base, notes };
+  const summary = { site, result, onRetry, when, base, notes, dsn };
   return <SiteSummary {...summary} status={<SourceDown {...source} />} />;
 }
 
 function PhoneUi(props: Props) {
   const phone = usePhoneState(props);
   const [scrim, dim] = useScrim();
-  const wiring = useSheetWiring(phone, props.sheetEdge, dim);
+  const wiring = useSheetWiring(phone, props, dim);
   const { tabs, bar, current, sheet } = wiring;
   const tabActions = {
-    onGlobe: phone.close,
+    ...viewActions(location, props.view, phone),
     onCalendar: phone.calendar,
     onSites: phone.open,
   };
@@ -171,6 +172,7 @@ function PhoneUi(props: Props) {
   return (
     <div className="phone">
       <div ref={scrim} className="phone-scrim" aria-hidden="true" />
+      {props.view === 'dsn' ? <DsnStage dsn={phone.dsn} /> : null}
       <PhoneBar ref={bar} {...pill} />
       <Sheet {...sheet}>
         <SheetBody phone={phone} {...props} />

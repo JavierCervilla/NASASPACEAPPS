@@ -43,9 +43,11 @@ export {
   EARTH_MIN_ELEVATION_DEG,
   SUN_MIN_ELEVATION_DEG,
   activeDsn,
+  earthLink,
   hasEarth,
   hasSun,
   isWindow,
+  type EarthLink,
 } from './visibility.ts';
 export { buildHourSamples, type SampleInputs } from './samples.ts';
 export { groupBlocks, longestBlock } from './blocks.ts';
@@ -67,3 +69,25 @@ export { moonPosition, type MoonPosition } from './moon.ts';
 export { subEarthPoint } from './libration.ts';
 export { moonElevationFromDsn } from './dsn-sky.ts';
 export type { Horizontal } from './horizon.ts';
+export {
+  dsnElevations,
+  dsnSpans,
+  dsnStateAt,
+  type DsnSpan,
+  type DsnState,
+} from './dsn-timeline.ts';
+export {
+  dsnOutlook,
+  nextTurn,
+  runsWhere,
+  turnsOf,
+  type DsnOutlook,
+  type DsnTurn,
+  type Interval,
+} from './dsn-outlook.ts';
+export {
+  earthSubSolarPoint,
+  subLunarPoint,
+  type EarthPoint,
+} from './earth-view.ts';
+export { MINUTE_MS } from './minute-runs.ts';

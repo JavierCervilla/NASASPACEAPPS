@@ -24,7 +24,8 @@
  */
 
 /**
- * The phone shell's line icons, drawn from the validated canvas (the pin,
+ * The phone shell's line icons, drawn from the validated canvas (the DSN
+ * tab's dish, VENT-7, canvas «DsnC»; the pin,
  * VENT-37: a ring with its centre dot, canvas «Pin C»; the bookmark of
  * «Save» and the saved site's menu, canvases «Save A» and «Saved list»). They
  * take the text colour (`currentColor`) and are hidden from assistive
@@ -35,6 +36,7 @@ import type { ReactElement } from 'react';
 export type IconName =
   | 'globe'
   | 'calendar'
+  | 'dsn'
   | 'horizon'
   | 'sites'
   | 'chevron'
@@ -59,6 +61,7 @@ const STROKE = {
 const SHAPES: Readonly<Record<IconName, [number, ReactElement]>> = {
   globe: [22, <g {...STROKE}><circle cx="11" cy="11" r="8" /><path d="M3 11h16M11 3c3 3 3 13 0 16M11 3c-3 3-3 13 0 16" strokeWidth="1.4" /></g>],
   calendar: [22, <g {...STROKE}><rect x="3" y="4" width="16" height="15" rx="3" /><path d="M3 9h16M8 4v15" strokeWidth="1.4" /></g>],
+  dsn: [22, <g {...STROKE}><path d="M3.5 9.5a7.5 7.5 0 0 0 9 9z" /><path d="M8 14l4.5-4.5M13.5 4.5a4 4 0 0 1 4 4M13.5 1.5a7 7 0 0 1 7 7M7 20.5h6" strokeWidth="1.4" /></g>],
   horizon: [22, <g {...STROKE}><path d="M2 15h18" /><circle cx="14" cy="9" r="3" /></g>],
   sites: [22, <path {...STROKE} d="M5 6h12M5 11h12M5 16h8" />],
   chevron: [12, <path {...STROKE} d="M2 4l4 4 4-4" />],

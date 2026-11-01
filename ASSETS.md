@@ -244,3 +244,23 @@ list (Mons Mouton uses Mons Mouton Plateau's; Nobile Rims 1 and 2 use Griffin-1'
   2026-11-01); two runs give byte-identical files, and `--check` bakes again and fails when the committed sheet or its
   manifest differ. `packages/web/tests/astronaut-figures.test.ts` holds the manifest to the page's layout, the sheet's
   sha256 and the tokens.
+
+## Earth land mask (VENT-7)
+
+| File | Size | sha256 |
+|---|---|---|
+| `packages/web/src/dsn/land.json` | 360 x 180 cells of 1°, 923 runs, 6 139 bytes | `e446610cf7a4c1bcd43ff701737bdae40bf5a5acc583515a5f1e2e2495dc885f` |
+
+- **Source**: Natural Earth 1:110m land polygons (version 4.1.0), as the TopoJSON `land-110m.json` of the npm package
+  `world-atlas` 2.0.2 (https://registry.npmjs.org/world-atlas/-/world-atlas-2.0.2.tgz, sha256
+  `032e7765f2ce00edaeafec23ff22bc3b77e42987c257da944cc585b452c05b97`; `land-110m.json` itself sha256
+  `ead5f68119c49a9250902e7da303bcb209341bbb8fefe7369a439b48b704658a`), downloaded on 2026-11-01.
+- **What it is**: which 1° cells of the Earth are land, as runs per row of latitude from the north. The DSN pictures
+  (the small Earth of the «Listening on Earth» block and the DSN view's big one) draw the land as dots from it, so
+  no coastline geometry ships.
+- **Licence**: Natural Earth is in the public domain («No permission is needed to use Natural Earth»,
+  https://www.naturalearthdata.com/about/terms-of-use/). The `world-atlas` packaging is ISC (© 2013-2019 Michael
+  Bostock); only the derived mask ships, not the package.
+- **How it was made**: `node packages/web/scripts/earth-land.mjs land-110m.json` decodes the TopoJSON arcs (no
+  dependency), tests the centre of every 1° cell against the land rings (even-odd) and fills every cell south of 84° S,
+  where Antarctica's ring closes along the pole. Deterministic: the same input writes the same bytes.

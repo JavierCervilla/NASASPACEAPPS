@@ -130,10 +130,13 @@ interface SectionProps {
   readonly view: ReturnType<typeof useView>;
 }
 
-/** The globe with its Layers key; hidden while the polar map shows. */
+/**
+ * The globe with its Layers key; hidden while the polar map or the DSN
+ * view shows (phones have no polar map, but have the DSN view, VENT-7).
+ */
 function GlobeSection({ globe, source, computed, view }: SectionProps) {
   const { t } = useI18n();
-  const hidden = !usePhone() && view !== 'globe';
+  const hidden = usePhone() ? view === 'dsn' : view !== 'globe';
   return (
     <section className="globe" aria-label={t('globe.section')} hidden={hidden} data-computed={computed}>
       <Globe {...globe} />
@@ -161,7 +164,7 @@ function Island({ sitesUrl, base, selectedId, sites }: Props) {
       <PinContext value={kit}>
         <GlobeSection {...section} />
         <DesktopShell {...{ sites, store, parts, base, view }} />
-        <PhoneShell {...{ sites, store, sheetEdge, parts, base }} />
+        <PhoneShell {...{ sites, store, sheetEdge, parts, base, view }} />
         <OfflineNotice base={base} />
         <PinLayers />
       </PinContext>

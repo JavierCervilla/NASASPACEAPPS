@@ -103,7 +103,6 @@ describe('loadWidgets, rolling horizon', () => {
     const result = await loadWidgets(api.source, 'im2-athena', Date.parse('2027-12-31T21:00:00Z'));
     if (result.kind !== 'ready') throw new Error(result.kind);
     expect(result.widgets.sun.value).toBe('at least 3 h');
-    expect(result.widgets.dsn.detail).toBe('Madrid · at least 3 h left');
     expect(api.urls[0]?.searchParams.get('to')).toBe('2027-12-31T23:00:00Z');
   });
 });

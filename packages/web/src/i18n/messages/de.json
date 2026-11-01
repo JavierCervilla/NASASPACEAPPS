@@ -27,7 +27,7 @@
   "layers.title": "Ebenen",
   "layers.sites": "Landeplätze",
   "layers.zones": "Ungefähre Gebiete",
-  "layers.rovers": "Geister-Rover (bald)",
+  "layers.rovers": "Geister-Rover · bald",
   "source.label": "Datenquelle",
   "source.computed": "Berechnet",
   "source.horizons": "Horizons",
@@ -238,5 +238,36 @@
   "pin.say.cancelled": "Abgebrochen: Nichts hat sich geändert.",
   "pin.hint.click": "Klicke auf den Mond, um einen Pin zu setzen",
   "pin.hint.hold": "Halte den Mond gedrückt, um einen Pin zu setzen",
-  "pin.hint.dismiss": "Hinweis schließen"
+  "pin.hint.dismiss": "Hinweis schließen",
+  "layers.saved": "Gespeicherte Orte",
+  "precision.saved": "auf diesem Gerät gespeichert",
+  "saved.save": "Sichern",
+  "saved.saved": "Gesichert",
+  "saved.unsave": "Gesichert: tippen, um ihn von diesem Gerät zu entfernen",
+  "saved.nameLabel": "Name des Orts",
+  "saved.device": "Nur auf diesem Gerät gespeichert",
+  "saved.full": {
+    "one": "Du kannst bis zu {n} Ort speichern. Lösche einen, um einen weiteren zu speichern.",
+    "other": "Du kannst bis zu {n} Orte speichern. Lösche einen, um einen weiteren zu speichern."
+  },
+  "saved.marker": "Gespeicherter Ort {name}",
+  "saved.title": "Gespeichert",
+  "saved.segment": {
+    "one": "Gespeichert, {n} Ort",
+    "other": "Gespeichert, {n} Orte"
+  },
+  "saved.list": "Gespeicherte Orte",
+  "saved.emptyTitle": "Noch keine gespeicherten Orte",
+  "saved.emptyText": "Setze eine Nadel auf den Mond und tippe auf Sichern, um den Ort hier zu behalten",
+  "saved.more": "Mehr zu {name}",
+  "saved.rename": "Umbenennen",
+  "saved.copy": "Koordinaten kopieren",
+  "saved.delete": "Löschen",
+  "saved.renameLabel": "Neuer Name für {name}",
+  "saved.copied": "Koordinaten kopiert: {coords}",
+  "saved.copyFailed": "Die Koordinaten konnten nicht kopiert werden",
+  "saved.deleted": "{name} gelöscht",
+  "saved.undo": "Widerrufen",
+  "custom.saved": "Gesichert",
+  "custom.savedNear": "Gesichert · nahe {name}"
 }

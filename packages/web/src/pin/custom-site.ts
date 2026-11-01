@@ -64,18 +64,38 @@ function nearFacts(
 }
 
 /**
- * The site of the custom point at `point` (already on the grid), named by
+ * A saved point's facts: «Saved · near Nobile Rim 1» and «26 km», or
+ * «Saved» alone without a listed site to be near (VENT-37).
+ */
+function savedFacts(
+  i18n: I18n,
+  nearest: ReturnType<typeof nearestSite<PhoneSite>>,
+): CustomFacts {
+  const facts = nearFacts(i18n, nearest);
+  const place = nearest ? splitName(nearest.site.name).title : '';
+  const near = place
+    ? i18n.t('custom.savedNear', { name: place })
+    : i18n.t('custom.saved');
+  return { ...facts, near, saved: true };
+}
+
+/**
+ * The site of the custom point at `point` (already on the grid), placed by
  * the nearest of `sites`; its group is that site's, so the site picker
- * opens on the region around it.
+ * opens on the region around it. «Custom point», or `savedName` when the
+ * point is saved on this device (VENT-37).
  */
 export function customSite(
   point: LatLon,
   sites: readonly PhoneSite[],
   i18n: I18n,
+  savedName?: string,
 ): PhoneSite {
   const nearest = nearestSite(point, sites);
-  const name = i18n.t('custom.title');
-  const custom = nearFacts(i18n, nearest);
+  const name = savedName ?? i18n.t('custom.title');
+  const custom = savedName === undefined
+    ? nearFacts(i18n, nearest)
+    : savedFacts(i18n, nearest);
   return {
     id: customId(point),
     name,

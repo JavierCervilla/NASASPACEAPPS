@@ -30,7 +30,7 @@
 import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import { numberBadges } from '../src/polar/badge-layout';
-import { labelBox, visibleLabels } from '../src/polar/label-layout';
+import { labelBox, labelsOverPins, visibleLabels } from '../src/polar/label-layout';
 import { toPx } from '../src/polar/layout-geometry';
 import { markerOf, polarMarkers } from '../src/polar/polar-markers';
 import type { PhoneSite } from '../src/phone/phone-site';
@@ -129,6 +129,19 @@ describe('polar labels', () => {
     // c's dot sits just left of a as well.
     const crowded = visibleLabels([marker('a', 0, 0), marker('b', 0.06, 0), marker('c', -0.06, 0)], 500, null);
     expect(crowded.has('a')).toBe(false);
+  });
+
+  it('tells the labels that cross the standing pin\'s ring, which stay where they are (VENT-37)', () => {
+    // «Nobile · 3 sites» with the pin dropped just right of its dot, where its label is.
+    const nobile = marker('nobile', 0, 0, false, 'Nobile · 3 sites');
+    const far = marker('far', -0.6, -0.6);
+    const markers = [nobile, far];
+    const labels = visibleLabels(markers, 500, null);
+    expect(labels.get('nobile')).toBe('right');
+    const layout = { markers, labels, size: 500, selectedId: null };
+    expect([...labelsOverPins(layout, [at(0.1, 0)])]).toEqual(['nobile']);
+    expect([...labelsOverPins(layout, [at(0.5, 0.5)])]).toEqual([]);
+    expect([...labelsOverPins(layout, [])]).toEqual([]);
   });
 });
 

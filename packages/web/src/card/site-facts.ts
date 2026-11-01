@@ -80,9 +80,10 @@ export interface PointLine {
 
 /**
  * How exact a site's point is, from its kind and its mission's status;
- * the custom point is where the astronaut was dropped.
+ * the custom point is where the pin was dropped, or saved.
  */
 function precision(i18n: I18n, site: CardSite): string {
+  if (site.custom?.saved) return i18n.t('precision.saved');
   if (site.custom) return i18n.t('precision.dropped');
   if (site.approximate) return i18n.t('precision.zone');
   const status = site.status ?? '';

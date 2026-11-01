@@ -296,6 +296,16 @@
   pointer-events: none;
 }
 
+/*
+ * Taller than its view (large text), the key scrolls inside it rather
+ * than run off the top (VENT-37); its switches take the wheel.
+ */
+:is(.globe, .polar) .globe-layers {
+  max-height: calc(100% - 40px);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
 .globe-layers h2 {
   margin: 0;
   font-size: 0.75rem;
@@ -318,10 +328,6 @@
   display: flex;
   align-items: center;
   gap: 6px;
-}
-
-.globe-layers .soon {
-  color: var(--text-muted);
 }
 
 /*

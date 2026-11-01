@@ -25,8 +25,10 @@
 
 /**
  * The pin's page-wide layers (VENT-10, VENT-37): the carried pin over
- * everything, and the polite live region that says its moves.
+ * everything, the polite live region that says its moves, and the undo
+ * of a deleted saved site.
  */
+import { UndoToast } from '../saved/UndoToast';
 import { CarryLayer } from './CarryLayer';
 import { LiveRegion } from './LiveRegion';
 
@@ -35,6 +37,7 @@ export function PinLayers() {
     <>
       <CarryLayer />
       <LiveRegion />
+      <UndoToast />
     </>
   );
 }

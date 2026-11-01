@@ -27,7 +27,8 @@
  * The Sites sheet at full (validated canvas «LangPhoneB»): the site
  * picker with a «Language · English ›» row under its title, grouped with
  * the «Data source» switch (VENT-36, canvas option C), and above them
- * «Drop a pin» (VENT-37), the way to the pin without a press. The row
+ * «Drop a pin» (VENT-37), the way to the pin without a press, and the
+ * «Layers» group, each layer a switch (VENT-37, canvas «Layers»). The row
  * pushes the language list into the sheet with a Back control, as an iOS
  * navigation push: the picker slides left as the list comes in from the
  * right, and Back (or Escape) slides them home and gives the focus back
@@ -39,6 +40,7 @@ import type { SourceStore } from '../../source/data-source';
 import { useI18n } from '../i18n-context';
 import { LanguageList } from '../lang/LanguageList';
 import { DropPin } from '../pin/DropPin';
+import { LayersGroup } from '../saved/LayerToggles';
 import { SourceRow } from '../source/SourceSwitch';
 import { Icon } from './Icon';
 import { SitePicker, type PickerProps } from './SitePicker';
@@ -96,13 +98,17 @@ interface SettingsProps {
   readonly onOpen: () => void;
 }
 
-/** Under the title: «Drop a pin», then the language and the data source. */
+/**
+ * Under the title: «Drop a pin», the layers, then the language and the
+ * data source.
+ */
 function Settings({ row, source, onOpen }: SettingsProps) {
   return (
     <>
       <div className="settings-group">
         <DropPin variant="row" />
       </div>
+      <LayersGroup />
       <div className="settings-group">
         <LanguageRow ref={row} onOpen={onOpen} />
         <SourceRow source={source} icon={<Icon name="database" />} />

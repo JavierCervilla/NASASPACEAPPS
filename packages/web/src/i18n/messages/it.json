@@ -27,7 +27,7 @@
   "layers.title": "Livelli",
   "layers.sites": "Siti di atterraggio",
   "layers.zones": "Zone approssimative",
-  "layers.rovers": "Rover fantasma (presto)",
+  "layers.rovers": "Rover fantasma · presto",
   "source.label": "Fonte dei dati",
   "source.computed": "Calcolato",
   "source.horizons": "Horizons",
@@ -242,5 +242,38 @@
   "pin.say.cancelled": "Annullato: non è cambiato nulla.",
   "pin.hint.click": "Fai clic sulla Luna per mettere un segnaposto",
   "pin.hint.hold": "Tieni premuto sulla Luna per mettere un segnaposto",
-  "pin.hint.dismiss": "Chiudi il suggerimento"
+  "pin.hint.dismiss": "Chiudi il suggerimento",
+  "layers.saved": "Siti salvati",
+  "precision.saved": "salvato su questo dispositivo",
+  "saved.save": "Salva",
+  "saved.saved": "Salvato",
+  "saved.unsave": "Salvato: premi per toglierlo da questo dispositivo",
+  "saved.nameLabel": "Nome del sito",
+  "saved.device": "Conservato solo su questo dispositivo",
+  "saved.full": {
+    "one": "Puoi tenere fino a {n} sito salvato. Eliminane uno per salvarne un altro.",
+    "many": "Puoi tenere fino a {n} di siti salvati. Eliminane uno per salvarne un altro.",
+    "other": "Puoi tenere fino a {n} siti salvati. Eliminane uno per salvarne un altro."
+  },
+  "saved.marker": "Sito salvato {name}",
+  "saved.title": "Salvati",
+  "saved.segment": {
+    "one": "Salvati, {n} sito",
+    "many": "Salvati, {n} di siti",
+    "other": "Salvati, {n} siti"
+  },
+  "saved.list": "Siti salvati",
+  "saved.emptyTitle": "Ancora nessun sito salvato",
+  "saved.emptyText": "Metti un segnaposto sulla Luna e tocca Salva per tenere qui un sito",
+  "saved.more": "Altro per {name}",
+  "saved.rename": "Rinomina",
+  "saved.copy": "Copia le coordinate",
+  "saved.delete": "Elimina",
+  "saved.renameLabel": "Nuovo nome per {name}",
+  "saved.copied": "Coordinate copiate: {coords}",
+  "saved.copyFailed": "Impossibile copiare le coordinate",
+  "saved.deleted": "{name} eliminato",
+  "saved.undo": "Annulla",
+  "custom.saved": "Salvato",
+  "custom.savedNear": "Salvato · vicino a {name}"
 }

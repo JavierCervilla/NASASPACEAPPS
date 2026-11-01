@@ -25,8 +25,9 @@
 
 /**
  * The site the views show for a selected id: a listed one, the custom
- * point (whose id carries its point), or, for an id the build-time list
- * lacks, a neutral site with that id. Pure.
+ * point (whose id carries its point) under its saved name if `savedName`
+ * knows one (VENT-37), or, for an id the build-time list lacks, a neutral
+ * site with that id. Pure.
  */
 import type { I18n } from '../i18n/translate';
 import type { PhoneSite } from '../phone/phone-site';
@@ -38,9 +39,11 @@ export function selectedSite<T extends PhoneSite>(
   sites: readonly T[],
   id: string,
   i18n: I18n,
+  savedName: (id: string) => string | undefined = () => undefined,
 ): T | PhoneSite {
   const listed = sites.find((site) => site.id === id);
   if (listed) return listed;
   const point = customPointOf(id);
-  return point ? customSite(point, sites, i18n) : unlistedSite(id);
+  if (!point) return unlistedSite(id);
+  return customSite(point, sites, i18n, savedName(id));
 }

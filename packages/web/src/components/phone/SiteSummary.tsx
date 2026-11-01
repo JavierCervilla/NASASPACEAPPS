@@ -26,7 +26,8 @@
 /**
  * The sheet at peek and half: the site's LOLA relief thumbnail (south of
  * 80° S), its name with what tells it apart (IM-2 and the Mons Mouton
- * zone share a place), its coordinates and the widgets.
+ * zone share a place), its coordinates and the widgets; for the custom
+ * point, «Save» and, once saved, its name field (VENT-37).
  */
 import type { ReactNode } from 'react';
 import { formatCoords } from '../../i18n/format';
@@ -34,6 +35,7 @@ import { siteLabels, type PhoneSite } from '../../phone/phone-site';
 import type { WidgetsResult } from '../../phone/widgets-loader';
 import { thumbOf } from '../../thumbs/thumbs';
 import { useI18n } from '../i18n-context';
+import { SaveButton, SaveName } from '../saved/SaveControl';
 import { SiteThumb } from '../SiteThumb';
 import { Widgets } from './Widgets';
 
@@ -67,24 +69,33 @@ function Coords({ site }: { readonly site: PhoneSite }) {
   );
 }
 
-export function SiteSummary(props: Props) {
-  const { site, result, onRetry, when, base, status, notes } = props;
-  const ready = result.kind === 'ready';
+/** The thumbnail, the name with «Save» for a custom point, the meta line. */
+function SummaryHead({ site, base }: Pick<Props, 'site' | 'base'>) {
   const { title, subtitle } = siteLabels(site);
   const i18n = useI18n();
   const thumb = thumbOf({ id: site.id, place: title }, base, i18n);
   return (
+    <div className="summary__head">
+      <SiteThumb thumb={thumb} sizes={THUMB_SIZES} className="summary__thumb" />
+      <h2 className="summary__name">{title}</h2>
+      <SaveButton site={site} />
+      <p className="summary__meta">
+        {!subtitle || subtitle === title ? null : (
+          <span className="summary__subtitle">{subtitle}</span>
+        )}
+        <Coords site={site} />
+      </p>
+    </div>
+  );
+}
+
+export function SiteSummary(props: Props) {
+  const { site, result, onRetry, when, base, status, notes } = props;
+  const ready = result.kind === 'ready';
+  return (
     <div className="summary">
-      <div className="summary__head">
-        <SiteThumb thumb={thumb} sizes={THUMB_SIZES} className="summary__thumb" />
-        <h2 className="summary__name">{title}</h2>
-        <p className="summary__meta">
-          {!subtitle || subtitle === title ? null : (
-            <span className="summary__subtitle">{subtitle}</span>
-          )}
-          <Coords site={site} />
-        </p>
-      </div>
+      <SummaryHead site={site} base={base} />
+      <SaveName site={site} />
       {ready ? status : null}
       <Widgets result={result} onRetry={onRetry} when={when} />
       {ready ? notes : null}

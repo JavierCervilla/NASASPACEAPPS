@@ -27,10 +27,11 @@
  * Where the pin is (VENT-10, VENT-37): nowhere yet, or on a point of the
  * Moon. Dropping it makes that point the selected site, the custom point,
  * and writes it into the address (`?lat&lon`), so it can be shared and
- * survives a reload. Picking a listed site (in the list or on a marker)
- * takes the pin away and the point out of the address (moving `?site=`
- * to that site when the address names one), so a reload opens what is
- * shown.
+ * survives a reload; selecting a custom point another way (a saved site
+ * in the list) stands the pin there the same. Picking a listed site (in
+ * the list or on a marker) takes the pin away and the point out of the
+ * address (moving `?site=` to that site when the address names one), so
+ * a reload opens what is shown.
  */
 import type { LatLon } from '../lib/polar-projection';
 import {
@@ -80,13 +81,26 @@ function restoreFrom(
   if (point) drop(point);
 }
 
-/** Takes the pin away once a listed site is selected; returns the stop. */
-function clearOnListed(
+/**
+ * Follows the selection: a listed site takes the pin away, a custom point
+ * selected without a drop stands it there and names it in `address`;
+ * returns the stop.
+ */
+function followSelection(
   store: SiteStore,
   place: WatchedValue<Place>,
+  address: Address,
 ): () => void {
   return store.subscribe(() => {
-    if (!customPointOf(store.get().id)) place.set(NONE);
+    const { id } = store.get();
+    const point = customPointOf(id);
+    const now = place.get();
+    if (!point) {
+      place.set(NONE);
+    } else if (now.kind !== 'moon' || customId(now.point) !== id) {
+      place.set({ kind: 'moon', point });
+      address.replace(searchWithPoint(address.search(), point));
+    }
   });
 }
 
@@ -100,7 +114,7 @@ export function createPlaces(
 ): Places & { readonly stop: () => void } {
   const place = createWatchedValue<Place>(NONE);
   const unfollow = followAddress(store, address);
-  const unclear = clearOnListed(store, place);
+  const unclear = followSelection(store, place, address);
   const drop = (point: LatLon): void => {
     place.set({ kind: 'moon', point });
     store.select(customId(point), 'globe');

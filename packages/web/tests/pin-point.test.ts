@@ -170,6 +170,17 @@ describe('the custom point as a site', () => {
     expect(selectedSite(SITES, 'mystery', EN)).toMatchObject({ name: 'mystery' });
   });
 
+  it('wears its saved name, «Saved · near …», once saved on this device (VENT-37)', () => {
+    const saved = customSite(point, SITES, EN, 'Rim camp');
+    const km = formatKm(EN, nearestSite(point, SITES)?.km ?? 0);
+    expect(siteLabels(saved)).toMatchObject({ title: 'Rim camp', subtitle: `Saved · near Nobile Rim 1 · ${km}`, pill: 'Rim camp' });
+    expect(pointLine(EN, saved).note).toBe('saved on this device');
+    expect(siteLabels(customSite(point, [], EN, 'Rim camp')).subtitle).toBe('Saved');
+    const named = (id: string) => (id === custom.id ? 'Rim camp' : undefined);
+    expect(selectedSite(SITES, custom.id, EN, named)).toMatchObject({ name: 'Rim camp', custom: { saved: true } });
+    expect(selectedSite(SITES, '@-80.00,1.00', EN, named)).toMatchObject({ name: 'Custom point' });
+  });
+
   it('has computed hours at its point', () => {
     expect(pointsOf(SITES)(custom.id)).toEqual({ latDeg: -85.87, lonEastDeg: 61.34 });
   });

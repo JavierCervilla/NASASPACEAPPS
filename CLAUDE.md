@@ -149,7 +149,8 @@ Every visible change follows `.claude/skills/apple-design/SKILL.md` (vendored fr
   circle, `src/pin/nearest-site.ts`; of sites within 0.5 km of the nearest, the shortest name; no subtitle when no
   listed site has coordinates), «… · pinned here», computed at once and then from `/api/v1/ephemeris?lat&lon`
   (`src/pin/point-hours.ts`). On the polar map the site labels and number badges paint over the pin (z-index 5 over
-  4), so a name beside it stays readable. The address carries the point, `?lat=…&lon=…` beside `?site=`
+  4), and a label across the pin's ring keeps its place on a dark backing (`labelsOverPins`,
+  `src/polar/label-layout.ts`; VENT-37), so a name beside it stays readable. The address carries the point, `?lat=…&lon=…` beside `?site=`
   (`src/pin/point-param.ts`: plain decimals only, latitude within ±90°, east longitude from -180° to 360° like the API,
   wrapped; anything else is ignored, never clamped), so it is shareable and reloads; picking a listed site (in the
   list or on a marker) takes the pin away and the point out of the address, and moves an existing `?site=` to that
@@ -159,7 +160,9 @@ Every visible change follows `.claude/skills/apple-design/SKILL.md` (vendored fr
   cancels, and a polite live region says each step; the drop says where it landed and how to move it again (Enter on
   the pin), while the focus stays on the button. The first-time hint (`PinHint.tsx`, `src/pin/first-hint.ts`): «Click
   the Moon to drop a pin», or «Touch and hold the Moon to drop a pin» under `(pointer: coarse)` (by CSS), over the
-  globe and in the polar panel's corner on desktop, under the top bar on phones (measured); gone after the first drop
+  globe and in the polar panel's corner on desktop, under the top bar on phones (measured); on desktop it keeps to the room
+  right of the Layers key's column (in rem, so it holds at 200 % text), centred over the globe and in the polar
+  panel's top right corner, so it never covers the key; gone after the first drop
   or its ✕, kept in `localStorage` (`ventana.pinHint`, refused storage only brings it back next visit). The
   astronaut's assets stay for VENT-34, where it comes back (dropped, it takes you to the 3D terrain), and nothing in
   the page imports them, so none ships: NASA's «Astronaut» model (`packages/web/models/astronaut.glb` and its suit
@@ -173,6 +176,41 @@ Every visible change follows `.claude/skills/apple-design/SKILL.md` (vendored fr
   (`src/globe/pole-uv.ts`), so the south pole shows no star; its gradient choices (the 180° seam, the polar cap) are
   scalar GLSL (`GRADIENT_GLSL`) that `tests/globe-pole.test.ts` runs as JavaScript. A site card without an image shows
   its state badge in its head.
+- **Globe layers and saved sites** (VENT-37 part 2, canvases «Layers», «Save A», «Saved list», «DeleteUndo»,
+  «Empty»). The globe draws through a layer registry (`src/globe/layers/`, API and example for other teams in
+  `docs/globe-layers.md`): `createLayerRegistry` (pure: register with an id, a `z` and a visible flag, unregister,
+  `setVisible`, `isVisible`, `list` by `z`, `subscribe`), owned by the page and passed to the globe, which mounts it
+  from its first frame (`bind.ts`: one root per layer over the canvas, in `z` order, hidden while the layer is, each
+  its own stacking context at z-index 0) and registers the two site layers on it (`site-layers.ts`: «Landing sites»
+  and «Approximate zones» show or hide their kind on the one marker layer, which keeps its cull and nearest-dot
+  clicks; the selected site's marker always shows). `pointLayer` (`point-layer.ts`) draws a layer's points as 44 px
+  buttons (`.globe-point`), hidden behind the limb, a click routed to the point nearest the pointer. The flags are
+  kept in `localStorage` (`ventana.layers`, read defensively by `kept-flags.ts`) and the polar map follows them
+  (`components/polar/use-polar-layers.ts`). The Layers key is switches (`components/saved/LayerToggles.tsx`: a
+  checkbox with `role="switch"` per row, its key mark, the whole row its label; neutral track, never a signal colour):
+  «Landing sites», «Approximate zones», «Saved sites N», «Ghost rovers · soon» off and disabled; on desktop in the key
+  (which scrolls when taller than its view), on phones as a «Layers» group in the Sites sheet, where an empty «Saved
+  sites» row says «Drop a pin on the Moon and tap Save to keep a site here». Saving (option A,
+  `components/saved/SaveControl.tsx`): «Save» with a bookmark in the head of the desktop card and of the phone sheet
+  for a custom point; saved it reads «Saved» (bookmark filled; a press deletes it, with the undo) and a «Name this
+  site» field, starting from «Near …», with «Kept on this device only». The saved sites (`src/saved/`) are a versioned
+  document in `localStorage` (`ventana.savedSites`, `{ v: 1, sites }`), every entry checked on read and a bad one
+  dropped alone (`saved-schema.ts`: id = its point's grid id, `@-85.87,61.34`, so stable and one per point; name
+  cleaned, at most 60), newest first, at most 50 (`SAVED_CAP`; a full list says so instead of saving). A saved site is
+  the custom point under its name: `selectedSite(…, savedName)` names it, «Saved · near Nobile Rim 1 · 26 km» and «…
+  saved on this device»; the address carries only `?lat&lon` (names stay on the device), and selecting a custom id in
+  any way stands the pin there (`src/pin/places.ts`). The «Saved sites» layer (`components/saved/use-saved-layer.ts`)
+  draws them as silver pins C, smaller, on the globe and the polar map (`PolarSaved.tsx`); the selected one is the
+  standing pin, in its state. The site lists (phone Sites sheet, desktop popover, `SitePicker.tsx`) gain a «Saved N»
+  segment (`PickerRegions.tsx`), opened when a saved site is selected: rows with the pin, the name, the state at the
+  shared instant with its dot, the point and the check on the selected one, and a «…» menu (`RowMenu.tsx`, a WAI-ARIA
+  menu in the browser's popover, on the top layer: Rename in place, Copy coordinates, said in the live region,
+  Delete). A delete asks nothing: «Deleted <name> · Undo» (`UndoToast.tsx`, polite live region, 5 s, the time stopped
+  while the focus or the pointer is on it; `src/saved/undo.ts`) puts it back where it was. With none saved the segment
+  shows «No saved sites yet» and how to save one. An unsaved custom point heads the other lists, checked, so the
+  selection is always marked. Under the picker's title everything scrolls as one (`.picker__scroll`), so the phone
+  sheet's settings never squeeze the list. The site popover opens and closes its list only on its own toggle, not on
+  a nested menu's.
 - **Five interface languages** (VENT-35): English (the default and the fallback), Spanish, French, German and Italian,
   each on its own static route (`/`, `/es/`, `/fr/`, `/de/`, `/it/`; `pages/[locale]/index.astro`) with `<html lang>`,
   `hreflang` links and `x-default` → `/`. This replaces the Language rule below for the interface only: every word a
@@ -215,7 +253,7 @@ Every visible change follows `.claude/skills/apple-design/SKILL.md` (vendored fr
   `favicon.ico`, `favicon.svg` and the root `apple-touch-icon.png`), fetched past the HTTP cache (`cache: 'reload'`),
   and the build's digest over every file the worker may keep, which names the static cache (`ventana-static-<digest>`),
   so a deploy drops the old one. The install set has a hard budget of 5 MB (`PRECACHE_BUDGET`, human decision
-  2026-10-31): the build logs the precache total and fails over it (4.52 MB since VENT-37 left the astronaut's sprites out; 4.60 MB with them). The 4K and 8K maps, and any build file not
+  2026-10-31): the build logs the precache total and fails over it (4.57 MB with VENT-37's saved sites; 4.52 MB when it left the astronaut's sprites out, 4.60 MB with them). The 4K and 8K maps, and any build file not
   precached, are kept cache first the first time the page fetches them. Under Save-Data the worker is not registered
   at all. Pages and API GETs are network first,
   build files cache first; the network's answer always wins (a copy that cannot be kept, a full quota, is skipped), only

@@ -25,7 +25,8 @@
 
 /**
  * The phone shell's line icons, drawn from the validated canvas (the pin,
- * VENT-37: a ring with its centre dot, canvas «Pin C»). They
+ * VENT-37: a ring with its centre dot, canvas «Pin C»; the bookmark of
+ * «Save» and the saved site's menu, canvases «Save A» and «Saved list»). They
  * take the text colour (`currentColor`) and are hidden from assistive
  * technology: the control around them carries the name.
  */
@@ -39,7 +40,13 @@ export type IconName =
   | 'chevron'
   | 'search'
   | 'database'
-  | 'pin';
+  | 'pin'
+  | 'bookmark'
+  | 'bookmarkFilled'
+  | 'more'
+  | 'rename'
+  | 'copy'
+  | 'delete';
 
 const STROKE = {
   fill: 'none',
@@ -58,6 +65,12 @@ const SHAPES: Readonly<Record<IconName, [number, ReactElement]>> = {
   database: [22, <g {...STROKE}><ellipse cx="11" cy="5.5" rx="7" ry="2.5" /><path d="M4 5.5v11c0 1.4 3.1 2.5 7 2.5s7-1.1 7-2.5v-11M4 11c0 1.4 3.1 2.5 7 2.5s7-1.1 7-2.5" strokeWidth="1.4" /></g>],
   pin: [22, <g {...STROKE}><circle cx="11" cy="11" r="6.5" /><circle cx="11" cy="11" r="2.4" fill="currentColor" stroke="none" /></g>],
   search: [16, <g {...STROKE}><circle cx="7" cy="7" r="5" /><path d="M11 11l3.5 3.5" /></g>],
+  bookmark: [18, <path {...STROKE} d="M5 3h8v12.5l-4-3-4 3z" />],
+  bookmarkFilled: [18, <path {...STROKE} fill="currentColor" d="M5 3h8v12.5l-4-3-4 3z" />],
+  more: [20, <g fill="currentColor"><circle cx="4.5" cy="10" r="1.6" /><circle cx="10" cy="10" r="1.6" /><circle cx="15.5" cy="10" r="1.6" /></g>],
+  rename: [18, <path {...STROKE} d="M11.5 3.5l3 3L6 15H3v-3z" />],
+  copy: [18, <g {...STROKE}><rect x="6" y="6" width="9" height="9" rx="2" /><path d="M12 3.5H5A1.5 1.5 0 0 0 3.5 5v7" /></g>],
+  delete: [18, <path {...STROKE} d="M3.5 5h11M7 5V3.5h4V5M5 5l.8 10h6.4L13 5" />],
 };
 
 /** The icon `name` at its canvas size. */

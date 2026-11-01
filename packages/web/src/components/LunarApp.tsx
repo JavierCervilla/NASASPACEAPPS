@@ -33,9 +33,10 @@
  * player and one cache of the API's hours, so the globe's Sun, the
  * widgets and the calendar show the same time; the sheet's top edge, so
  * the globe frames the selected site above the sheet; and the selected
- * site's state, which its marker on the globe wears.
+ * site's state, which its marker on the globe wears; and the globe's
+ * layers with the sites saved on this device (VENT-37).
  */
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState, type ComponentProps } from 'react';
 import type { Catalogue } from '../i18n/catalogue';
 import type { UiLocale } from '../i18n/locales';
 import { createI18n } from '../i18n/translate';
@@ -52,6 +53,8 @@ import { createSiteStore } from '../phone/site-store';
 import { PinLayers } from './pin/PinLayers';
 import { PinContext } from './pin/context';
 import { useCreatePinKit } from './pin/use-kit';
+import { SavedContext } from './saved/context';
+import { useCreateSavedKit } from './saved/use-saved-kit';
 import type { CalendarParts } from './calendar/hooks';
 import { DesktopShell } from './desktop/DesktopShell';
 import { useView } from './desktop/use-view';
@@ -119,29 +122,49 @@ export default function LunarApp(props: Props) {
   );
 }
 
+interface SectionProps {
+  readonly globe: ComponentProps<typeof Globe>;
+  readonly source: CalendarParts['source'];
+  readonly computed: boolean;
+  /** The header tab's view: on desktop the section hides off the globe. */
+  readonly view: ReturnType<typeof useView>;
+}
+
+/** The globe with its Layers key; hidden while the polar map shows. */
+function GlobeSection({ globe, source, computed, view }: SectionProps) {
+  const { t } = useI18n();
+  const hidden = !usePhone() && view !== 'globe';
+  return (
+    <section className="globe" aria-label={t('globe.section')} hidden={hidden} data-computed={computed}>
+      <Globe {...globe} />
+      <Layers source={source} />
+    </section>
+  );
+}
+
 function Island({ sitesUrl, base, selectedId, sites }: Props) {
   const [store] = useState(() => createSiteStore(selectedId));
   const [sheetEdge] = useState(() => createWatchedValue<number | null>(null));
   const parts = useCalendarParts(sitesUrl, sites);
   const view = useView(VIEW_NAV);
-  const offView = !usePhone() && view !== 'globe';
   const { feed: state, computed } = useStateFeed(store, parts);
   useLiveFavicon(base, parts.time, state);
   const time = parts.time;
   // The address's `?site=` and `?lat&lon` open once the kit runs.
   const kit = useCreatePinKit({ store, time, state, sites });
-  const { t } = useI18n();
-  const globe = { base, sitesUrl, store, sheetEdge, time, state };
+  const saved = useCreateSavedKit(kit, store);
+  const layers = saved.layers;
+  const globe = { base, sitesUrl, store, sheetEdge, time, state, layers };
+  const section = { globe, source: parts.source, computed, view };
   return (
-    <PinContext value={kit}>
-      <section className="globe" aria-label={t('globe.section')} hidden={offView} data-computed={computed}>
-        <Globe {...globe} />
-        <Layers source={parts.source} />
-      </section>
-      <DesktopShell {...{ sites, store, parts, base, view }} />
-      <PhoneShell {...{ sites, store, sheetEdge, parts, base }} />
-      <OfflineNotice base={base} />
-      <PinLayers />
-    </PinContext>
+    <SavedContext value={saved}>
+      <PinContext value={kit}>
+        <GlobeSection {...section} />
+        <DesktopShell {...{ sites, store, parts, base, view }} />
+        <PhoneShell {...{ sites, store, sheetEdge, parts, base }} />
+        <OfflineNotice base={base} />
+        <PinLayers />
+      </PinContext>
+    </SavedContext>
   );
 }

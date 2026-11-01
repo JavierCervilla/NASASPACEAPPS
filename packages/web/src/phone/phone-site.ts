@@ -33,12 +33,14 @@ import type { I18n } from '../i18n/translate';
 import type { NowState } from './widget-types';
 
 /**
- * What names the custom point where the astronaut stands (VENT-10): the
- * listed site nearest it, «Near Nobile Rim 1», and how far, «26 km».
+ * What names the custom point where the pin stands (VENT-10, VENT-37): the
+ * listed site nearest it, «Near Nobile Rim 1», and how far, «26 km»; and
+ * whether it is saved on this device (its name is then the saved one).
  */
 export interface CustomFacts {
   readonly near: string;
   readonly distance: string;
+  readonly saved?: boolean;
 }
 
 /** The part of a site the phone sheet shows; `custom` for the point. */
@@ -91,7 +93,7 @@ export function siteLabels(
 ): SiteLabels {
   if (site.custom) {
     const { near, distance } = site.custom;
-    const subtitle = near ? `${near} · ${distance}` : '';
+    const subtitle = [near, distance].filter(Boolean).join(' · ');
     return { title: site.name, subtitle, pill: site.name, pillDetail: '' };
   }
   const { title, detail } = splitName(site.name);

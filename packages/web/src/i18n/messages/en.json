@@ -27,7 +27,7 @@
   "layers.title": "Layers",
   "layers.sites": "Landing sites",
   "layers.zones": "Approximate zones",
-  "layers.rovers": "Ghost rovers (soon)",
+  "layers.rovers": "Ghost rovers · soon",
   "source.label": "Data source",
   "source.computed": "Computed",
   "source.horizons": "Horizons",
@@ -238,5 +238,36 @@
   "pin.say.cancelled": "Cancelled: nothing changed.",
   "pin.hint.click": "Click the Moon to drop a pin",
   "pin.hint.hold": "Touch and hold the Moon to drop a pin",
-  "pin.hint.dismiss": "Dismiss the hint"
+  "pin.hint.dismiss": "Dismiss the hint",
+  "layers.saved": "Saved sites",
+  "precision.saved": "saved on this device",
+  "saved.save": "Save",
+  "saved.saved": "Saved",
+  "saved.unsave": "Saved: press to remove it from this device",
+  "saved.nameLabel": "Name this site",
+  "saved.device": "Kept on this device only",
+  "saved.full": {
+    "one": "You can keep up to {n} saved site. Delete one to save another.",
+    "other": "You can keep up to {n} saved sites. Delete one to save another."
+  },
+  "saved.marker": "Saved site {name}",
+  "saved.title": "Saved",
+  "saved.segment": {
+    "one": "Saved, {n} site",
+    "other": "Saved, {n} sites"
+  },
+  "saved.list": "Saved sites",
+  "saved.emptyTitle": "No saved sites yet",
+  "saved.emptyText": "Drop a pin on the Moon and tap Save to keep a site here",
+  "saved.more": "More for {name}",
+  "saved.rename": "Rename",
+  "saved.copy": "Copy coordinates",
+  "saved.delete": "Delete",
+  "saved.renameLabel": "New name for {name}",
+  "saved.copied": "Coordinates copied: {coords}",
+  "saved.copyFailed": "The coordinates could not be copied",
+  "saved.deleted": "Deleted {name}",
+  "saved.undo": "Undo",
+  "custom.saved": "Saved",
+  "custom.savedNear": "Saved · near {name}"
 }

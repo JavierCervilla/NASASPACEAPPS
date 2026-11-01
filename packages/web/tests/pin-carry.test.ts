@@ -387,6 +387,15 @@ describe('places', () => {
     expect(address.value).toBe('');
   });
 
+  it('stands the pin on a custom point selected without a drop (a saved site in the list, VENT-37)', () => {
+    const { store, address, places } = placesAt('');
+    store.select('@-84.20,-40.00', 'list');
+    expect(places.place.get()).toEqual({ kind: 'moon', point: { lat: -84.2, lonEast: -40 } });
+    expect(address.value).toBe('?lat=-84.20&lon=-40.00');
+    places.drop({ lat: -84.2, lonEast: -40 });
+    expect(address.value).toBe('?lat=-84.20&lon=-40.00');
+  });
+
   it('keeps the point it opens in the address', () => {
     const { store, address, places } = placesAt('?site=apollo11&lat=-89.5&lon=0');
     places.restore(['im2-athena', 'apollo11']);

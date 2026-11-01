@@ -30,14 +30,16 @@
  * in the shared store, so the card, the strip and the globe follow; where
  * targets overlap, a click goes to the nearest dot, as on the globe. A
  * site north of 80° S is not drawn: a note beside the disk says so, and
- * the card still shows it.
+ * the card still shows it. The globe's layer switches apply here too
+ * (VENT-37), with the sites saved on this device; a label over the pin
+ * wears a backing, so it stays readable.
  */
 import { useMemo, type MouseEvent } from 'react';
 import { pickedSite } from '../../globe/marker-hit';
 import { siteLabels, type PhoneSite } from '../../phone/phone-site';
 import type { NowState } from '../../phone/widget-types';
-import { numberBadges, type Badge } from '../../polar/badge-layout';
-import { visibleLabels, type Side } from '../../polar/label-layout';
+import { numberBadges } from '../../polar/badge-layout';
+import { labelsOverPins, visibleLabels } from '../../polar/label-layout';
 import { toPx } from '../../polar/layout-geometry';
 import {
   markerOf,
@@ -45,7 +47,7 @@ import {
   type PolarMarker,
 } from '../../polar/polar-markers';
 import type { SourceStore } from '../../source/data-source';
-import { onPolarMap } from '../../lib/polar-projection';
+import { onPolarMap, type MapPoint } from '../../lib/polar-projection';
 import { PinHint } from '../pin/PinHint';
 import { PolarPin } from '../pin/PolarPin';
 import { useI18n } from '../i18n-context';
@@ -53,6 +55,8 @@ import { Layers } from '../Layers';
 import { Graticule } from './Graticule';
 import { PolarKey } from './PolarKey';
 import { PolarMarkers } from './PolarMarkers';
+import { PolarSaved } from './PolarSaved';
+import { usePolarLayers } from './use-polar-layers';
 import { useDiskFit } from './use-disk-fit';
 import { useWidth } from './use-width';
 
@@ -88,16 +92,22 @@ function OffMap(props: { site: PhoneSite; chosen: string | null }) {
   );
 }
 
-/** The labels that show, and the numbers of the rest, on a disk `size` wide. */
+/**
+ * The labels that show, those over a pin at `pins`, and the numbers of
+ * the rest, on a disk `size` wide.
+ */
 function layout(
   markers: readonly PolarMarker[],
   size: number,
   chosen: string | null,
-): { labels: Map<string, Side>; badges: Badge[] } {
+  pins: readonly MapPoint[],
+) {
   const labels = visibleLabels(markers, size, chosen);
+  const selectedId = chosen;
+  const overPin = labelsOverPins({ markers, labels, size, selectedId }, pins);
   // Unmeasured, every dot sits at 0: no badge until the disk has a size.
   const badges = size > 0 ? numberBadges(markers, size, labels, chosen) : [];
-  return { labels, badges };
+  return { labels, badges, overPin };
 }
 
 /** The map's markers of `sites`, labelled in the visitor's language. */
@@ -122,23 +132,25 @@ function pickHandler(
 
 export function PolarMap(props: Props) {
   const { sites, site, state, computed, base, onPick, source } = props;
-  const { markers, label } = useMarkers(sites);
+  const { markers: all, label } = useMarkers(sites);
   const [disk, size] = useWidth<HTMLDivElement>();
-  const chosen = markerOf(markers, site.id)?.id ?? null;
-  const { labels, badges } = layout(markers, size, chosen);
+  const chosen = markerOf(all, site.id)?.id ?? null;
+  const { shown: markers, pins } = usePolarLayers(all, chosen);
+  const laid = layout(markers, size, chosen, pins);
+  const marks = { markers, chosen, state, ...laid };
   const panel = useDiskFit();
-  const click = pickHandler(markers, size, onPick);
   return (
     <section ref={panel} className="polar" aria-label={label} data-computed={computed}>
-      <div className="polar__disk" ref={disk} onClick={click}>
+      <div className="polar__disk" ref={disk} onClick={pickHandler(markers, size, onPick)}>
         <img className="polar__image" src={`${base.replace(/\/?$/, '/')}${IMAGE}`} alt="" decoding="async" draggable={false} />
         <Graticule />
-        <PolarMarkers {...{ markers, chosen, state, labels, badges }} />
+        <PolarMarkers {...marks} />
+        <PolarSaved selected={site.id} onPick={onPick} />
         <PolarPin disk={disk} selected={site.id} onPick={onPick} />
       </div>
       <OffMap site={site} chosen={chosen} />
       <Layers source={source} />
-      <PolarKey badges={badges} />
+      <PolarKey badges={marks.badges} />
       <PinHint />
     </section>
   );

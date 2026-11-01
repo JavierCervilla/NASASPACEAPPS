@@ -27,7 +27,7 @@
   "layers.title": "Calques",
   "layers.sites": "Sites d’atterrissage",
   "layers.zones": "Zones approximatives",
-  "layers.rovers": "Rovers fantômes (bientôt)",
+  "layers.rovers": "Rovers fantômes · bientôt",
   "source.label": "Source des données",
   "source.computed": "Calculé",
   "source.horizons": "Horizons",
@@ -242,5 +242,38 @@
   "pin.say.cancelled": "Annulé : rien n’a changé.",
   "pin.hint.click": "Clique sur la Lune pour placer une épingle",
   "pin.hint.hold": "Touche la Lune longuement pour placer une épingle",
-  "pin.hint.dismiss": "Fermer l’astuce"
+  "pin.hint.dismiss": "Fermer l’astuce",
+  "layers.saved": "Sites enregistrés",
+  "precision.saved": "enregistré sur cet appareil",
+  "saved.save": "Enregistrer",
+  "saved.saved": "Enregistré",
+  "saved.unsave": "Enregistré : appuyez pour le retirer de cet appareil",
+  "saved.nameLabel": "Nom du site",
+  "saved.device": "Conservé sur cet appareil uniquement",
+  "saved.full": {
+    "one": "Vous pouvez garder jusqu’à {n} site. Supprimez-en un pour en enregistrer un autre.",
+    "many": "Vous pouvez garder jusqu’à {n} de sites. Supprimez-en un pour en enregistrer un autre.",
+    "other": "Vous pouvez garder jusqu’à {n} sites. Supprimez-en un pour en enregistrer un autre."
+  },
+  "saved.marker": "Site enregistré {name}",
+  "saved.title": "Enregistrés",
+  "saved.segment": {
+    "one": "Enregistrés, {n} site",
+    "many": "Enregistrés, {n} de sites",
+    "other": "Enregistrés, {n} sites"
+  },
+  "saved.list": "Sites enregistrés",
+  "saved.emptyTitle": "Aucun site enregistré",
+  "saved.emptyText": "Placez une épingle sur la Lune et touchez Enregistrer pour garder un site ici",
+  "saved.more": "Plus d’options pour {name}",
+  "saved.rename": "Renommer",
+  "saved.copy": "Copier les coordonnées",
+  "saved.delete": "Supprimer",
+  "saved.renameLabel": "Nouveau nom pour {name}",
+  "saved.copied": "Coordonnées copiées : {coords}",
+  "saved.copyFailed": "Impossible de copier les coordonnées",
+  "saved.deleted": "{name} supprimé",
+  "saved.undo": "Annuler",
+  "custom.saved": "Enregistré",
+  "custom.savedNear": "Enregistré · près de {name}"
 }

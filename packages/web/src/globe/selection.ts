@@ -27,9 +27,11 @@
  * The globe's side of the shared site selection: a site picked in the list
  * selects its marker and turns the Moon to it, framed clear of the docked
  * card (site-framer.ts); a marker tapped on the globe only selects (the
- * globe does not move under the finger).
+ * globe does not move under the finger). A saved site picked in the list
+ * is a custom point (VENT-37), turned to the same way.
  */
 import { wrapDeg } from '@ventana/sim';
+import { customPointOf } from '../pin/custom-point';
 import type { SiteStore } from '../phone/site-store';
 import type { MarkerLayer } from './marker-layer';
 import type { GlobeSite } from './markers';
@@ -80,7 +82,9 @@ export function bindSelection(
   return store.subscribe(() => {
     const { id, origin } = store.get();
     markers.select(id);
-    const site = sites().find((s) => s.id === id);
+    const point = customPointOf(id);
+    const custom = point && { id, name: '', ...point, approximate: false };
+    const site = sites().find((s) => s.id === id) ?? custom;
     if (origin === 'list' && site) framer.fly(site);
     else framer.hold(null);
   });

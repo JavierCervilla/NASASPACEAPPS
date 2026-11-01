@@ -45,6 +45,8 @@ import { bindKeys, bindWheel } from './keys';
 import { createLoop, type Loop } from './loop';
 import { MarkerLayer } from './marker-layer';
 import { linkView } from './view-link';
+import { mountGlobeLayers } from './layers/globe-layers';
+import type { LayerRegistry } from './layers/registry';
 import type { GlobeSite } from './markers';
 import { addMoon } from './moon';
 import { createOrbit, type Orbit } from './orbit';
@@ -80,10 +82,15 @@ export interface GlobeOptions {
   /** The first map is on the Moon: the loading state may go. */
   readonly onTextured?: () => void;
   /**
-   * Hears the globe as a place to drop the astronaut on, once mounted,
-   * and null once gone (VENT-10).
+   * Hears the globe as a place to drop the pin on, once mounted, and null
+   * once gone (VENT-10).
    */
   readonly onView?: (view: GlobeView | null) => void;
+  /**
+   * The page's globe layers (VENT-37): mounted while the globe runs, with
+   * the landing sites and the approximate zones registered on it.
+   */
+  readonly layers?: LayerRegistry;
 }
 
 /** Keeps the canvas the host's size; redraws after a restored context. */
@@ -182,18 +189,18 @@ export function mountGlobe(host: HTMLElement, options: GlobeOptions) {
   // The Moon takes its tier from the quality settings.
   const moon = addMoon(stage, { ...options, ...quality, onChange: invalidate });
   const link = linkView(stage, options.onView);
-  const parts = { stage, orbit, markers, moon, drawn: link.drawn };
+  const layers = mountGlobeLayers(
+    { host, scene: stage.scene, invalidate, markers }, options.layers);
+  const parts = { stage, orbit, markers, moon, drawn: link.drawn, layers };
   const loop = createLoop((dt) => drawFrame(parts, dt));
   const input = bindInput(host, orbit, loop, options.reducedMotion);
   const globeParts = { markers, orbit, invalidate, camera: stage.camera };
   const sites = bindSites(host, options, globeParts);
   const sun = bindSun(stage.scene, options.time, invalidate);
   const watch = watchHost(host, stage, loop);
-  const unbind = [link.unlink, watch, ...input, sites, sun];
+  const unbind = [() => loop.stop(), link.unlink, watch, ...input, sites];
+  const end = [sun, layers.dispose, () => markers.dispose(), moon.dispose];
+  const teardown = [...unbind, ...end, () => disposeStage(stage)];
   void attachDevTools(stage.renderer, moon.textureBytes);
-  return () => {
-    loop.stop();
-    [...unbind, () => markers.dispose(), moon.dispose].forEach((fn) => fn());
-    disposeStage(stage);
-  };
+  return () => teardown.forEach((fn) => fn());
 }

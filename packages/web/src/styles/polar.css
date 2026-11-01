@@ -250,6 +250,19 @@
 }
 
 /*
+ * A label across the standing pin's ring (VENT-37, label-layout.ts
+ * `labelsOverPins`) keeps its place on top, on a dark backing, so neither
+ * the ring nor the Moon under it blurs the name.
+ */
+.polar-label[data-over-pin='true'] {
+  margin: -1px -5px;
+  padding: 1px 5px;
+  border-radius: 6px;
+  background: rgba(7, 8, 11, 0.8);
+  color: #f2f2f4;
+}
+
+/*
  * A marker too crowded for a label wears a number, which the key names
  * (polar/badge-layout.ts: 16 px, 5 px off the dot or 13 px past a
  * neighbour's ring, at the corner given).

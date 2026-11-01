@@ -3,6 +3,20 @@
 ## [Sin publicar]
 
 ### Añadido
+- Capas del globo como interruptores y sitios guardados (VENT-37, parte 2; opciones del lienzo aprobadas por Javier).
+  La leyenda «Layers» del PC y un grupo «Layers» nuevo en la hoja «Sites» del móvil son ahora interruptores, cada uno
+  con su marca: «Landing sites», «Approximate zones», «Saved sites» con cuántos hay y «Ghost rovers · soon» apagado.
+  Apagar una capa quita sus marcadores del globo y del mapa polar (el sitio elegido siempre se ve) y se recuerda en el
+  dispositivo. Con un pin puesto, «Save» (con un marcador de libro) en la ficha del PC y en la cabecera de la hoja del
+  móvil lo guarda: pasa a «Saved», con un campo «Name this site» que empieza en «Near …» y la nota «Kept on this device
+  only»; se guardan hasta 50, solo en el dispositivo y sin cuenta. Los guardados se ven como pines plateados más
+  pequeños en el globo y en el mapa polar, y la lista de sitios (hoja del móvil y desplegable del PC) tiene una
+  pestaña «Saved N» con su estado, coordenadas y un menú «…» para renombrar, copiar las coordenadas o borrar; borrar
+  no pregunta y ofrece «Deleted … · Undo» durante cinco segundos. Sin guardados, la pestaña explica cómo guardar uno.
+  La lista marca ahora el punto propio o guardado elegido, las etiquetas del mapa polar ya no se pisan con el aro del
+  pin, y con el texto al 200 % la pista de la primera vez ya no tapa la leyenda «Layers». Para el equipo Mooner, una
+  API de capas del globo (añadir, quitar, mostrar, ocultar y ordenar capas de puntos o de objetos 3D), sin interfaz de
+  Ventana dentro y documentada con un ejemplo en `docs/globe-layers.md`. En los cinco idiomas.
 - Pin para elegir cualquier punto de la Luna (VENT-37, parte 1; pin «C» del lienzo, elegido por Javier): un aro con un
   punto en el centro, que es el punto exacto, sin mástil, y que nunca se confunde con las zonas aproximadas (aro
   discontinuo sin punto). En el PC basta un clic en el globo o en el mapa polar; en el móvil, mantener el dedo quieto

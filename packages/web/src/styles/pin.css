@@ -23,6 +23,9 @@
  *             :::.. .  .               SPDX-License-Identifier: MIT
  */
 
+/* The layers' switches and the saved sites (VENT-37), after the views'. */
+@import './saved.css';
+
 /*
  * The pin (VENT-37, validated canvas «Pin C»): a ring with a dot at its
  * centre, the exact point, and no stem. It stands on its point on the
@@ -382,6 +385,36 @@
 .polar .pin-hint {
   left: 20px;
   transform: none;
+}
+
+/*
+ * Never over the Layers key (VENT-37): on desktop the hint is centred in
+ * the room right of the key's column (in rem, so it moves with the text,
+ * 200 % included), and on the polar map it takes the top right corner,
+ * away from the key. Where the key gives way (a view
+ * narrow for its text) the hint has the whole width again.
+ */
+@media (min-width: 768px) {
+  .globe .pin-hint {
+    left: calc(var(--layers-w) + 40px);
+    right: 20px;
+    width: fit-content;
+    max-width: none;
+    margin-inline: auto;
+    transform: none;
+  }
+
+  .polar .pin-hint {
+    left: auto;
+    right: 20px;
+    max-width: calc(100% - var(--layers-w) - 60px);
+  }
+}
+
+@container (max-width: 24em) {
+  .globe .pin-hint {
+    left: 20px;
+  }
 }
 
 /* Phones: under the glass top bar, measured (components/pin/PinHint.tsx). */

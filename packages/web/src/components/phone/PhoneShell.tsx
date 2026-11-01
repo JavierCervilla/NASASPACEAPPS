@@ -43,6 +43,7 @@ import type { SiteStore } from '../../phone/site-store';
 import { CalendarSheet } from '../calendar/CalendarSheet';
 import { useTime, type CalendarParts } from '../calendar/hooks';
 import { useSheetAside } from '../pin/use-sheet-aside';
+import { useSavedName } from '../saved/use-saved-name';
 import { useI18n } from '../i18n-context';
 import { usePhone, useScrim, useSelection, useSiteWidgets } from './hooks';
 import { PhoneBar } from './PhoneBar';
@@ -74,7 +75,7 @@ interface Props {
 function usePhoneState({ sites, store, parts }: Props) {
   const selection = useSelection(store);
   const i18n = useI18n();
-  const site = selectedSite(sites, selection.id, i18n);
+  const site = selectedSite(sites, selection.id, i18n, useSavedName());
   const time = useTime(parts.time);
   const at = time?.atMs ?? null;
   const widgets = useSiteWidgets(parts, selection.id, at);

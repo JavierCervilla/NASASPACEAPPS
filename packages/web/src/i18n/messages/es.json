@@ -27,7 +27,7 @@
   "layers.title": "Capas",
   "layers.sites": "Lugares de aterrizaje",
   "layers.zones": "Zonas aproximadas",
-  "layers.rovers": "Rovers fantasma (pronto)",
+  "layers.rovers": "Rovers fantasma · pronto",
   "source.label": "Fuente de datos",
   "source.computed": "Calculado",
   "source.horizons": "Horizons",
@@ -242,5 +242,38 @@
   "pin.say.cancelled": "Cancelado: no ha cambiado nada.",
   "pin.hint.click": "Haz clic en la Luna para poner un pin",
   "pin.hint.hold": "Mantén pulsada la Luna para poner un pin",
-  "pin.hint.dismiss": "Cerrar la pista"
+  "pin.hint.dismiss": "Cerrar la pista",
+  "layers.saved": "Sitios guardados",
+  "precision.saved": "guardado en este dispositivo",
+  "saved.save": "Guardar",
+  "saved.saved": "Guardado",
+  "saved.unsave": "Guardado: pulsa para quitarlo de este dispositivo",
+  "saved.nameLabel": "Nombre del sitio",
+  "saved.device": "Solo se guarda en este dispositivo",
+  "saved.full": {
+    "one": "Puedes guardar hasta {n} sitio. Borra uno para guardar otro.",
+    "many": "Puedes guardar hasta {n} de sitios. Borra uno para guardar otro.",
+    "other": "Puedes guardar hasta {n} sitios. Borra uno para guardar otro."
+  },
+  "saved.marker": "Sitio guardado {name}",
+  "saved.title": "Guardados",
+  "saved.segment": {
+    "one": "Guardados, {n} sitio",
+    "many": "Guardados, {n} de sitios",
+    "other": "Guardados, {n} sitios"
+  },
+  "saved.list": "Sitios guardados",
+  "saved.emptyTitle": "Aún no hay sitios guardados",
+  "saved.emptyText": "Pon un pin en la Luna y pulsa Guardar para tener aquí el sitio",
+  "saved.more": "Más opciones de {name}",
+  "saved.rename": "Cambiar nombre",
+  "saved.copy": "Copiar coordenadas",
+  "saved.delete": "Borrar",
+  "saved.renameLabel": "Nuevo nombre para {name}",
+  "saved.copied": "Coordenadas copiadas: {coords}",
+  "saved.copyFailed": "No se pudieron copiar las coordenadas",
+  "saved.deleted": "Borrado {name}",
+  "saved.undo": "Deshacer",
+  "custom.saved": "Guardado",
+  "custom.savedNear": "Guardado · cerca de {name}"
 }

@@ -27,10 +27,13 @@
  * The picker's list of sites: the solid or dashed symbol (exact touchdown
  * or approximate zone), the name, the mission and a check on the
  * selection. Co-located sites get a row each, so a site hidden under
- * another marker on the globe is still reachable.
+ * another marker on the globe is still reachable. A selected custom point
+ * not saved (VENT-37) heads the list with the pin's mark and the check.
  */
+import { formatCoords } from '../../i18n/format';
 import {
   rowDetail,
+  siteLabels,
   splitName,
   type PhoneSite,
 } from '../../phone/phone-site';
@@ -48,7 +51,7 @@ interface RowProps {
   readonly withRegion: boolean;
 }
 
-function Check() {
+export function Check() {
   const { t } = useI18n();
   return (
     <svg className="site-row__check" width="16" height="16" viewBox="0 0 16 16" role="img" aria-label={t('picker.selected')}>
@@ -82,22 +85,46 @@ function SiteRow(props: RowProps) {
   );
 }
 
+/** The selected custom point, «Custom point · Near … · 85.87° S, 61.34° E». */
+function CurrentRow(props: { site: PhoneSite; state: NowState | null }) {
+  const { site, state } = props;
+  const i18n = useI18n();
+  const { title, subtitle } = siteLabels(site);
+  const coords = formatCoords(i18n, site.lat, site.lonEast);
+  const detail = [subtitle, coords].filter(Boolean).join(' · ');
+  return (
+    <li>
+      <span className="site-row site-row--current" aria-current="true">
+        <span className="site-symbol" data-kind="pin" data-state={state ?? undefined} />
+        <span className="site-row__text">
+          <span className="site-row__title">{title}</span>
+          <span className="site-row__detail">{detail}</span>
+        </span>
+        <Check />
+      </span>
+    </li>
+  );
+}
+
 interface Props {
   readonly sites: readonly PhoneSite[];
   readonly selectedId: string;
   readonly state: NowState | null;
   readonly onPick: (id: string) => void;
   readonly withRegion: boolean;
+  /** The selected custom point, when not saved: it heads the list. */
+  readonly current?: PhoneSite | null;
 }
 
 export function SiteList(props: Props) {
-  const { sites, selectedId, state, onPick, withRegion } = props;
+  const { sites, selectedId, state, onPick, withRegion, current } = props;
   const { t } = useI18n();
-  if (sites.length === 0) {
+  if (sites.length === 0 && !current) {
     return <p className="site-list-empty">{t('picker.empty')}</p>;
   }
   return (
     <ul className="site-list" data-sheet-scroll aria-label={t('picker.list')}>
+      {current ? <CurrentRow site={current} state={state} /> : null}
       {sites.map((site) => (
         <SiteRow
           key={site.id}

@@ -1,0 +1,702 @@
+/*
+ *   _   _       _                         _ _
+ *  | | | |_ __ (_)_   _____ _ __ ___  ___| | | ___
+ *  | | | | '_ \| \ \ / / _ \ '__/ __|/ _ \ | |/ _ \
+ *  | |_| | | | | |\ V /  __/ |  \__ \  __/ | |  __/
+ *   \___/|_| |_|_| \_/ \___|_|  |___/\___|_|_|\___|
+ *
+ *             =++==--::.
+ *         %%%%##**++=--:..  .
+ *      ##**#%@%%#***+=--::.   .
+ *    #**=+*#*#**#++++=-:::.. .  .
+ *   #++-====*@%+*++==--::...   .  .    Ventana Lunar
+ *  #+=-=--++==+===-+==--:..   .  .  .  Sun, Earth and landing
+ * #----====-------=-=---:..  .  .  .   windows at the lunar
+ * #+---+=====--=---==-::..     .  .  . south pole
+ * #*----==---==-=-=-:-....    .  .  .
+ * *#----===+*===--:-::...    .  .  .   Built for the NASA Space
+ *  *----=*-+*%*+=-:::....   .  .  .    Apps Challenge 2026,
+ *   *------=+*=--:::-:::.. .  .  .     Madrid. Not endorsed
+ *    %*===-=-==--==-:::.  .  .  .      by NASA.
+ *      *+:--+:--::::::.  .  .  .
+ *         -=:::...:..   .  .           (c) 2026 Universelle
+ *             :::.. .  .               SPDX-License-Identifier: MIT
+ */
+
+/*
+ * The globe's layers as switches, and the sites saved on this device
+ * (VENT-37, validated canvases «Layers», «Save A», «Saved list»,
+ * «DeleteUndo», «Empty»). Saved sites wear the pin's look C, smaller and
+ * silver: never a signal colour, which keep their meaning (the selected
+ * one is the standing pin, in its state's colour). The switches are
+ * neutral too: on is light, off is a grey track.
+ */
+
+:root {
+  --saved-silver: #d6d8de;
+  --destructive: #ff6961;
+}
+
+@media (prefers-color-scheme: light) {
+  :root {
+    --saved-silver: #8e9099;
+    --destructive: #d70015;
+  }
+}
+
+/* Each layer's own root over the canvas (src/globe/layers/bind.ts). */
+.globe-layer {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+}
+
+/* A point of a layer: a 44 px target centred on its point. */
+.globe-point {
+  position: absolute;
+  top: -22px;
+  left: -22px;
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: none;
+  cursor: pointer;
+  pointer-events: auto;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.globe-point:focus-visible,
+.polar-saved:focus-visible {
+  outline: 2px solid var(--marker);
+  outline-offset: 0;
+}
+
+/* A saved site: a 14 px silver ring with its centre dot (pin look C). */
+.saved-marker::before,
+.saved-marker::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  box-sizing: border-box;
+  border-radius: 50%;
+}
+
+.saved-marker::before {
+  width: 14px;
+  height: 14px;
+  margin: -7px 0 0 -7px;
+  background: rgba(7, 8, 11, 0.5);
+  box-shadow:
+    inset 0 0 0 2px var(--saved-silver),
+    0 0 0 1px rgba(0, 0, 0, 0.45);
+}
+
+.saved-marker::after {
+  width: 4px;
+  height: 4px;
+  margin: -2px 0 0 -2px;
+  background: var(--saved-silver);
+}
+
+/* On the polar map: placed by percentage, under the labels (z 5). */
+.polar-saved {
+  position: absolute;
+  z-index: 3;
+  width: 44px;
+  height: 44px;
+  margin: -22px 0 0 -22px;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: none;
+  cursor: pointer;
+}
+
+/* The switches */
+
+.layer-toggles {
+  display: flex;
+  flex-direction: column;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.layer-row__label {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 32px;
+  cursor: pointer;
+  /* The key lets clicks through to the globe; its switches take them. */
+  pointer-events: auto;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.layer-row[data-soon='true'] .layer-row__label {
+  color: var(--text-muted);
+  cursor: default;
+}
+
+.layer-row__text {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.layer-row__count {
+  color: var(--text-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.layer-row__note {
+  font-size: 0.8125rem;
+  line-height: 1.3;
+  color: var(--text-muted);
+}
+
+.layer-key {
+  flex: none;
+  box-sizing: border-box;
+}
+
+/* The silver pin of a saved site, as on the Moon. */
+.layer-key--saved {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  box-shadow: inset 0 0 0 2px var(--saved-silver);
+  background: radial-gradient(circle, var(--saved-silver) 0 1.5px, transparent 2px);
+}
+
+/* A switch from a checkbox: the track, its knob, and the focus ring. */
+.layer-switch {
+  flex: none;
+  position: relative;
+  width: 40px;
+  height: 24px;
+  margin: 0;
+  border-radius: 12px;
+  background: var(--fill);
+  box-shadow: inset 0 0 0 1px var(--surface-edge);
+  appearance: none;
+  cursor: inherit;
+  transition: background-color 200ms var(--ease-out);
+}
+
+.layer-switch::before {
+  content: '';
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: var(--text-muted);
+  transition: transform 250ms var(--ease-out), background-color 200ms;
+}
+
+.layer-switch:checked {
+  background: var(--text);
+}
+
+.layer-switch:checked::before {
+  background: var(--bg);
+  transform: translateX(16px);
+}
+
+.layer-switch:disabled {
+  opacity: 0.45;
+}
+
+.layer-switch:focus-visible {
+  outline: 2px solid var(--marker);
+  outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .layer-switch,
+  .layer-switch::before {
+    transition: none;
+  }
+}
+
+@media (prefers-contrast: more) {
+  .layer-switch {
+    box-shadow: inset 0 0 0 1px var(--text);
+  }
+}
+
+/* In the desktop key, each row's label spans it. */
+.globe-layers .layer-row__label {
+  flex: 1;
+  min-width: 0;
+}
+
+/* The phone's «Layers» group in the Sites sheet. */
+.layers-group {
+  display: flex;
+  flex: none;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.layers-group__title {
+  margin: 0 0 0 14px;
+  font-size: 0.8125rem;
+  font-weight: 400;
+  color: var(--text-muted);
+}
+
+.layers-group .layer-row + .layer-row .layer-row__label {
+  border-top: 1px solid var(--surface-edge);
+}
+
+.layers-group .layer-row {
+  padding: 0 14px;
+}
+
+.layers-group .layer-row__label {
+  gap: 14px;
+  min-height: 52px;
+  padding: 8px 0;
+  font-size: 1rem;
+}
+
+.layers-group .layer-switch {
+  width: 51px;
+  height: 31px;
+  border-radius: 16px;
+}
+
+.layers-group .layer-switch::before {
+  width: 27px;
+  height: 27px;
+}
+
+.layers-group .layer-switch:checked::before {
+  transform: translateX(20px);
+}
+
+/*
+ * Under the picker's title everything scrolls as one (VENT-37): with the
+ * phone's settings and layers above it, the list keeps its room.
+ */
+.picker__scroll {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 12px;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  touch-action: pan-y;
+}
+
+.picker__scroll .site-list {
+  flex: none;
+  overflow: visible;
+}
+
+/*
+ * The picker's control with «Saved»: four segments sized by their words
+ * and sharing the rest; where a language's words do not fit one row (a
+ * 320 px phone in German, large text) they wrap to a second, each whole.
+ */
+.segmented.segmented--four {
+  display: flex;
+  flex-wrap: wrap;
+}
+
+.segmented--four button {
+  flex: 1 1 auto;
+  padding: 0 8px;
+}
+
+.segmented__count {
+  color: var(--text-muted);
+  font-weight: 500;
+}
+
+/* The pin's mark in the lists: the custom point, and each saved site. */
+.site-symbol[data-kind='pin'],
+.saved-glyph {
+  flex: none;
+  box-sizing: border-box;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  box-shadow: inset 0 0 0 2px var(--saved-silver);
+  background: radial-gradient(circle, var(--tone, var(--saved-silver)) 0 3px, transparent 3.5px);
+}
+
+.site-symbol[data-kind='pin'] {
+  box-shadow: inset 0 0 0 2px var(--text);
+}
+
+:is(.site-symbol, .saved-glyph)[data-state='window'] { --tone: var(--signal-window); }
+:is(.site-symbol, .saved-glyph)[data-state='sun'] { --tone: var(--signal-sun); }
+:is(.site-symbol, .saved-glyph)[data-state='earth'] { --tone: var(--signal-earth); }
+:is(.site-symbol, .saved-glyph)[data-state='none'] { --tone: var(--signal-none); }
+
+.site-row--current {
+  cursor: default;
+}
+
+/* A saved site's row: the row's button, then its «…» button. */
+.saved-row {
+  display: flex;
+  align-items: center;
+  box-shadow: inset 0 -1px 0 var(--surface-edge);
+}
+
+.saved-list li:last-child {
+  box-shadow: none;
+}
+
+.saved-row .site-row {
+  flex: 1;
+  min-width: 0;
+  box-shadow: none;
+}
+
+.saved-row .site-row__detail {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.saved-row__more {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  margin-right: 6px;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: none;
+  color: var(--text-muted);
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.saved-row__more:hover,
+.saved-row__more:focus-visible {
+  background: var(--fill);
+  color: var(--text);
+}
+
+.saved-row__more:focus-visible {
+  outline: 2px solid var(--text);
+  outline-offset: -2px;
+}
+
+.saved-row__edit {
+  cursor: default;
+}
+
+.saved-row__input,
+.save-name__input {
+  flex: 1;
+  min-width: 0;
+  min-height: 40px;
+  padding: 0 12px;
+  border: 0;
+  border-radius: 10px;
+  background: var(--phone-field, var(--fill));
+  box-shadow: inset 0 0 0 1.5px var(--text-muted);
+  color: var(--text);
+  font: inherit;
+  /* 16px or more, or iOS zooms into the field. */
+  font-size: 1rem;
+  outline: none;
+  -webkit-user-select: text;
+  user-select: text;
+}
+
+.saved-row__input:focus,
+.save-name__input:focus {
+  box-shadow: inset 0 0 0 2px var(--text);
+}
+
+/* Nothing saved yet: the pin, a title and how to save one. */
+.saved-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  padding: 28px 20px;
+  border-radius: 14px;
+  background: var(--phone-card);
+  text-align: center;
+}
+
+.saved-glyph--large {
+  width: 24px;
+  height: 24px;
+  margin-bottom: 6px;
+}
+
+.saved-empty__title {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 600;
+}
+
+.saved-empty__text {
+  margin: 0;
+  font-size: 0.9375rem;
+  line-height: 1.4;
+  color: var(--text-muted);
+}
+
+/* The «…» menu, on the top layer under its button. */
+.row-menu {
+  position: fixed;
+  inset: auto;
+  top: var(--top, 72px);
+  right: var(--right, 24px);
+  width: 230px;
+  margin: 0;
+  padding: 4px 0;
+  border: 0;
+  border-radius: 14px;
+  background: var(--card);
+  box-shadow: var(--popover-shadow), inset 0 0 0 1px var(--surface-edge);
+  color: var(--text);
+  transform-origin: top right;
+}
+
+.row-menu:popover-open {
+  display: flex;
+  flex-direction: column;
+}
+
+.row-menu__item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  min-height: 44px;
+  padding: 0 16px;
+  border: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
+  font-size: 1rem;
+  text-align: left;
+  cursor: pointer;
+}
+
+.row-menu__item + .row-menu__item {
+  box-shadow: inset 0 1px 0 var(--surface-edge);
+}
+
+.row-menu__item[data-action='delete'] {
+  color: var(--destructive);
+}
+
+.row-menu__item:hover,
+.row-menu__item:focus-visible {
+  background: var(--fill);
+  outline: none;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .row-menu:popover-open {
+    animation: popover-in var(--dur-enter) var(--ease-out);
+  }
+}
+
+/* «Save» / «Saved» with its bookmark. */
+.save-button {
+  position: relative;
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  gap: 6px;
+  min-height: 36px;
+  padding: 0 14px 0 10px;
+  border: 0;
+  border-radius: 18px;
+  background: var(--fill);
+  color: var(--text);
+  font: inherit;
+  font-size: 0.9375rem;
+  font-weight: 600;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.save-button[data-saved='true'] {
+  background: var(--text);
+  color: var(--bg);
+}
+
+.save-button[aria-disabled='true'] {
+  color: var(--text-muted);
+  cursor: default;
+}
+
+.save-button:focus-visible {
+  outline: 2px solid var(--text);
+  outline-offset: 2px;
+}
+
+.save-button:active {
+  transform: scale(0.97);
+  transition: transform var(--dur-press) ease-out;
+}
+
+/* Its target is 44 px tall even where it is drawn at 36. */
+.save-button::after {
+  content: '';
+  position: absolute;
+  inset: -4px 0;
+}
+
+/* In the desktop card, at the head's top right, beside the badge. */
+.card-head {
+  position: relative;
+}
+
+.card-head > .save-button {
+  position: absolute;
+  top: 14px;
+  right: 14px;
+}
+
+/* On the phone sheet: the name, «Save», then the meta line full width. */
+.summary__head:has(> .save-button) {
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+.summary__head:has(> .save-button) .summary__meta {
+  flex: 1 1 100%;
+  flex-flow: row wrap;
+  align-items: baseline;
+  column-gap: 6px;
+  max-width: none;
+}
+
+.summary__head:has(> .save-button) .summary__subtitle::after {
+  content: ' ·';
+}
+
+/* The name field, once saved. */
+.save-name {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-top: 10px;
+}
+
+.save-name__label {
+  font-size: 0.8125rem;
+  color: var(--text-muted);
+}
+
+.save-name__note,
+.save-note {
+  margin: 0;
+  font-size: 0.8125rem;
+  line-height: 1.35;
+  color: var(--text-muted);
+}
+
+.save-name__input {
+  flex: none;
+  min-height: 44px;
+}
+
+/* «Deleted Cabeus ridge · Undo»: above the tab bar, or the strip. */
+.undo-toast {
+  position: fixed;
+  /* Centred by its margins, so its width is its words', up to the edges. */
+  left: 16px;
+  right: 16px;
+  bottom: 24px;
+  width: fit-content;
+  margin-inline: auto;
+  z-index: 40;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  box-sizing: border-box;
+  padding: 6px 6px 6px 18px;
+  border-radius: 26px;
+  background: var(--phone-tabs, var(--surface));
+  backdrop-filter: blur(24px) saturate(180%);
+  box-shadow: var(--popover-shadow), inset 0 0 0 1px var(--surface-edge);
+  color: var(--text);
+}
+
+.undo-toast[data-open='false'] {
+  visibility: hidden;
+}
+
+.undo-toast__text {
+  min-width: 0;
+  font-size: 0.9375rem;
+  line-height: 1.3;
+}
+
+.undo-toast__undo {
+  flex: none;
+  min-width: 44px;
+  min-height: 44px;
+  padding: 0 16px;
+  border: 0;
+  border-radius: 22px;
+  background: var(--fill);
+  color: var(--text);
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.undo-toast__undo:focus-visible {
+  outline: 2px solid var(--text);
+  outline-offset: 2px;
+}
+
+@media (max-width: 767px) {
+  .undo-toast {
+    bottom: calc(96px + env(safe-area-inset-bottom));
+  }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .undo-toast[data-open='true'] {
+    animation: toast-in var(--dur-enter) var(--ease-out);
+  }
+}
+
+@keyframes toast-in {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+}
+
+@media (prefers-reduced-transparency: reduce) {
+  .undo-toast {
+    background: var(--card);
+    backdrop-filter: none;
+  }
+}
+
+@media (prefers-contrast: more) {
+  .undo-toast,
+  .row-menu {
+    border: 1px solid var(--surface-edge);
+  }
+}

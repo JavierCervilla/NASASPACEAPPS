@@ -41,17 +41,25 @@ function haltTurn(orbit: Orbit): boolean {
   return turning;
 }
 
+/** The turn's targets, to tell the flick's coast from any later move. */
+function turnTargets(orbit: Orbit): string {
+  return [orbit.lat.target, orbit.lon.target].join();
+}
+
 /**
  * The coast of a flick, which a press stops where it is (like Maps). Only
- * a flick's: a site being framed goes on.
+ * a flick's: once it settles or another move (a framing, a key) sets new
+ * targets, a site being framed goes on.
  */
 export function flickCoast(orbit: Orbit, deps: ControlDeps) {
-  let flung = false;
+  let flung: string | null = null;
   const press = (): boolean => {
-    const stopped = flung && haltTurn(orbit);
-    flung = false;
+    const ours = flung === turnTargets(orbit);
+    const stopped = ours && haltTurn(orbit);
+    flung = null;
     if (stopped) deps.invalidate();
     return stopped;
   };
-  return { press, flung: (): void => void (flung = true) };
+  const fling = (): void => void (flung = turnTargets(orbit));
+  return { press, flung: fling };
 }

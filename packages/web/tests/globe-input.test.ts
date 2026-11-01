@@ -27,7 +27,7 @@ import { describe, expect, it, vi } from 'vitest';
 import { keyControls } from '../src/globe/key-controls';
 import { keyToMove } from '../src/globe/keys';
 import { createLoop } from '../src/globe/loop';
-import { createOrbit, poseOf, stepOrbit } from '../src/globe/orbit';
+import { createOrbit, moveOrbit, poseOf, stepOrbit } from '../src/globe/orbit';
 import { pointerControls } from '../src/globe/pointer-controls';
 import { SOUTH_POLE_VIEW } from '../src/globe/framing';
 
@@ -108,6 +108,48 @@ describe('a press on the turning globe', () => {
     controls.release(800, 0);
     for (let i = 0; i < 600; i++) stepOrbit(orbit, 1 / 60);
     expect(controls.press?.()).toBe(false);
+  });
+
+  const frame = (orbit: ReturnType<typeof createOrbit>) =>
+    moveOrbit(orbit, { latDeg: -8, lonEastDeg: 20, distance: 0 }, false);
+  const expectFraming = (orbit: ReturnType<typeof createOrbit>, controls: ReturnType<typeof pointerControls>) => {
+    stepOrbit(orbit, 0.05);
+    const target = orbit.lon.target;
+    expect(controls.press?.()).toBe(false);
+    expect(orbit.lon.target).toBe(target);
+    expect(orbit.lon.value).not.toBe(target);
+  };
+
+  it('never stops a site being framed, without a flick', () => {
+    const orbit = createOrbit(SOUTH_POLE_VIEW);
+    const controls = pointerControls(orbit, deps(false));
+    frame(orbit);
+    expectFraming(orbit, controls);
+  });
+
+  it('lets a framing go on after a flick that settled by itself', () => {
+    const orbit = createOrbit(SOUTH_POLE_VIEW);
+    const controls = pointerControls(orbit, deps(false));
+    controls.release(800, 0);
+    for (let i = 0; i < 600; i++) stepOrbit(orbit, 1 / 60);
+    frame(orbit);
+    expectFraming(orbit, controls);
+  });
+
+  it('lets a framing or a key turn that takes over a flick go on', () => {
+    const framed = createOrbit(SOUTH_POLE_VIEW);
+    const byFrame = pointerControls(framed, deps(false));
+    byFrame.release(800, 0);
+    stepOrbit(framed, 0.05);
+    frame(framed);
+    expectFraming(framed, byFrame);
+
+    const keyed = createOrbit(SOUTH_POLE_VIEW);
+    const byKey = pointerControls(keyed, deps(false));
+    byKey.release(800, 0);
+    stepOrbit(keyed, 0.05);
+    keyControls(keyed, deps(false)).rotate({ latDeg: 0, lonEastDeg: 10 });
+    expectFraming(keyed, byKey);
   });
 });
 

@@ -25,13 +25,16 @@
 
 /**
  * The astronaut's figure (VENT-10): its picture for the pose and visor
- * colour (astronaut/figure-types.ts) or, until the pictures are drawn or
- * where they cannot be, a plain silhouette with a tinted visor. The visor
- * is neutral silver at home and off the Moon; a signal colour only says a
- * state. Decorative: the button around it carries the name.
+ * colour, a cell of the sprite sheet baked offline
+ * (astronaut/figure-types.ts; styles/astronaut.css picks the cell), or,
+ * before the island runs and under Save-Data, a plain silhouette with a
+ * tinted visor. The visor is neutral silver at home and off the Moon; a
+ * signal colour only says a state. Decorative: the button around it
+ * carries the name.
  */
+import { useSyncExternalStore } from 'react';
 import type { Pose, Visor } from '../../astronaut/figure-types';
-import { useAstronaut, useWatched } from './context';
+import { prefersSaveData } from '../../lib/viewport';
 
 interface Props {
   readonly pose: Pose;
@@ -39,10 +42,14 @@ interface Props {
   readonly className?: string;
 }
 
+const steady = (): (() => void) => () => undefined;
+
+/** Whether the sheet may load: in the browser, unless it saves data. */
+const useSheet = (): boolean =>
+  useSyncExternalStore(steady, () => !prefersSaveData(), () => false);
+
 export function Figure({ pose, visor, className = '' }: Props) {
-  const kit = useAstronaut();
-  const images = useWatched(kit?.figures ?? null, null);
-  const src = images?.[pose][visor];
+  const sheet = useSheet();
   return (
     <span
       className={`astro-figure ${className}`.trim()}
@@ -50,8 +57,8 @@ export function Figure({ pose, visor, className = '' }: Props) {
       data-visor={visor}
       aria-hidden="true"
     >
-      {src ? (
-        <img className="astro-figure__image" src={src} alt="" draggable={false} />
+      {sheet ? (
+        <span className="astro-figure__image" />
       ) : (
         <span className="astro-figure__plain">
           <span className="astro-figure__visor" />

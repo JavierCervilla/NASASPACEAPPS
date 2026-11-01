@@ -28,7 +28,9 @@
  * figure, the dock at the end of the desktop Layers key and beside the
  * phone's tab bar, the carried figure with its shadow, crosshair and
  * readout, and the figure standing on its point. The pictures are 180 x
- * 220 with the feet at 50 % x 95 % (src/astronaut/figure-types.ts).
+ * 220 with the feet at 50 % x 95 % (src/astronaut/figure-types.ts), the
+ * cells of one sprite sheet baked offline (scripts/astronaut-figures.mjs):
+ * rows stand, carry; columns silver, window, Sun, Earth, neither.
  */
 
 .astro-figure {
@@ -46,10 +48,18 @@
   display: block;
   width: 100%;
   height: 100%;
-  -webkit-user-drag: none;
+  background: url('../astronaut/figures.webp') no-repeat;
+  background-size: 500% 200%;
+  background-position: var(--cell-x, 0%) var(--cell-y, 0%);
 }
 
-/* Until the pictures are drawn, or without WebGL: a plain suit. */
+.astro-figure[data-pose='carry'] { --cell-y: 100%; }
+.astro-figure[data-visor='window'] { --cell-x: 25%; }
+.astro-figure[data-visor='sun'] { --cell-x: 50%; }
+.astro-figure[data-visor='earth'] { --cell-x: 75%; }
+.astro-figure[data-visor='none'] { --cell-x: 100%; }
+
+/* Before the island runs, and under Save-Data: a plain suit. */
 .astro-figure__plain {
   position: absolute;
   left: 30%;

@@ -97,9 +97,9 @@ describe('light-mode signal words on the phone top bar (VENT-33)', () => {
 });
 
 describe('the astronaut visor colours (VENT-10)', () => {
-  // The pictures are baked once with these tokens (astronaut/figure-load.ts). They are declared once, outside every
-  // theme, contrast and transparency query, so a later theme switch cannot leave the visors stale. Moving one into a
-  // query would need the pictures baked again on that change.
+  // The pictures are baked offline with these tokens (scripts/astronaut-figures.mjs). They are declared once, outside
+  // every theme, contrast and transparency query, so no theme can leave the visors stale. Moving one into a query would
+  // need a sheet per theme.
   it.each(Object.values(VISOR_TOKENS))('%s is the same in every theme', (token) => {
     const declarations = TOKENS.split(`${token}:`).length - 1;
     expect(declarations).toBe(1);

@@ -129,7 +129,7 @@ function Island({ sitesUrl, base, selectedId, sites }: Props) {
   useLiveFavicon(base, parts.time, state);
   const time = parts.time;
   // The address's `?site=` and `?lat&lon` open once the kit runs.
-  const kit = useAstronautKit({ store, time, state, sites, base });
+  const kit = useAstronautKit({ store, time, state, sites });
   const { t } = useI18n();
   const globe = { base, sitesUrl, store, sheetEdge, time, state };
   return (

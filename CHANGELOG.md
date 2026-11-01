@@ -21,8 +21,9 @@
   decimales simples dentro de rango (latitud ±90°, longitud de -180° a 360° este); cualquier otra cosa se ignora. Con teclado: Intro sobre el hueco
   lo coge, las flechas lo mueven (con Mayúsculas, a pasos grandes), Intro lo suelta y Esc lo devuelve, y el lector de
   pantalla oye cada paso; al soltarlo dice dónde ha quedado y cómo volver a moverlo. Con movimiento reducido va derecho y se desvanece en vez de volar. En los cinco idiomas.
-  Las imágenes del astronauta se dibujan cuando el globo ya está en pantalla, a ratos libres, y nunca retrasan su
-  arranque; en un móvil estrecho o con texto grande, donde el botón del astronauta sube sobre la barra de pestañas, la
+  Las imágenes del astronauta vienen dibujadas de antemano (una sola imagen de 77 kB con las dos posturas y los cinco
+  colores del visor, idéntica píxel a píxel a lo que antes se dibujaba en el navegador): la página ya no descarga el
+  modelo 3D ni lo dibuja al cargar, así que el astronauta no gasta nada mientras arranca el globo; en un móvil estrecho o con texto grande, donde el botón del astronauta sube sobre la barra de pestañas, la
   hoja sube lo mismo para que el botón no tape «Reintentar» ni las tarjetas.
 - Respuesta al instante con el cálculo propio y conmutador para compararlo con Horizons (VENT-36, opción C del lienzo,
   aprobada por Javier): al elegir un sitio, la píldora, las tarjetas, la ficha y el calendario se pintan en el acto con

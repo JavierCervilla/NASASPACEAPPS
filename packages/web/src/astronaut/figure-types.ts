@@ -27,9 +27,10 @@
  * The astronaut's pictures (VENT-10): two poses, standing and carried
  * (tilted, as if lifted by the hand), each with the visor in every colour
  * it can wear: neutral silver in the dock or off the Moon, else the state
- * of the point under it. The page draws the 3D model once into these
- * pictures (figure-render.ts), so the figure costs no draw call while it
- * is dragged or stands on the Moon. Pure.
+ * of the point under it. They are baked offline from the 3D model into
+ * one sprite sheet (scripts/astronaut-figures.mjs: figures.webp, laid out
+ * by figures.json, rows {@link POSES}, columns {@link VISORS}), so the
+ * page draws no 3D for the figure. Pure.
  */
 import type { NowState } from '../phone/widget-types';
 
@@ -41,21 +42,13 @@ export const VISORS: readonly Visor[] = [
   'idle', 'window', 'sun', 'earth', 'none',
 ];
 
-/** One picture per pose and visor, as `data:` URLs (img-src allows them). */
-export type FigureImages = Readonly<
-  Record<Pose, Readonly<Record<Visor, string>>>
->;
-
 /**
- * The pictures' size in device px, and where the feet are in them, as a
- * share of each side: the page puts that point on the dropped one.
+ * Each picture's size in px, and where the feet are in it, as a share of
+ * each side: the page puts that point on the dropped one.
  */
 export const PICTURE = { width: 180, height: 220, feetX: 0.5, feetY: 0.95 };
 
-/** The visor's neutral silver: in the dock and off the Moon. */
-export const IDLE_VISOR = '#a7acb6';
-
-/** The token of each state's colour (styles/tokens.css). */
+/** The token of each state's colour (styles/tokens.css): the bake's. */
 export const VISOR_TOKENS: Readonly<Record<NowState, string>> = {
   window: '--signal-window',
   sun: '--signal-sun',

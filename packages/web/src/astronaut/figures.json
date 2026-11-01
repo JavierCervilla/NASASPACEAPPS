@@ -1,0 +1,31 @@
+{
+  "file": "figures.webp",
+  "width": 900,
+  "height": 440,
+  "cell": {
+    "width": 180,
+    "height": 220,
+    "feetX": 0.5,
+    "feetY": 0.95
+  },
+  "rows": [
+    "stand",
+    "carry"
+  ],
+  "columns": [
+    "idle",
+    "window",
+    "sun",
+    "earth",
+    "none"
+  ],
+  "colours": {
+    "idle": "#a7acb6",
+    "window": "#3ddc84",
+    "sun": "#f5c542",
+    "earth": "#4a9cff",
+    "none": "#3a3c44"
+  },
+  "bytes": 76642,
+  "sha256": "1b4b694ce7a15550b660022d670c8bedec4259377dee66b40fc9a5a5e6df6a22"
+}

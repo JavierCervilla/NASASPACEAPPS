@@ -48,8 +48,6 @@ const START_MAPS = new Set([
 ]);
 const WHOLE_FOLDERS = ['_astro/', 'icons/', 'thumbs/'];
 const ROOT_FILES = new Set(['favicon.ico', 'favicon.svg', 'apple-touch-icon.png']);
-/** The astronaut's model (VENT-10): the dock draws it offline too. */
-const MODELS = new Set(['models/astronaut.glb', 'models/astronaut-suit.webp']);
 /** The pseudo-locale's folder (src/i18n/locales.ts): never offered, never cached. */
 const PSEUDO = 'en-xa/';
 
@@ -72,7 +70,6 @@ export function precached(file) {
   if (!keepable(file)) return false;
   if (file === 'index.html' || /^[a-z]{2}\/index\.html$/.test(file)) return true;
   if (file.endsWith('manifest.webmanifest')) return true;
-  if (MODELS.has(file)) return true;
   return START_MAPS.has(file) || ROOT_FILES.has(file) || WHOLE_FOLDERS.some((f) => file.startsWith(f));
 }
 

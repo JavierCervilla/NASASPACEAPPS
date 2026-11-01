@@ -112,12 +112,16 @@ Every visible change follows `.claude/skills/apple-design/SKILL.md` (vendored fr
   and again from the first press, since an idle page redraws nothing under the glass); a slow probe switches to frosted
   live and for the session. `?glass=liquid|frosted` forces a mode, except that `?glass=liquid` never overrides
   reduced transparency or more contrast.
-- **The astronaut** (VENT-10, canvas «Astro A + B»): NASA's «Astronaut» model (`public/models/astronaut.glb` and its
-  suit texture beside it, `astronaut-suit.webp`, built by `packages/web/scripts/astronaut.mjs`: arms lowered, the NASA
-  insignia and the mission patch covered with fabric (the US flags stay), materials `suit` and `visor`; no decoder and no `blob:` URL needed, so the CSP holds) is drawn once the
-  globe is up (its loading state gone: never on its critical path), one picture per idle slice, into small pictures,
-  two poses times five visor colours (`src/astronaut/figure-render.ts`, its own WebGL renderer, released at once; none
-  under Save-Data, where a plain silhouette stands in), so the figure costs no draw call. Its dock ends the desktop
+- **The astronaut** (VENT-10, canvas «Astro A + B»): NASA's «Astronaut» model (`packages/web/models/astronaut.glb` and
+  its suit texture beside it, `astronaut-suit.webp`, built by `packages/web/scripts/astronaut.mjs`: arms lowered, the
+  NASA insignia and the mission patch covered with fabric (the US flags stay), materials `suit` and `visor`) is a build
+  input only, never shipped: `scripts/astronaut-figures.mjs` bakes it offline, in Playwright's Chromium pinned to
+  SwiftShader (byte-stable; `--check` re-bakes and compares), into one lossless sprite sheet,
+  `src/astronaut/figures.webp` (77 kB, manifest `figures.json`, held by `tests/astronaut-figures.test.ts`): two poses
+  (rows) times five visor colours (columns: silver and the four signal colours, theme-independent). The page has no
+  runtime renderer for it: `Figure.tsx` shows a cell of the sheet as a CSS background (`styles/astronaut.css` picks it
+  by `data-pose` and `data-visor`; the sheet is a hashed `_astro/` file), before hydration and under Save-Data a plain
+  silhouette, so the figure costs no draw call and no CPU while the globe starts. Its dock ends the desktop
   Layers key («Drag me anywhere») and is a round glass button beside the phone's tab bar
   (`src/components/astronaut/`). A press lifts it (Pointer
   Events with capture; the feet keep the grab offset, at least 64 px above a finger); it leans with the hand's speed,
@@ -194,10 +198,10 @@ Every visible change follows `.claude/skills/apple-design/SKILL.md` (vendored fr
 - **Offline**: `scripts/service-worker.mjs` (an Astro integration) bundles `src/pwa/sw-worker.ts` into `dist/sw.js`
   after every build, with the files it caches at install, the whole offline set (every locale's page except `/en-xa/`,
   `_astro/`, the manifests, `icons/` with the 30 phase frames, every site thumbnail, the 1K and 2K maps, the polar map,
-  the astronaut's model, `favicon.ico`, `favicon.svg` and the root `apple-touch-icon.png`), fetched past the HTTP cache (`cache: 'reload'`),
+  `favicon.ico`, `favicon.svg` and the root `apple-touch-icon.png`; the astronaut's sprite sheet is in `_astro/`), fetched past the HTTP cache (`cache: 'reload'`),
   and the build's digest over every file the worker may keep, which names the static cache (`ventana-static-<digest>`),
   so a deploy drops the old one. The install set has a hard budget of 5 MB (`PRECACHE_BUDGET`, human decision
-  2026-10-31): the build logs the precache total and fails over it (4.75 MB with the astronaut, VENT-10). The 4K and 8K maps, and any build file not
+  2026-10-31): the build logs the precache total and fails over it (4.60 MB with the astronaut's baked sprites, VENT-10). The 4K and 8K maps, and any build file not
   precached, are kept cache first the first time the page fetches them. Under Save-Data the worker is not registered
   at all. Pages and API GETs are network first,
   build files cache first; the network's answer always wins (a copy that cannot be kept, a full quota, is skipped), only

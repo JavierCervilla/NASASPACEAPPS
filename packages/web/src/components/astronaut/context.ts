@@ -30,7 +30,6 @@
  */
 import {
   createContext,
-  useCallback,
   useContext,
   useSyncExternalStore,
 } from 'react';
@@ -60,13 +59,4 @@ export function useInstant(kit: AstronautKit | null): number | null {
     () => (kit ? kit.time.get().atMs : null),
     () => null,
   );
-}
-
-/**
- * What the globe calls once it has taken over (its splash is done): only
- * then may the astronaut's pictures be drawn (astronaut/kit.ts).
- */
-export function useFiguresDue(): () => void {
-  const kit = useAstronaut();
-  return useCallback(() => kit?.figuresDue.set(true), [kit]);
 }

@@ -24,17 +24,17 @@
  */
 
 // Builds the astronaut the page lets you drag onto the Moon (VENT-10) from NASA's «Astronaut» model, NASA 3D
-// Resources (public domain), into packages/web/public/models/astronaut.glb and its suit texture beside it,
-// astronaut-suit.webp:
+// Resources (public domain), into packages/web/models/astronaut.glb and its suit texture beside it,
+// astronaut-suit.webp. They are the input of the offline sprite bake (astronaut-figures.mjs), not files the site serves:
 //
 //   node packages/web/scripts/astronaut.mjs <Astronaut.glb> [out.glb]
 //
 // The source is read as data only (a GLB, Draco-compressed). The build bakes the root transform into the mesh, lowers
 // the arms (astronaut-mesh.mjs), covers the NASA insignia on the backpack and the mission patch on the suit with the
-// fabric next to each, names the two materials `suit` and `visor` (the page tints the visor with the state's colour,
-// so its texture goes), welds the vertices and quantizes the mesh (KHR_mesh_quantization). The output needs no decoder: Draco and meshopt would both
-// need WebAssembly, which the page's CSP does not allow. The suit texture, shrunk to 512 px WebP, is its own file: a
-// texture inside a GLB reaches the browser through a blob: URL, which the CSP does not allow either.
+// fabric next to each, names the two materials `suit` and `visor` (the bake tints the visor with each state's colour,
+// so its texture goes), welds the vertices and quantizes the mesh (KHR_mesh_quantization). The output needs no decoder,
+// and the suit texture, shrunk to 512 px WebP, is its own file: the page used to load the model under its CSP, which
+// allows neither WebAssembly (Draco, meshopt) nor the blob: URL a texture inside a GLB loads through.
 import { readFileSync, writeFileSync } from 'node:fs';
 import { createHash } from 'node:crypto';
 import { fileURLToPath } from 'node:url';
@@ -45,7 +45,7 @@ import draco3d from 'draco3dgltf';
 import sharp from 'sharp';
 import { COVERED_MARKS, lowerArms } from './astronaut-mesh.mjs';
 
-const OUT = fileURLToPath(new URL('../public/models/astronaut.glb', import.meta.url));
+const OUT = fileURLToPath(new URL('../models/astronaut.glb', import.meta.url));
 const TEXTURE_PX = 512;
 const WEBP_QUALITY = 82;
 /** The source names its visor material `astnt1_2` and the suit `astnt1_1`. */

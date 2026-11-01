@@ -35,6 +35,8 @@ import { expect, test, type Locator, type Page } from '@playwright/test';
 import { stubApi } from '../api-stub';
 
 const NOW = new Date('2026-11-23T18:00:00Z');
+/** How often the page's animation frames are counted; three equal counts in a row are at rest. */
+const STILL_EVERY_MS = 200;
 
 interface Point {
   readonly x: number;
@@ -45,6 +47,35 @@ interface Point {
 async function feetOf(figure: Locator): Promise<Point> {
   const box = (await figure.boundingBox())!;
   return { x: box.x + box.width / 2, y: box.y + box.height * 0.95 };
+}
+
+/** Counts the animation frames the page asks for, from its first script on (`window.__frames`). */
+async function countFrames(page: Page): Promise<void> {
+  await page.addInitScript(() => {
+    const counted = window as unknown as { __frames: number };
+    const ask = window.requestAnimationFrame.bind(window);
+    counted.__frames = 0;
+    window.requestAnimationFrame = (callback) => {
+      counted.__frames += 1;
+      return ask(callback);
+    };
+  });
+}
+
+/**
+ * The page at rest: no animation frame asked for in three reads in a row. The globe behind the polar map still turns
+ * and loads its maps for a while after the figure shows, and each of its frames makes the carry read its point again,
+ * which would hide the stale readout this spec is about until the globe settles.
+ */
+async function atRest(page: Page): Promise<void> {
+  const frames = () => page.evaluate(() => (window as unknown as { __frames: number }).__frames);
+  let last = await frames();
+  for (let still = 0; still < 3; ) {
+    await page.waitForTimeout(STILL_EVERY_MS);
+    const now = await frames();
+    still = now === last ? still + 1 : 0;
+    last = now;
+  }
 }
 
 async function centreOf(page: Page, selector: string): Promise<Point> {
@@ -62,9 +93,11 @@ test.describe('desktop, 1440x900, polar map', () => {
     test.fail();
     await page.clock.setFixedTime(NOW);
     await stubApi(page);
+    await countFrames(page);
     await page.goto('./#polar-map');
     await expect(page.locator('.polar__disk')).toBeVisible();
     await expect(page.locator('.polar .astro-dock .astro-figure__image')).toBeVisible({ timeout: 20_000 });
+    await atRest(page);
 
     const centre = await centreOf(page, '.polar__disk');
     const target = { x: centre.x + 120, y: centre.y + 60 };

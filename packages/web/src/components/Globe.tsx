@@ -70,7 +70,7 @@ function useGlobe(props: Props, i18n: I18n) {
   const host = useRef<HTMLDivElement>(null);
   const loader = useRef<() => void>(() => undefined);
   const [status, setStatus] = useState<GlobeStatus | null>(null);
-  const { textured, view, signals, done } = useGlobeSignals();
+  const { textured, view, signals } = useGlobeSignals();
   useEffect(() => {
     const el = host.current;
     if (!el) return undefined;
@@ -90,7 +90,7 @@ function useGlobe(props: Props, i18n: I18n) {
     return start.dispose;
   }, [sitesUrl, base, store, sheetEdge, time, state, i18n, signals]);
   const load = (): void => loader.current();
-  return { host, status, load, textured, view, done };
+  return { host, status, load, textured, view };
 }
 
 /**
@@ -126,7 +126,7 @@ function LoadButton({ onLoad }: { readonly onLoad: () => void }) {
  */
 export default function Globe(props: Props) {
   const i18n = useI18n();
-  const { host, status, load, textured, view, done } = useGlobe(props, i18n);
+  const { host, status, load, textured, view } = useGlobe(props, i18n);
   const atMs = useTime(props.time)?.atMs ?? null;
   // The scene owns the viewport's children (canvas, markers), so React
   // renders nothing inside it; the text alternative is its sibling.
@@ -146,7 +146,7 @@ export default function Globe(props: Props) {
         {helpText(i18n, status, atMs)}
       </p>
       {kind === 'deferred' ? <LoadButton onLoad={load} /> : null}
-      <GlobeSplash {...props} textured={textured} status={kind} onDone={done} />
+      <GlobeSplash {...props} textured={textured} status={kind} />
       <GlobeAstronaut host={host} view={view} store={props.store} />
     </>
   );

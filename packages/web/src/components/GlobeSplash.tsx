@@ -47,8 +47,6 @@ interface Props {
   readonly status: GlobeStatus['kind'] | 'idle';
   /** Whether the Moon's first map is on the globe. */
   readonly textured: boolean;
-  /** Called once the globe has taken over and the splash is done. */
-  readonly onDone?: () => void;
 }
 
 /** The longest the splash waits for the map over a running scene. */
@@ -96,12 +94,8 @@ function useDone(status: Props['status'], textured: boolean): boolean {
   return status !== 'ready' || textured || late;
 }
 
-export function GlobeSplash(props: Props) {
-  const { base, time, status, textured, onDone } = props;
+export function GlobeSplash({ base, time, status, textured }: Props) {
   const done = useDone(status, textured);
-  useEffect(() => {
-    if (done) onDone?.();
-  }, [done, onDone]);
   const atMs = useTime(time)?.atMs ?? null;
   const frame =
     atMs === null ? null : frameIndex(simPhase.phaseAt(atMs));

@@ -40,6 +40,8 @@ type Box = { x: number; y: number; width: number; height: number };
 import { SITES, stubApi } from './api-stub';
 
 const NOW = new Date('2026-11-23T18:00:00Z');
+/** The page's island hydrating is not what this spec checks: a cold, loaded run can take seconds. */
+const HYDRATED_MS = 20_000;
 const DIST = fileURLToPath(new URL('../../packages/web/dist', import.meta.url));
 const CSP_SCRIPT = fileURLToPath(new URL('../../packages/web/scripts/csp-header.mjs', import.meta.url));
 const OUT = new URL('../../production/qa/evidence/', import.meta.url);
@@ -79,6 +81,9 @@ async function open(page: Page, query = ''): Promise<void> {
   await page.emulateMedia({ reducedMotion: 'reduce', colorScheme: 'dark' });
   await page.clock.setFixedTime(NOW);
   await page.goto(`./${query}`);
+  // The switch is in the server-rendered HTML: a click before React hydrates it is lost, and the source stays Horizons.
+  // Astro removes the island's `ssr` attribute once it has hydrated (smoke.spec.ts).
+  await expect(page.locator('astro-island')).not.toHaveAttribute('ssr', { timeout: HYDRATED_MS });
 }
 
 /** The CSP nginx sends for the built site (packages/web/scripts/csp-header.mjs, as the Dockerfile runs it). */

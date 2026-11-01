@@ -26,11 +26,9 @@
 /**
  * Makes the astronaut's shared parts once the island runs (VENT-10): the
  * places, the carrier and the surfaces (astronaut/kit.ts); then opens the
- * point the address names and, once the globe has taken over, draws the
- * figure's pictures, unless the browser asks to save data.
+ * point the address names.
  */
 import { useEffect, useState } from 'react';
-import { loadFigures } from '../../astronaut/figure-load';
 import {
   createKit,
   type AstronautKit,
@@ -40,9 +38,7 @@ import type { Address } from '../../astronaut/places';
 import { selectedSite } from '../../astronaut/selected-site';
 import type { CardSite } from '../../card/site-facts';
 import type { I18n } from '../../i18n/translate';
-import { prefersSaveData } from '../../lib/viewport';
 import { useI18n } from '../i18n-context';
-import { useWatched } from './context';
 
 const REDUCED_MOTION = '(prefers-reduced-motion: reduce)';
 
@@ -59,8 +55,6 @@ interface Options extends Pick<KitDeps, 'store' | 'time'> {
   /** The selected site's state, as the views show it. */
   readonly state: KitDeps['selectedState'];
   readonly sites: readonly CardSite[];
-  /** The site's base path, for the model. */
-  readonly base: string;
 }
 
 /** The selected site's point, where the keyboard's carry starts. */
@@ -73,22 +67,8 @@ function startPointOf(options: Options, i18n: I18n) {
   };
 }
 
-/**
- * Draws the figure's pictures once the globe has taken over (the kit's
- * `figuresDue`), never on the page's critical path; none under Save-Data.
- */
-function useFigures(kit: AstronautKit, base: string): void {
-  const due = useWatched(kit.figuresDue, false);
-  useEffect(() => {
-    if (!due || prefersSaveData()) return undefined;
-    let live = true;
-    void loadFigures(base).then((images) => live && kit.figures.set(images));
-    return () => void (live = false);
-  }, [kit, base, due]);
-}
-
 export function useAstronautKit(options: Options): AstronautKit {
-  const { sites, base } = options;
+  const { sites } = options;
   const i18n = useI18n();
   const [kit] = useState(() => createKit({
     ...options,
@@ -101,6 +81,5 @@ export function useAstronautKit(options: Options): AstronautKit {
   useEffect(() => {
     kit.places.restore(sites.map((site) => site.id));
   }, [kit, sites]);
-  useFigures(kit, base);
   return kit;
 }

@@ -25,8 +25,8 @@
 
 /**
  * Everything the astronaut's views share (VENT-10), made once per page:
- * where it is, the carry under way, the places to drop it on, its
- * pictures, and what the live region says.
+ * where it is, the carry under way, the places to drop it on, and what
+ * the live region says.
  */
 import type { TimeStore } from '../calendar/time-store';
 import type { I18n } from '../i18n/translate';
@@ -40,7 +40,6 @@ import type { NowState } from '../phone/widget-types';
 import { describeCarry, describeDrop } from './announce';
 import { createCarrier, type Carrier, type CarryEnd } from './carrier';
 import type { CarryView } from './carry-view';
-import type { FigureImages } from './figure-types';
 import { carryByKeys } from './key-carry';
 import { createPlaces, type Address, type Places } from './places';
 import { stateAtPoint } from './sky-state';
@@ -64,14 +63,6 @@ export interface AstronautKit {
   readonly selectedState: KitDeps['selectedState'];
   readonly carrier: Carrier;
   readonly surfaces: Surfaces;
-  /** Its pictures once drawn; null until then, or if they cannot be. */
-  readonly figures: WatchedValue<FigureImages | null>;
-  /**
-   * Whether the pictures may be drawn: set once the globe has taken over
-   * (its first map is on, it gave up, or its splash timed out), so their
-   * second WebGL renderer never competes with the globe's start.
-   */
-  readonly figuresDue: WatchedValue<boolean>;
   /** What the polite live region says. */
   readonly live: WatchedValue<string>;
   /** The state of `point` at the shared instant. */
@@ -127,9 +118,7 @@ export function createKit(deps: KitDeps): AstronautKit {
     live.set(describeCarry(i18n, view, first));
   const keys = (home: ClientPoint): boolean =>
     carryByKeys(home, { carrier, surfaces, startPoint, say });
-  const figures = createWatchedValue<FigureImages | null>(null);
-  const figuresDue = createWatchedValue(false);
-  const parts = { places, carrier, surfaces, figures, figuresDue, live };
+  const parts = { places, carrier, surfaces, live };
   const shared = { ...parts, stateAt };
   const kit = { ...shared, time, selectedState, reducedMotion, keys };
   const ends = carrier.ended.subscribe(() =>

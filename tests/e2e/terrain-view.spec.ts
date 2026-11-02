@@ -262,6 +262,18 @@ test.describe('desktop, 1440x900', () => {
     await expect(view(page).getByRole('status')).toHaveText('No terrain covers this point on the server');
     await expect(host(page).locator('canvas')).toHaveCount(0);
   });
+
+  test('says there is no terrain, with no retry, when the list answers but every tile is a 404', async ({ page }) => {
+    const seen: string[] = [];
+    await page.clock.setFixedTime(AT);
+    await stubApi(page);
+    await stubTile(page, { tileStatus: 404, error: 'no terrain data covers this point', seen });
+    await page.goto('./?lat=-30.00&lon=20.00#horizon');
+    await expect(view(page).getByRole('status')).toHaveText('No terrain covers this point on the server');
+    await expect(view(page).getByRole('button', { name: 'Try again' })).toHaveCount(0);
+    await expect(host(page).locator('canvas')).toHaveCount(0);
+    expect(seen.filter((u) => /\/tiles\/[^?]+\/\d+\/-?\d+\/-?\d+/.test(u)).length).toBeLessThan(15);
+  });
 });
 
 test.describe('phone, 390x844', () => {

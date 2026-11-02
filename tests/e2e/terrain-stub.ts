@@ -104,6 +104,8 @@ export interface TileStub {
   /** Other than 200 it answers an error. */
   readonly status?: number;
   readonly error?: string;
+  /** The ring list answers 200 but every tile answers this error. */
+  readonly tileStatus?: number;
   /** Collects the requests. */
   readonly seen?: string[];
 }
@@ -119,6 +121,7 @@ export async function stubTile(page: Page, stub: TileStub = {}): Promise<void> {
     if (status !== 200) return route.fulfill({ status, json: { error } });
     const m = TILE_PATH.exec(url.pathname);
     if (!m) return route.fulfill({ json: ringBody(url) });
+    if (stub.tileStatus) return route.fulfill({ status: stub.tileStatus, json: { error } });
     const key = { scheme: m[1] as TileScheme, level: Number(m[2]), x: Number(m[3]), y: Number(m[4]) };
     return route.fulfill({ json: tileBodyOf(key) });
   });

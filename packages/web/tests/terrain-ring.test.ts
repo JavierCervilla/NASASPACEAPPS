@@ -34,6 +34,7 @@ import {
   type TileKey,
 } from '@ventana/sim';
 import { describe, expect, it } from 'vitest';
+import { NoTerrainHereError } from '../src/horizon/horizon-errors';
 import { parseRing, parseTile } from '../src/terrain/ring/ring-answer';
 import { cellOf, tileOfCell } from '../src/terrain/ring/ring-cells';
 import { fetchRingSource, IN_FLIGHT } from '../src/terrain/ring/ring-fetch';
@@ -275,6 +276,33 @@ describe('fetching the ring', () => {
     expect(log.filter((l) => l.startsWith('tile'))).toHaveLength(11);
     expect(log).not.toContain('tile3');
     expect(log.at(-1)).toBe('settled0');
+  });
+
+  it('rejects as no terrain when every tile of the near levels is a 404, and stops asking the coarse ones', async () => {
+    const urls: string[] = [];
+    const two = { scheme: 'polar-south', levels: [0, 1, 2].map((level) => ({ level, tiles: Array.from({ length: 8 }, (_, i) => ({ x: i, y: 0, url: `/api/v1/terrain/tiles/polar-south/${level}/${i}/0?v=1` })) })) };
+    const fetcher = (async (url: string) => {
+      if (!url.includes('/tiles/polar')) return new Response(JSON.stringify(two));
+      urls.push(url);
+      return new Response('{}', { status: 404 });
+    }) as unknown as typeof fetch;
+    const log: string[] = [];
+    await expect(fetchRingSource(fetcher, 'https://x.test/api/v1/sites', waits)
+      .load({ ...request, levels: 3 }, feedTo(log), new AbortController().signal)).rejects.toBeInstanceOf(NoTerrainHereError);
+    expect(urls.length).toBeLessThan(24);
+    expect(urls.filter((u) => u.includes('/polar-south/2/')).length).toBeLessThan(IN_FLIGHT);
+    expect(log).not.toContain('settled1');
+  });
+
+  it('keeps a hole as a hole when a near tile is missing but another came', async () => {
+    const one = { scheme: 'polar-south', levels: [{ level: 0, tiles: [0, 1].map((i) => ({ x: i, y: 0, url: `/api/v1/terrain/tiles/polar-south/0/${i}/0?v=1` })) }] };
+    const fetcher = (async (url: string) => {
+      if (!url.includes('/tiles/polar')) return new Response(JSON.stringify(one));
+      return url.includes('/0/0/') ? new Response('{}', { status: 404 }) : new Response(JSON.stringify(tileBody));
+    }) as unknown as typeof fetch;
+    const log: string[] = [];
+    await fetchRingSource(fetcher, 'https://x.test/api/v1/sites', waits).load(request, feedTo(log), new AbortController().signal);
+    expect(log.filter((l) => l.startsWith('tile'))).toHaveLength(1);
   });
 
   it('rejects when the route itself says there is no terrain', async () => {

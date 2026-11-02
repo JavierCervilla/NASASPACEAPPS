@@ -379,7 +379,7 @@ Every visible change follows `.claude/skills/apple-design/SKILL.md` (vendored fr
   the Sun and the Earth are real geometry out to 128 km. Each level draws a window of 256 x 256 of its cells around the
   site (4, 16, 64 and 256 km across, `ring-window.ts`), aligned to the parent's cells: the parent leaves a hole where the
   finer level is loaded and draws it where that tile failed (a 404 or the tries ran out is a hole filled by the parent,
-  never the view's failure, `ring-layout.ts`); a skirt hangs on every side of a drawn cell whose neighbour is not drawn
+  never the view's failure, `ring-layout.ts`; but when every tile of levels 0 and 1 is a 404 the list was answered for a point with no terrain, and the view ends in the route's final «No terrain covers this point on the server», no «Try again» and no mode switch, the coarse tiles no longer asked, `ring-absent.ts`); a skirt hangs on every side of a drawn cell whose neighbour is not drawn
   (T-junctions and open edges, `ring-mesh.ts`); normals are taken across the tile edges when the neighbour is loaded and
   blended into the parent's over 8 cells at a window's edge, so no seam shows a crease (`ring-normals.ts`); and the heights themselves are stitched: a node within 8 cells of its window's edge is pulled toward the parent's surface by a smoothstep, so the edge nodes lie exactly on it (`ring-stitch.ts`; where the levels read different LOLA tiers the raw step is metres), and a parent that arrives late places again only the nodes in that band (the stitch held by `tests/terrain-ring-stitch.test.ts` on the recorded IM-2 relief, L1 to L2 and L2 to L3). Nodes are
   placed with `sampleDirection` and the site's frame (`ring-frame.ts`: x east, y up, z south, the site the origin and

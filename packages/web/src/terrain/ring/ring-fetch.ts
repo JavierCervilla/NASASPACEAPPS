@@ -32,9 +32,12 @@
  * fails for good (a 404, or the tries ran out) is a hole the parent level
  * fills, never the view's failure.
  */
-import { TransientHorizonError } from '../../horizon/horizon-errors';
+import { NoTerrainHereError, TransientHorizonError }
+  from '../../horizon/horizon-errors';
 import { snapPoint } from '../../pin/custom-point';
 import type { LatLon } from '../../lib/polar-projection';
+import { countByLevel, settleEmpty } from './ring-count';
+import { watchNear } from './ring-absent';
 import { getJson, inFlight, type Waits } from './ring-http';
 import { parseRing, parseTile, type RingEntry } from './ring-answer';
 import type { RingFeed, RingRequest, RingSource } from './ring-source';
@@ -42,6 +45,9 @@ import type { TileScheme } from '@ventana/sim';
 
 /** The most tile requests in flight: the API's streaming guidance. */
 export const IN_FLIGHT = 6;
+/** The finest levels the near ground stands on (levels 0 and 1). */
+const NEAR_LEVELS = 2;
+const ABSENT = Symbol('absent');
 const SITES_PATH = /\/sites$/;
 
 /** The ring route's URL for `point`, on the server's 0.01° grid. */
@@ -58,21 +64,26 @@ interface Deps {
   readonly base: () => URL;
 }
 
-/** Fetches one wanted tile and feeds it; a failure is a hole, not an error. */
+/**
+ * Fetches one wanted tile and feeds it; a failure is a hole, not an error.
+ * Resolves true when the tile is a 404.
+ */
 async function fetchTile(
   d: Deps,
   e: RingEntry,
   list: { scheme: TileScheme },
   io: { feed: RingFeed; signal: AbortSignal },
-): Promise<void> {
+): Promise<boolean> {
   const url = new URL(e.url, d.base()).toString();
   const body = await getJson(d.fetcher, url, d.waits, io.signal)
     .catch((error: unknown) => {
       if (io.signal.aborted) throw error;
-      return null;
+      return error instanceof NoTerrainHereError ? ABSENT : null;
     });
-  const tile = body === null ? null : parseTile(body, e, list.scheme);
+  const tile = body === null || body === ABSENT
+    ? null : parseTile(body, e, list.scheme);
   if (tile && !io.signal.aborted) io.feed.tile(tile);
+  return body === ABSENT;
 }
 
 /** Feeds `request`'s ring: the route's list, then its wanted tiles. */
@@ -87,13 +98,13 @@ async function loadRing(
   if (!list) throw new TransientHorizonError(null, 'ring: not a ring');
   io.feed.scheme(list.scheme);
   const wanted = request.wanted(list.scheme, list.entries);
-  const left = new Map<number, number>();
-  for (const e of wanted) left.set(e.level, (left.get(e.level) ?? 0) + 1);
-  for (let level = 0; level < request.levels; level++) {
-    if (!left.has(level)) io.feed.settled(level);
-  }
+  const left = countByLevel(wanted);
+  settleEmpty(left, request.levels, io.feed);
+  const near = watchNear(wanted.filter((e) => e.level < NEAR_LEVELS).length);
   const job = (e: RingEntry) => async (): Promise<void> => {
-    await fetchTile(d, e, list, io);
+    if (near.dead()) return;
+    const absent = await fetchTile(d, e, list, io);
+    if (e.level < NEAR_LEVELS) near.done(absent);
     const rest = (left.get(e.level) ?? 1) - 1;
     left.set(e.level, rest);
     if (rest === 0) io.feed.settled(e.level);

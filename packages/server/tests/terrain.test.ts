@@ -105,6 +105,19 @@ describe('TerrainService', () => {
     await service.close();
   });
 
+  it('answers at 0° E, across the seam of the tiled globe (VENT-44)', async () => {
+    const service = await open();
+    for (const lat of [0, 0.5, 60]) {
+      const answer = await service.horizon({ lat, lonEast: 0, heightM: 2 });
+      expect(answer.tiers.map((t) => t.id)).toEqual(['globe-coarse']);
+      expect(answer.coverage).toBe(1);
+    }
+    // Halfway between the last tile of the row and its first.
+    const north = await service.horizon({ lat: 60, lonEast: 0, heightM: 2 });
+    expect(north.groundM).toBe(((tileDn(0, 3) + tileDn(0, 0)) / 2) * 0.5);
+    await service.close();
+  });
+
   it('refuses a point no tier present covers', async () => {
     const southOnly = { ...CATALOGUE, tiers: [SOUTH], bands: CATALOGUE.bands.map((b) => ({ ...b, tiers: b.tiers.filter((id) => id === SOUTH.id) })) };
     const service = await open(64 * 2 ** 20, southOnly);

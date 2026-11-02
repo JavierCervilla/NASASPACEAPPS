@@ -102,25 +102,41 @@ export function pixelOf(grid: DemGrid, p: Vec3): [number, number] {
 }
 
 /**
+ * Whether a cylindrical grid spans the whole 360° of longitude, as LDEM_128
+ * and the LDEM_256/512 mosaics do. Their first pixel centre sits half a
+ * pixel east of 0° E and their last half a pixel west of 360° E, so the
+ * strip between them is read across the seam (VENT-44).
+ */
+function wrapsLongitude(grid: DemGrid): boolean {
+  const proj = grid.projection;
+  if (proj.kind !== 'cylindrical') return false;
+  return Math.abs(grid.samples / proj.pixelsPerDeg - 360) < 1e-6;
+}
+
+/**
  * The height in metres of the point `p` (a unit vector), bilinear between
  * the four pixels around it; NaN when it falls outside the grid or a pixel
- * has no height.
+ * has no height. A grid spanning 360° of longitude has no east-west edge.
  */
 export function demHeightAt(grid: DemGrid, p: Vec3): number {
   const [line, sample] = pixelOf(grid, p);
+  const wraps = wrapsLongitude(grid);
   const inside =
     line >= 0 &&
     line <= grid.lines - 1.001 &&
-    sample >= 0 &&
-    sample <= grid.samples - 1.001;
+    (wraps || (sample >= 0 && sample <= grid.samples - 1.001));
   if (!inside) return Number.NaN;
   const l0 = Math.floor(line);
   const s0 = Math.floor(sample);
   const fl = line - l0;
   const fs = sample - s0;
+  // pixelOf keeps a wrapping sample within -0.5 .. samples - 0.5.
+  const n = grid.samples;
+  const sa = wraps ? (s0 + n) % n : s0;
+  const sb = wraps ? (s0 + 1) % n : s0 + 1;
   const { dnAt } = grid;
-  const top = dnAt(l0, s0) * (1 - fs) + dnAt(l0, s0 + 1) * fs;
-  const low = dnAt(l0 + 1, s0) * (1 - fs) + dnAt(l0 + 1, s0 + 1) * fs;
+  const top = dnAt(l0, sa) * (1 - fs) + dnAt(l0, sb) * fs;
+  const low = dnAt(l0 + 1, sa) * (1 - fs) + dnAt(l0 + 1, sb) * fs;
   return (top * (1 - fl) + low * fl) * grid.metresPerDn;
 }
 

@@ -42,6 +42,8 @@ const CANVAS = new Date('2026-11-22T20:00:00Z');
 const LOLA_20 = 'LOLA terrain (NASA LRO), 20 m';
 // The pin's point, near Nobile Rim 1: the stub's wall hides its Earth (api-stub.ts, STUB_WALL).
 const PIN = '?lat=-85.50&lon=40.00';
+// The server's final answer for a point outside its terrain (VENT-45: a 503 is a passing failure, asked again).
+const NO_TERRAIN = { status: 404, error: 'no terrain data covers this point' } as const;
 
 interface Open {
   readonly at: Date;
@@ -144,11 +146,37 @@ test.describe('desktop, 1440x900', () => {
   });
 
   test('a pin the API has no terrain for keeps the smooth horizon, with a quiet note', async ({ page }) => {
-    await open(page, { at: CANVAS, path: `./${PIN}`, horizon: { status: 503 } });
+    await open(page, { at: CANVAS, path: `./${PIN}`, horizon: NO_TERRAIN });
     await expect(strip(page)).toContainText('Real terrain unavailable here');
     await expect(strip(page)).toContainText('Smooth horizon');
     await expect(page.getByRole('alert')).toHaveCount(0);
     await expect(tile(page, /^Earthset in/)).toContainText('Earth 9.1° up');
+  });
+
+  test('a busy server once, then the terrain: the strip ends on the real terrain without a reload (VENT-45)', async ({ page }) => {
+    const asked: string[] = [];
+    page.on('request', (request) => {
+      if (request.url().includes('/api/v1/horizon?')) asked.push(request.url());
+    });
+    const failOnce = { status: 503, error: 'the service is busy; try again later', retryAfterSec: 1 };
+    await open(page, { at: CANVAS, path: `./${PIN}`, horizon: { failOnce } });
+    await expect(strip(page)).toContainText('Smooth horizon · real terrain loading');
+    await expect(strip(page)).toContainText(LOLA_20);
+    await expect(strip(page)).not.toContainText('Real terrain unavailable here');
+    await expect(strip(page).locator('.horizon__label')).toHaveText(['Sun', 'Earth · hidden']);
+    expect(asked).toHaveLength(2);
+  });
+
+  test('a pin the API has no terrain for asks once: a 404 is final (VENT-45)', async ({ page }) => {
+    const asked: string[] = [];
+    page.on('request', (request) => {
+      if (request.url().includes('/api/v1/horizon?')) asked.push(request.url());
+    });
+    await open(page, { at: CANVAS, path: `./${PIN}`, horizon: NO_TERRAIN });
+    await expect(strip(page)).toContainText('Real terrain unavailable here');
+    await page.evaluate(() => window.dispatchEvent(new Event('online')));
+    await page.waitForTimeout(500);
+    expect(asked).toHaveLength(1);
   });
 
   test('a server whose terrain is not installed yet says so, not «unavailable here» (VENT-43)', async ({ page }) => {
@@ -192,7 +220,7 @@ test.describe('desktop, 1440x900, the saved sites over their terrain (VENT-44)',
   });
 
   test('a saved row whose terrain the server cannot give keeps the smooth sphere', async ({ page }) => {
-    await open(page, { at: CANVAS, path: './?site=im2-athena', horizon: { status: 503 }, saved: SAVED });
+    await open(page, { at: CANVAS, path: './?site=im2-athena', horizon: NO_TERRAIN, saved: SAVED });
     await page.locator('.site-button').click();
     const popover = page.locator('#site-popover');
     await popover.getByRole('button', { name: /^Saved/ }).click();

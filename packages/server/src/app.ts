@@ -27,6 +27,7 @@
 import type { Site } from '@ventana/sim';
 import { Hono, type Context } from 'hono';
 import { apiHeaders } from './api-headers.ts';
+import { errorLog } from './error-log.ts';
 import { clientIp } from './client-ip.ts';
 import { computeEphemeris, type EphemerisRequest } from './ephemeris.ts';
 import {
@@ -80,6 +81,8 @@ export interface AppDeps {
    * TERRAIN_DIR, and then /terrain/status says so with no tiers.
    */
   readonly terrainStatus?: (() => TerrainStatusBody) | undefined;
+  /** Writes the error answers' log lines; by default `console.error`. */
+  readonly log?: ((line: string) => void) | undefined;
 }
 
 /** {@link AppDeps} with the limiter chosen, shared by every route. */
@@ -209,6 +212,7 @@ export function createApp(deps: AppDeps): Hono {
   // One limiter per app, shared by every route (and every version) that may
   // call Horizons.
   const missLimiter = deps.missLimiter ?? createMissLimiter({ now: deps.now });
+  app.use('/api/*', errorLog({ log: deps.log ?? console.error, now: deps.now }));
   app.use('/api/*', apiHeaders());
   app.route('/api/v1', createV1({ ...deps, missLimiter }));
   return app;

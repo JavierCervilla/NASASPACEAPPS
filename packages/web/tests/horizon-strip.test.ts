@@ -116,6 +116,7 @@ function storeWithFetch(shippedProfile?: HorizonProfile) {
     shipped: (id) => (id === 'im2-athena' ? shippedProfile : undefined),
     shippedResolutionM: 20,
     fetchHorizon,
+    sleep: async () => undefined,
   };
   return { store: createHorizonStore(sources), fetchHorizon, settle: () => settle! };
 }

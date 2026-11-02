@@ -111,6 +111,8 @@ export interface HorizonStub {
   readonly error?: string;
   /** It answers only once this settles. */
   readonly hold?: Promise<void>;
+  /** The first request gets this error instead (VENT-45: a passing failure), the rest answer as above. */
+  readonly failOnce?: { readonly status: number; readonly error: string; readonly retryAfterSec?: number };
 }
 
 /**
@@ -144,8 +146,15 @@ function horizonBody(url: URL): unknown {
 
 /** Routes `/api/v1/horizon` as `stub` says. */
 async function stubHorizon(page: Page | BrowserContext, stub: HorizonStub): Promise<void> {
+  let failOnce = stub.failOnce;
   await page.route(/\/api\/v1\/horizon\?/, async (route: Route) => {
     await stub.hold;
+    if (failOnce) {
+      const { status, error, retryAfterSec } = failOnce;
+      failOnce = undefined;
+      const headers: Record<string, string> = retryAfterSec === undefined ? {} : { 'Retry-After': String(retryAfterSec) };
+      return route.fulfill({ status, json: { error }, headers });
+    }
     const { status = 200, error = 'no terrain' } = stub;
     if (status !== 200) return route.fulfill({ status, json: { error } });
     return route.fulfill({ json: horizonBody(new URL(route.request().url())) });

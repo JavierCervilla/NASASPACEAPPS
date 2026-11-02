@@ -3,6 +3,13 @@
 ## [Sin publicar]
 
 ### Arreglado
+- Un fallo pasajero ya no deja un punto sin relieve toda la sesión (VENT-45). Si la API del horizonte no responde, está
+  ocupada, limita las peticiones o da un error 5xx, la web vuelve a preguntar a los 2, 6 y 18 s (o cuando el servidor
+  diga en su `Retry-After`, como mucho 30 s) y la franja sigue en «Smooth horizon · real terrain loading» mientras
+  tanto. Si aun así falla, enseña «Real terrain unavailable here», pero lo vuelve a pedir al volver a la pestaña, al
+  recuperar la conexión o al pulsar «Try again». Solo el 404 («ningún relieve cubre este punto») es definitivo. El
+  servidor registra ahora cada respuesta de error de `/api/*` en una línea con el método, la ruta, el código y el
+  tiempo, sin la IP, los parámetros ni el cuerpo.
 - Arreglos tras el horizonte real (VENT-44):
   - Los sitios guardados de la lista enseñan su estado con el relieve real en cuanto llega su horizonte, pedido de uno
     en uno para no saturar el servidor. Mientras tanto, o si el servidor no tiene relieve, siguen con el horizonte liso.

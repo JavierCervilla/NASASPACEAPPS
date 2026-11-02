@@ -83,14 +83,18 @@ function setLit(s: LayerState, level: number, grid: LitGrid | null): void {
   }
 }
 
-/** The layer for `view`, drawing with `material`; it adds nothing yet. */
+/**
+ * The layer for `view`, drawing with `material`; it adds nothing yet. It
+ * tells `note` when a level builds its first mesh.
+ */
 export function createRingLayer(
   view: RingView,
   material: MeshStandardMaterial,
   slicer: Slicer,
+  note: (text: string) => void = () => undefined,
 ): RingLayer {
   const s: LayerState = { view, material, slicer, group: new Group(),
-    entries: new Map(), lits: [] };
+    entries: new Map(), lits: [], built: new Set(), note };
   s.group.name = 'ring';
   const known = [...view.store.tiles.values()];
   for (const tile of known.sort((a, b) => a.key.level - b.key.level)) {

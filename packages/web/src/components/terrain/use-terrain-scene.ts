@@ -40,7 +40,9 @@ import {
 } from 'react';
 import { settingsFor } from '../../lib/quality';
 import { parseLeaveOut } from '../../terrain/leave-out';
-import type { SceneInput, TerrainScene } from '../../terrain/scene/scene-types';
+import type { Recorder } from '../../terrain/report/recorder';
+import type { SceneInput, SceneSetup, TerrainScene }
+  from '../../terrain/scene/scene-types';
 import type { ViewTier } from '../../terrain/view-tier';
 import { sceneHooks, type PanelHooks } from './scene-hooks';
 
@@ -49,8 +51,14 @@ export type SceneStatus = 'loading' | 'ready' | 'failed' | 'lost';
 /** Subscribes to the moves of the view's band; returns the unsubscribe. */
 export type BandMoves = (listener: () => void) => () => void;
 
-/** What the panel gives the scene, and the band's moves it listens to. */
-type Hooks = PanelHooks & { readonly bandMoves?: BandMoves | undefined };
+/**
+ * What the panel gives the scene, the band's moves it listens to and the
+ * crash report it tells what the scene does.
+ */
+type Hooks = PanelHooks & {
+  readonly bandMoves?: BandMoves | undefined;
+  readonly report: Recorder;
+};
 
 interface Mount {
   readonly el: HTMLElement;
@@ -61,6 +69,16 @@ interface Mount {
   readonly onStatus: (status: SceneStatus) => void;
 }
 
+/** What this mount draws at, told to the crash report as it starts. */
+function setupOf(m: Mount): SceneSetup {
+  const { tier } = m.tier.get();
+  const { report } = m.hooks.current;
+  report.environment({ tier });
+  report.step(`scene mounted at tier ${tier}`);
+  return { quality: settingsFor(tier),
+    leave: parseLeaveOut(window.location.search), report };
+}
+
 /** Loads and mounts the scene; returns what undoes it. */
 function mountScene(m: Mount): () => void {
   let live = true;
@@ -69,15 +87,15 @@ function mountScene(m: Mount): () => void {
   void import('../../terrain/scene/terrain-scene').then((module) => {
     const input = m.latest.current;
     if (!live || !input) return;
-    const setup = { quality: settingsFor(m.tier.get().tier),
-      leave: parseLeaveOut(window.location.search) };
+    const setup = setupOf(m);
     const hooks = sceneHooks({ panel: m.hooks, tier: m.tier,
-      onLost: () => m.onStatus('lost') });
+      report: setup.report, onLost: () => m.onStatus('lost') });
     m.scene.current = module.mountTerrainScene(m.el, input, hooks, setup);
     off = m.hooks.current.bandMoves?.(() => m.scene.current?.invalidate());
     m.onStatus('ready');
   }).catch((error: unknown) => {
     console.warn(`Ventana Lunar: the 3D view could not start (${String(error)}).`);
+    m.hooks.current.report.step(`scene failed to start: ${String(error)}`);
     if (live) m.onStatus('failed');
   });
   return () => {

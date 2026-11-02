@@ -29,7 +29,7 @@
  * sky at the shared instant (`skyAt`), the camera's mode, and from them
  * the scene's input and what the text alternative says.
  */
-import { useMemo, useRef, useState } from 'react';
+import { useCallback, useMemo, useRef, useState } from 'react';
 import { skyAt, type SiteGroup, type SiteShadow } from '@ventana/sim';
 import type { TimeStore } from '../../calendar/time-store';
 import type { HorizonStore } from '../../horizon/horizon-store';
@@ -41,6 +41,7 @@ import type { PlacedTile, SceneInput,
   SkyDirs } from '../../terrain/scene/scene-types';
 import { landerKindOf } from '../../terrain/lander-kind';
 import { seedOf } from '../../terrain/seeded';
+import type { Recorder } from '../../terrain/report/recorder';
 import type { RingSource } from '../../terrain/ring/ring-source';
 import type { ViewTier } from '../../terrain/view-tier';
 import type { CameraMode } from '../../terrain/view-camera';
@@ -66,10 +67,13 @@ export interface OnFootParts {
 }
 
 /** The point's tile, placed, and the sky over it at the instant. */
-function useGround({ site, time, tiles, viewTier }: OnFootParts) {
+function useGround(parts: OnFootParts, report: Recorder) {
+  const { site, time, tiles, viewTier } = parts;
   const { lat, lonEast } = site;
   const located = Number.isFinite(lat) && Number.isFinite(lonEast);
-  const tile = useRing(tiles, located ? { lat, lonEast } : null, viewTier);
+  const note = useCallback((text: string) => report.step(text), [report]);
+  const tile = useRing(tiles, located ? { lat, lonEast } : null, viewTier,
+    note);
   const { state } = tile;
   const ring = state.kind === 'ready' ? state.ring : null;
   const placed = ring?.near ?? null;
@@ -90,10 +94,10 @@ function useOpening(placed: PlacedTile | null, sky: SkyDirs | null): number {
   return kept.current?.yaw ?? 0;
 }
 
-/** Everything the panel shows. */
-export function useOnFoot(parts: OnFootParts) {
+/** Everything the panel shows; the ring tells `report` how it comes. */
+export function useOnFoot(parts: OnFootParts, report: Recorder) {
   const i18n = useI18n();
-  const ground = useGround(parts);
+  const ground = useGround(parts, report);
   const { placed, ring, sky } = ground;
   const horizon = useSiteHorizon(parts.horizons, parts.site.id);
   const profile = horizon.kind === 'terrain' ? horizon.profile : null;

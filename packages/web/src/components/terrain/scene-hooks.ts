@@ -30,6 +30,7 @@
  * tier may step down at all).
  */
 import type { RefObject } from 'react';
+import type { ReportSink } from '../../terrain/report/sink';
 import type { SceneHooks } from '../../terrain/scene/scene-types';
 import type { ViewTier } from '../../terrain/view-tier';
 
@@ -39,19 +40,25 @@ export type PanelHooks = Pick<SceneHooks, 'onLook' | 'band'>;
 export interface HookParts {
   readonly panel: RefObject<PanelHooks>;
   readonly tier: ViewTier;
+  readonly report: Pick<ReportSink, 'step'>;
   /** The context was lost, and the tier has been dropped. */
   readonly onLost: () => void;
 }
 
 /** The scene's hooks: the panel's, a loss and a slow load. */
-export function sceneHooks({ panel, tier, onLost }: HookParts): SceneHooks {
+export function sceneHooks(parts: HookParts): SceneHooks {
+  const { panel, tier, report, onLost } = parts;
   return {
     onLook: (look) => panel.current.onLook(look),
     band: () => panel.current.band?.() ?? null,
     onLost: () => {
       tier.afterLoss();
+      report.step(`tier dropped to ${tier.get().tier} for the next mount`);
       onLost();
     },
-    onSlowFrame: tier.get().steppable ? tier.stepDown : undefined,
+    onSlowFrame: tier.get().steppable ? () => {
+      report.step(`frame probe: slow frame at ${tier.get().tier}, stepping down`);
+      tier.stepDown();
+    } : undefined,
   };
 }

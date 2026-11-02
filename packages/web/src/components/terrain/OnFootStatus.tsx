@@ -28,12 +28,13 @@
  * loading, no terrain here, none installed on the server, a failure that
  * outlasted its retries (with «Try again»), no WebGL, a GPU context the
  * browser took away (the same words and «Try again» as an unavailable
- * terrain, VENT-49), or a site with no coordinates. Nothing once the scene
- * draws.
+ * terrain, plus a quieter «Copy report» that copies the crash report,
+ * VENT-49), or a site with no coordinates. Nothing once the scene draws.
  */
 import type { TextKey } from '../../i18n/catalogue';
 import type { RingState } from '../../terrain/ring/ring-session';
 import { useI18n } from '../i18n-context';
+import { useCopyReport } from './use-copy-report';
 import type { SceneStatus } from './use-terrain-scene';
 
 interface Props {
@@ -41,6 +42,8 @@ interface Props {
   readonly tile: RingState;
   readonly scene: SceneStatus;
   readonly onRetry: () => void;
+  /** Copies the crash report; whether anything was copied. */
+  readonly onCopyReport: () => Promise<boolean>;
 }
 
 const TILE_WORDS: Readonly<Record<RingState['kind'], TextKey | null>> = {
@@ -60,17 +63,46 @@ function wordsOf({ located, tile, scene }: Props): TextKey | null {
   return scene === 'loading' ? 'onFoot.loading' : null;
 }
 
+interface ActionsProps {
+  readonly lost: boolean;
+  readonly onRetry: () => void;
+  readonly onCopy: () => void;
+}
+
+/** «Try again», and in the lost state a quieter «Copy report». */
+function Actions({ lost, onRetry, onCopy }: ActionsProps) {
+  const { t } = useI18n();
+  return (
+    <div className="on-foot__actions">
+      <button type="button" className="on-foot__retry" onClick={onRetry}>
+        {t('data.retry')}
+      </button>
+      {lost ? (
+        <button type="button" className="on-foot__copy" onClick={onCopy}>
+          {t('onFoot.copyReport')}
+        </button>
+      ) : null}
+    </div>
+  );
+}
+
 export function OnFootStatus(props: Props) {
   const { t } = useI18n();
+  const copy = useCopyReport(props.onCopyReport);
   const key = wordsOf(props);
   if (!key) return null;
+  const lost = props.scene === 'lost';
+  const copied = copy.outcome === 'copied';
   return (
-    <div className="on-foot__status" role="status">
+    <div className="on-foot__status" role="status" aria-atomic="false">
       <p>{t(key)}</p>
-      {props.tile.kind === 'unavailable' || props.scene === 'lost' ? (
-        <button type="button" className="on-foot__retry" onClick={props.onRetry}>
-          {t('data.retry')}
-        </button>
+      {props.tile.kind === 'unavailable' || lost ? (
+        <Actions lost={lost} onRetry={props.onRetry} onCopy={copy.press} />
+      ) : null}
+      {copy.outcome ? (
+        <p className="on-foot__copied">
+          {t(copied ? 'onFoot.reportCopied' : 'onFoot.reportNotCopied')}
+        </p>
       ) : null}
     </div>
   );

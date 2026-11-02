@@ -34,6 +34,7 @@ import type { HorizonProfile } from '@ventana/sim';
 import type { QualitySettings } from '../../lib/quality';
 import type { LanderKind } from '../lander-kind';
 import type { LeaveOut } from '../leave-out';
+import type { ReportSink } from '../report/sink';
 import type { RingView } from '../ring/ring-session';
 import type { HeightTile } from '../tile';
 import type { CameraMode, Look } from '../view-camera';
@@ -78,11 +79,15 @@ export interface SceneInput {
   readonly words: SceneWords;
 }
 
-/** What a mount draws at (VENT-49): its tier, and the parts left out. */
+/**
+ * What a mount draws at (VENT-49): its tier, the parts left out, and where
+ * it tells the crash report what it does.
+ */
 export interface SceneSetup {
   readonly quality: QualitySettings;
   /** The `?onfoot=` diagnostic switches (leave-out.ts). */
   readonly leave: ReadonlySet<LeaveOut>;
+  readonly report: ReportSink;
 }
 
 export interface SceneHooks {

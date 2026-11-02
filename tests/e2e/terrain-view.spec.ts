@@ -73,6 +73,8 @@ interface Open {
   readonly requests?: string[];
   /** The recorded LOLA relief of IM-2 instead of the synthetic one, at this instant. */
   readonly real?: Date;
+  /** The page's clock runs from the instant (the follow-clock ticks each minute) instead of standing still. */
+  readonly live?: boolean;
 }
 
 /** Counts the WebGL contexts the page gives up (`WEBGL_lose_context.loseContext`, what forceContextLoss calls). */
@@ -101,8 +103,9 @@ async function countLostContexts(page: Page): Promise<void> {
 const lostContexts = (page: Page): Promise<number> =>
   page.evaluate(() => (window as unknown as { __lostContexts: number }).__lostContexts);
 
-async function open(page: Page, { path, wall = [300, 330], requests, real }: Open): Promise<void> {
-  await page.clock.setFixedTime(real ?? AT);
+async function open(page: Page, { path, wall = [300, 330], requests, real, live }: Open): Promise<void> {
+  if (live) await page.clock.install({ time: real ?? AT });
+  else await page.clock.setFixedTime(real ?? AT);
   await page.addInitScript(() => {
     localStorage.setItem('ventana.dataSource', 'computed');
     localStorage.setItem('ventana.pinHint', 'seen');
@@ -248,6 +251,109 @@ test.describe('desktop, 1440x900', () => {
     expect(await frames(page)).toBe(settledAt);
   });
 
+  // VENT-49 part 2: the dead canvas must not outlive the context, or the browser's broken-WebGL icon and a frozen frame show
+  // under the message; and «Copy report» hands over what the view did, for a crash nobody can reproduce on a desk.
+  test('a lost context takes the canvas out before the message shows, and «Copy report» copies the trail beside «Try again»', async ({ page, context }) => {
+    await context.grantPermissions(['clipboard-read', 'clipboard-write']);
+    await open(page, { path: `./${POINT}&quality=medium#horizon` });
+    await settled(page);
+    await idle(page);
+    // The page's own order of events: the canvas leaves in the browser's event, the message a render later.
+    await page.evaluate(() => {
+      const order: string[] = [];
+      (window as unknown as { __order: string[] }).__order = order;
+      const stage = document.querySelector('.on-foot__stage');
+      new MutationObserver((records) => {
+        for (const record of records) {
+          record.removedNodes.forEach((node) => node.nodeName === 'CANVAS' && order.push('canvas removed'));
+          record.addedNodes.forEach((node) => (node as Element).classList?.contains('on-foot__status') && order.push('message shown'));
+        }
+      }).observe(stage as Node, { childList: true, subtree: true });
+    });
+    await host(page).locator('canvas').evaluate((canvas) => {
+      (canvas as HTMLCanvasElement).getContext('webgl2')?.getExtension('WEBGL_lose_context')?.loseContext();
+    });
+    await expect(view(page).getByRole('status')).toContainText('Terrain unavailable right now');
+    expect(await page.evaluate(() => (window as unknown as { __order: string[] }).__order)).toEqual(['canvas removed', 'message shown']);
+    await expect(host(page).locator('canvas')).toHaveCount(0);
+    await expect(view(page).locator('.on-foot__label')).toHaveCount(0);
+
+    const retry = view(page).getByRole('button', { name: 'Try again' });
+    const copy = view(page).getByRole('button', { name: 'Copy report' });
+    await expect(retry).toBeVisible();
+    await expect(copy).toBeVisible();
+    // Side by side, both 44 px targets; nothing says «crash».
+    const [retryBox, copyBox] = await Promise.all([retry.boundingBox(), copy.boundingBox()]);
+    expect(retryBox?.height).toBeGreaterThanOrEqual(44);
+    expect(copyBox?.height).toBeGreaterThanOrEqual(44);
+    expect(Math.abs((retryBox?.y ?? 0) - (copyBox?.y ?? 99))).toBeLessThan(2);
+    expect(copyBox?.x).toBeGreaterThan((retryBox?.x ?? 0) + (retryBox?.width ?? 0));
+    await expect(view(page).getByRole('status')).not.toContainText(/crash|error|fail/i);
+    await shot(page, 'lost-state');
+
+    await copy.click();
+    await expect(view(page).getByRole('status')).toContainText('Report copied');
+    const report = await page.evaluate(() => navigator.clipboard.readText());
+    expect(report).toContain('Ventana Lunar on-foot view report');
+    expect(report).toContain('Tier: medium');
+    expect(report).toMatch(/^ {2}[\d.]+ context lost, /m);
+    for (const step of ['mount at tier medium', 'scene mounted at tier medium', 'stage created', 'near ground standing', 'near ground placed', 'all parts loaded']) {
+      expect(report).toContain(step);
+    }
+    expect(report).toMatch(/ring level 0 settled/);
+    expect(report).toMatch(/Last frames: seconds, draw calls, triangles, draw ms\n {2}[\d.]+ \d+ \d+ [\d.]+/);
+    expect(report).toMatch(/GPU memory: \d+ geometries, \d+ textures/);
+    // The report is a log of this device, not of the interface: English whatever the page's language.
+    expect(report).toMatch(/^Page: \/\?.*lat=-85\.50.*#horizon$/m);
+    // A reload keeps the run: the session's storage holds it for the next page.
+    const kept = await page.evaluate(() => sessionStorage.getItem('ventana.onFootReport'));
+    expect(kept).toContain('context lost');
+  });
+
+  test('«Copy report» says so when nothing could be copied', async ({ page, context }) => {
+    await context.grantPermissions(['clipboard-read', 'clipboard-write']);
+    await open(page, { path: `./${POINT}&quality=medium#horizon` });
+    await settled(page);
+    await page.evaluate(() => {
+      Object.defineProperty(navigator, 'clipboard', { value: { writeText: () => Promise.reject(new Error('denied')) } });
+      document.execCommand = () => false;
+    });
+    await host(page).locator('canvas').evaluate((canvas) => {
+      (canvas as HTMLCanvasElement).getContext('webgl2')?.getExtension('WEBGL_lose_context')?.loseContext();
+    });
+    await view(page).getByRole('button', { name: 'Copy report' }).click();
+    await expect(view(page).getByRole('status')).toContainText('Could not copy the report');
+  });
+
+  // VENT-49 part 2: a Pixel's GPU reset a while after the view opened, with the live clock re-lighting every ring each minute
+  // for a Sun that moves 0.008 degrees. Only a move of 0.1 degrees lights and draws again.
+  test('the live clock does not relight or draw the view each minute; a scrub of an hour does, and the trail says both', async ({ page }) => {
+    await open(page, { path: `./${POINT}#horizon`, live: true });
+    await settled(page);
+    const settledAt = await idle(page);
+    const steps = () => page.evaluate(() => {
+      const kept = JSON.parse(sessionStorage.getItem('ventana.onFootReport') ?? '{}') as { current?: { steps: { text: string; count: number }[] } };
+      return kept.current?.steps ?? [];
+    });
+    const relights = async () => (await steps()).filter((step) => /^relight: Sun moved/.test(step.text)).length;
+    const lit = await relights();
+    await page.clock.runFor('02:00');
+    await page.waitForTimeout(1500);
+    const skipped = (await steps()).filter((step) => step.text.startsWith('instant skipped: Sun moved 0.0'));
+    expect(skipped.length).toBeGreaterThan(0);
+    expect(skipped.at(-1)?.text).toMatch(/Sun moved 0\.0\d\d deg, Earth 0\.0\d\d deg since the last relight$/);
+    expect(await relights()).toBe(lit);
+    expect(await frames(page)).toBe(settledAt);
+
+    const slider = page.getByRole('slider', { name: 'Selected hour' });
+    await slider.focus();
+    await page.keyboard.press('ArrowRight');
+    await expect.poll(() => frames(page)).toBeGreaterThan(settledAt);
+    expect(await relights()).toBe(lit + 1);
+    const last = (await steps()).filter((step) => /^relight: Sun moved/.test(step.text)).at(-1);
+    expect(last?.text).toMatch(/Sun moved 0\.[45]\d\d deg/);
+  });
+
   // VENT-49: the diagnostic switch for bisecting a crash on a phone's address bar.
   test('?onfoot= leaves parts out, says which on the host, and the view still settles with no idle frames', async ({ page }) => {
     const requests: string[] = [];
@@ -378,5 +484,33 @@ test.describe('phone, 390x844', () => {
     await expect(host(page)).toHaveAttribute('data-mode', 'first');
     await idle(page);
     await shot(page, 'phone-first');
+  });
+});
+
+// VENT-49 part 2: the lost state's second button in the longest text (the pseudo-locale is about 40 % longer) on the
+// narrowest phone the layout promises: both buttons stay on the screen, 44 px tall, and nothing scrolls sideways.
+test.describe('phone, 360x740, pseudo-locale', () => {
+  test.use({ viewport: { width: 360, height: 740 }, hasTouch: true, isMobile: true });
+
+  test('the lost state fits: «Try again» and «Copy report» wrap inside the screen, with no sideways scroll', async ({ page }) => {
+    await open(page, { path: `./en-xa/${POINT}&quality=medium` });
+    // The Horizon tab is the fourth of five (Globe, Calendar, DSN, Horizon, Sites); it leaves the sheet at peek.
+    await page.locator('.tab-bar button').nth(3).tap();
+    const stage = page.locator('.on-foot__host');
+    await expect(stage).toHaveAttribute('data-ready', 'true', { timeout: START_MS });
+    await stage.locator('canvas').evaluate((canvas) => {
+      (canvas as HTMLCanvasElement).getContext('webgl2')?.getExtension('WEBGL_lose_context')?.loseContext();
+    });
+    const retry = page.locator('.on-foot__status .on-foot__retry');
+    const copy = page.locator('.on-foot__status .on-foot__copy');
+    await expect(copy).toBeVisible();
+    for (const button of [retry, copy]) {
+      const box = await button.boundingBox();
+      expect(box?.height ?? 0).toBeGreaterThanOrEqual(44);
+      expect(box?.x ?? -1).toBeGreaterThanOrEqual(0);
+      expect((box?.x ?? 0) + (box?.width ?? 999)).toBeLessThanOrEqual(360);
+    }
+    expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(360);
+    await shot(page, 'lost-state-phone-xa');
   });
 });

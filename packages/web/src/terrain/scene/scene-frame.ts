@@ -29,11 +29,13 @@
  * the host where the Sun and the Earth fall and how many frames were
  * drawn (`data-frames`, which the tests read: an idle view draws none).
  */
+import type { FrameProbe } from '../frame-probe';
 import { stepCoast, type Coast } from '../look-coast';
 import type { CameraMode, Look } from '../view-camera';
 import { aimCamera, markBodies } from './camera-apply';
 import { labelLayer, type LabelLayer } from './labels';
 import { stageProbe } from './scene-guard';
+import { reportFrame } from './scene-report';
 import type { SceneHooks } from './scene-types';
 import { fitStage } from './stage';
 import type { World } from './world';
@@ -66,6 +68,15 @@ function markFrame(world: World, host: HTMLElement): void {
   host.dataset['frames'] = String(drawn);
 }
 
+/** Draws through the probe; milliseconds the draw took. */
+function drawTimed(world: World, probe: FrameProbe): number {
+  const { stage } = world;
+  const start = performance.now();
+  probe.frame(() => stage.renderer.render(stage.scene, stage.camera),
+    () => world.slicer.busy());
+  return performance.now() - start;
+}
+
 /** The labels' layer and the frame function for the scene's loop. */
 export function framer(
   world: World,
@@ -77,16 +88,15 @@ export function framer(
   const { renderer } = world.stage;
   const probe = stageProbe(renderer, world.setup.quality, hooks.onSlowFrame);
   const frame = (dt: number): boolean => {
-    const { stage } = world;
     const coasting = coast(view, dt, hooks);
     world.idle?.advance(dt);
-    fitStage(stage, host, hooks.band?.() ?? null);
+    fitStage(world.stage, host, hooks.band?.() ?? null);
     aimCamera(world, view.mode, view.look);
-    probe.frame(() => renderer.render(stage.scene, stage.camera),
-      () => world.slicer.busy());
+    const drawMs = drawTimed(world, probe);
     if (world.input) labels.draw(world.input.words, view.look.yawDeg);
     markBodies(world, host);
     markFrame(world, host);
+    reportFrame(world, drawMs);
     return coasting;
   };
   return { labels, frame };

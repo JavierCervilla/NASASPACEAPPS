@@ -25,21 +25,62 @@
 
 /**
  * What guards the on-foot scene's GPU (VENT-49): the loss of its context,
- * which the panel answers by freeing the scene and saying so, and the frame
- * probe that, while the view loads, steps it down a tier when a frame costs
- * more than the tier can afford.
+ * which the scene answers by noting it in the crash report, taking the dead
+ * canvas and the labels out of the page and stopping the loop, and only then
+ * telling the panel, which frees the scene and says so; and the frame probe
+ * that, while the view loads, steps it down a tier when a frame costs more
+ * than the tier can afford.
  */
 import type { WebGLRenderer } from 'three';
+import type { Loop } from '../../globe/loop';
 import type { QualitySettings } from '../../lib/quality';
 import { budgetOf, createFrameProbe, type FrameProbe } from '../frame-probe';
+import type { ReportSink } from '../report/sink';
+
+/** What the browser's `webglcontextlost` event carries. */
+type LostEvent = Event & { readonly statusMessage?: string | undefined };
 
 /** Tells `onLost` when the browser takes the canvas's context; unbinds. */
 export function watchLost(
   canvas: EventTarget,
-  onLost: () => void,
+  onLost: (statusMessage: string | undefined) => void,
 ): () => void {
-  canvas.addEventListener('webglcontextlost', onLost);
-  return () => canvas.removeEventListener('webglcontextlost', onLost);
+  const hear = (event: Event): void =>
+    onLost((event as LostEvent).statusMessage);
+  canvas.addEventListener('webglcontextlost', hear);
+  return () => canvas.removeEventListener('webglcontextlost', hear);
+}
+
+/** The report's words for a lost context. */
+export function lostWords(statusMessage: string | undefined): string {
+  return statusMessage
+    ? `context lost, statusMessage: "${statusMessage}"`
+    : 'context lost, no statusMessage';
+}
+
+export interface LostParts {
+  readonly canvas: EventTarget & { remove: () => void };
+  readonly labels: { readonly root: { remove: () => void } };
+  readonly loop: Pick<Loop, 'stop'>;
+  readonly report: Pick<ReportSink, 'step'>;
+  /** The panel's answer: free the scene and say so. */
+  readonly onLost: () => void;
+}
+
+/**
+ * Answers a lost context: the dead canvas and the labels leave the page
+ * and the loop stops before the panel is told, so neither a frozen frame
+ * nor the browser's broken-WebGL icon shows under its message (the panel
+ * frees the rest in its own time, a render later). Returns the unbind.
+ */
+export function guardLost(parts: LostParts): () => void {
+  return watchLost(parts.canvas, (statusMessage) => {
+    parts.report.step(lostWords(statusMessage));
+    parts.loop.stop();
+    parts.labels.root.remove();
+    parts.canvas.remove();
+    parts.onLost();
+  });
 }
 
 /**

@@ -45,12 +45,14 @@ interface Props {
   readonly onMode: (mode: CameraMode) => void;
   /** «Try again»: the relief's, or the scene's after a lost context. */
   readonly onRetry: () => void;
+  /** «Copy report» in the lost state: whether anything was copied. */
+  readonly onCopyReport: () => Promise<boolean>;
   /** The text alternative's id. */
   readonly altId: string;
 }
 
 export function OnFootStageArea(props: Props) {
-  const { view, host, status, onMode, onRetry, altId } = props;
+  const { view, host, status, onMode, onRetry, onCopyReport, altId } = props;
   const { t } = useI18n();
   const tile = view.tile.state;
   const resolution = tile.kind === 'ready' ? tile.ring.resolutionM : null;
@@ -64,7 +66,7 @@ export function OnFootStageArea(props: Props) {
           : <OnFootCaption resolutionM={resolution} lander={view.lander} />}
       </div>
       <OnFootStatus located={view.located} tile={tile} scene={status}
-        onRetry={onRetry} />
+        onRetry={onRetry} onCopyReport={onCopyReport} />
     </div>
   );
 }

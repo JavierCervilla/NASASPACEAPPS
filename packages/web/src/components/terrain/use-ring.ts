@@ -60,11 +60,15 @@ export function useRingTier(view: ViewTier): RingTier {
   }, [tier]);
 }
 
-/** The rings of `point` (null: no coordinates) and how to ask again. */
+/**
+ * The rings of `point` (null: no coordinates) and how to ask again; `note`
+ * tells the crash report how they come (VENT-49).
+ */
 export function useRing(
   source: RingSource,
   point: LatLon | null,
   view: ViewTier,
+  note: (text: string) => void,
 ) {
   const [state, setState] = useState<RingState>(LOADING);
   const [attempt, setAttempt] = useState(0);
@@ -75,10 +79,10 @@ export function useRing(
     if (lat === undefined || lonEast === undefined) return undefined;
     const abort = new AbortController();
     setState(LOADING);
-    const run = { source, point: { lat, lonEast }, tier, breathe,
+    const run = { source, point: { lat, lonEast }, tier, breathe, note,
       signal: abort.signal };
     void runRing(run, setState);
     return () => abort.abort();
-  }, [source, lat, lonEast, tier, attempt]);
+  }, [source, lat, lonEast, tier, attempt, note]);
   return { state, retry: () => setAttempt((n) => n + 1) };
 }

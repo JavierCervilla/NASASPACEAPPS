@@ -81,5 +81,6 @@ export async function stand(
   live.standing = true;
   const view: RingView | null = await nearOf(run, live.store, live.windows);
   if (run.signal.aborted) return;
+  run.note?.(view ? 'near ground standing' : 'near ground has no height');
   report(view ? { kind: 'ready', ring: view } : { kind: 'unavailable' });
 }

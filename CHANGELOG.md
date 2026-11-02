@@ -43,6 +43,21 @@
   calidad se recuerda durante la sesión. Además, si un fotograma de la carga tarda demasiado para la GPU del móvil, la
   vista baja sola un nivel de calidad. Para localizar un cuelgue desde el móvil,
   `?onfoot=astronaut,lander,shadows,far,shade,logdepth` deja fuera partes de la vista.
+- La vista 3D «Horizon» ya no se vuelve a iluminar cada minuto (VENT-49). Con el reloj en vivo, cada minuto nuevo
+  recalculaba la sombra de todos los anillos y dibujaba tres fotogramas completos para un Sol que se mueve 0,008°, y
+  en el Pixel con ahorro de batería la GPU se reiniciaba poco después. Ahora solo se ilumina y se dibuja cuando el Sol o
+  la Tierra, vistos desde el punto, se han movido 0,1° o más desde la última vez; cambiar de hora a mano pasa siempre
+  ese umbral, y un cambio de punto, de calidad o de cámara también vuelve a dibujar. El atributo `lit` se sigue
+  actualizando en el sitio: three r186 solo libera el búfer de la GPU junto con su geometría, así que sustituir el
+  atributo lo dejaría colgado.
+- Cuando el navegador quita la GPU a la vista 3D, el lienzo muerto sale de la página en el mismo evento, antes de que
+  aparezca el mensaje, así que ya no se ve un fotograma congelado ni el icono de WebGL roto. El aviso «Terrain
+  unavailable right now» conserva «Try again» como acción principal y añade «Copy report» (con la misma apariencia de
+  la vista, sin parecer un fallo): copia un informe en texto plano de lo que hizo la vista desde que se abrió (como
+  mucho 40 pasos con sus segundos, los últimos 8 fotogramas, la memoria de la GPU, la GPU, el navegador, la pantalla,
+  los núcleos, la memoria y la batería), que se guarda en la sesión (`ventana.onFootReport`, la ejecución actual y la
+  anterior) para poder recuperarlo si la página se recarga. No se envía a ningún sitio: lo copia la persona. Hay
+  textos nuevos en los cinco idiomas, a revisar por una persona nativa en francés, alemán e italiano.
 - Un fallo pasajero ya no deja un punto sin relieve toda la sesión (VENT-45). Si la API del horizonte no responde, está
   ocupada, limita las peticiones o da un error 5xx, la web vuelve a preguntar a los 2, 6 y 18 s (o cuando el servidor
   diga en su `Retry-After`, como mucho 30 s) y la franja sigue en «Smooth horizon · real terrain loading» mientras

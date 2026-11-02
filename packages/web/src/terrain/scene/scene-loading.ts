@@ -45,24 +45,32 @@ export function markSetup(host: HTMLElement, setup: SceneSetup): void {
   else delete host.dataset['onfoot'];
 }
 
+/** Loads the parts the setup keeps, noting each in the crash report. */
+async function loadParts(world: World, alive: () => boolean,
+  reducedMotion: () => boolean): Promise<void> {
+  const { leave, report } = world.setup;
+  const lander = { into: world.lander, mask: world.mask, alive };
+  const astronaut = { into: world.astronaut, mask: world.mask, alive,
+    reducedMotion };
+  const loaded = (part: string) => (): void => report.step(`${part} loaded`);
+  await Promise.all([
+    leave.has('astronaut') ? undefined
+      : loadAstronaut(astronaut, console.warn).then((idle) => {
+        world.idle = idle;
+      }).then(loaded('astronaut')),
+    leave.has('lander') ? undefined
+      : loadLander(lander, world.input?.lander ?? 'generic', console.warn)
+        .then(loaded('lander')),
+    loadSurfaces(world, console.warn).then(loaded('surfaces')),
+  ]);
+  report.step('all parts loaded');
+}
+
 /** Loads the astronaut and the maps; marks the host once both stand. */
 export function startLoading(host: HTMLElement, world: World, loop: Loop,
   reducedMotion: () => boolean): () => void {
   let alive = true;
-  const { leave } = world.setup;
-  const lander = { into: world.lander, mask: world.mask,
-    alive: () => alive };
-  const astronaut = { into: world.astronaut, mask: world.mask,
-    alive: () => alive, reducedMotion };
-  const standing = Promise.all([
-    leave.has('astronaut') ? undefined
-      : loadAstronaut(astronaut, console.warn).then((idle) => {
-        world.idle = idle;
-      }),
-    leave.has('lander') ? undefined
-      : loadLander(lander, world.input?.lander ?? 'generic', console.warn),
-    loadSurfaces(world, console.warn),
-  ]).then(() => undefined);
+  const standing = loadParts(world, () => alive, reducedMotion);
   const unmark = markReadyWhenStanding(host, standing,
     () => loop.invalidate());
   return () => {

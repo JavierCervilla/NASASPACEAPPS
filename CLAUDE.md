@@ -443,11 +443,21 @@ Every visible change follows `.claude/skills/apple-design/SKILL.md` (vendored fr
   times, 67 ms on high and 89 ms on medium, and a frame that compiled a shader is not judged: `frame-probe.ts`) steps it
   down one rung, never from a tier the address forces with `?quality=` or from low, and a lost GPU context
   (`webglcontextlost`, VENT-49) frees the scene, drops the tier to low and says «Terrain unavailable right now» with
-  «Try again», which mounts it again at low and never happens by itself. `?onfoot=astronaut,lander,shadows,far,shade,logdepth`
+  «Try again», which mounts it again at low and never happens by itself; the dead canvas and the labels leave the page
+  in the browser's event, before the message shows (`guardLost` in `scene-guard.ts`), so no frozen frame or broken-WebGL
+  icon appears under it. A new instant lights and draws the view again only when the Sun or the Earth, seen from the
+  point, moved 0.1° since the sky last placed (`src/terrain/relight.ts`, `scene/world-light.ts`; the live clock makes an
+  instant a minute for a Sun that moves 0.008°, a scrub of hours always passes), and `input-change.ts` keeps an input
+  that only has a new sky from drawing; the `lit` attribute is updated in place, since three r186 frees a GL buffer only
+  with its geometry. «Copy report» in the lost state copies a plain-English crash report (`src/terrain/report/`: at most
+  40 steps with seconds since the view opened, the last 8 frames, `renderer.info.memory`, the GPU, browser, screen,
+  cores, memory and battery; kept in memory and in `sessionStorage` as `ventana.onFootReport`, the current run and the
+  previous one, per-frame data written with the next step; nothing is sent anywhere).
+  `?onfoot=astronaut,lander,shadows,far,shade,logdepth`
   leaves parts out to bisect a crash from a phone's address bar (`src/terrain/leave-out.ts`, unknown words ignored,
   listed in `data-onfoot`, kept by the language switch like `?site=`). The API gzips its JSON
   (`compress()` in `packages/server/src/app.ts`; base64 floats shrink about 26 %). Held by `tests/terrain-view.test.ts`,
-  `tests/terrain-ring.test.ts`, `tests/view-tier.test.ts`, `tests/frame-probe.test.ts`, `tests/leave-out.test.ts` and `tests/e2e/terrain-view.spec.ts` (the ring and tile routes answered by the simulator's own core over a synthetic polar grid, or by real LOLA tiles of IM-2 recorded from a local server, `fixtures/terrain-ring-im2/`: third then first person, the caption, no idle
+  `tests/terrain-ring.test.ts`, `tests/view-tier.test.ts`, `tests/frame-probe.test.ts`, `tests/leave-out.test.ts`, `tests/relight.test.ts`, `tests/input-change.test.ts`, `tests/on-foot-report.test.ts`, `tests/on-foot-device.test.ts`, `tests/scene-guard.test.ts` and `tests/e2e/terrain-view.spec.ts` (the ring and tile routes answered by the simulator's own core over a synthetic polar grid, or by real LOLA tiles of IM-2 recorded from a local server, `fixtures/terrain-ring-im2/`: third then first person, the caption, no idle
   frames, the Sun drawn hidden behind a far wall, none of the view's files in the first load).
 - **Five interface languages** (VENT-35): English (the default and the fallback), Spanish, French, German and Italian,
   each on its own static route (`/`, `/es/`, `/fr/`, `/de/`, `/it/`; `pages/[locale]/index.astro`) with `<html lang>`,

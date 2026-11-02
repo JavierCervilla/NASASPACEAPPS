@@ -36,13 +36,16 @@
  */
 import { useId, useRef, useState } from 'react';
 import type { HoursResult } from '../../phone/widgets-loader';
+import { pageReport } from '../../terrain/report/page-report';
 import type { SceneHooks } from '../../terrain/scene/scene-types';
 import { viewAlt } from '../../terrain/view-alt';
 import stylesUrl from '../../styles/on-foot.css?url';
 import { SiteHorizon } from '../horizon/SiteHorizon';
 import { useI18n } from '../i18n-context';
 import { OnFootStageArea } from './OnFootStageArea';
+import { copyReport } from './use-copy-report';
 import { useOnFoot, type OnFootParts } from './use-on-foot';
+import { useReportRun } from './use-report-run';
 import { useTerrainScene, type BandMoves } from './use-terrain-scene';
 
 export interface PanelProps extends OnFootParts {
@@ -55,31 +58,37 @@ export interface PanelProps extends OnFootParts {
 
 /** The view's state, its scene and the heading its text alternative says. */
 function usePanel(props: PanelProps) {
-  const view = useOnFoot(props);
+  const report = pageReport();
+  useReportRun(report, props.viewTier);
+  const view = useOnFoot(props, report);
   const host = useRef<HTMLDivElement>(null);
   const [yaw, setYaw] = useState<number | null>(null);
   const hooks = { onLook: (look: { yawDeg: number }) => setYaw(look.yawDeg),
-    band: props.band, bandMoves: props.bandMoves };
+    band: props.band, bandMoves: props.bandMoves, report };
   const scene = useTerrainScene(host, view.input, hooks, props.viewTier);
   const onMode = (mode: typeof view.mode): void => {
     setYaw(null);
     view.setMode(mode);
   };
   const onRetry = (): void => {
+    report.step('«Try again» pressed');
     scene.retry();
     if (view.tile.state.kind === 'unavailable') view.tile.retry();
   };
+  const onCopyReport = (): Promise<boolean> => copyReport(report);
   const yawDeg = yaw ?? view.startYawDeg;
-  return { view, host, status: scene.status, onMode, onRetry, yawDeg };
+  return { view, host, status: scene.status, onMode, onRetry, onCopyReport,
+    yawDeg };
 }
 
 export default function TerrainPanel(props: PanelProps) {
   const i18n = useI18n();
-  const { view, host, status, onMode, onRetry, yawDeg } = usePanel(props);
+  const { view, host, status, onMode, onRetry, onCopyReport, yawDeg } =
+    usePanel(props);
   const altId = useId();
   const alt = view.input
     ? viewAlt(i18n, { mode: view.mode, yawDeg, bodies: view.bodies }) : '';
-  const area = { view, host, status, onMode, onRetry, altId };
+  const area = { view, host, status, onMode, onRetry, onCopyReport, altId };
   const { layout, hours } = props;
   return (
     <section className={`on-foot on-foot--${layout}`} aria-label={i18n.t('onFoot.view')}>

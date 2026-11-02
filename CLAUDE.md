@@ -124,7 +124,8 @@ Every visible change follows `.claude/skills/apple-design/SKILL.md` (vendored fr
   just enough to land it in the free band between the phone's top bar and the sheet's top edge, or the tab bar below
   it (`src/globe/free-band.ts`, `src/globe/site-aim.ts`, `src/globe/site-framer.ts`), and again on the orbit's springs
   when the band moves, until the user moves the globe. The
-  selected marker wears a ring in its state colour that pulses (2.4 s; still under reduced motion), placed with the
+  selected marker wears a ring in its state colour that pulses three times (2.4 s each) when the selection or its
+  state changes, then rests lit, so an idle page draws no frames (still under reduced motion; `src/globe/marker-ring.ts`), placed with the
   markers (`src/globe/marker-layer.ts`) and hidden with its marker. Under Save-Data
   the globe waits for a «Load the 3D globe» button and never loads more than its start map.
 - Glass: the floating surfaces (phone top bar, sheet and tab bar; desktop header, site popover, Layers key,
@@ -157,7 +158,8 @@ Every visible change follows `.claude/skills/apple-design/SKILL.md` (vendored fr
   The standing pin (`src/components/pin/StandingPin.tsx`, placed after every globe frame) is a 44 px button: a press
   lifts it again (Pointer Events with capture, 1:1 from where it was grabbed, at least 64 px above a finger); its dot
   wears the state at the shared instant in its colour, hollow while the state is the simulator's, with the state's
-  ring around it pulsing as on a selected marker (2.4 s; still under reduced motion); each drop plays a short fall on
+  ring around it pulsing as on a selected marker (three times on a new point or state, then lit; still under reduced
+  motion); each drop plays a short fall on
   a critically damped spring (CSS `linear()`, none under reduced motion). Carried (`CarryLayer.tsx`), it is a larger
   ring with the readout beside it, the point and its state (`skyAt`, one instant per move, `src/pin/sky-state.ts`), or
   «Off the Moon · Let go to cancel», and it springs back on critically damped springs from the hand's velocity;
@@ -269,9 +271,11 @@ Every visible change follows `.claude/skills/apple-design/SKILL.md` (vendored fr
   whose precision line already says «not a landing point»; «Crater floor · little Sun» and «NASA's maps give this
   point 11 % of the Sun on average.» for Cabeus B, with no override. The Sun's source joins the computed caption on
   one line (or stands alone with Horizons): «Sun from NASA's permanent-shadow map (LRO LOLA, Mazarico 2011)». The
-  phone's half sheet does not scroll, so it rises (never under its 344 px) until the summary's lowest line
+  phone's half sheet rises (never under its 344 px) until the summary's lowest line
   (`data-sheet-fit`, measured from the content's bottom) clears the tab bar by 12 px, at any width, language and text
-  size (`src/sheet/sheet-lift.ts`; at 200 % text on a phone it stops at the full detent). For the Mooner session,
+  size (`src/sheet/sheet-lift.ts`); when even the full detent is too short (200 % text on a phone), it stops there and
+  the summary scrolls instead (`data-sheet-scroll`, `src/sheet/sheet-scroll.ts`), a press inside it scrolling rather
+  than dragging the sheet. For the Mooner session,
   `packages/sim/data/psr-flags.json` lists every curated site south of 80° S with `{id, lat, lon, avgSun, psrShare,
   onPsrFloor}` and a provenance header; `packages/server/tests/sites.test.ts` holds `sites.json` to it. Held by
   `tests/e2e/shadow.spec.ts`.

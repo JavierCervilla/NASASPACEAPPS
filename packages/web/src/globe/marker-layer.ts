@@ -31,7 +31,8 @@
  * that would cover another marker (marker-cull.ts). Where two boxes
  * overlap, a click goes to the dot nearest the pointer (marker-hit.ts).
  * Sites that share a point share one marker. The selected site's marker
- * wears a pulsing ring, hidden with its marker, and both take the
+ * wears a ring (marker-ring.ts), hidden with its marker, that pulses when
+ * the selection or its state changes, and both take the
  * colour of its state at the selected instant. Each kind of marker (exact
  * point, approximate zone) can be hidden as a whole, its globe layer
  * switched off (VENT-37, layers/site-layers.ts); the selected site's
@@ -47,6 +48,7 @@ import {
   type MarkerKind,
   type MarkerSite,
 } from './markers';
+import { MarkerRing } from './marker-ring';
 
 /** Screen position, in px from the host's top left, of a globe point. */
 export type Projector = (point: Vec3) => { x: number; y: number };
@@ -72,8 +74,11 @@ export class MarkerLayer {
    * which its marker and ring wear (styles/globe.css).
    */
   readonly root = document.createElement('div');
-  /** The pulsing ring around the selected site's marker. */
-  private readonly ring = document.createElement('span');
+  /**
+   * The ring around the selected site's marker; globe.ts pulses it again
+   * when it changes the state on {@link root}.
+   */
+  readonly ring: MarkerRing;
 
   /**
    * `onPick` hears a tapped marker's site; the selection comes back
@@ -86,16 +91,13 @@ export class MarkerLayer {
     onPick: (id: string) => void,
   ) {
     this.selected = selected;
-    this.ring.className = 'globe-ring';
-    this.ring.setAttribute('aria-hidden', 'true');
-    this.ring.hidden = true;
     this.root.className = 'globe-markers';
     this.root.dataset['state'] = 'unknown';
     this.root.addEventListener('click', (event) => {
       const id = pickedSite(event, this.root, this.placed);
       if (id) onPick(id);
     });
-    this.root.append(this.ring);
+    this.ring = new MarkerRing(this.root);
     host.append(this.root);
   }
 
@@ -122,7 +124,9 @@ export class MarkerLayer {
     const chosen = this.markers.find(({ site }) =>
       site.members.some((member) => member.id === id),
     );
-    this.selected = chosen?.site.id ?? id;
+    const selected = chosen?.site.id ?? id;
+    if (selected !== this.selected) this.ring.pulse();
+    this.selected = selected;
     for (const { el, site } of this.markers) {
       el.setAttribute('aria-pressed', String(site === chosen?.site));
     }
@@ -150,11 +154,7 @@ export class MarkerLayer {
     }
     this.placed = shown.map(({ marker, at }) => ({ id: marker.site.id, at }));
     // The ring hides with the selected marker (behind the limb).
-    const ringAt = shown.find(({ selected }) => selected)?.at;
-    if (this.ring.hidden !== !ringAt) this.ring.hidden = !ringAt;
-    if (ringAt) {
-      this.ring.style.transform = `translate3d(${ringAt.x}px, ${ringAt.y}px, 0)`;
-    }
+    this.ring.place(shown.find(({ selected }) => selected)?.at);
   }
 
   /** Takes the markers and the ring off the page. */

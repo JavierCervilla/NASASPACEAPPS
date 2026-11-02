@@ -222,8 +222,11 @@
  * says which site the pill and the sheet speak of. Placed on the marker by
  * src/globe/marker-layer.ts and hidden with it behind the limb; the
  * pseudo-element pulses, so the frame loop only writes the position. In
- * the state's colour, as the marker: the legend's meaning. Still under
- * reduced motion.
+ * the state's colour, as the marker: the legend's meaning. It pulses three
+ * times when the selection or its state changes (marker-ring.ts swaps
+ * the animation for its twin), then rests lit: a loop that never ends
+ * keeps the page drawing frames for good (VENT-7's rule, as the DSN
+ * glow). Still under reduced motion.
  */
 .globe-ring {
   position: absolute;
@@ -268,9 +271,27 @@
   }
 }
 
+/* The same pulse under another name: a new name starts it over. */
+@keyframes globe-ring-pulse-again {
+  0% {
+    transform: scale(0.8);
+    opacity: 1;
+  }
+
+  70%,
+  100% {
+    transform: scale(1.35);
+    opacity: 0;
+  }
+}
+
 @media (prefers-reduced-motion: no-preference) {
   .globe-ring::after {
-    animation: globe-ring-pulse 2.4s cubic-bezier(0.2, 0.7, 0.3, 1) infinite;
+    animation: globe-ring-pulse 2.4s cubic-bezier(0.2, 0.7, 0.3, 1) 3;
+  }
+
+  .globe-ring[data-again]::after {
+    animation-name: globe-ring-pulse-again;
   }
 }
 

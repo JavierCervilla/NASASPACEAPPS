@@ -152,7 +152,7 @@ test.describe('desktop, 1440x900', () => {
       const after = getComputedStyle(el, '::after');
       return [after.animationName, after.animationDuration, after.animationIterationCount, after.borderTopColor];
     });
-    expect(style).toEqual(['globe-ring-pulse', '2.4s', 'infinite', 'rgb(61, 220, 132)']);
+    expect(style).toEqual(['globe-ring-pulse', '2.4s', '3', 'rgb(61, 220, 132)']);
   });
 
   test('the selected marker takes its state colour and a halo of it, and keeps its clicks', async ({ page }) => {

@@ -2,6 +2,19 @@
 
 ## [Sin publicar]
 
+### Arreglado
+- Arreglos tras el horizonte real (VENT-44):
+  - Los sitios guardados de la lista enseñan su estado con el relieve real en cuanto llega su horizonte, pedido de uno
+    en uno para no saturar el servidor. Mientras tanto, o si el servidor no tiene relieve, siguen con el horizonte liso.
+  - El pin, mientras lo arrastras, también usa el relieve si ese punto ya se había consultado.
+  - −170° y 190° de longitud cuentan como el mismo punto y no se piden dos veces.
+  - El anillo del sitio elegido y el del pin laten tres veces y se quedan fijos, como la antena del modo DSN: una
+    página quieta ya no redibuja sin parar.
+  - En el móvil, con el texto al 200 %, la media hoja hace scroll cuando su contenido no cabe ni abierta entera.
+  - Las etiquetas de las pestañas ya no parten palabras a la mitad con el texto al 200 %.
+  - La descarga del relieve se para si otro servidor le quita el volumen, suelta el candado a tiempo aunque la
+    paren mientras comprueba un fichero, y la imagen rechaza `/data//` y `/data/./` como rutas de montaje.
+
 ### Añadido
 - El servidor descarga solo el relieve LOLA (VENT-43). Con `TERRAIN_FETCH_TIERS=all` y el volumen montado en
   `/data/terrain`, la API baja en segundo plano, un fichero detrás de otro, las mallas que le faltan (unos 48,6 GB en

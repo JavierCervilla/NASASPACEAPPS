@@ -35,6 +35,7 @@ import { bindSheetDrag } from './sheet-drag';
 import { edgeDragTarget } from './sheet-edge-drag';
 import { halfLiftPx, watchLift } from './sheet-lift';
 import { SheetMotion } from './sheet-motion';
+import { scrollingHalf } from './sheet-scroll';
 import {
   detentsFor,
   SHEET_LAYOUT,
@@ -137,11 +138,18 @@ function layoutUnder(frame: Frame): SheetLayout {
 /**
  * Moves the sheet to its detent again when the viewport resizes, when
  * the bar's height moves the full detent, or when the lift of the half
- * sheet it rests at changes; returns the unwatch function.
+ * sheet it rests at changes, and lets a content taller than the full
+ * sheet scroll (sheet-scroll.ts); returns the unwatch function.
  */
 function watchLayout(frame: Frame, state: SheetState, motion: SheetMotion) {
   const { el, bar, tabs } = frame;
-  const resize = (): void => motion.moveTo(state.detent);
+  // Only the half detent moves with the lift; the others read it on the
+  // next move. A content taller than the full sheet scrolls in it.
+  const halfOf = scrollingHalf(el, tabs, () => layoutUnder(frame));
+  const resize = (): void => {
+    halfOf();
+    motion.moveTo(state.detent);
+  };
   const fullMoved = (): boolean =>
     layoutUnder(frame).fullGapPx !== state.detents.full;
   const barResized = (): void => {
@@ -149,9 +157,6 @@ function watchLayout(frame: Frame, state: SheetState, motion: SheetMotion) {
   };
   const observer = new ResizeObserver(barResized);
   if (bar) observer.observe(bar);
-  // Only the half detent moves with the lift; the others read it on the
-  // next move.
-  const halfOf = (): number => layoutUnder(frame).halfPx;
   const unwatchLift = watchLift(el, tabs, halfOf, () => {
     if (state.detent === 'half') resize();
   });

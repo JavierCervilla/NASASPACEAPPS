@@ -128,6 +128,13 @@ const BUILD = {
 };
 
 describe('precache', () => {
+  it('leaves the on-foot 3D view’s files to the runtime cache (VENT-34)', () => {
+    for (const file of ['_astro/TerrainPanel.Ab1.js', '_astro/terrain-scene.Ab1.js', '_astro/on-foot.Ab1.css', '_astro/astronaut.Ab1.glb']) {
+      expect(precached(file)).toBe(false);
+    }
+    expect(precached('_astro/LunarApp.Ab1.js')).toBe(true);
+  });
+
   it('caches the offline set at install: pages, build files, manifests, icons, phase frames, thumbnails, start maps', () => {
     expect(precacheOf(dist(BUILD)).precache.toSorted()).toEqual([
       '',

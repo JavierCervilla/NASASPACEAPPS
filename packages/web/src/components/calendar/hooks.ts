@@ -35,6 +35,7 @@ import type { Player } from '../../calendar/time-player';
 import type { TimeState, TimeStore } from '../../calendar/time-store';
 import type { HoursLoader } from '../../phone/hours-cache';
 import type { HorizonStore } from '../../horizon/horizon-store';
+import type { TileSource } from '../../terrain/tile';
 import { monthDiff } from '../../calendar/month-diff';
 import { widgetRange } from '../../phone/widget-range';
 import { useSiteHours, type HoursParts } from '../use-site-hours';
@@ -100,6 +101,11 @@ export interface CalendarParts extends HoursParts {
   readonly player: Player;
   /** Each site's terrain horizon (VENT-40). */
   readonly horizons: HorizonStore;
+  /**
+   * The on-foot view's height tiles (VENT-34): one source per page, the
+   * seam a Web Worker streamer will replace (terrain/tile.ts).
+   */
+  readonly tiles: TileSource;
 }
 
 /**

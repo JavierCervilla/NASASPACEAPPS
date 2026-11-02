@@ -322,3 +322,25 @@ describe('GET /api/v1/sites', () => {
     expect((await api.request('/api/v1/sites/im2-athena?from=2026-12-01')).status).toBe(400);
   });
 });
+
+describe('compression (VENT-34)', () => {
+  // A tile's JSON is 352 kB; the site list stands in for any JSON answer over the threshold.
+  it('gzips a JSON answer when the client accepts it, and says so', async () => {
+    const res = await app(fixtureFetch()).request('/api/v1/sites', { headers: { 'Accept-Encoding': 'gzip, deflate, br' } });
+    expect(res.status).toBe(200);
+    expect(res.headers.get('Content-Encoding')).toBe('gzip');
+    expect(res.headers.get('Vary')).toMatch(/Accept-Encoding/);
+    const { gunzipSync } = await import('node:zlib');
+    const raw = new Uint8Array(await res.arrayBuffer());
+    const body = JSON.parse(gunzipSync(raw).toString('utf8')) as { sites: unknown[] };
+    expect(body.sites).toHaveLength(SITES.length);
+    expect(raw.byteLength).toBeLessThan(JSON.stringify({ sites: SITES }).length / 2);
+  });
+
+  it('sends it as is to a client that accepts no encoding, and keeps the security headers', async () => {
+    const res = await app(fixtureFetch()).request('/api/v1/sites');
+    expect(res.headers.get('Content-Encoding')).toBeNull();
+    expect(res.headers.get('X-Content-Type-Options')).toBe('nosniff');
+    expect(((await res.json()) as { sites: unknown[] }).sites).toHaveLength(SITES.length);
+  });
+});

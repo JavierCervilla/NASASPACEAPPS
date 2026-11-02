@@ -363,3 +363,26 @@ No elevation grid ships: only the profiles, and the catalogue of what the server
   Within 1 point at 8 of the 11 points; the three outliers are documented, not tuned.
 - **Licence**: NASA data, not subject to copyright in the United States; credit NASA/GSFC, the LOLA team, via the PDS
   Geosciences Node.
+
+## On-foot view surfaces (VENT-34 quality pass)
+
+All load on demand with the 3D view (file names `on-foot-*`, left out of the precache by `ON_DEMAND`).
+
+| File | What | sha256 |
+|---|---|---|
+| `packages/web/src/terrain/maps/on-foot-regolith-albedo.webp` | 1024 px, from `moon_02_diff_1k.jpg`, desaturated to near neutral and stretched in contrast, WebP q82, 14 536 bytes | `8563640a36c8dc7558c1903cc1536cc3eb5e842f9a393bf8624cbbb274e1d2cc` |
+| `packages/web/src/terrain/maps/on-foot-regolith-normal.webp` | 1024 px OpenGL normal map, from `moon_02_nor_gl_1k.jpg`, WebP q88, 469 352 bytes | `b4b5989bbf1c722cad2111304bc4396ae31e26b7296b2f99f3b3737d11ffe66a` |
+| `packages/web/src/terrain/maps/on-foot-earth.webp` | 1024 x 512 equirectangular, from the 5400 x 2700 Blue Marble, Lanczos, WebP q86, 85 926 bytes | `8edd5b933a5987878257f43f9f5d67c0dc9128581441baa4ffe9d19a3285baf3` |
+
+- **Regolith**: Poly Haven «Moon 02» (https://polyhaven.com/a/moon_02; Greg Zaal, Rico Cilliers, Jenelle van Heerden,
+  Dario Barresi), CC0. Sources fetched from `https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/moon_02/`:
+  `moon_02_diff_1k.jpg` sha256 `690a431ac0f4c998ab97135f914ac61362a7b16d0760a365fddc204851689cb8`,
+  `moon_02_nor_gl_1k.jpg` `93c4f7f6facfdee5b997aa1c22005bfa0957eeaa22134f640ab0d612b6516ae0`. Its roughness map (mean 0.97) is
+  not used: a constant 0.96 does the same. Illustrative fine detail, captioned as such.
+- **Earth**: NASA Visible Earth, «Blue Marble Next Generation with topography and bathymetry» (December 2004,
+  `world.topo.bathy.200412.3x5400x2700.jpg`, https://visibleearth.nasa.gov/images/73909), NASA imagery, public domain under the
+  NASA media usage guidelines; sha256 of the source `a9f0088972dee0254610af851c4d6838ca3f2cf79176987e0a5713e2c15ec042`.
+  Cloud-free, so it shows land and ocean, not the weather of the day.
+- **Astronaut suit**: the existing `astronaut-suit.webp` (above), now put on the model's UVs.
+- **Lander**: no model imported. NASA 3D Resources' landers are Apollo's; the site is a 2026 CLPS lander, so the view keeps its own
+  primitives and says so.

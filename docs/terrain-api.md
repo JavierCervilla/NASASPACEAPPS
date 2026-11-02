@@ -242,8 +242,9 @@ horizons through the same gate (`TERRAIN_MAX_RUNNING`), read only the grid block
 cached on disk under a key of point, size and the tiers present, so a tier fetched later gives new tiles.
 
 **Budget.** The body is 352 423 bytes of JSON (264 196 bytes of floats in base64, plus the fields); real relief
-compresses little (gzip of floats), so a client should expect about 300 kB per tile over the wire if the host
-compresses. At the default 512 MB the disk cache holds about 1 400 tiles. If that is too much, the next step is a
+compresses little (gzip of floats), so a client should expect about 260 to 300 kB per tile over the wire. The API
+gzips (or deflates) every JSON answer over 1 kB for a client that accepts it (Hono's `compress()`, `src/app.ts`;
+no brotli, which `CompressionStream` lacks). At the default 512 MB the disk cache holds about 1 400 tiles. If that is too much, the next step is a
 quantised form (int16 centimetres relative to `groundM`, half the size) as another serialiser over the same core,
 `terrainTile`; it is not built. Measured on the test fixture (a 600 x 600 polar grid and a coarse globe, Node 22, cold
 LRU): 110 to 150 ms per tile, two passes over 66 049 samples (a probe that notes the blocks, then the real one); a third

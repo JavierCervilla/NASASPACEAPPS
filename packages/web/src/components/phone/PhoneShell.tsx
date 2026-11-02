@@ -36,7 +36,7 @@ import type { View } from '../../lib/view-tabs';
 import type { WatchedValue } from '../../lib/watched-value';
 import type { PhoneSite } from '../../phone/phone-site';
 import { sheetActions } from '../../phone/sheet-actions';
-import { viewActions } from '../../phone/view-actions';
+import { tabOf, viewActions } from '../../phone/view-actions';
 import {
   hoursStatus,
   siteState,
@@ -44,7 +44,7 @@ import {
 } from '../../phone/site-state';
 import type { SiteStore } from '../../phone/site-store';
 import { CalendarSheet } from '../calendar/CalendarSheet';
-import { DsnSheet, DsnStage } from '../dsn/DsnPhone';
+import { DsnSheet } from '../dsn/DsnPhone';
 import { useDsn } from '../dsn/use-dsn';
 import { useTime, type CalendarParts } from '../calendar/hooks';
 import { useSheetAside } from '../pin/use-sheet-aside';
@@ -58,6 +58,7 @@ import { SiteHorizon } from '../horizon/SiteHorizon';
 import { SitesPanel } from './SitesPanel';
 import { SiteSummary } from './SiteSummary';
 import { TabBar } from './TabBar';
+import { ViewStage } from './ViewStage';
 import { useSheetPanel } from './use-sheet-detent';
 
 interface Props {
@@ -69,7 +70,7 @@ interface Props {
   readonly parts: CalendarParts;
   /** The site's base path, for the site's thumbnail. */
   readonly base: string;
-  /** The view the address names: the DSN view has its own tab here. */
+  /** The view the address names: DSN and Horizon have their tabs here. */
   readonly view: View;
 }
 
@@ -130,7 +131,7 @@ function useSheetWiring(
     edge: tabs,
     bar,
   };
-  const current = atFull ? phone.view : view === 'dsn' ? 'dsn' : 'globe';
+  const current = atFull ? phone.view : tabOf(view);
   return { tabs, bar, current, sheet } as const;
 }
 
@@ -166,18 +167,15 @@ function PhoneUi(props: Props) {
   const [scrim, dim] = useScrim();
   const wiring = useSheetWiring(phone, props, dim);
   const { tabs, bar, current, sheet } = wiring;
-  const tabActions = {
-    ...viewActions(location, props.view, phone),
-    onCalendar: phone.calendar,
-    onSites: phone.open,
-  };
+  const tabActions = { ...viewActions(location, props.view, phone),
+    onCalendar: phone.calendar, onSites: phone.open };
   const { site, state, lines, computed } = phone;
   const pill = { site, state, lines, computed, onOpenPicker: phone.open };
   useSheetAside(phone.detent, phone.setDetent);
   return (
     <div className="phone">
       <div ref={scrim} className="phone-scrim" aria-hidden="true" />
-      {props.view === 'dsn' ? <DsnStage dsn={phone.dsn} /> : null}
+      <ViewStage {...props} dsn={phone.dsn} site={site} bar={bar} />
       <PhoneBar ref={bar} {...pill} />
       <Sheet {...sheet}>
         <SheetBody phone={phone} {...props} />

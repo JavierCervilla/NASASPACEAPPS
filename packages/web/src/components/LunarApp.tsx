@@ -59,6 +59,7 @@ import {
 } from '../source/terrain-profiles';
 import { createHorizonStore } from '../horizon/horizon-store';
 import { horizonFetch } from '../horizon/point-horizon';
+import { fetchTileSource } from '../terrain/tile-fetch';
 import { retryOnReturn } from '../horizon/retry-triggers';
 import { createSourceStore } from '../source/data-source';
 import { followClock } from '../calendar/follow-clock';
@@ -116,9 +117,11 @@ function createClock(sitesUrl: string, sites: readonly CardSite[]) {
     fetchHorizon: horizonFetch(globalThis.fetch.bind(globalThis), sitesUrl),
     sleep: (ms) => new Promise((done) => window.setTimeout(done, ms)),
   });
+  const tiles = fetchTileSource(globalThis.fetch.bind(globalThis), sitesUrl);
   const raw = cachedComputed(pointsOf(sites));
   const source = createSourceStore(localStore());
-  return { time, player, raw, source, shadowOf: shadowsOf(sites), horizons };
+  const shadowOf = shadowsOf(sites);
+  return { time, player, raw, source, shadowOf, horizons, tiles };
 }
 
 /**
@@ -177,12 +180,15 @@ interface SectionProps {
 }
 
 /**
- * The globe with its Layers key; hidden while the polar map or the DSN
- * view shows (phones have no polar map, but have the DSN view, VENT-7).
+ * The globe with its Layers key; hidden while the polar map, the DSN view
+ * or the on-foot view shows (phones have no polar map, but have the DSN
+ * view, VENT-7, and the on-foot view, VENT-34).
  */
 function GlobeSection({ globe, source, computed, view }: SectionProps) {
   const { t } = useI18n();
-  const hidden = usePhone() ? view === 'dsn' : view !== 'globe';
+  const hidden = usePhone()
+    ? view === 'dsn' || view === 'horizon'
+    : view !== 'globe';
   return (
     <section className="globe" aria-label={t('globe.section')} hidden={hidden} data-computed={computed}>
       <Globe {...globe} />

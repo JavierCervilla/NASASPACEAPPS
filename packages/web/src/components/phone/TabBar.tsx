@@ -24,9 +24,9 @@
  */
 
 /**
- * The floating tab bar: Globe, Calendar, DSN, Horizon and Sites. Horizon
- * says «soon» until its view exists; Calendar opens the calendar, DSN the
- * DSN view (VENT-7, canvas «DsnC»), Sites the picker, and Globe closes the
+ * The floating tab bar: Globe, Calendar, DSN, Horizon and Sites. Calendar
+ * opens the calendar, DSN the DSN view (VENT-7, canvas «DsnC»), Horizon
+ * the on-foot 3D view (VENT-34), Sites the picker, and Globe closes the
  * sheet. Dragging up from it opens a closed
  * sheet.
  */
@@ -42,46 +42,43 @@ interface Props {
   readonly onGlobe: () => void;
   readonly onCalendar: () => void;
   readonly onDsn: () => void;
+  readonly onHorizon: () => void;
   readonly onSites: () => void;
 }
 
-export type TabView = 'globe' | 'calendar' | 'dsn' | 'sites';
+export type TabView = 'globe' | 'calendar' | 'dsn' | 'horizon' | 'sites';
 
 interface Tab {
   readonly icon: IconName;
   readonly label: string;
   readonly current?: boolean;
-  readonly onClick?: () => void;
+  readonly onClick: () => void;
 }
 
 function TabButton({ icon, label, current, onClick }: Tab) {
-  const soon = onClick === undefined;
-  const { t } = useI18n();
   return (
     <button
       type="button"
       className="tab"
       aria-current={current ? 'true' : undefined}
-      aria-disabled={soon ? 'true' : undefined}
-      aria-label={soon ? t('tabs.soonLabel', { label }) : undefined}
       onClick={onClick}
     >
       <Icon name={icon} />
       <span>{label}</span>
-      {soon ? <span className="tab__soon">{t('tabs.soon')}</span> : null}
     </button>
   );
 }
 
 export function TabBar(props: Props) {
   const { ref, current, onGlobe, onCalendar, onDsn, onSites } = props;
+  const { onHorizon } = props;
   const { t } = useI18n();
   return (
     <nav ref={ref} className="tab-bar" aria-label={t('tabs.label')}>
       <TabButton icon="globe" label={t('tabs.globe')} current={current === 'globe'} onClick={onGlobe} />
       <TabButton icon="calendar" label={t('tabs.calendar')} current={current === 'calendar'} onClick={onCalendar} />
       <TabButton icon="dsn" label={t('tabs.dsn')} current={current === 'dsn'} onClick={onDsn} />
-      <TabButton icon="horizon" label={t('tabs.horizon')} />
+      <TabButton icon="horizon" label={t('tabs.horizon')} current={current === 'horizon'} onClick={onHorizon} />
       <TabButton icon="sites" label={t('tabs.sites')} current={current === 'sites'} onClick={onSites} />
     </nav>
   );

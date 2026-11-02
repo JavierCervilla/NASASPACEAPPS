@@ -2,7 +2,7 @@
   "schema_version": 1,
   "diagram_type": "architecture",
   "meta": {
-    "title": "Ventana Lunar \u00b7 architecture",
+    "title": "Ventana Lunar · architecture",
     "locale": "en",
     "quality_profile": "showcase",
     "viewBox": [
@@ -175,7 +175,7 @@
       "label": "Calendar strip",
       "sublabel": "pick the hour",
       "pos": [
-        70,
+        40,
         680
       ],
       "size": [
@@ -190,7 +190,7 @@
       "label": "2D polar map",
       "sublabel": "stereographic, 80-90 S",
       "pos": [
-        295,
+        225,
         680
       ],
       "size": [
@@ -205,7 +205,7 @@
       "label": "Site card",
       "sublabel": "countdowns + horizon",
       "pos": [
-        520,
+        410,
         680
       ],
       "size": [
@@ -220,7 +220,7 @@
       "label": "3D Moon globe",
       "sublabel": "real Sun, site ring",
       "pos": [
-        745,
+        595,
         680
       ],
       "size": [
@@ -235,7 +235,7 @@
       "label": "DSN mode",
       "sublabel": "card block + DSN view",
       "pos": [
-        970,
+        780,
         680
       ],
       "size": [
@@ -273,6 +273,20 @@
         60
       ],
       "tag": "built"
+    },
+    {
+      "id": "onfoot",
+      "type": "frontend",
+      "label": "On-foot 3D view",
+      "sublabel": "API tiles · lazy",
+      "pos": [
+        965,
+        680
+      ],
+      "size": [
+        140,
+        60
+      ]
     }
   ],
   "boundaries": [
@@ -304,7 +318,8 @@
         "polar",
         "sitecard",
         "moon3d",
-        "dsn"
+        "dsn",
+        "onfoot"
       ]
     }
   ],
@@ -366,27 +381,37 @@
     {
       "id": "sub-calendar",
       "from": "store",
-      "to": "calendar"
+      "to": "calendar",
+      "fromSide": "bottom",
+      "toSide": "top"
     },
     {
       "id": "sub-polar",
       "from": "store",
-      "to": "polar"
+      "to": "polar",
+      "fromSide": "bottom",
+      "toSide": "top"
     },
     {
       "id": "sub-sitecard",
       "from": "store",
-      "to": "sitecard"
+      "to": "sitecard",
+      "fromSide": "bottom",
+      "toSide": "top"
     },
     {
       "id": "sub-moon3d",
       "from": "store",
-      "to": "moon3d"
+      "to": "moon3d",
+      "fromSide": "bottom",
+      "toSide": "top"
     },
     {
       "id": "sub-dsn",
       "from": "store",
-      "to": "dsn"
+      "to": "dsn",
+      "fromSide": "bottom",
+      "toSide": "top"
     },
     {
       "id": "install-sw",
@@ -415,6 +440,13 @@
       "to": "layers",
       "label": "saves",
       "variant": "dashed"
+    },
+    {
+      "id": "sub-onfoot",
+      "from": "store",
+      "to": "onfoot",
+      "fromSide": "bottom",
+      "toSide": "top"
     }
   ],
   "cards": [
@@ -447,7 +479,8 @@
         "Installable (VENT-28): a manifest per locale with the J2 icon and site shortcuts, a live favicon with the Moon's phase and the site's state, and a service worker (build-versioned cache, pages and API network first) that opens the app offline with its last data",
         "VENT-10, VENT-37: a pin, dropped by a click (or a held finger) on the globe or the polar map and dragged to adjust, makes any point the selected site (?lat&lon), answered at once by the simulator and then by Horizons; the astronaut's assets wait for VENT-34",
         "Globe layers (VENT-37): a registry of layers (id, z, visible) the globe mounts; landing sites, zones and the sites saved on this device are layers, switched from the Layers key and kept on the device; API for other teams in docs/globe-layers.md",
-        "DSN mode (VENT-7): the simulator finds each handoff between Goldstone, Canberra and Robledo to the minute, once per UTC day; a \u00abListening on Earth\u00bb block in the desktop card and the phone widget (small Earth seen from the Moon, real terminator, \u00abNo link\u00bb first when the Earth is under 3\u00b0) and a DSN view (#dsn, phone tab) with the big Earth, the Moon above 10\u00b0 ring and the 24 h band following the shared instant"
+        "DSN mode (VENT-7): the simulator finds each handoff between Goldstone, Canberra and Robledo to the minute, once per UTC day; a «Listening on Earth» block in the desktop card and the phone widget (small Earth seen from the Moon, real terminator, «No link» first when the Earth is under 3°) and a DSN view (#dsn, phone tab) with the big Earth, the Moon above 10° ring and the 24 h band following the shared instant",
+        "On-foot 3D view (VENT-34, #horizon and the phone's Horizon tab, lazy-loaded with the astronaut): relief only from /api/v1/terrain/tile through a TileSource seam (transferable tiles placed by key in a local frame; a Web Worker streamer of aligned tiles replaces it later), the far horizon from the point's profile, the Sun and the Earth at the shared instant, illustrative fine detail captioned; the API gzips its JSON"
       ]
     }
   ]

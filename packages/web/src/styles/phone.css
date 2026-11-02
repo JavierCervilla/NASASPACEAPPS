@@ -870,7 +870,7 @@
  * share of a narrow bar is cut with an ellipsis; the button's name keeps
  * it whole.
  */
-.tab > span:not(.tab__soon) {
+.tab > span {
   max-width: 100%;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -907,22 +907,6 @@
 .tab[aria-current='true'] {
   background: var(--phone-tab-current);
   color: var(--text);
-}
-
-.tab[aria-disabled='true'] {
-  cursor: default;
-}
-
-.tab__soon {
-  position: absolute;
-  top: -6px;
-  right: 0;
-  padding: 0 4px;
-  border-radius: 6px;
-  background: var(--fill);
-  font-size: 0.5625rem;
-  line-height: 1.4;
-  letter-spacing: 0.02em;
 }
 
 /* Accessibility preferences (apple-design §14). */
@@ -964,4 +948,15 @@
   .site-row__detail {
     color: var(--text-secondary);
   }
+}
+
+/* The on-foot view's stage while its panel downloads (VENT-34). */
+.on-foot-wait--phone {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  display: grid;
+  place-content: center;
+  background: #000;
+  color: #c7c8ce;
 }

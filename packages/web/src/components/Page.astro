@@ -69,12 +69,12 @@ const full = curated as ListedSite[];
 const sites = full.map((s) => localSite(i18n, toCardSite(s)));
 
 // The views switch by hash (lib/view-tabs.ts); the island marks the
-// current one. Horizon is a later trajectory.
+// current one.
 const views = [
   { label: t('view.globe'), view: 'globe', current: true },
   { label: t('view.polar'), view: 'polar', current: false },
   { label: t('view.dsn'), view: 'dsn', current: false },
-  { label: t('view.horizon'), view: null, current: false },
+  { label: t('view.horizon'), view: 'horizon', current: false },
 ] as const;
 ---
 
@@ -92,19 +92,13 @@ const views = [
       <div class="bar__end">
         <nav aria-label={t('header.views')} class="views">
           {
-            views.map(({ label, view, current }) =>
-              view ? (
-                <a href={VIEW_HASH[view]} data-view={view}
-                  aria-current={current ? 'page' : undefined}
-                >
-                  {label}
-                </a>
-              ) : (
-                <span aria-disabled="true" title={t('view.soon')}>
-                  {label}
-                </span>
-              ),
-            )
+            views.map(({ label, view, current }) => (
+              <a href={VIEW_HASH[view]} data-view={view}
+                aria-current={current ? 'page' : undefined}
+              >
+                {label}
+              </a>
+            ))
           }
         </nav>
         <!-- The island puts the language menu here once it runs. -->
@@ -194,11 +188,6 @@ const views = [
     background: var(--fill-selected);
     box-shadow: var(--fill-selected-shadow);
     color: var(--text);
-  }
-
-  .views [aria-disabled='true'] {
-    opacity: 0.55;
-    cursor: default;
   }
 
   /* The globe, with the calendar strip under it. */

@@ -117,6 +117,61 @@ describe('the saved sites\' horizons, asked in the background', () => {
   });
 });
 
+/** `count` distinct points on the server's grid, none of them POINT. */
+function gridPoints(count: number) {
+  return Array.from({ length: count }, (_, i) => ({ lat: -88, lonEast: -170 + i }));
+}
+
+/** Lets every settled fetch run its continuations, up to the next one asked. */
+const drain = () => new Promise((done) => setTimeout(done, 0));
+
+/** Prefetches `points` and settles each fetch as it is asked, with a profile or a 503, until none is left. */
+async function prefetchAll(
+  { store, pending }: ReturnType<typeof queuedStore>,
+  points: readonly { lat: number; lonEast: number }[],
+  settle: (p: (typeof pending)[number]) => void,
+) {
+  let settled = pending.length;
+  for (const point of points) store.prefetch(point);
+  await drain();
+  while (settled < pending.length) {
+    settle(pending[settled++]!);
+    await drain();
+  }
+}
+
+const terrainOk = (p: { ok: (known: KnownHorizon) => void }) => p.ok({ profile: wallProfile(), resolutionM: 20 });
+const unavailable = (p: { fail: () => void }) => p.fail();
+
+describe('the horizon cache holds a whole saved list beside the selected point', () => {
+  it.each([30, 50])('keeps the selected point\'s terrain after prefetching %i saved points', async (count) => {
+    const queued = queuedStore();
+    queued.store.request('@-85.50,40.00');
+    queued.pending[0]!.ok({ profile: wallProfile(), resolutionM: 20 });
+    await vi.waitFor(() => expect(queued.store.of('@-85.50,40.00').kind).toBe('terrain'));
+    await prefetchAll(queued, gridPoints(count), terrainOk);
+    expect(queued.store.of('@-85.50,40.00').kind).toBe('terrain');
+    expect(queued.store.cached(POINT)).toBeDefined();
+  });
+
+  it('asks for each of 50 saved points once over two openings of the list', async () => {
+    const queued = queuedStore();
+    const points = gridPoints(50);
+    await prefetchAll(queued, points, terrainOk);
+    await prefetchAll(queued, points, terrainOk);
+    expect(queued.fetchHorizon).toHaveBeenCalledTimes(50);
+    expect(points.every((p) => queued.store.cached(p) !== undefined)).toBe(true);
+  });
+
+  it('never asks again for 50 saved points the server could not answer', async () => {
+    const queued = queuedStore();
+    const points = gridPoints(50);
+    await prefetchAll(queued, points, unavailable);
+    await prefetchAll(queued, points, unavailable);
+    expect(queued.fetchHorizon).toHaveBeenCalledTimes(50);
+  });
+});
+
 describe('a point\'s state over the terrain', () => {
   it('a wall that hides the Earth turns the smooth sphere\'s window into Sun only', () => {
     expect(stateAtPoint(POINT, CANVAS_MS)).toBe('window');

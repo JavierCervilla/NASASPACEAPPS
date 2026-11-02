@@ -80,6 +80,21 @@ test.describe('desktop, 1440x900, finite pulses', () => {
     await expect.poll(() => pulses(page, 'running'), { timeout: GLOBE_START_MS }).toEqual([expect.stringMatching(/^globe-ring-pulse/)]);
   });
 
+  test('the ring pulses again for a new site in the same state, so the selection alone restarts it', async ({ page }) => {
+    // IM-2 and Malapert Massif are both «Window» at the canvas instant: no state change can start the pulse.
+    await open(page, './?site=im2-athena');
+    const markers = page.locator('.globe-markers');
+    await expect(page.locator('.globe-ring')).toBeVisible({ timeout: GLOBE_START_MS });
+    await expect(markers).toHaveAttribute('data-state', 'window');
+    await expect.poll(() => pulses(page, 'running'), { timeout: SETTLE_MS }).toEqual([]);
+    await page.getByRole('button', { name: /^Change site, now/ }).click();
+    const dialog = page.getByRole('dialog', { name: 'Choose a site' });
+    await dialog.getByRole('searchbox', { name: 'Search a site or mission' }).fill('malapert massif');
+    await dialog.getByRole('button', { name: /^Malapert Massif/ }).click();
+    await expect.poll(() => pulses(page, 'running'), { timeout: GLOBE_START_MS }).toEqual([expect.stringMatching(/^globe-ring-pulse/)]);
+    await expect(markers).toHaveAttribute('data-state', 'window');
+  });
+
   test('the standing pin\'s halo pulses three times, then rests lit', async ({ page }) => {
     await open(page, './?lat=-85.50&lon=40.00');
     const pin = page.locator('.globe .pin');
@@ -127,11 +142,12 @@ test.describe('phone, 360x740, 200 % text, Haworth', () => {
 
 /**
  * At 100 % text in Spanish, Haworth's summary (shadow note, horizon strip, computed caption) is taller than the full
- * detent, so it scrolls. As an iOS sheet does, a finger pulling down on it while it shows its top drags the sheet down
+ * detent, so it scrolls. A 600 px tall phone makes that hold on any font set: here the summary outgrows its box by
+ * 187 px (by 47 px at 740 px, which a narrower system font, as on the CI runner, closed). As an iOS sheet does, a finger pulling down on it while it shows its top drags the sheet down
  * to a lower detent; a finger pushing up scrolls it until its last line sits 12 px above the tab bar.
  */
-test.describe('phone, 360x740, es, 100 % text, Haworth: a scrolling summary', () => {
-  test.use({ viewport: { width: 360, height: 740 }, hasTouch: true, isMobile: true });
+test.describe('phone, 360x600, es, 100 % text, Haworth: a scrolling summary', () => {
+  test.use({ viewport: { width: 360, height: 600 }, hasTouch: true, isMobile: true });
 
   async function scrollingSummary(page: Page) {
     await open(page, './es/?site=artemis-haworth');

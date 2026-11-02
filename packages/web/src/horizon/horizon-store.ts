@@ -46,6 +46,7 @@ import {
   pointKey,
   type Fetched,
 } from './horizon-ask';
+import { createHorizonCache } from './horizon-cache';
 import type { HorizonFetch, KnownHorizon } from './point-horizon';
 
 /** What the page knows of a site's horizon. */
@@ -62,7 +63,10 @@ export type SiteHorizon =
 
 export interface HorizonStore {
   readonly of: (id: string) => SiteHorizon;
-  /** Asks the API for a custom point's horizon, unless it has it. */
+  /**
+   * Asks the API for a custom point's horizon, unless it has it, and keeps
+   * it for the session (the selected site's).
+   */
   readonly request: (id: string) => void;
   /**
    * Asks for `point`'s horizon in the background, after the points asked
@@ -109,7 +113,7 @@ function profileAt(fetched: Fetched, key: string | null) {
 
 /** The store over `sources`. */
 export function createHorizonStore(sources: HorizonSources): HorizonStore {
-  const fetched: Fetched = new Map();
+  const fetched: Fetched = createHorizonCache();
   const of = (id: string): SiteHorizon => knownOf(sources, fetched, id);
   const profileOf = (): TerrainOf => (id) => {
     const known = of(id);
@@ -120,6 +124,8 @@ export function createHorizonStore(sources: HorizonSources): HorizonStore {
   const ask = createAsk(sources.fetchHorizon, fetched, changed);
   const request = (id: string): void => {
     const point = customPointOf(id);
+    const key = point ? pointKey(point) : null;
+    if (key !== null) fetched.hold(key);
     if (point) void ask(point, true);
   };
   const prefetch = createSerialQueue((point) => ask(point, false));

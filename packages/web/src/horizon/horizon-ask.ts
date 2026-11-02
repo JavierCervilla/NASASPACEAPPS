@@ -33,28 +33,16 @@
  */
 import { customId, snapPoint } from '../pin/custom-point';
 import type { LatLon } from '../lib/polar-projection';
+import type { HorizonCache } from './horizon-cache';
 import type { SiteHorizon } from './horizon-store';
 import { TerrainNotInstalledError, type HorizonFetch } from './point-horizon';
 
-/** As many points as the hours' cache keeps. */
-const MAX_POINTS = 24;
-
 /** What the page learnt of each point, by its grid id. */
-export type Fetched = Map<string, SiteHorizon>;
+export type Fetched = HorizonCache;
 
 /** The key of `point`: its id on the grid; null when not a point. */
 export function pointKey(point: LatLon): string | null {
   return snapPoint(point) ? customId(point) : null;
-}
-
-/** Keeps `value` for `key`, the oldest out past the cap. */
-function keep(fetched: Fetched, key: string, value: SiteHorizon): void {
-  fetched.delete(key);
-  fetched.set(key, value);
-  const oldest = fetched.keys().next().value;
-  if (fetched.size > MAX_POINTS && oldest !== undefined) {
-    fetched.delete(oldest);
-  }
 }
 
 /** What a failed request leaves: not installed yet, or unavailable. */
@@ -80,14 +68,14 @@ export function createAsk(
     const kind = key === null ? 'unavailable' : fetched.get(key)?.kind;
     const busy = kind === 'loading' || kind === 'terrain';
     if (key === null || busy || (kind !== undefined && !again)) return;
-    keep(fetched, key, { kind: 'loading' });
+    fetched.keep(key, { kind: 'loading' });
     let answer: SiteHorizon;
     try {
       answer = { kind: 'terrain', ...(await fetchHorizon(point)) };
     } catch (error) {
       answer = failed(error);
     }
-    keep(fetched, key, answer);
+    fetched.keep(key, answer);
     changed();
   };
 }

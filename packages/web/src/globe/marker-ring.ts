@@ -28,7 +28,9 @@
  * with the markers and hidden with its marker. It pulses three times when
  * it comes, then rests lit; {@link pulse} swaps its animation for a twin
  * (`data-again`), which starts it over without a new element, so what
- * holds the ring (a test, the frame loop) keeps it.
+ * holds the ring (a test, the frame loop) keeps it. Each swap is read back
+ * at once, so two in one frame (a new site, then its state) are two starts,
+ * never a swap and its undoing that the frame does not see.
  */
 import type { Projector } from './marker-layer';
 
@@ -53,5 +55,7 @@ export class MarkerRing {
   /** Pulses again: the selection or its state changed. */
   pulse(): void {
     this.el.toggleAttribute('data-again');
+    // Reading the style recalculates it: the twin starts now.
+    void getComputedStyle(this.el, '::after').animationName;
   }
 }

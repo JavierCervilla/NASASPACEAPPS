@@ -29,6 +29,14 @@
  * the moments a passing failure has most likely passed.
  */
 
+/**
+ * Whether the browser says it is online; true where it cannot say, so
+ * nothing waits on a question no one answers.
+ */
+export function browserOnline(): boolean {
+  return typeof navigator === 'undefined' || navigator.onLine !== false;
+}
+
 export interface ReturnSignals {
   /** Fires `online` (the window). */
   readonly win: EventTarget;

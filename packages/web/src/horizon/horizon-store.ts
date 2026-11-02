@@ -43,8 +43,9 @@ import {
 import type { TerrainOf } from '../source/terrain-profiles';
 import { createRequests, pointKey, type Fetched } from './horizon-ask';
 import { createHorizonCache } from './horizon-cache';
-import type { Sleep } from './horizon-retry';
+import type { Random, Sleep } from './horizon-retry';
 import type { HorizonFetch, KnownHorizon } from './point-horizon';
+import { browserOnline } from './retry-triggers';
 
 /** What the page knows of a site's horizon. */
 export type SiteHorizon =
@@ -67,8 +68,8 @@ export interface HorizonStore {
   readonly request: (id: string) => void;
   /**
    * Asks for `point`'s horizon in the background, after the points asked
-   * before it, one at a time; a point that failed for good is not asked
-   * again.
+   * before it, one at a time, and none while the browser is offline; a
+   * point that failed for good is not asked again.
    */
   readonly prefetch: (point: LatLon) => void;
   /**
@@ -93,6 +94,13 @@ export interface HorizonSources {
   readonly fetchHorizon: HorizonFetch;
   /** The wait between retries of a failure that may pass. */
   readonly sleep: Sleep;
+  /** Spreads those waits; `Math.random` unless given. */
+  readonly random?: Random;
+  /**
+   * Whether the browser is online, the saved rows waiting while not;
+   * the browser's own answer unless given.
+   */
+  readonly isOnline?: () => boolean;
 }
 
 /** What the page knows of site `id`'s horizon. */
@@ -127,7 +135,11 @@ export function createHorizonStore(sources: HorizonSources): HorizonStore {
   const terrain = createWatchedValue(profileOf());
   const changed = (): void => terrain.set(profileOf());
   const { fetchHorizon, sleep } = sources;
-  const requests = createRequests({ fetchHorizon, sleep, fetched, changed });
+  const random = sources.random ?? Math.random;
+  const isOnline = sources.isOnline ?? browserOnline;
+  const requests = createRequests({
+    fetchHorizon, sleep, random, isOnline, fetched, changed,
+  });
   const cached = (point: LatLon) => profileAt(fetched, pointKey(point));
   return { ...requests, of, cached, terrain };
 }

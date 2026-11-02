@@ -26,8 +26,10 @@
 /**
  * How long the page waits before asking again for a point's horizon after
  * a failure that may pass (VENT-45): 2 s, 6 s, then 18 s, or the server's
- * Retry-After cut to 30 s, four tries in all. The wait is injected, so a
- * test runs it at once.
+ * Retry-After when longer, each spread by a factor from 0.5 to 1.5 so the
+ * pages that lost the server together do not come back together; never
+ * under the Retry-After, never over 30 s; four tries in all. The wait and
+ * the random source are injected, so a test runs it at once and exactly.
  */
 import {
   TerrainNotInstalledError,
@@ -51,19 +53,27 @@ export const HORIZON_RETRY: RetryPolicy = {
 /** Resolves after `ms`. */
 export type Sleep = (ms: number) => Promise<void>;
 
+/** A number from 0 (included) to 1, as `Math.random`. */
+export type Random = () => number;
+
 /**
- * The wait before the next try after `failures` failed tries, ms; null
- * when `error` is final or the tries ran out.
+ * The wait before the next try after `failures` failed tries, ms, spread
+ * by `random`; null when `error` is final or the tries ran out. A
+ * Retry-After shorter than the planned wait (0 included) does not
+ * shorten it: the server's own retries hold the same floor.
  */
 export function retryDelayMs(
   error: unknown,
   failures: number,
   policy: RetryPolicy,
+  random: Random,
 ): number | null {
   if (!(error instanceof TransientHorizonError)) return null;
   const planned = policy.delaysMs[failures];
   if (planned === undefined) return null;
-  return Math.min(error.retryAfterMs ?? planned, policy.maxWaitMs);
+  const asked = error.retryAfterMs ?? 0;
+  const spread = Math.max(planned, asked) * (0.5 + random());
+  return Math.min(Math.max(spread, asked), policy.maxWaitMs);
 }
 
 /** What the tries left, and whether asking later may still help. */
@@ -81,17 +91,23 @@ function settled(error: unknown): Asked {
   return { horizon: { kind: 'unavailable' }, lapsed };
 }
 
+/** How {@link askWithRetry} waits between tries. */
+export interface Waits {
+  readonly sleep: Sleep;
+  readonly random: Random;
+}
+
 /** Tries `once` until it answers, fails for good or the tries run out. */
 export async function askWithRetry(
   once: () => Promise<KnownHorizon>,
-  sleep: Sleep,
+  { sleep, random }: Waits,
   policy: RetryPolicy = HORIZON_RETRY,
 ): Promise<Asked> {
   for (let failures = 0; ; failures++) {
     try {
       return { horizon: { kind: 'terrain', ...(await once()) }, lapsed: false };
     } catch (error) {
-      const wait = retryDelayMs(error, failures, policy);
+      const wait = retryDelayMs(error, failures, policy, random);
       if (wait === null) return settled(error);
       await sleep(wait);
     }

@@ -58,3 +58,37 @@ describe.each(['dash', 'bash'])('docker-entrypoint.sh allowed() under %s', (shel
     },
   );
 });
+
+const resolved = /^resolved_allowed\(\) \{\n[\s\S]*?^\}$/m.exec(script)?.[0] ?? '';
+
+/** Whether `shell` lets `path` through when `realpath` resolves it to `real`. */
+function resolvedBy(shell: string, path: string, real: string): boolean {
+  const stub = `realpath() { printf '%s\\n' "$REAL"; }`;
+  const code = `${guard}\n${resolved}\n${stub}\nif resolved_allowed "$1"; then echo yes; else echo no; fi`;
+  const env = { ...process.env, REAL: real };
+  return execFileSync(shell, ['-c', code, 'sh', path], { encoding: 'utf8', env }).trim() === 'yes';
+}
+
+describe.each(['dash', 'bash'])('docker-entrypoint.sh resolved_allowed() under %s (VENT-44)', (shell) => {
+  it('finds the resolved guard in the script', () => {
+    expect(resolved).toContain('resolved_allowed()');
+  });
+
+  it('accepts a path that resolves inside /data/', () => {
+    expect(resolvedBy(shell, '/data/terrain', '/data/terrain')).toBe(true);
+  });
+
+  it('refuses a path whose parent is a symlink out of /data/', () => {
+    expect(resolvedBy(shell, '/data/x/ssl', '/etc/ssl')).toBe(false);
+  });
+
+  it('refuses a path that resolves to /data itself', () => {
+    expect(resolvedBy(shell, '/data/link', '/data')).toBe(false);
+  });
+});
+
+describe('docker-entrypoint.sh leftovers sweep (VENT-44)', () => {
+  it('never hands a hard-linked file to node', () => {
+    expect(script).toMatch(/find "\$TERRAIN_DIR"[^\n]*-links 1/);
+  });
+});

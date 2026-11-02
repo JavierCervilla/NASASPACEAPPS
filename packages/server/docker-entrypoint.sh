@@ -50,6 +50,13 @@ allowed() {
   return 0
 }
 
+# The same guard on the path as the kernel resolves it: a symlinked parent
+# (/data/x pointing at /etc) must not carry chown out of the volumes.
+resolved_allowed() {
+  real=$(realpath "$1" 2>/dev/null) || return 1
+  allowed "$real"
+}
+
 own() {
   dir=$1
   [ -n "$dir" ] || return 0
@@ -59,6 +66,10 @@ own() {
   fi
   mkdir -p "$dir" 2>/dev/null || true
   [ -d "$dir" ] || return 0
+  if ! resolved_allowed "$dir"; then
+    echo "entrypoint: $dir resolves outside /data/ or /var/cache/; left alone"
+    return 0
+  fi
   [ "$(stat -c %u "$dir")" = "$(id -u node)" ] && return 0
   # -h: a symlink changes owner itself, never what it points to.
   if chown -h node:node "$dir" 2>/dev/null; then
@@ -72,9 +83,10 @@ if [ "$(id -u)" = 0 ]; then
   own "${TERRAIN_DIR:-}"
   own "${TERRAIN_CACHE_DIR:-}"
   own "${HORIZONS_CACHE_DIR:-}"
-  if [ -n "${TERRAIN_DIR:-}" ] && allowed "$TERRAIN_DIR" && [ -d "$TERRAIN_DIR" ]; then
-    # Regular files only: a planted symlink named *.part is never followed.
-    find "$TERRAIN_DIR" -maxdepth 1 -type f \( -name '*.part' -o -name '.fetch.lock' \) \
+  if [ -n "${TERRAIN_DIR:-}" ] && [ -d "$TERRAIN_DIR" ] && resolved_allowed "$TERRAIN_DIR"; then
+    # Regular files with one link only: a planted symlink or a hard link to a
+    # root file named *.part is never handed to node.
+    find "$TERRAIN_DIR" -maxdepth 1 -type f -links 1 \( -name '*.part' -o -name '.fetch.lock' \) \
       ! -user node -exec chown -h node:node {} + 2>/dev/null || true
   fi
   exec su-exec node "$@"

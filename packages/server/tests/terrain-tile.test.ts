@@ -43,7 +43,7 @@ import { tileIn } from '../src/terrain/tile-rounds.ts';
 import { cachedTiles, tileKey, type TileSource } from '../src/terrain/tile-cache.ts';
 import { parseTileParams, DEFAULT_TILE_SIZE_M } from '../src/terrain/tile-route.ts';
 import type { TileAnswer } from '../src/terrain/tile-answer.ts';
-import { CATALOGUE, CRATER, SOUTH, terrainDir, tileDn } from './terrain-fixture.ts';
+import { CATALOGUE, CRATER, GLOBE, SOUTH, terrainDir, tileDn } from './terrain-fixture.ts';
 
 let dir: string;
 beforeAll(async () => {
@@ -98,6 +98,44 @@ describe('tileIn', () => {
     await service.close();
   });
 
+  it('reads the finest tier first even when a coarser one is listed before it', async () => {
+    const service = await open();
+    // 6 km from the pole on 45° E: the 20 m grid (its wall at 500 m)
+    // holds the whole tile and the globe (which stops short of the pole)
+    // holds its centre, so the order alone decides which one answers.
+    const both = { lat: -89.8, lonEast: 45, sizeM: 2_000 };
+    const answer = await tileIn(service, both, [GLOBE, SOUTH]);
+    expect(answer).toMatchObject({ groundM: 500, resolutionM: 20, coverage: 1 });
+    expect(answer.tiers).toEqual([{ id: 'south-20m', resolutionM: 20, share: 1 }]);
+    const globeOnly = await tileIn(service, both, [GLOBE]);
+    expect(globeOnly.groundM).not.toBe(500);
+    await service.close();
+  });
+
+  it('lists the tiers finest first on a tile across the edge of the 20 m grid', async () => {
+    const service = await open();
+    // 4.5 km from the pole: an 8 km tile reaches past the grid's 6 km edge.
+    const answer = await tileIn(service, { lat: -89.85, lonEast: 0, sizeM: 8_000 }, [GLOBE, SOUTH]);
+    expect(answer.tiers.map((t) => t.id)).toEqual(['south-20m', 'globe-coarse']);
+    expect(answer.resolutionM).toBe(20);
+    expect(answer.coverage).toBe(1);
+    const [south, globe] = answer.tiers;
+    expect(south?.share).toBeGreaterThan(0.5);
+    expect((south?.share ?? 0) + (globe?.share ?? 0)).toBeCloseTo(1, 3);
+    await service.close();
+  });
+
+  it('gives the share of covered samples on a tile partly off the only tier', async () => {
+    const southOnly = { ...CATALOGUE, tiers: [SOUTH], bands: [] };
+    const service = await open({ catalogue: southOnly });
+    // 5.5 km from the pole along 0° E; north of it, past 6 km, nothing.
+    const answer = await tileIn(service, { lat: -89.82, lonEast: 0, sizeM: 4_000 });
+    expect(answer.coverage).toBeGreaterThan(0.5);
+    expect(answer.coverage).toBeLessThan(0.9);
+    expect(answer.tiers).toEqual([{ id: 'south-20m', resolutionM: 20, share: 1 }]);
+    await service.close();
+  });
+
   it('gives the same answer with a block cache of a single block', async () => {
     const roomy = await open();
     const tight = await open({ cacheBytes: 128 * 1024 });
@@ -148,6 +186,27 @@ describe('cachedTiles', () => {
     expect(tileKey({ ...CRATER_POINT, sizeM: 2_000 }, 'a+b')).not.toBe(base);
     expect(tileKey(CRATER_POINT, 'a')).not.toBe(base);
     expect(tileKey({ ...CRATER_POINT, lat: -85 }, 'a+b')).not.toBe(base);
+  });
+
+  it('keys one point under one longitude: 0 and 360, -180 and 180', () => {
+    const at = (lonEast: number) => tileKey({ ...CRATER_POINT, lonEast }, 'a');
+    expect(at(360)).toBe(at(0));
+    expect(at(-180)).toBe(at(180));
+    expect(at(-179.98)).toBe(at(180.02));
+    expect(at(-0.01)).toBe(at(359.99));
+    expect(at(31.01)).not.toBe(at(31.02));
+  });
+
+  it('serves 360° E from the entry of 0° E', async () => {
+    const service = await open();
+    const cache = await mkdtemp(join(tmpdir(), 'tile-lon-'));
+    let misses = 0;
+    const tiles = cachedTiles(service, cache, 2 ** 22);
+    await tiles.tile({ ...CRATER_POINT, lonEast: 0 }, () => misses++);
+    await tiles.tile({ ...CRATER_POINT, lonEast: 360 }, () => misses++);
+    expect(misses).toBe(1);
+    await service.close();
+    await rm(cache, { recursive: true, force: true });
   });
 
   it('says the terrain is not installed when no tier is on disk', async () => {

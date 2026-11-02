@@ -246,6 +246,7 @@ compresses little (gzip of floats), so a client should expect about 300 kB per t
 compresses. At the default 512 MB the disk cache holds about 1 400 tiles. If that is too much, the next step is a
 quantised form (int16 centimetres relative to `groundM`, half the size) as another serialiser over the same core,
 `terrainTile`; it is not built. Measured on the test fixture (a 600 x 600 polar grid and a coarse globe, Node 22, cold
-LRU): 110 to 150 ms per tile, three passes over 66 049 samples (one probe, one real, one that checks nothing is
-missing). Not measured on the real 48.6 GB volume.
+LRU): 110 to 150 ms per tile, two passes over 66 049 samples (a probe that notes the blocks, then the real one); a third
+runs only when the real pass finds a block still missing (a sample read as a hole, NaN, that falls through to a
+coarser tier whose blocks the probe never noted). Not measured on the real 48.6 GB volume.
 

@@ -32,6 +32,8 @@
  */
 import { DiskCache } from '../horizons/disk-cache.ts';
 import { InFlight } from '../horizons/in-flight.ts';
+import { normaliseLonEast } from '../horizons/query.ts';
+import { roundToGrid } from '../params.ts';
 import { TerrainNotInstalledError } from './horizon-cache.ts';
 import type { TileAnswer, TilePoint } from './tile-answer.ts';
 import type { TerrainService } from './terrain-service.ts';
@@ -49,9 +51,14 @@ export interface TileSource {
 /** Bumped when the method changes, so old answers are not served. */
 const KEY_VERSION = 'v1';
 
-/** The file name of a point's tile. */
+/**
+ * The file name of a point's tile. The longitude is wrapped to [0, 360)
+ * on the 0.01° grid (wrapping alone leaves 180.01999… for 180.02), so 0
+ * and 360, or -180 and 180, are one entry.
+ */
 export function tileKey(point: TilePoint, tiers: string): string {
-  const { lat, lonEast, sizeM } = point;
+  const { lat, sizeM } = point;
+  const lonEast = roundToGrid(normaliseLonEast(point.lonEast));
   return `tile-${KEY_VERSION}_${lat}_${lonEast}_s${sizeM}_${tiers}`;
 }
 

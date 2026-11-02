@@ -117,6 +117,80 @@ describe('terrainTile on a slope', () => {
   });
 });
 
+/** The point `d` metres from (lat, lon) along `bearing` (0 = north,
+ * 90 = east) on the great circle: the expected place of an edge sample. */
+function destination(lat: number, lon: number, bearing: number, d: number) {
+  const rad = Math.PI / 180;
+  const [p1, b, t] = [lat * rad, bearing * rad, d / R];
+  const p2 = Math.asin(Math.sin(p1) * Math.cos(t) + Math.cos(p1) * Math.sin(t) * Math.cos(b));
+  const l2 = Math.atan2(Math.sin(b) * Math.sin(t) * Math.cos(p1), Math.cos(t) - Math.sin(p1) * Math.sin(p2));
+  return unitVector(p2 / rad, lon + l2 / rad);
+}
+
+describe('terrainTile on a slope rising to the north', () => {
+  // 1 m of height per pixel, 100 pixels per degree, rising with the
+  // latitude (lines grow to the south), flat along the longitude.
+  const grid = crop('north-slope', 100, (l) => 40 - l);
+  const tile = terrainTile([grid], AT_100E, SIZE, N);
+  const at = (row: number, col: number) => tile.heights[row * N + col] as number;
+  const rise = (SIZE / 2 / M_PER_DEG) * 100;
+
+  it('puts the north in row 0 and the south in the last row', () => {
+    expect(at(0, HALF)).toBeCloseTo(rise, 2);
+    expect(at(N - 1, HALF)).toBeCloseTo(-rise, 2);
+    expect(at(0, HALF)).toBeGreaterThan(at(N - 1, HALF));
+  });
+
+  it('is level from west to east', () => {
+    expect(at(HALF, 0)).toBeCloseTo(0, 2);
+    expect(at(HALF, N - 1)).toBeCloseTo(0, 2);
+  });
+});
+
+describe('terrainTile on a tilted polar grid off the pole', () => {
+  const side = 600;
+  const pole = (side - 1) / 2;
+  const meta = {
+    id: 'south-tilt',
+    lines: side,
+    samples: side,
+    metresPerDn: 1,
+    radiusM: R,
+    projection: {
+      kind: 'polar' as const,
+      pole: 'south' as const,
+      poleLine: pole,
+      poleSample: pole,
+      metresPerPixel: 20,
+    },
+  };
+  // 3 m per line toward lon 0° (north of a point on lon 0° near the
+  // south pole is lines going down) and 1 m per sample toward 90° E.
+  const dn = Int16Array.from({ length: side * side }, (_, i) => 3 * (side - Math.floor(i / side)) + (i % side));
+  const grid = arrayGrid(meta, dn);
+  const centre = { latDeg: -89.9, lonEastDeg: 0 };
+  const tile = terrainTile([grid], centre, SIZE, N);
+  const at = (row: number, col: number) => tile.heights[row * N + col] as number;
+  const edge = (bearing: number) =>
+    demHeightAt(grid, destination(centre.latDeg, centre.lonEastDeg, bearing, SIZE / 2)) - tile.groundM;
+
+  it('lays the north edge in row 0 and the south edge in the last row', () => {
+    expect(tile.covered).toBe(N * N);
+    expect(at(0, HALF)).toBeCloseTo(edge(0), 3);
+    expect(at(N - 1, HALF)).toBeCloseTo(edge(180), 3);
+    // 100 pixels of 20 m, 3 m each.
+    expect(at(0, HALF)).toBeCloseTo(300, -1);
+    expect(at(N - 1, HALF)).toBeCloseTo(-300, -1);
+  });
+
+  it('lays the west edge in column 0 and the east edge in the last column', () => {
+    expect(at(HALF, 0)).toBeCloseTo(edge(270), 3);
+    expect(at(HALF, N - 1)).toBeCloseTo(edge(90), 3);
+    expect(at(HALF, N - 1)).toBeCloseTo(100, -1);
+    expect(at(HALF, 0)).toBeCloseTo(-100, -1);
+  });
+});
+
 describe('terrainTile with several grids', () => {
   it('takes each sample from the first grid that covers it', () => {
     // Fine grid: 0.001° pixels, 40 px = 0.04° = 4.4 km wide, so it covers
@@ -218,6 +292,11 @@ describe('the heights codec', () => {
 
   it('writes 4 bytes per height', () => {
     expect(encodeHeights(new Float32Array(N * N))).toHaveLength(Math.ceil((N * N * 4) / 3) * 4);
+  });
+
+  it('writes the bytes little-endian: 1 and -2 are 00 00 80 3F 00 00 00 C0', () => {
+    expect(encodeHeights(Float32Array.from([1, -2]))).toBe('AACAPwAAAMA=');
+    expect(decodeHeights('AACAPwAAAMA=')).toEqual(Float32Array.from([1, -2]));
   });
 
   it('refuses a text that is not whole float32 values', () => {

@@ -40,6 +40,7 @@
  */
 import { serve } from '@hono/node-server';
 import { createApp } from './app.ts';
+import { stopGracefully } from './graceful-stop.ts';
 import {
   DEFAULT_CACHE_DIR,
   DEFAULT_MAX_POINTS_BYTES,
@@ -57,6 +58,8 @@ const DEFAULT_PORT = 3000;
 // connection).
 const HORIZONS_TIMEOUT_MS = 20_000;
 const BYTES_PER_MB = 1024 * 1024;
+// SIGTERM: how long the terrain fetch may take to let go before the exit.
+const SHUTDOWN_GRACE_MS = 5_000;
 
 function pointsCacheBytes(raw: string | undefined): number {
   if (raw === undefined || raw.trim() === '') return DEFAULT_MAX_POINTS_BYTES;
@@ -84,18 +87,32 @@ const app = createApp({
   terrain: terrain?.horizons,
   terrainStatus: terrainStatus && (() => terrainStatus.snapshot()),
 });
+// Aborted on SIGTERM: the fetch stops at once, keeps its part and lets go
+// of the volume's lock.
+const stopFetch = new AbortController();
+let fetching: Promise<unknown> = Promise.resolve();
 const server = serve({ fetch: app.fetch, port }, (info) => {
   process.stdout.write(`server listening on port ${info.port}\n`);
   // In the background, one file at a time: serving never waits for it.
   if (!terrain || !terrainStatus) return;
   const raw = process.env['TERRAIN_FETCH_TIERS'];
   const options = { raw, status: terrainStatus };
-  fetchOnBoot(nodeFetchDeps(), terrain, options).catch((error: unknown) => {
+  const deps = nodeFetchDeps(stopFetch.signal);
+  fetching = fetchOnBoot(deps, terrain, options).catch((error: unknown) => {
     terrainStatus.run('stopped');
-    console.error(`terrain fetch: stopped: ${(error as Error).message}`);
+    const why = stopFetch.signal.aborted ? 'shutting down' : (error as Error).message;
+    console.error(`terrain fetch: stopped: ${why}`);
   });
 });
-process.on('SIGTERM', () => server.close());
+process.on('SIGTERM', () => {
+  void stopGracefully({
+    abort: stopFetch,
+    closeServer: () => server.close(),
+    pending: fetching,
+    graceMs: SHUTDOWN_GRACE_MS,
+    exit: (code) => process.exit(code),
+  });
+});
 
 // Size points/ once at start, in the background, so the health answer reports
 // the real cache size from boot instead of 0 until the first custom point.

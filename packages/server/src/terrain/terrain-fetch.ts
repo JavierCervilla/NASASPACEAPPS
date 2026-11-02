@@ -70,12 +70,16 @@ async function roomFor(deps: FetchDeps, plan: TierFetchPlan, f: TierFile) {
   return false;
 }
 
-/** Fetches `job`'s file; false, with a log line, when it failed. */
+/**
+ * Fetches `job`'s file; false, with a log line, when it failed. An abort
+ * (shutdown) is no failure: it goes up and stops the whole fetch.
+ */
 async function fetchOrLog(deps: FetchDeps, job: FileJob): Promise<boolean> {
   try {
     await fetchFile(deps, job);
     return true;
   } catch (error) {
+    if (deps.signal?.aborted) throw error;
     const why = (error as Error).message;
     deps.log(`terrain fetch: ${job.tierId} failed at ${job.file.file}: ${why}`);
     return false;

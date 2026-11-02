@@ -93,10 +93,16 @@ export class TerrainService {
     this.present = await presentTiers(this.dir, this.catalogue);
   }
 
-  /** The horizon at `point`, in turn with the other requests. */
-  horizon(point: HorizonPoint): Promise<HorizonAnswer> {
+  /**
+   * The horizon at `point`, in turn with the other requests, from
+   * `present` (the caller's view of the tiers, so a cache key names the
+   * tiers that answered) or the tiers present now.
+   */
+  horizon(
+    point: HorizonPoint,
+    present: readonly Tier[] = this.present,
+  ): Promise<HorizonAnswer> {
     // One request reads the tiers it started with, even across a rescan.
-    const present = this.present;
     const { blocks, catalogue } = this;
     return this.gate.run(() =>
       readHorizon({ blocks, bands: catalogue.bands, present }, point),

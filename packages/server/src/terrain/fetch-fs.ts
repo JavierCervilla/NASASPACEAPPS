@@ -49,6 +49,10 @@ export interface FetchFs {
   writable(dir: string): Promise<boolean>;
   /** Creates `path` only if it does not exist; false when it does. */
   createExclusive(path: string, text: string): Promise<boolean>;
+  /** The text of `path`; null when it does not exist. */
+  read(path: string): Promise<string | null>;
+  /** Moves `from` to `to` only if `to` does not exist; false when it does. */
+  moveExclusive(from: string, to: string): Promise<boolean>;
   /** When `path` was last touched, ms; null when it does not exist. */
   mtimeMs(path: string): Promise<number | null>;
   touch(path: string, atMs: number): Promise<void>;

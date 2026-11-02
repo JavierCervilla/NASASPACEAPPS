@@ -25,22 +25,16 @@
 
 /**
  * {@link FetchFs} over `node:fs` (VENT-43): the file half from
- * {@link NodeFileOps}, and here the volume half: its free room, whether it
- * can be written, and the lock file.
+ * {@link NodeFileOps}, the lock file from {@link NodeLockOps}, and here the
+ * volume half: its free room and whether it can be written.
  */
 import { constants } from 'node:fs';
-import {
-  access,
-  mkdir,
-  open,
-  stat,
-  statfs,
-  utimes,
-} from 'node:fs/promises';
-import { NodeFileOps, type FetchFs } from './fetch-fs.ts';
+import { access, mkdir, statfs } from 'node:fs/promises';
+import type { FetchFs } from './fetch-fs.ts';
+import { NodeLockOps } from './node-lock-ops.ts';
 
 /** {@link FetchFs} over `node:fs`. */
-export class NodeFetchFs extends NodeFileOps implements FetchFs {
+export class NodeFetchFs extends NodeLockOps implements FetchFs {
   async freeBytes(dir: string): Promise<number> {
     const fs = await statfs(dir);
     return fs.bavail * fs.bsize;
@@ -54,29 +48,5 @@ export class NodeFetchFs extends NodeFileOps implements FetchFs {
     } catch {
       return false;
     }
-  }
-
-  async createExclusive(path: string, text: string): Promise<boolean> {
-    try {
-      const file = await open(path, 'wx');
-      await file.writeFile(text);
-      await file.close();
-      return true;
-    } catch (error) {
-      if ((error as NodeJS.ErrnoException).code === 'EEXIST') return false;
-      throw error;
-    }
-  }
-
-  mtimeMs(path: string): Promise<number | null> {
-    return stat(path).then(
-      (s) => s.mtimeMs,
-      () => null,
-    );
-  }
-
-  touch(path: string, atMs: number): Promise<void> {
-    const at = new Date(atMs);
-    return utimes(path, at, at);
   }
 }

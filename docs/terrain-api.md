@@ -135,14 +135,23 @@ over the same code). `all` goes smallest first (the 240 m, 80 m and 20 m polar c
 tiers serve the soonest; a list keeps its order and an unknown id is logged and skipped.
 
 - One file at a time into `<name>.part`, continued with HTTP Range; the sha256 is checked against the catalogue's pin
-  before the rename. A cut keeps the part and is retried with backoff (5 s doubling to 5 min, 12 attempts); a hash that
-  does not match deletes the part. A file that fails every attempt marks its tier `failed` and the next tier goes on.
+  before the rename, and a tier with a file the catalogue has not pinned is refused with a log line. A cut keeps the
+  part and is retried with backoff (5 s doubling to 5 min, 12 attempts); a hash that does not match deletes the part.
+  A file that fails every attempt marks its tier `failed` and the next tier goes on. The answer is checked before a
+  byte is written (`src/terrain/part-writer.ts`): a 206 must start where the part ends (else it is refused and the
+  part kept), a 200 (a server that ignored the Range) replaces the part from byte 0, a 416 deletes the part, and a
+  part larger than the file is deleted and fetched again. The bytes never go past the file's size: a server that
+  sends more loses the request and the part. Only a whole, verified file is ever renamed into place.
 - A tier whose files are all in place is picked up at once: the service re-scans the volume after each tier, with no
   restart. `/api/v1/health` stays ok throughout; serving never waits for the fetch.
 - Disk check: before each file the server reads the volume's free space (`statfs`) and stops the fetch, with a log
   line, when the rest of the file and a 2 GB margin would not fit. It never fills the disk.
-- One fetch per volume: the fetch holds `.fetch.lock` in `TERRAIN_DIR` and touches it every 30 s; a lock untouched
-  for 2 minutes (a killed container) is taken over, so a restart may wait up to 2 minutes before it resumes.
+- One fetch per volume: the fetch holds `.fetch.lock` in `TERRAIN_DIR`, with its own token, and touches it every
+  30 s while the lock is still its own; the release deletes it only then. A stop (SIGTERM, as `docker stop` and a
+  redeploy send) aborts the fetch, keeps the `.part`, releases the lock and exits within 5 s, so the next start
+  resumes at once. Only a killed process (SIGKILL, a crash) leaves its lock behind: it goes stale after 2 minutes
+  untouched and the waiter checks every 30 s, so that restart waits between 2 and 2.5 minutes. The takeover moves the
+  stale lock aside under a name of its own first, so of two servers only one takes it.
 - Logs at info level, no secrets: a line when a file starts (tier, file, bytes from and total), its bytes at most
   every 30 s, the sha256 when it checks, and when a tier is installed.
 
@@ -161,7 +170,9 @@ Environment: `TERRAIN_DIR=/data/terrain` and `TERRAIN_FETCH_TIERS=all` (the imag
 relied on. The image's entrypoint (`packages/server/docker-entrypoint.sh`) therefore starts as root, gives the top
 directory of each mount (`TERRAIN_DIR`, `TERRAIN_CACHE_DIR`, `HORIZONS_CACHE_DIR`) to `node` when it is not already
 (never a recursive chown over the 48 GB; only the fetch's own `*.part` and `.fetch.lock` at the top of the terrain
-volume follow), then drops to `node` for good with `su-exec` and runs the server. A mount it cannot change (read-only)
+volume follow, regular files only, and `chown -h` never follows a symlink). It touches only paths under `/data/` or
+`/var/cache/` without `..`: any other value is logged and left alone, so a variable set to `/` or `/etc` by mistake
+never hands it to `node`. Then it drops to `node` for good with `su-exec` and runs the server. A mount it cannot change (read-only)
 is said in the log; the server then logs «TERRAIN_DIR is not writable; nothing fetched», keeps serving what the volume
 holds, and `/horizon` answers 503 while it holds no tier.
 

@@ -27,7 +27,9 @@
  * Horizons of the terrain service kept on disk (VENT-40), like the
  * Horizons tables: a point's answer never changes for the same tiers, so
  * it is computed once and then read. Under a byte cap, least recently used
- * first out, and shared while in flight.
+ * first out, and shared while in flight. The key names the tiers present,
+ * and the service answers from those very tiers, so a tier fetched in the
+ * meantime (VENT-43) never lands under the key of the tiers before it.
  */
 import { DiskCache } from '../horizons/disk-cache.ts';
 import { InFlight } from '../horizons/in-flight.ts';
@@ -80,7 +82,7 @@ export function cachedHorizons(
       if (hit !== null) return JSON.parse(hit) as HorizonAnswer;
       onMiss?.();
       return inFlight.share(key, async () => {
-        const answer = await service.horizon(point);
+        const answer = await service.horizon(point, present);
         await disk.store(key, JSON.stringify(answer), false);
         return answer;
       });

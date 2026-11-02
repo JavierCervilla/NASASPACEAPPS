@@ -28,8 +28,9 @@
  * or tier ids separated by commas) and TERRAIN_DIR set, the server fetches
  * the tiers it lacks in the background once it listens, so a new volume
  * fills itself. `all` goes smallest first, so the most tiers serve the
- * soonest. A volume the server cannot write is said once in the log and
- * left alone: the route keeps serving what is there (503 with nothing).
+ * soonest. A tier with a file whose sha256 is not pinned is refused. A
+ * volume the server cannot write is said once in the log and left alone:
+ * the route keeps serving what is there (503 with nothing).
  */
 import {
   tierBytes,
@@ -61,6 +62,21 @@ export function wantedTiers(
   return ids.map(known).filter((t): t is Tier => t !== undefined);
 }
 
+/**
+ * The tiers of `wanted` whose every file has a pinned sha256 (seguridad):
+ * the server never installs a file it cannot check. A refused tier is said
+ * in the log and stays missing.
+ */
+function pinnedOnly(wanted: readonly Tier[], log: (line: string) => void) {
+  return wanted.filter((tier) => {
+    const loose = tier.files.find((f) => f.sha256 === null);
+    if (!loose) return true;
+    const why = `${loose.file} has no pinned sha256 in the catalogue`;
+    log(`terrain fetch: ${tier.id} refused: ${why}`);
+    return false;
+  });
+}
+
 /** The status of the terrain of `setup`, before any fetch. */
 export function terrainStatusOf(setup: TerrainSetup): FetchStatus {
   const present = setup.service.present.map((t) => t.id);
@@ -77,19 +93,32 @@ export async function fetchOnBoot(
   const wanted = wantedTiers(options.raw, setup.catalogue, deps.log);
   if (wanted === null) return;
   const have = new Set(service.present.map((t) => t.id));
-  const tiers = wanted.filter((t) => !have.has(t.id));
+  const missing = wanted.filter((t) => !have.has(t.id));
+  const tiers = pinnedOnly(missing, deps.log);
   if (tiers.length === 0) return options.status.run('done');
   if (!(await deps.fs.writable(dir))) {
     deps.log('terrain fetch: TERRAIN_DIR is not writable; nothing fetched');
     return options.status.run('stopped', 'notWritable');
   }
-  await fetchLocked(deps, setup, { tiers, status: options.status });
+  const onTierReady = (): Promise<void> => service.rescan();
+  const job = { tiers, status: options.status };
+  await fetchLocked(deps, { dir, onTierReady }, job);
 }
 
-/** Fetches `tiers` holding the volume's lock. */
-async function fetchLocked(
+/** Where a locked fetch writes, and who hears of each tier it installs. */
+export interface LockedTarget {
+  readonly dir: string;
+  readonly onTierReady: (tier: Tier) => Promise<void>;
+}
+
+/**
+ * Fetches `tiers` holding the volume's lock, for the server at boot and
+ * for scripts/fetch-terrain.ts; the lock goes even when the fetch throws
+ * or is aborted.
+ */
+export async function fetchLocked(
   deps: LockDeps,
-  { service, dir }: TerrainSetup,
+  { dir, onTierReady }: LockedTarget,
   job: { readonly tiers: readonly Tier[]; readonly status: FetchStatus },
 ): Promise<void> {
   const release = await acquireLock(deps, dir, () => {
@@ -97,7 +126,6 @@ async function fetchLocked(
     job.status.run('stopped', 'locked');
   });
   try {
-    const onTierReady = (): Promise<void> => service.rescan();
     const plan = { dir, ...job, onTierReady, marginBytes: MARGIN_BYTES };
     await fetchTiers(deps, plan);
   } finally {

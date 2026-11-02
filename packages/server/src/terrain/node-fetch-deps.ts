@@ -26,8 +26,10 @@
 /**
  * The terrain fetch's outside world in the running server (VENT-43): the
  * global fetch, the disk, the clock and timers that never keep the process
- * alive on their own, and the log on stdout.
+ * alive on their own (a backoff can be cut short by the shutdown signal),
+ * and the log on stdout.
  */
+import { setTimeout as wait } from 'node:timers/promises';
 import { NodeFetchFs } from './node-fetch-fs.ts';
 import type { LockDeps } from './fetch-lock.ts';
 
@@ -38,18 +40,18 @@ function every(ms: number, fn: () => void): () => void {
   return () => clearInterval(timer);
 }
 
-/** Resolves after `ms`. */
-function sleep(ms: number): Promise<void> {
-  return new Promise((resolve) => setTimeout(resolve, ms));
-}
-
 /** One line on stdout. */
 function log(line: string): void {
   process.stdout.write(`${line}\n`);
 }
 
-/** {@link LockDeps} over Node. */
-export function nodeFetchDeps(): LockDeps {
+/**
+ * {@link LockDeps} over Node; `signal` stops the fetch, and cuts short a
+ * backoff or a wait for the lock.
+ */
+export function nodeFetchDeps(signal?: AbortSignal): LockDeps {
   const fs = new NodeFetchFs();
-  return { http: fetch, fs, now: Date.now, sleep, log, every };
+  const sleep = (ms: number): Promise<void> => wait(ms, undefined, { signal });
+  const deps = { http: fetch, fs, now: Date.now, sleep, log, every };
+  return signal ? { ...deps, signal } : deps;
 }

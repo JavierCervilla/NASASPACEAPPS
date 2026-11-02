@@ -30,7 +30,7 @@
  * network is touched.
  */
 import { createHash } from 'node:crypto';
-import { copyFile, mkdtemp, rm } from 'node:fs/promises';
+import { copyFile, mkdtemp, readFile, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { describe, expect, it, vi } from 'vitest';
@@ -40,13 +40,15 @@ import type { Tier, TierFile } from '../src/terrain/catalogue.ts';
 import type { FetchFs } from '../src/terrain/fetch-fs.ts';
 import { acquireLock, HEARTBEAT_MS, LOCK_FILE, STALE_MS, type LockDeps } from '../src/terrain/fetch-lock.ts';
 import { FetchStatus } from '../src/terrain/fetch-status.ts';
-import { backoffMs, LOG_EVERY_MS } from '../src/terrain/file-fetch.ts';
-import { cachedHorizons } from '../src/terrain/horizon-cache.ts';
-import { fetchOnBoot, terrainStatusOf, wantedTiers } from '../src/terrain/terrain-boot.ts';
+import { backoffMs, LOG_EVERY_MS, RETRIES } from '../src/terrain/file-fetch.ts';
+import { cachedHorizons, horizonKey } from '../src/terrain/horizon-cache.ts';
+import { NodeFetchFs } from '../src/terrain/node-fetch-fs.ts';
+import { stopGracefully } from '../src/graceful-stop.ts';
+import { fetchLocked, fetchOnBoot, terrainStatusOf, wantedTiers } from '../src/terrain/terrain-boot.ts';
 import type { TerrainSetup } from '../src/terrain/terrain-config.ts';
 import { fetchTiers, type TierFetchPlan } from '../src/terrain/terrain-fetch.ts';
 import { TerrainService } from '../src/terrain/terrain-service.ts';
-import { CATALOGUE, SOUTH, terrainDir } from './terrain-fixture.ts';
+import { CATALOGUE, CRATER, GLOBE, SOUTH, terrainDir } from './terrain-fixture.ts';
 
 const DIR = '/data/terrain';
 const GB = 1024 ** 3;
@@ -66,12 +68,18 @@ function tierOf(id: string, files: TierFile[]): Tier {
   return { ...SOUTH, id, files };
 }
 
-/** A disk in memory, its free room set by the test. */
+/** A disk in memory, its free room set by the test, its times from `clock`. */
 class MemoryFs implements FetchFs {
   readonly files = new Map<string, Uint8Array>();
   readonly mtimes = new Map<string, number>();
   free = 100 * GB;
   canWrite = true;
+
+  readonly clock: () => number;
+
+  constructor(clock: () => number = () => 0) {
+    this.clock = clock;
+  }
 
   async size(path: string) {
     return this.files.get(path)?.length ?? -1;
@@ -83,8 +91,17 @@ class MemoryFs implements FetchFs {
     return sha(this.files.get(path) ?? new Uint8Array());
   }
   async rename(from: string, to: string) {
-    this.files.set(to, this.files.get(from)!);
+    const data = this.files.get(from);
+    if (!data) throw Object.assign(new Error('ENOENT'), { code: 'ENOENT' });
+    this.files.set(to, data);
+    this.mtimes.set(to, this.mtimes.get(from) ?? 0);
     this.files.delete(from);
+    this.mtimes.delete(from);
+  }
+  async moveExclusive(from: string, to: string) {
+    if (this.files.has(to)) return false;
+    await this.rename(from, to);
+    return true;
   }
   async remove(path: string) {
     this.files.delete(path);
@@ -99,8 +116,12 @@ class MemoryFs implements FetchFs {
   async createExclusive(path: string, text: string) {
     if (this.files.has(path)) return false;
     this.files.set(path, Buffer.from(text));
-    this.mtimes.set(path, Number(text));
+    this.mtimes.set(path, this.clock());
     return true;
+  }
+  async read(path: string) {
+    const data = this.files.get(path);
+    return data ? Buffer.from(data).toString('utf8') : null;
   }
   async mtimeMs(path: string) {
     return this.mtimes.get(path) ?? null;
@@ -309,7 +330,8 @@ describe('fetch at boot', () => {
     const empty = await mkdtemp(join(tmpdir(), 'terrain-empty-'));
     const service = await TerrainService.open({ dir: empty, catalogue: CATALOGUE, cacheBytes: 1 << 20, maxRunning: 1, maxWaiting: 1 });
     const horizons = cachedHorizons(service, join(empty, 'cache'), 1 << 20);
-    const setup: TerrainSetup = { horizons, service, dir: empty, catalogue: CATALOGUE };
+    const pinned = { ...CATALOGUE, tiers: CATALOGUE.tiers.map((t) => ({ ...t, files: t.files.map((f) => ({ ...f, sha256: '0'.repeat(64) })) })) };
+    const setup: TerrainSetup = { horizons, service, dir: empty, catalogue: pinned };
     const status = terrainStatusOf(setup);
     const fs = new MemoryFs();
     fs.canWrite = false;
@@ -349,5 +371,386 @@ describe('fetch at boot', () => {
     const client = createHorizonsClient({ fetch: async () => new Response(''), cacheDir: tmpdir() });
     const app = createApp({ horizons: client, pointsCache: client.points, sites: [], now: () => 0 });
     expect(await (await app.request('/api/v1/terrain/status')).json()).toEqual({ fetch: 'off', tiers: [] });
+  });
+});
+
+/** A body of `data` in chunks of `chunk`, noting when it is cancelled. */
+function bodyOf(data: Uint8Array, chunk = 4) {
+  const seen = { cancelled: false };
+  let at = 0;
+  const body = new ReadableStream<Uint8Array>({
+    pull(controller) {
+      if (at >= data.length) return controller.close();
+      controller.enqueue(data.slice(at, at + chunk));
+      at += chunk;
+    },
+    cancel() {
+      seen.cancelled = true;
+    },
+  });
+  return { body, seen };
+}
+
+/** A server that answers `answers` in turn, then like {@link lolaServer}. */
+function scriptedServer(answers: Array<(range: number) => Response>, files: Map<string, Uint8Array>) {
+  const rest = lolaServer(files);
+  return vi.fn(async (url: string, init: { readonly headers: Record<string, string>; readonly signal?: AbortSignal }) => {
+    const answer = answers.shift();
+    if (!answer) return rest(url, init);
+    return answer(Number(/bytes=(\d+)-/.exec(init.headers['Range'] ?? '')?.[1] ?? 0));
+  });
+}
+
+describe('resume edge cases (F2, F3, F4)', () => {
+  const PART = `${DIR}/a.img.part`;
+  const FINAL = `${DIR}/a.img`;
+
+  it('F3: takes a 200 that ignores Range from byte 0, discarding the part', async () => {
+    const data = bytesOf(40, 21);
+    const file = fileOf('a.img', data);
+    const fs = new MemoryFs();
+    fs.files.set(PART, data.subarray(0, 25));
+    const { body, seen } = bodyOf(data);
+    const http = scriptedServer([() => new Response(body, { status: 200 })], new Map());
+    const { deps, lines, sleeps } = depsOf(fs, http);
+    const plan = planOf([tierOf('t', [file])]);
+    await fetchTiers(deps, plan);
+    expect(http).toHaveBeenCalledTimes(1);
+    expect(sleeps).toEqual([]);
+    expect(seen.cancelled).toBe(false);
+    expect(fs.files.get(FINAL)).toEqual(Buffer.from(data));
+    expect(fs.files.has(PART)).toBe(false);
+    expect(lines.some((l) => l.includes('ignored the Range'))).toBe(true);
+  });
+
+  it('F2: a 416 deletes the part, cancels the body and starts again from 0', async () => {
+    const data = bytesOf(40, 22);
+    const file = fileOf('a.img', data);
+    const fs = new MemoryFs();
+    fs.files.set(PART, bytesOf(25, 99));
+    const { body, seen } = bodyOf(new Uint8Array(4));
+    const http = scriptedServer([() => new Response(body, { status: 416 })], new Map([[file.url, data]]));
+    const { deps, lines } = depsOf(fs, http);
+    await fetchTiers(deps, planOf([tierOf('t', [file])]));
+    expect(seen.cancelled).toBe(true);
+    expect(http.mock.calls.map((c) => c[1].headers['Range'])).toEqual(['bytes=25-', 'bytes=0-']);
+    expect(fs.files.get(FINAL)).toEqual(Buffer.from(data));
+    expect(lines.some((l) => l.includes('HTTP 416'))).toBe(true);
+  });
+
+  it('F4: a part larger than the file is deleted and fetched again from 0, said honestly', async () => {
+    const data = bytesOf(40, 23);
+    const file = fileOf('a.img', data);
+    const fs = new MemoryFs();
+    fs.files.set(PART, bytesOf(50, 1));
+    const http = lolaServer(new Map([[file.url, data]]));
+    const { deps, lines, sleeps } = depsOf(fs, http);
+    const plan = planOf([tierOf('t', [file])]);
+    await fetchTiers(deps, plan);
+    expect(http.mock.calls.map((c) => c[1].headers['Range'])).toEqual(['bytes=0-']);
+    expect(sleeps).toEqual([]);
+    expect(fs.files.get(FINAL)).toEqual(Buffer.from(data));
+    expect(lines.join('\n')).not.toContain('cut at -1');
+    expect(lines).toContain('terrain fetch: t/a.img: part of 50 bytes is larger than the file (40); deleted, starting again');
+    expect(plan.status.snapshot().tiers[0]?.state).toBe('installed');
+  });
+
+  it('F2: a Content-Range at another offset is refused, its body cancelled, the part kept and never renamed', async () => {
+    const data = bytesOf(40, 24);
+    const file = fileOf('a.img', data);
+    const fs = new MemoryFs();
+    fs.files.set(PART, data.subarray(0, 25));
+    const bodies: Array<{ cancelled: boolean }> = [];
+    const http = vi.fn(async () => {
+      const { body, seen } = bodyOf(data);
+      bodies.push(seen);
+      return new Response(body, { status: 206, headers: { 'Content-Range': `bytes 0-39/40` } });
+    });
+    const { deps, lines } = depsOf(fs, http);
+    const plan = planOf([tierOf('t', [file])]);
+    await fetchTiers(deps, plan);
+    expect(bodies.length).toBe(RETRIES);
+    expect(bodies.every((b) => b.cancelled)).toBe(true);
+    expect(Buffer.from(fs.files.get(PART)!)).toEqual(Buffer.from(data.subarray(0, 25)));
+    expect(fs.files.has(FINAL)).toBe(false);
+    expect(lines.some((l) => l.includes('Content-Range bytes 0-39/40 does not start at 25'))).toBe(true);
+    expect(plan.status.snapshot().tiers[0]?.state).toBe('failed');
+  });
+
+  it('F2: a body that keeps ending short leaves the part and never renames it', async () => {
+    const data = bytesOf(40, 25);
+    const file = fileOf('a.img', data);
+    const fs = new MemoryFs();
+    const http = vi.fn(async (_url: string, init: { readonly headers: Record<string, string> }) => {
+      const from = Number(/bytes=(\d+)-/.exec(init.headers['Range'] ?? '')?.[1] ?? 0);
+      const { body } = bodyOf(from >= 30 ? new Uint8Array() : data.subarray(from, 30));
+      return new Response(body, { status: 206, headers: { 'Content-Range': `bytes ${from}-39/40` } });
+    });
+    const plan = planOf([tierOf('t', [file])]);
+    await fetchTiers(depsOf(fs, http).deps, plan);
+    expect(fs.files.get(PART)?.length).toBe(30);
+    expect(fs.files.has(FINAL)).toBe(false);
+    expect(plan.status.snapshot().tiers[0]?.state).toBe('failed');
+  });
+
+  it('F2: a whole part whose sha256 never matches is never renamed', async () => {
+    const data = bytesOf(16, 26);
+    const file = fileOf('a.img', data);
+    const fs = new MemoryFs();
+    const plan = planOf([tierOf('t', [file])]);
+    await fetchTiers(depsOf(fs, lolaServer(new Map([[file.url, bytesOf(16, 27)]]))).deps, plan);
+    expect(fs.files.has(FINAL)).toBe(false);
+    expect(fs.files.has(PART)).toBe(false);
+    expect(plan.status.snapshot().tiers[0]?.state).toBe('failed');
+  });
+
+  it('seguridad 3: stops appending past the file size, aborts the request and deletes the part', async () => {
+    const data = bytesOf(40, 28);
+    const file = fileOf('a.img', data);
+    const fs = new MemoryFs();
+    const pulled: number[] = [];
+    const http = vi.fn(async (_url: string, init: { readonly headers: Record<string, string>; readonly signal?: AbortSignal }) => {
+      let at = 0;
+      const body = new ReadableStream<Uint8Array>({
+        pull(controller) {
+          pulled.push(at);
+          controller.enqueue(bytesOf(8, at));
+          at += 8;
+        },
+      });
+      expect(init.signal).toBeInstanceOf(AbortSignal);
+      return new Response(body, { status: 200 });
+    });
+    const plan = planOf([tierOf('t', [file])]);
+    const { deps, lines } = depsOf(fs, http);
+    await fetchTiers(deps, plan);
+    expect(Math.max(...pulled)).toBeLessThan(64);
+    expect(fs.files.has(PART)).toBe(false);
+    expect(fs.files.has(FINAL)).toBe(false);
+    expect(lines.some((l) => l.includes('more than the 40 bytes of the file; part deleted'))).toBe(true);
+  });
+});
+
+/** Two contenders' deps over one disk and one clock that runs `every` timers. */
+function sharedClock(fs: MemoryFs, start: number) {
+  let now = start;
+  const timers: Array<{ ms: number; next: number; fn: () => void; on: boolean }> = [];
+  const advance = async (ms: number) => {
+    const until = now + ms;
+    for (;;) {
+      const due = timers.filter((t) => t.on && t.next <= until).sort((a, b) => a.next - b.next)[0];
+      if (!due) break;
+      now = due.next;
+      due.next += due.ms;
+      due.fn();
+      await new Promise((r) => setImmediate(r));
+    }
+    now = until;
+  };
+  const depsFor = (sleep: (ms: number) => Promise<void>): LockDeps => ({
+    http: lolaServer(new Map()),
+    fs,
+    now: () => now,
+    sleep,
+    log: () => undefined,
+    every: (ms, fn) => {
+      const timer = { ms, next: now + ms, fn, on: true };
+      timers.push(timer);
+      return () => {
+        timer.on = false;
+      };
+    },
+  });
+  return { depsFor, advance, now: () => now };
+}
+
+describe('the volume lock (F1, F5)', () => {
+  const LOCK = `${DIR}/${LOCK_FILE}`;
+
+  it('F1: a live holder past STALE_MS keeps its lock through the heartbeat, and a contender waits', async () => {
+    let clock = () => 0;
+    const fs = new MemoryFs(() => clock());
+    const shared = sharedClock(fs, 0);
+    clock = shared.now;
+    const holder = await acquireLock(shared.depsFor(async () => undefined), DIR, () => undefined);
+    const token = await fs.read(LOCK);
+    let held = true;
+    let waits = 0;
+    const contender = shared.depsFor(async (ms) => {
+      waits++;
+      await shared.advance(ms);
+      if (waits === 10) {
+        await holder();
+        held = false;
+      }
+    });
+    const onWait = vi.fn();
+    const release = await acquireLock(contender, DIR, onWait);
+    expect(onWait).toHaveBeenCalledTimes(1);
+    expect(shared.now()).toBeGreaterThan(2 * STALE_MS);
+    expect(held).toBe(false);
+    expect(await fs.read(LOCK)).not.toBe(token);
+    await release();
+  });
+
+  it('F5: of two contenders for a stale lock only one takes it; the late one puts the live lock back', async () => {
+    let clock = () => 0;
+    const fs = new MemoryFs(() => clock());
+    await fs.createExclusive(LOCK, 'dead');
+    const shared = sharedClock(fs, 10 * STALE_MS);
+    clock = shared.now;
+    let aTook!: () => void;
+    const aHolds = new Promise<void>((r) => (aTook = r));
+    let freeB!: () => void;
+    const bMayRetry = new Promise<void>((r) => (freeB = r));
+    const slowFs = Object.create(fs) as MemoryFs;
+    slowFs.mtimeMs = async (path: string) => {
+      const touched = await fs.mtimeMs(path);
+      if (path === LOCK) await aHolds;
+      return touched;
+    };
+    const b: LockDeps = { ...shared.depsFor(() => bMayRetry), fs: slowFs };
+    const onWaitB = vi.fn();
+    const bLock = acquireLock(b, DIR, onWaitB);
+    const releaseA = await acquireLock(shared.depsFor(async () => undefined), DIR, () => undefined);
+    const aToken = await fs.read(LOCK);
+    aTook();
+    await vi.waitFor(() => expect(onWaitB).toHaveBeenCalledTimes(1));
+    expect(await fs.read(LOCK)).toBe(aToken);
+    expect([...fs.files.keys()].filter((k) => k.includes('.stale'))).toEqual([]);
+    await releaseA();
+    freeB();
+    const releaseB = await bLock;
+    expect(await fs.read(LOCK)).not.toBe(aToken);
+    await releaseB();
+  });
+
+  it('F5: release deletes only a lock whose token is ours', async () => {
+    const fs = new MemoryFs();
+    const release = await acquireLock(depsOf(fs, lolaServer(new Map())).deps, DIR, () => undefined);
+    fs.files.set(LOCK, Buffer.from('someone-else'));
+    await release();
+    expect(await fs.read(LOCK)).toBe('someone-else');
+  });
+
+  it('F5: an abort stops the fetch at once, keeps the part for resume and frees the lock', async () => {
+    const data = bytesOf(40, 30);
+    const file = fileOf('a.img', data);
+    const fs = new MemoryFs();
+    const abort = new AbortController();
+    const http = vi.fn(async (_url: string, init: { readonly headers: Record<string, string>; readonly signal?: AbortSignal }) => {
+      let at = 0;
+      const body = new ReadableStream<Uint8Array>({
+        pull(controller) {
+          if (at === 12) {
+            abort.abort();
+            return controller.error(init.signal?.reason ?? new Error('aborted'));
+          }
+          controller.enqueue(data.slice(at, at + 4));
+          at += 4;
+        },
+      });
+      return new Response(body, { status: 206, headers: { 'Content-Range': 'bytes 0-39/40' } });
+    });
+    const { deps, sleeps } = depsOf(fs, http);
+    const tier = tierOf('t', [file]);
+    const status = new FetchStatus([tier], []);
+    const run = fetchLocked({ ...deps, signal: abort.signal }, { dir: DIR, onTierReady: async () => undefined }, { tiers: [tier], status });
+    await expect(run).rejects.toThrow();
+    expect(http).toHaveBeenCalledTimes(1);
+    expect(sleeps).toEqual([]);
+    expect(fs.files.get(`${DIR}/a.img.part`)).toEqual(Buffer.from(data.subarray(0, 12)));
+    expect(fs.files.has(LOCK)).toBe(false);
+    expect(status.snapshot().tiers[0]?.state).not.toBe('failed');
+  });
+});
+
+describe('fetch at boot through the service (M8, M9, seguridad 4)', () => {
+  it('M8: fetchOnBoot fetches a tier into a real volume and the service serves it after the rescan', async () => {
+    const source = await terrainDir();
+    const target = await mkdtemp(join(tmpdir(), 'terrain-boot-'));
+    const pin = async (f: TierFile): Promise<TierFile> => ({ ...f, sha256: sha(await readFile(join(source, f.file))) });
+    const south: Tier = { ...SOUTH, files: await Promise.all(SOUTH.files.map(pin)) };
+    const catalogue = { ...CATALOGUE, tiers: [south] , bands: [{ untilM: 5_000, stepM: 20, tiers: ['south-20m'] }] };
+    const served = new Map(await Promise.all(south.files.map(async (f) => [f.url, new Uint8Array(await readFile(join(source, f.file)))] as const)));
+    const service = await TerrainService.open({ dir: target, catalogue, cacheBytes: 1 << 24, maxRunning: 1, maxWaiting: 1 });
+    const horizons = cachedHorizons(service, join(target, 'cache'), 1 << 20);
+    const setup: TerrainSetup = { horizons, service, dir: target, catalogue };
+    const status = terrainStatusOf(setup);
+    await expect(horizons.horizon(CRATER)).rejects.toThrow('terrain data is not installed');
+    const { deps } = depsOf(new MemoryFs(), lolaServer(served, 1 << 16));
+    await fetchOnBoot({ ...deps, fs: new NodeFetchFs() }, setup, { raw: 'south-20m', status });
+    expect(status.snapshot()).toMatchObject({ fetch: 'done', tiers: [{ id: 'south-20m', state: 'installed' }] });
+    const answer = await horizons.horizon(CRATER);
+    expect(answer.tiers.map((t) => t.id)).toEqual(['south-20m']);
+    await service.close();
+    await Promise.all([source, target].map((d) => rm(d, { recursive: true, force: true })));
+  });
+
+  it('M9: the cache key follows the tiers present, and the service reads the tiers it was keyed with', async () => {
+    const dir = await mkdtemp(join(tmpdir(), 'terrain-key-'));
+    const calls: string[][] = [];
+    const fake = {
+      present: [SOUTH] as readonly Tier[],
+      horizon: async (_point: unknown, present: readonly Tier[]) => {
+        calls.push(present.map((t) => t.id));
+        return { tiers: present.map((t) => ({ id: t.id })) };
+      },
+    };
+    const horizons = cachedHorizons(fake as unknown as TerrainService, dir, 1 << 20);
+    await horizons.horizon(CRATER);
+    await horizons.horizon(CRATER);
+    fake.present = [SOUTH, GLOBE];
+    await horizons.horizon(CRATER);
+    expect(calls).toEqual([['south-20m'], ['south-20m', 'globe-coarse']]);
+    expect(horizonKey(CRATER, 'south-20m')).not.toBe(horizonKey(CRATER, 'south-20m+globe-coarse'));
+    await rm(dir, { recursive: true, force: true });
+  });
+
+  it('seguridad 4: refuses at boot a tier with a file whose sha256 is not pinned, with a clear log line', async () => {
+    const unpinned = tierOf('unpinned', [{ ...fileOf('a.img', bytesOf(8, 1)), sha256: null }]);
+    const pinned = tierOf('pinned', [fileOf('b.img', bytesOf(8, 2))]);
+    const service = { present: [] as Tier[], rescan: async () => undefined } as unknown as TerrainService;
+    const catalogue = { bands: [], tiers: [unpinned, pinned] };
+    const setup: TerrainSetup = { horizons: { horizon: async () => { throw new Error('no'); } }, service, dir: DIR, catalogue };
+    const status = terrainStatusOf(setup);
+    const fs = new MemoryFs();
+    const http = lolaServer(new Map([[pinned.files[0]!.url, bytesOf(8, 2)]]));
+    const { deps, lines } = depsOf(fs, http);
+    await fetchOnBoot(deps, setup, { raw: 'unpinned,pinned', status });
+    expect(lines).toContain('terrain fetch: unpinned refused: a.img has no pinned sha256 in the catalogue');
+    expect(http.mock.calls.map((c) => c[0])).toEqual([pinned.files[0]!.url]);
+    expect(status.snapshot().tiers.map((t) => t.state)).toEqual(['missing', 'installed']);
+  });
+});
+
+describe('graceful stop (F5)', () => {
+  it('aborts the fetch, closes the server, waits for the lock to go and exits promptly', async () => {
+    const order: string[] = [];
+    const abort = new AbortController();
+    let settle!: () => void;
+    const pending = new Promise<void>((r) => (settle = r));
+    abort.signal.addEventListener('abort', () => {
+      order.push('abort');
+      setImmediate(() => {
+        order.push('lock released');
+        settle();
+      });
+    });
+    const exit = vi.fn();
+    await stopGracefully({ abort, closeServer: () => order.push('close'), pending, graceMs: 5_000, exit });
+    order.push('exit');
+    expect(order).toEqual(['abort', 'close', 'lock released', 'exit']);
+    expect(exit).toHaveBeenCalledWith(0);
+  });
+
+  it('exits after the grace time when the fetch does not settle', async () => {
+    const exit = vi.fn();
+    vi.useFakeTimers();
+    const stop = stopGracefully({ abort: new AbortController(), closeServer: () => undefined, pending: new Promise(() => undefined), graceMs: 5_000, exit });
+    await vi.advanceTimersByTimeAsync(5_000);
+    await stop;
+    vi.useRealTimers();
+    expect(exit).toHaveBeenCalledWith(0);
   });
 });

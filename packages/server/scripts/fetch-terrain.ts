@@ -38,11 +38,9 @@
  */
 import { parseArgs } from 'node:util';
 import { DEFAULT_CATALOGUE_FILE, loadCatalogue, tierBytes } from '../src/terrain/catalogue.ts';
-import { acquireLock } from '../src/terrain/fetch-lock.ts';
 import { FetchStatus } from '../src/terrain/fetch-status.ts';
 import { nodeFetchDeps } from '../src/terrain/node-fetch-deps.ts';
-import { wantedTiers } from '../src/terrain/terrain-boot.ts';
-import { fetchTiers, MARGIN_BYTES } from '../src/terrain/terrain-fetch.ts';
+import { fetchLocked, wantedTiers } from '../src/terrain/terrain-boot.ts';
 
 const GB = 1e9;
 
@@ -64,15 +62,10 @@ if (values.list) {
     throw new Error(line);
   });
   if (!(await deps.fs.writable(dir))) throw new Error(`${dir} cannot be written`);
-  const release = await acquireLock(deps, dir, () => deps.log('another fetch holds the volume; waiting'));
   const status = new FetchStatus(catalogue.tiers, []);
-  try {
-    await fetchTiers(deps, { dir, tiers: tiers ?? [], status, marginBytes: MARGIN_BYTES, onTierReady: async () => undefined });
-  } finally {
-    await release();
-  }
-  const { fetch: state, reason } = status.snapshot();
-  if (state !== 'done' || status.snapshot().tiers.some((t) => t.state === 'failed')) {
+  await fetchLocked(deps, { dir, onTierReady: async () => undefined }, { tiers: tiers ?? [], status });
+  const { fetch: state, reason, tiers: done } = status.snapshot();
+  if (state !== 'done' || done.some((t) => t.state === 'failed')) {
     throw new Error(`fetch ${state}${reason ? ` (${reason})` : ''}`);
   }
 }

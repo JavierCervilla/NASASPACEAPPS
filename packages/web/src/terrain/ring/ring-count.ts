@@ -23,8 +23,6 @@
  *             :::.. .  .               SPDX-License-Identifier: MIT
  */
 
-/**
-
 /** Counting the wanted tiles of each level (VENT-46). */
 import type { RingEntry } from './ring-answer';
 import type { RingFeed } from './ring-source';

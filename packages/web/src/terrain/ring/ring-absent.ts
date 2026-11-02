@@ -24,8 +24,6 @@
  */
 
 /**
-
-/**
  * Whether the near ground can stand at all (VENT-46). One tile that is a 404
  * is a hole the parent fills, but when every tile of the finest two levels is
  * a 404 nothing near is drawable: the server has no terrain for the point

@@ -386,3 +386,64 @@ All load on demand with the 3D view (file names `on-foot-*`, left out of the pre
 - **Astronaut suit**: the existing `astronaut-suit.webp` (above), now put on the model's UVs.
 - **Lander**: no model imported. NASA 3D Resources' landers are Apollo's; the site is a 2026 CLPS lander, so the view keeps its own
   primitives and says so.
+
+## On-foot view models v2 (VENT-34)
+
+| File | What | sha256 |
+|---|---|---|
+| `packages/web/models/astronaut-v2.glb` | EVA suit figure, 17 820 triangles, 6 materials, 1.91 m tall, 534 216 bytes | `ecf68c50beb336179ceaeff94dcf7ab04802cc9dae6a7c51422d6797b3cc1f10` |
+| `packages/web/models/astronaut-v2-ao.webp` | its baked ambient occlusion, 512 px, 63 624 bytes | `0fbd4f13a495173db873280e6209193d7d19617f8f61808e0844ff918ddc76d8` |
+| `packages/web/models/astronaut-v2-normal.webp` | its baked fabric folds, tangent-space normal (OpenGL), 1024 px, 51 492 bytes | `1bb074a69f88509eb6838d055e7dd87f2daf2f47d1880fba9d8334555d963f06` |
+| `packages/web/models/lander.glb` | generic robotic lander, 8 276 triangles, 6 materials, 4.35 m tall, 4.72 m across the pads, 296 536 bytes | `444832bce60561b9267b8b89d7707b54f62eaa3cae85f5f6a273a16a19dc6d7a` |
+| `packages/web/models/lander-ao.webp` | its baked ambient occlusion, 512 px, 71 718 bytes | `72e8b9fcc29e495777426605bdc9c47d979ca88b3cabccfca953663c7428b213` |
+| `packages/web/models/lander-normal.webp` | its baked crinkled blanket, seams and solar cells, 1024 px, 152 306 bytes | `e174ec30fe953d4dba9a8ce47d973558225851ff13363824c907997b6e5f4b96` |
+| `packages/web/models/apollo-lm.glb` | Apollo Lunar Module, 24 249 triangles, 12 materials, 9.40 m across the gear, 7.33 m tall, 1 192 380 bytes | `556a068caf150372dad324b024209174b9127def5b7b352c49eb4b79e66cc8b5` |
+| `packages/web/models/apollo-lm-0.webp` | crumpled-foil normal map (`foil_normal`), 512 px, 45 992 bytes | `a3de33de6f9b2b5c0ee156fbeb8bfe074ed8e523fd59aca84d9991ec0b3dca2e` |
+| `packages/web/models/apollo-lm-1.webp` | crumpled-foil metal-roughness map (`foil_metal_roughness`), 512 px, 8 008 bytes | `2a0c790afc2be27bed696ed630debf731ba9796458586ef7959681bafc2e484b` |
+| `packages/web/models/apollo-lm-2.webp` | the descent engine's striped booster texture (`BOOSTER3`), 400 px, 936 bytes | `df69e2c9ac02b49c77182cf18c8f31e020d3401157f9e4c2c7b3e59f7ef437c6` |
+
+- **How they are made**: `python3 packages/web/scripts/onfoot_models.py --source <apollo-lm.glb> [--previews <folder>]
+  [--check]`, with the studio's Blender 5.2.2 (`python3 -m studio install blender` in GAMESTUDIO, or `--blender`). It
+  runs `onfoot_blender.py` inside Blender, packs each export into a GLB (one mesh, one node, float positions, normals
+  and UVs, uint16 indices: the subset `src/terrain/glb.ts` reads), audits it (at most 25 000 triangles, textures at
+  most 1024 px, at most 1.5 MB with its textures) and copies it here. The textures are separate WebP files named by URI
+  through `EXT_texture_webp`, never inside the GLB: the page's CSP loads no `blob:` image. No Draco, no meshopt, no
+  quantization. Tests: `packages/web/scripts/test_onfoot_models.py`.
+- **Astronaut v2**: built from code, `packages/web/scripts/astronaut_model.py` (shapes in `onfoot_shapes.py`); no
+  third-party source, nothing to license or credit. A generic modern EVA suit: hard upper torso, soft lower torso,
+  pleated elbows and knees, bearings at the waist, shoulders, thighs and wrists, gauntlet gloves, boots with dark soles,
+  a life-support backpack with its propulsion unit, a chest control unit with hoses, a helmet with lamps and a gold
+  visor (`visor_gold`: metal, roughness 0.12, no maps). No insignia, patch, flag or lettering. The whole figure is
+  unwrapped into one atlas; Cycles bakes its ambient occlusion and a procedural fold pattern (bake only: wavy bands round
+  the limbs, faded in patches) into the two maps, which every material but the visor wears (`occlusionTexture`,
+  `normalTexture`). Feet on the origin, +Y up, the visor towards +Z, metres. It replaces NASA's Apollo-era «Astronaut»
+  (above, VENT-10) in the on-foot view once the page loads it; that model stays for the sprite sheet.
+- **Lander**: built from code, `packages/web/scripts/lander_model.py`; no third-party source. A generic lander of the
+  Nova-C class (hexagonal body 1.6 m flat to flat, about 4.3 m to the top of its dish, six legs), copying no single
+  design and wearing no logo, flag, lettering or trademark: gold and silver blankets with taped seams, three
+  body-mounted solar arrays, a radiator face, instrument boxes, an engine bell, two propellant tanks under the body, two
+  pressurant spheres and a payload box on the deck, a dish on a mast, thruster pods, six legs with a shock strut, two
+  side struts and a footpad each. Baked like the astronaut: ambient occlusion and a procedural crinkled blanket (two
+  sizes of Voronoi facets over a slow undulation, seams every 0.45 m), the solar arrays' cell grid. Footpads on the
+  origin, +Y up, metres. For robotic sites and custom points.
+- **Apollo LM**: from Mooner (JavierCervilla/Mooner, commit `cc528da`, `module_models_blender.py` and `foil_maps.py`),
+  baked from NASA 3D Resources' «Apollo Lunar Module»
+  (`3D Models/Apollo Lunar Module/Apollo Lunar Module.glb`, https://github.com/nasa/NASA-3D-Resources at commit
+  `11ebb4ee043715aefbba6aeec8a61746fad67fa7`), 716 840 bytes, sha256
+  `379101dfcee399267addf771709107c35e826b0b9e5233272f123e4c8a585c4e`, checked before every bake; the source stays out
+  of the repo. The repository's README says its models are «free and without copyright». Licence: NASA, public domain
+  under the NASA media usage guidelines (https://www.nasa.gov/nasa-brand-center/images-and-media/). Credit: NASA. NASA
+  does not endorse Ventana Lunar. The model's two decal textures, a US flag (`TEXTURE_`) and the «UNITED STATES»
+  lettering (`TEXTUREA`), each on a flat gold foil field (sRGB 196, 135, 14), are removed: their materials lose the
+  texture, take the field's colour and wear the crumpled foil like the rest of the blanket, so no flag, lettering or
+  insignia remains (the tests check that no such image is left); the model carries no other mark. The booster texture
+  is cut to 512 px at most (it is 400 px). `packages/web/scripts/apollo_lm_model.py` (ported, `apollo_lm_model.py`'s
+  docstring lists the changes) joins it, scales it so the gear spans 9.4 m footpad to footpad (NASA's figure; the
+  height comes out at 7.33 m, against NASA's 7.04 m: the model's proportions, not ours), sets the footpads on the
+  origin, box-projects the generated crumpled-foil maps (`foil_maps.py`, Mooner's, NumPy, seed 1969: no source, nothing
+  to license) on the foil and panel materials, decimates it from 97 588 to 24 249 triangles and smooths it by angle. For
+  Apollo sites.
+- **Known limits**: the bake is deterministic on one machine (fixed seeds), but Cycles bakes are not promised to be
+  byte-identical across CPUs, so `--check` may report the baked maps of the two models built from code as changed on
+  another machine. Without an environment map, three.js shades the metal materials (foil, struts, bearings, visor)
+  darker than these previews, which light them with a grey sky. The page does not use these files yet.

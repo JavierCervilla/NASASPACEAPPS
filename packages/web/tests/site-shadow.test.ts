@@ -138,8 +138,8 @@ describe('halfLiftPx', () => {
   const sheetAt = (top: number, fit: object | null) =>
     ({ querySelector: () => fit, getBoundingClientRect: () => ({ top }) }) as unknown as HTMLElement;
 
-  /** What the sheet fits: its children's boxes, and its own. */
-  const fitOf = (...children: object[]) => ({ children, ...box(0, 0) });
+  /** What the sheet fits: its children's boxes, and its own, scrolled by `scrollTop` (sheet-scroll.ts). */
+  const fitOf = (...children: object[]) => ({ children, scrollTop: 0, ...box(0, 0) });
 
   it('rises until the content\'s lowest line clears the tab bar by 12 px', () => {
     vi.stubGlobal('window', { innerHeight: 844 });
@@ -151,6 +151,13 @@ describe('halfLiftPx', () => {
   it('reads the same wherever the sheet rests: the content moves with it', () => {
     vi.stubGlobal('window', { innerHeight: 844 });
     expect(halfLiftPx(sheetAt(100, fitOf(box(110, 590))), TABS, 344)).toBe(241);
+  });
+
+  // VENT-44: a summary taller than the full sheet scrolls; its children move up, the lift it needs does not.
+  it('reads the same while what it fits is scrolled', () => {
+    vi.stubGlobal('window', { innerHeight: 844 });
+    const scrolled = { ...fitOf(box(300 - 200, 400 - 200), box(410 - 200, 790 - 200)), scrollTop: 200 };
+    expect(halfLiftPx(sheetAt(300, scrolled), TABS, 344)).toBe(241);
   });
 
   it('never sinks under its usual height', () => {

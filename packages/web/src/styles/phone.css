@@ -406,6 +406,35 @@
   gap: 12px;
 }
 
+/*
+ * Taller than the full sheet (a narrow phone at 200 % text, VENT-44): the
+ * half sheet stops at full and the summary scrolls (src/sheet/
+ * sheet-scroll.ts), its end 12 px over the tab bar: --tab-clear is the tab
+ * bar's reach from the bottom, 96px the sheet's own padding, so the margin
+ * may be negative.
+ */
+.summary[data-sheet-scroll] {
+  flex: 0 1 auto;
+  min-height: 0;
+  margin-bottom: calc(var(--tab-clear, 84px) + 12px - 96px);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  touch-action: pan-y;
+}
+
+/*
+ * At its top, the summary leaves a finger pulling down to the sheet's drag
+ * (pan-down keeps only the scroll a finger pushing up starts); below the
+ * sheet's top, every move drags the sheet (src/sheet/sheet-pull.ts).
+ */
+.summary[data-sheet-scroll][data-sheet-pull='down'] {
+  touch-action: pan-down;
+}
+
+.summary[data-sheet-scroll][data-sheet-pull='any'] {
+  touch-action: none;
+}
+
 /* Below the head, the summary fades out towards peek, where only the
    head clears the tab bar (--sheet-reveal: src/sheet/sheet-view.ts). */
 .summary > :not(.summary__head) {
@@ -827,24 +856,25 @@
   background: none;
   color: var(--text-muted);
   font: inherit;
-  font-size: 0.6875rem;
+  /* Larger text grows the labels by 30 % at most, as a tab bar's do
+     (apple-design): five words share one bar. */
+  font-size: min(0.6875rem, 14.3px);
   line-height: 1.2;
   font-weight: 600;
   letter-spacing: 0.01em;
   cursor: pointer;
 }
 
-/* A label longer than its share of a narrow bar wraps, never cut. */
+/*
+ * A label never breaks inside its word (VENT-44): a word longer than its
+ * share of a narrow bar is cut with an ellipsis; the button's name keeps
+ * it whole.
+ */
 .tab > span:not(.tab__soon) {
   max-width: 100%;
-  overflow-wrap: anywhere;
+  overflow: hidden;
+  text-overflow: ellipsis;
   text-align: center;
-}
-
-@media (max-width: 359.98px) {
-  .tab {
-    padding: 6px 6px;
-  }
 }
 
 /*
@@ -855,7 +885,22 @@
 @media (max-width: 399.98px) {
   .tab {
     padding-inline: 4px;
-    font-size: 0.625rem;
+    font-size: min(0.625rem, 13px);
+  }
+}
+
+/*
+ * Under 360 px the tabs and their gaps pull in further, down to a 44 px
+ * target, so the longest words still fit whole rather than cut.
+ */
+@media (max-width: 359.98px) {
+  .tab-bar {
+    gap: 2px;
+  }
+
+  .tab {
+    min-width: 44px;
+    padding-inline: 2px;
   }
 }
 

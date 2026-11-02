@@ -65,6 +65,14 @@ describe.each(LOCALES.filter((locale) => locale !== 'en'))('the %s catalogue', (
     }
   });
 
+  // VENT-44: the subtitles and the phone's «Sun + Earth = window» rule start with a capital, after any opening mark.
+  it('starts its subtitles and the phone rule with a capital letter', () => {
+    for (const key of ['page.title', 'page.description', 'header.subtitle', 'rule.sun'] as const) {
+      const first = (catalogue[key] as string).replace(/^[¿¡«"“\s]+/u, '').charAt(0);
+      expect(first, `${locale} ${key}`).toBe(first.toLocaleUpperCase(locale));
+    }
+  });
+
   it('leaves no message empty or untranslated by accident', () => {
     for (const [key, value] of Object.entries(catalogue)) {
       for (const text of textsOf(value)) expect(text.trim(), `${locale} ${key}`).not.toBe('');

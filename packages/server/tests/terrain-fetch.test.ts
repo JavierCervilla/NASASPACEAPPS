@@ -30,7 +30,7 @@
  * network is touched.
  */
 import { createHash } from 'node:crypto';
-import { copyFile, mkdtemp, readFile, rm } from 'node:fs/promises';
+import { copyFile, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { describe, expect, it, vi } from 'vitest';
@@ -513,6 +513,7 @@ describe('resume edge cases (F2, F3, F4)', () => {
       let at = 0;
       const body = new ReadableStream<Uint8Array>({
         pull(controller) {
+          if (at >= 1024) return controller.close();
           pulled.push(at);
           controller.enqueue(bytesOf(8, at));
           at += 8;
@@ -662,6 +663,83 @@ describe('the volume lock (F1, F5)', () => {
     expect(fs.files.get(`${DIR}/a.img.part`)).toEqual(Buffer.from(data.subarray(0, 12)));
     expect(fs.files.has(LOCK)).toBe(false);
     expect(status.snapshot().tiers[0]?.state).not.toBe('failed');
+  });
+});
+
+/** `p`, or 'still running' when it has not settled within `ms`. */
+function within<T>(ms: number, p: Promise<T>): Promise<T | 'still running'> {
+  return Promise.race([p, new Promise<'still running'>((r) => setTimeout(() => r('still running'), ms))]);
+}
+
+describe('a lost lock and an abortable hash (VENT-44)', () => {
+  const LOCK = `${DIR}/${LOCK_FILE}`;
+
+  it.each([
+    ['taken by another server', (fs: MemoryFs) => fs.files.set(LOCK, Buffer.from('D'))],
+    ['deleted', (fs: MemoryFs) => fs.remove(LOCK)],
+  ])('a holder whose lock was %s aborts its fetch at the next heartbeat and says so', async (_how, lose) => {
+    let clock = () => 0;
+    const fs = new MemoryFs(() => clock());
+    const shared = sharedClock(fs, 0);
+    clock = shared.now;
+    const file = fileOf('a.img', bytesOf(40, 31));
+    const lines: string[] = [];
+    const asked = vi.fn();
+    const http = vi.fn((_url: string, init: { readonly signal?: AbortSignal }) => new Promise<Response>((_resolve, reject) => {
+      asked();
+      init.signal?.addEventListener('abort', () => reject(init.signal?.reason));
+    }));
+    const deps: LockDeps = { ...shared.depsFor(async () => undefined), http, log: (l) => lines.push(l) };
+    const tier = tierOf('t', [file]);
+    const run = fetchLocked(deps, { dir: DIR, onTierReady: async () => undefined }, { tiers: [tier], status: new FetchStatus([tier], []) });
+    run.catch(() => undefined);
+    await vi.waitFor(() => expect(asked).toHaveBeenCalledTimes(1));
+    await lose(fs);
+    const before = await fs.read(LOCK);
+    await shared.advance(HEARTBEAT_MS);
+    const outcome = await within(1_000, run.then(() => 'resolved', () => 'aborted'));
+    expect(outcome).toBe('aborted');
+    expect(lines).toContain('terrain fetch: lost the volume lock to another server; stopping');
+    expect(await fs.read(LOCK)).toBe(before);
+    expect(http).toHaveBeenCalledTimes(1);
+  });
+
+  it('the real hash stops on an aborted signal', async () => {
+    const dir = await mkdtemp(join(tmpdir(), 'terrain-hash-'));
+    const path = join(dir, 'a.img');
+    await writeFile(path, bytesOf(3 << 20, 5));
+    const fs = new NodeFetchFs();
+    expect(await fs.sha256(path)).toBe(sha(bytesOf(3 << 20, 5)));
+    const abort = new AbortController();
+    abort.abort(new Error('stop'));
+    await expect(fs.sha256(path, abort.signal)).rejects.toThrow('stop');
+    await rm(dir, { recursive: true, force: true });
+  });
+
+  it('a stop while a large part is hashed frees the lock well inside the grace time', async () => {
+    const data = bytesOf(40, 32);
+    const file = fileOf('a.img', data);
+    const abort = new AbortController();
+    const fs = new MemoryFs();
+    fs.files.set(`${DIR}/a.img.part`, data);
+    const slow = { chunks: 0 };
+    fs.sha256 = async (_path: string, signal?: AbortSignal) => {
+      for (let i = 0; i < 1_000; i++) {
+        await new Promise((r) => setTimeout(r, 5));
+        slow.chunks++;
+        signal?.throwIfAborted();
+      }
+      return sha(data);
+    };
+    const { deps } = depsOf(fs, lolaServer(new Map()));
+    const tier = tierOf('t', [file]);
+    const run = fetchLocked({ ...deps, signal: abort.signal }, { dir: DIR, onTierReady: async () => undefined }, { tiers: [tier], status: new FetchStatus([tier], []) });
+    run.catch(() => undefined);
+    await vi.waitFor(() => expect(slow.chunks).toBeGreaterThan(2));
+    abort.abort();
+    expect(await within(1_000, run.then(() => 'resolved', () => 'aborted'))).toBe('aborted');
+    expect(fs.files.has(LOCK)).toBe(false);
+    expect(fs.files.get(`${DIR}/a.img.part`)).toEqual(data);
   });
 });
 

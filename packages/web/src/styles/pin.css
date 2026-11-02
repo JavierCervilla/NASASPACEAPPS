@@ -135,9 +135,12 @@
   box-shadow: 0 0 0 1px rgba(242, 242, 244, 0.6);
 }
 
-/* The state's ring around the selected pin, as on a selected marker. */
-.pin__mark::after {
-  content: '';
+/*
+ * The state's ring around the selected pin, as on a selected marker: it
+ * pulses three times when the pin drops or its state changes (a new
+ * element, StandingPin.tsx), then rests lit.
+ */
+.pin__halo {
   position: absolute;
   inset: -6px;
   box-sizing: border-box;
@@ -146,8 +149,8 @@
   box-shadow: 0 0 0 4px color-mix(in srgb, var(--halo, var(--tone)) 18%, transparent);
 }
 
-.pin[data-state='unknown'] .pin__mark::after {
-  content: none;
+.pin[data-state='unknown'] .pin__halo {
+  display: none;
 }
 
 /* The carried pin: lifted, a little larger, its centre on the point. */
@@ -448,8 +451,8 @@
     animation: pin-drop 600ms var(--spring) both;
   }
 
-  .pin__mark::after {
-    animation: pin-halo 2.4s cubic-bezier(0.2, 0.7, 0.3, 1) infinite;
+  .pin__halo {
+    animation: pin-halo 2.4s cubic-bezier(0.2, 0.7, 0.3, 1) 3;
   }
 
   .pin-carry[data-phase='carry'] .pin-carry__pin {

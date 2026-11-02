@@ -33,6 +33,7 @@
  */
 import { decodeProfile, type HorizonProfile } from '@ventana/sim';
 import type { LatLon } from '../lib/polar-projection';
+import { snapPoint } from '../pin/custom-point';
 
 /** A terrain horizon and the finest grid it was read from, metres. */
 export interface KnownHorizon {
@@ -43,11 +44,15 @@ export interface KnownHorizon {
 /** The sites endpoint's sibling for any point's horizon. */
 const SITES_PATH = /\/sites$/;
 
-/** The URL of `point`'s horizon, on the server's 0.01° grid. */
+/**
+ * The URL of `point`'s horizon, on the server's 0.01° grid, its longitude
+ * wrapped to -180..180 (which the API accepts), so one point has one URL.
+ */
 export function pointHorizonUrl(sitesUrl: string, point: LatLon): string {
+  const at = snapPoint(point) ?? point;
   const query = new URLSearchParams({
-    lat: point.lat.toFixed(2),
-    lon: point.lonEast.toFixed(2),
+    lat: at.lat.toFixed(2),
+    lon: at.lonEast.toFixed(2),
   });
   return `${sitesUrl.replace(SITES_PATH, '/horizon')}?${query.toString()}`;
 }

@@ -28,13 +28,14 @@
  * at the shared instant, the words for it, and its menu's actions (copy
  * the coordinates and say so; delete and offer the undo; rename).
  */
+import { useEffect } from 'react';
 import type { TextKey } from '../../i18n/catalogue';
 import { formatCoords } from '../../i18n/format';
 import type { I18n } from '../../i18n/translate';
 import type { NowState } from '../../phone/widget-types';
 import type { SavedSite } from '../../saved/saved-schema';
 import { useI18n } from '../i18n-context';
-import { useInstant, usePin } from '../pin/context';
+import { useInstant, usePin, useWatched } from '../pin/context';
 import { useSavedKit } from './context';
 import type { RowAction } from './RowMenu';
 
@@ -46,7 +47,12 @@ export const STATE_WORDS: Readonly<Record<NowState, TextKey>> = {
   none: 'state.badge.none',
 };
 
-/** The state at the site: the card's when selected, else the simulator's. */
+/**
+ * The state at the site: the card's when selected, else the simulator's,
+ * over the site's terrain once its profile has come (VENT-44). An
+ * unselected site's profile is asked for in the background, one point at
+ * a time; until it comes, and for good if it cannot, the smooth sphere's.
+ */
 export function useRowState(
   site: SavedSite,
   selected: boolean,
@@ -54,6 +60,11 @@ export function useRowState(
 ): NowState | null {
   const pin = usePin();
   const atMs = useInstant(pin);
+  const { lat, lonEast } = site;
+  useWatched(pin?.horizons.terrain ?? null, undefined);
+  useEffect(() => {
+    if (!selected) pin?.horizons.prefetch({ lat, lonEast });
+  }, [pin, selected, lat, lonEast]);
   if (selected) return state;
   return pin && atMs !== null ? pin.stateAt(site) : null;
 }

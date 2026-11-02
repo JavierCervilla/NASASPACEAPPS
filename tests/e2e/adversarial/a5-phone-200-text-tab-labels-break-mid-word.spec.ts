@@ -63,8 +63,6 @@ for (const width of [360, 390]) {
     test.use({ viewport: { width, height: 844 }, hasTouch: true, isMobile: true });
 
     test('A5 · at 200 % text no tab label breaks inside its word', async ({ page }) => {
-      // Open finding, hardening (fix forward): expected to fail until fixed; then remove this line.
-      test.fail();
       await openAt(page, '200%');
       await expect.poll(() => brokenLabels(page)).toEqual([]);
     });

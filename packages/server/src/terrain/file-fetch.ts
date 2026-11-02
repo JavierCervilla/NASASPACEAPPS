@@ -117,7 +117,7 @@ async function settle(deps: FetchDeps, job: FileJob, part: string) {
   const { file } = job;
   const size = await deps.fs.size(part);
   if (size !== file.bytes) throw new Error(`cut at ${size} bytes`);
-  const sha = await deps.fs.sha256(part);
+  const sha = await deps.fs.sha256(part, deps.signal);
   if (file.sha256 !== null && sha !== file.sha256) {
     await deps.fs.remove(part);
     throw new Error('sha256 does not match the pin; part deleted');

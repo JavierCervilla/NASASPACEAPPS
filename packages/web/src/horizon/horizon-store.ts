@@ -32,17 +32,22 @@
  * a new `terrain`, so the hours are read against the new profile and the
  * views draw it.
  */
+import type { HorizonProfile } from '@ventana/sim';
 import { customPointOf } from '../pin/custom-point';
+import type { LatLon } from '../lib/polar-projection';
 import {
   createWatchedValue,
   type WatchedValue,
 } from '../lib/watched-value';
 import type { TerrainOf } from '../source/terrain-profiles';
 import {
-  TerrainNotInstalledError,
-  type HorizonFetch,
-  type KnownHorizon,
-} from './point-horizon';
+  createAsk,
+  createSerialQueue,
+  pointKey,
+  type Fetched,
+} from './horizon-ask';
+import { createHorizonCache } from './horizon-cache';
+import type { HorizonFetch, KnownHorizon } from './point-horizon';
 
 /** What the page knows of a site's horizon. */
 export type SiteHorizon =
@@ -58,8 +63,18 @@ export type SiteHorizon =
 
 export interface HorizonStore {
   readonly of: (id: string) => SiteHorizon;
-  /** Asks the API for a custom point's horizon, unless it has it. */
+  /**
+   * Asks the API for a custom point's horizon, unless it has it, and keeps
+   * it for the session (the selected site's).
+   */
   readonly request: (id: string) => void;
+  /**
+   * Asks for `point`'s horizon in the background, after the points asked
+   * before it, one at a time; a point that failed is not asked again.
+   */
+  readonly prefetch: (point: LatLon) => void;
+  /** The profile kept for `point`; never asks the API. */
+  readonly cached: (point: LatLon) => HorizonProfile | undefined;
   /**
    * The profile the hours are read against (undefined: none), a new
    * function on every change, so a view knows to read the hours anew.
@@ -75,27 +90,6 @@ export interface HorizonSources {
   readonly fetchHorizon: HorizonFetch;
 }
 
-/** As many points as the hours' cache keeps. */
-const MAX_POINTS = 24;
-
-type Fetched = Map<string, SiteHorizon>;
-
-/** Keeps `value` for `id`, the oldest out past the cap. */
-function keep(fetched: Fetched, id: string, value: SiteHorizon): void {
-  fetched.delete(id);
-  fetched.set(id, value);
-  const oldest = fetched.keys().next().value;
-  if (fetched.size > MAX_POINTS && oldest !== undefined) {
-    fetched.delete(oldest);
-  }
-}
-
-/** What a failed request leaves: not installed yet, or unavailable. */
-function failed(error: unknown): SiteHorizon {
-  const notYet = error instanceof TerrainNotInstalledError;
-  return { kind: notYet ? 'notInstalled' : 'unavailable' };
-}
-
 /** What the page knows of site `id`'s horizon. */
 function knownOf(
   sources: HorizonSources,
@@ -105,32 +99,36 @@ function knownOf(
   const profile = sources.shipped(id);
   const resolutionM = sources.shippedResolutionM;
   if (profile) return { kind: 'terrain', profile, resolutionM };
-  if (!customPointOf(id)) return { kind: 'smooth' };
-  return fetched.get(id) ?? { kind: 'loading' };
+  const point = customPointOf(id);
+  const key = point ? pointKey(point) : null;
+  if (key === null) return { kind: 'smooth' };
+  return fetched.get(key) ?? { kind: 'loading' };
+}
+
+/** The profile known for `key`, if any. */
+function profileAt(fetched: Fetched, key: string | null) {
+  const known = key === null ? undefined : fetched.get(key);
+  return known?.kind === 'terrain' ? known.profile : undefined;
 }
 
 /** The store over `sources`. */
 export function createHorizonStore(sources: HorizonSources): HorizonStore {
-  const fetched: Fetched = new Map();
+  const fetched: Fetched = createHorizonCache();
   const of = (id: string): SiteHorizon => knownOf(sources, fetched, id);
   const profileOf = (): TerrainOf => (id) => {
     const known = of(id);
     return known.kind === 'terrain' ? known.profile : undefined;
   };
   const terrain = createWatchedValue(profileOf());
-  const settle = (id: string, value: SiteHorizon): void => {
-    keep(fetched, id, value);
-    terrain.set(profileOf());
-  };
+  const changed = (): void => terrain.set(profileOf());
+  const ask = createAsk(sources.fetchHorizon, fetched, changed);
   const request = (id: string): void => {
     const point = customPointOf(id);
-    const kind = fetched.get(id)?.kind;
-    if (!point || kind === 'loading' || kind === 'terrain') return;
-    keep(fetched, id, { kind: 'loading' });
-    sources.fetchHorizon(point).then(
-      (known) => settle(id, { kind: 'terrain', ...known }),
-      (error: unknown) => settle(id, failed(error)),
-    );
+    const key = point ? pointKey(point) : null;
+    if (key !== null) fetched.hold(key);
+    if (point) void ask(point, true);
   };
-  return { of, request, terrain };
+  const prefetch = createSerialQueue((point) => ask(point, false));
+  const cached = (point: LatLon) => profileAt(fetched, pointKey(point));
+  return { of, request, prefetch, cached, terrain };
 }

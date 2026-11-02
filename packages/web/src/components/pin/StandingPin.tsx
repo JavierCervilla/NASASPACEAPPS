@@ -32,7 +32,8 @@
  * and its dot always tell it from an approximate zone's dashed ring. A
  * tap selects its point again; a drag, or Enter, lifts it again. While it
  * is carried it stays, invisible, so the keyboard's focus is not lost.
- * Its mark is keyed by the point, so each drop plays the drop again.
+ * Its mark is keyed by the point, so each drop plays the drop again, and
+ * its halo by the state, so a new state pulses it again.
  */
 import { useRef } from 'react';
 import { customId } from '../../pin/custom-point';
@@ -67,6 +68,18 @@ function useStateAt(selected: string, point: LatLon | null): NowState | null {
   return stateAtPoint(point, atMs);
 }
 
+/**
+ * The ring and its dot; the halo is keyed by the state, so a new state
+ * pulses it again (styles/pin.css).
+ */
+function PinMark({ state }: { readonly state: NowState | null }) {
+  return (
+    <span className="pin__mark" aria-hidden="true">
+      <span key={state} className="pin__halo" />
+    </span>
+  );
+}
+
 export function StandingPin({ surface, selected, onSelect }: Props) {
   const kit = usePin();
   const i18n = useI18n();
@@ -88,7 +101,7 @@ export function StandingPin({ surface, selected, onSelect }: Props) {
       aria-label={i18n.t('pin.label', { coords })}
       {...handlers}
     >
-      <span key={id} className="pin__mark" aria-hidden="true" />
+      <PinMark key={id} state={state} />
     </button>
   );
 }

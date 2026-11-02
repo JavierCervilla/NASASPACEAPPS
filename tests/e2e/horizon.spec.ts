@@ -47,15 +47,18 @@ interface Open {
   readonly at: Date;
   readonly path?: string;
   readonly horizon?: HorizonStub;
+  /** The sites saved on this device (src/saved/saved-schema.ts). */
+  readonly saved?: readonly object[];
 }
 
 /** Opens `path` at `at` on the computed sky, as if chosen on an earlier visit. */
-async function open(page: Page, { at, path = './', horizon }: Open): Promise<void> {
+async function open(page: Page, { at, path = './', horizon, saved }: Open): Promise<void> {
   await page.clock.setFixedTime(at);
-  await page.addInitScript(() => {
+  await page.addInitScript((kept) => {
     localStorage.setItem('ventana.dataSource', 'computed');
     localStorage.setItem('ventana.pinHint', 'seen');
-  });
+    if (kept) localStorage.setItem('ventana.savedSites', kept);
+  }, saved ? JSON.stringify({ v: 1, sites: saved }) : null);
   await stubApi(page, { horizon });
   await page.goto(path);
 }
@@ -153,6 +156,48 @@ test.describe('desktop, 1440x900', () => {
     await expect(strip(page)).toContainText('Real terrain not installed on the server yet');
     await expect(strip(page)).not.toContainText('Real terrain unavailable here');
     await expect(strip(page)).toContainText('Smooth horizon');
+  });
+});
+
+test.describe('desktop, 1440x900, the saved sites over their terrain (VENT-44)', () => {
+  test.use({ viewport: { width: 1440, height: 900 } });
+
+  // The pin's point, where the stub's wall hides the Earth, and a second point the server is never asked about at once.
+  const SAVED = [
+    { id: '@-85.50,40.00', name: 'Wall camp', lat: -85.5, lonEast: 40, savedAt: 2 },
+    { id: '@-84.20,-40.00', name: 'Cabeus ridge', lat: -84.2, lonEast: -40, savedAt: 1 },
+  ];
+
+  test('a saved row reads the smooth sphere until its terrain comes, then the terrain; one request at a time', async ({ page }) => {
+    let answer = (): void => undefined;
+    const hold = new Promise<void>((resolve) => (answer = resolve));
+    const asked: string[] = [];
+    page.on('request', (request) => {
+      if (request.url().includes('/api/v1/horizon?')) asked.push(new URL(request.url()).search);
+    });
+    await open(page, { at: CANVAS, path: './?site=im2-athena', horizon: { hold }, saved: SAVED });
+    await page.locator('.site-button').click();
+    const popover = page.locator('#site-popover');
+    await popover.getByRole('button', { name: /^Saved/ }).click();
+    const row = popover.locator('[data-saved-id="@-85.50,40.00"]');
+    await expect(row).toContainText('Window');
+    await expect.poll(() => asked.length).toBe(1);
+    await page.waitForTimeout(500);
+    expect(asked).toEqual(['?lat=-85.50&lon=40.00']);
+    answer();
+    await expect(row).toContainText('Sun only');
+    await expect(row.locator('.signal-dot')).toHaveAttribute('data-state', 'sun');
+    await expect.poll(() => asked.length).toBe(2);
+    expect(asked[1]).toBe('?lat=-84.20&lon=-40.00');
+  });
+
+  test('a saved row whose terrain the server cannot give keeps the smooth sphere', async ({ page }) => {
+    await open(page, { at: CANVAS, path: './?site=im2-athena', horizon: { status: 503 }, saved: SAVED });
+    await page.locator('.site-button').click();
+    const popover = page.locator('#site-popover');
+    await popover.getByRole('button', { name: /^Saved/ }).click();
+    await page.waitForResponse(/\/api\/v1\/horizon\?lat=-84\.20/);
+    await expect(popover.locator('[data-saved-id="@-85.50,40.00"]')).toContainText('Window');
   });
 });
 

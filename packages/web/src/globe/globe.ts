@@ -133,14 +133,20 @@ function bindInput(
   ];
 }
 
-/** The selected marker wears the page's state of the selected site. */
+/**
+ * The selected marker wears the page's state of the selected site, and its
+ * ring pulses again when that state changes.
+ */
 function bindState(
   state: GlobeOptions['state'],
   markers: MarkerLayer,
 ): () => void {
   const { dataset } = markers.root;
   const show = (): void => {
-    dataset['state'] = state.get() ?? 'unknown';
+    const [was, next] = [dataset['state'], state.get() ?? 'unknown'];
+    dataset['state'] = next;
+    // The first known state is no change: the ring is already pulsing.
+    if (was !== next && was !== 'unknown') markers.ring.pulse();
   };
   show();
   return state.subscribe(show);

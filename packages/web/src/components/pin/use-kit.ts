@@ -52,7 +52,7 @@ const browserAddress: Address = {
   },
 };
 
-interface Options extends Pick<KitDeps, 'store' | 'time'> {
+interface Options extends Pick<KitDeps, 'store' | 'time' | 'horizons'> {
   /** The selected site's state, as the views show it. */
   readonly state: KitDeps['selectedState'];
   readonly sites: readonly CardSite[];

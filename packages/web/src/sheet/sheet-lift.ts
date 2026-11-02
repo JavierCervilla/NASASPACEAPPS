@@ -58,7 +58,10 @@ export function halfLiftPx(
   const fit = sheet.querySelector(FIT);
   if (!fit || !tabs) return 0;
   const below = window.innerHeight - tabs.getBoundingClientRect().top;
-  const reach = contentBottom(fit) - sheet.getBoundingClientRect().top;
+  // Scrolled (sheet-scroll.ts), the content still counts from its top.
+  const scrolled = fit.scrollTop;
+  const top = sheet.getBoundingClientRect().top;
+  const reach = contentBottom(fit) + scrolled - top;
   return Math.max(0, Math.ceil(reach + TAB_GAP_PX + below - basePx));
 }
 

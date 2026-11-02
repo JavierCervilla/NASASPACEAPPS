@@ -43,8 +43,31 @@ any of the 720 bins, the quantisation step. Its profiles are validated against N
 `tiers` names the grids that served the rays and their share of the stops, finest first, so a client can say at what
 resolution the horizon was seen. `coverage` is the smallest share of a ray's stops some grid covered. Errors: 400 (bad
 parameter), 404 (no tier on this server covers the point), 429 (per-address limit, shared with the Horizons misses),
-503 (no terrain installed, or the computation queue is full; `Retry-After`). Answers are cached on disk and sent with
-`Cache-Control: public, max-age=86400`.
+503 (`{"error":"terrain data is not installed"}` while no tier is on disk, which the web shows as «Real terrain not
+installed on the server yet»; or the computation queue is full, with `Retry-After`). Answers are cached on disk and sent
+with `Cache-Control: public, max-age=86400`; the disk key names the tiers present, so a tier fetched later gives new
+answers (a browser may keep an answer from fewer tiers for up to a day).
+
+## `GET /api/v1/terrain/status` (VENT-43)
+
+Every tier of the catalogue and where it stands, and the fetch as a whole. Ids, states and byte counts only: no paths,
+URLs or error text.
+
+```json
+{
+  "fetch": "running",
+  "tiers": [
+    { "id": "polar-south-240m", "state": "installed", "bytesDone": 29062688, "bytesTotal": 29062688 },
+    { "id": "polar-south-80m", "state": "fetching", "bytesDone": 30261248, "bytesTotal": 115520000 },
+    { "id": "global-59m", "state": "queued", "bytesDone": 0, "bytesTotal": 33973862400 }
+  ]
+}
+```
+
+`fetch` is `off` (no `TERRAIN_FETCH_TIERS`, or no `TERRAIN_DIR`, then with no tiers), `running`, `done` or `stopped`
+with a `reason`: `disk` (the volume would keep less than the margin), `notWritable` (the server cannot write
+`TERRAIN_DIR`) or `locked` (another server holds the volume; it waits). A tier is `installed`, `fetching`, `queued`,
+`missing` or `failed` (a file failed every retry; the next restart tries again).
 
 The handler is a serialiser over `HorizonSource.horizon(point)` (`src/terrain/horizon-cache.ts`), so a binary form (for
 example a 1° uint16 profile for build-time callers) or a batch form (many points per request) is another serialiser
@@ -92,8 +115,10 @@ LDEM_128 to a median 9 m at 84.5° to 85.5° N; the flipped orientation differs 
 | `TERRAIN_BLOCKS_MB` | 192 | grid blocks kept in memory between requests |
 | `TERRAIN_MAX_RUNNING` | 2 | horizons computed at once; 16 more may wait, then 503 |
 
+| `TERRAIN_FETCH_TIERS` | unset: no fetch | `all`, or tier ids separated by commas: the server fetches the missing ones at boot |
+
 Fetch the tiers into the volume (resumable through `<name>.part` and HTTP Range, each file checked against its size
-and pinned sha256; nothing goes into git or the image):
+and pinned sha256; nothing goes into git or the image), by hand:
 
 ```sh
 node packages/server/scripts/fetch-terrain.ts --list
@@ -101,6 +126,55 @@ node packages/server/scripts/fetch-terrain.ts --dir /data/terrain --tiers polar-
 ```
 
 The disk on Dokploy is a human decision: the volume needs the chosen tiers' bytes above plus `TERRAIN_CACHE_MB`.
+
+### Deploying with every tier (VENT-43)
+
+The server fills its own volume: with `TERRAIN_FETCH_TIERS` set it fetches, once it listens and in the background, the
+tiers it lacks (`src/terrain/terrain-boot.ts`, `terrain-fetch.ts`, `file-fetch.ts`; the script above is a thin wrapper
+over the same code). `all` goes smallest first (the 240 m, 80 m and 20 m polar caps, then the global grids), so the most
+tiers serve the soonest; a list keeps its order and an unknown id is logged and skipped.
+
+- One file at a time into `<name>.part`, continued with HTTP Range; the sha256 is checked against the catalogue's pin
+  before the rename, and a tier with a file the catalogue has not pinned is refused with a log line. A cut keeps the
+  part and is retried with backoff (5 s doubling to 5 min, 12 attempts); a hash that does not match deletes the part.
+  A file that fails every attempt marks its tier `failed` and the next tier goes on. The answer is checked before a
+  byte is written (`src/terrain/part-writer.ts`): a 206 must start where the part ends (else it is refused and the
+  part kept), a 200 (a server that ignored the Range) replaces the part from byte 0, a 416 deletes the part, and a
+  part larger than the file is deleted and fetched again. The bytes never go past the file's size: a server that
+  sends more loses the request and the part. Only a whole, verified file is ever renamed into place.
+- A tier whose files are all in place is picked up at once: the service re-scans the volume after each tier, with no
+  restart. `/api/v1/health` stays ok throughout; serving never waits for the fetch.
+- Disk check: before each file the server reads the volume's free space (`statfs`) and stops the fetch, with a log
+  line, when the rest of the file and a 2 GB margin would not fit. It never fills the disk.
+- One fetch per volume: the fetch holds `.fetch.lock` in `TERRAIN_DIR`, with its own token, and touches it every
+  30 s while the lock is still its own; the release deletes it only then. A stop (SIGTERM, as `docker stop` and a
+  redeploy send) aborts the fetch, keeps the `.part`, releases the lock and exits within 5 s, so the next start
+  resumes at once. Only a killed process (SIGKILL, a crash) leaves its lock behind: it goes stale after 2 minutes
+  untouched and the waiter checks every 30 s, so that restart waits between 2 and 2.5 minutes. The takeover moves the
+  stale lock aside under a name of its own first, so of two servers only one takes it.
+- Logs at info level, no secrets: a line when a file starts (tier, file, bytes from and total), its bytes at most
+  every 30 s, the sha256 when it checks, and when a tier is installed.
+
+On Dokploy (the API application):
+
+| Mount | Kind | Path in the container |
+|---|---|---|
+| `ventana-lunar-terrain` | named volume | `/data/terrain` |
+| `ventana-lunar-terrain-cache` | named volume | `/var/cache/terrain` |
+
+Environment: `TERRAIN_DIR=/data/terrain` and `TERRAIN_FETCH_TIERS=all` (the image already sets
+`TERRAIN_CACHE_DIR=/var/cache/terrain`). Every tier is about 48.6 GB; leave the margin's 2 GB on top.
+
+**Volume ownership.** The server runs as `node`, but a named volume Docker created before the image had the directory
+(or one a root process wrote) comes up owned by root, and Docker's copy-up of the image directory's owner is not to be
+relied on. The image's entrypoint (`packages/server/docker-entrypoint.sh`) therefore starts as root, gives the top
+directory of each mount (`TERRAIN_DIR`, `TERRAIN_CACHE_DIR`, `HORIZONS_CACHE_DIR`) to `node` when it is not already
+(never a recursive chown over the 48 GB; only the fetch's own `*.part` and `.fetch.lock` at the top of the terrain
+volume follow, regular files only, and `chown -h` never follows a symlink). It touches only paths under `/data/` or
+`/var/cache/` without `..`: any other value is logged and left alone, so a variable set to `/` or `/etc` by mistake
+never hands it to `node`. Then it drops to `node` for good with `su-exec` and runs the server. A mount it cannot change (read-only)
+is said in the log; the server then logs «TERRAIN_DIR is not writable; nothing fetched», keeps serving what the volume
+holds, and `/horizon` answers 503 while it holds no tier.
 
 ### Memory
 

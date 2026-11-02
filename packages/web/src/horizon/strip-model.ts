@@ -105,6 +105,8 @@ function sourceOf(i18n: I18n, horizon: SiteHorizon) {
       return plain(i18n.t('horizon.loading'), null);
     case 'unavailable':
       return plain(i18n.t('horizon.smooth'), i18n.t('horizon.unavailable'));
+    case 'notInstalled':
+      return plain(i18n.t('horizon.smooth'), i18n.t('horizon.notInstalled'));
     default:
       return plain(i18n.t('horizon.smooth'), null);
   }

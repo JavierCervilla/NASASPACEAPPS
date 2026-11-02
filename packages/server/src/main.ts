@@ -35,9 +35,12 @@
  * 503), TERRAIN_CACHE_DIR (default ./.cache/terrain), TERRAIN_CACHE_MB (its
  * byte cap, default 256), TERRAIN_BLOCKS_MB (grid blocks kept in memory,
  * default 192) and TERRAIN_MAX_RUNNING (horizons computed at once, default 2).
+ * TERRAIN_FETCH_TIERS (VENT-43: `all` or tier ids separated by commas) has
+ * the server fetch the tiers it lacks into TERRAIN_DIR once it listens.
  */
 import { serve } from '@hono/node-server';
 import { createApp } from './app.ts';
+import { stopGracefully } from './graceful-stop.ts';
 import {
   DEFAULT_CACHE_DIR,
   DEFAULT_MAX_POINTS_BYTES,
@@ -45,7 +48,9 @@ import {
   type FetchLike,
 } from './horizons/client.ts';
 import { DEFAULT_SITES_FILE, loadSites } from './sites.ts';
+import { fetchOnBoot, terrainStatusOf } from './terrain/terrain-boot.ts';
 import { openTerrain } from './terrain/terrain-config.ts';
+import { nodeFetchDeps } from './terrain/node-fetch-deps.ts';
 import { warmCache } from './warmup.ts';
 
 const DEFAULT_PORT = 3000;
@@ -53,6 +58,8 @@ const DEFAULT_PORT = 3000;
 // connection).
 const HORIZONS_TIMEOUT_MS = 20_000;
 const BYTES_PER_MB = 1024 * 1024;
+// SIGTERM: how long the terrain fetch may take to let go before the exit.
+const SHUTDOWN_GRACE_MS = 5_000;
 
 function pointsCacheBytes(raw: string | undefined): number {
   if (raw === undefined || raw.trim() === '') return DEFAULT_MAX_POINTS_BYTES;
@@ -71,17 +78,41 @@ const horizons = createHorizonsClient({
 });
 const sites = await loadSites(process.env['SITES_FILE'] ?? DEFAULT_SITES_FILE);
 const terrain = await openTerrain(process.env);
+const terrainStatus = terrain && terrainStatusOf(terrain);
 const app = createApp({
   horizons,
   pointsCache: horizons.points,
   sites,
   now: Date.now,
-  terrain,
+  terrain: terrain?.horizons,
+  terrainStatus: terrainStatus && (() => terrainStatus.snapshot()),
 });
+// Aborted on SIGTERM: the fetch stops at once, keeps its part and lets go
+// of the volume's lock.
+const stopFetch = new AbortController();
+let fetching: Promise<unknown> = Promise.resolve();
 const server = serve({ fetch: app.fetch, port }, (info) => {
   process.stdout.write(`server listening on port ${info.port}\n`);
+  // In the background, one file at a time: serving never waits for it.
+  if (!terrain || !terrainStatus) return;
+  const raw = process.env['TERRAIN_FETCH_TIERS'];
+  const options = { raw, status: terrainStatus };
+  const deps = nodeFetchDeps(stopFetch.signal);
+  fetching = fetchOnBoot(deps, terrain, options).catch((error: unknown) => {
+    terrainStatus.run('stopped');
+    const why = stopFetch.signal.aborted ? 'shutting down' : (error as Error).message;
+    console.error(`terrain fetch: stopped: ${why}`);
+  });
 });
-process.on('SIGTERM', () => server.close());
+process.on('SIGTERM', () => {
+  void stopGracefully({
+    abort: stopFetch,
+    closeServer: () => server.close(),
+    pending: fetching,
+    graceMs: SHUTDOWN_GRACE_MS,
+    exit: (code) => process.exit(code),
+  });
+});
 
 // Size points/ once at start, in the background, so the health answer reports
 // the real cache size from boot instead of 0 until the first custom point.

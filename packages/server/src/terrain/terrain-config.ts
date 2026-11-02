@@ -28,7 +28,11 @@
  * without TERRAIN_DIR, else over the tiers of the catalogue found there.
  * The variables are listed in main.ts and docs/terrain-api.md.
  */
-import { DEFAULT_CATALOGUE_FILE, loadCatalogue } from './catalogue.ts';
+import {
+  DEFAULT_CATALOGUE_FILE,
+  loadCatalogue,
+  type TerrainCatalogue,
+} from './catalogue.ts';
 import { cachedHorizons, type HorizonSource } from './horizon-cache.ts';
 import { TerrainService } from './terrain-service.ts';
 
@@ -51,15 +55,24 @@ function positive(name: string, raw: string | undefined, fallback: number) {
   return value;
 }
 
-/** The horizon source of `env`, or undefined without TERRAIN_DIR. */
+/** The terrain of a server: its horizons and what serves them. */
+export interface TerrainSetup {
+  readonly horizons: HorizonSource;
+  readonly service: TerrainService;
+  readonly dir: string;
+  readonly catalogue: TerrainCatalogue;
+}
+
+/** The terrain of `env`, or undefined without TERRAIN_DIR. */
 export async function openTerrain(
   env: Readonly<Record<string, string | undefined>>,
-): Promise<HorizonSource | undefined> {
+): Promise<TerrainSetup | undefined> {
   const dir = env['TERRAIN_DIR'];
   if (dir === undefined || dir.trim() === '') return undefined;
+  const catalogue = await loadCatalogue(DEFAULT_CATALOGUE_FILE);
   const service = await TerrainService.open({
     dir,
-    catalogue: await loadCatalogue(DEFAULT_CATALOGUE_FILE),
+    catalogue,
     cacheBytes: positive('TERRAIN_BLOCKS_MB', env['TERRAIN_BLOCKS_MB'], DEFAULTS.blocksMb) * MB,
     maxRunning: Math.floor(positive('TERRAIN_MAX_RUNNING', env['TERRAIN_MAX_RUNNING'], DEFAULTS.maxRunning)),
     maxWaiting: DEFAULTS.maxWaiting,
@@ -67,5 +80,7 @@ export async function openTerrain(
   const tiers = service.present.map((t) => t.id).join(', ') || 'none';
   process.stdout.write(`terrain: tiers present: ${tiers}\n`);
   const cacheMb = positive('TERRAIN_CACHE_MB', env['TERRAIN_CACHE_MB'], DEFAULTS.cacheMb);
-  return cachedHorizons(service, env['TERRAIN_CACHE_DIR'] ?? DEFAULTS.cacheDir, cacheMb * MB);
+  const cacheDir = env['TERRAIN_CACHE_DIR'] ?? DEFAULTS.cacheDir;
+  const horizons = cachedHorizons(service, cacheDir, cacheMb * MB);
+  return { horizons, service, dir, catalogue };
 }

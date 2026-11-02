@@ -107,6 +107,8 @@ interface StubOptions {
 export interface HorizonStub {
   /** Other than 200 it answers an error (503: no terrain on the server). */
   readonly status?: number;
+  /** The error's body text; by default «no terrain» (VENT-43: the server's own is «terrain data is not installed»). */
+  readonly error?: string;
   /** It answers only once this settles. */
   readonly hold?: Promise<void>;
 }
@@ -144,8 +146,8 @@ function horizonBody(url: URL): unknown {
 async function stubHorizon(page: Page | BrowserContext, stub: HorizonStub): Promise<void> {
   await page.route(/\/api\/v1\/horizon\?/, async (route: Route) => {
     await stub.hold;
-    const { status = 200 } = stub;
-    if (status !== 200) return route.fulfill({ status, json: { error: 'no terrain' } });
+    const { status = 200, error = 'no terrain' } = stub;
+    if (status !== 200) return route.fulfill({ status, json: { error } });
     return route.fulfill({ json: horizonBody(new URL(route.request().url())) });
   });
 }

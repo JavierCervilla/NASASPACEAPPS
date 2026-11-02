@@ -27,7 +27,9 @@
  * Horizons of the terrain service kept on disk (VENT-40), like the
  * Horizons tables: a point's answer never changes for the same tiers, so
  * it is computed once and then read. Under a byte cap, least recently used
- * first out, and shared while in flight.
+ * first out, and shared while in flight. The key names the tiers present,
+ * and the service answers from those very tiers, so a tier fetched in the
+ * meantime (VENT-43) never lands under the key of the tiers before it.
  */
 import { DiskCache } from '../horizons/disk-cache.ts';
 import { InFlight } from '../horizons/in-flight.ts';
@@ -44,6 +46,14 @@ export interface HorizonSource {
    * throw to refuse it).
    */
   horizon(point: HorizonPoint, onMiss?: () => void): Promise<HorizonAnswer>;
+}
+
+/** The server has no tier on disk yet (VENT-43): the route says 503. */
+export class TerrainNotInstalledError extends Error {
+  constructor() {
+    super('terrain data is not installed');
+    this.name = 'TerrainNotInstalledError';
+  }
 }
 
 /** Bumped when the method changes, so old answers are not served. */
@@ -63,15 +73,16 @@ export function cachedHorizons(
 ): HorizonSource {
   const disk = new DiskCache(dir, maxBytes);
   const inFlight = new InFlight<HorizonAnswer>();
-  const tiers = service.present.map((t) => t.id).join('+');
   return {
     async horizon(point, onMiss) {
-      const key = horizonKey(point, tiers);
+      const present = service.present;
+      if (present.length === 0) throw new TerrainNotInstalledError();
+      const key = horizonKey(point, present.map((t) => t.id).join('+'));
       const hit = await disk.lookup(key);
       if (hit !== null) return JSON.parse(hit) as HorizonAnswer;
       onMiss?.();
       return inFlight.share(key, async () => {
-        const answer = await service.horizon(point);
+        const answer = await service.horizon(point, present);
         await disk.store(key, JSON.stringify(answer), false);
         return answer;
       });

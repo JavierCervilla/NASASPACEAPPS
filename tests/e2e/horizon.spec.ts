@@ -147,6 +147,13 @@ test.describe('desktop, 1440x900', () => {
     await expect(page.getByRole('alert')).toHaveCount(0);
     await expect(tile(page, /^Earthset in/)).toContainText('Earth 9.1° up');
   });
+
+  test('a server whose terrain is not installed yet says so, not «unavailable here» (VENT-43)', async ({ page }) => {
+    await open(page, { at: CANVAS, path: `./${PIN}`, horizon: { status: 503, error: 'terrain data is not installed' } });
+    await expect(strip(page)).toContainText('Real terrain not installed on the server yet');
+    await expect(strip(page)).not.toContainText('Real terrain unavailable here');
+    await expect(strip(page)).toContainText('Smooth horizon');
+  });
 });
 
 const sheet = (page: Page) => page.locator('.sheet');

@@ -15,6 +15,8 @@ COPY packages/server packages/server
 RUN npm run build -w @ventana/server
 
 FROM node:22.23.4-alpine@sha256:fe4f6d74e20370acb04ad889077d14d0f64a9c8ea6a42bc60cddf1e844699914
+# su-exec lets the entrypoint drop from root to node (VENT-43). Pinned to the version of the base image's Alpine (3.24).
+RUN apk add --no-cache su-exec=0.3-r0
 # Mount a persistent volume at HORIZONS_CACHE_DIR: every cached Horizons answer saves a slow call on the next deploy.
 ENV NODE_ENV=production PORT=3000 HORIZONS_CACHE_DIR=/var/cache/horizons
 # Hard cap on the custom-point tables in /var/cache/horizons/points; the pinned tables (about 10 MB) do not count.
@@ -31,9 +33,14 @@ COPY --from=build /app/packages/sim/dist packages/sim/dist
 COPY --from=build /app/packages/server/dist packages/server/dist
 COPY packages/server/data packages/server/data
 # The terrain horizons' answers (VENT-40); the LOLA grids themselves live on a volume set by TERRAIN_DIR, never here.
+# /data/terrain is that volume's usual mount point (VENT-43, docs/terrain-api.md); TERRAIN_DIR is set by the deploy.
 ENV TERRAIN_CACHE_DIR=/var/cache/terrain
-RUN mkdir -p /var/cache/horizons /var/cache/terrain && chown node:node /var/cache/horizons /var/cache/terrain
-USER node
+RUN mkdir -p /var/cache/horizons /var/cache/terrain /data/terrain \
+  && chown node:node /var/cache/horizons /var/cache/terrain /data/terrain
+# The entrypoint starts as root, gives the mounted volumes' top directories to node, and runs the server as node.
+COPY packages/server/docker-entrypoint.sh /usr/local/bin/docker-entrypoint.sh
+RUN chmod 755 /usr/local/bin/docker-entrypoint.sh
+ENTRYPOINT ["/usr/local/bin/docker-entrypoint.sh"]
 EXPOSE 3000
 # node is the one HTTP client this image is sure to keep. Unhealthy on a non-2xx answer, an error or 3 s of silence.
 HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \

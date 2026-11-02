@@ -3,6 +3,19 @@
 ## [Sin publicar]
 
 ### Añadido
+- El servidor descarga solo el relieve LOLA (VENT-43). Con `TERRAIN_FETCH_TIERS=all` y el volumen montado en
+  `/data/terrain`, la API baja en segundo plano, un fichero detrás de otro, las mallas que le faltan (unos 48,6 GB en
+  total), empezando por las más pequeñas: retoma donde lo dejó tras un corte o un reinicio, comprueba el sha256 de cada
+  fichero antes de darlo por bueno, nunca llena el disco (se para si fuesen a quedar menos de 2 GB libres) y empieza a
+  usar cada malla en cuanto está completa, sin reiniciar. Mientras tanto sigue sirviendo con normalidad. Nueva ruta
+  `GET /api/v1/terrain/status` con el progreso de cada malla. Si el servidor aún no tiene relieve instalado, la franja
+  del horizonte lo dice («Real terrain not installed on the server yet») en lugar de «Real terrain unavailable here»,
+  que queda para los puntos que ninguna malla cubre. La imagen arregla al arrancar el propietario de los volúmenes
+  montados, así que funciona aunque Docker los haya creado como root (solo dentro de `/data/` y `/var/cache/`). Al
+  pararlo o redesplegarlo suelta el volumen al momento y la descarga sigue en el siguiente arranque sin esperar; solo
+  tras un cierre brusco espera entre 2 y 2,5 minutos. No instala nunca un fichero que el catálogo no tenga fijado por
+  su sha256 ni uno incompleto, aunque el servidor de origen ignore la petición por rangos o mande de más. En los cinco
+  idiomas.
 - Horizonte real con el relieve LOLA (VENT-40; opción B del lienzo, aprobada por Javier). El Sol y la Tierra ya no se
   miden contra un horizonte liso a 0°, sino contra el relieve de verdad que rodea cada sitio, calculado con las mallas
   de altura LOLA de NASA (LRO): un sitio en lo alto de una cresta ve el Sol aunque esté un poco por debajo de la

@@ -114,20 +114,26 @@ export interface LockedTarget {
 /**
  * Fetches `tiers` holding the volume's lock, for the server at boot and
  * for scripts/fetch-terrain.ts; the lock goes even when the fetch throws
- * or is aborted.
+ * or is aborted. A lock lost to another server aborts the fetch.
  */
 export async function fetchLocked(
   deps: LockDeps,
   { dir, onTierReady }: LockedTarget,
   job: { readonly tiers: readonly Tier[]; readonly status: FetchStatus },
 ): Promise<void> {
+  const lost = new AbortController();
   const release = await acquireLock(deps, dir, () => {
     deps.log('terrain fetch: another server holds the volume; waiting');
     job.status.run('stopped', 'locked');
+  }, () => {
+    deps.log('terrain fetch: lost the volume lock to another server; stopping');
+    lost.abort(new Error('lost the volume lock'));
   });
+  const outer = deps.signal;
+  const signal = outer ? AbortSignal.any([outer, lost.signal]) : lost.signal;
   try {
     const plan = { dir, ...job, onTierReady, marginBytes: MARGIN_BYTES };
-    await fetchTiers(deps, plan);
+    await fetchTiers({ ...deps, signal }, plan);
   } finally {
     await release();
   }

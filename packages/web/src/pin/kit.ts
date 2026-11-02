@@ -29,6 +29,7 @@
  * gesture that places it, and what the live region says.
  */
 import type { TimeStore } from '../calendar/time-store';
+import type { HorizonStore } from '../horizon/horizon-store';
 import type { I18n } from '../i18n/translate';
 import type { LatLon } from '../lib/polar-projection';
 import {
@@ -45,7 +46,7 @@ import { createPinHint, type HintStorage, type PinHint } from './first-hint';
 import { carryByKeys, dropAtStart, type KeyCarryDeps } from './key-carry';
 import { bindPlacing } from './place-gesture';
 import { createPlaces, type Address, type Places } from './places';
-import { stateAtPoint } from './sky-state';
+import { type stateAtPoint, terrainStateAt } from './sky-state';
 import { createSurfaces, type ClientPoint, type Surfaces } from './surfaces';
 
 export interface KitDeps {
@@ -60,7 +61,15 @@ export interface KitDeps {
   readonly reducedMotion: () => boolean;
   /** Where the first-time hint's dismissal is kept; null: nowhere. */
   readonly storage: HintStorage | null;
+  /** The points' terrain horizons the page has, or asks for (VENT-44). */
+  readonly horizons: PointHorizons;
 }
+
+/** What the pin's views read of the points' terrain horizons. */
+export type PointHorizons = Pick<
+  HorizonStore,
+  'cached' | 'prefetch' | 'terrain'
+>;
 
 export interface PinKit {
   readonly places: Places;
@@ -72,7 +81,11 @@ export interface PinKit {
   readonly live: WatchedValue<string>;
   /** The first-time hint. */
   readonly hint: PinHint;
-  /** The state of `point` at the shared instant. */
+  readonly horizons: PointHorizons;
+  /**
+   * The state of `point` at the shared instant, over its terrain when
+   * the page already has that point's profile.
+   */
   readonly stateAt: (point: LatLon) => ReturnType<typeof stateAtPoint>;
   readonly reducedMotion: () => boolean;
   /** Lifts it for the keyboard, springing back to `home` if cancelled. */
@@ -111,11 +124,13 @@ function carrierOf(
   return createCarrier({ surfaces, stateAt, drop, reducedMotion, frame });
 }
 
+/** The element at a client point, where the surfaces look for the Moon. */
+const elementAt = ({ x, y }: ClientPoint) => document.elementFromPoint(x, y);
+
 export function createKit(deps: KitDeps): PinKit {
   const { i18n, time, selectedState, startPoint, reducedMotion } = deps;
-  const stateAt = (point: LatLon) => stateAtPoint(point, time.get().atMs);
-  const hit = ({ x, y }: ClientPoint) => document.elementFromPoint(x, y);
-  const surfaces = createSurfaces(hit);
+  const stateAt = terrainStateAt(deps.horizons.cached, () => time.get().atMs);
+  const surfaces = createSurfaces(elementAt);
   const places = createPlaces(deps.store, deps.address);
   const carrier = carrierOf(deps, places, surfaces, stateAt);
   const live = createWatchedValue('');
@@ -130,7 +145,8 @@ export function createKit(deps: KitDeps): PinKit {
   };
   const hint = createPinHint(deps.storage, carrier);
   const shared = { places, carrier, surfaces, live, stateAt, hint };
-  const kit = { ...shared, ...actions, time, selectedState, reducedMotion };
+  const kept = { time, selectedState, reducedMotion, horizons: deps.horizons };
+  const kit = { ...shared, ...actions, ...kept };
   const ends = carrier.ended.subscribe(() =>
     sayEnd(kit, i18n, carrier.ended.get()));
   const stops = [places.stop, ends, hint.stop];

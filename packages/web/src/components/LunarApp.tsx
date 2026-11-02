@@ -193,9 +193,9 @@ function Island({ sitesUrl, base, selectedId, sites }: Props) {
   const view = useView(VIEW_NAV);
   const { feed: state, computed } = useStateFeed(store, parts);
   useLiveFavicon(base, parts.time, state);
-  const time = parts.time;
+  const { time, horizons } = parts;
   // The address's `?site=` and `?lat&lon` open once the kit runs.
-  const kit = useCreatePinKit({ store, time, state, sites });
+  const kit = useCreatePinKit({ store, time, state, sites, horizons });
   const saved = useCreateSavedKit(kit, store);
   const layers = saved.layers;
   const globe = { base, sitesUrl, store, sheetEdge, time, state, layers };

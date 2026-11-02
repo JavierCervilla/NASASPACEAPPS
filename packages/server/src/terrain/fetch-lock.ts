@@ -30,7 +30,9 @@
  * fresh; a lock left by a process that died goes stale and is taken over.
  * The takeover moves the stale lock to a name only the taker uses, so of
  * two takers only one wins the rename; one that finds it moved a live lock
- * (taken between its check and its move) puts it back and waits.
+ * (taken between its check and its move) puts it back and waits. A holder
+ * whose heartbeat finds the lock gone or holding another token has lost
+ * it (a third taker can win in that gap) and is told, so it stops.
  */
 import { randomUUID } from 'node:crypto';
 import { join } from 'node:path';
@@ -77,19 +79,28 @@ async function tryLock(deps: LockDeps, path: string, token: string) {
 }
 
 /**
- * Keeps the lock at `path` fresh while it holds `token`; resolves to what
- * stops the heartbeat and deletes the lock, if it is still ours.
+ * Keeps the lock at `path` fresh while it holds `token`, and calls
+ * `onLost` once, ending the heartbeat, when it no longer does; resolves to
+ * what stops the heartbeat and deletes the lock, if it is still ours.
  */
-function hold(deps: LockDeps, path: string, token: string) {
+function hold(
+  deps: LockDeps,
+  path: string,
+  token: string,
+  onLost: () => void,
+) {
   const ours = async (): Promise<boolean> =>
     (await deps.fs.read(path)) === token;
-  const beat = (): void => {
-    const touch = async (mine: boolean): Promise<void> => {
-      if (mine) await deps.fs.touch(path, deps.now());
-    };
-    ours().then(touch).catch(() => undefined);
+  let stop = (): void => undefined;
+  const check = async (): Promise<void> => {
+    if (await ours()) return deps.fs.touch(path, deps.now());
+    stop();
+    onLost();
   };
-  const stop = deps.every(HEARTBEAT_MS, beat);
+  const beat = (): void => {
+    check().catch(() => undefined);
+  };
+  stop = deps.every(HEARTBEAT_MS, beat);
   return async (): Promise<void> => {
     stop();
     if (await ours()) await deps.fs.remove(path);
@@ -98,13 +109,15 @@ function hold(deps: LockDeps, path: string, token: string) {
 
 /**
  * Waits until the lock of `dir` is free and takes it; resolves to what
- * releases it. `onWait` runs once if it has to wait. The heartbeat and
- * the release touch only a lock that still holds our token.
+ * releases it. `onWait` runs once if it has to wait, `onLost` once if the
+ * lock is later found taken or gone. The heartbeat and the release touch
+ * only a lock that still holds our token.
  */
 export async function acquireLock(
   deps: LockDeps,
   dir: string,
   onWait: () => void,
+  onLost: () => void = () => undefined,
 ): Promise<() => Promise<void>> {
   const path = join(dir, LOCK_FILE);
   const token = randomUUID();
@@ -114,5 +127,5 @@ export async function acquireLock(
     waited = true;
     await deps.sleep(HEARTBEAT_MS);
   }
-  return hold(deps, path, token);
+  return hold(deps, path, token, onLost);
 }

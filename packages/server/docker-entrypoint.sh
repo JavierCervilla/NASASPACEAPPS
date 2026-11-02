@@ -35,12 +35,19 @@ set -u
 
 # Only a path under /data/ or /var/cache/, without `..`, is ever touched:
 # a variable set to `/` or `/etc` by mistake must not hand it to `node`.
+# Its first component there must name a directory: `/data//` and `/data/./`
+# are /data itself.
 allowed() {
   case "$1" in
     *..*) return 1 ;;
-    /data/?*|/var/cache/?*) return 0 ;;
+    /data/*) rest=${1#/data/} ;;
+    /var/cache/*) rest=${1#/var/cache/} ;;
     *) return 1 ;;
   esac
+  case "${rest%%/*}" in
+    ''|.) return 1 ;;
+  esac
+  return 0
 }
 
 own() {

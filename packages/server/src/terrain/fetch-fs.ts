@@ -28,18 +28,19 @@
  * operations it needs, behind an interface so the scheduler is tested
  * over memory. `NodeFetchFs` (`node-fetch-fs.ts`) is the real one.
  */
-import { createHash } from 'node:crypto';
 import { createReadStream, createWriteStream } from 'node:fs';
 import { rename, rm, stat } from 'node:fs/promises';
 import { Readable } from 'node:stream';
 import { pipeline } from 'node:stream/promises';
+import { sha256Of } from './sha256-of.ts';
 
 export interface FetchFs {
   /** The size of `path` in bytes, or -1 when it does not exist. */
   size(path: string): Promise<number>;
   /** Appends every chunk of `body` to `path`, creating it. */
   append(path: string, body: AsyncIterable<Uint8Array>): Promise<void>;
-  sha256(path: string): Promise<string>;
+  /** The hash of `path`; stops between chunks once `signal` aborts. */
+  sha256(path: string, signal?: AbortSignal): Promise<string>;
   rename(from: string, to: string): Promise<void>;
   /** Removes `path`; nothing when it does not exist. */
   remove(path: string): Promise<void>;
@@ -72,11 +73,9 @@ export class NodeFileOps {
     await pipeline(Readable.from(body), out);
   }
 
-  async sha256(path: string): Promise<string> {
-    const hash = createHash('sha256');
+  sha256(path: string, signal?: AbortSignal): Promise<string> {
     const chunks = createReadStream(path, { highWaterMark: 1 << 20 });
-    await pipeline(chunks, hash);
-    return hash.digest('hex');
+    return sha256Of(chunks, signal);
   }
 
   rename(from: string, to: string): Promise<void> {

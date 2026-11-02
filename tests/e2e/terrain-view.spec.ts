@@ -274,6 +274,22 @@ test.describe('desktop, 1440x900', () => {
     await expect(host(page).locator('canvas')).toHaveCount(0);
     expect(seen.filter((u) => /\/tiles\/[^?]+\/\d+\/-?\d+\/-?\d+/.test(u)).length).toBeLessThan(15);
   });
+
+  // Verificador round 2 on PR #32: tiles that are only ever busy are a failure that may pass, not «no terrain».
+  test('offers «Try again», not «no terrain», when every tile stays busy until its tries run out', async ({ page }) => {
+    await page.clock.install({ time: AT });
+    await stubApi(page);
+    await stubTile(page, { tileStatus: 503, error: 'busy' });
+    await page.goto('./?lat=-30.00&lon=20.00#horizon');
+    const retry = view(page).getByRole('button', { name: 'Try again' });
+    // The tries wait 2, 6 and 18 s, spread up to 1.5 times: the page's clock runs them out.
+    await expect.poll(async () => {
+      await page.clock.fastForward(30_000);
+      return retry.count();
+    }, { intervals: [50] }).toBe(1);
+    await expect(view(page).getByRole('status')).toContainText('Terrain unavailable right now');
+    await expect(view(page).getByRole('status')).not.toContainText('No terrain covers this point');
+  });
 });
 
 test.describe('phone, 390x844', () => {

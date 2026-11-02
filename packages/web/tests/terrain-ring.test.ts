@@ -35,6 +35,7 @@ import {
 } from '@ventana/sim';
 import { describe, expect, it } from 'vitest';
 import { NoTerrainHereError } from '../src/horizon/horizon-errors';
+import { HORIZON_RETRY } from '../src/horizon/horizon-retry';
 import { parseRing, parseTile } from '../src/terrain/ring/ring-answer';
 import { cellOf, tileOfCell } from '../src/terrain/ring/ring-cells';
 import { fetchRingSource, IN_FLIGHT } from '../src/terrain/ring/ring-fetch';
@@ -292,6 +293,33 @@ describe('fetching the ring', () => {
     expect(urls.length).toBeLessThan(24);
     expect(urls.filter((u) => u.includes('/polar-south/2/')).length).toBeLessThan(IN_FLIGHT);
     expect(log).not.toContain('settled1');
+  });
+
+  // Verificador round 2 on PR #32: a near level that only ever answered passing failures is not «no terrain».
+  it('keeps the near tiles as holes, not «no terrain», when they are busy until their tries run out', async () => {
+    const asked = new Map<string, number>();
+    const three = { scheme: 'polar-south', levels: [0, 1, 2].map((level) => ({ level, tiles: Array.from({ length: 4 }, (_, i) => ({ x: i, y: 0, url: `/api/v1/terrain/tiles/polar-south/${level}/${i}/0?v=1` })) })) };
+    let busy = true;
+    const fetcher = (async (url: string) => {
+      if (!url.includes('/tiles/polar')) return new Response(JSON.stringify(three));
+      asked.set(url, (asked.get(url) ?? 0) + 1);
+      const near = /\/polar-south\/[01]\//.test(url);
+      if (near && busy) return new Response(JSON.stringify({ error: 'busy' }), { status: 503 });
+      return new Response(JSON.stringify(tileBody));
+    }) as unknown as typeof fetch;
+    const source = fetchRingSource(fetcher, 'https://x.test/api/v1/sites', waits);
+    const log: string[] = [];
+    await expect(source.load({ ...request, levels: 3 }, feedTo(log), new AbortController().signal)).resolves.toBeUndefined();
+    const nearUrls = [...asked.keys()].filter((u) => /\/polar-south\/[01]\//.test(u));
+    expect(nearUrls).toHaveLength(8);
+    for (const u of nearUrls) expect(asked.get(u)).toBe(HORIZON_RETRY.delaysMs.length + 1);
+    expect(log.filter((l) => l.startsWith('tile'))).toHaveLength(4);
+    expect(log).toEqual(expect.arrayContaining(['settled0', 'settled1', 'settled2']));
+    // The holes stay retryable: the same source asked again once the server is free feeds every near tile.
+    busy = false;
+    const again: string[] = [];
+    await source.load({ ...request, levels: 3 }, feedTo(again), new AbortController().signal);
+    expect(again.filter((l) => l.startsWith('tile'))).toHaveLength(12);
   });
 
   it('keeps a hole as a hole when a near tile is missing but another came', async () => {

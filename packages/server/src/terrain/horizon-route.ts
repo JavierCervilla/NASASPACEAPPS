@@ -41,7 +41,10 @@ import {
 } from '../miss-limiter.ts';
 import { ParamError, numberParam } from '../param-values.ts';
 import { roundToGrid } from '../params.ts';
-import type { HorizonSource } from './horizon-cache.ts';
+import {
+  TerrainNotInstalledError,
+  type HorizonSource,
+} from './horizon-cache.ts';
 import {
   TerrainBusyError,
   TerrainUncoveredError,
@@ -53,6 +56,8 @@ export const DEFAULT_HEIGHT_M = 2;
 /** The highest eye the route takes, metres (a mast, not an orbit). */
 export const MAX_HEIGHT_M = 100;
 const BUSY_RETRY_AFTER_SEC = 10;
+/** The 503 body's error while no tier is on disk; the web reads it. */
+export const NOT_INSTALLED = 'terrain data is not installed';
 // A point's horizon changes only with the tiers on disk.
 const CACHE_CONTROL = 'public, max-age=86400';
 
@@ -91,6 +96,9 @@ function errorResponse(c: Context, error: unknown): Response {
   if (error instanceof TerrainUncoveredError) {
     return c.json({ error: 'no terrain data covers this point' }, 404);
   }
+  if (error instanceof TerrainNotInstalledError) {
+    return c.json({ error: NOT_INSTALLED }, 503);
+  }
   if (error instanceof TerrainBusyError) {
     c.header('Retry-After', String(BUSY_RETRY_AFTER_SEC));
     return c.json({ error: 'the service is busy; try again later' }, 503);
@@ -110,7 +118,7 @@ export async function horizonResponse(
 ): Promise<Response> {
   const onMiss = limitMisses(missLimiter, () => clientIp(c));
   if (!source) {
-    return c.json({ error: 'terrain data is not installed' }, 503);
+    return c.json({ error: NOT_INSTALLED }, 503);
   }
   try {
     const point = parseHorizonParams(c.req.query());

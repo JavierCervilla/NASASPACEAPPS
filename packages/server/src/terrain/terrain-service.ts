@@ -33,22 +33,14 @@
  * serve height tiles around a point for the 3D view later (VENT-34,
  * docs/terrain-api.md).
  *
- * The ray-march is synchronous and pure, the disk is not, so a request
- * runs it in rounds: a probe that notes the blocks the rays cross (see
- * `tier-grid.ts`), then real rounds until no block is missing.
+ * A request reads in rounds (`horizon-rounds.ts`).
  */
 import { BlockLoader } from './block-loader.ts';
 import type { TerrainCatalogue, Tier } from './catalogue.ts';
 import { Gate } from './gate.ts';
-import {
-  answer,
-  bandsOf,
-  march,
-  type HorizonAnswer,
-  type HorizonPoint,
-} from './horizon-answer.ts';
+import type { HorizonAnswer, HorizonPoint } from './horizon-answer.ts';
+import { readHorizon } from './horizon-rounds.ts';
 import { presentTiers } from './tier-presence.ts';
-import { TierGrid } from './tier-grid.ts';
 
 export { TerrainBusyError } from './gate.ts';
 export {
@@ -69,20 +61,19 @@ export interface TerrainServiceOptions {
   readonly maxWaiting: number;
 }
 
-/** Rounds of the read: one probe, then real ones until nothing misses. */
-const MAX_ROUNDS = 4;
-
 /** Computes horizons from the tiers present under `dir`. */
 export class TerrainService {
   /** The blocks in memory, shared by the requests. */
   readonly blocks: BlockLoader;
-  /** The tiers found on disk. */
-  readonly present: readonly Tier[];
+  /** The tiers found on disk at the last scan. */
+  present: readonly Tier[];
   private readonly gate: Gate;
   private readonly catalogue: TerrainCatalogue;
+  private readonly dir: string;
 
   private constructor(options: TerrainServiceOptions, present: Tier[]) {
     this.present = present;
+    this.dir = options.dir;
     this.catalogue = options.catalogue;
     this.blocks = new BlockLoader(options.dir, options.cacheBytes);
     this.gate = new Gate(options.maxRunning, options.maxWaiting);
@@ -94,24 +85,22 @@ export class TerrainService {
     return new TerrainService(options, present);
   }
 
-  /** The horizon at `point`, in turn with the other requests. */
-  horizon(point: HorizonPoint): Promise<HorizonAnswer> {
-    return this.gate.run(() => this.compute(point));
+  /**
+   * Looks for the tiers on disk again (VENT-43): a tier fetched while the
+   * server runs serves from the next request, without a restart.
+   */
+  async rescan(): Promise<void> {
+    this.present = await presentTiers(this.dir, this.catalogue);
   }
 
-  private async compute(point: HorizonPoint): Promise<HorizonAnswer> {
-    const grids = new Map(this.present.map((t) => [t.id, new TierGrid(t)]));
-    const bands = bandsOf(this.catalogue.bands, grids);
-    const { lat, lonEast, heightM } = point;
-    const observer = { latDeg: lat, lonEastDeg: lonEast, heightM };
-    for (let round = 0; round < MAX_ROUNDS; round++) {
-      const result = march(bands, observer);
-      const all = [...grids.values()];
-      const misses = all.some((g) => g.missing.size > 0);
-      if (round > 0 && !misses) return answer(point, result, this.present);
-      await Promise.all(all.map((g) => this.blocks.load(g)));
-    }
-    throw new Error('terrain: blocks still missing after every round');
+  /** The horizon at `point`, in turn with the other requests. */
+  horizon(point: HorizonPoint): Promise<HorizonAnswer> {
+    // One request reads the tiers it started with, even across a rescan.
+    const present = this.present;
+    const { blocks, catalogue } = this;
+    return this.gate.run(() =>
+      readHorizon({ blocks, bands: catalogue.bands, present }, point),
+    );
   }
 
   /** Closes the files. */

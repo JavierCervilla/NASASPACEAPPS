@@ -38,7 +38,11 @@ import {
   type WatchedValue,
 } from '../lib/watched-value';
 import type { TerrainOf } from '../source/terrain-profiles';
-import type { HorizonFetch, KnownHorizon } from './point-horizon';
+import {
+  TerrainNotInstalledError,
+  type HorizonFetch,
+  type KnownHorizon,
+} from './point-horizon';
 
 /** What the page knows of a site's horizon. */
 export type SiteHorizon =
@@ -47,6 +51,8 @@ export type SiteHorizon =
   | { readonly kind: 'loading' }
   /** A custom point the API has no terrain for. */
   | { readonly kind: 'unavailable' }
+  /** The server has no terrain installed yet (VENT-43). */
+  | { readonly kind: 'notInstalled' }
   /** A listed site without a shipped profile: the smooth sphere. */
   | { readonly kind: 'smooth' };
 
@@ -84,6 +90,12 @@ function keep(fetched: Fetched, id: string, value: SiteHorizon): void {
   }
 }
 
+/** What a failed request leaves: not installed yet, or unavailable. */
+function failed(error: unknown): SiteHorizon {
+  const notYet = error instanceof TerrainNotInstalledError;
+  return { kind: notYet ? 'notInstalled' : 'unavailable' };
+}
+
 /** What the page knows of site `id`'s horizon. */
 function knownOf(
   sources: HorizonSources,
@@ -117,7 +129,7 @@ export function createHorizonStore(sources: HorizonSources): HorizonStore {
     keep(fetched, id, { kind: 'loading' });
     sources.fetchHorizon(point).then(
       (known) => settle(id, { kind: 'terrain', ...known }),
-      () => settle(id, { kind: 'unavailable' }),
+      (error: unknown) => settle(id, failed(error)),
     );
   };
   return { of, request, terrain };

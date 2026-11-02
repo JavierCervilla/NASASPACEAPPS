@@ -79,6 +79,11 @@ export interface TerrainCatalogue {
   readonly tiers: readonly Tier[];
 }
 
+/** The bytes of every file of `tier`. */
+export function tierBytes(tier: Tier): number {
+  return tier.files.reduce((sum, f) => sum + f.bytes, 0);
+}
+
 /** The catalogue next to the code: `packages/server/data/`. */
 export const DEFAULT_CATALOGUE_FILE = new URL(
   '../../data/terrain-catalogue.json',

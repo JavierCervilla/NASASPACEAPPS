@@ -332,6 +332,7 @@
   "horizon.loading": "Orizzonte liscio · rilievo reale in caricamento",
   "horizon.smooth": "Orizzonte liscio",
   "horizon.unavailable": "Rilievo reale non disponibile qui",
+  "horizon.notInstalled": "Rilievo reale non ancora installato sul server",
   "horizon.sun": "Sole",
   "horizon.earth": "Terra",
   "horizon.sunHidden": "Sole · nascosto",

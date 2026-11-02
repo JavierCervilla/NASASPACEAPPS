@@ -46,6 +46,14 @@ export interface HorizonSource {
   horizon(point: HorizonPoint, onMiss?: () => void): Promise<HorizonAnswer>;
 }
 
+/** The server has no tier on disk yet (VENT-43): the route says 503. */
+export class TerrainNotInstalledError extends Error {
+  constructor() {
+    super('terrain data is not installed');
+    this.name = 'TerrainNotInstalledError';
+  }
+}
+
 /** Bumped when the method changes, so old answers are not served. */
 const KEY_VERSION = 'v1';
 
@@ -63,10 +71,11 @@ export function cachedHorizons(
 ): HorizonSource {
   const disk = new DiskCache(dir, maxBytes);
   const inFlight = new InFlight<HorizonAnswer>();
-  const tiers = service.present.map((t) => t.id).join('+');
   return {
     async horizon(point, onMiss) {
-      const key = horizonKey(point, tiers);
+      const present = service.present;
+      if (present.length === 0) throw new TerrainNotInstalledError();
+      const key = horizonKey(point, present.map((t) => t.id).join('+'));
       const hit = await disk.lookup(key);
       if (hit !== null) return JSON.parse(hit) as HorizonAnswer;
       onMiss?.();

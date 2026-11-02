@@ -74,6 +74,29 @@ export function horizonOf(body: unknown): KnownHorizon | null {
   }
 }
 
+/**
+ * The server has no terrain installed yet (VENT-43): its 503 says so in
+ * `error`, unlike a busy one, so the strip can tell the two apart.
+ */
+export class TerrainNotInstalledError extends Error {
+  constructor() {
+    super('horizon: terrain not installed');
+    this.name = 'TerrainNotInstalledError';
+  }
+}
+
+/** The server's `error` for a 503 with no terrain installed. */
+const NOT_INSTALLED = 'terrain data is not installed';
+
+/** Whether `response` says the server has no terrain installed. */
+async function notInstalled(response: Response): Promise<boolean> {
+  if (response.status !== 503) return false;
+  const body = (await response.json().catch(() => null)) as {
+    readonly error?: unknown;
+  } | null;
+  return body?.error === NOT_INSTALLED;
+}
+
 /** Fetches a point's horizon; rejects when there is none to show. */
 export type HorizonFetch = (point: LatLon) => Promise<KnownHorizon>;
 
@@ -84,6 +107,7 @@ export function horizonFetch(
 ): HorizonFetch {
   return async (point) => {
     const response = await fetcher(pointHorizonUrl(sitesUrl, point));
+    if (await notInstalled(response)) throw new TerrainNotInstalledError();
     if (!response.ok) throw new Error(`horizon ${response.status}`);
     const known = horizonOf(await response.json());
     if (!known) throw new Error('horizon: not a profile');

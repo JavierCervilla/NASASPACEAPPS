@@ -37,7 +37,7 @@ import { dsnText } from '../src/dsn/dsn-text';
 import { directionOf, horizonAlt } from '../src/horizon/horizon-alt';
 import { createHorizonStore, type HorizonSources } from '../src/horizon/horizon-store';
 import { hourSky } from '../src/horizon/hour-sky';
-import { horizonFetch, horizonOf, pointHorizonUrl, type KnownHorizon } from '../src/horizon/point-horizon';
+import { horizonFetch, horizonOf, pointHorizonUrl, TerrainNotInstalledError, type KnownHorizon } from '../src/horizon/point-horizon';
 import { boxOf } from '../src/horizon/label-box';
 import { placeLabels } from '../src/horizon/strip-labels';
 import { EDGE_INSET, bodiesAt, stripMarks } from '../src/horizon/strip-marks';
@@ -94,15 +94,22 @@ describe('point-horizon', () => {
     const fetcher = vi.fn(async () => new Response('{}', { status: 503 }));
     await expect(horizonFetch(fetcher, SITES_URL)({ lat: -85.5, lonEast: 40 })).rejects.toThrow('503');
   });
+
+  it('tells a server without terrain installed from a busy one (VENT-43)', async () => {
+    const answer = (error: string) => async () => new Response(JSON.stringify({ error }), { status: 503 });
+    const point = { lat: -85.5, lonEast: 40 };
+    await expect(horizonFetch(answer('terrain data is not installed'), SITES_URL)(point)).rejects.toBeInstanceOf(TerrainNotInstalledError);
+    await expect(horizonFetch(answer('the service is busy; try again later'), SITES_URL)(point)).rejects.not.toBeInstanceOf(TerrainNotInstalledError);
+  });
 });
 
 /** A store over a fetch the test settles by hand. */
 function storeWithFetch(shippedProfile?: HorizonProfile) {
-  let settle: { ok: (known: KnownHorizon) => void; fail: () => void } | null = null;
+  let settle: { ok: (known: KnownHorizon) => void; fail: (error?: Error) => void } | null = null;
   const fetchHorizon = vi.fn(
     () =>
       new Promise<KnownHorizon>((ok, fail) => {
-        settle = { ok, fail: () => fail(new Error('down')) };
+        settle = { ok, fail: (error = new Error('down')) => fail(error) };
       }),
   );
   const sources: HorizonSources = {
@@ -144,6 +151,15 @@ describe('horizon-store', () => {
     settle().fail();
     await vi.waitFor(() => expect(store.of(POINT)).toEqual({ kind: 'unavailable' }));
     expect(store.terrain.get()(POINT)).toBeUndefined();
+    store.request(POINT);
+    expect(fetchHorizon).toHaveBeenCalledTimes(2);
+  });
+
+  it('says when the server has no terrain installed yet, and asks again later', async () => {
+    const { store, fetchHorizon, settle } = storeWithFetch();
+    store.request(POINT);
+    settle().fail(new TerrainNotInstalledError());
+    await vi.waitFor(() => expect(store.of(POINT)).toEqual({ kind: 'notInstalled' }));
     store.request(POINT);
     expect(fetchHorizon).toHaveBeenCalledTimes(2);
   });
@@ -320,6 +336,8 @@ describe('stripModel', () => {
     expect(loading.sourceShort).toBe(loading.source);
     const down = stripModel(EN, { kind: 'unavailable' }, hour({}), size);
     expect([down.source, down.note]).toEqual(['Smooth horizon', 'Real terrain unavailable here']);
+    const notYet = stripModel(EN, { kind: 'notInstalled' }, hour({}), size);
+    expect([notYet.source, notYet.note]).toEqual(['Smooth horizon', 'Real terrain not installed on the server yet']);
   });
 
   it('keeps the stretch while the time is scrubbed, whatever the bodies do', () => {

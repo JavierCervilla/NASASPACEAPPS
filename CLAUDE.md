@@ -41,7 +41,14 @@ epic: `VENT-1` (Dashboard project «Ventana Lunar», prefix `VENT`).
   also answers the terrain horizon of any point, `GET /api/v1/horizon?lat&lon[&height]` (VENT-40), from the LOLA tiers
   present in `TERRAIN_DIR` (catalogue `packages/server/data/terrain-catalogue.json`, fetched by
   `packages/server/scripts/fetch-terrain.ts`, never in git or the image; without it the route answers 503), reading
-  only the grid blocks its rays cross: `docs/terrain-api.md`.
+  only the grid blocks its rays cross: `docs/terrain-api.md`. The server fills that volume itself (VENT-43): with
+  `TERRAIN_FETCH_TIERS` (`all` or tier ids) it fetches the missing tiers in the background once it listens, one file at
+  a time, resumable (`.part` and HTTP Range), sha256-checked, stopping when the volume would keep under 2 GB free, and
+  re-scans after each tier so it serves without a restart (`src/terrain/terrain-boot.ts`; progress at
+  `GET /api/v1/terrain/status`; `scripts/fetch-terrain.ts` is a thin wrapper over the same code). With no tier on disk
+  the route answers 503 «terrain data is not installed», which the web shows as «Real terrain not installed on the
+  server yet». The image's entrypoint gives the mounted volumes' top directories to `node` and drops to it with
+  `su-exec`, so a root-owned volume works.
 - **Deploy**: Dokploy builds the `Dockerfile` (static build served by nginx, `nginx.conf`) from `main`, at the domain
   root (`SITE_BASE` sets a sub-path if ever needed). The API has its own `packages/server/Dockerfile` (built from the
   repo root, port 3000). Operate it with the framework's `dokploy` skill.

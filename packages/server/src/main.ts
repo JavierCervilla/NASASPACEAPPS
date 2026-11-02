@@ -35,6 +35,8 @@
  * 503), TERRAIN_CACHE_DIR (default ./.cache/terrain), TERRAIN_CACHE_MB (its
  * byte cap, default 256), TERRAIN_BLOCKS_MB (grid blocks kept in memory,
  * default 192) and TERRAIN_MAX_RUNNING (horizons computed at once, default 2).
+ * TERRAIN_FETCH_TIERS (VENT-43: `all` or tier ids separated by commas) has
+ * the server fetch the tiers it lacks into TERRAIN_DIR once it listens.
  */
 import { serve } from '@hono/node-server';
 import { createApp } from './app.ts';
@@ -45,7 +47,9 @@ import {
   type FetchLike,
 } from './horizons/client.ts';
 import { DEFAULT_SITES_FILE, loadSites } from './sites.ts';
+import { fetchOnBoot, terrainStatusOf } from './terrain/terrain-boot.ts';
 import { openTerrain } from './terrain/terrain-config.ts';
+import { nodeFetchDeps } from './terrain/node-fetch-deps.ts';
 import { warmCache } from './warmup.ts';
 
 const DEFAULT_PORT = 3000;
@@ -71,15 +75,25 @@ const horizons = createHorizonsClient({
 });
 const sites = await loadSites(process.env['SITES_FILE'] ?? DEFAULT_SITES_FILE);
 const terrain = await openTerrain(process.env);
+const terrainStatus = terrain && terrainStatusOf(terrain);
 const app = createApp({
   horizons,
   pointsCache: horizons.points,
   sites,
   now: Date.now,
-  terrain,
+  terrain: terrain?.horizons,
+  terrainStatus: terrainStatus && (() => terrainStatus.snapshot()),
 });
 const server = serve({ fetch: app.fetch, port }, (info) => {
   process.stdout.write(`server listening on port ${info.port}\n`);
+  // In the background, one file at a time: serving never waits for it.
+  if (!terrain || !terrainStatus) return;
+  const raw = process.env['TERRAIN_FETCH_TIERS'];
+  const options = { raw, status: terrainStatus };
+  fetchOnBoot(nodeFetchDeps(), terrain, options).catch((error: unknown) => {
+    terrainStatus.run('stopped');
+    console.error(`terrain fetch: stopped: ${(error as Error).message}`);
+  });
 });
 process.on('SIGTERM', () => server.close());
 

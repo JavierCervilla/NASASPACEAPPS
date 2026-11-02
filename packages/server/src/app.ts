@@ -47,6 +47,7 @@ import {
   type RawEphemerisParams,
 } from './params.ts';
 import type { HorizonSource } from './terrain/horizon-cache.ts';
+import type { TerrainStatusBody } from './terrain/fetch-status.ts';
 import { horizonResponse } from './terrain/horizon-route.ts';
 
 /**
@@ -74,6 +75,11 @@ export interface AppDeps {
    * grids, and then /horizon answers 503.
    */
   readonly terrain?: HorizonSource | undefined;
+  /**
+   * The terrain's tiers and its fetch (VENT-43); absent without
+   * TERRAIN_DIR, and then /terrain/status says so with no tiers.
+   */
+  readonly terrainStatus?: (() => TerrainStatusBody) | undefined;
 }
 
 /** {@link AppDeps} with the limiter chosen, shared by every route. */
@@ -172,6 +178,11 @@ function createV1(deps: RouteDeps): Hono {
 
   // Any point: lat and lon (east longitude) in degrees, optional height.
   v1.get('/horizon', (c) => horizonResponse(c, deps.terrain, deps.missLimiter));
+
+  // Tier ids, states and byte counts only: no paths.
+  v1.get('/terrain/status', (c) =>
+    c.json(deps.terrainStatus?.() ?? { fetch: 'off', tiers: [] }),
+  );
 
   v1.get('/sites', (c) => c.json({ sites: deps.sites }));
 

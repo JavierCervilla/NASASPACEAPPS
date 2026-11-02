@@ -24,8 +24,6 @@
  */
 
 /**
-
-/**
  * Where one point lies from another, metres east and north in the second's
  * tangent plane (VENT-34). The API centres a tile on the 0.01° grid, up to
  * about 160 m from the site the view opened on; this places that centre

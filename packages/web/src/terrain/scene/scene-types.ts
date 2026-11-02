@@ -62,6 +62,8 @@ export interface SceneInput {
   /** The illustrative detail's seed (seeded.ts). */
   readonly seed: number;
   readonly sky: SkyDirs;
+  /** The Earth's scene-to-body matrix, row-major (earth-orientation.ts). */
+  readonly earthSpin: readonly number[];
   readonly mode: CameraMode;
   /** Where the view opens: the Sun's azimuth, or the Earth's. */
   readonly startYawDeg: number;

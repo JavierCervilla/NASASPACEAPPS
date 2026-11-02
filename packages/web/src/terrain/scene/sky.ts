@@ -27,9 +27,9 @@
  * The sky at the shared instant (VENT-34): black, faint stars drawn by a
  * shader on a far sphere (illustrative, seeded), the Sun's disc at its
  * true size and direction with a small glare, the key light with hard
- * shadows near the point, and the Earth as a lit disc at its true size
- * whose phase follows the Sun's direction (no map: the caption says so).
- * The faint earthshine and legibility fill are ambient, indirect light.
+ * shadows near the point, and the Earth at its true size
+ * wearing the Blue Marble, its phase from the Sun's direction. The fill
+ * (sky-light.ts) is the Earth's light, the ground's bounce and a dim floor.
  */
 import {
   AdditiveBlending,
@@ -59,13 +59,17 @@ const GLARE_R_DEG = 2.5;
  * astronaut keep their form where the Sun does not reach. Three.js divides
  * indirect light by pi: this is a dim grey on level ground.
  */
-const FILL = { sky: 0xdfe0e6, ground: 0x6c6c74, intensity: 1.05 } as const;
+const FILL = { sky: 0x9097a8, ground: 0x8a857d, intensity: 1.1 } as const;
+/** The Sun's key light, relative to which the fill is set. */
+export const KEY_INTENSITY = 4;
 
 export interface SkyParts {
   readonly group: Group;
   readonly sun: Group;
   readonly earth: Mesh<SphereGeometry, ShaderMaterial>;
   readonly light: DirectionalLight;
+  readonly earthshine: DirectionalLight;
+  readonly bounce: DirectionalLight;
 }
 
 /** A sphere `distance` away that looks `radiusDeg` across. */
@@ -86,13 +90,14 @@ function sunGroup(): Group {
 
 /** The key light, its shadows over the near field only. */
 function sunLight(shadowPx: number): DirectionalLight {
-  const light = new DirectionalLight(0xfff3e4, 3.2);
+  const light = new DirectionalLight(0xfff3e4, KEY_INTENSITY);
   light.castShadow = true;
   light.shadow.mapSize.set(shadowPx, shadowPx);
-  Object.assign(light.shadow.camera, { left: -70, right: 70, top: 70,
-    bottom: -70, near: 1, far: 1400 });
-  light.shadow.bias = -0.0005;
-  light.shadow.normalBias = 0.05;
+  Object.assign(light.shadow.camera, { left: -60, right: 60, top: 60,
+    bottom: -60, near: 1, far: 1400 });
+  light.shadow.bias = -0.0012;
+  light.shadow.normalBias = 0.14;
+  light.shadow.radius = 2;
   return light;
 }
 
@@ -105,8 +110,10 @@ export function createSky(seed: number, shadowPx: number): SkyParts {
     starsMaterial(seed, BackSide));
   stars.renderOrder = -1;
   const light = sunLight(shadowPx);
-  // Earthshine and a fill lifted for legibility: the caption says so.
+  // Earthshine, the ground's bounce and a floor lifted for legibility.
   const fill = new HemisphereLight(FILL.sky, FILL.ground, FILL.intensity);
-  group.add(stars, sun, earth, light, light.target, fill);
-  return { group, sun, earth, light };
+  const earthshine = new DirectionalLight(0xbfd2ff, 0);
+  const bounce = new DirectionalLight(0xe8e0d2, 0);
+  group.add(stars, sun, earth, light, light.target, fill, earthshine, bounce);
+  return { group, sun, earth, light, earthshine, bounce };
 }

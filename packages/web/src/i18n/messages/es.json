@@ -361,7 +361,7 @@
   "onFoot.third": "Tercera persona",
   "onFoot.first": "Primera persona",
   "onFoot.caption": "Detalle fino ilustrativo · relieve LOLA {res} m",
-  "onFoot.placeholders": "Módulo: modelo provisional · Tierra: disco iluminado, sin mapa · sombras aclaradas para leerse",
+  "onFoot.placeholders": "Módulo: modelo provisional · Tierra: NASA Blue Marble · sombras aclaradas para leerse",
   "onFoot.ring": "{distance} m",
   "onFoot.ridge": "Cresta {height} m · {distance} km",
   "onFoot.loading": "Cargando el terreno…",

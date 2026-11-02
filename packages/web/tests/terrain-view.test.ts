@@ -41,7 +41,9 @@ import { shadeSun } from '../src/terrain/scene/sky-place';
 import { groundOf } from '../src/terrain/scene/world-ground';
 import type { World } from '../src/terrain/scene/world';
 import { dragLook, keyLook } from '../src/terrain/look-input';
-import { regolithMaps } from '../src/terrain/regolith';
+import { earthPole, earthToBody } from '../src/terrain/earth-orientation';
+import { earthPhase, fillLight } from '../src/terrain/sky-light';
+import { contactAo } from '../src/terrain/stones';
 import { blockerOf, ridgeAlong } from '../src/terrain/ridge';
 import { MAX_ROCK_M, scatterRocks } from '../src/terrain/rocks';
 import { seedOf } from '../src/terrain/seeded';
@@ -84,6 +86,13 @@ describe('tileOf and tileUrl', () => {
     expect(tileOf({ ...body, n: 'x' }, SITE_ON_GRID)).toBeNull();
     expect(tileOf({ ...body, heights: '%%' }, SITE_ON_GRID)).toBeNull();
     expect(tileOf(null, SITE_ON_GRID)).toBeNull();
+  });
+
+  it('refuses an answer with no centre, or one that is not a number', () => {
+    expect(tileOf({ ...body, lat: undefined }, SITE_ON_GRID)).toBeNull();
+    expect(tileOf({ ...body, lat: 'south' }, SITE_ON_GRID)).toBeNull();
+    expect(tileOf({ ...body, lonEast: undefined }, SITE_ON_GRID)).toBeNull();
+    expect(tileOf({ ...body, lonEast: 'east' }, SITE_ON_GRID)).toBeNull();
   });
 
   it('puts the tile’s centre where the grid point is from the site: east and north in metres, the site at the origin', () => {
@@ -143,6 +152,17 @@ describe('the tries', () => {
     await expect(get(503, { error: 'terrain data is not installed' })).rejects.toBeInstanceOf(TerrainNotInstalledError);
     await expect(get(429, { error: 'slow down' })).rejects.toBeInstanceOf(TransientHorizonError);
     await expect(get(200, { not: 'a tile' })).rejects.toBeInstanceOf(TransientHorizonError);
+  });
+
+  it('places the tile from the site it was asked for, off the 0.01° grid', async () => {
+    const heights = encodeHeights(Float32Array.from({ length: N * N }, (_, i) => i));
+    const body = { lat: -84.79, lonEast: 29.2, sizeM: 4000, n: N, groundM: 5321.3, heights, resolutionM: 20 };
+    const fetcher = (async () => new Response(JSON.stringify(body))) as unknown as typeof fetch;
+    const site = { lat: -84.7912, lonEast: 29.2049 };
+    const tile = await fetchTileSource(fetcher, SITES).get(site, 4000);
+    expect(tile.originNorth).toBeCloseTo((-84.79 - site.lat) * (Math.PI / 180) * MOON_RADIUS_M, 1);
+    expect(tile.originNorth).toBeGreaterThan(30);
+    expect(tile.originEast).toBeLessThan(-10);
   });
 });
 
@@ -239,23 +259,6 @@ describe('the illustrative detail', () => {
     }
   });
 
-  it('keeps the regolith grain fine and low in contrast: dust, never a pattern', () => {
-    const { roughness } = regolithMaps(5, 64);
-    const greys = Array.from({ length: 64 * 64 }, (_, i) => roughness[i * 4 + 1]!);
-    expect(Math.max(...greys) - Math.min(...greys)).toBeLessThan(40);
-    expect(Math.min(...greys)).toBeGreaterThan(200);
-  });
-
-  it('draws the same regolith maps for the same seed, unit normals pointing out', () => {
-    const a = regolithMaps(3, 16);
-    expect(a.normal).toEqual(regolithMaps(3, 16).normal);
-    expect(a.normal).not.toEqual(regolithMaps(4, 16).normal);
-    for (let i = 0; i < 16 * 16; i++) {
-      const [x, y, z] = [0, 1, 2].map((c) => a.normal[i * 4 + c]! / 127.5 - 1);
-      expect(Math.hypot(x!, y!, z!)).toBeCloseTo(1, 1);
-      expect(z).toBeGreaterThan(0);
-    }
-  });
 });
 
 /** A profile with a 12° wall from 300° to 330° and 0.5° elsewhere. */
@@ -328,6 +331,14 @@ describe('a tile centred off the site', () => {
     // The site is at tile-local (60, -40): 0.5 * 60 + 0.25 * -40 = 20; the centre's ground is 0.
     expect(ground(0, 0)).toBeCloseTo(20, 4);
     expect(cameraPose('first', startLook('first', 0), ground(0, 0), ground).position[1]).toBeCloseTo(20 + EYE_M, 4);
+  });
+
+  it('finds the sample north of the site by the tile’s own origin, rows running north to south', () => {
+    const north = { ...tileFrom(() => 0), originEast: 0, originNorth: 100 };
+    // The site lies 100 m south of this tile's centre: one row below the middle row.
+    expect(nearestSample(north, 0, 0)).toBe(3 * N + 2);
+    const south = { ...tileFrom(() => 0), originEast: 0, originNorth: -100 };
+    expect(nearestSample(south, 0, 0)).toBe(1 * N + 2);
   });
 
   it('shades the point from the sample nearest the site, not the tile centre', () => {
@@ -504,5 +515,58 @@ describe('the astronaut and the shapes', () => {
     for (let i = 0; i < ring.positions.length; i += 3) {
       expect(ring.positions[i + 1]).toBeCloseTo(ring.positions[i]! * 0.01 + 0.12 + 0.1, 6);
     }
+  });
+});
+
+describe('the Earth in the sky', () => {
+  const toward = direction(314, 9);
+  const input = { toward, siteLatDeg: -85.5, subLunar: { latDeg: 12, lonEastDeg: 30 }, moonLonDeg: 100 };
+
+  it('turns the scene into the Earth’s body frame: the sub-lunar point faces the site, the pole is up', () => {
+    const m = earthToBody(input);
+    const apply = (v: readonly number[]) => [0, 1, 2].map((i) => m[i * 3]! * v[0]! + m[i * 3 + 1]! * v[1]! + m[i * 3 + 2]! * v[2]!);
+    const [lat, lon] = [(12 * Math.PI) / 180, (30 * Math.PI) / 180];
+    const facing = apply([-toward[0], -toward[1], -toward[2]]);
+    expect(facing[0]).toBeCloseTo(Math.cos(lat) * Math.sin(lon), 6);
+    expect(facing[1]).toBeCloseTo(Math.sin(lat), 6);
+    expect(facing[2]).toBeCloseTo(Math.cos(lat) * Math.cos(lon), 6);
+    const pole = apply(earthPole(input));
+    expect(pole[0]).toBeCloseTo(0, 6);
+    expect(pole[1]).toBeCloseTo(1, 6);
+    expect(Math.hypot(...earthPole(input))).toBeCloseTo(1, 6);
+  });
+
+  it('shows the Earth’s north toward the horizon at the south pole, as the Moon’s axis does', () => {
+    const level = { ...input, toward: direction(0, 0), siteLatDeg: -90, subLunar: { latDeg: 0, lonEastDeg: 0 }, moonLonDeg: 90 };
+    // The Moon's north is straight down there, and with L = 90° the Earth's pole leans 0° from it.
+    expect(earthPole(level)[1]).toBeLessThan(-0.9);
+  });
+});
+
+describe('the fill light', () => {
+  const sky = { sunAz: 0, sunEl: 5, earthAz: 180, earthEl: 9 };
+
+  it('gives the Earth’s light by its lit share and by its being up: full beats new, below the level none', () => {
+    expect(earthPhase({ ...sky, sunAz: 0, sunEl: 0, earthAz: 180, earthEl: 0 })).toBeCloseTo(1, 6);
+    expect(earthPhase({ ...sky, sunAz: 180, sunEl: 0, earthAz: 180, earthEl: 0 })).toBeCloseTo(0, 6);
+    expect(fillLight({ ...sky, earthEl: -10 }).earthshine.intensity).toBe(0);
+    expect(fillLight(sky).earthshine.intensity).toBeGreaterThan(0);
+  });
+
+  it('bounces the ground’s light back from where the Sun is, and not at all under a set Sun', () => {
+    expect(fillLight({ ...sky, sunEl: -5 }).bounce.intensity).toBe(0);
+    expect(fillLight({ ...sky, sunEl: 40 }).bounce.intensity).toBeGreaterThan(fillLight(sky).bounce.intensity);
+    expect(fillLight(sky).bounce.toward[2]).toBeGreaterThan(0);
+  });
+});
+
+describe('baked contact occlusion', () => {
+  it('darkens what touches the ground and leaves what stands clear of it', () => {
+    const positions = Float32Array.from([0, 0, 0, 0, 0.6, 0, 0, -0.2, 0]);
+    const ao = contactAo(positions, () => 0);
+    expect(ao[0]).toBeCloseTo(0.3, 6);
+    expect(ao[3]).toBeCloseTo(1, 6);
+    expect(ao[6]).toBeCloseTo(0.3, 6);
+    expect(ao).toHaveLength(9);
   });
 });

@@ -27,9 +27,10 @@
  * The little of glTF the astronaut needs (VENT-34), read without
  * GLTFLoader: the loader's animation and skinning classes would join the
  * Three.js chunk the globe loads at start. A binary glTF's JSON and BIN
- * chunks, and each primitive's indices, positions and normals with their
- * byte stride and normalisation (KHR_mesh_quantization), its material's
- * colour, roughness and metalness, and the node's scale and translation.
+ * chunks, and each primitive's indices, positions, normals and UVs with
+ * their byte stride and normalisation (KHR_mesh_quantization), its
+ * material's colour, roughness and metalness, and the node's scale and
+ * translation.
  * Pure: arrays only; the scene makes the Three.js objects.
  */
 
@@ -48,6 +49,8 @@ export interface GlbPrimitive {
   readonly index: GlbAccessor;
   readonly position: GlbAccessor;
   readonly normal: GlbAccessor;
+  /** The first texture coordinates (the suit's, laid out as glTF does). */
+  readonly uv: GlbAccessor;
   readonly color: readonly [number, number, number];
   readonly roughness: number;
   readonly metalness: number;
@@ -106,6 +109,7 @@ function primitives(json: Json, bin: DataView): GlbPrimitive[] {
       index: accessor(json, bin, p.indices),
       position: accessor(json, bin, p.attributes['POSITION'] ?? -1),
       normal: accessor(json, bin, p.attributes['NORMAL'] ?? -1),
+      uv: accessor(json, bin, p.attributes['TEXCOORD_0'] ?? -1),
       color: [r, g, b],
       roughness: pbr.roughnessFactor ?? 1,
       metalness: pbr.metallicFactor ?? 1,

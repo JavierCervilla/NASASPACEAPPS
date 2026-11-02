@@ -25,15 +25,16 @@
 
 /**
  * What stands near the point (VENT-34): the illustrative rocks (rocks.ts,
- * stones.ts) as one mesh of rounded stones, and the lander, a clean
+ * stones.ts) as one mesh of rounded stones, and the lander, a
  * placeholder (lander-shape.ts) until a licensed model is chosen (the
  * caption says so), on its four feet, beside where the view opens.
  */
-import { Group, Mesh, MeshLambertMaterial } from 'three';
+import { BufferAttribute, Group, Mesh, MeshStandardMaterial } from 'three';
 import { LANDER_FOOT_M, landerBuffers } from '../lander-shape';
 import { scatterRocks } from '../rocks';
-import { stonesBuffers, type GroundAt } from '../stones';
+import { contactAo, stonesBuffers, type GroundAt } from '../stones';
 import { direction } from '../view-camera';
+import { contactShadow } from './contact-shadow';
 import { geometryOf } from './mesh-of';
 import { maskSun, type SunMask } from './sun-mask';
 
@@ -46,9 +47,10 @@ export function landerSpot(yawDeg: number): readonly [number, number] {
   return [x * LANDER.distanceM, -z * LANDER.distanceM];
 }
 
-/** A masked Lambert material of `color`. */
-function masked(color: number, mask: SunMask): MeshLambertMaterial {
-  const material = new MeshLambertMaterial({ color });
+/** A masked, physically based material of `color`. */
+function masked(color: number, mask: SunMask, roughness = 0.92) {
+  const material = new MeshStandardMaterial({ color, roughness,
+    metalness: 0 });
   maskSun(material, mask, false);
   return material;
 }
@@ -63,10 +65,27 @@ export function rocksMesh(
   const clear = [{ east: avoid[0], north: avoid[1], r: LANDER_FOOT_M + 2 }];
   const rocks = scatterRocks(seed, { count: 420, innerM: 2.5,
     outerM: 120, clear });
-  const mesh = new Mesh(geometryOf(stonesBuffers(rocks, ground)),
-    masked(0xa6a39e, mask));
+  const buffers = stonesBuffers(rocks, ground);
+  const geometry = geometryOf(buffers);
+  geometry.setAttribute('color', new BufferAttribute(
+    contactAo(buffers.positions, ground), 3));
+  const material = masked(0xb4b1ab, mask);
+  material.vertexColors = true;
+  const mesh = new Mesh(geometry, material);
   mesh.castShadow = mesh.receiveShadow = true;
   return mesh;
+}
+
+/** The soft shadows under the pads, and a wide one under the body. */
+function padShadows(): Mesh[] {
+  const pads = [0, 1, 2, 3].map((i) => {
+    const angle = (i + 0.5) * (Math.PI / 2);
+    const shadow = contactShadow(0.95, 0.6);
+    shadow.position.set(Math.sin(angle) * LANDER_FOOT_M, 0,
+      Math.cos(angle) * LANDER_FOOT_M);
+    return shadow;
+  });
+  return [...pads, contactShadow(3.4, 0.3)];
 }
 
 /** The placeholder lander at `spot`, its feet on `ground`. */
@@ -77,12 +96,15 @@ export function landerMesh(
 ): Group {
   const parts = landerBuffers();
   const lander = new Group();
-  const colours = { body: 0xc9ccd2, foil: 0xa8843c, dark: 0x2c2e33 };
+  const looks = { body: [0xd8dadf, 0.5], foil: [0xc09a44, 0.3],
+    dark: [0x3a3c42, 0.7] } as const;
   for (const key of ['body', 'foil', 'dark'] as const) {
-    const mesh = new Mesh(geometryOf(parts[key]), masked(colours[key], mask));
+    const mesh = new Mesh(geometryOf(parts[key]),
+      masked(looks[key][0], mask, looks[key][1]));
     mesh.castShadow = mesh.receiveShadow = true;
     lander.add(mesh);
   }
+  lander.add(...padShadows());
   lander.position.set(spot[0], ground(spot[0], spot[1]), -spot[1]);
   return lander;
 }

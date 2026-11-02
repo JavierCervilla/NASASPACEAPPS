@@ -36,7 +36,7 @@ import type { HorizonStore } from '../../horizon/horizon-store';
 import { useTime } from '../calendar/hooks';
 import { useSiteHorizon } from '../horizon/use-horizon';
 import { useI18n } from '../i18n-context';
-import { sceneWords, seenBodies, startYaw } from '../../terrain/on-foot-model';
+import { sceneWords, seenBodies, spinOf, startYaw } from '../../terrain/on-foot-model';
 import type { PlacedTile, SceneInput,
   SkyDirs } from '../../terrain/scene/scene-types';
 import { seedOf } from '../../terrain/seeded';
@@ -101,7 +101,10 @@ export function useOnFoot(parts: OnFootParts) {
   const input = useMemo<SceneInput | null>(() => {
     if (!placed || !sky) return null;
     const words = sceneWords(i18n, bodies);
-    return { tiles: [placed], profile, seed, sky, mode, startYawDeg, words };
-  }, [placed, sky, profile, seed, mode, startYawDeg, bodies, i18n]);
+    const earthSpin = spinOf(parts.site.lat, sky, ground.atMs ?? 0);
+    return { tiles: [placed], profile, seed, sky, earthSpin, mode,
+      startYawDeg, words };
+  }, [placed, sky, profile, seed, mode, startYawDeg, bodies, i18n,
+    parts.site.lat, ground.atMs]);
   return { ...ground, input, bodies, mode, setMode, startYawDeg };
 }

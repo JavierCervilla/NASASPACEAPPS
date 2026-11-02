@@ -371,15 +371,24 @@ Every visible change follows `.claude/skills/apple-design/SKILL.md` (vendored fr
   Sun and the Earth set behind exactly the ridge the card names. The sky at the shared instant (`skyAt`): the Sun at its
   true size and direction is the key light, with hard shadows near the point (shadow map) and per vertex over the tile
   (`sun-shade.ts`), darkening the whole view when terrain beyond the tile hides it (`ridge.ts` `blockerOf`,
-  `scene/sun-mask.ts`); the Earth a lit disc at its true size with its true phase (no map); faint seeded stars; an
-  ambient fill lifted for legibility. Illustrative and said so in the caption («Fine detail illustrative · relief LOLA
-  20 m», «Lander: placeholder model · Earth: lit disc, no map · shadows lifted for legibility»): rounded rocks under
-  1 m and a regolith normal map and grain, seeded from the point (`seeded.ts`, `rocks.ts`, `regolith.ts`), and the
-  lander, primitives until a licensed model is chosen. Rings at 25, 100 and 500 m with HTML labels, and the ridge that
+  `scene/sun-mask.ts`); the Earth at its true size with its true phase, wearing NASA's Blue Marble turned to the face the Moon sees
+  (`earth-orientation.ts`, from the sub-lunar point and the ecliptic roll, about 2° accurate); faint seeded stars; the fill is
+  the Earth's light by its lit share, the ground's bounce by the Sun's height and a dim sky floor (`sky-light.ts`), and
+  when the Sun does not reach the point the exposure opens up instead of faking sunlight (`exposureFor`, `stage.ts`).
+  Rendering: ACES filmic tone mapping, `MeshStandardMaterial` everywhere, the Sun a hard key with a 60 m PCF shadow, baked
+  contact occlusion on the stones (`contactAo`) and soft contact shadows under the astronaut and the lander's pads. Illustrative and said so in the caption («Fine detail illustrative · relief LOLA
+  20 m», «Lander: placeholder model · Earth: NASA Blue Marble · shadows lifted for legibility»): rounded rocks under
+  1 m seeded from the point (`seeded.ts`, `rocks.ts`), the regolith a CC0 photographed material (Poly Haven «Moon 02»,
+  albedo and normal, 1K WebP in `src/terrain/maps/`, ASSETS.md) tiled at 3.5 m and read twice, turned and at another
+  scale, with a slow brightness noise and a fade with distance so it never repeats (`scene/ground-shader.ts`), and the
+  lander, primitives (a dome, tanks, mast and dish on a hexagonal body: NASA's only public-domain landers are Apollo's,
+  wrong for a 2026 CLPS site) until a licensed model is chosen. Rings at 25, 100 and 500 m with HTML labels, and the ridge that
   hides a body labelled with its height and distance (`on-foot-model.ts`); a text alternative says the heading, where
   each body is and what hides it (`view-alt.ts`); the desktop view keeps the horizon strip under it. The astronaut is
-  read by a small glb reader (`glb.ts`), not GLTFLoader, whose classes would join the Three.js chunk the globe loads at
-  start; the scene uses Lambert materials and builds its shapes itself for the same reason. Performance: the panel
+  read by a small glb reader (`glb.ts`, with its UVs) and wears its suit texture (`models/astronaut-suit.webp`, which the
+  glb does not carry) on a `MeshStandardMaterial`, not GLTFLoader, whose classes would join the Three.js chunk the globe
+  loads at start (the scene builds its shapes itself for the same reason); the standard material, ACES and the Earth's
+  shader added 1.9 kB (0.4 %) to that chunk, the one cost of this look. Performance: the panel
   (`components/terrain/TerrainPanel.tsx`, `React.lazy` in `OnFootView.tsx`), its stylesheet (a React 19
   `<link precedence>`, so Astro does not inline it), the scene (`src/terrain/scene/terrain-scene.ts`, a dynamic import)
   and the astronaut load only when the view opens, and the service worker leaves them out of the precache

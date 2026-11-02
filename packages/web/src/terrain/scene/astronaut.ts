@@ -25,9 +25,11 @@
 
 /**
  * The astronaut (VENT-34): NASA's «Astronaut» model with the insignia
- * covered (packages/web/models/astronaut.glb, ASSETS.md), loaded with the
- * scene only and read by glb.ts, 1.9 m tall, standing on the point. Third
- * person shows it, facing where the view looks.
+ * covered (packages/web/models/astronaut.glb, ASSETS.md) and its suit
+ * texture (astronaut-suit.webp, which the glb does not carry), loaded with
+ * the scene only and read by glb.ts, as a physically based white suit and
+ * a gold visor, 1.9 m tall, standing on the point in a soft contact
+ * shadow. Third person shows it, facing where the view looks.
  */
 import {
   Box3,
@@ -35,36 +37,28 @@ import {
   BufferGeometry,
   Group,
   Mesh,
-  MeshLambertMaterial,
+  type Texture,
 } from 'three';
 import modelUrl from '../../../models/astronaut.glb?url';
 import { readGlb, type GlbAccessor, type GlbPrimitive } from '../glb';
-import { maskSun, type SunMask } from './sun-mask';
+import { contactShadow } from './contact-shadow';
+import { loadSuit, materialOf } from './suit';
+import type { SunMask } from './sun-mask';
 
 const HEIGHT_M = 1.9;
-/**
- * The white suit's own lift, a share of its colour: it reads as a lit white
- * suit against the dark ground even with the Sun grazing (shadows lifted
- * for legibility, as the caption says).
- */
-const SELF_FILL = 0.3;
-
 /** A vertex attribute over `a`. */
 const attribute = (a: GlbAccessor): BufferAttribute =>
   new BufferAttribute(a.array, a.itemSize, a.normalized);
 
 /** A mesh of `p`, its light masked near the point. */
-function primitiveMesh(p: GlbPrimitive, mask: SunMask): Mesh {
+function primitiveMesh(p: GlbPrimitive, i: number, suit: Texture,
+  mask: SunMask): Mesh {
   const geometry = new BufferGeometry();
   geometry.setAttribute('position', attribute(p.position));
   geometry.setAttribute('normal', attribute(p.normal));
+  geometry.setAttribute('uv', attribute(p.uv));
   geometry.setIndex(attribute(p.index));
-  // Lambert, as the globe: no new material class joins the shared chunk.
-  const material = new MeshLambertMaterial();
-  material.color.setRGB(...p.color);
-  material.emissive.setRGB(...p.color).multiplyScalar(SELF_FILL);
-  maskSun(material, mask, false);
-  const mesh = new Mesh(geometry, material);
+  const mesh = new Mesh(geometry, materialOf(i, suit, mask));
   mesh.castShadow = mesh.receiveShadow = true;
   return mesh;
 }
@@ -89,15 +83,16 @@ export async function loadAstronaut(
   warn: (message: string) => void,
 ): Promise<void> {
   try {
-    const response = await fetch(modelUrl);
+    const [response, suit] = await Promise.all([fetch(modelUrl), loadSuit()]);
     const glb = readGlb(await response.arrayBuffer());
     const model = new Group();
-    for (const p of glb.primitives) model.add(primitiveMesh(p, mask));
+    glb.primitives.forEach((p, i) => model.add(primitiveMesh(p, i, suit,
+      mask)));
     model.scale.setScalar(glb.scale);
     model.position.set(...glb.translation);
     const outer = new Group();
     outer.add(model);
-    into.add(fitted(outer));
+    into.add(fitted(outer), contactShadow(0.95, 0.6));
   } catch (error) {
     warn(`Ventana Lunar: the astronaut did not load (${String(error)}).`);
   }

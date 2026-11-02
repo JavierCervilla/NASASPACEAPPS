@@ -53,7 +53,7 @@ const ROOT_FILES = new Set(['favicon.ico', 'favicon.svg', 'apple-touch-icon.png'
  * The on-foot 3D view's files (VENT-34): its panel, styles, scene and the astronaut download only when the view opens,
  * so they stay out of the install set; the worker keeps them cache first the first time the page asks for them.
  */
-const ON_DEMAND = /^_astro\/(TerrainPanel|terrain-scene|on-foot|astronaut)\.[^/]+$/;
+const ON_DEMAND = /^_astro\/(TerrainPanel|terrain-scene|on-foot|astronaut)[.-][^/]+$/;
 /** The pseudo-locale's folder (src/i18n/locales.ts): never offered, never cached. */
 const PSEUDO = 'en-xa/';
 

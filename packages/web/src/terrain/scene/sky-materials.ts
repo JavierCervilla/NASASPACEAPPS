@@ -25,12 +25,13 @@
 
 /**
  * The sky's shaders (VENT-34): the Earth lit from the Sun's direction, so
- * its phase is the true one as the Moon sees it (no map; a little light
- * on its night side keeps the disc findable); the Sun's soft glare; and
+ * its phase is the true one as the Moon sees it, wearing NASA's Blue
+ * Marble turned to the face the Moon sees (a little light on its night
+ * side keeps the disc findable); the Sun's soft glare; and
  * faint stars hashed from the direction, the same for the same seed
  * (illustrative: not a catalogue).
  */
-import { ShaderMaterial, Vector3, type Blending, type Side } from 'three';
+import { Matrix3, ShaderMaterial, Vector3, type Blending, type Side } from 'three';
 
 const NORMAL_VERTEX = `
 varying vec3 vNormal;
@@ -42,20 +43,36 @@ void main() {
   gl_Position = projectionMatrix * viewMatrix * world;
 }`;
 
-/** The Earth, `uSun` the unit vector toward the Sun. */
-export function earthMaterial(): ShaderMaterial {
-  return new ShaderMaterial({
-    uniforms: { uSun: { value: new Vector3(0, 1, 0) } },
-    vertexShader: NORMAL_VERTEX,
-    fragmentShader: `
+const EARTH_FRAGMENT = `
 uniform vec3 uSun;
+uniform mat3 uBody;
+uniform sampler2D uMap;
 varying vec3 vNormal;
 varying vec3 vView;
 void main() {
-  float lit = smoothstep(-0.05, 0.15, dot(normalize(vNormal), uSun));
-  gl_FragColor = vec4(vec3(0.55, 0.68, 0.92) * (0.06 + 0.94 * lit), 1.0);
+  vec3 n = normalize(vNormal);
+  vec3 p = uBody * n;
+  vec2 uv = vec2(atan(p.x, p.z) / 6.2831853 + 0.5,
+    asin(clamp(p.y, -1.0, 1.0)) / 3.1415927 + 0.5);
+  vec2 wrapped = vec2(fract(uv.x + 0.5), uv.y);
+  vec2 gx = dFdx(uv); vec2 gy = dFdy(uv);
+  vec2 hx = dFdx(wrapped); vec2 hy = dFdy(wrapped);
+  if (dot(hx, hx) + dot(hy, hy) < dot(gx, gx) + dot(gy, gy)) { gx = hx; gy = hy; }
+  vec3 land = textureGrad(uMap, uv, gx, gy).rgb;
+  float lit = smoothstep(-0.08, 0.3, dot(n, uSun));
+  float rim = pow(1.0 - max(dot(n, normalize(vView)), 0.0), 3.0);
+  vec3 colour = land * (0.025 + 0.975 * lit) + vec3(0.2, 0.4, 0.9) * rim * 0.45 * lit;
+  gl_FragColor = vec4(colour, 1.0);
   #include <colorspace_fragment>
-}`,
+}`;
+
+/** The Earth: `uMap` its Blue Marble, `uBody` the scene-to-body matrix. */
+export function earthMaterial(): ShaderMaterial {
+  return new ShaderMaterial({
+    uniforms: { uSun: { value: new Vector3(0, 1, 0) },
+      uBody: { value: new Matrix3() }, uMap: { value: null } },
+    vertexShader: NORMAL_VERTEX,
+    fragmentShader: EARTH_FRAGMENT,
     toneMapped: false,
   });
 }

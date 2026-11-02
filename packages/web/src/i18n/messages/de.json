@@ -353,7 +353,7 @@
   "onFoot.third": "Dritte Person",
   "onFoot.first": "Erste Person",
   "onFoot.caption": "Feine Details illustrativ · Relief LOLA {res} m",
-  "onFoot.placeholders": "Lander: Platzhaltermodell · Erde: beleuchtete Scheibe, ohne Karte · Schatten zur Lesbarkeit aufgehellt",
+  "onFoot.placeholders": "Lander: Platzhaltermodell · Erde: NASA Blue Marble · Schatten zur Lesbarkeit aufgehellt",
   "onFoot.ring": "{distance} m",
   "onFoot.ridge": "Grat {height} m · {distance} km",
   "onFoot.loading": "Gelände wird geladen…",

@@ -29,21 +29,26 @@
  * sun-mask.ts from what hides the Sun (ridge.ts): the far horizon darkens
  * the whole view, a ridge in reach only what it shades.
  */
-import type { BufferAttribute, Vector3 } from 'three';
+import type { BufferAttribute, Matrix3, Vector3 } from 'three';
 import type { HorizonProfile } from '@ventana/sim';
 import { blockerOf, ridgeAlong } from '../ridge';
 import { sunLit } from '../sun-shade';
 import { nearestSample } from '../tile-sample';
 import { direction } from '../view-camera';
 import type { PlacedTile, SkyDirs } from './scene-types';
-import { EARTH_M, SUN_M, type SkyParts } from './sky';
+import { EARTH_M, KEY_INTENSITY, SUN_M, type SkyParts } from './sky';
+import { fillLight } from '../sky-light';
 import type { SunMask } from './sun-mask';
 
 /** How far the light stands from the point, metres. */
 const LIGHT_M = 600;
 
 /** Moves the Sun, the Earth and the light to `sky`'s directions. */
-export function placeSky(parts: SkyParts, sky: SkyDirs): void {
+export function placeSky(
+  parts: SkyParts,
+  sky: SkyDirs,
+  spin: readonly number[],
+): void {
   const [sx, sy, sz] = direction(sky.sunAz, sky.sunEl);
   const [ex, ey, ez] = direction(sky.earthAz, sky.earthEl);
   parts.sun.position.set(sx * SUN_M, sy * SUN_M, sz * SUN_M);
@@ -54,6 +59,21 @@ export function placeSky(parts: SkyParts, sky: SkyDirs): void {
   parts.light.position.set(sx * LIGHT_M, sy * LIGHT_M, sz * LIGHT_M);
   parts.light.target.position.set(0, 0, 0);
   parts.light.target.updateMatrixWorld();
+  const bodyUniform = parts.earth.material.uniforms['uBody'];
+  (bodyUniform?.value as Matrix3 | undefined)?.fromArray(spin as number[])
+    .transpose();
+  placeFill(parts, sky);
+}
+
+/** Aims the Earth's light and the ground's bounce, and sets their level. */
+function placeFill(parts: SkyParts, sky: SkyDirs): void {
+  const fill = fillLight(sky);
+  for (const [light, part] of [[parts.earthshine, fill.earthshine],
+    [parts.bounce, fill.bounce]] as const) {
+    light.position.set(...part.toward.map((c) => c * LIGHT_M) as
+      [number, number, number]);
+    light.intensity = part.intensity * KEY_INTENSITY;
+  }
 }
 
 export interface Shading {

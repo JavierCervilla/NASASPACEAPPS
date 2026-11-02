@@ -27,58 +27,62 @@
  * The measured ground (VENT-34): one mesh per tile, kept by the tile's
  * key so tiles can later come and go side by side, each freed when it
  * leaves. Geometry from the pure buffers (tile-mesh.ts), the Sun's mask
- * per vertex (sun-shade.ts), and the illustrative regolith grain
- * (regolith.ts) as a normal map and an albedo grain. Lambert, as the
- * globe, so no new material class joins the chunk it loads at start:
- * regolith is near fully rough, and the grain stands for its roughness.
+ * per vertex (sun-shade.ts), and the regolith as a physically based
+ * material: CC0 photographs of lunar regolith (Poly
+ * Haven, ASSETS.md), albedo and normal, tiled at walking scale and varied
+ * so they do not repeat (ground-shader.ts). Illustrative fine detail, as
+ * the caption says; the relief it lies on is LOLA's.
  */
 import {
   BufferAttribute,
   BufferGeometry,
-  DataTexture,
-  LinearMipmapLinearFilter,
   Mesh,
-  MeshLambertMaterial,
-  RepeatWrapping,
+  MeshStandardMaterial,
+  Vector2,
   type Scene,
 } from 'three';
-import { regolithMaps } from '../regolith';
 import { tileBuffers } from '../tile-mesh';
+import { antiTile } from './ground-shader';
+import type { SurfaceMaps } from './surface-maps';
 import type { PlacedTile } from './scene-types';
 import { maskSun, type SunMask } from './sun-mask';
 
-/** Metres one repeat of the grain covers. */
-const GRAIN_M = 3;
-const GRAIN_PX = 256;
+/** Metres one repeat of the regolith photograph covers. */
+const GRAIN_M = 3.5;
+/** Regolith is near fully rough; its albedo is a dark grey (about 0.12). */
+const ROUGHNESS = 0.96;
+const NORMAL_STRENGTH = 0.55;
 
-/** A wrapping, mipmapped texture over `data`. */
-function grainTexture(data: Uint8Array): DataTexture {
-  const texture = new DataTexture(data, GRAIN_PX, GRAIN_PX);
-  texture.wrapS = texture.wrapT = RepeatWrapping;
-  texture.minFilter = LinearMipmapLinearFilter;
-  texture.generateMipmaps = true;
-  texture.anisotropy = 4;
-  texture.needsUpdate = true;
-  return texture;
+/** The ground's material; its maps come with {@link attachGroundMaps}. */
+export function groundMaterial(mask: SunMask): MeshStandardMaterial {
+  const material = new MeshStandardMaterial({ color: 0xcfcfcf,
+    roughness: ROUGHNESS, metalness: 0 });
+  material.normalScale = new Vector2(NORMAL_STRENGTH, NORMAL_STRENGTH);
+  maskSun(material, mask, true);
+  const masked = material.onBeforeCompile;
+  material.onBeforeCompile = (shader, renderer) => {
+    masked.call(material, shader, renderer);
+    antiTile(shader);
+  };
+  material.customProgramCacheKey = () => 'sun-tile-regolith';
+  return material;
 }
 
-/** The ground's material, its grain from `seed`, the Sun masked. */
-export function groundMaterial(seed: number, mask: SunMask) {
-  const maps = regolithMaps(seed, GRAIN_PX);
-  const material = new MeshLambertMaterial({
-    color: 0xa6a39e,
-    normalMap: grainTexture(maps.normal),
-    map: grainTexture(maps.roughness),
-  });
-  maskSun(material, mask, true);
-  return material;
+/** Puts the photographed regolith on `material` (compiled once more). */
+export function attachGroundMaps(
+  material: MeshStandardMaterial,
+  maps: SurfaceMaps,
+): void {
+  material.map = maps.albedo;
+  material.normalMap = maps.normal;
+  material.needsUpdate = true;
 }
 
 /** The mesh of `placed`, with `lit` as its Sun mask. */
 export function tileMesh(
   placed: PlacedTile,
   lit: Float32Array,
-  material: MeshLambertMaterial,
+  material: MeshStandardMaterial,
 ): Mesh {
   const { positions, normals, index } = tileBuffers(placed.tile, placed.ys);
   const uv = new Float32Array((positions.length / 3) * 2);

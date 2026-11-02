@@ -24,12 +24,13 @@
  */
 
 /**
- * The on-foot scene's stage (VENT-34): renderer with hard shadows, scene
- * and camera, the pixel ratio capped by the device's quality tier, sized
- * to its host; drawn by a band of the host when one is given.
+ * The on-foot scene's stage (VENT-34): renderer with ACES filmic tone
+ * mapping and hard shadows, scene and camera, the pixel ratio capped by
+ * the device's quality tier, sized to its host; drawn by a band of the host
+ * when one is given.
  */
 import {
-  NeutralToneMapping,
+  ACESFilmicToneMapping,
   PCFShadowMap,
   PerspectiveCamera,
   Scene,
@@ -42,6 +43,14 @@ export interface Stage {
   readonly scene: Scene;
   readonly camera: PerspectiveCamera;
 }
+
+/** Filmic exposure, fixed: sunlit regolith mid grey, the suit near white. */
+const EXPOSURE = 1.35;
+/**
+ * The eye's adaptation when the Sun does not reach the point: the view
+ * opens up, as a camera set for the dark would, instead of lighting it.
+ */
+const DARK_EXPOSURE = 2.8;
 
 /** Vertical field of view, degrees: wider on a phone held upright. */
 const FOV = { phone: 62, wide: 50 } as const;
@@ -58,7 +67,8 @@ export function createStage(
   });
   renderer.setPixelRatio(Math.min(devicePixelRatio, quality.maxPixelRatio));
   renderer.setClearColor(0x000000, 1);
-  renderer.toneMapping = NeutralToneMapping;
+  renderer.toneMapping = ACESFilmicToneMapping;
+  renderer.toneMappingExposure = EXPOSURE;
   renderer.shadowMap.enabled = true;
   renderer.shadowMap.type = PCFShadowMap;
   renderer.shadowMap.autoUpdate = true;
@@ -108,5 +118,16 @@ function disposeMaterial(material: { dispose(): void }): void {
     const texture = value as { isTexture?: boolean; dispose?: () => void };
     if (texture?.isTexture) texture.dispose?.();
   }
+  // A shader material keeps its textures in its uniforms.
+  const { uniforms } = material as { uniforms?: Record<string,
+    { value?: { isTexture?: boolean; dispose?: () => void } | null }> };
+  for (const uniform of Object.values(uniforms ?? {})) {
+    if (uniform.value?.isTexture) uniform.value.dispose?.();
+  }
   material.dispose();
+}
+
+/** The exposure for a point the Sun reaches (`lit`) or does not. */
+export function exposureFor(lit: boolean): number {
+  return lit ? EXPOSURE : DARK_EXPOSURE;
 }

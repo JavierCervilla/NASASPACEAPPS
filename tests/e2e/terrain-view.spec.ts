@@ -43,7 +43,7 @@ const RIDGE_AT = new Date('2026-11-30T20:00:00Z');
 const POINT = '?lat=-85.50&lon=40.00';
 const SHOTS = process.env.VENT34_SHOTS;
 /** The view's files, never in the first load (scripts/service-worker.mjs ON_DEMAND). */
-const VIEW_FILES = /\/_astro\/(TerrainPanel|terrain-scene|on-foot|astronaut)\.|\/api\/v1\/terrain\/tile/;
+const VIEW_FILES = /\/_astro\/(TerrainPanel|terrain-scene|on-foot|astronaut)[.-]|\/api\/v1\/terrain\/tile/;
 const START_MS = 30_000;
 /**
  * A string only the view's panel and only its scene carry (OnFootStageArea's host class, sun-mask.ts's uniform): a

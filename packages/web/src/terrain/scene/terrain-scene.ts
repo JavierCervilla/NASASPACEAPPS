@@ -41,6 +41,7 @@ import { framer, type ViewState } from './scene-frame';
 import { controller, turner } from './scene-controller';
 import type { SceneHooks, SceneInput, TerrainScene } from './scene-types';
 import { createStage, disposeStage } from './stage';
+import { loadSurfaces } from './surfaces';
 import { applyInput, createWorld, type World } from './world';
 
 /** The world on a new stage in `host`; throws without WebGL. */
@@ -66,6 +67,16 @@ function bindHost(host: HTMLElement, world: World, view: ViewState,
   };
 }
 
+/** Loads the astronaut and the maps; marks the host once both stand. */
+function startLoading(host: HTMLElement, world: World,
+  loop: ReturnType<typeof createLoop>): () => void {
+  const standing = Promise.all([
+    loadAstronaut(world.astronaut, world.mask, console.warn),
+    loadSurfaces(world, console.warn),
+  ]).then(() => undefined);
+  return markReadyWhenStanding(host, standing, () => loop.invalidate());
+}
+
 /** Mounts the view in `host` with `input`; throws without WebGL. */
 export function mountTerrainScene(
   host: HTMLElement,
@@ -80,9 +91,7 @@ export function mountTerrainScene(
   const set = turner(view, hooks, () => loop);
   applyInput(world, input);
   const unbind = bindHost(host, world, view, set);
-  const standing = loadAstronaut(world.astronaut, world.mask, console.warn);
-  const unmark = markReadyWhenStanding(host, standing, () =>
-    loop.invalidate());
+  const unmark = startLoading(host, world, loop);
   const teardown = (): void => {
     unmark();
     loop.stop();

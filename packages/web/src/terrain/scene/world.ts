@@ -31,7 +31,7 @@
  * instant does.
  */
 import { Group, type BufferAttribute, type Mesh,
-  type MeshLambertMaterial } from 'three';
+  type MeshStandardMaterial } from 'three';
 import type { HorizonProfile } from '@ventana/sim';
 import { EYE_M } from '../view-camera';
 import { backdropMesh } from './backdrop';
@@ -41,7 +41,7 @@ import { landerMesh, landerSpot, rocksMesh } from './props';
 import type { SceneInput } from './scene-types';
 import { placeSky, shadeSun } from './sky-place';
 import { createSky, type SkyParts } from './sky';
-import type { Stage } from './stage';
+import { exposureFor, type Stage } from './stage';
 import { createSunMask, type SunMask } from './sun-mask';
 import { groundOf, type Ground } from './world-ground';
 
@@ -52,16 +52,17 @@ export interface World {
   readonly astronaut: Group;
   near: Group;
   ground: Ground;
-  material: MeshLambertMaterial | null;
+  material: MeshStandardMaterial;
   backdrop: Mesh | null;
   input: SceneInput | null;
 }
 
 /** An empty world on `stage`. */
 export function createWorld(stage: Stage, seed: number, shadowPx: number) {
-  const world: World = { stage, mask: createSunMask(), sky: createSky(seed,
-    shadowPx), astronaut: new Group(), near: new Group(), ground: () => 0,
-    material: null, backdrop: null, input: null };
+  const mask = createSunMask();
+  const world: World = { stage, mask, sky: createSky(seed, shadowPx),
+    astronaut: new Group(), near: new Group(), ground: () => 0,
+    material: groundMaterial(mask), backdrop: null, input: null };
   stage.scene.add(world.sky.group, world.astronaut, world.near);
   return world;
 }
@@ -69,7 +70,6 @@ export function createWorld(stage: Stage, seed: number, shadowPx: number) {
 /** Puts `tiles` on the scene by key; drops and frees the others. */
 function applyTiles(world: World, input: SceneInput): void {
   const { scene } = world.stage;
-  world.material ??= groundMaterial(input.seed, world.mask);
   const keys = new Set(input.tiles.map((p) => p.tile.key));
   const was = world.input?.tiles ?? [];
   for (const old of was) {
@@ -118,9 +118,11 @@ export function applyInput(world: World, input: SceneInput): void {
   world.input = input;
   if (!tilesChanged && was?.sky === input.sky &&
     was.profile === input.profile) return;
-  placeSky(world.sky, input.sky);
+  placeSky(world.sky, input.sky, input.earthSpin);
   const lit = (key: string) => (world.stage.scene.getObjectByName(key) as
     Mesh | undefined)?.geometry.getAttribute('lit') as BufferAttribute;
   shadeSun({ tiles: input.tiles, lit, profile: input.profile,
     mask: world.mask }, input.sky);
+  world.stage.renderer.toneMappingExposure =
+    exposureFor(world.mask.near.value > 0);
 }

@@ -353,7 +353,7 @@
   "onFoot.third": "Third person",
   "onFoot.first": "First person",
   "onFoot.caption": "Fine detail illustrative · relief LOLA {res} m",
-  "onFoot.placeholders": "Lander: placeholder model · Earth: lit disc, no map · shadows lifted for legibility",
+  "onFoot.placeholders": "Lander: placeholder model · Earth: NASA Blue Marble · shadows lifted for legibility",
   "onFoot.ring": "{distance} m",
   "onFoot.ridge": "Ridge {height} m · {distance} km",
   "onFoot.loading": "Loading the terrain…",

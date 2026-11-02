@@ -30,12 +30,15 @@
  * where the view opens: toward the Sun when it is near the sky, else the
  * Earth. Pure.
  */
-import type { HorizonProfile } from '@ventana/sim';
+import { moonPosition, subLunarPoint,
+  type HorizonProfile } from '@ventana/sim';
+import { earthToBody } from './earth-orientation';
 import type { I18n } from '../i18n/translate';
 import { blockerOf, ridgeAlong } from './ridge';
 import { RING_DISTANCES_M, type PlacedTile, type SceneWords,
   type SkyDirs } from './scene/scene-types';
 import type { SeenBody } from './view-alt';
+import { direction } from './view-camera';
 import { ridgeLabel, ringLabel } from './view-text';
 
 /** A body this far under the level still opens the view, degrees. */
@@ -77,3 +80,8 @@ export function sceneWords(
 /** Where the view opens: the Sun's azimuth when near the sky. */
 export const startYaw = (sky: SkyDirs): number =>
   sky.sunEl > NEAR_SKY_DEG ? sky.sunAz : sky.earthAz;
+
+/** The Earth's matrix to its body frame, as the site sees it at `atMs`. */
+export const spinOf = (siteLatDeg: number, sky: SkyDirs, atMs: number) =>
+  earthToBody({ toward: direction(sky.earthAz, sky.earthEl), siteLatDeg,
+    subLunar: subLunarPoint(atMs), moonLonDeg: moonPosition(atMs).lonDeg });

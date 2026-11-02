@@ -24,8 +24,6 @@
  */
 
 /**
-
-/**
  * Which sample of a tile lies where (VENT-34): the one nearest a spot in
  * the session's frame. Pure.
  */

@@ -24,8 +24,6 @@
  */
 
 /**
-
-/**
  * The host's `data-ready` mark (VENT-34): set once the astronaut stands,
  * so the tests know the scene is complete. A scene that is freed before
  * its astronaut arrives must not mark whatever scene the host holds next,

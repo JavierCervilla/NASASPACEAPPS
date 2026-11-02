@@ -33,7 +33,7 @@ import type { I18n } from '../i18n/translate';
 import { bodySentence, directionOf } from '../horizon/horizon-alt';
 import type { BodyAt } from '../horizon/strip-marks';
 import type { Blocker } from './ridge';
-import { TILE_SIZE_M } from './tile';
+import { localSize } from './ring/ring-local';
 import type { CameraMode } from './view-camera';
 import { ridgeParams } from './view-text';
 
@@ -53,7 +53,7 @@ function hiderSentence(i18n: I18n, body: SeenBody): string | null {
   if (blocker.kind === 'ridge') {
     return i18n.t(HIDES[body.id].ridge, ridgeParams(i18n, blocker));
   }
-  const distance = i18n.number(TILE_SIZE_M / 2000, 0);
+  const distance = i18n.number(localSize(0) / 2000, 0);
   return i18n.t(HIDES[body.id].far, { distance });
 }
 

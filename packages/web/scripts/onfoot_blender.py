@@ -48,6 +48,7 @@ from mathutils import Vector
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 import apollo_lm_model
+import astronaut_meshy_model
 import astronaut_model
 import lander_model
 
@@ -55,7 +56,7 @@ BUILDERS = {"astronaut-v2": astronaut_model, "lander": lander_model}
 BAKE_SAMPLES = {"AO": 256, "NORMAL": 8}
 AO_DISTANCE_M = 0.35
 BAKE_MARGIN_PX = 6
-WEBP_QUALITY = {"ao": 85, "normal": 92}
+WEBP_QUALITY = {"ao": 85, "normal": 92, "meshy": 85}
 SEED = 34
 
 
@@ -240,6 +241,46 @@ def make_lm(source, out):
     }
 
 
+def export_skinned(armature, body, path):
+    """glTF with the skin and every kept action as a clip."""
+    bpy.ops.object.select_all(action="DESELECT")
+    for obj in (armature, body):
+        obj.select_set(True)
+    bpy.ops.export_scene.gltf(
+        filepath=str(path),
+        export_format="GLTF_SEPARATE",
+        use_selection=True,
+        export_yup=True,
+        export_image_format="WEBP",
+        export_image_quality=WEBP_QUALITY["meshy"],
+        export_normals=True,
+        export_texcoords=True,
+        export_tangents=False,
+        export_skins=True,
+        export_influence_nb=astronaut_meshy_model.MAX_INFLUENCES,
+        export_all_influences=False,
+        export_animations=True,
+        export_animation_mode="ACTIONS",
+        export_force_sampling=True,
+        export_optimize_animation_size=True,
+        export_extras=False,
+        export_cameras=False,
+        export_lights=False,
+        export_vertex_color="NONE",
+    )
+
+
+def make_meshy(source, out):
+    reset()
+    armature, body, info = astronaut_meshy_model.build(source)
+    export_skinned(armature, body, out / "astronaut-meshy.gltf")
+    return {
+        "triangles": triangles(body),
+        **info,
+        "size_m": [round(v, 3) for v in body.dimensions],
+    }
+
+
 def make(job):
     out = Path(job["out"])
     out.mkdir(parents=True, exist_ok=True)
@@ -247,6 +288,8 @@ def make(job):
     for name in job["models"]:
         if name == "apollo-lm":
             results[name] = make_lm(job["source"], out)
+        elif name == "astronaut-meshy":
+            results[name] = make_meshy(job["meshy_source"], out)
         else:
             results[name] = make_built(name, out)
     return results

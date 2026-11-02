@@ -45,8 +45,9 @@ const BINS = 720;
 export function backdropMesh(
   profile: HorizonProfile | null,
   eyeY: number,
+  radiusM: number,
 ): Mesh {
-  const { positions, index } = backdropWall(profile, eyeY, BINS);
+  const { positions, index } = backdropWall(profile, eyeY, BINS, radiusM);
   const geometry = new BufferGeometry();
   geometry.setAttribute('position', new BufferAttribute(positions, 3));
   geometry.setIndex(new BufferAttribute(index, 1));

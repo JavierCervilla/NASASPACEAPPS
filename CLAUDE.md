@@ -59,9 +59,11 @@ epic: `VENT-1` (Dashboard project «Ventana Lunar», prefix `VENT`).
   uint16 heights (0.1 m step, 33 kB) with their georeference, at four levels of 2, 8, 32 and 128 km (nodes 15.6 m to
   1 km apart) on the polar stereographic plane from 60° to each pole (`polar-south`, `polar-north`) and on a lat-lon
   grid between (`latlon`); neighbours share their edge nodes and a level's nodes are every 4th node of the level below,
-  exactly; urls carry a version token of the tiers present and are immutable (ETag, 304); pure core in `@ventana/sim`
+  exactly, up to the level's step: a tile stores its heights at that step, so the same place has approximately the same height
+  at two levels, within the two steps (`levelQuantumM`: 0.1, 0.1, 0.2 and 0.4 m at levels 0 to 3) and where the levels read different LOLA tiers
+  by metres, which the viewer stitches at its level boundaries; urls carry a version token of the tiers present and are immutable (ETag, 304); pure core in `@ventana/sim`
   (`tile-scheme.ts`, `tile-georef.ts`, `tile-ring.ts`, `lod-tile.ts`, `tile-quant.ts`), server in
-  `src/terrain/lod-*.ts`, with its own limiter and cache (`TERRAIN_LOD_CACHE_MB`). The server fills that volume itself (VENT-43): with
+  `src/terrain/lod-*.ts`, with its own limiter, cache (`TERRAIN_LOD_CACHE_MB`), gate (`TERRAIN_LOD_MAX_RUNNING`) and per-address slots (`TERRAIN_LOD_PER_IP`, `src/ip-slots.ts`), so a tile flood cannot fill the horizon's queue. The server fills that volume itself (VENT-43): with
   `TERRAIN_FETCH_TIERS` (`all` or tier ids) it fetches the missing tiers in the background once it listens, one file at
   a time, resumable (`.part` and HTTP Range), sha256-checked, stopping when the volume would keep under 2 GB free, and
   re-scans after each tier so it serves without a restart (`src/terrain/terrain-boot.ts`; progress at
@@ -364,33 +366,58 @@ Every visible change follows `.claude/skills/apple-design/SKILL.md` (vendored fr
   above NASA's astronaut on the point, facing the Sun when it is near the sky, else the Earth), with «Third person |
   First person» (`ModeSwitch.tsx`, a radiogroup, 44 px targets; first person: the eye 2 m up); drag (Pointer Events
   with capture) or the arrows and Home on the focused view turn it (`src/terrain/look-input.ts`, `view-camera.ts`).
-  The relief comes **only from our API** (`/api/v1/terrain/tile`, 4 km, `TILE_SIZE_M`) through a **`TileSource`**
-  (`src/terrain/tile.ts`), one per page in the calendar parts (`LunarApp.tsx`): the seam of the streaming to come. It
-  delivers transferable tiles (`HeightTile`: `key`, origin in metres east and north of the session's origin point, `n`,
-  `sizeM`, float32 heights, `resolutionM`), the base64 decoded inside the source, so a Web Worker streamer of aligned
-  tiles with LOD and walking (VENT-34 C to E: server aligned tiles, worker streamer, movement; **not built**) can
-  replace the main-thread one (`fetchTileSource`, `tile-fetch.ts`) without touching the scene. The scene keeps tiles
-  by key in the session's local frame and frees each when it leaves (`scene/world.ts`, `ground.ts`); mesh buffers come
-  from pure functions a worker can run (`tile-mesh.ts`: curvature fall `d²/2R`, positions, normals, triangles;
-  `shapes.ts`, `stones.ts`, `lander-shape.ts`, `ring-ribbon.ts`). Failures are the horizon's (VENT-45: 404 «No terrain
-  covers this point on the server», 503 not installed, passing failures retried at 2, 6, 18 s, then «Try again»). The
-  tile reaches 2 km, so the **far horizon** is a dark wall at 6 km whose top follows the point's horizon profile in
-  each of its 720 bins (shipped or from `/api/v1/horizon`, `far-horizon.ts`), its foot far below the tile's edge: the
-  Sun and the Earth set behind exactly the ridge the card names. The sky at the shared instant (`skyAt`): the Sun at its
-  true size and direction is the key light, with hard shadows near the point (shadow map) and per vertex over the tile
-  (`sun-shade.ts`), darkening the whole view when terrain beyond the tile hides it (`ridge.ts` `blockerOf`,
+  Turning it: a swipe across the whole width turns 180° (a full turn in two swipes, on a phone and a desktop alike;
+  the pitch by the field of view over the height, held to its range, `dragScale`, `look-input.ts`), and on release the
+  finger's velocity goes on into the yaw and decays as the globe's flick does (`look-coast.ts`: 0.995 per ms, stops
+  under 2°/s, never under reduced motion or for a slow drag; a press stops it; frames are drawn only while it lasts).
+  The relief comes **only from our API, as rings of real 3D relief** from the aligned tiles with levels of detail
+  (VENT-46, `docs/terrain-api.md`): `GET /api/v1/terrain/tiles?lat&lon&levels` lists the tiles and each is fetched from
+  its immutable `?v=` URL, at most 6 in flight, nearest and finest first (`terrain/ring/ring-fetch.ts`, behind a
+  **`RingSource`** (`ring-source.ts`): the seam the Web Worker streamer of VENT-47 plugs into; it feeds `RingTile`s,
+  plain numbers a worker can transfer, to a `RingStore`). Level 0 (2 km, 15.6 m nodes) is the near ground, level 1 (8
+  km, 62.5 m) the mid relief, levels 2 and 3 (32 and 128 km, 250 m and 1 km) the far relief, so the ridges that hide
+  the Sun and the Earth are real geometry out to 128 km. Each level draws a window of 256 x 256 of its cells around the
+  site (4, 16, 64 and 256 km across, `ring-window.ts`), aligned to the parent's cells: the parent leaves a hole where the
+  finer level is loaded and draws it where that tile failed (a 404 or the tries ran out is a hole filled by the parent,
+  never the view's failure, `ring-layout.ts`); a skirt hangs on every side of a drawn cell whose neighbour is not drawn
+  (T-junctions and open edges, `ring-mesh.ts`); normals are taken across the tile edges when the neighbour is loaded and
+  blended into the parent's over 8 cells at a window's edge, so no seam shows a crease (`ring-normals.ts`); and the heights themselves are stitched: a node within 8 cells of its window's edge is pulled toward the parent's surface by a smoothstep, so the edge nodes lie exactly on it (`ring-stitch.ts`; where the levels read different LOLA tiers the raw step is metres), and a parent that arrives late places again only the nodes in that band (held by `tests/terrain-ring-stitch.test.ts` on the recorded IM-2 relief, L1 to L2 and L2 to L3). Nodes are
+  placed with `sampleDirection` and the site's frame (`ring-frame.ts`: x east, y up, z south, the site the origin and
+  its ground height y = 0, the Moon's curvature in the positions: a node 2 km away is 1.15 m lower). The tier sets the
+  rings (`ring-plan.ts`: high 4 levels at every node, about 520 k triangles; medium level 0 at every second node; low 3
+  levels with levels 0 and 1 at every second node), and decoding, placing and meshing run in slices of a few
+  milliseconds (`scene/slicer.ts`, 12 ms a turn, a job under 20 ms, and a frame asked for at most every 1.5 s while work waits and once more when it is done, because a
+  frame draws every ring built so far and in software GL costs a second; `data-working` says when the slices are all run), tile by tile, the finest level first, so the view
+  stands as soon as level 0 and 1 land (`ring-session.ts`, `ring-near.ts`) and the coarser rings fill in; a tile that
+  arrives rebuilds itself, its neighbours and its parent (`scene/ring-layer.ts`) and every mesh is freed when the view
+  leaves. The near ground (props, the astronaut's feet, the ridge, the Sun's shadow march) is a 257 x 257 grid over 4
+  km resampled from the rings (`ring-local.ts`, the `HeightTile` of `tile.ts`), not a second copy of the relief. The
+  horizon profile's wall stays as the backdrop beyond the farthest ring (190 km, 40 km on the low tier,
+  `far-horizon.ts`), so a ridge past 128 km is still the profile's. Failures are the horizon's (VENT-45: 404 «No
+  terrain covers this point on the server», 503 not installed, passing failures retried at 2, 6, 18 s, then «Try
+  again»). A depth buffer that is logarithmic (the rings reach 190 km, the sky bodies are drawn at 450 to 900 km so
+  terrain always hides them) keeps the 0.2 m near plane from z-fighting. The sky at the shared instant (`skyAt`): the Sun at its
+  true size and direction is the key light, with hard shadows near the point (shadow map), per vertex over the near ground and, level by level, over
+  each ring from a grid of its own (16, 64 and 256 km at 62.5 m to 1 km, `scene/ring-shade.ts`, in slices, no cast shadow beyond a grid's edge; distant rings are shaded by their normals, no haze: the Moon has no
+  atmosphere) (`sun-shade.ts`), darkening the whole view when terrain beyond the near ground hides it (`ridge.ts` `blockerOf`,
   `scene/sun-mask.ts`); the Earth at its true size with its true phase, wearing NASA's Blue Marble turned to the face the Moon sees
   (`earth-orientation.ts`, from the sub-lunar point and the ecliptic roll, about 2° accurate); faint seeded stars; the fill is
   the Earth's light by its lit share, the ground's bounce by the Sun's height and a dim sky floor (`sky-light.ts`), and
   when the Sun does not reach the point the exposure opens up instead of faking sunlight (`exposureFor`, `stage.ts`).
   Rendering: ACES filmic tone mapping, `MeshStandardMaterial` everywhere, the Sun a hard key with a 60 m PCF shadow, baked
   contact occlusion on the stones (`contactAo`) and soft contact shadows under the astronaut and the lander's pads. Illustrative and said so in the caption («Fine detail illustrative · relief LOLA
-  20 m», «Lander: placeholder model · Earth: NASA Blue Marble · shadows lifted for legibility»): rounded rocks under
+  20 m», «Generic lander (illustrative) · …» or «Apollo LM: NASA 3D Resources · Earth: NASA Blue Marble · shadows lifted for legibility»): rounded rocks under
   1 m seeded from the point (`seeded.ts`, `rocks.ts`), the regolith a CC0 photographed material (Poly Haven «Moon 02»,
   albedo and normal, 1K WebP in `src/terrain/maps/`, ASSETS.md) tiled at 3.5 m and read twice, turned and at another
   scale, with a slow brightness noise and a fade with distance so it never repeats (`scene/ground-shader.ts`), and the
-  lander, primitives (a dome, tanks, mast and dish on a hexagonal body: NASA's only public-domain landers are Apollo's,
-  wrong for a 2026 CLPS site) until a licensed model is chosen. Rings at 25, 100 and 500 m with HTML labels, and the ridge that
+  lander, one of two models of ours, chosen by the site (`lander-kind.ts`: an Apollo site, `group: 'apollo'`, wears the
+  Apollo Lunar Module of NASA 3D Resources, `models/apollo-lm.glb`; every other site and every custom point a generic robotic lander built
+  from code, `models/lander.glb`, with its baked occlusion and blanket normals; both read by the glb reader and its map loaders,
+  `glb-maps.ts`, `scene/lander*.ts`, so no GLTFLoader joins the chunk), standing 22 m from the astronaut and 14° to the right of the opening heading
+  (`landerSpot`, `props.ts`), so it is in the first frame, on a phone too, its pads on the highest ground under them (`lander-place.ts`).
+  The metals and the gold foil are lit by the Sun and, in shadow, by an analytic earthshine: a sky-and-ground hemisphere injected into the
+  lander's shader as radiance (`scene/earthshine.ts`, zenith and horizon blues, a near-black ground, scaled by one intensity that is not the Sun's),
+  not a PMREM environment map, which cost about 9 s of software GL to bake. Rings at 25, 100 and 500 m with HTML labels, and the ridge that
   hides a body labelled with its height and distance (`on-foot-model.ts`); a text alternative says the heading, where
   each body is and what hides it (`view-alt.ts`); the desktop view keeps the horizon strip under it. The astronaut is
   read by a small glb reader (`glb.ts`, with its UVs) and wears its suit texture (`models/astronaut-suit.webp`, which the
@@ -402,8 +429,8 @@ Every visible change follows `.claude/skills/apple-design/SKILL.md` (vendored fr
   and the astronaut load only when the view opens, and the service worker leaves them out of the precache
   (`ON_DEMAND` in `scripts/service-worker.mjs`); it draws only on change (`globe/loop.ts`, counted in `data-frames`),
   the pixel ratio capped by the quality tier, and frees the GPU context on leave. The API gzips its JSON
-  (`compress()` in `packages/server/src/app.ts`; base64 floats shrink about 26 %). Held by `tests/terrain-view.test.ts`
-  and `tests/e2e/terrain-view.spec.ts` (stubbed tile and horizon: third then first person, the caption, no idle
+  (`compress()` in `packages/server/src/app.ts`; base64 floats shrink about 26 %). Held by `tests/terrain-view.test.ts`,
+  `tests/terrain-ring.test.ts` and `tests/e2e/terrain-view.spec.ts` (the ring and tile routes answered by the simulator's own core over a synthetic polar grid, or by real LOLA tiles of IM-2 recorded from a local server, `fixtures/terrain-ring-im2/`: third then first person, the caption, no idle
   frames, the Sun drawn hidden behind a far wall, none of the view's files in the first load).
 - **Five interface languages** (VENT-35): English (the default and the fallback), Spanish, French, German and Italian,
   each on its own static route (`/`, `/es/`, `/fr/`, `/de/`, `/it/`; `pages/[locale]/index.astro`) with `<html lang>`,

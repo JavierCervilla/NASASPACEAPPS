@@ -24,20 +24,24 @@
  */
 
 /**
- * The scene's world (VENT-34): it takes each {@link SceneInput} and
- * changes only what changed: tiles by key (added, dropped and freed), the
- * near props and rings when the ground changes, the far horizon when the
- * profile does, and the sky, its shadows and the Sun's mask when the
+ * The scene's world (VENT-34, VENT-46): it takes each {@link SceneInput} and
+ * changes only what changed: the relief rings' meshes (a layer per ring,
+ * freed with it), the near ground's props and rings, the far horizon when
+ * the profile does, and the sky, its shadows and the Sun's mask when the
  * instant does.
  */
-import { Group, type BufferAttribute, type Mesh,
-  type MeshStandardMaterial } from 'three';
-import type { HorizonProfile } from '@ventana/sim';
+import { Group, type Mesh, type MeshStandardMaterial } from 'three';
 import { EYE_M } from '../view-camera';
 import { backdropMesh } from './backdrop';
-import { dropTile, groundMaterial, tileMesh } from './ground';
+import { groundMaterial } from './ground';
+import { backdropM } from '../ring/ring-plan';
+import type { RingLayer } from './ring-layer';
+import type { FarShade } from './ring-shade';
+import { applyRings } from './world-rings';
+import { createSlicer, type Slicer } from './slicer';
 import { ringsMesh } from './rings';
-import { landerMesh, landerSpot, rocksMesh } from './props';
+import { placeLander } from './lander-place';
+import { landerSpot, rocksMesh } from './props';
 import type { SceneInput } from './scene-types';
 import { placeSky, shadeSun } from './sky-place';
 import { createSky, type SkyParts } from './sky';
@@ -50,37 +54,37 @@ export interface World {
   readonly mask: SunMask;
   readonly sky: SkyParts;
   readonly astronaut: Group;
+  /** The lander's holder: placed on the ground, filled when it loads. */
+  readonly lander: Group;
   near: Group;
   ground: Ground;
   material: MeshStandardMaterial;
   backdrop: Mesh | null;
   input: SceneInput | null;
+  /** The relief rings now drawn, their far shading and the work slicer. */
+  rings: RingLayer | null;
+  farShade: FarShade | null;
+  readonly slicer: Slicer;
+  /** Asks for a frame: bound to the scene's loop once it exists. */
+  invalidate: () => void;
 }
 
 /** An empty world on `stage`. */
 export function createWorld(stage: Stage, seed: number, shadowPx: number) {
   const mask = createSunMask();
+  const slicer = createSlicer({ invalidate: () => world.invalidate() });
   const world: World = { stage, mask, sky: createSky(seed, shadowPx),
-    astronaut: new Group(), near: new Group(), ground: () => 0,
-    material: groundMaterial(mask), backdrop: null, input: null };
-  stage.scene.add(world.sky.group, world.astronaut, world.near);
+    astronaut: new Group(), lander: new Group(), near: new Group(),
+    ground: () => 0,
+    material: groundMaterial(mask), backdrop: null, input: null,
+    rings: null, farShade: null, slicer, invalidate: () => undefined };
+  stage.scene.add(world.sky.group, world.astronaut, world.lander,
+    world.near);
   return world;
 }
 
-/** Puts `tiles` on the scene by key; drops and frees the others. */
+/** The near ground changed: the props stand on the new ground. */
 function applyTiles(world: World, input: SceneInput): void {
-  const { scene } = world.stage;
-  const keys = new Set(input.tiles.map((p) => p.tile.key));
-  const was = world.input?.tiles ?? [];
-  for (const old of was) {
-    if (!keys.has(old.tile.key)) dropTile(scene, old.tile.key);
-  }
-  for (const placed of input.tiles) {
-    if (was.includes(placed)) continue;
-    dropTile(scene, placed.tile.key);
-    const lit = new Float32Array(placed.tile.n * placed.tile.n).fill(1);
-    scene.add(tileMesh(placed, lit, world.material));
-  }
   world.ground = groundOf(input.tiles);
   rebuildNear(world, input);
 }
@@ -91,18 +95,21 @@ function rebuildNear(world: World, input: SceneInput): void {
   world.near.traverse((o) => (o as Partial<Mesh>).geometry?.dispose());
   const spot = landerSpot(input.startYawDeg);
   world.near = new Group();
-  world.near.add(rocksMesh(input.seed, world.ground, spot, world.mask),
-    landerMesh(spot, world.ground, world.mask), ringsMesh(world.ground));
+  world.near.add(rocksMesh(input.seed, world.ground,
+    { spot, kind: input.lander }, world.mask), ringsMesh(world.ground));
   world.stage.scene.add(world.near);
+  placeLander(world.lander, world.ground, input);
 }
 
 /** The far horizon from `profile`, around the eye over the point. */
-function applyProfile(world: World, profile: HorizonProfile | null): void {
+function applyProfile(world: World, input: SceneInput): void {
   if (world.backdrop) {
     world.stage.scene.remove(world.backdrop);
     world.backdrop.geometry.dispose();
   }
-  world.backdrop = backdropMesh(profile, world.ground(0, 0) + EYE_M);
+  const radius = backdropM(input.ring.tier);
+  const eyeY = world.ground(0, 0) + EYE_M;
+  world.backdrop = backdropMesh(input.profile, eyeY, radius);
   world.stage.scene.add(world.backdrop);
 }
 
@@ -111,18 +118,22 @@ export function applyInput(world: World, input: SceneInput): void {
   const was = world.input;
   const tilesChanged = was?.tiles.length !== input.tiles.length ||
     input.tiles.some((t, i) => was.tiles[i] !== t);
+  world.input = input;
+  applyRings(world, input);
   if (tilesChanged) applyTiles(world, input);
   if (tilesChanged || was?.profile !== input.profile) {
-    applyProfile(world, input.profile);
+    applyProfile(world, input);
   }
-  world.input = input;
   if (!tilesChanged && was?.sky === input.sky &&
     was.profile === input.profile) return;
   placeSky(world.sky, input.sky, input.earthSpin);
-  const lit = (key: string) => (world.stage.scene.getObjectByName(key) as
-    Mesh | undefined)?.geometry.getAttribute('lit') as BufferAttribute;
-  shadeSun({ tiles: input.tiles, lit, profile: input.profile,
+  const onLit = (lit: Float32Array): void => {
+    world.rings?.setLit(0, { lit, sizeM: input.tiles[0]?.tile.sizeM ?? 0 });
+  };
+  const sun = { azDeg: input.sky.sunAz, elDeg: input.sky.sunEl };
+  shadeSun({ tiles: input.tiles, onLit, profile: input.profile,
     mask: world.mask }, input.sky);
+  world.farShade?.run(sun);
   world.stage.renderer.toneMappingExposure =
     exposureFor(world.mask.near.value > 0);
 }

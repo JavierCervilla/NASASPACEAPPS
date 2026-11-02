@@ -118,6 +118,19 @@ async function open(page: Page, { path, wall = [300, 330], requests, real }: Ope
   await page.goto(path);
 }
 
+/** Screenshots the view every 60° round (VENT34_SHOTS only), the draws it cost in the name's log line. */
+async function shotsAround(page: Page, name: string): Promise<void> {
+  if (!SHOTS) return;
+  await host(page).focus();
+  for (let i = 0; i < 6; i++) {
+    await idle(page);
+    const draws = await host(page).getAttribute('data-draws');
+    console.log(`${name}-${i * 60}: draws,triangles = ${draws}`);
+    await shot(page, `${name}-${i * 60}`);
+    for (let k = 0; k < 4; k++) await page.keyboard.press('Shift+ArrowRight');
+  }
+}
+
 const view = (page: Page) => page.getByRole('region', { name: 'On foot at the site' });
 const host = (page: Page) => view(page).getByRole('application', { name: 'On foot at the site' });
 
@@ -129,13 +142,17 @@ async function settled(page: Page): Promise<void> {
 
 const frames = async (page: Page): Promise<number> => Number(await host(page).getAttribute('data-frames'));
 
-/** Waits until no frame has been drawn for 600 ms (a resize or the sheet settling), and returns the count. */
+/**
+ * Waits until no frame has been drawn for 600 ms (a resize or the sheet settling) and the ring's slices are all run
+ * (`data-working`, written by every frame: the slices ask for a frame every 1.5 s at most, so a quiet 600 ms is no
+ * proof), and returns the count.
+ */
 async function idle(page: Page): Promise<number> {
   let last = -1;
   await expect
     .poll(async () => {
       const now = await frames(page);
-      const still = now === last;
+      const still = now === last && (await host(page).getAttribute('data-working')) !== 'true';
       last = now;
       return still;
     }, { intervals: [600], timeout: 15_000 })
@@ -182,7 +199,7 @@ test.describe('desktop, 1440x900', () => {
     const modes = view(page).getByRole('radiogroup', { name: 'Camera' });
     await expect(modes.getByRole('radio', { name: 'Third person' })).toHaveAttribute('aria-checked', 'true');
     await expect(view(page)).toContainText('Fine detail illustrative · relief LOLA 20 m');
-    await expect(view(page)).toContainText('Lander: placeholder model');
+    await expect(view(page)).toContainText('Generic lander (illustrative)');
     await expect(view(page).getByRole('region', { name: 'Horizon' })).toBeVisible();
     await expect(view(page).locator('.on-foot__label--ring').first()).toBeVisible();
     await shot(page, 'synthetic-desktop-third');
@@ -224,15 +241,17 @@ test.describe('desktop, 1440x900', () => {
   });
 
   test('IM-2 on its real LOLA relief: the Sun just over the ridge, the shipped skyline behind', async ({ page }) => {
-    await open(page, { path: './?site=im2-athena#horizon', real: RIDGE_AT });
+    await open(page, { path: './?site=im2-athena&quality=high#horizon', real: RIDGE_AT });
     await settled(page);
     await idle(page);
-    await expect(view(page)).toContainText('Fine detail illustrative · relief LOLA 20 m');
+    await expect(view(page)).toContainText('Fine detail illustrative · relief LOLA 80 m');
     await expect(host(page)).toHaveAccessibleDescription(/The Sun is to the .*, above the terrain\./);
     await shot(page, 'desktop-third');
+    await shotsAround(page, 'desktop-third-round');
     await view(page).getByRole('radio', { name: 'First person' }).click();
     await expect(host(page)).toHaveAttribute('data-mode', 'first');
     await shot(page, 'desktop-first');
+    await shotsAround(page, 'desktop-first-round');
   });
 
   test('says so when the server has no terrain for the point, and offers no 3D', async ({ page }) => {

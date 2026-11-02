@@ -44,10 +44,10 @@ import {
 } from 'three';
 import { earthMaterial, glareMaterial, starsMaterial } from './sky-materials';
 
-/** How far the bodies are drawn, metres: past the far horizon. */
-export const SUN_M = 50_000;
-export const EARTH_M = 40_000;
-const STARS_M = 90_000;
+/** How far the bodies are drawn, metres: past the rings and the backdrop. */
+export const SUN_M = 500_000;
+export const EARTH_M = 450_000;
+const STARS_M = 900_000;
 const RAD = Math.PI / 180;
 /** Apparent radii, degrees: the Sun's mean, the Earth's from the Moon. */
 const SUN_R_DEG = 0.2666;

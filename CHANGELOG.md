@@ -2,6 +2,34 @@
 
 ## [Sin publicar]
 
+### Cambiado
+- La vista 3D «Horizon» dibuja ahora relieve real en anillos hasta el horizonte (VENT-46). En lugar de una sola
+  tesela de 4 km con un muro plano a 6 km, la web pide a la API las teselas alineadas por niveles de detalle y las
+  dibuja como geometría: el suelo de al lado (nivel 0, nodos de 15,6 m), el relieve medio (8 km), y el lejano (32 y
+  128 km), de modo que las crestas que esconden el Sol y la Tierra son montañas de verdad, con su sombreado por
+  normales y, en cada anillo, sombras duras del Sol. Cada nivel deja un hueco bajo el más fino, las costuras se cierran
+  con faldones y se mezclan las normales para que no se vea ningún pliegue; una tesela que falla es un hueco que
+  rellena el nivel de arriba. Las teselas se piden de 6 en 6, las más finas primero, y se decodifican y se mallan a
+  trozos de pocos milisegundos para no bloquear la página: la vista aparece en cuanto llegan los dos niveles más finos
+  y los anillos lejanos se van completando. En el móvil el nivel 0 y el 1 usan un nodo de cada dos y el nivel más lejano
+  se omite en el nivel de calidad bajo. El muro del horizonte queda solo como fondo más allá del último anillo.
+- Girar la vista 3D cuesta menos: un deslizamiento de lado a lado gira 180° (una vuelta entera en dos), en móvil y en
+  escritorio, y al soltar el dedo el giro sigue con su velocidad y se frena solo, como la bola del globo (nada de inercia
+  con «reducir movimiento»; un toque la para; no se dibujan fotogramas cuando se ha parado).
+
+- La vista 3D enseña ahora un módulo de aterrizaje de verdad (VENT-46). En los sitios Apolo se ve el Módulo Lunar de
+  NASA 3D Resources, con su lámina dorada y sus patas; en cualquier otro sitio y en los puntos libres, un módulo robótico
+  genérico (ilustrativo, sin logos). Está a 22 m del astronauta y algo a la derecha de hacia dónde mira la vista al abrir,
+  así que sale en el primer fotograma, también en el móvil. A la sombra lo ilumina la luz de la Tierra con un cálculo
+  analítico (un hemisferio de cielo y suelo en su sombreado), sin simular una luz del Sol que no está.
+- Los anillos de relieve cierran sus costuras: las alturas de los nodos del borde de cada nivel se acercan a la
+  superficie del nivel de arriba, de modo que no queda escalón entre el relieve fino y el grueso, aunque lean teselas
+  de resolución distinta. La API sirve los mismos lugares con alturas aproximadamente iguales entre niveles (con un paso
+  por nivel de 0,1, 0,1, 0,2 y 0,4 m), y el visor se encarga de coserlos.
+- La vista 3D carga bastante más rápido en equipos sin GPU: los anillos piden un fotograma como mucho cada 1,5 s mientras
+  se construyen, en lugar de uno por trozo de trabajo (la carga de IM-2 en calidad alta pasó de 36 a 12 s en el
+  renderizado por software, de 38 fotogramas a 6).
+
 ### Arreglado
 - Un fallo pasajero ya no deja un punto sin relieve toda la sesión (VENT-45). Si la API del horizonte no responde, está
   ocupada, limita las peticiones o da un error 5xx, la web vuelve a preguntar a los 2, 6 y 18 s (o cuando el servidor

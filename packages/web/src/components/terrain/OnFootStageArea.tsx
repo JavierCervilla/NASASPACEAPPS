@@ -50,14 +50,15 @@ interface Props {
 export function OnFootStageArea({ view, host, status, onMode, altId }: Props) {
   const { t } = useI18n();
   const tile = view.tile.state;
-  const resolution = tile.kind === 'tile' ? tile.tile.resolutionM : null;
+  const resolution = tile.kind === 'ready' ? tile.ring.resolutionM : null;
   return (
     <div className="on-foot__stage">
       <div ref={host} className="on-foot__host" tabIndex={0} role="application" aria-roledescription={t('onFoot.role')} aria-label={t('onFoot.view')} aria-describedby={altId} data-status={status} data-mode={view.mode} />
       <div className="on-foot__top">
         <ModeSwitch mode={view.mode} onMode={onMode} />
         {resolution === null
-          ? null : <OnFootCaption resolutionM={resolution} />}
+          ? null
+          : <OnFootCaption resolutionM={resolution} lander={view.lander} />}
       </div>
       <OnFootStatus located={view.located} tile={tile} scene={status}
         onRetry={view.tile.retry} />

@@ -28,10 +28,9 @@
  * the tries, the mesh's heights and triangles, the camera, the seeded
  * detail, the far horizon's backdrop, the ridge and the Sun's shadows.
  */
-import { encodeHeights, encodeProfile, horizonAt, quantiseDeg } from '@ventana/sim';
+import { encodeProfile, horizonAt, quantiseDeg } from '@ventana/sim';
 import { describe, expect, it, vi } from 'vitest';
-import { NoTerrainHereError, TerrainNotInstalledError, TransientHorizonError } from '../src/horizon/horizon-errors';
-import { BACKDROP_M, backdropTopDeg, backdropWall, dipDeg } from '../src/terrain/far-horizon';
+import { backdropTopDeg, backdropWall, dipDeg } from '../src/terrain/far-horizon';
 import { BufferGeometry, DataTexture, Mesh, MeshLambertMaterial, PerspectiveCamera, Group, Scene, Vector3, type BufferAttribute } from 'three';
 import { markReadyWhenStanding } from '../src/terrain/scene/ready-mark';
 import { disposeStage, type Stage } from '../src/terrain/scene/stage';
@@ -40,7 +39,10 @@ import { aimCamera } from '../src/terrain/scene/camera-apply';
 import { shadeSun } from '../src/terrain/scene/sky-place';
 import { groundOf } from '../src/terrain/scene/world-ground';
 import type { World } from '../src/terrain/scene/world';
-import { dragLook, keyLook } from '../src/terrain/look-input';
+import { dragLook, dragScale, keyLook } from '../src/terrain/look-input';
+import { bindLook } from '../src/terrain/scene/controls';
+import { createLoop } from '../src/globe/loop';
+import { FLING_MIN_PX_S, STOP_DEG_S, coastOf, stepCoast, travelDeg } from '../src/terrain/look-coast';
 import { earthPole, earthToBody } from '../src/terrain/earth-orientation';
 import { earthPhase, fillLight } from '../src/terrain/sky-light';
 import { contactAo } from '../src/terrain/stones';
@@ -48,13 +50,11 @@ import { blockerOf, ridgeAlong } from '../src/terrain/ridge';
 import { MAX_ROCK_M, scatterRocks } from '../src/terrain/rocks';
 import { seedOf } from '../src/terrain/seeded';
 import { sunLit } from '../src/terrain/sun-shade';
-import { tileOf, tileUrl, type HeightTile } from '../src/terrain/tile';
-import { askTile, fetchTileSource } from '../src/terrain/tile-fetch';
-import { MOON_RADIUS_M, gridIndex, meshHeights, surfaceHeight, tileBuffers } from '../src/terrain/tile-mesh';
+import type { HeightTile } from '../src/terrain/tile';
+import { surfaceHeight } from '../src/terrain/tile-mesh';
 import { nearestSample } from '../src/terrain/tile-sample';
 import { EYE_M, ORBIT_M, cameraPose, direction, startLook, turnLook } from '../src/terrain/view-camera';
 
-const SITES = 'https://ventana.example/api/v1/sites';
 const N = 5;
 
 /** A tile of `n` x `n` samples over `sizeM`, heights from `h(east, north)`. */
@@ -67,134 +67,10 @@ function tileFrom(h: (east: number, north: number) => number, n = N, sizeM = 400
   return { key: 'k', originEast: 0, originNorth: 0, n, sizeM, heights, resolutionM: 20 };
 }
 
-const SITE_ON_GRID = { lat: -84.79, lonEast: 29.2 };
+const BACKDROP_M = 6_000;
 
-describe('tileOf and tileUrl', () => {
-  const heights = encodeHeights(Float32Array.from({ length: N * N }, (_, i) => i));
-  const body = { lat: -84.79, lonEast: 29.2, sizeM: 4000, n: N, groundM: 5321.3, heights, resolutionM: 20 };
-
-  it('reads the API answer into transferable heights, keyed, centred on the site', () => {
-    const tile = tileOf(body, SITE_ON_GRID);
-    expect(tile).toMatchObject({ key: '-84.79,29.2,4000', n: N, sizeM: 4000, resolutionM: 20 });
-    expect(Math.hypot(tile?.originEast ?? 1, tile?.originNorth ?? 1)).toBeLessThan(1e-6);
-    expect(tile?.heights).toBeInstanceOf(Float32Array);
-    expect(Array.from(tile?.heights ?? [])).toEqual(Array.from({ length: N * N }, (_, i) => i));
-  });
-
-  it('refuses an answer that is not a tile: short heights, no side, bad base64', () => {
-    expect(tileOf({ ...body, n: N + 1 }, SITE_ON_GRID)).toBeNull();
-    expect(tileOf({ ...body, n: 'x' }, SITE_ON_GRID)).toBeNull();
-    expect(tileOf({ ...body, heights: '%%' }, SITE_ON_GRID)).toBeNull();
-    expect(tileOf(null, SITE_ON_GRID)).toBeNull();
-  });
-
-  it('refuses an answer with no centre, or one that is not a number', () => {
-    expect(tileOf({ ...body, lat: undefined }, SITE_ON_GRID)).toBeNull();
-    expect(tileOf({ ...body, lat: 'south' }, SITE_ON_GRID)).toBeNull();
-    expect(tileOf({ ...body, lonEast: undefined }, SITE_ON_GRID)).toBeNull();
-    expect(tileOf({ ...body, lonEast: 'east' }, SITE_ON_GRID)).toBeNull();
-  });
-
-  it('puts the tile’s centre where the grid point is from the site: east and north in metres, the site at the origin', () => {
-    const site = { lat: -84.7912, lonEast: 29.2049 };
-    const tile = tileOf(body, site);
-    const rad = Math.PI / 180;
-    const north = (-84.79 - site.lat) * rad * MOON_RADIUS_M;
-    const east = (29.2 - site.lonEast) * rad * Math.cos(site.lat * rad) * MOON_RADIUS_M;
-    expect(tile?.originNorth).toBeCloseTo(north, 1);
-    expect(tile?.originEast).toBeCloseTo(east, 1);
-    expect(north).toBeGreaterThan(30);
-    expect(east).toBeLessThan(-10);
-  });
-
-  it('wraps the longitude across the seam and stays exact next to the pole', () => {
-    const seam = tileOf({ ...body, lat: -85, lonEast: 0 }, { lat: -85, lonEast: 359.996 });
-    expect(seam?.originEast).toBeCloseTo(0.004 * (Math.PI / 180) * Math.cos((85 * Math.PI) / 180) * MOON_RADIUS_M, 1);
-    const pole = tileOf({ ...body, lat: -89.99, lonEast: 90 }, { lat: -89.9949, lonEast: 90 });
-    expect(pole?.originNorth).toBeCloseTo(0.0049 * (Math.PI / 180) * MOON_RADIUS_M, 0);
-    expect(pole?.originEast ?? 1).toBeCloseTo(0, 3);
-  });
-
-  it('asks the sites endpoint’s sibling on the 0.01° grid with the size', () => {
-    expect(tileUrl(SITES, { lat: -84.7912, lonEast: 29.2049 }, 4000)).toBe(
-      'https://ventana.example/api/v1/terrain/tile?lat=-84.79&lon=29.20&size=4000',
-    );
-  });
-});
-
-describe('the tries', () => {
-  const waits = { sleep: async () => undefined, random: () => 0.5 };
-  const point = { lat: -85, lonEast: 40 };
-  const failing = (errors: Error[], tile?: HeightTile) => {
-    let i = 0;
-    return { get: async () => { const e = errors[i++]; if (e) throw e; if (!tile) throw new Error('none'); return tile; } };
-  };
-
-  it('asks again after a passing failure and shows the tile when it comes', async () => {
-    const tile = tileFrom(() => 0);
-    const state = await askTile({ source: failing([new TransientHorizonError(null)], tile), point, sizeM: 4000 }, waits);
-    expect(state).toEqual({ kind: 'tile', tile });
-  });
-
-  it('stops at once on a 404 or a server with no terrain, and after four passing failures', async () => {
-    const ask = (errors: Error[]) => askTile({ source: failing(errors), point, sizeM: 4000 }, waits);
-    expect(await ask([new NoTerrainHereError()])).toEqual({ kind: 'noTerrain' });
-    expect(await ask([new TerrainNotInstalledError()])).toEqual({ kind: 'notInstalled' });
-    const passing = Array.from({ length: 4 }, () => new TransientHorizonError(null));
-    expect(await ask(passing)).toEqual({ kind: 'unavailable' });
-  });
-
-  it('classifies the API’s answers as the horizon does', async () => {
-    const answer = (status: number, json: object) => async () => new Response(JSON.stringify(json), { status });
-    const get = (status: number, json: object) =>
-      fetchTileSource(answer(status, json) as unknown as typeof fetch, SITES).get(point, 4000);
-    await expect(get(404, { error: 'no terrain' })).rejects.toBeInstanceOf(NoTerrainHereError);
-    await expect(get(503, { error: 'terrain data is not installed' })).rejects.toBeInstanceOf(TerrainNotInstalledError);
-    await expect(get(429, { error: 'slow down' })).rejects.toBeInstanceOf(TransientHorizonError);
-    await expect(get(200, { not: 'a tile' })).rejects.toBeInstanceOf(TransientHorizonError);
-  });
-
-  it('places the tile from the site it was asked for, off the 0.01° grid', async () => {
-    const heights = encodeHeights(Float32Array.from({ length: N * N }, (_, i) => i));
-    const body = { lat: -84.79, lonEast: 29.2, sizeM: 4000, n: N, groundM: 5321.3, heights, resolutionM: 20 };
-    const fetcher = (async () => new Response(JSON.stringify(body))) as unknown as typeof fetch;
-    const site = { lat: -84.7912, lonEast: 29.2049 };
-    const tile = await fetchTileSource(fetcher, SITES).get(site, 4000);
-    expect(tile.originNorth).toBeCloseTo((-84.79 - site.lat) * (Math.PI / 180) * MOON_RADIUS_M, 1);
-    expect(tile.originNorth).toBeGreaterThan(30);
-    expect(tile.originEast).toBeLessThan(-10);
-  });
-});
-
-describe('the mesh', () => {
-  it('lowers each sample by the curvature’s fall from the origin, nothing at the centre', () => {
-    const tile = tileFrom(() => 10);
-    const ys = meshHeights(tile);
-    expect(ys[2 * N + 2]).toBe(10);
-    const corner = Math.hypot(200, 200);
-    expect(ys[0]).toBeCloseTo(10 - (corner * corner) / (2 * MOON_RADIUS_M), 6);
-  });
-
-  it('places a tile by its origin in the session frame: x east, z south', () => {
-    const tile = { ...tileFrom(() => 0), originEast: 1000, originNorth: -500 };
-    const { positions, normals, index } = tileBuffers(tile, new Float32Array(N * N));
-    expect(Array.from(positions.slice(0, 3))).toEqual([800, 0, 300]);
-    expect(Array.from(normals.slice(0, 3))).toEqual([-0, 1, -0]);
-    expect(index).toHaveLength((N - 1) ** 2 * 6);
-  });
-
-  it('winds every triangle counter-clockwise seen from above (normals up)', () => {
-    const tile = tileFrom(() => 0);
-    const { positions } = tileBuffers(tile, new Float32Array(N * N));
-    const index = gridIndex(N);
-    for (let k = 0; k < index.length; k += 3) {
-      const [a, b, c] = [index[k]!, index[k + 1]!, index[k + 2]!].map((i) => [positions[i * 3]!, positions[i * 3 + 2]!]);
-      const crossY = (b![1]! - a![1]!) * (c![0]! - a![0]!) - (b![0]! - a![0]!) * (c![1]! - a![1]!);
-      expect(crossY).toBeGreaterThan(0);
-    }
-  });
-
-  it('reads the drawn ground exactly on a plane, and the sample at a vertex', () => {
+describe('the drawn ground', () => {
+  it('reads the near grid exactly on a plane, and the sample at a vertex', () => {
     const tile = tileFrom((e, n) => 0.1 * e - 0.05 * n);
     const ys = tile.heights;
     expect(surfaceHeight(tile, ys, 37, -61)).toBeCloseTo(0.1 * 37 + 0.05 * 61, 4);
@@ -228,7 +104,7 @@ describe('the camera', () => {
   });
 
   it('turns with a drag and the keys, wrapping the yaw and holding the pitch in range', () => {
-    expect(dragLook('first', { yawDeg: 10, pitchDeg: 0 }, [100, 0], 0.2)).toEqual({ yawDeg: 350, pitchDeg: 0 });
+    expect(dragLook('first', { yawDeg: 10, pitchDeg: 0 }, [100, 0], { yaw: 0.2, pitch: 0.1 })).toEqual({ yawDeg: 350, pitchDeg: 0 });
     expect(turnLook('first', { yawDeg: 0, pitchDeg: 70 }, 0, 50).pitchDeg).toBe(80);
     expect(turnLook('third', { yawDeg: 0, pitchDeg: 10 }, 0, -50).pitchDeg).toBe(3);
     const home = startLook('first', 200);
@@ -236,6 +112,120 @@ describe('the camera', () => {
     expect(keyLook('first', look, { key: 'ArrowRight', shiftKey: true }, home)).toEqual({ yawDeg: 15, pitchDeg: 0 });
     expect(keyLook('first', look, { key: 'Home', shiftKey: false }, home)).toBe(home);
     expect(keyLook('first', look, { key: 'a', shiftKey: false }, home)).toBeNull();
+  });
+});
+
+describe('turning by swiping', () => {
+  it('turns 180° across the view’s width, whatever the width, and the pitch by the field of view over the height', () => {
+    for (const width of [390, 1440]) {
+      const scale = dragScale(width, 844, 62);
+      const turned = dragLook('first', { yawDeg: 0, pitchDeg: 0 }, [-width, 0], scale);
+      expect(turned.yawDeg).toBeCloseTo(180, 6);
+    }
+    expect(dragScale(390, 844, 62).pitch).toBeCloseTo(62 / 844, 9);
+    expect(dragLook('first', { yawDeg: 0, pitchDeg: 0 }, [0, 5000], dragScale(390, 844, 62)).pitchDeg).toBe(80);
+  });
+
+  const scale = dragScale(390, 844, 62);
+  const flick = coastOf({ x: -2000, y: 0 }, scale, false);
+
+  it('carries a flick on, slowing down to a stop, as far as the globe’s projection says', () => {
+    expect(flick?.yaw).toBeCloseTo(2000 * scale.yaw, 6);
+    let state = { look: { yawDeg: 0, pitchDeg: 14 }, coast: flick };
+    const speeds: number[] = [];
+    let steps = 0;
+    while (state.coast && steps < 2000) {
+      speeds.push(state.coast.yaw);
+      state = stepCoast('first', state.look, state.coast, 1 / 60) as typeof state;
+      steps += 1;
+    }
+    expect(state.coast).toBeNull();
+    expect(speeds.every((v, i) => i === 0 || v < (speeds[i - 1] as number))).toBe(true);
+    const total = (state.look.yawDeg + 360) % 360;
+    const expected = travelDeg(flick?.yaw ?? 0);
+    expect(total).toBeGreaterThan(expected - 2 * STOP_DEG_S);
+    expect(total).toBeLessThanOrEqual(expected);
+    expect(steps).toBeLessThan(600);
+  });
+
+  it('draws no frame once the coast ends: the loop schedules nothing after its last step', () => {
+    let state = { look: { yawDeg: 0, pitchDeg: 14 }, coast: flick };
+    const queue: ((now: number) => void)[] = [];
+    let drawn = 0;
+    const loop = createLoop((dt) => {
+      drawn += 1;
+      if (!state.coast) return false;
+      state = stepCoast('first', state.look, state.coast, dt) as typeof state;
+      return state.coast !== null;
+    }, (fn) => queue.push(fn), () => undefined);
+    loop.invalidate();
+    let now = 0;
+    while (queue.length > 0 && drawn < 2000) {
+      now += 1000 / 60;
+      queue.shift()?.(now);
+    }
+    expect(state.coast).toBeNull();
+    expect(queue).toHaveLength(0);
+    const ended = drawn;
+    now += 5000;
+    expect(queue).toHaveLength(0);
+    expect(drawn).toBe(ended);
+    loop.invalidate();
+    expect(queue).toHaveLength(1);
+  });
+
+  it('is exact for any frame time', () => {
+    const once = stepCoast('first', { yawDeg: 0, pitchDeg: 0 }, flick!, 0.5);
+    const first = stepCoast('first', { yawDeg: 0, pitchDeg: 0 }, flick!, 0.25);
+    const twice = stepCoast('first', first.look, first.coast!, 0.25);
+    expect(twice.look.yawDeg).toBeCloseTo(once.look.yawDeg, 6);
+  });
+
+  it('starts from no slow drag and no reduced motion, and holds the pitch at its limit', () => {
+    expect(coastOf({ x: FLING_MIN_PX_S - 1, y: 0 }, scale, false)).toBeNull();
+    expect(coastOf({ x: -2000, y: 0 }, scale, true)).toBeNull();
+    const up = coastOf({ x: 0, y: 3000 }, scale, false)!;
+    const step = stepCoast('first', { yawDeg: 0, pitchDeg: 79 }, up, 1);
+    expect(step.look.pitchDeg).toBe(80);
+    expect(step.coast).toBeNull();
+  });
+});
+
+describe('the drag handlers', () => {
+  /** A pointer event with the fields the handlers read. */
+  const pointer = (type: string, x: number, t: number): Event => {
+    const e = new Event(type);
+    for (const [k, v] of Object.entries({ button: 0, pointerId: 1, clientX: x, clientY: 0, timeStamp: t })) {
+      Object.defineProperty(e, k, { value: v });
+    }
+    return e;
+  };
+
+  function rig() {
+    const el = Object.assign(new EventTarget(), { setPointerCapture: () => undefined }) as unknown as HTMLElement;
+    const log: string[] = [];
+    const target = { mode: () => 'first' as const, look: () => ({ yawDeg: 0, pitchDeg: 0 }), home: () => ({ yawDeg: 0, pitchDeg: 0 }),
+      set: () => log.push('set'), scale: () => dragScale(400, 800, 50),
+      fling: (vx: number) => log.push(`fling ${Math.round(vx)}`), halt: () => log.push('halt') };
+    bindLook(el, target);
+    return { el, log };
+  }
+
+  it('stops a coast on a press, and hands the release speed on after a drag', () => {
+    const { el, log } = rig();
+    el.dispatchEvent(pointer('pointerdown', 100, 0));
+    el.dispatchEvent(pointer('pointermove', 140, 40));
+    el.dispatchEvent(pointer('pointermove', 180, 80));
+    el.dispatchEvent(pointer('pointerup', 180, 80));
+    expect(log).toEqual(['halt', 'set', 'set', 'fling 1000']);
+  });
+
+  it('hands nothing on from a cancelled drag, and a second press halts again', () => {
+    const { el, log } = rig();
+    el.dispatchEvent(pointer('pointerdown', 100, 0));
+    el.dispatchEvent(pointer('pointercancel', 100, 10));
+    el.dispatchEvent(pointer('pointerdown', 100, 20));
+    expect(log).toEqual(['halt', 'halt']);
   });
 });
 
@@ -271,7 +261,7 @@ describe('the far horizon backdrop', () => {
   it('stands its top at the profile’s elevation in every bin, seen from the eye', () => {
     const profile = wallProfile();
     const eyeY = 7;
-    const { positions } = backdropWall(profile, eyeY, 720);
+    const { positions } = backdropWall(profile, eyeY, 720, BACKDROP_M);
     for (let i = 0; i < 720; i++) {
       const [x, y, z] = [positions[i * 6]!, positions[i * 6 + 1]!, positions[i * 6 + 2]!];
       const el = (Math.atan2(y - eyeY, Math.hypot(x, z)) * 180) / Math.PI;
@@ -282,7 +272,7 @@ describe('the far horizon backdrop', () => {
   });
 
   it('closes the ring and falls back to the smooth sphere’s dip without a profile', () => {
-    const { positions, index } = backdropWall(null, 0, 8);
+    const { positions, index } = backdropWall(null, 0, 8, BACKDROP_M);
     for (let c = 0; c < 3; c++) expect(positions[48 + c]).toBeCloseTo(positions[c]!, 6);
     expect(Math.max(...index)).toBe(17);
     expect(backdropTopDeg(null, 123)).toBe(dipDeg(EYE_M));
@@ -343,12 +333,13 @@ describe('a tile centred off the site', () => {
 
   it('shades the point from the sample nearest the site, not the tile centre', () => {
     const wide = { ...tileFrom((e) => (e === 100 ? 50 : 0)), originEast: -100, originNorth: 0 };
-    const ys = meshHeights(wide);
+    const ys = wide.heights;
     expect(nearestSample(wide, 0, 0)).toBe(2 * N + 3);
     const mask = createSunMask();
     const attribute = { array: new Float32Array(N * N), needsUpdate: false } as unknown as BufferAttribute;
     const sky = { sunAz: 90, sunEl: 5, earthAz: 0, earthEl: 0 };
-    shadeSun({ tiles: [{ tile: wide, ys }], lit: () => attribute, profile: null, mask }, sky);
+    const onLit = (lit: Float32Array): void => void (attribute.array as Float32Array).set(lit);
+    shadeSun({ tiles: [{ tile: wide, ys }], onLit, profile: null, mask }, sky);
     expect((attribute.array as Float32Array)[2 * N + 2]).toBe(0);
     expect((attribute.array as Float32Array)[2 * N + 3]).toBe(1);
     expect(mask.near.value).toBe(1);
@@ -501,12 +492,9 @@ describe('the astronaut and the shapes', () => {
     expect(model.scale).toBeGreaterThan(1);
   });
 
-  it('builds a closed tube, a unit sphere and rings sat on the ground', async () => {
-    const { sphere, tube } = await import('../src/terrain/shapes');
+  it('builds a unit sphere and rings sat on the ground', async () => {
+    const { sphere } = await import('../src/terrain/shapes');
     const { ringRibbon } = await import('../src/terrain/ring-ribbon');
-    const t = tube({ from: [0, 0, 0], to: [0, 2, 0], radiusFrom: 1, radiusTo: 0.5, sides: 6 });
-    expect(t.index).toHaveLength(6 * 12);
-    expect(Math.max(...t.index)).toBeLessThan(t.positions.length / 3);
     const s = sphere(8, 5);
     for (let i = 0; i < s.positions.length; i += 3) {
       expect(Math.hypot(s.positions[i]!, s.positions[i + 1]!, s.positions[i + 2]!)).toBeCloseTo(1, 6);

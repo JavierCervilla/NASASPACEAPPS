@@ -57,6 +57,7 @@ export const controller = (
   update: (next: SceneInput): void => {
     if (next.mode !== view.mode) {
       view.mode = next.mode;
+      view.coast = null;
       view.home = startLook(next.mode, view.look.yawDeg);
       set(view.home);
     }

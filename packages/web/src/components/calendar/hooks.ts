@@ -35,7 +35,7 @@ import type { Player } from '../../calendar/time-player';
 import type { TimeState, TimeStore } from '../../calendar/time-store';
 import type { HoursLoader } from '../../phone/hours-cache';
 import type { HorizonStore } from '../../horizon/horizon-store';
-import type { TileSource } from '../../terrain/tile';
+import type { RingSource } from '../../terrain/ring/ring-source';
 import { monthDiff } from '../../calendar/month-diff';
 import { widgetRange } from '../../phone/widget-range';
 import { useSiteHours, type HoursParts } from '../use-site-hours';
@@ -105,7 +105,7 @@ export interface CalendarParts extends HoursParts {
    * The on-foot view's height tiles (VENT-34): one source per page, the
    * seam a Web Worker streamer will replace (terrain/tile.ts).
    */
-  readonly tiles: TileSource;
+  readonly tiles: RingSource;
 }
 
 /**

@@ -35,9 +35,8 @@ and thruster pods. Metres, Blender axes: footpads on Z = 0, solar arrays on face
 import math
 
 import bmesh
-from mathutils import Vector
-
 import onfoot_shapes as s
+from mathutils import Vector
 
 TRIANGLE_BUDGET = 25_000
 ATLAS_PX = 1024
@@ -68,9 +67,17 @@ SEAM_M = 0.45
 
 
 def mats():
-    return {k: s.material(*v) for k, v in {
-        "gold": GOLD, "silver": SILVER, "solar": SOLAR, "white": WHITE,
-        "metal": METAL, "dark": DARK}.items()}
+    return {
+        k: s.material(*v)
+        for k, v in {
+            "gold": GOLD,
+            "silver": SILVER,
+            "solar": SOLAR,
+            "white": WHITE,
+            "metal": METAL,
+            "dark": DARK,
+        }.items()
+    }
 
 
 def corner(i, radius, z):
@@ -97,11 +104,9 @@ def body(m):
     rims = list(bm.edges)
     for i, face in enumerate(sides):
         if i in SOLAR_FACES or i in RADIATOR_FACES:
-            bmesh.ops.inset_individual(bm, faces=[face], thickness=0.07,
-                                       depth=-0.015)
+            bmesh.ops.inset_individual(bm, faces=[face], thickness=0.07, depth=-0.015)
             face.material_index = 2 if i in SOLAR_FACES else 3
-    bmesh.ops.bevel(bm, geom=rims, offset=0.035, segments=2,
-                    affect="EDGES")
+    bmesh.ops.bevel(bm, geom=rims, offset=0.035, segments=2, affect="EDGES")
     obj = s.to_object("body", bm, m["gold"])
     for mat in (m["silver"], m["solar"], m["white"]):
         obj.data.materials.append(mat)
@@ -115,13 +120,16 @@ def girdle(m):
     parts = []
     for z, h in ((BODY_BOTTOM_M + 0.12, 0.1), (BODY_TOP_M - 0.05, 0.1)):
         bm = bmesh.new()
-        bmesh.ops.create_cone(bm, cap_ends=True, segments=6, radius1=r + 0.03,
-                              radius2=r + 0.03, depth=h)
-        bmesh.ops.rotate(bm, verts=bm.verts, cent=(0, 0, 0),
-                         matrix=_rz(math.radians(-60)))
+        bmesh.ops.create_cone(
+            bm, cap_ends=True, segments=6, radius1=r + 0.03, radius2=r + 0.03, depth=h
+        )
+        bmesh.ops.rotate(
+            bm, verts=bm.verts, cent=(0, 0, 0), matrix=_rz(math.radians(-60))
+        )
         bmesh.ops.translate(bm, vec=(0, 0, z), verts=bm.verts)
-        bmesh.ops.bevel(bm, geom=list(bm.edges), offset=0.012, segments=1,
-                        affect="EDGES")
+        bmesh.ops.bevel(
+            bm, geom=list(bm.edges), offset=0.012, segments=1, affect="EDGES"
+        )
         obj = s.to_object(f"band_{len(parts)}", bm, m["silver"])
         s.smooth_by_angle(obj, 30)
         parts.append(obj)
@@ -130,39 +138,82 @@ def girdle(m):
 
 def _rz(angle):
     from mathutils import Matrix
+
     return Matrix.Rotation(angle, 3, "Z")
 
 
 def engine(m):
     """The main engine's bell under the body and its silver throat."""
-    bell = s.tube("bell", [(0, 0, 0.42), (0, 0, 0.6), (0, 0, 0.8),
-                           (0, 0, BODY_BOTTOM_M)],
-                  s.lerp_radius([(0, 0.33, 0.33), (0.5, 0.22, 0.22),
-                                 (0.85, 0.15, 0.15), (1, 0.17, 0.17)]),
-                  m["dark"], segments=32, caps=False, up=(1, 0, 0))
-    lip = s.ring("bell_lip", (0, 0, 0.43), (0, 0, 1), 0.34, 0.025,
-                 m["metal"], segments=32)
-    throat = s.ring("throat", (0, 0, BODY_BOTTOM_M - 0.05), (0, 0, 1), 0.2,
-                    0.1, m["silver"], segments=24)
-    inner = s.tube("bell_in", [(0, 0, 0.44), (0, 0, 0.8)],
-                   s.lerp_radius([(0, 0.315, 0.315), (1, 0.14, 0.14)]),
-                   m["dark"], segments=32, caps=True, up=(1, 0, 0))
+    bell = s.tube(
+        "bell",
+        [(0, 0, 0.42), (0, 0, 0.6), (0, 0, 0.8), (0, 0, BODY_BOTTOM_M)],
+        s.lerp_radius(
+            [(0, 0.33, 0.33), (0.5, 0.22, 0.22), (0.85, 0.15, 0.15), (1, 0.17, 0.17)]
+        ),
+        m["dark"],
+        segments=32,
+        caps=False,
+        up=(1, 0, 0),
+    )
+    lip = s.ring(
+        "bell_lip", (0, 0, 0.43), (0, 0, 1), 0.34, 0.025, m["metal"], segments=32
+    )
+    throat = s.ring(
+        "throat",
+        (0, 0, BODY_BOTTOM_M - 0.05),
+        (0, 0, 1),
+        0.2,
+        0.1,
+        m["silver"],
+        segments=24,
+    )
+    inner = s.tube(
+        "bell_in",
+        [(0, 0, 0.44), (0, 0, 0.8)],
+        s.lerp_radius([(0, 0.315, 0.315), (1, 0.14, 0.14)]),
+        m["dark"],
+        segments=32,
+        caps=True,
+        up=(1, 0, 0),
+    )
     return [bell, lip, throat, inner]
 
 
 def tanks(m):
     """Two spherical propellant tanks bulging under the body, wrapped in
     silver blanket; on the deck two pressurant spheres and a payload box."""
-    parts = [s.uv_sphere(f"tank_{i}", (x, 0.0, BODY_BOTTOM_M + 0.02), 0.42,
-                         m["silver"], scale=(1, 1, 0.8), segments=28,
-                         rings=14)
-             for i, x in enumerate((-0.42, 0.42))]
+    parts = [
+        s.uv_sphere(
+            f"tank_{i}",
+            (x, 0.0, BODY_BOTTOM_M + 0.02),
+            0.42,
+            m["silver"],
+            scale=(1, 1, 0.8),
+            segments=28,
+            rings=14,
+        )
+        for i, x in enumerate((-0.42, 0.42))
+    ]
     for i, at in enumerate(((0.38, 0.3), (0.38, -0.32))):
-        parts.append(s.uv_sphere(f"bottle_{i}", (*at, BODY_TOP_M + 0.17),
-                                 0.15, m["white"], segments=20, rings=10))
-    parts.append(s.box("payload", (0.42, 0.36, 0.22),
-                       (-0.25, -0.3, BODY_TOP_M + 0.11), m["gold"],
-                       bevel=0.02))
+        parts.append(
+            s.uv_sphere(
+                f"bottle_{i}",
+                (*at, BODY_TOP_M + 0.17),
+                0.15,
+                m["white"],
+                segments=20,
+                rings=10,
+            )
+        )
+    parts.append(
+        s.box(
+            "payload",
+            (0.42, 0.36, 0.22),
+            (-0.25, -0.3, BODY_TOP_M + 0.11),
+            m["gold"],
+            bevel=0.02,
+        )
+    )
     return parts
 
 
@@ -177,26 +228,55 @@ def leg(m, i):
     top = corner(i, r - 0.05, BODY_BOTTOM_M + 0.85)
     knee = top.lerp(foot, 0.55)
     parts = [
-        s.tube(f"strut_{i}", [top, knee], lambda t: (0.055, 0.055),
-               m["silver"], segments=12),
-        s.tube(f"piston_{i}", [knee - (knee - top).normalized() * 0.15, foot],
-               lambda t: (0.035, 0.035), m["metal"], segments=12),
-        s.ring(f"seal_{i}", knee, knee - top, 0.062, 0.05, m["metal"],
-               segments=12),
+        s.tube(
+            f"strut_{i}",
+            [top, knee],
+            lambda t: (0.055, 0.055),
+            m["silver"],
+            segments=12,
+        ),
+        s.tube(
+            f"piston_{i}",
+            [knee - (knee - top).normalized() * 0.15, foot],
+            lambda t: (0.035, 0.035),
+            m["metal"],
+            segments=12,
+        ),
+        s.ring(f"seal_{i}", knee, knee - top, 0.062, 0.05, m["metal"], segments=12),
     ]
     for k, sign in enumerate((-1, 1)):
         root = corner(i, r - 0.02, BODY_BOTTOM_M + 0.05) + side * sign * 0.32
-        parts.append(s.tube(f"side_{i}_{k}", [root, knee.lerp(foot, 0.45)],
-                            lambda t: (0.022, 0.022), m["metal"], segments=8))
-    parts.append(s.tube(f"pad_{i}", [foot + Vector((0, 0, -0.13)),
-                                     foot + Vector((0, 0, -0.1)),
-                                     foot + Vector((0, 0, -0.04))],
-                        s.lerp_radius([(0, FOOTPAD_M * 0.9, FOOTPAD_M * 0.9),
-                                       (0.3, FOOTPAD_M, FOOTPAD_M),
-                                       (1, 0.06, 0.06)]),
-                        m["silver"], segments=20))
-    parts.append(s.uv_sphere(f"ankle_{i}", foot, 0.05, m["metal"],
-                             segments=12, rings=6))
+        parts.append(
+            s.tube(
+                f"side_{i}_{k}",
+                [root, knee.lerp(foot, 0.45)],
+                lambda t: (0.022, 0.022),
+                m["metal"],
+                segments=8,
+            )
+        )
+    parts.append(
+        s.tube(
+            f"pad_{i}",
+            [
+                foot + Vector((0, 0, -0.13)),
+                foot + Vector((0, 0, -0.1)),
+                foot + Vector((0, 0, -0.04)),
+            ],
+            s.lerp_radius(
+                [
+                    (0, FOOTPAD_M * 0.9, FOOTPAD_M * 0.9),
+                    (0.3, FOOTPAD_M, FOOTPAD_M),
+                    (1, 0.06, 0.06),
+                ]
+            ),
+            m["silver"],
+            segments=20,
+        )
+    )
+    parts.append(
+        s.uv_sphere(f"ankle_{i}", foot, 0.05, m["metal"], segments=12, rings=6)
+    )
     return parts
 
 
@@ -204,22 +284,37 @@ def boxes(m):
     """Instrument boxes on the gold faces and a bottom skirt."""
     parts = []
     r = BODY_FLATS_M / 2
-    for i, (z, w, h) in ((1, (1.6, 0.42, 0.34)), (5, (2.3, 0.36, 0.3)),
-                         (1, (2.55, 0.3, 0.2))):
+    for i, (z, w, h) in (
+        (1, (1.6, 0.42, 0.34)),
+        (5, (2.3, 0.36, 0.3)),
+        (1, (2.55, 0.3, 0.2)),
+    ):
         a = math.radians(-30 + 60 * i)
         out = Vector((math.cos(a), math.sin(a), 0))
-        parts.append(s.box(f"unit_{i}", (w, 0.16, h), out * (r + 0.07) +
-                           Vector((0, 0, z)), m["gold" if i != 5 else "silver"],
-                           bevel=0.025, rotation=_rz4(a + math.pi / 2)))
-    skirt = s.tube("skirt", [(0, 0, BODY_BOTTOM_M - 0.12),
-                             (0, 0, BODY_BOTTOM_M + 0.01)],
-                   s.lerp_radius([(0, 0.62, 0.62), (1, 0.8, 0.8)]),
-                   m["silver"], segments=6, up=(0, -1, 0))
+        parts.append(
+            s.box(
+                f"unit_{i}",
+                (w, 0.16, h),
+                out * (r + 0.07) + Vector((0, 0, z)),
+                m["gold" if i != 5 else "silver"],
+                bevel=0.025,
+                rotation=_rz4(a + math.pi / 2),
+            )
+        )
+    skirt = s.tube(
+        "skirt",
+        [(0, 0, BODY_BOTTOM_M - 0.12), (0, 0, BODY_BOTTOM_M + 0.01)],
+        s.lerp_radius([(0, 0.62, 0.62), (1, 0.8, 0.8)]),
+        m["silver"],
+        segments=6,
+        up=(0, -1, 0),
+    )
     return [*parts, skirt]
 
 
 def _rz4(angle):
     from mathutils import Matrix
+
     return Matrix.Rotation(angle, 4, "Z")
 
 
@@ -229,27 +324,53 @@ def mast(m):
     tip = Vector((-0.3, 0.25, DISH_TOP_M - 0.42))
     dish_at = tip + Vector((0, 0, 0.12))
     aim = Vector((-0.4, 0.6, 1.0)).normalized()
-    dish = s.tube("dish", [dish_at, dish_at + aim * 0.07,
-                           dish_at + aim * 0.16],
-                  s.lerp_radius([(0, 0.06, 0.06), (0.5, 0.25, 0.25),
-                                 (1, 0.38, 0.38)]),
-                  m["white"], segments=32, caps=False, up=(1, 0, 0))
-    feed = s.tube("feed", [dish_at + aim * 0.1, dish_at + aim * 0.36],
-                  lambda t: (0.012, 0.012), m["metal"], segments=8)
-    parts = [s.tube("mast", [base, tip], lambda t: (0.04, 0.04), m["metal"],
-                    segments=12),
-             s.box("gimbal", (0.12, 0.12, 0.12), tip, m["silver"],
-                   bevel=0.02), dish, feed,
-             s.box("tracker", (0.18, 0.14, 0.12), (0.45, -0.25, BODY_TOP_M +
-                                                     0.08), m["silver"],
-                   bevel=0.015),
-             s.cylinder("tracker_eye", (0.45, -0.33, BODY_TOP_M + 0.1),
-                        (0, -1, 0.6), 0.04, 0.06, m["dark"])]
+    dish = s.tube(
+        "dish",
+        [dish_at, dish_at + aim * 0.07, dish_at + aim * 0.16],
+        s.lerp_radius([(0, 0.06, 0.06), (0.5, 0.25, 0.25), (1, 0.38, 0.38)]),
+        m["white"],
+        segments=32,
+        caps=False,
+        up=(1, 0, 0),
+    )
+    feed = s.tube(
+        "feed",
+        [dish_at + aim * 0.1, dish_at + aim * 0.36],
+        lambda t: (0.012, 0.012),
+        m["metal"],
+        segments=8,
+    )
+    parts = [
+        s.tube("mast", [base, tip], lambda t: (0.04, 0.04), m["metal"], segments=12),
+        s.box("gimbal", (0.12, 0.12, 0.12), tip, m["silver"], bevel=0.02),
+        dish,
+        feed,
+        s.box(
+            "tracker",
+            (0.18, 0.14, 0.12),
+            (0.45, -0.25, BODY_TOP_M + 0.08),
+            m["silver"],
+            bevel=0.015,
+        ),
+        s.cylinder(
+            "tracker_eye",
+            (0.45, -0.33, BODY_TOP_M + 0.1),
+            (0, -1, 0.6),
+            0.04,
+            0.06,
+            m["dark"],
+        ),
+    ]
     for k, at in enumerate(((0.55, 0.35), (-0.6, -0.3))):
-        parts.append(s.tube(f"omni_{k}", [(*at, BODY_TOP_M),
-                                          (*at, BODY_TOP_M + 0.5)],
-                            lambda t: (0.012, 0.012), m["metal"],
-                            segments=8))
+        parts.append(
+            s.tube(
+                f"omni_{k}",
+                [(*at, BODY_TOP_M), (*at, BODY_TOP_M + 0.5)],
+                lambda t: (0.012, 0.012),
+                m["metal"],
+                segments=8,
+            )
+        )
     return parts
 
 
@@ -262,14 +383,18 @@ def thrusters(m):
         out = at.copy()
         out.z = 0
         out.normalize()
-        parts.append(s.box(f"pod_{i}", (0.16, 0.16, 0.16), at, m["silver"],
-                           bevel=0.02))
+        parts.append(s.box(f"pod_{i}", (0.16, 0.16, 0.16), at, m["silver"], bevel=0.02))
         for k, d in enumerate((out, Vector((0, 0, -1)))):
-            parts.append(s.tube(f"nozzle_{i}_{k}", [at + d * 0.08,
-                                                    at + d * 0.17],
-                                s.lerp_radius([(0, 0.02, 0.02),
-                                               (1, 0.04, 0.04)]),
-                                m["dark"], segments=10, caps=False))
+            parts.append(
+                s.tube(
+                    f"nozzle_{i}_{k}",
+                    [at + d * 0.08, at + d * 0.17],
+                    s.lerp_radius([(0, 0.02, 0.02), (1, 0.04, 0.04)]),
+                    m["dark"],
+                    segments=10,
+                    caps=False,
+                )
+            )
     return parts
 
 
@@ -277,6 +402,7 @@ def crinkle(big, small):
     """Crumpled blanket: flat facets at random heights meeting at creases
     (Voronoi cells, two sizes) over a slow undulation, and the taped
     seams between blanket strips every SEAM_M of height."""
+
     def height(nodes, links, coord):
         seams = nodes.new("ShaderNodeTexWave")
         seams.wave_type, seams.bands_direction = "BANDS", "Z"
@@ -310,6 +436,7 @@ def crinkle(big, small):
         mix.inputs[1].default_value = 0.5
         links.new(total, mix.inputs[2])
         return mix.outputs["Value"]
+
     return height
 
 
@@ -330,19 +457,23 @@ def cell_grid(nodes, links, coord):
 
 
 BUMPS = {
-    "foil_gold": {"strength": 1.0, "distance": 0.02,
-                  "height": crinkle(5.0, 14.0)},
-    "foil_silver": {"strength": 0.9, "distance": 0.02,
-                    "height": crinkle(6.0, 16.0)},
-    "solar_cells": {"strength": 0.5, "distance": 0.003,
-                    "height": cell_grid},
+    "foil_gold": {"strength": 1.0, "distance": 0.02, "height": crinkle(5.0, 14.0)},
+    "foil_silver": {"strength": 0.9, "distance": 0.02, "height": crinkle(6.0, 16.0)},
+    "solar_cells": {"strength": 0.5, "distance": 0.003, "height": cell_grid},
 }
 
 
 def build():
     m = mats()
-    parts = [body(m), *girdle(m), *engine(m), *tanks(m), *mast(m), *boxes(m),
-             *thrusters(m)]
+    parts = [
+        body(m),
+        *girdle(m),
+        *engine(m),
+        *tanks(m),
+        *mast(m),
+        *boxes(m),
+        *thrusters(m),
+    ]
     for i in range(LEGS):
         parts += leg(m, i)
     return parts

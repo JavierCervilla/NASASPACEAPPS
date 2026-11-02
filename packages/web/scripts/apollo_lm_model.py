@@ -44,14 +44,13 @@ import math
 import sys
 from pathlib import Path
 
-import numpy as np
-
 import bmesh
 import bpy
+import numpy as np
 from mathutils import Vector
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-import foil_maps  # noqa: E402  (Blender's Python ships NumPy)
+import foil_maps
 
 TRIANGLE_BUDGET = 25_000
 # Across the landing gear, footpad to footpad (NASA: 9.4 m diagonally
@@ -109,8 +108,11 @@ def flatten_decals(mat):
     """A decal material loses its texture and wears its field's colour;
     {image name: field colour (sRGB 0..255)}."""
     nodes = mat.node_tree.nodes
-    decals = [n for n in nodes if n.type == "TEX_IMAGE" and n.image
-              and n.image.name.startswith(DECAL_IMAGES)]
+    decals = [
+        n
+        for n in nodes
+        if n.type == "TEX_IMAGE" and n.image and n.image.name.startswith(DECAL_IMAGES)
+    ]
     flattened = {}
     for node in decals:
         colour = field_colour(node.image)
@@ -129,10 +131,16 @@ def flatten_decals(mat):
 def cut_textures(mat):
     """Cuts every image texture of `mat` to TEXTURE_PX at most."""
     for node in mat.node_tree.nodes:
-        if node.type == "TEX_IMAGE" and node.image and max(node.image.size) > TEXTURE_PX:
+        if (
+            node.type == "TEX_IMAGE"
+            and node.image
+            and max(node.image.size) > TEXTURE_PX
+        ):
             width, height = node.image.size
             scale = TEXTURE_PX / max(width, height)
-            node.image.scale(max(1, round(width * scale)), max(1, round(height * scale)))
+            node.image.scale(
+                max(1, round(width * scale)), max(1, round(height * scale))
+            )
 
 
 def foil_image(name, rgb):
@@ -151,13 +159,19 @@ def foil_nodes(mat, images, shiny):
     metal-roughness map (glTF's G and B)."""
     nodes, links = mat.node_tree.nodes, mat.node_tree.links
     bsdf = next(n for n in nodes if n.type == "BSDF_PRINCIPLED")
-    normal_tex, normal = nodes.new("ShaderNodeTexImage"), nodes.new("ShaderNodeNormalMap")
+    normal_tex, normal = (
+        nodes.new("ShaderNodeTexImage"),
+        nodes.new("ShaderNodeNormalMap"),
+    )
     normal_tex.image = images["normal"]
     normal.inputs["Strength"].default_value = 1.0 if shiny else PANEL_NORMAL
     links.new(normal_tex.outputs["Color"], normal.inputs["Color"])
     links.new(normal.outputs["Normal"], bsdf.inputs["Normal"])
     if shiny:
-        mr_tex, split = nodes.new("ShaderNodeTexImage"), nodes.new("ShaderNodeSeparateColor")
+        mr_tex, split = (
+            nodes.new("ShaderNodeTexImage"),
+            nodes.new("ShaderNodeSeparateColor"),
+        )
         mr_tex.image = images["metal_roughness"]
         links.new(mr_tex.outputs["Color"], split.inputs["Color"])
         links.new(split.outputs["Green"], bsdf.inputs["Roughness"])
@@ -172,16 +186,20 @@ def box_project(body, indices, cube_size):
     for face in bm.faces:
         face.select = face.material_index in indices
     bmesh.update_edit_mesh(body.data)
-    bpy.ops.uv.cube_project(cube_size=cube_size, correct_aspect=True,
-                            scale_to_bounds=False)
+    bpy.ops.uv.cube_project(
+        cube_size=cube_size, correct_aspect=True, scale_to_bounds=False
+    )
     bpy.ops.object.mode_set(mode="OBJECT")
 
 
 def crumple(body):
     """Foil and panels wear the generated crumpled-foil maps."""
-    images = {"normal": foil_image("foil_normal", foil_maps.normal_map(FOIL_PX)),
-              "metal_roughness": foil_image("foil_metal_roughness",
-                                            foil_maps.metal_roughness_map(FOIL_PX))}
+    images = {
+        "normal": foil_image("foil_normal", foil_maps.normal_map(FOIL_PX)),
+        "metal_roughness": foil_image(
+            "foil_metal_roughness", foil_maps.metal_roughness_map(FOIL_PX)
+        ),
+    }
     worn = {}
     for index, mat in enumerate(body.data.materials):
         shiny = mat.name.startswith(FOIL_MATERIALS)
@@ -231,8 +249,9 @@ def smooth_by_angle(body):
     bpy.ops.object.select_all(action="DESELECT")
     body.select_set(True)
     bpy.context.view_layer.objects.active = body
-    bpy.ops.object.shade_smooth_by_angle(angle=math.radians(SHARP_DEG),
-                                         keep_sharp_edges=True)
+    bpy.ops.object.shade_smooth_by_angle(
+        angle=math.radians(SHARP_DEG), keep_sharp_edges=True
+    )
 
 
 def build(source):
@@ -246,5 +265,4 @@ def build(source):
     foil = crumple(body)
     decimate(body, TRIANGLE_BUDGET)
     smooth_by_angle(body)
-    return body, {"decals_flattened": flattened, "foil": foil,
-                  "scale": round(scale, 4)}
+    return body, {"decals_flattened": flattened, "foil": foil, "scale": round(scale, 4)}

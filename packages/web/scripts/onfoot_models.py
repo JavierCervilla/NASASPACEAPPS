@@ -138,8 +138,9 @@ def add_textures(gltf, maps, unmapped):
     (occlusionTexture) and normal (normalTexture) maps, by URI."""
     gltf["samplers"] = [SAMPLER]
     gltf["images"] = [{"uri": maps["ao"]}, {"uri": maps["normal"]}]
-    gltf["textures"] = [{"extensions": {WEBP: {"source": i}}, "sampler": 0}
-                        for i in (0, 1)]
+    gltf["textures"] = [
+        {"extensions": {WEBP: {"source": i}}, "sampler": 0} for i in (0, 1)
+    ]
     for mat in gltf["materials"]:
         if mat["name"] not in unmapped:
             mat["occlusionTexture"] = {"index": 0}
@@ -170,12 +171,12 @@ def pack(folder, name, info):
         add_textures(gltf, info["maps"], set(info["unmapped"]))
         files = {f: folder / f for f in info["maps"].values()}
     else:
-        files = {new: folder / old
-                 for old, new in rename_images(gltf, folder, name).items()}
+        files = {
+            new: folder / old for old, new in rename_images(gltf, folder, name).items()
+        }
     if gltf.get("textures"):
         gltf["extensionsUsed"] = sorted({*gltf.get("extensionsUsed", []), WEBP})
-        gltf["extensionsRequired"] = sorted(
-            {*gltf.get("extensionsRequired", []), WEBP})
+        gltf["extensionsRequired"] = sorted({*gltf.get("extensionsRequired", []), WEBP})
     gltf["asset"] = {"version": "2.0", "generator": "Ventana Lunar onfoot_models.py"}
     return write_glb(gltf, binary), files
 
@@ -203,7 +204,10 @@ def reader_problems(gltf):
         if gltf["accessors"][primitive["indices"]]["componentType"] != UINT16:
             problems.append("indices are not uint16")
         for key in ("POSITION", "NORMAL", "TEXCOORD_0"):
-            if key not in attrs or gltf["accessors"][attrs[key]]["componentType"] != FLOAT:
+            if (
+                key not in attrs
+                or gltf["accessors"][attrs[key]]["componentType"] != FLOAT
+            ):
                 problems.append(f"a primitive without float {key}")
     return sorted(set(problems))
 
@@ -218,8 +222,12 @@ def audit(folder, names=NAMES):
         sizes = [webp_size((folder / uri).read_bytes()) for uri in uris]
         total = len(data) + sum((folder / uri).stat().st_size for uri in uris)
         tris = glb_triangles(gltf)
-        report[name] = {"glb_bytes": len(data), "total_bytes": total,
-                        "triangles": tris, "textures": dict(zip(uris, sizes))}
+        report[name] = {
+            "glb_bytes": len(data),
+            "total_bytes": total,
+            "triangles": tris,
+            "textures": dict(zip(uris, sizes)),
+        }
         if tris > TRIANGLE_BUDGET:
             problems.append(f"{name}: {tris} triangles > {TRIANGLE_BUDGET}")
         if any(max(size) > TEXTURE_BUDGET_PX for size in sizes):
@@ -235,8 +243,17 @@ def audit(folder, names=NAMES):
 def run_blender(blender, job):
     with tempfile.NamedTemporaryFile("w", suffix=".json", delete=False) as stream:
         json.dump(job, stream)
-    command = [str(blender), "-b", "--factory-startup", "--python-exit-code", "1",
-               "--python", str(HERE / "onfoot_blender.py"), "--", stream.name]
+    command = [
+        str(blender),
+        "-b",
+        "--factory-startup",
+        "--python-exit-code",
+        "1",
+        "--python",
+        str(HERE / "onfoot_blender.py"),
+        "--",
+        stream.name,
+    ]
     subprocess.run(command, check=True, stdout=subprocess.DEVNULL)
 
 
@@ -255,8 +272,15 @@ def bake(source, blender, previews=None, check=False):
     with tempfile.TemporaryDirectory() as tmp:
         work, ship = Path(tmp) / "work", Path(tmp) / "ship"
         ship.mkdir(parents=True)
-        run_blender(blender, {"out": str(work), "report": str(work / "report.json"),
-                              "models": list(NAMES), "source": str(source)})
+        run_blender(
+            blender,
+            {
+                "out": str(work),
+                "report": str(work / "report.json"),
+                "models": list(NAMES),
+                "source": str(source),
+            },
+        )
         info = json.loads((work / "report.json").read_text())
         for name in NAMES:
             glb, files = pack(work, name, info[name])
@@ -265,8 +289,13 @@ def bake(source, blender, previews=None, check=False):
                 shutil.copyfile(path, ship / target)
         report = audit(ship)
         if previews is not None:
-            run_blender(blender, {"previews": str(previews), "glbs": {
-                name: str(ship / f"{name}.glb") for name in NAMES}})
+            run_blender(
+                blender,
+                {
+                    "previews": str(previews),
+                    "glbs": {name: str(ship / f"{name}.glb") for name in NAMES},
+                },
+            )
         if check:
             return compare(ship), info
         MODELS.mkdir(parents=True, exist_ok=True)
@@ -276,9 +305,12 @@ def bake(source, blender, previews=None, check=False):
 
 
 def compare(ship):
-    changed = [name for name in shipped_files(ship)
-               if not (MODELS / name).is_file()
-               or (ship / name).read_bytes() != (MODELS / name).read_bytes()]
+    changed = [
+        name
+        for name in shipped_files(ship)
+        if not (MODELS / name).is_file()
+        or (ship / name).read_bytes() != (MODELS / name).read_bytes()
+    ]
     if changed:
         raise BakeError("differs from the committed file: " + ", ".join(changed))
     return audit(ship)
@@ -289,8 +321,11 @@ def main(argv=None):
     parser.add_argument("--source", type=Path, required=True)
     parser.add_argument("--blender", type=Path, default=BLENDER)
     parser.add_argument("--previews", type=Path)
-    parser.add_argument("--check", action="store_true",
-                        help="bake into a temporary folder and compare; write nothing")
+    parser.add_argument(
+        "--check",
+        action="store_true",
+        help="bake into a temporary folder and compare; write nothing",
+    )
     args = parser.parse_args(argv)
     try:
         report, info = bake(args.source, args.blender, args.previews, args.check)

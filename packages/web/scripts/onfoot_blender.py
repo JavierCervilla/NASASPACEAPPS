@@ -47,9 +47,9 @@ import bpy
 from mathutils import Vector
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-import apollo_lm_model  # noqa: E402
-import astronaut_model  # noqa: E402
-import lander_model  # noqa: E402
+import apollo_lm_model
+import astronaut_model
+import lander_model
 
 BUILDERS = {"astronaut-v2": astronaut_model, "lander": lander_model}
 BAKE_SAMPLES = {"AO": 256, "NORMAL": 8}
@@ -96,16 +96,19 @@ def unwrap(body):
     select_only([body])
     bpy.ops.object.mode_set(mode="EDIT")
     bpy.ops.mesh.select_all(action="SELECT")
-    bpy.ops.uv.smart_project(angle_limit=math.radians(60),
-                             island_margin=0.004, area_weight=0.0,
-                             correct_aspect=True, scale_to_bounds=False)
+    bpy.ops.uv.smart_project(
+        angle_limit=math.radians(60),
+        island_margin=0.004,
+        area_weight=0.0,
+        correct_aspect=True,
+        scale_to_bounds=False,
+    )
     bpy.ops.uv.pack_islands(margin=0.004, rotate=True)
     bpy.ops.object.mode_set(mode="OBJECT")
 
 
 def bake_image(name, size):
-    image = bpy.data.images.new(name, size, size, alpha=False,
-                                float_buffer=True)
+    image = bpy.data.images.new(name, size, size, alpha=False, float_buffer=True)
     image.colorspace_settings.name = "Non-Color"
     return image
 
@@ -139,9 +142,13 @@ def bake(body, kind, image):
     for mat in body.data.materials:
         target(mat, image)
     select_only([body])
-    bpy.ops.object.bake(type=kind, normal_space="TANGENT",
-                        margin=BAKE_MARGIN_PX, use_clear=True,
-                        target="IMAGE_TEXTURES")
+    bpy.ops.object.bake(
+        type=kind,
+        normal_space="TANGENT",
+        margin=BAKE_MARGIN_PX,
+        use_clear=True,
+        target="IMAGE_TEXTURES",
+    )
 
 
 def strip_bake_nodes(mat):
@@ -186,12 +193,22 @@ def bake_maps(body, module, out, name):
 def export(body, path, images="NONE"):
     select_only([body])
     bpy.ops.export_scene.gltf(
-        filepath=str(path), export_format="GLTF_SEPARATE",
-        use_selection=True, export_apply=True, export_yup=True,
-        export_image_format=images, export_image_quality=85,
-        export_normals=True, export_texcoords=True, export_tangents=False,
-        export_animations=False, export_extras=False, export_cameras=False,
-        export_lights=False, export_vertex_color="NONE")
+        filepath=str(path),
+        export_format="GLTF_SEPARATE",
+        use_selection=True,
+        export_apply=True,
+        export_yup=True,
+        export_image_format=images,
+        export_image_quality=85,
+        export_normals=True,
+        export_texcoords=True,
+        export_tangents=False,
+        export_animations=False,
+        export_extras=False,
+        export_cameras=False,
+        export_lights=False,
+        export_vertex_color="NONE",
+    )
 
 
 def make_built(name, out):
@@ -204,17 +221,23 @@ def make_built(name, out):
     unwrap(body)
     files = bake_maps(body, module, out, name)
     export(body, out / f"{name}.gltf")
-    return {"triangles": triangles(body), "maps": files,
-            "unmapped": sorted(module.UNMAPPED),
-            "size_m": [round(v, 3) for v in body.dimensions]}
+    return {
+        "triangles": triangles(body),
+        "maps": files,
+        "unmapped": sorted(module.UNMAPPED),
+        "size_m": [round(v, 3) for v in body.dimensions],
+    }
 
 
 def make_lm(source, out):
     reset()
     body, info = apollo_lm_model.build(source)
     export(body, out / "apollo-lm.gltf", images="WEBP")
-    return {"triangles": triangles(body), **info,
-            "size_m": [round(v, 3) for v in body.dimensions]}
+    return {
+        "triangles": triangles(body),
+        **info,
+        "size_m": [round(v, 3) for v in body.dimensions],
+    }
 
 
 def make(job):
@@ -235,8 +258,9 @@ def render(path, camera_at, look_at, lens=50, size=560, samples=48):
     scene.collection.objects.link(cam)
     cam.data.lens = lens
     cam.location = camera_at
-    cam.rotation_euler = (Vector(look_at) - Vector(camera_at)).to_track_quat(
-        "-Z", "Y").to_euler()
+    cam.rotation_euler = (
+        (Vector(look_at) - Vector(camera_at)).to_track_quat("-Z", "Y").to_euler()
+    )
     scene.camera = cam
     scene.cycles.samples = samples
     scene.render.resolution_x = size
@@ -264,7 +288,11 @@ def stage(height):
     world = bpy.data.worlds.new("world")
     world.node_tree.nodes["Background"].inputs["Strength"].default_value = 0.5
     world.node_tree.nodes["Background"].inputs["Color"].default_value = (
-        0.12, 0.12, 0.13, 1)
+        0.12,
+        0.12,
+        0.13,
+        1,
+    )
     scene.world = world
     scene.view_settings.view_transform = "AgX"
 
@@ -276,8 +304,7 @@ def previews(job):
         reset()
         bpy.ops.import_scene.gltf(filepath=glb)
         objs = [o for o in bpy.context.scene.objects if o.type == "MESH"]
-        top = max((o.matrix_world @ Vector(c)).z for o in objs
-                  for c in o.bound_box)
+        top = max((o.matrix_world @ Vector(c)).z for o in objs for c in o.bound_box)
         stage(top)
         look = (0, 0, top * 0.55)
         dist = top * 2.3
@@ -286,8 +313,7 @@ def previews(job):
             at = (dist * math.sin(a), -dist * math.cos(a), top * 0.75)
             render(folder / f"{name}-{deg:03d}.png", at, look)
         if name == "astronaut-v2":
-            render(folder / f"{name}-far.png", (2.5, -7.5, 2.2),
-                   (0, 0, 0.9), lens=50)
+            render(folder / f"{name}-far.png", (2.5, -7.5, 2.2), (0, 0, 0.9), lens=50)
 
 
 def main():
@@ -295,8 +321,7 @@ def main():
     if job.get("previews"):
         previews(job)
         return
-    Path(job["report"]).write_text(json.dumps(make(job), indent=2,
-                                              sort_keys=True))
+    Path(job["report"]).write_text(json.dumps(make(job), indent=2, sort_keys=True))
 
 
 if __name__ == "__main__":

@@ -48,8 +48,10 @@ def bounds(gltf):
         accessor = gltf["accessors"][primitive["attributes"]["POSITION"]]
         lows.append(accessor["min"])
         highs.append(accessor["max"])
-    return ([min(v[i] for v in lows) for i in range(3)],
-            [max(v[i] for v in highs) for i in range(3)])
+    return (
+        [min(v[i] for v in lows) for i in range(3)],
+        [max(v[i] for v in highs) for i in range(3)],
+    )
 
 
 class SourceTest(unittest.TestCase):
@@ -98,8 +100,9 @@ class ShippedTest(unittest.TestCase):
         self.assertTrue(1.8 < high[1] < 2.0, high[1])
 
     def test_the_visor_is_gold_metal_without_maps(self):
-        (visor,) = [m for m in load("astronaut-v2")["materials"]
-                    if m["name"] == "visor_gold"]
+        (visor,) = [
+            m for m in load("astronaut-v2")["materials"] if m["name"] == "visor_gold"
+        ]
         self.assertEqual(visor["pbrMetallicRoughness"].get("metallicFactor", 1), 1)
         self.assertNotIn("normalTexture", visor)
 
@@ -124,7 +127,9 @@ class ShippedTest(unittest.TestCase):
             if mat["name"].startswith(("blinn12SG", "blinn8SG")):
                 base = mat["pbrMetallicRoughness"].get("baseColorTexture")
                 self.assertIsNone(base, mat["name"])
-        self.assertEqual(sorted(names), ["BOOSTER3", "foil_metal_roughness", "foil_normal"])
+        self.assertEqual(
+            sorted(names), ["BOOSTER3", "foil_metal_roughness", "foil_normal"]
+        )
 
 
 if __name__ == "__main__":

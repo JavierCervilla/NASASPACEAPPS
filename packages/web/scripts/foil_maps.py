@@ -60,7 +60,10 @@ def nearest_cell(size, cells, rng):
             dist = (cy + point[..., 0] - y) ** 2 + (cx + point[..., 1] - x) ** 2
             closer = dist < best
             best = np.where(closer, dist, best)
-            best_y, best_x = np.where(closer, cy % cells, best_y), np.where(closer, cx % cells, best_x)
+            best_y, best_x = (
+                np.where(closer, cy % cells, best_y),
+                np.where(closer, cx % cells, best_x),
+            )
     return best_y, best_x
 
 
@@ -70,7 +73,14 @@ def facets(size):
     layers = []
     for cells, tilt in OCTAVES:
         row, col = nearest_cell(size, cells, rng)
-        layers.append((row, col, rng.normal(0, tilt, (cells, cells, 2)), rng.random((cells, cells))))
+        layers.append(
+            (
+                row,
+                col,
+                rng.normal(0, tilt, (cells, cells, 2)),
+                rng.random((cells, cells)),
+            )
+        )
     return layers
 
 

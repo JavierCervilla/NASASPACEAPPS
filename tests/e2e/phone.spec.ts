@@ -283,15 +283,18 @@ test.describe('phone, 390x844', () => {
     await expect(sunset).not.toContainText('7 d 3 h');
   });
 
-  test('Horizon says soon and does nothing', async ({ page }) => {
+  // The Horizon tab is real since VENT-34 (the human's decision): it sets #horizon, is the current view and the
+  // on-foot view takes the globe's place, with the sheet at peek.
+  test('Horizon opens the on-foot view: #horizon, current tab, the globe hidden, the sheet at peek', async ({ page }) => {
     await open(page);
-    const horizon = tabs(page).getByRole('button', { name: 'Horizon (soon)' });
-    await expect(horizon).toHaveAttribute('aria-disabled', 'true');
-    // Playwright treats aria-disabled as disabled and would wait: the tap is forced, as a finger would.
-    await horizon.click({ force: true });
-    await expect(page.locator('.widget')).toHaveCount(4);
-    await expectHalf(page);
-    await expect(tabs(page).getByRole('button', { name: 'Calendar', exact: true })).not.toHaveAttribute('aria-disabled');
+    const horizon = tabs(page).getByRole('button', { name: 'Horizon', exact: true });
+    await expect(horizon).not.toHaveAttribute('aria-disabled');
+    await horizon.click();
+    await expect(page).toHaveURL(/#horizon$/);
+    await expect(horizon).toHaveAttribute('aria-current', 'true');
+    await expect(page.locator('.globe')).toBeHidden();
+    await expectRestsAt(page, PEEK_TOP);
+    await expect(tabs(page).getByRole('button', { name: 'Calendar', exact: true })).not.toHaveAttribute('aria-current');
   });
 
   test('Calendar opens the calendar at full: the month, its shares and the instant', async ({ page }) => {

@@ -1,0 +1,281 @@
+/*
+ *   _   _       _                         _ _
+ *  | | | |_ __ (_)_   _____ _ __ ___  ___| | | ___
+ *  | | | | '_ \| \ \ / / _ \ '__/ __|/ _ \ | |/ _ \
+ *  | |_| | | | | |\ V /  __/ |  \__ \  __/ | |  __/
+ *   \___/|_| |_|_| \_/ \___|_|  |___/\___|_|_|\___|
+ *
+ *             =++==--::.
+ *         %%%%##**++=--:..  .
+ *      ##**#%@%%#***+=--::.   .
+ *    #**=+*#*#**#++++=-:::.. .  .
+ *   #++-====*@%+*++==--::...   .  .    Ventana Lunar
+ *  #+=-=--++==+===-+==--:..   .  .  .  Sun, Earth and landing
+ * #----====-------=-=---:..  .  .  .   windows at the lunar
+ * #+---+=====--=---==-::..     .  .  . south pole
+ * #*----==---==-=-=-:-....    .  .  .
+ * *#----===+*===--:-::...    .  .  .   Built for the NASA Space
+ *  *----=*-+*%*+=-:::....   .  .  .    Apps Challenge 2026,
+ *   *------=+*=--:::-:::.. .  .  .     Madrid. Not endorsed
+ *    %*===-=-==--==-:::.  .  .  .      by NASA.
+ *      *+:--+:--::::::.  .  .  .
+ *         -=:::...:..   .  .           (c) 2026 Universelle
+ *             :::.. .  .               SPDX-License-Identifier: MIT
+ */
+
+/*
+ * The on-foot 3D view (VENT-34): loaded with its panel, never in the
+ * first load. Space is dark in both themes; the controls are floating
+ * glass over it, 44 px targets; never a signal colour.
+ */
+.on-foot {
+  --on-foot-ink: #f2f2f4;
+  --on-foot-muted: #a7adb8;
+  --on-foot-glass: rgba(28, 28, 32, 0.72);
+  --on-foot-edge: rgba(255, 255, 255, 0.12);
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  min-width: 0;
+  min-height: 0;
+  color: var(--on-foot-ink);
+}
+
+@media (min-width: 768px) {
+  .on-foot { grid-area: view; }
+}
+
+.on-foot__stage {
+  position: relative;
+  flex: 1 1 auto;
+  min-height: 320px;
+  overflow: hidden;
+  border-radius: 18px;
+  background: #000;
+}
+
+.on-foot--phone {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  background: #000;
+}
+
+.on-foot--phone .on-foot__stage {
+  position: absolute;
+  inset: 0;
+  min-height: 0;
+  border-radius: 0;
+}
+
+.on-foot__host {
+  position: absolute;
+  inset: 0;
+  touch-action: none;
+  cursor: grab;
+  outline: none;
+}
+
+.on-foot__host:active { cursor: grabbing; }
+
+.on-foot__host:focus-visible {
+  box-shadow: inset 0 0 0 2px var(--on-foot-ink);
+}
+
+.on-foot__host canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.on-foot__top {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  left: 12px;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 8px;
+  pointer-events: none;
+}
+
+/*
+ * On a phone the controls live in the free band between the top bar and
+ * the sheet at peek (156 px, src/sheet/): the switch under the bar, the
+ * caption low, just over the sheet's edge, so the two never crowd.
+ */
+.on-foot--phone .on-foot__top {
+  top: calc(env(safe-area-inset-top) + 108px);
+  bottom: 166px;
+  flex-direction: column;
+  flex-wrap: nowrap;
+  align-items: stretch;
+  justify-content: space-between;
+}
+
+.on-foot--phone .on-foot__modes { align-self: center; }
+
+.on-foot__top > * { pointer-events: auto; }
+
+.on-foot__switch {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  padding: 3px;
+  border-radius: 14px;
+  background: var(--on-foot-glass);
+  box-shadow: inset 0 0 0 1px var(--on-foot-edge);
+  backdrop-filter: blur(14px) saturate(160%);
+  -webkit-backdrop-filter: blur(14px) saturate(160%);
+}
+
+.on-foot__switch button {
+  min-width: 7.5rem;
+  min-height: 44px;
+  padding: 0 14px;
+  border: 0;
+  border-radius: 11px;
+  background: transparent;
+  color: var(--on-foot-muted);
+  font: inherit;
+  font-size: 0.875rem;
+  font-weight: 600;
+  letter-spacing: -0.006em;
+  cursor: pointer;
+  transition: background-color 100ms ease-out, transform 100ms ease-out;
+}
+
+.on-foot__switch button:active { transform: scale(0.97); }
+
+.on-foot__switch button[aria-checked='true'] {
+  background: rgba(255, 255, 255, 0.16);
+  color: var(--on-foot-ink);
+}
+
+.on-foot__switch button:focus-visible {
+  outline: 2px solid var(--on-foot-ink);
+  outline-offset: -2px;
+}
+
+.on-foot__caption {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  max-width: 22rem;
+  margin: 0;
+  padding: 8px 12px;
+  border-radius: 12px;
+  background: rgba(7, 8, 11, 0.62);
+  color: var(--on-foot-muted);
+  font-size: 0.75rem;
+  line-height: 1.35;
+}
+
+.on-foot__caption-main {
+  color: var(--on-foot-ink);
+  font-size: 0.8125rem;
+  font-weight: 600;
+}
+
+.on-foot--phone .on-foot__caption {
+  max-width: 100%;
+  padding: 5px 10px;
+  font-size: 0.6875rem;
+  line-height: 1.3;
+  pointer-events: none;
+}
+
+.on-foot--phone .on-foot__caption-main { font-size: 0.6875rem; }
+
+.on-foot__stage {
+  --text: #f2f2f4;
+  --text-muted: #9a9ca6;
+  --text-secondary: #c7c8ce;
+}
+
+.on-foot__status {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-content: center;
+  justify-items: center;
+  gap: 12px;
+  padding: 24px;
+  color: var(--text-secondary);
+  text-align: center;
+  pointer-events: none;
+}
+
+.on-foot__status p { margin: 0; }
+
+.on-foot__retry {
+  min-height: 44px;
+  padding: 0 18px;
+  border: 0;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.16);
+  color: var(--on-foot-ink);
+  font: inherit;
+  font-weight: 600;
+  pointer-events: auto;
+  cursor: pointer;
+}
+
+.on-foot__labels {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.on-foot__label {
+  position: absolute;
+  top: 0;
+  left: 0;
+  transform: translate(-50%, -100%);
+  padding: 1px 6px;
+  border-radius: 6px;
+  background: rgba(7, 8, 11, 0.58);
+  color: #e6e6ea;
+  font-size: 0.6875rem;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.on-foot__label[hidden] { display: none; }
+
+.on-foot__label--ridge {
+  color: var(--on-foot-ink);
+  font-weight: 600;
+}
+
+/* Under the view, the strip is a card as the site card's: page colours. */
+.on-foot .horizon--on-foot {
+  flex: none;
+  padding: 10px 16px 8px;
+  border-radius: 18px;
+  background: var(--card);
+  box-shadow: var(--strip-edge);
+  color: var(--text);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .on-foot__switch button { transition: none; }
+  .on-foot__switch button:active { transform: none; }
+}
+
+@media (prefers-reduced-transparency: reduce) {
+  .on-foot__switch {
+    background: #1c1c20;
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+  }
+}
+
+@media (prefers-contrast: more) {
+  .on-foot__switch,
+  .on-foot__caption { box-shadow: inset 0 0 0 1px var(--on-foot-ink); }
+  .on-foot__label { background: #000; color: #fff; }
+}

@@ -204,8 +204,8 @@ Every visible change follows `.claude/skills/apple-design/SKILL.md` (vendored fr
   right of the Layers key's column (in rem, so it holds at 200 % text), centred over the globe and in the polar
   panel's top right corner, so it never covers the key; gone after the first drop
   or its ✕, kept in `localStorage` (`ventana.pinHint`, refused storage only brings it back next visit). The
-  astronaut's assets stay for VENT-34, where it comes back (dropped, it takes you to the 3D terrain), and nothing in
-  the page imports them, so none ships: NASA's «Astronaut» model (`packages/web/models/astronaut.glb` and its suit
+  astronaut came back in VENT-34's on-foot view (below), which loads its model only when that view opens: NASA's
+  «Astronaut» model (`packages/web/models/astronaut.glb` and its suit
   texture `astronaut-suit.webp`, built by `packages/web/scripts/astronaut.mjs`: arms lowered, the NASA insignia and
   the mission patch covered with fabric, the US flags kept) and its offline bake, `scripts/astronaut-figures.mjs`
   (Playwright's Chromium pinned to SwiftShader, byte-stable; `--check` re-bakes and compares), into the lossless
@@ -350,6 +350,44 @@ Every visible change follows `.claude/skills/apple-design/SKILL.md` (vendored fr
   a `--label-shift` property set in the CSSOM, so at 200 % text on a phone no label leaves the screen). Never the signal
   colours: `--dsn-*` tokens; the Earth and the DSN view's panel stay dark in both themes. The month's figures add «Hours with DSN» (hours with any complex
   listening, `card/month-facts.ts`).
+- **3D terrain view** (VENT-34, the human's verdict on the canvas): the «Horizon» header tab (`#horizon`,
+  `src/lib/view-tabs.ts`) and the phone's Horizon tab (sheet at peek, the ground framed in the band between the top bar
+  and the sheet's edge) show the selected site or point from the ground, opening in **third person** (camera behind and
+  above NASA's astronaut on the point, facing the Sun when it is near the sky, else the Earth), with «Third person |
+  First person» (`ModeSwitch.tsx`, a radiogroup, 44 px targets; first person: the eye 2 m up); drag (Pointer Events
+  with capture) or the arrows and Home on the focused view turn it (`src/terrain/look-input.ts`, `view-camera.ts`).
+  The relief comes **only from our API** (`/api/v1/terrain/tile`, 4 km, `TILE_SIZE_M`) through a **`TileSource`**
+  (`src/terrain/tile.ts`), one per page in the calendar parts (`LunarApp.tsx`): the seam of the streaming to come. It
+  delivers transferable tiles (`HeightTile`: `key`, origin in metres east and north of the session's origin point, `n`,
+  `sizeM`, float32 heights, `resolutionM`), the base64 decoded inside the source, so a Web Worker streamer of aligned
+  tiles with LOD and walking (VENT-34 C to E: server aligned tiles, worker streamer, movement; **not built**) can
+  replace the main-thread one (`fetchTileSource`, `tile-fetch.ts`) without touching the scene. The scene keeps tiles
+  by key in the session's local frame and frees each when it leaves (`scene/world.ts`, `ground.ts`); mesh buffers come
+  from pure functions a worker can run (`tile-mesh.ts`: curvature fall `d²/2R`, positions, normals, triangles;
+  `shapes.ts`, `stones.ts`, `lander-shape.ts`, `ring-ribbon.ts`). Failures are the horizon's (VENT-45: 404 «No terrain
+  covers this point on the server», 503 not installed, passing failures retried at 2, 6, 18 s, then «Try again»). The
+  tile reaches 2 km, so the **far horizon** is a dark wall at 6 km whose top follows the point's horizon profile in
+  each of its 720 bins (shipped or from `/api/v1/horizon`, `far-horizon.ts`), its foot far below the tile's edge: the
+  Sun and the Earth set behind exactly the ridge the card names. The sky at the shared instant (`skyAt`): the Sun at its
+  true size and direction is the key light, with hard shadows near the point (shadow map) and per vertex over the tile
+  (`sun-shade.ts`), darkening the whole view when terrain beyond the tile hides it (`ridge.ts` `blockerOf`,
+  `scene/sun-mask.ts`); the Earth a lit disc at its true size with its true phase (no map); faint seeded stars; an
+  ambient fill lifted for legibility. Illustrative and said so in the caption («Fine detail illustrative · relief LOLA
+  20 m», «Lander: placeholder model · Earth: lit disc, no map · shadows lifted for legibility»): rounded rocks under
+  1 m and a regolith normal map and grain, seeded from the point (`seeded.ts`, `rocks.ts`, `regolith.ts`), and the
+  lander, primitives until a licensed model is chosen. Rings at 25, 100 and 500 m with HTML labels, and the ridge that
+  hides a body labelled with its height and distance (`on-foot-model.ts`); a text alternative says the heading, where
+  each body is and what hides it (`view-alt.ts`); the desktop view keeps the horizon strip under it. The astronaut is
+  read by a small glb reader (`glb.ts`), not GLTFLoader, whose classes would join the Three.js chunk the globe loads at
+  start; the scene uses Lambert materials and builds its shapes itself for the same reason. Performance: the panel
+  (`components/terrain/TerrainPanel.tsx`, `React.lazy` in `OnFootView.tsx`), its stylesheet (a React 19
+  `<link precedence>`, so Astro does not inline it), the scene (`src/terrain/scene/terrain-scene.ts`, a dynamic import)
+  and the astronaut load only when the view opens, and the service worker leaves them out of the precache
+  (`ON_DEMAND` in `scripts/service-worker.mjs`); it draws only on change (`globe/loop.ts`, counted in `data-frames`),
+  the pixel ratio capped by the quality tier, and frees the GPU context on leave. The API gzips its JSON
+  (`compress()` in `packages/server/src/app.ts`; base64 floats shrink about 26 %). Held by `tests/terrain-view.test.ts`
+  and `tests/e2e/terrain-view.spec.ts` (stubbed tile and horizon: third then first person, the caption, no idle
+  frames, the Sun drawn hidden behind a far wall, none of the view's files in the first load).
 - **Five interface languages** (VENT-35): English (the default and the fallback), Spanish, French, German and Italian,
   each on its own static route (`/`, `/es/`, `/fr/`, `/de/`, `/it/`; `pages/[locale]/index.astro`) with `<html lang>`,
   `hreflang` links and `x-default` → `/`. This replaces the Language rule below for the interface only: every word a
@@ -392,7 +430,7 @@ Every visible change follows `.claude/skills/apple-design/SKILL.md` (vendored fr
   `favicon.ico`, `favicon.svg` and the root `apple-touch-icon.png`), fetched past the HTTP cache (`cache: 'reload'`),
   and the build's digest over every file the worker may keep, which names the static cache (`ventana-static-<digest>`),
   so a deploy drops the old one. The install set has a hard budget of 5 MB (`PRECACHE_BUDGET`, human decision
-  2026-10-31): the build logs the precache total and fails over it (4.68 MB with VENT-40's horizon strip; 4.63 MB with VENT-39's shadow notes; 4.57 MB with VENT-37's saved sites; 4.52 MB when it left the astronaut's sprites out, 4.60 MB with them). The 4K and 8K maps, and any build file not
+  2026-10-31): the build logs the precache total and fails over it (4.70 MB with VENT-34's on-foot view, its files left out; 4.68 MB with VENT-40's horizon strip; 4.63 MB with VENT-39's shadow notes; 4.57 MB with VENT-37's saved sites; 4.52 MB when it left the astronaut's sprites out, 4.60 MB with them). The 4K and 8K maps, and any build file not
   precached, are kept cache first the first time the page fetches them. Under Save-Data the worker is not registered
   at all. Pages and API GETs are network first,
   build files cache first; the network's answer always wins (a copy that cannot be kept, a full quota, is skipped), only

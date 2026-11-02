@@ -29,8 +29,9 @@
 // dist/sw.js at the base.
 //
 // Cached at install, the whole offline set: every locale's page (not the pseudo-locale's), the build's scripts and
-// styles, the manifests, the icons with the 30 phase frames, every site thumbnail, the 1K and 2K maps, the polar
-// map and the astronaut's model. The sharper maps (4K, 8K) are left to the runtime cache: the zoom asks for them, and most visits never do.
+// styles, the manifests, the icons with the 30 phase frames, every site thumbnail, the 1K and 2K maps and the polar
+// map. The sharper maps (4K, 8K) are left to the runtime cache: the zoom asks for them, and most visits never do. So
+// are the on-foot 3D view's files (ON_DEMAND), which only that view asks for.
 // The install set has a hard budget, PRECACHE_BUDGET: a build over it fails (human decision, 2026-10-31: under 5 MB
 // is fine for this app).
 import { createHash } from 'node:crypto';
@@ -48,6 +49,11 @@ const START_MAPS = new Set([
 ]);
 const WHOLE_FOLDERS = ['_astro/', 'icons/', 'thumbs/'];
 const ROOT_FILES = new Set(['favicon.ico', 'favicon.svg', 'apple-touch-icon.png']);
+/**
+ * The on-foot 3D view's files (VENT-34): its panel, styles, scene and the astronaut download only when the view opens,
+ * so they stay out of the install set; the worker keeps them cache first the first time the page asks for them.
+ */
+const ON_DEMAND = /^_astro\/(TerrainPanel|terrain-scene|on-foot|astronaut)\.[^/]+$/;
 /** The pseudo-locale's folder (src/i18n/locales.ts): never offered, never cached. */
 const PSEUDO = 'en-xa/';
 
@@ -67,7 +73,7 @@ export const PRECACHE_BUDGET = 5 * 1024 * 1024;
 
 /** Whether the worker caches `file` (a path under dist) at install: the offline set. */
 export function precached(file) {
-  if (!keepable(file)) return false;
+  if (!keepable(file) || ON_DEMAND.test(file)) return false;
   if (file === 'index.html' || /^[a-z]{2}\/index\.html$/.test(file)) return true;
   if (file.endsWith('manifest.webmanifest')) return true;
   return START_MAPS.has(file) || ROOT_FILES.has(file) || WHOLE_FOLDERS.some((f) => file.startsWith(f));

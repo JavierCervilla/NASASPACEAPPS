@@ -42,7 +42,6 @@ import type { SiteStore } from '../../phone/site-store';
 import { siteState } from '../../phone/site-state';
 import { LOADING, widgetsAt } from '../../phone/widgets-loader';
 import { CalendarStrip } from '../calendar/CalendarStrip';
-import { DsnView } from '../dsn/DsnView';
 import { useDsn } from '../dsn/use-dsn';
 import {
   useCalendar,
@@ -52,13 +51,13 @@ import {
 import { useI18n } from '../i18n-context';
 import { LanguageMenu } from '../lang/LanguageMenu';
 import { usePhone, useSelection } from '../phone/hooks';
-import { PolarMap } from '../polar/PolarMap';
 import { useSavedName } from '../saved/use-saved-name';
 import { SourceNotes } from '../source/SourceNotes';
 import { SiteHorizon } from '../horizon/SiteHorizon';
 import type { HorizonStore } from '../../horizon/horizon-store';
 import { SiteCard } from './SiteCard';
 import { SiteMenu } from './SiteMenu';
+import { DesktopView } from './DesktopView';
 
 /** The header element the site button goes in. */
 const SLOT_ID = 'site-slot';
@@ -120,10 +119,10 @@ function DesktopUi({ sites, store, parts, base, view }: Props) {
   const pick = (picked: string): void => store.select(picked, 'list');
   const menu = { sites, site, state, computed, onPick: pick };
   const map = { ...menu, base, source: parts.source };
+  const shown = { view, map, dsn, site, parts };
   return (
     <>
-      {view === 'polar' ? <PolarMap {...map} /> : null}
-      {view === 'dsn' ? <DsnView dsn={dsn} /> : null}
+      <DesktopView {...shown} hours={calendar.result} />
       <SiteCard {...card} {...{ site, base, dsn }} state={card.badge}
         onRetry={calendar.retry} />
       <CalendarStrip parts={parts} calendar={calendar} />

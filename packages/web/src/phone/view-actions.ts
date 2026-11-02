@@ -24,10 +24,11 @@
  */
 
 /**
- * What the phone's Globe and DSN tabs do (VENT-7): DSN shows the DSN view
- * (its hash, so the back button leaves it) with the sheet at half, where it
- * says who listens; Globe leaves the DSN view and closes the sheet, as
- * before.
+ * What the phone's Globe, DSN and Horizon tabs do (VENT-7, VENT-34): DSN
+ * shows the DSN view (its hash, so the back button leaves it) with the
+ * sheet at half, where it says who listens; Horizon shows the on-foot view
+ * with the sheet at peek, so the ground fills the screen; Globe leaves
+ * either and closes the sheet, as before.
  */
 import type { DetentName } from '../sheet/sheet-physics';
 import { goToView, type View } from '../lib/view-tabs';
@@ -37,6 +38,10 @@ interface Sheet {
   readonly setDetent: (detent: DetentName) => void;
 }
 
+/** The tab of `view` while the sheet is not at full. */
+export const tabOf = (view: View): 'dsn' | 'horizon' | 'globe' =>
+  view === 'dsn' || view === 'horizon' ? view : 'globe';
+
 export function viewActions(
   place: { hash: string },
   view: View,
@@ -44,12 +49,16 @@ export function viewActions(
 ) {
   return {
     onGlobe: (): void => {
-      if (view === 'dsn') goToView(place, 'globe');
+      if (view === 'dsn' || view === 'horizon') goToView(place, 'globe');
       sheet.close();
     },
     onDsn: (): void => {
       goToView(place, 'dsn');
       sheet.setDetent('half');
+    },
+    onHorizon: (): void => {
+      goToView(place, 'horizon');
+      sheet.setDetent('peek');
     },
   };
 }

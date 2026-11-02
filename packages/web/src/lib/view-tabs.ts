@@ -24,27 +24,29 @@
  */
 
 /**
- * The header's view tabs: Globe, Polar map and DSN are links to `#globe`,
- * `#polar-map` and `#dsn` (VENT-7; the phone's DSN tab sets it too), so a
+ * The header's view tabs: Globe, Polar map, DSN and Horizon are links to
+ * `#globe`, `#polar-map`, `#dsn` (VENT-7) and `#horizon` (the on-foot 3D
+ * view, VENT-34; the phone's DSN and Horizon tabs set them too), so a
  * switch is a hash change, never a page load, and the
  * selected site and instant carry over; the back button goes back a view.
  * No hash (the page as first opened) is the globe. Before the island runs,
  * the links still change the hash, and the island reads it when it does.
  */
 
-export type View = 'globe' | 'polar' | 'dsn';
+export type View = 'globe' | 'polar' | 'dsn' | 'horizon';
 
 /** The hash of each view's link (pages/index.astro). */
 export const VIEW_HASH: Readonly<Record<View, string>> = {
   globe: '#globe',
   polar: '#polar-map',
   dsn: '#dsn',
+  horizon: '#horizon',
 };
 
 /** The view a location hash names; anything else is the globe. */
 export function viewOfHash(hash: string): View {
-  if (hash === VIEW_HASH.polar) return 'polar';
-  return hash === VIEW_HASH.dsn ? 'dsn' : 'globe';
+  const views = Object.entries(VIEW_HASH) as [View, string][];
+  return views.find(([, h]) => h === hash)?.[0] ?? 'globe';
 }
 
 /**

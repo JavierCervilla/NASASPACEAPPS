@@ -95,11 +95,18 @@ export function useMonthHours(
 }
 
 /** What a calendar view needs from the page: shared by every view. */
+import type { TileSource } from '../../terrain/tile';
+
 export interface CalendarParts extends HoursParts {
   readonly time: TimeStore;
   readonly player: Player;
   /** Each site's terrain horizon (VENT-40). */
   readonly horizons: HorizonStore;
+  /**
+   * The on-foot view's height tiles (VENT-34): one source per page, the
+   * seam a Web Worker streamer will replace (terrain/tile.ts).
+   */
+  readonly tiles: TileSource;
 }
 
 /**

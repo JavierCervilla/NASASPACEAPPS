@@ -26,6 +26,7 @@
 /** The HTTP API: route wiring and the mapping of errors to HTTP answers. */
 import type { Site } from '@ventana/sim';
 import { Hono, type Context } from 'hono';
+import { compress } from 'hono/compress';
 import { apiHeaders } from './api-headers.ts';
 import { errorLog } from './error-log.ts';
 import { clientIp } from './client-ip.ts';
@@ -221,6 +222,10 @@ export function createApp(deps: AppDeps): Hono {
   const missLimiter = deps.missLimiter ?? createMissLimiter({ now: deps.now });
   app.use('/api/*', errorLog({ log: deps.log ?? console.error, now: deps.now }));
   app.use('/api/*', apiHeaders());
+  // JSON over 1 kB goes gzipped (or deflated) to a client that accepts it:
+  // a 352 kB terrain tile (VENT-34) is the reason. Brotli would need
+  // node:zlib by hand; Hono's middleware uses CompressionStream.
+  app.use('/api/*', compress());
   app.route('/api/v1', createV1({ ...deps, missLimiter }));
   return app;
 }

@@ -23,6 +23,18 @@
     paren mientras comprueba un fichero, y la imagen rechaza `/data//` y `/data/./` como rutas de montaje.
 
 ### Añadido
+- Vista 3D a pie (VENT-34), en la pestaña «Horizon» del escritorio y del móvil: el sitio o el punto elegido visto desde
+  el suelo, con el relieve LOLA que da nuestra API en 4 km alrededor. Abre en tercera persona, con el astronauta de NASA
+  de pie en el punto mirando al Sol (o a la Tierra si el Sol está bajo el horizonte), y un conmutador «Third person |
+  First person» pasa a los ojos a 2 m del suelo. Se mira alrededor arrastrando o con las flechas. El Sol y la Tierra
+  están en su dirección real en el instante elegido; el Sol da la luz y las sombras duras, y la Tierra se ve como un
+  disco iluminado con su fase. Más allá de los 2 km de relieve, un horizonte lejano sigue el perfil del punto, así que
+  el Sol se esconde detrás de la misma cresta que dice la ficha. Lo que LOLA no ve está marcado como ilustrativo: rocas
+  redondeadas de menos de 1 m, el grano del regolito y el módulo de aterrizaje provisional. Anillos a 25, 100 y 500 m,
+  la cresta que tapa el Sol o la Tierra con su altura y distancia, y un texto para lectores de pantalla que dice dónde
+  está cada uno. Solo se descarga al abrir la vista y no entra en la caché de instalación; con la página quieta no
+  dibuja nada.
+- La API comprime sus respuestas JSON con gzip (VENT-34): un mosaico de relieve viaja un 26 % más ligero.
 - Nueva ruta `GET /api/v1/terrain/tile?lat&lon[&size]` con el relieve alrededor de un punto para la vista 3D a pie
   (VENT-34; decisión de Javier: esa vista toma el relieve solo de nuestra API). Devuelve una malla de 257 x 257 alturas
   LOLA (float32 en base64, en metros respecto al centro) sobre el plano tangente, de 2, 4 u 8 km de lado (4 por

@@ -28,9 +28,13 @@
  * the global tiling (`tile-scheme.ts`), each read bilinearly from the first
  * of `grids` that has a height there, so a caller that lists the finest grid
  * first gets the finest data per node, as the horizon's ray-march does. A
- * node is a function of its place alone, so two tiles that share a node, on
- * an edge or across levels, hold the very same height there. Heights are
- * metres above the sphere (absolute, no ground reference); NaN where no grid
+ * node is a function of its place and the grids' order alone, so two tiles
+ * read over the same grids in the same order hold the very same height at a
+ * node they share, on an edge or across levels. A caller that reads each
+ * level over a different order (the server does, so a coarse level is not
+ * aliased by data finer than its spacing) gets heights that agree across
+ * levels only approximately. Heights are metres above the sphere (absolute,
+ * no ground reference); NaN where no grid
  * covers. Pure.
  */
 import type { DemGrid } from './dem-grid.ts';

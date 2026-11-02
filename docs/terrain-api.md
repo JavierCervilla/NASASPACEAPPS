@@ -297,17 +297,30 @@ native spacing of LOLA's 20 m polar grid (a finer mesh would be smooth interpola
 `resolutionM` says what is measured) and a power of two, so everything below is exact in a double.
 
 **Alignment.** Tiles of a level **share their edge samples**: sample 128 of a tile is sample 0 of its neighbour, the
-very same node, so heights agree bit for bit and a mesh has no crack between neighbours of a level. A node `(r, c)` of a
-tile is also a node of the level above whenever `r` and `c` are multiples of 4, at the same place and with the same
-height (`tests/tile-scheme.test.ts`, `tests/lod-tile.test.ts`): the parent's samples are every 4th sample of each of
-its 16 children. **Between levels there are T-junctions**: the fine edge has 4 samples for each of the coarse one's, and
-they differ between the shared nodes; the viewer hangs a skirt on each tile's edge, or snaps the fine edge's
-in-between samples to the coarse edge's line. The tiling does not do it for the viewer. The 0° E seam is closed
+very same node, so heights agree bit for bit and a mesh has no crack between neighbours of a level (they decode alike
+because they share their `quantumM`, below). A node `(r, c)` of a tile is also a node of the level above **at the same
+place** whenever `r` and `c` are multiples of 4 (`tests/tile-scheme.test.ts`): the parent's samples are every 4th
+sample of each of its 16 children. **Its height there is only approximately the same.** Each level reads the tiers in
+its own order (see «Which tiers a level reads»), so a node shared by level 1 and level 2 can be measured by the 20 m
+tier in one and by the 80 m or global tier in the other, and the two differ by what the coarser tier averages away:
+metres on real relief, 475 m on the test fixture's crater wall (`tests/terrain-lod.test.ts`). Levels 0 and 1 read the
+same tiers in the same order (every tier of the catalogue is 20 m or coarser), so their shared nodes are equal
+(«a tile its parent level heights at every 4th sample»); where only one tier covers a node every level reads it, so
+the heights agree up to the two steps (0.1 and 0.2 m).
+**The viewer must stitch level boundaries**, and must not assume a parent's sample equals its child's: the fine edge
+has 4 samples for each of the coarse one's and they differ between the shared nodes too; hang a skirt on each tile's
+edge, or snap the fine edge's samples to the coarse edge's line. The tiling does not do it for the viewer. Why not
+exact: a node of level 3 is a node of every level below, so exactness means every level reads the finest tier at its
+nodes, which is the aliasing the tier rule avoids (20 m data point-sampled at 1 km) and a cost that is not bounded by
+a few blocks: a 128 km tile would touch the 20 m grid's blocks of 256 x 256 (5.1 km) over its whole area, about 625
+instead of a few of the 240 m tier, per computation. Not measured on the real volume; the test fixture's 12 km grid
+cannot show it (7 block reads either way). The 0° E seam is closed
 (tile `x = 359` of level 2 ends at 360° E, which is 0° E), and a polar tile at the pole has the pole as the corner node
 of four tiles.
 
-Heights are a function of the node alone: from the first tier that covers it (bilinear, as the other routes do), so
-the answer for a tile does not depend on which other tiles were asked, in what order, or when.
+Heights are a function of the node and its level alone: from the first tier the level reads that covers it (bilinear,
+as the other routes do), so the answer for a tile does not depend on which other tiles were asked, in what order, or
+when.
 
 **Which tiers a level reads.** The finest data a level reads is a quarter of its node spacing (`minDataResolutionM`:
 3.9, 15.6, 62.5 and 250 m): point-sampling 20 m data at a 250 m spacing aliases the relief and reads blocks for nothing,
@@ -363,10 +376,15 @@ or `[x * size, (x + 1) * size]` degrees of east longitude and `[y * size, (y + 1
   and `q = 65535` (`noData`) is a node no tier covers. No ground reference: heights are absolute, so two tiles agree
   without knowing each other. `decodeQuantised(heights, quantumM, baseUnits)` of `@ventana/sim` reads it (NaN for no
   data). Why uint16 and not float32: the same tile is 33 kB of values instead of 66, and the step is 0.1 m
-  (**an error of at most 0.05 m**, under the 0.1 m target and under LOLA's own 0.5 m DN step). The
-  step is a constant and `baseUnits` a whole number of steps, not the tile's minimum, so a shared node decodes to the
-  same height in every tile. When a tile's relief does not fit 65 534 steps (6.5 km at 0.1 m: only a 128 km tile over
-  a very deep crater) the step doubles as often as it needs, `quantumM` says so and the error is at most half of it.
+  (**an error of at most 0.05 m** at levels 0 and 1, under the 0.1 m target and under LOLA's own 0.5 m DN step). The
+  step is a constant **of the level** and `baseUnits` a whole number of steps, not the tile's minimum, so a node shared
+  by two tiles of a level decodes to the same height in both, whatever else they hold. `quantumM` is 0.1 m at levels
+  0 and 1, 0.2 m at level 2 (13 km of relief) and 0.4 m at level 3 (26 km, more than the Moon's 20 km from its
+  lowest floor to its highest rim), so no tile of any level needs more than its level's step and the error is at most
+  0.05, 0.05, 0.1 and 0.2 m (the spacing is 15.6 m to 1 km). **Two tiles agree on a shared node only when they share
+  `quantumM`**: neighbours of a level always do; across levels the nodes differ by up to the two steps anyway.
+  (`levelQuantumM` of `@ventana/sim`; a tile whose relief still did not fit 65 534 steps would double the step as often
+  as it needs and say so in `quantumM`: it cannot happen on the Moon, but read `quantumM` of every answer.)
 - **`georef`** places every sample exactly, in the local frame of the client's choice:
   - polar: sample `(row, col)` is at plane `X = minX + col * spacingM`, `Y = maxY - row * spacingM` metres; `pole`
     is the pole of the plane. Plane and sphere, as the PDS grids and `pixelOf` define them: with `k = 2R / (1 - z)`
@@ -407,8 +425,10 @@ rest (Seguridad's finding on VENT-46):
   Waiting, not refusing, is deliberate: the web keeps 6 requests in flight, so on a cold cache two wait a few
   milliseconds for a slot instead of failing and retrying after seconds, while one address can never hold more than 8
   places (4 + 4) in the gate's queue or on the server's memory. Tiles read from the disk cache, a 304 and a request
-  that joins a computation already running for the same tile take no slot. The slot is held until the tile is computed
-  (or failed) and stored. The table of slots forgets an address when its last slot is given back, so it is never larger
+  that joins a computation already running for the same tile take **no slot and count no miss**. A request that had
+  to wait for a slot looks again once it has one: if the tile was stored meanwhile it is read from the disk, and if
+  another request started computing it, it joins that, so a waiter spends neither a computation nor a miss on a tile
+  somebody else produced. The slot is held until the tile is computed (or failed) and stored. The table of slots forgets an address when its last slot is given back, so it is never larger
   than the requests in flight. Several people behind one address (a venue's Wi-Fi) share its 4 slots and 600 misses.
 
 A client should keep at most **6 requests in flight** and fetch the ring in the order the route lists it (nearest

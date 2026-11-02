@@ -35,7 +35,7 @@ import { tileGeoref, type TileKey } from '@ventana/sim';
 import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest';
 import { createApp } from '../src/app.ts';
 import { createHorizonsClient } from '../src/horizons/client.ts';
-import { createMissLimiter } from '../src/miss-limiter.ts';
+import { DEFAULT_LOD_MISSES_PER_WINDOW, createMissLimiter } from '../src/miss-limiter.ts';
 import { cachedHorizons } from '../src/terrain/horizon-cache.ts';
 import type { LodAnswer } from '../src/terrain/lod-answer.ts';
 import { cachedLod, type LodSource } from '../src/terrain/lod-cache.ts';
@@ -88,6 +88,43 @@ describe('a flood of uncached tiles from one address', () => {
     const horizon = await request(api, HORIZON, from('203.0.113.5'));
     expect(horizon.status).toBe(200);
     await Promise.all(flood);
+    await service.close();
+  });
+});
+
+describe('the default wiring of the tile limiter', () => {
+  const answer = (key: TileKey): LodAnswer => ({
+    version: 'abcd1234', scheme: key.scheme, level: key.level, x: key.x, y: key.y, n: 129,
+    georef: tileGeoref(key), quantumM: 0.1, baseUnits: 0, noData: 65_535, heights: '',
+    minM: 0, maxM: 0, resolutionM: 59, tiers: [], coverage: 1,
+  });
+  // Every request is a computation: it counts its miss and answers at once.
+  const computing: LodSource = {
+    version: () => 'abcd1234',
+    async tile(key, onMiss) {
+      onMiss?.();
+      return answer(key);
+    },
+  };
+
+  it('has a limit of its own: the horizon still answers once the tile limit is spent', async () => {
+    const service = await TerrainService.open({
+      dir, catalogue: CATALOGUE, cacheBytes: 2 ** 26, maxRunning: 1, maxWaiting: 4,
+    });
+    const cache = await mkdtemp(join(work, 'w-'));
+    const client = createHorizonsClient({ fetch: async () => new Response(''), cacheDir: tmpdir() });
+    // No `lodLimiter` and no `missLimiter`: the app's own defaults.
+    const api = createApp({
+      horizons: client, pointsCache: client.points, sites: [], now: () => NOW,
+      terrain: cachedHorizons(service, join(cache, 'h'), 2 ** 24), lod: computing, log: () => undefined,
+    });
+    const statuses = new Set<number>();
+    for (let i = 0; i < DEFAULT_LOD_MISSES_PER_WINDOW; i++) {
+      statuses.add((await request(api, TILE(i % 20, Math.floor(i / 20)), from('198.51.100.9'))).status);
+    }
+    expect([...statuses]).toEqual([200]);
+    expect((await request(api, TILE(0), from('198.51.100.9'))).status).toBe(429);
+    expect((await request(api, HORIZON, from('198.51.100.9'))).status).toBe(200);
     await service.close();
   });
 });
@@ -192,6 +229,94 @@ describe('cachedLod and the slot', () => {
     const refuse = () => { throw new Error('over the limit'); };
     await expect(lod.tile(KEY, refuse, slot)).rejects.toThrow('over the limit');
     expect(calls).toEqual({ taken: 2, released: 2 });
+    await service.close();
+  });
+
+  /** Holds every computation of the service at the gate until `release()`. */
+  function holdComputations(service: TerrainService) {
+    let release = () => undefined as void;
+    const held = new Promise<void>((resolve) => (release = resolve));
+    const run = service.lodGate.run.bind(service.lodGate);
+    const spy = vi
+      .spyOn(service.lodGate, 'run')
+      .mockImplementation(async (task) => {
+        await held;
+        return run(task);
+      });
+    return { release, computations: () => spy.mock.calls.length };
+  }
+
+  /** A slot that waits until `open()`, as a client at its cap does. */
+  function waitingSlot() {
+    let open = () => undefined as void;
+    const gate = new Promise<void>((resolve) => (open = resolve));
+    const taken = vi.fn();
+    const slot = async () => {
+      taken();
+      await gate;
+      return () => undefined;
+    };
+    return { slot, open, taken };
+  }
+
+  it('lets a request join a computation in flight without a slot or a miss', async () => {
+    const { service, lod } = await source();
+    const hold = holdComputations(service);
+    const first = slotCounter();
+    const miss = vi.fn();
+    const owner = lod.tile(KEY, undefined, first.slot);
+    await vi.waitFor(() => expect(hold.computations()).toBe(1));
+    const joiner = slotCounter();
+    const joined = lod.tile(KEY, miss, joiner.slot);
+    await new Promise<void>((resolve) => setTimeout(resolve, 20));
+    hold.release();
+    expect(await joined).toEqual(await owner);
+    expect(joiner.calls).toEqual({ taken: 0, released: 0 });
+    expect(miss).not.toHaveBeenCalled();
+    expect(hold.computations()).toBe(1);
+    await service.close();
+  });
+
+  it('spends no computation and no miss on a waiter whose tile was stored meanwhile', async () => {
+    const { service, lod } = await source();
+    const hold = holdComputations(service);
+    const waiter = waitingSlot();
+    const miss = vi.fn();
+    const waiting = lod.tile(KEY, miss, waiter.slot);
+    await vi.waitFor(() => expect(waiter.taken).toHaveBeenCalled());
+    hold.release();
+    await lod.tile(KEY);
+    expect(hold.computations()).toBe(1);
+    waiter.open();
+    expect(await waiting).toEqual(await lod.tile(KEY));
+    expect(miss).not.toHaveBeenCalled();
+    expect(hold.computations()).toBe(1);
+    await service.close();
+  });
+
+  it('lets a waiter join, with no miss, the computation that started while it waited', async () => {
+    const { service, lod } = await source();
+    const hold = holdComputations(service);
+    const waiter = waitingSlot();
+    const miss = vi.fn();
+    const waiting = lod.tile(KEY, miss, waiter.slot);
+    await vi.waitFor(() => expect(waiter.taken).toHaveBeenCalled());
+    const owner = lod.tile(KEY);
+    await vi.waitFor(() => expect(hold.computations()).toBe(1));
+    waiter.open();
+    await new Promise<void>((resolve) => setTimeout(resolve, 20));
+    hold.release();
+    expect(await waiting).toEqual(await owner);
+    expect(miss).not.toHaveBeenCalled();
+    expect(hold.computations()).toBe(1);
+    await service.close();
+  });
+
+  it('counts the miss of the one request that computes', async () => {
+    const { service, lod } = await source();
+    const miss = vi.fn();
+    await lod.tile(KEY, miss, slotCounter().slot);
+    expect(miss).toHaveBeenCalledTimes(1);
     await service.close();
   });
 });

@@ -32,7 +32,13 @@
 import { describe, expect, it } from 'vitest';
 import { demHeightAt, type DemGrid } from '../src/dem-grid.ts';
 import { alignedTile, minDataResolutionM } from '../src/lod-tile.ts';
-import { decodeQuantised, dequantiseHeights, encodeQuantised, quantiseHeights } from '../src/tile-quant.ts';
+import {
+  decodeQuantised,
+  dequantiseHeights,
+  encodeQuantised,
+  quantiseHeights,
+} from '../src/tile-quant.ts';
+import { levelQuantumM } from '../src/level-quantum.ts';
 import { sampleDirection, tileGeoref } from '../src/tile-georef.ts';
 import { LUNAR_RADIUS_M, TILE_SAMPLES, type TileKey } from '../src/tile-scheme.ts';
 
@@ -181,6 +187,40 @@ describe('quantiseHeights', () => {
     const a = dequantiseHeights(quantiseHeights(Float32Array.of(1_234.5678, 10, 20)));
     const b = dequantiseHeights(quantiseHeights(Float32Array.of(1_234.5678, 900, 2_000)));
     expect(a[0]).toBe(b[0]);
+  });
+
+  it('keeps the base a whole number of steps when the lowest height is not on a step', () => {
+    const heights = Float32Array.of(12.34, 50, 33.3);
+    const q = quantiseHeights(heights);
+    expect(q.baseUnits).toBe(123);
+    expect(Number.isInteger(q.baseUnits)).toBe(true);
+    const back = dequantiseHeights(q);
+    heights.forEach((h, i) => expect(Math.abs((back[i] as number) - h)).toBeLessThanOrEqual(0.05 + 1e-4));
+  });
+
+  it('gives two tiles the same height at a shared node when their lows are off the step', () => {
+    const a = dequantiseHeights(quantiseHeights(Float32Array.of(1_234.5678, 12.34, 20)));
+    const b = dequantiseHeights(quantiseHeights(Float32Array.of(1_234.5678, 17.77, 2_000)));
+    expect(a[0]).toBe(b[0]);
+  });
+
+  it('steps by level: 0.1 m up to level 1, then doubling, so any relief of the Moon fits level 3', () => {
+    expect([0, 1, 2, 3].map(levelQuantumM)).toEqual([0.1, 0.1, 0.2, 0.4]);
+    // The Moon spans about 20 km from its lowest floor to its highest rim.
+    const moon = quantiseHeights(Float32Array.of(-9_200, 10_800), levelQuantumM(3));
+    expect(moon.quantumM).toBe(0.4);
+  });
+
+  it('starts at the step it is given and still widens when the span needs it', () => {
+    expect(quantiseHeights(Float32Array.of(0, 100), 0.4).quantumM).toBe(0.4);
+    expect(quantiseHeights(Float32Array.of(0, 30_000), 0.4).quantumM).toBe(0.8);
+  });
+
+  it('gives neighbours that share a step the same height at a shared node, whatever their relief', () => {
+    const step = levelQuantumM(3);
+    const flat = dequantiseHeights(quantiseHeights(Float32Array.of(1_234.5678, 10, 20), step));
+    const deep = dequantiseHeights(quantiseHeights(Float32Array.of(1_234.5678, -9_000, 12_000), step));
+    expect(flat[0]).toBe(deep[0]);
   });
 
   it('survives the text form: base64 of 16-bit little-endian, 2 bytes a height', () => {

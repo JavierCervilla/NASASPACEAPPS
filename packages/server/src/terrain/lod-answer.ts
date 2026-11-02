@@ -33,6 +33,7 @@ import {
   NO_DATA,
   alignedTile,
   encodeQuantised,
+  levelQuantumM,
   minDataResolutionM,
   quantiseHeights,
   tileGeoref,
@@ -56,7 +57,10 @@ export interface LodAnswer {
   /** Samples a side. */
   readonly n: number;
   readonly georef: TileGeoref;
-  /** Height of a sample: `(baseUnits + q) * quantumM`, metres. */
+  /**
+   * Height of a sample: `(baseUnits + q) * quantumM`, metres. `quantumM` is
+   * the level's (`levelQuantumM`), so tiles of a level decode alike.
+   */
   readonly quantumM: number;
   readonly baseUnits: number;
   /** The `q` of a sample without data. */
@@ -123,7 +127,7 @@ export function lodAnswer(
       share: round((tile.stopsByGrid[t.id] ?? 0) / tile.covered, 4),
     }))
     .sort((a, b) => a.resolutionM - b.resolutionM);
-  const q = quantiseHeights(tile.heights);
+  const q = quantiseHeights(tile.heights, levelQuantumM(key.level));
   return {
     version, ...key, n, georef: tileGeoref(key),
     quantumM: q.quantumM, baseUnits: q.baseUnits, noData: NO_DATA,

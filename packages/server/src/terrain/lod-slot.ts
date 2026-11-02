@@ -33,16 +33,14 @@ export type SlotTaker = () => Promise<() => void>;
 
 /**
  * Runs `work` holding a client slot (taken first, which may wait or refuse),
- * after `onMiss`, and gives the slot back however `work` ends.
+ * and gives the slot back however `work` ends.
  */
 export async function underSlot<T>(
   work: () => Promise<T>,
-  onMiss?: () => void,
   slot?: SlotTaker,
 ): Promise<T> {
   const release = await slot?.();
   try {
-    onMiss?.();
     return await work();
   } finally {
     release?.();

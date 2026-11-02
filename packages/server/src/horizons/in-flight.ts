@@ -30,6 +30,11 @@
 export class InFlight<T> {
   private readonly pending = new Map<string, Promise<T>>();
 
+  /** Whether a request for `key` is on its way. */
+  has(key: string): boolean {
+    return this.pending.has(key);
+  }
+
   /**
    * The promise in flight for `key`, or a new one from `start`, shared until it
    * settles. A synchronous throw from `start` starts nothing.

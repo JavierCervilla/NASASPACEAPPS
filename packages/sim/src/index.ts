@@ -157,6 +157,7 @@ export {
   minDataResolutionM,
   type AlignedTile,
 } from './lod-tile.ts';
+export { levelQuantumM } from './level-quantum.ts';
 export {
   MIN_QUANTUM_M,
   NO_DATA,

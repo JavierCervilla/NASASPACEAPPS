@@ -26,12 +26,13 @@
 /**
  * The 16-bit form of a tile's heights (VENT-46): `h = (baseUnits + q) *
  * quantumM`, `q` an unsigned 16-bit number, 65535 meaning no data. The step
- * is 0.1 m (an error of at most 0.05 m), doubled as many times as the tile's
- * relief needs to fit 65534 steps (6.5 km at 0.1 m: only a 128 km tile over
- * a very deep crater needs more, and then at most 0.15 m). The step is a
- * constant and the base a whole number of steps, never the tile's minimum,
- * so two tiles that share a node decode to the same height whatever else
- * they hold. 2 bytes a height. Pure.
+ * is a constant of the tile's level (`levelQuantumM`: 0.1 m at levels 0 and
+ * 1, doubling after that, so any relief of the Moon fits a level without
+ * widening it), and the base a whole number of steps, never the tile's
+ * minimum, so two tiles of a level that share a node decode to the same
+ * height whatever else they hold. A tile whose relief still did not fit
+ * 65534 steps would double the step as often as it needs (it cannot happen
+ * on the Moon). 2 bytes a height. Pure.
  */
 import { fromBase64, toBase64 } from './terrain-codec.ts';
 
@@ -58,10 +59,16 @@ function span(heights: ArrayLike<number>): [number, number] {
   return low > high ? [0, 0] : [low, high];
 }
 
-/** The 16-bit form of `heights` (NaN for no data). */
-export function quantiseHeights(heights: ArrayLike<number>): QuantisedHeights {
+/**
+ * The 16-bit form of `heights` (NaN for no data), with a step of at least
+ * `minQuantumM`.
+ */
+export function quantiseHeights(
+  heights: ArrayLike<number>,
+  minQuantumM = MIN_QUANTUM_M,
+): QuantisedHeights {
   const [low, high] = span(heights);
-  let quantumM = MIN_QUANTUM_M;
+  let quantumM = minQuantumM;
   while (Math.round(high / quantumM) - Math.floor(low / quantumM) > MAX_STEPS) {
     quantumM *= 2;
   }

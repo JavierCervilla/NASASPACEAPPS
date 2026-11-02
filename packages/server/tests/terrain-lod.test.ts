@@ -119,7 +119,8 @@ describe('lodTileIn', () => {
     await service.close();
   });
 
-  it('gives a tile its parent level heights at every 4th sample', async () => {
+  it('gives a tile its parent level heights at every 4th sample, where both levels read the same tiers', async () => {
+    // Levels 0 and 1 both read the 20 m grid first: the shared nodes are equal.
     const service = await open();
     const parent = await lodTileIn(service, { scheme: 'polar-south', level: 1, x: 0, y: 0 });
     const child = await lodTileIn(service, { scheme: 'polar-south', level: 0, x: 0, y: 1 });
@@ -127,6 +128,53 @@ describe('lodTileIn', () => {
     for (let r = 0; r < N; r += 4) {
       for (let c = 0; c < N; c += 4) expect(at(child, r, c)).toBe(at(parent, 32 * (3 - 1) + r / 4, c / 4));
     }
+    await service.close();
+  });
+
+  it('gives shared nodes across levels the same height only where both levels read the same tier, up to the steps', async () => {
+    const service = await open();
+    const parent = await lodTileIn(service, { scheme: 'polar-south', level: 2, x: 0, y: 0 });
+    const child = await lodTileIn(service, { scheme: 'polar-south', level: 1, x: 0, y: 0 });
+    // Level 1 reads the 20 m grid first, level 2 the coarse globe first (tiersForLevel).
+    const georef = child.georef as { minX: number; maxY: number; spacingM: number };
+    // How far from the pole a node is, along its larger plane axis, metres.
+    const reach = (r: number, c: number): number =>
+      Math.max(georef.minX + c * georef.spacingM, georef.maxY - r * georef.spacingM);
+    // The 20 m fixture covers about 6 km either side of the pole.
+    const covered = (r: number, c: number): boolean => reach(r, c) < 5_900;
+    const outside = (r: number, c: number): boolean => reach(r, c) > 6_100;
+    // The same measured height, up to the two levels' steps (0.1 and 0.2 m).
+    const within = (child.quantumM + parent.quantumM) / 2 + 1e-4;
+    let [differing, equalOutside, checked] = [0, 0, 0];
+    for (let r = 0; r < N; r += 4) {
+      for (let c = 0; c < N; c += 4) {
+        const gap = Math.abs(at(child, r, c) - at(parent, 96 + r / 4, c / 4));
+        if (covered(r, c) && gap > 100) differing++;
+        if (outside(r, c)) {
+          checked++;
+          if (gap <= within) equalOutside++;
+        }
+      }
+    }
+    // Across a change of the tier order the contract is «approximately equal»: the crater
+    // wall is 500 m in the 20 m grid and a few metres in the globe, 475 m apart at a node.
+    expect(differing).toBeGreaterThan(100);
+    expect(checked).toBeGreaterThan(0);
+    // Where only one tier covers, both levels read it: the same height.
+    expect(equalOutside).toBe(checked);
+    await service.close();
+  });
+
+  it('gives every tile of a level the level\'s step, so neighbours decode alike whatever their relief', async () => {
+    const service = await open();
+    const steps: number[] = [];
+    for (const level of [0, 1, 2, 3]) {
+      const flat = await lodTileIn(service, { scheme: 'polar-south', level, x: 3, y: 3 });
+      const crater = await lodTileIn(service, { scheme: 'polar-south', level, x: 0, y: 0 });
+      expect(flat.quantumM).toBe(crater.quantumM);
+      steps.push(crater.quantumM);
+    }
+    expect(steps).toEqual([0.1, 0.1, 0.2, 0.4]);
     await service.close();
   });
 

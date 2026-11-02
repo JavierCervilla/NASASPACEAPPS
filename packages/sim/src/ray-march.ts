@@ -75,7 +75,7 @@ export interface TerrainHorizon {
 }
 
 /** The first grid of `grids` with a height at `p`, and that height. */
-function heightFrom(
+export function heightFrom(
   grids: readonly DemGrid[],
   p: Vec3,
 ): { h: number; grid: DemGrid | null } {

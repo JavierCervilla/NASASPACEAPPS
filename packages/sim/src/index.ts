@@ -119,3 +119,9 @@ export {
   type TerrainHorizon,
 } from './ray-march.ts';
 export { terrainHours } from './terrain-hours.ts';
+export {
+  terrainTile,
+  type TerrainTile,
+  type TileCentre,
+} from './terrain-tile.ts';
+export { decodeHeights, encodeHeights } from './tile-codec.ts';

@@ -28,6 +28,7 @@
  * without TERRAIN_DIR, else over the tiers of the catalogue found there.
  * The variables are listed in main.ts and docs/terrain-api.md.
  */
+import { join } from 'node:path';
 import {
   DEFAULT_CATALOGUE_FILE,
   loadCatalogue,
@@ -35,11 +36,13 @@ import {
 } from './catalogue.ts';
 import { cachedHorizons, type HorizonSource } from './horizon-cache.ts';
 import { TerrainService } from './terrain-service.ts';
+import { cachedTiles, type TileSource } from './tile-cache.ts';
 
 const MB = 1024 * 1024;
 const DEFAULTS = {
   cacheDir: './.cache/terrain',
   cacheMb: 256,
+  tileCacheMb: 512,
   blocksMb: 192,
   maxRunning: 2,
   maxWaiting: 16,
@@ -58,6 +61,7 @@ function positive(name: string, raw: string | undefined, fallback: number) {
 /** The terrain of a server: its horizons and what serves them. */
 export interface TerrainSetup {
   readonly horizons: HorizonSource;
+  readonly tiles?: TileSource;
   readonly service: TerrainService;
   readonly dir: string;
   readonly catalogue: TerrainCatalogue;
@@ -82,5 +86,8 @@ export async function openTerrain(
   const cacheMb = positive('TERRAIN_CACHE_MB', env['TERRAIN_CACHE_MB'], DEFAULTS.cacheMb);
   const cacheDir = env['TERRAIN_CACHE_DIR'] ?? DEFAULTS.cacheDir;
   const horizons = cachedHorizons(service, cacheDir, cacheMb * MB);
-  return { horizons, service, dir, catalogue };
+  const tileCache = join(cacheDir, 'tiles');
+  const tileMb = positive('TERRAIN_TILE_CACHE_MB', env['TERRAIN_TILE_CACHE_MB'], DEFAULTS.tileCacheMb);
+  const tiles = cachedTiles(service, tileCache, tileMb * MB);
+  return { horizons, tiles, service, dir, catalogue };
 }

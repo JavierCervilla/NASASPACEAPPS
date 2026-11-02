@@ -50,6 +50,8 @@ import {
 import type { HorizonSource } from './terrain/horizon-cache.ts';
 import type { TerrainStatusBody } from './terrain/fetch-status.ts';
 import { horizonResponse } from './terrain/horizon-route.ts';
+import type { TileSource } from './terrain/tile-cache.ts';
+import { tileResponse } from './terrain/tile-route.ts';
 
 /**
  * What the API needs from the outside world, injected so tests can replace it.
@@ -76,6 +78,8 @@ export interface AppDeps {
    * grids, and then /horizon answers 503.
    */
   readonly terrain?: HorizonSource | undefined;
+  /** The terrain's height tiles (VENT-34); absent like `terrain`. */
+  readonly tiles?: TileSource | undefined;
   /**
    * The terrain's tiers and its fetch (VENT-43); absent without
    * TERRAIN_DIR, and then /terrain/status says so with no tiers.
@@ -181,6 +185,9 @@ function createV1(deps: RouteDeps): Hono {
 
   // Any point: lat and lon (east longitude) in degrees, optional height.
   v1.get('/horizon', (c) => horizonResponse(c, deps.terrain, deps.missLimiter));
+
+  // Any point: lat and lon (east longitude) in degrees, optional size.
+  v1.get('/terrain/tile', (c) => tileResponse(c, deps.tiles, deps.missLimiter));
 
   // Tier ids, states and byte counts only: no paths.
   v1.get('/terrain/status', (c) =>

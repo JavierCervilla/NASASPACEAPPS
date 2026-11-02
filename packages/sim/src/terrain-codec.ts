@@ -36,7 +36,7 @@ const ALPHABET =
 const BYTES_PER_VALUE = 2;
 
 /** `bytes` in base64. */
-function toBase64(bytes: Uint8Array): string {
+export function toBase64(bytes: Uint8Array): string {
   let out = '';
   for (let i = 0; i < bytes.length; i += 3) {
     const a = bytes[i] ?? 0;
@@ -53,7 +53,7 @@ function toBase64(bytes: Uint8Array): string {
 }
 
 /** The bytes of a base64 text; throws on a character outside it. */
-function fromBase64(text: string): Uint8Array {
+export function fromBase64(text: string): Uint8Array {
   const clean = text.replace(/=+$/, '');
   const out = new Uint8Array(Math.floor((clean.length * 3) / 4));
   let word = 0;

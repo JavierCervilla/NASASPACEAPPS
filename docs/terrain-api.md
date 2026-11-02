@@ -1,7 +1,7 @@
 # Terrain service (VENT-40)
 
 The server answers the real horizon of any point on the Moon from NASA's LOLA elevation grids, read from a volume. The
-same service is meant to serve height tiles for the 3D view later (VENT-34). The curated sites south of 80° S do not
+same service serves height tiles for the 3D on-foot view (`GET /api/v1/terrain/tile`, VENT-34). The curated sites south of 80° S do not
 need it: their horizons ship with the web (`packages/sim/data/horizons.json`), so they answer at once and offline.
 
 ## The pure core: `@ventana/sim`
@@ -15,6 +15,7 @@ offline script and other projects call the same functions:
 | `terrain-codec.ts` | `encodeProfile` / `decodeProfile`: little-endian int16 in base64 (720 bins = 1920 characters) |
 | `sun-disc.ts` | `sunDiscVisible`: the fraction of the Sun's disc (radius 0.26645°, IAU nominal values) above the terrain |
 | `dem-grid.ts` | `DemGrid`: a grid's size, projection (polar stereographic or simple cylindrical, as the PDS labels define them) and a `dnAt(line, sample)` accessor; `demHeightAt` (bilinear), `pixelOf`, `arrayGrid` |
+| `terrain-tile.ts`, `tile-codec.ts` | `terrainTile(grids, centre, sizeM, n)`: an `n` x `n` height grid in the local tangent plane, and `encodeHeights` / `decodeHeights` (little-endian float32 in base64) |
 | `ray-stops.ts`, `ray-march.ts` | `terrainHorizon(bands, observer, bins = 720)`: great-circle rays on the sphere, curvature included, each stop reading the first grid of its band that has a height |
 | `terrain-hours.ts` | `terrainHours(hours, profile)`: marks `sunAboveTerrain`, `sunDisc` and `earthAboveTerrain` on each hour; `hasSun`, `hasEarth` and `earthLink` honour them |
 
@@ -113,7 +114,8 @@ LDEM_128 to a median 9 m at 84.5° to 85.5° N; the flipped orientation differs 
 | `TERRAIN_CACHE_DIR` | `./.cache/terrain` | answers on disk |
 | `TERRAIN_CACHE_MB` | 256 | byte cap of the answers, least recently used out first |
 | `TERRAIN_BLOCKS_MB` | 192 | grid blocks kept in memory between requests |
-| `TERRAIN_MAX_RUNNING` | 2 | horizons computed at once; 16 more may wait, then 503 |
+| `TERRAIN_TILE_CACHE_MB` | 512 | byte cap of the height tiles on disk (`<TERRAIN_CACHE_DIR>/tiles`), least recently used out first |
+| `TERRAIN_MAX_RUNNING` | 2 | horizons and tiles computed at once; 16 more may wait, then 503 |
 
 | `TERRAIN_FETCH_TIERS` | unset: no fetch | `all`, or tier ids separated by commas: the server fetches the missing ones at boot |
 
@@ -194,15 +196,56 @@ node packages/server/scripts/terrain-horizons.ts --dir /data/terrain --check  # 
 It reads only the south polar tiers and LDEM_128 (past the 240 m cap's rim, for IM-1 at 80.13° S), so the shipped
 profiles are the validated method.
 
-## Planned: `GET /api/v1/terrain` (VENT-34)
+## `GET /api/v1/terrain/tile?lat&lon[&size]` (VENT-34)
 
-Height tiles around a point for the 3D view and for other projects, from the same tiers and block reader. Not built.
-The interface it should keep:
+The relief around a point for the 3D on-foot view. The human's decision: the view takes its relief only from our API.
 
-- Request: `lat`, `lon` (the same checks and grid), `size` (pixels per side), `res` (metres per pixel; the server
-  picks the finest tier at or below it and says which).
-- Projection: polar stereographic windows at 20 m near the poles (the grid's own pixels, no resampling); simple
-  cylindrical elsewhere.
-- Body: 16-bit unsigned heights, little-endian, row by row from the upper left, height = `offsetM + value * 0.1 m`.
-- Georeference JSON beside it: projection (with its pole or centre longitude and the sphere's radius), the upper-left
-  corner's coordinates, pixel size, `offsetM`, the step (0.1 m), the tier id and the source file's sha256.
+- `lat`, `lon`: as `/horizon` (0.01° grid, `lon` east from -180 to 360).
+- `size`: the side of the square in metres, `2000`, `4000` (default) or `8000`; any other value is a 400. Our choice:
+  4 km is a few minutes' walk, and the three sizes bound the cache to three keys per point.
+
+The tile is a fixed 257 x 257 grid (`n = 257`: 256 cells, a sample at the centre) in the local tangent plane centred on
+the point, x east and y north. Sample `(row, col)` lies `x = -size/2 + col * step` east and `y = size/2 - row * step`
+north of the centre, `step = size / 256` (7.8, 15.6 or 31.3 m). Its height is LOLA's at the point of the sphere under
+it (the great circle of that distance and bearing from the centre), bilinear (`demHeightAt`), from the **finest tier
+present that covers that sample**, the way the ray-march chooses (polar 20 m near the poles, then global 59 m, 80 m,
+118 m, 237 m and so on by resolution). A tile that crosses the edge of the 20 m grid therefore mixes tiers, and the
+answer says in what shares.
+
+```json
+{
+  "lat": -84.79, "lonEast": 29.2, "sizeM": 4000, "n": 257,
+  "groundM": 5321.3, "heights": "<base64>", "resolutionM": 20,
+  "tiers": [{ "id": "polar-south-20m", "resolutionM": 20, "share": 1 }],
+  "coverage": 1
+}
+```
+
+- `heights`: `n * n` little-endian float32 values in metres, **relative to `groundM`** (the height of the centre sample,
+  metres above the sphere of radius 1 737 400 m), row-major, rows from north to south, columns from west to east
+  (`decodeHeights` of `@ventana/sim` reads it; the centre is index `128 * 257 + 128` and is 0). Heights are above the
+  sphere, so the Moon's curvature is in them: against the tangent plane a flat surface falls by `d² / 2R` (9 m at the
+  corner of an 8 km tile). A client drawing a flat mesh may subtract that, or leave it.
+- `resolutionM`: the finest tier that served any sample. `tiers`: every tier that served samples and its share of them,
+  finest first. **What is measured**: compare the sample spacing (`sizeM / 256`) with `resolutionM`. At 4 km and 59 m
+  the spacing (15.6 m) is finer than the data, so the surface is smooth interpolation between measured points (a client
+  may add detail but must not call it terrain); at 8 km on a polar 20 m tile the spacing (31 m) is coarser than the
+  data and some of it is skipped.
+- `coverage`: the share of samples some tier covered. A sample no tier covers (a partial install) is 0 m, that is
+  `groundM`; with the global tier installed `coverage` is 1 everywhere.
+
+Errors and limits are `/horizon`'s: 400 (bad `lat`, `lon` or `size`), 404 (no tier covers the centre), 429 (the same
+per-address miss limiter: a computed tile counts as one new point), 503 (`{"error":"terrain data is not installed"}`
+while no tier is on disk, or the computation queue is full, with `Retry-After`). Every `/api/*` error answer is logged as
+one line (VENT-45). Success carries `Cache-Control: public, max-age=86400`. Tiles are computed in turn with the
+horizons through the same gate (`TERRAIN_MAX_RUNNING`), read only the grid blocks they need through the same LRU, and are
+cached on disk under a key of point, size and the tiers present, so a tier fetched later gives new tiles.
+
+**Budget.** The body is 352 423 bytes of JSON (264 196 bytes of floats in base64, plus the fields); real relief
+compresses little (gzip of floats), so a client should expect about 300 kB per tile over the wire if the host
+compresses. At the default 512 MB the disk cache holds about 1 400 tiles. If that is too much, the next step is a
+quantised form (int16 centimetres relative to `groundM`, half the size) as another serialiser over the same core,
+`terrainTile`; it is not built. Measured on the test fixture (a 600 x 600 polar grid and a coarse globe, Node 22, cold
+LRU): 110 to 150 ms per tile, three passes over 66 049 samples (one probe, one real, one that checks nothing is
+missing). Not measured on the real 48.6 GB volume.
+

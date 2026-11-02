@@ -59,7 +59,7 @@ const BUSY_RETRY_AFTER_SEC = 10;
 /** The 503 body's error while no tier is on disk; the web reads it. */
 export const NOT_INSTALLED = 'terrain data is not installed';
 // A point's horizon changes only with the tiers on disk.
-const CACHE_CONTROL = 'public, max-age=86400';
+export const CACHE_CONTROL = 'public, max-age=86400';
 
 /** The raw query of the route. */
 export interface RawHorizonParams {
@@ -84,7 +84,7 @@ export function parseHorizonParams(raw: RawHorizonParams): HorizonPoint {
 }
 
 /** The HTTP answer for an error of the route; rethrows the rest. */
-function errorResponse(c: Context, error: unknown): Response {
+export function errorResponse(c: Context, error: unknown): Response {
   if (error instanceof ParamError) {
     return c.json({ error: error.message }, 400);
   }

@@ -213,7 +213,11 @@ Every visible change follows `.claude/skills/apple-design/SKILL.md` (vendored fr
   sites» row says «Drop a pin on the Moon and tap Save to keep a site here». Saving (option A,
   `components/saved/SaveControl.tsx`): «Save» with a bookmark in the head of the desktop card and of the phone sheet
   for a custom point; saved it reads «Saved» (bookmark filled; a press deletes it, with the undo) and a «Name this
-  site» field, starting from «Near …», with «Kept on this device only». The saved sites (`src/saved/`) are a versioned
+  site» field, starting from «Near …», with «Kept on this device only». The phone's full sheet hides that head, so
+  the picker's head (`SitePicker.tsx`, `withSave`, set by `SitesPanel.tsx` only) carries an icon-only bookmark beside
+  «Done» for a custom point (`components/saved/SaveIcon.tsx`, VENT-42): outline or filled, named «Save» or «Saved:
+  press to remove it from this device», a 44 px target, the same action through `useSaveToggle`; the desktop popover
+  has none, since the card's «Save» stays in view beside it. The saved sites (`src/saved/`) are a versioned
   document in `localStorage` (`ventana.savedSites`, `{ v: 1, sites }`), every entry checked on read and a bad one
   dropped alone (`saved-schema.ts`: id = its point's grid id, `@-85.87,61.34`, so stable and one per point; name
   cleaned of control and format characters (bidi overrides, zero-width marks), at most 60), newest first, at most 50

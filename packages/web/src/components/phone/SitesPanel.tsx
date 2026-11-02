@@ -136,7 +136,7 @@ export function SitesPanel(props: PanelProps) {
   return (
     <div ref={stack} className="push" data-pushed={pushed} data-at={at}>
       <div className="push__root" inert={pushed}>
-        <SitePicker {...picker} languageRow={languageRow} />
+        <SitePicker {...picker} languageRow={languageRow} withSave />
       </div>
       <div className="push__page" inert={!pushed}>
         {pushed || at !== 'root' ? <LanguagePage base={base} onBack={back} /> : null}

@@ -39,6 +39,7 @@ import { filterSites, foldText } from '../../phone/site-search';
 import type { NowState } from '../../phone/widget-types';
 import { useI18n } from '../i18n-context';
 import { SavedList } from '../saved/SavedList';
+import { SaveIcon } from '../saved/SaveIcon';
 import { Icon } from './Icon';
 import { Regions, type Segment } from './PickerRegions';
 import { SiteList } from './SiteList';
@@ -51,6 +52,12 @@ export interface PickerProps {
   readonly onDone: () => void;
   /** Under the title: the phone's language row (SitesPanel.tsx). */
   readonly languageRow?: ReactNode;
+  /**
+   * Beside «Done», the icon-only «Save» for a custom point (VENT-42): the
+   * phone's full sheet hides the half sheet's «Save»; the desktop card
+   * keeps its own beside the popover.
+   */
+  readonly withSave?: boolean;
 }
 
 function Search(props: { value: string; onChange: (v: string) => void }) {
@@ -69,11 +76,14 @@ function Search(props: { value: string; onChange: (v: string) => void }) {
   );
 }
 
-function PickerHead({ onDone }: { readonly onDone: () => void }) {
+type HeadProps = Pick<PickerProps, 'selected' | 'onDone' | 'withSave'>;
+
+function PickerHead({ selected, onDone, withSave }: HeadProps) {
   const { t } = useI18n();
   return (
     <div className="picker__head">
       <h2 className="picker__title">{t('picker.title')}</h2>
+      {withSave ? <SaveIcon site={selected} /> : null}
       <button type="button" className="picker__done" onClick={onDone}>{t('picker.done')}</button>
     </div>
   );
@@ -108,7 +118,11 @@ export function SitePicker(props: PickerProps) {
   const searching = foldText(query) !== '';
   return (
     <div className="picker">
-      <PickerHead onDone={onDone} />
+      <PickerHead
+        selected={selected}
+        onDone={onDone}
+        withSave={props.withSave}
+      />
       <div className="picker__scroll" data-sheet-scroll>
         {props.languageRow}
         <Search value={query} onChange={setQuery} />

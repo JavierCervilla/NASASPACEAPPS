@@ -23,6 +23,16 @@
     paren mientras comprueba un fichero, y la imagen rechaza `/data//` y `/data/./` como rutas de montaje.
 
 ### Añadido
+- Relieve alineado y por niveles de detalle para la vista 3D (VENT-46, solo servidor y simulador): la API sirve teselas
+  de relieve de una cuadrícula global y determinista, en cuatro niveles (2, 8, 32 y 128 km de lado, de 129 x 129
+  muestras), con el plano estereográfico polar de LOLA desde 60° hasta cada polo y una cuadrícula latitud-longitud entre
+  medias. Las teselas vecinas comparten su borde y cada nivel comparte sus muestras con el de arriba, así que el visor
+  puede construir anillos de relieve real hasta 32 km (o 128 km) y, más adelante, cargar teselas mientras camina.
+  `GET /api/v1/terrain/tiles?lat&lon` dice qué teselas cubren cada anillo y `GET /api/v1/terrain/tiles/{scheme}/{level}/{x}/{y}`
+  da una: alturas de 16 bits (error de 0,05 m, unos 33 kB frente a los 264 kB de la tesela de 4 km), su georreferencia
+  y las capas de LOLA que la sirvieron. Las URL llevan un token de los niveles presentes y son inmutables un año; el
+  ETag responde 304 sin recalcular. Cada tesela cuenta como una sola para el límite, que es propio y más holgado que el
+  del horizonte (`TERRAIN_LOD_CACHE_MB`, 512 por defecto). La tesela de 4 km de VENT-34 sigue como estaba.
 - Vista 3D a pie (VENT-34), en la pestaña «Horizon» del escritorio y del móvil: el sitio o el punto elegido visto desde
   el suelo, con el relieve LOLA que da nuestra API en 4 km alrededor. Abre en tercera persona, con el astronauta de NASA
   de pie en el punto mirando al Sol (o a la Tierra si el Sol está bajo el horizonte), y un conmutador «Third person |

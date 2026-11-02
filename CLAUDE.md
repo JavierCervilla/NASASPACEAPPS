@@ -53,7 +53,15 @@ epic: `VENT-1` (Dashboard project «Ventana Lunar», prefix `VENT`).
   answer cache it serves `GET /api/v1/terrain/tile?lat&lon[&size]` (VENT-34), the relief of the 3D on-foot view and
   its only source: a 257 x 257 float32 height grid (base64, metres relative to the centre) in the tangent plane,
   `size` 2000, 4000 or 8000 m, each sample from the finest tier covering it (`terrainTile` in `@ventana/sim`,
-  `src/terrain/tile-*.ts`), with the tiers' shares so the client knows what is measured. The server fills that volume itself (VENT-43): with
+  `src/terrain/tile-*.ts`), with the tiers' shares so the client knows what is measured. For relief in rings and streaming it also serves
+  aligned, levelled tiles of a global tiling (VENT-46): `GET /api/v1/terrain/tiles?lat&lon[&levels]` lists the tiles
+  that cover a ring around a point, and `GET /api/v1/terrain/tiles/{scheme}/{level}/{x}/{y}[?v]` serves one: 129 x 129
+  uint16 heights (0.1 m step, 33 kB) with their georeference, at four levels of 2, 8, 32 and 128 km (nodes 15.6 m to
+  1 km apart) on the polar stereographic plane from 60° to each pole (`polar-south`, `polar-north`) and on a lat-lon
+  grid between (`latlon`); neighbours share their edge nodes and a level's nodes are every 4th node of the level below,
+  exactly; urls carry a version token of the tiers present and are immutable (ETag, 304); pure core in `@ventana/sim`
+  (`tile-scheme.ts`, `tile-georef.ts`, `tile-ring.ts`, `lod-tile.ts`, `tile-quant.ts`), server in
+  `src/terrain/lod-*.ts`, with its own limiter and cache (`TERRAIN_LOD_CACHE_MB`). The server fills that volume itself (VENT-43): with
   `TERRAIN_FETCH_TIERS` (`all` or tier ids) it fetches the missing tiers in the background once it listens, one file at
   a time, resumable (`.part` and HTTP Range), sha256-checked, stopping when the volume would keep under 2 GB free, and
   re-scans after each tier so it serves without a restart (`src/terrain/terrain-boot.ts`; progress at

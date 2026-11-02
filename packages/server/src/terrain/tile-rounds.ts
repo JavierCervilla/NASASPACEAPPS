@@ -39,10 +39,8 @@ import {
   type TilePoint,
 } from './tile-answer.ts';
 import type { TerrainService } from './terrain-service.ts';
+import { inRounds } from './rounds.ts';
 import { TierGrid } from './tier-grid.ts';
-
-/** Rounds of the read: one probe, then real ones until nothing misses. */
-const MAX_ROUNDS = 4;
 
 /** What a read needs: the shared blocks and the tiers present. */
 export interface TileRead {
@@ -60,13 +58,9 @@ export async function readTile(
   );
   const grids = finest.map((t) => new TierGrid(t));
   const demGrids = grids.map((g) => g.grid);
-  for (let round = 0; round < MAX_ROUNDS; round++) {
-    const tile = tileOf(demGrids, point);
-    const misses = grids.some((g) => g.missing.size > 0);
-    if (round > 0 && !misses) return tileAnswer(point, tile, read.present);
-    await Promise.all(grids.map((g) => read.blocks.load(g)));
-  }
-  throw new Error('terrain: blocks still missing after every round');
+  const compute = () => tileOf(demGrids, point);
+  const tile = await inRounds(read.blocks, grids, compute);
+  return tileAnswer(point, tile, read.present);
 }
 
 /**

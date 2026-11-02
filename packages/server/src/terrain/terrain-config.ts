@@ -36,6 +36,7 @@ import {
 } from './catalogue.ts';
 import { cachedHorizons, type HorizonSource } from './horizon-cache.ts';
 import { TerrainService } from './terrain-service.ts';
+import { cachedLod, type LodSource } from './lod-cache.ts';
 import { cachedTiles, type TileSource } from './tile-cache.ts';
 
 const MB = 1024 * 1024;
@@ -43,6 +44,7 @@ const DEFAULTS = {
   cacheDir: './.cache/terrain',
   cacheMb: 256,
   tileCacheMb: 512,
+  lodCacheMb: 512,
   blocksMb: 192,
   maxRunning: 2,
   maxWaiting: 16,
@@ -62,6 +64,7 @@ function positive(name: string, raw: string | undefined, fallback: number) {
 export interface TerrainSetup {
   readonly horizons: HorizonSource;
   readonly tiles?: TileSource;
+  readonly lod?: LodSource;
   readonly service: TerrainService;
   readonly dir: string;
   readonly catalogue: TerrainCatalogue;
@@ -89,5 +92,7 @@ export async function openTerrain(
   const tileCache = join(cacheDir, 'tiles');
   const tileMb = positive('TERRAIN_TILE_CACHE_MB', env['TERRAIN_TILE_CACHE_MB'], DEFAULTS.tileCacheMb);
   const tiles = cachedTiles(service, tileCache, tileMb * MB);
-  return { horizons, tiles, service, dir, catalogue };
+  const lodMb = positive('TERRAIN_LOD_CACHE_MB', env['TERRAIN_LOD_CACHE_MB'], DEFAULTS.lodCacheMb);
+  const lod = cachedLod(service, join(cacheDir, 'lod'), lodMb * MB);
+  return { horizons, tiles, lod, service, dir, catalogue };
 }

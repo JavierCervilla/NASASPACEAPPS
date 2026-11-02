@@ -43,7 +43,7 @@ import { createSlicer, type Slicer } from './slicer';
 import { ringsMesh } from './rings';
 import { placeLander } from './lander-place';
 import { landerSpot, rocksMesh } from './props';
-import type { SceneInput } from './scene-types';
+import type { SceneInput, SceneSetup } from './scene-types';
 import { placeSky, shadeSun } from './sky-place';
 import { createSky, type SkyParts } from './sky';
 import { exposureFor, type Stage } from './stage';
@@ -52,6 +52,8 @@ import { groundOf, type Ground } from './world-ground';
 
 export interface World {
   readonly stage: Stage;
+  /** What this mount draws at and without (its tier, `?onfoot=`). */
+  readonly setup: SceneSetup;
   readonly mask: SunMask;
   readonly sky: SkyParts;
   readonly astronaut: Group;
@@ -73,10 +75,11 @@ export interface World {
 }
 
 /** An empty world on `stage`. */
-export function createWorld(stage: Stage, seed: number, shadowPx: number) {
+export function createWorld(stage: Stage, seed: number, setup: SceneSetup) {
   const mask = createSunMask();
   const slicer = createSlicer({ invalidate: () => world.invalidate() });
-  const world: World = { stage, mask, sky: createSky(seed, shadowPx),
+  const shadowPx = setup.quality.tier === 'high' ? 2048 : 1024;
+  const world: World = { stage, setup, mask, sky: createSky(seed, shadowPx),
     astronaut: new Group(), idle: null, lander: new Group(), near: new Group(),
     ground: () => 0,
     material: groundMaterial(mask), backdrop: null, input: null,

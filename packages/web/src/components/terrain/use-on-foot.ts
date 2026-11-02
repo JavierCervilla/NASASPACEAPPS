@@ -42,6 +42,7 @@ import type { PlacedTile, SceneInput,
 import { landerKindOf } from '../../terrain/lander-kind';
 import { seedOf } from '../../terrain/seeded';
 import type { RingSource } from '../../terrain/ring/ring-source';
+import type { ViewTier } from '../../terrain/view-tier';
 import type { CameraMode } from '../../terrain/view-camera';
 import { useRing } from './use-ring';
 
@@ -60,13 +61,15 @@ export interface OnFootParts {
   readonly horizons: HorizonStore;
   /** Where the relief rings come from (the page's, ring-source.ts). */
   readonly tiles: RingSource;
+  /** The view's tier, shared by its scene and its rings (VENT-49). */
+  readonly viewTier: ViewTier;
 }
 
 /** The point's tile, placed, and the sky over it at the instant. */
-function useGround({ site, time, tiles }: OnFootParts) {
+function useGround({ site, time, tiles, viewTier }: OnFootParts) {
   const { lat, lonEast } = site;
   const located = Number.isFinite(lat) && Number.isFinite(lonEast);
-  const tile = useRing(tiles, located ? { lat, lonEast } : null);
+  const tile = useRing(tiles, located ? { lat, lonEast } : null, viewTier);
   const { state } = tile;
   const ring = state.kind === 'ready' ? state.ring : null;
   const placed = ring?.near ?? null;

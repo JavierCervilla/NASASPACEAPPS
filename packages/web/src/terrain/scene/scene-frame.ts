@@ -33,6 +33,7 @@ import { stepCoast, type Coast } from '../look-coast';
 import type { CameraMode, Look } from '../view-camera';
 import { aimCamera, markBodies } from './camera-apply';
 import { labelLayer, type LabelLayer } from './labels';
+import { stageProbe } from './scene-guard';
 import type { SceneHooks } from './scene-types';
 import { fitStage } from './stage';
 import type { World } from './world';
@@ -56,6 +57,15 @@ function coast(view: ViewState, dt: number, hooks: SceneHooks): boolean {
   return next.coast !== null;
 }
 
+/** Marks on the host what the frame drew and how many were drawn. */
+function markFrame(world: World, host: HTMLElement): void {
+  const { calls, triangles } = world.stage.renderer.info.render;
+  host.dataset['draws'] = `${calls},${triangles}`;
+  host.dataset['working'] = String(world.slicer.busy());
+  const drawn = Number(host.dataset['frames'] ?? 0) + 1;
+  host.dataset['frames'] = String(drawn);
+}
+
 /** The labels' layer and the frame function for the scene's loop. */
 export function framer(
   world: World,
@@ -64,20 +74,19 @@ export function framer(
   view: ViewState,
 ): { labels: LabelLayer; frame: (dt: number) => boolean } {
   const labels = labelLayer(host, world.stage.camera, () => world.ground);
+  const { renderer } = world.stage;
+  const probe = stageProbe(renderer, world.setup.quality, hooks.onSlowFrame);
   const frame = (dt: number): boolean => {
     const { stage } = world;
     const coasting = coast(view, dt, hooks);
     world.idle?.advance(dt);
     fitStage(stage, host, hooks.band?.() ?? null);
     aimCamera(world, view.mode, view.look);
-    stage.renderer.render(stage.scene, stage.camera);
+    probe.frame(() => renderer.render(stage.scene, stage.camera),
+      () => world.slicer.busy());
     if (world.input) labels.draw(world.input.words, view.look.yawDeg);
     markBodies(world, host);
-    const { calls, triangles } = stage.renderer.info.render;
-    host.dataset['draws'] = `${calls},${triangles}`;
-    host.dataset['working'] = String(world.slicer.busy());
-    const drawn = Number(host.dataset['frames'] ?? 0) + 1;
-    host.dataset['frames'] = String(drawn);
+    markFrame(world, host);
     return coasting;
   };
   return { labels, frame };

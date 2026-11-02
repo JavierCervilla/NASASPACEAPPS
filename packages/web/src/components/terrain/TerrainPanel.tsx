@@ -60,22 +60,26 @@ function usePanel(props: PanelProps) {
   const [yaw, setYaw] = useState<number | null>(null);
   const hooks = { onLook: (look: { yawDeg: number }) => setYaw(look.yawDeg),
     band: props.band, bandMoves: props.bandMoves };
-  const status = useTerrainScene(host, view.input, hooks);
+  const scene = useTerrainScene(host, view.input, hooks, props.viewTier);
   const onMode = (mode: typeof view.mode): void => {
     setYaw(null);
     view.setMode(mode);
   };
+  const onRetry = (): void => {
+    scene.retry();
+    if (view.tile.state.kind === 'unavailable') view.tile.retry();
+  };
   const yawDeg = yaw ?? view.startYawDeg;
-  return { view, host, status, onMode, yawDeg };
+  return { view, host, status: scene.status, onMode, onRetry, yawDeg };
 }
 
 export default function TerrainPanel(props: PanelProps) {
   const i18n = useI18n();
-  const { view, host, status, onMode, yawDeg } = usePanel(props);
+  const { view, host, status, onMode, onRetry, yawDeg } = usePanel(props);
   const altId = useId();
   const alt = view.input
     ? viewAlt(i18n, { mode: view.mode, yawDeg, bodies: view.bodies }) : '';
-  const area = { view, host, status, onMode, altId };
+  const area = { view, host, status, onMode, onRetry, altId };
   const { layout, hours } = props;
   return (
     <section className={`on-foot on-foot--${layout}`} aria-label={i18n.t('onFoot.view')}>

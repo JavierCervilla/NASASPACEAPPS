@@ -31,20 +31,22 @@
  * band moving): an idle view draws no frames.
  */
 import { createLoop } from '../../globe/loop';
-import { pickQuality } from '../../globe/quality-pick';
 import { isPhoneViewport } from '../../lib/viewport';
 import { coastOf } from '../look-coast';
 import { dragScale } from '../look-input';
 import { startLook, type Look } from '../view-camera';
-import { loadAstronaut } from './astronaut';
-import { loadLander } from './lander';
-import { markReadyWhenStanding } from './ready-mark';
 import { bindLook } from './controls';
+import { markSetup, startLoading } from './scene-loading';
 import { framer, type ViewState } from './scene-frame';
 import { controller, turner } from './scene-controller';
-import type { SceneHooks, SceneInput, TerrainScene } from './scene-types';
+import { watchLost } from './scene-guard';
+import type {
+  SceneHooks,
+  SceneInput,
+  SceneSetup,
+  TerrainScene,
+} from './scene-types';
 import { createStage, disposeStage } from './stage';
-import { loadSurfaces } from './surfaces';
 import { applyInput, createWorld, type World } from './world';
 
 /** Whether the person asked for less motion. */
@@ -52,11 +54,9 @@ const reducedMotion = (): boolean =>
   window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
 /** The world on a new stage in `host`; throws without WebGL. */
-function stageWorld(host: HTMLElement, seed: number): World {
-  const phone = isPhoneViewport();
-  const quality = pickQuality(phone);
-  const stage = createStage(host, quality, phone);
-  return createWorld(stage, seed, quality.tier === 'high' ? 2048 : 1024);
+function stageWorld(host: HTMLElement, seed: number, setup: SceneSetup) {
+  const stage = createStage(host, setup, isPhoneViewport());
+  return createWorld(stage, seed, setup);
 }
 
 /** Binds the controls and the host's size; returns the unbind. */
@@ -80,45 +80,33 @@ function bindHost(host: HTMLElement, world: World, view: ViewState,
   };
 }
 
-/** Loads the astronaut and the maps; marks the host once both stand. */
-function startLoading(host: HTMLElement, world: World,
-  loop: ReturnType<typeof createLoop>): () => void {
-  let alive = true;
-  const lander = { into: world.lander, mask: world.mask,
-    alive: () => alive };
-  const astronaut = { into: world.astronaut, mask: world.mask,
-    alive: () => alive, reducedMotion };
-  const standing = Promise.all([
-    loadAstronaut(astronaut, console.warn).then((idle) => {
-      world.idle = idle;
-    }),
-    loadLander(lander, world.input?.lander ?? 'generic', console.warn),
-    loadSurfaces(world, console.warn),
-  ]).then(() => undefined);
-  const unmark = markReadyWhenStanding(host, standing,
-    () => loop.invalidate());
-  return () => {
-    alive = false;
-    unmark();
-  };
+/** The world, the view's state and the loop that draws them. */
+function openScene(host: HTMLElement, input: SceneInput, hooks: SceneHooks,
+  setup: SceneSetup) {
+  const world = stageWorld(host, input.seed, setup);
+  const home = startLook(input.mode, input.startYawDeg);
+  const view: ViewState = { mode: input.mode, look: home, home, coast: null };
+  const { labels, frame } = framer(world, host, hooks, view);
+  const loop = createLoop(frame);
+  world.invalidate = () => loop.invalidate();
+  return { world, view, labels, loop };
 }
 
 export function mountTerrainScene(
   host: HTMLElement,
   input: SceneInput,
   hooks: SceneHooks,
+  setup: SceneSetup,
 ): TerrainScene {
-  const world = stageWorld(host, input.seed);
-  const home = startLook(input.mode, input.startYawDeg);
-  const view: ViewState = { mode: input.mode, look: home, home, coast: null };
-  const { labels, frame } = framer(world, host, hooks, view);
-  const loop = createLoop(frame);
-  world.invalidate = () => loop.invalidate();
+  const { world, view, labels, loop } = openScene(host, input, hooks, setup);
   const set = turner(view, hooks, () => loop);
   applyInput(world, input);
   const unbind = bindHost(host, world, view, set);
-  const unmark = startLoading(host, world, loop);
+  markSetup(host, setup);
+  const unmark = startLoading(host, world, loop, reducedMotion);
+  const unwatch = watchLost(world.stage.renderer.domElement, hooks.onLost);
   const teardown = (): void => {
+    unwatch();
     unmark();
     loop.stop();
     unbind();

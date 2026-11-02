@@ -40,7 +40,8 @@ export function applyRings(world: World, input: SceneInput): void {
   const rings = createRingLayer(input.ring, world.material, world.slicer);
   world.stage.scene.add(rings.group);
   world.rings = rings;
-  world.farShade = createFarShade(input.ring, world.slicer,
-    (level, grid) => world.rings?.setLit(level, grid));
+  world.farShade = world.setup.leave.has('shade') ? null
+    : createFarShade(input.ring, world.slicer,
+      (level, grid) => world.rings?.setLit(level, grid));
 }
 

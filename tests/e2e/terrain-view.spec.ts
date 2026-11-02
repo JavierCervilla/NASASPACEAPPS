@@ -220,6 +220,47 @@ test.describe('desktop, 1440x900', () => {
     await expect(host(page)).toHaveAccessibleDescription(/View heading 334°, to the north-west\. .*The Sun is to the north, above the terrain\./);
   });
 
+  // VENT-49: a Pixel's GPU process restarted under the view; a lost context frees the scene and never remounts itself.
+  test('a lost GPU context frees the view and says so; «Try again» opens it again at low, with no idle frames', async ({ page }) => {
+    await open(page, { path: `./${POINT}&quality=medium#horizon` });
+    await settled(page);
+    await expect(host(page)).toHaveAttribute('data-tier', 'medium');
+    await idle(page);
+    await host(page).locator('canvas').evaluate((canvas) => {
+      (canvas as HTMLCanvasElement).getContext('webgl2')?.getExtension('WEBGL_lose_context')?.loseContext();
+    });
+    await expect(view(page).getByRole('status')).toContainText('Terrain unavailable right now');
+    await expect(host(page)).toHaveAttribute('data-status', 'lost');
+    await expect(host(page).locator('canvas')).toHaveCount(0);
+    const retry = view(page).getByRole('button', { name: 'Try again' });
+    await expect(retry).toBeVisible();
+    // Nothing remounts by itself: the view stays as it is until the tap.
+    await page.waitForTimeout(2500);
+    await expect(host(page).locator('canvas')).toHaveCount(0);
+    await retry.click();
+    // The new mount writes the tier and clears the old ready mark in one task.
+    await expect(host(page)).toHaveAttribute('data-tier', 'low');
+    await settled(page);
+    await expect(host(page).locator('canvas')).toHaveCount(1);
+    await expect(view(page).getByRole('status')).toHaveCount(0);
+    const settledAt = await idle(page);
+    await page.waitForTimeout(1500);
+    expect(await frames(page)).toBe(settledAt);
+  });
+
+  // VENT-49: the diagnostic switch for bisecting a crash on a phone's address bar.
+  test('?onfoot= leaves parts out, says which on the host, and the view still settles with no idle frames', async ({ page }) => {
+    const requests: string[] = [];
+    await open(page, { path: `./${POINT}&onfoot=astronaut,lander,far#horizon`, requests });
+    await settled(page);
+    await expect(host(page)).toHaveAttribute('data-onfoot', 'astronaut,lander,far');
+    expect(requests.some((url) => /\/terrain\/tiles\?.*levels=2(&|$)/.test(url))).toBe(true);
+    expect(requests.some((url) => /\/terrain\/tiles\?.*levels=[34]/.test(url))).toBe(false);
+    const settledAt = await idle(page);
+    await page.waitForTimeout(1500);
+    expect(await frames(page)).toBe(settledAt);
+  });
+
   test('the Sun is drawn where the profile shows it', async ({ page }) => {
     await open(page, { path: `./${POINT}#horizon` });
     await settled(page);

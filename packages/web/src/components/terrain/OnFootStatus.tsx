@@ -26,8 +26,10 @@
 /**
  * What the on-foot view says when it cannot show the ground (VENT-34):
  * loading, no terrain here, none installed on the server, a failure that
- * outlasted its retries (with «Try again»), no WebGL, or a site with no
- * coordinates. Nothing once the scene draws.
+ * outlasted its retries (with «Try again»), no WebGL, a GPU context the
+ * browser took away (the same words and «Try again» as an unavailable
+ * terrain, VENT-49), or a site with no coordinates. Nothing once the scene
+ * draws.
  */
 import type { TextKey } from '../../i18n/catalogue';
 import type { RingState } from '../../terrain/ring/ring-session';
@@ -52,6 +54,7 @@ const TILE_WORDS: Readonly<Record<RingState['kind'], TextKey | null>> = {
 /** The message's key, or null when the scene shows. */
 function wordsOf({ located, tile, scene }: Props): TextKey | null {
   if (!located) return 'onFoot.noPoint';
+  if (scene === 'lost') return 'onFoot.unavailable';
   if (tile.kind !== 'ready') return TILE_WORDS[tile.kind];
   if (scene === 'failed') return 'onFoot.noWebgl';
   return scene === 'loading' ? 'onFoot.loading' : null;
@@ -64,7 +67,7 @@ export function OnFootStatus(props: Props) {
   return (
     <div className="on-foot__status" role="status">
       <p>{t(key)}</p>
-      {props.tile.kind === 'unavailable' ? (
+      {props.tile.kind === 'unavailable' || props.scene === 'lost' ? (
         <button type="button" className="on-foot__retry" onClick={props.onRetry}>
           {t('data.retry')}
         </button>

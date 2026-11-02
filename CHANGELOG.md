@@ -38,6 +38,11 @@
   renderizado por software, de 38 fotogramas a 6).
 
 ### Arreglado
+- La vista 3D «Horizon» ya no se queda muerta cuando el navegador le quita la GPU (VENT-49). La vista se libera y dice
+  «Terrain unavailable right now» con «Try again», que la abre de nuevo en calidad baja (nunca se reabre sola), y esa
+  calidad se recuerda durante la sesión. Además, si un fotograma de la carga tarda demasiado para la GPU del móvil, la
+  vista baja sola un nivel de calidad. Para localizar un cuelgue desde el móvil,
+  `?onfoot=astronaut,lander,shadows,far,shade,logdepth` deja fuera partes de la vista.
 - Un fallo pasajero ya no deja un punto sin relieve toda la sesión (VENT-45). Si la API del horizonte no responde, está
   ocupada, limita las peticiones o da un error 5xx, la web vuelve a preguntar a los 2, 6 y 18 s (o cuando el servidor
   diga en su `Retry-After`, como mucho 30 s) y la franja sigue en «Smooth horizon · real terrain loading» mientras

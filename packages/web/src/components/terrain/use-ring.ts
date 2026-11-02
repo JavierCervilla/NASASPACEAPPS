@@ -30,29 +30,45 @@
  * finest two levels land, and the coarser rings left to arrive into the
  * view's store; «Try again» asks once more.
  */
-import { useEffect, useMemo, useState } from 'react';
-import { pickQuality } from '../../globe/quality-pick';
+import { useEffect, useMemo, useState, useSyncExternalStore } from 'react';
 import type { LatLon } from '../../lib/polar-projection';
-import { isPhoneViewport } from '../../lib/viewport';
-import { ringTier, type RingTier } from '../../terrain/ring/ring-plan';
+import { parseLeaveOut } from '../../terrain/leave-out';
+import {
+  nearRings,
+  ringTier,
+  type RingTier,
+} from '../../terrain/ring/ring-plan';
 import type { RingSource } from '../../terrain/ring/ring-source';
 import { runRing, type RingState } from '../../terrain/ring/ring-session';
+import type { ViewTier } from '../../terrain/view-tier';
 
 const LOADING: RingState = { kind: 'loading' };
 /** Lets the page draw and answer input between two slices of work. */
 const breathe = (): Promise<void> =>
   new Promise((done) => window.setTimeout(done, 0));
 
-/** The rings this device draws (its quality tier, read once). */
-export function useRingTier(): RingTier {
-  return useMemo(() => ringTier(pickQuality(isPhoneViewport()).tier), []);
+/**
+ * The rings the view draws: its tier's (view-tier.ts), so a change of tier
+ * asks for them again; less the far levels under `?onfoot=far`.
+ */
+export function useRingTier(view: ViewTier): RingTier {
+  const { tier } = useSyncExternalStore(view.subscribe, view.get, view.get);
+  return useMemo(() => {
+    const rings = ringTier(tier);
+    const near = parseLeaveOut(window.location.search).has('far');
+    return near ? nearRings(rings) : rings;
+  }, [tier]);
 }
 
 /** The rings of `point` (null: no coordinates) and how to ask again. */
-export function useRing(source: RingSource, point: LatLon | null) {
+export function useRing(
+  source: RingSource,
+  point: LatLon | null,
+  view: ViewTier,
+) {
   const [state, setState] = useState<RingState>(LOADING);
   const [attempt, setAttempt] = useState(0);
-  const tier = useRingTier();
+  const tier = useRingTier(view);
   const lat = point?.lat;
   const lonEast = point?.lonEast;
   useEffect(() => {

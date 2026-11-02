@@ -94,8 +94,12 @@ const CAPABLE_PHONE_GPU = new RegExp(
   ].join('|'),
 );
 
-function isTier(value: string | null | undefined): value is Tier {
-  return value === 'low' || value === 'medium' || value === 'high';
+/** The tier the address forces (`?quality=`, a hash word), or null. */
+export function forcedTier(search = '', hash = ''): Tier | null {
+  const word =
+    new URLSearchParams(search).get('quality') ??
+    /(?:^|[#-])(low|medium|high)(?:$|-)/.exec(hash)?.[1];
+  return TIERS.find((tier) => tier === word) ?? null;
 }
 
 /**
@@ -103,10 +107,8 @@ function isTier(value: string | null | undefined): value is Tier {
  * overrides it.
  */
 export function detectTier(device: DeviceHints, search = '', hash = ''): Tier {
-  const forced =
-    new URLSearchParams(search).get('quality') ??
-    /(?:^|[#-])(low|medium|high)(?:$|-)/.exec(hash)?.[1];
-  if (isTier(forced)) return forced;
+  const forced = forcedTier(search, hash);
+  if (forced) return forced;
   const gpu = device.gpu.toLowerCase();
   if (/swiftshader|llvmpipe|software/.test(gpu)) return 'low';
   if (!device.coarsePointer) return device.cores >= 4 ? 'high' : 'medium';

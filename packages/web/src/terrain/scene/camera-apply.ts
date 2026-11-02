@@ -35,6 +35,14 @@ import type { World } from './world';
 
 const RAD = Math.PI / 180;
 
+/**
+ * The turn about the vertical (radians) that makes the astronaut face
+ * azimuth `yawDeg`. The model's visor is on +z, which a turn of `t` takes
+ * to (sin t, cos t) in x and z; the look is (sin yaw, -cos yaw): so
+ * `t = pi - yaw`, and the astronaut shows its back to a camera behind it.
+ */
+const facingY = (yawDeg: number): number => Math.PI - yawDeg * RAD;
+
 /** Aims the camera and turns the astronaut. */
 export function aimCamera(world: World, mode: CameraMode, look: Look): void {
   const groundY = world.ground(0, 0);
@@ -46,7 +54,7 @@ export function aimCamera(world: World, mode: CameraMode, look: Look): void {
   const { astronaut } = world;
   astronaut.visible = mode === 'third';
   astronaut.position.set(0, groundY, 0);
-  astronaut.rotation.y = -look.yawDeg * RAD;
+  astronaut.rotation.y = facingY(look.yawDeg);
 }
 
 /** «x,y» of `point` on the host, or empty when off screen. */

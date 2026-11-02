@@ -29,9 +29,17 @@
  * detail, the far horizon's backdrop, the ridge and the Sun's shadows.
  */
 import { encodeHeights, encodeProfile, horizonAt, quantiseDeg } from '@ventana/sim';
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { NoTerrainHereError, TerrainNotInstalledError, TransientHorizonError } from '../src/horizon/horizon-errors';
 import { BACKDROP_M, backdropTopDeg, backdropWall, dipDeg } from '../src/terrain/far-horizon';
+import { BufferGeometry, DataTexture, Mesh, MeshLambertMaterial, PerspectiveCamera, Group, Scene, Vector3, type BufferAttribute } from 'three';
+import { markReadyWhenStanding } from '../src/terrain/scene/ready-mark';
+import { disposeStage, type Stage } from '../src/terrain/scene/stage';
+import { createSunMask } from '../src/terrain/scene/sun-mask';
+import { aimCamera } from '../src/terrain/scene/camera-apply';
+import { shadeSun } from '../src/terrain/scene/sky-place';
+import { groundOf } from '../src/terrain/scene/world-ground';
+import type { World } from '../src/terrain/scene/world';
 import { dragLook, keyLook } from '../src/terrain/look-input';
 import { regolithMaps } from '../src/terrain/regolith';
 import { blockerOf, ridgeAlong } from '../src/terrain/ridge';
@@ -41,6 +49,7 @@ import { sunLit } from '../src/terrain/sun-shade';
 import { tileOf, tileUrl, type HeightTile } from '../src/terrain/tile';
 import { askTile, fetchTileSource } from '../src/terrain/tile-fetch';
 import { MOON_RADIUS_M, gridIndex, meshHeights, surfaceHeight, tileBuffers } from '../src/terrain/tile-mesh';
+import { nearestSample } from '../src/terrain/tile-sample';
 import { EYE_M, ORBIT_M, cameraPose, direction, startLook, turnLook } from '../src/terrain/view-camera';
 
 const SITES = 'https://ventana.example/api/v1/sites';
@@ -56,22 +65,45 @@ function tileFrom(h: (east: number, north: number) => number, n = N, sizeM = 400
   return { key: 'k', originEast: 0, originNorth: 0, n, sizeM, heights, resolutionM: 20 };
 }
 
+const SITE_ON_GRID = { lat: -84.79, lonEast: 29.2 };
+
 describe('tileOf and tileUrl', () => {
   const heights = encodeHeights(Float32Array.from({ length: N * N }, (_, i) => i));
   const body = { lat: -84.79, lonEast: 29.2, sizeM: 4000, n: N, groundM: 5321.3, heights, resolutionM: 20 };
 
-  it('reads the API answer into transferable heights, keyed, at the session origin', () => {
-    const tile = tileOf(body);
-    expect(tile).toMatchObject({ key: '-84.79,29.2,4000', originEast: 0, originNorth: 0, n: N, sizeM: 4000, resolutionM: 20 });
+  it('reads the API answer into transferable heights, keyed, centred on the site', () => {
+    const tile = tileOf(body, SITE_ON_GRID);
+    expect(tile).toMatchObject({ key: '-84.79,29.2,4000', n: N, sizeM: 4000, resolutionM: 20 });
+    expect(Math.hypot(tile?.originEast ?? 1, tile?.originNorth ?? 1)).toBeLessThan(1e-6);
     expect(tile?.heights).toBeInstanceOf(Float32Array);
     expect(Array.from(tile?.heights ?? [])).toEqual(Array.from({ length: N * N }, (_, i) => i));
   });
 
   it('refuses an answer that is not a tile: short heights, no side, bad base64', () => {
-    expect(tileOf({ ...body, n: N + 1 })).toBeNull();
-    expect(tileOf({ ...body, n: 'x' })).toBeNull();
-    expect(tileOf({ ...body, heights: '%%' })).toBeNull();
-    expect(tileOf(null)).toBeNull();
+    expect(tileOf({ ...body, n: N + 1 }, SITE_ON_GRID)).toBeNull();
+    expect(tileOf({ ...body, n: 'x' }, SITE_ON_GRID)).toBeNull();
+    expect(tileOf({ ...body, heights: '%%' }, SITE_ON_GRID)).toBeNull();
+    expect(tileOf(null, SITE_ON_GRID)).toBeNull();
+  });
+
+  it('puts the tile’s centre where the grid point is from the site: east and north in metres, the site at the origin', () => {
+    const site = { lat: -84.7912, lonEast: 29.2049 };
+    const tile = tileOf(body, site);
+    const rad = Math.PI / 180;
+    const north = (-84.79 - site.lat) * rad * MOON_RADIUS_M;
+    const east = (29.2 - site.lonEast) * rad * Math.cos(site.lat * rad) * MOON_RADIUS_M;
+    expect(tile?.originNorth).toBeCloseTo(north, 1);
+    expect(tile?.originEast).toBeCloseTo(east, 1);
+    expect(north).toBeGreaterThan(30);
+    expect(east).toBeLessThan(-10);
+  });
+
+  it('wraps the longitude across the seam and stays exact next to the pole', () => {
+    const seam = tileOf({ ...body, lat: -85, lonEast: 0 }, { lat: -85, lonEast: 359.996 });
+    expect(seam?.originEast).toBeCloseTo(0.004 * (Math.PI / 180) * Math.cos((85 * Math.PI) / 180) * MOON_RADIUS_M, 1);
+    const pole = tileOf({ ...body, lat: -89.99, lonEast: 90 }, { lat: -89.9949, lonEast: 90 });
+    expect(pole?.originNorth).toBeCloseTo(0.0049 * (Math.PI / 180) * MOON_RADIUS_M, 0);
+    expect(pole?.originEast ?? 1).toBeCloseTo(0, 3);
   });
 
   it('asks the sites endpoint’s sibling on the 0.01° grid with the size', () => {
@@ -288,6 +320,126 @@ describe('what hides a body', () => {
 });
 
 // The profile codec is the one the API speaks.
+describe('a tile centred off the site', () => {
+  const off = { ...tileFrom((e, n) => 0.5 * e + 0.25 * n), originEast: -60, originNorth: 40 };
+
+  it('keeps the ground under the SITE at the scene origin, not the tile centre', () => {
+    const ground = groundOf([{ tile: off, ys: off.heights }]);
+    // The site is at tile-local (60, -40): 0.5 * 60 + 0.25 * -40 = 20; the centre's ground is 0.
+    expect(ground(0, 0)).toBeCloseTo(20, 4);
+    expect(cameraPose('first', startLook('first', 0), ground(0, 0), ground).position[1]).toBeCloseTo(20 + EYE_M, 4);
+  });
+
+  it('shades the point from the sample nearest the site, not the tile centre', () => {
+    const wide = { ...tileFrom((e) => (e === 100 ? 50 : 0)), originEast: -100, originNorth: 0 };
+    const ys = meshHeights(wide);
+    expect(nearestSample(wide, 0, 0)).toBe(2 * N + 3);
+    const mask = createSunMask();
+    const attribute = { array: new Float32Array(N * N), needsUpdate: false } as unknown as BufferAttribute;
+    const sky = { sunAz: 90, sunEl: 5, earthAz: 0, earthEl: 0 };
+    shadeSun({ tiles: [{ tile: wide, ys }], lit: () => attribute, profile: null, mask }, sky);
+    expect((attribute.array as Float32Array)[2 * N + 2]).toBe(0);
+    expect((attribute.array as Float32Array)[2 * N + 3]).toBe(1);
+    expect(mask.near.value).toBe(1);
+  });
+});
+
+describe('the astronaut’s pose', () => {
+  const worldOf = (ground: (e: number, n: number) => number) => ({
+    stage: { camera: new PerspectiveCamera() }, astronaut: new Group(), ground,
+  }) as unknown as World;
+
+  it('faces where the view looks, its back to the third-person camera', () => {
+    for (const yaw of [0, 37, 90, 180, 251, 359]) {
+      const world = worldOf(() => 0);
+      aimCamera(world, 'third', startLook('third', yaw));
+      const facing = world.astronaut.getWorldDirection(new Vector3());
+      const [dx, , dz] = direction(yaw, 0);
+      expect(facing.x).toBeCloseTo(dx, 6);
+      expect(facing.z).toBeCloseTo(dz, 6);
+      const toCamera = world.stage.camera.position.clone().setY(0).normalize();
+      expect(facing.dot(toCamera)).toBeLessThan(-0.99);
+    }
+  });
+
+  it('stands on the ground at the site', () => {
+    const world = worldOf(() => 7.5);
+    aimCamera(world, 'third', startLook('third', 10));
+    expect(world.astronaut.position.toArray()).toEqual([0, 7.5, 0]);
+  });
+
+  it('has the shipped model’s visor on +z, the way the pose assumes', async () => {
+    const { readFileSync } = await import('node:fs');
+    const { readGlb } = await import('../src/terrain/glb');
+    const file = readFileSync(new URL('../models/astronaut.glb', import.meta.url));
+    const model = readGlb(file.buffer.slice(file.byteOffset, file.byteOffset + file.byteLength));
+    const meanZ = (p: (typeof model.primitives)[number]) => {
+      const a = p.position.array;
+      let sum = 0;
+      for (let i = 2; i < a.length; i += 3) sum += a[i]!;
+      return sum / (a.length / 3);
+    };
+    const [suit, visor] = model.primitives;
+    expect(meanZ(visor!)).toBeGreaterThan(meanZ(suit!));
+  });
+});
+
+describe('leaving the view', () => {
+  it('frees every geometry, material and texture, then the renderer and its GPU context, and takes the canvas out', () => {
+    const geometry = new BufferGeometry();
+    const texture = new DataTexture(new Uint8Array(4), 1, 1);
+    const material = new MeshLambertMaterial({ map: texture });
+    const scene = new Scene();
+    scene.add(new Mesh(geometry, material));
+    const spies = [vi.spyOn(geometry, 'dispose'), vi.spyOn(material, 'dispose'), vi.spyOn(texture, 'dispose')];
+    const renderer = { dispose: vi.fn(), forceContextLoss: vi.fn(), domElement: { remove: vi.fn() } };
+    disposeStage({ renderer, scene, camera: new PerspectiveCamera() } as unknown as Stage);
+    for (const spy of spies) expect(spy).toHaveBeenCalledTimes(1);
+    expect(renderer.dispose).toHaveBeenCalledTimes(1);
+    expect(renderer.forceContextLoss).toHaveBeenCalledTimes(1);
+    expect(renderer.domElement.remove).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe('the host’s ready mark', () => {
+  const deferred = () => {
+    let done = () => {};
+    const promise = new Promise<void>((resolve) => { done = resolve; });
+    return { promise, done };
+  };
+  const flush = () => new Promise((resolve) => setTimeout(resolve, 0));
+
+  it('is set when the astronaut stands, and the view draws again', async () => {
+    const host = { dataset: {} as DOMStringMap };
+    const standing = deferred();
+    const drawn = vi.fn();
+    markReadyWhenStanding(host, standing.promise, drawn);
+    expect(host.dataset['ready']).toBeUndefined();
+    standing.done();
+    await flush();
+    expect(host.dataset['ready']).toBe('true');
+    expect(drawn).toHaveBeenCalledTimes(1);
+  });
+
+  it('starts clear on a host a previous scene marked, and a stale astronaut never marks the new scene', async () => {
+    const host = { dataset: { ready: 'true' } as DOMStringMap };
+    const stale = deferred();
+    const cancelStale = markReadyWhenStanding(host, stale.promise, vi.fn());
+    expect(host.dataset['ready']).toBeUndefined();
+    cancelStale();
+    const fresh = deferred();
+    const drawn = vi.fn();
+    markReadyWhenStanding(host, fresh.promise, drawn);
+    stale.done();
+    await flush();
+    expect(host.dataset['ready']).toBeUndefined();
+    fresh.done();
+    await flush();
+    expect(host.dataset['ready']).toBe('true');
+    expect(drawn).toHaveBeenCalledTimes(1);
+  });
+});
+
 it('round-trips the wall profile', () => {
   expect(encodeProfile(wallProfile()).length).toBe(1920);
 });

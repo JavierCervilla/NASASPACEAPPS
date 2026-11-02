@@ -33,6 +33,7 @@ import type { BufferAttribute, Vector3 } from 'three';
 import type { HorizonProfile } from '@ventana/sim';
 import { blockerOf, ridgeAlong } from '../ridge';
 import { sunLit } from '../sun-shade';
+import { nearestSample } from '../tile-sample';
 import { direction } from '../view-camera';
 import type { PlacedTile, SkyDirs } from './scene-types';
 import { EARTH_M, SUN_M, type SkyParts } from './sky';
@@ -73,8 +74,9 @@ export function shadeSun(shading: Shading, sky: SkyDirs): void {
       (attribute.array as Float32Array).set(lit);
       attribute.needsUpdate = true;
     }
-    const { n } = placed.tile;
-    if (placed === shading.tiles[0]) centre = lit[((n * n) - 1) / 2] ?? 1;
+    if (placed === shading.tiles[0]) {
+      centre = lit[nearestSample(placed.tile, 0, 0)] ?? 1;
+    }
   }
   const first = shading.tiles[0];
   const ridge = first ? ridgeAlong(first.tile, first.ys, sun.azDeg) : null;

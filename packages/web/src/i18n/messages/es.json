@@ -7,7 +7,6 @@
   "view.polar": "Mapa polar",
   "view.dsn": "DSN",
   "view.horizon": "Horizonte",
-  "view.soon": "Próximamente",
   "lang.label": "Idioma",
   "lang.button": "Idioma: {name}",
   "lang.back": "Atrás",
@@ -181,8 +180,6 @@
   "tabs.dsn": "DSN",
   "tabs.horizon": "Horizonte",
   "tabs.sites": "Lugares",
-  "tabs.soon": "pronto",
-  "tabs.soonLabel": "{label} (pronto)",
   "calendar.label": "Calendario",
   "calendar.shares": "Porcentaje del mes",
   "calendar.legend": "Leyenda",
@@ -377,6 +374,6 @@
   "onFoot.altFirst": "Primera persona, ojos a 2 m del suelo. Rumbo de la vista {deg}°, {dir}.",
   "onFoot.ridgeHidesSun": "Una cresta de {height} m, a {distance} km, oculta el Sol.",
   "onFoot.ridgeHidesEarth": "Una cresta de {height} m, a {distance} km, oculta la Tierra.",
-  "onFoot.farHidesSun": "Terreno a más de {distance} km oculta el Sol.",
-  "onFoot.farHidesEarth": "Terreno a más de {distance} km oculta la Tierra."
+  "onFoot.farHidesSun": "El terreno a más de {distance} km oculta el Sol.",
+  "onFoot.farHidesEarth": "El terreno a más de {distance} km oculta la Tierra."
 }

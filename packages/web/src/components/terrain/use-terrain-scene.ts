@@ -60,6 +60,7 @@ interface Mount {
 function mountScene(m: Mount): () => void {
   let live = true;
   let off: (() => void) | undefined;
+  m.onStatus('loading');
   void import('../../terrain/scene/terrain-scene').then((module) => {
     const input = m.latest.current;
     if (!live || !input) return;

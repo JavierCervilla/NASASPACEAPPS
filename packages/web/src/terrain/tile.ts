@@ -33,6 +33,7 @@
 import { decodeHeights } from '@ventana/sim';
 import type { LatLon } from '../lib/polar-projection';
 import { snapPoint } from '../pin/custom-point';
+import { offsetFrom } from './site-offset';
 
 /** Our choice (the human's): a 4 km square, 15.6 m between samples. */
 export const TILE_SIZE_M = 4_000;
@@ -40,8 +41,8 @@ export const TILE_SIZE_M = 4_000;
 /**
  * One tile as the scene takes it: transferable numbers only (a Web Worker
  * may build it), placed by `key` in the session's local frame (metres
- * east and north of the point the view opened on), so tiles can later sit
- * side by side.
+ * east and north of the site the view opened on, which is the origin), so
+ * tiles can later sit side by side.
  */
 export interface HeightTile {
   /** Names the tile: the scene keeps, replaces and frees tiles by it. */
@@ -106,19 +107,25 @@ const isSide = (value: unknown): value is number =>
 /**
  * The tile in the API's answer, or null when it is not one: a side that
  * is not a number, heights that do not decode or do not fill the grid.
+ * The API centres it on the 0.01° grid, so it is placed by where that
+ * centre lies from `site`, which stays at the origin.
  */
-export function tileOf(body: unknown): HeightTile | null {
+export function tileOf(body: unknown, site: LatLon): HeightTile | null {
   const answer = (body ?? {}) as Answer;
   const { n, sizeM, heights, resolutionM } = answer;
   if (!isSide(n) || typeof heights !== 'string') return null;
   if (typeof sizeM !== 'number' || !(sizeM > 0)) return null;
   if (typeof resolutionM !== 'number') return null;
+  const { lat, lonEast } = answer;
+  if (!Number.isFinite(lat) || !Number.isFinite(lonEast)) return null;
   try {
     const values = decodeHeights(heights);
     if (values.length !== n * n) return null;
     const key = `${String(answer.lat)},${String(answer.lonEast)},${sizeM}`;
-    const at = { key, originEast: 0, originNorth: 0 };
-    return { ...at, n, sizeM, heights: values, resolutionM };
+    const centre = { lat: Number(lat), lonEast: Number(lonEast) };
+    const { east, north } = offsetFrom(site, centre);
+    const origin = { originEast: east, originNorth: north };
+    return { key, ...origin, n, sizeM, heights: values, resolutionM };
   } catch {
     return null;
   }

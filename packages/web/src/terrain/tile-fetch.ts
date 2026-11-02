@@ -68,7 +68,7 @@ export function fetchTileSource(
         throw new TransientHorizonError(null, `tile: ${String(error)}`);
       });
       if (!response.ok) throw await failureOf(response);
-      const tile = tileOf(await response.json().catch(() => null));
+      const tile = tileOf(await response.json().catch(() => null), point);
       if (!tile) throw new TransientHorizonError(null, 'tile: not a tile');
       return tile;
     },

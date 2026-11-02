@@ -45,6 +45,26 @@ const SHOTS = process.env.VENT34_SHOTS;
 /** The view's files, never in the first load (scripts/service-worker.mjs ON_DEMAND). */
 const VIEW_FILES = /\/_astro\/(TerrainPanel|terrain-scene|on-foot|astronaut)\.|\/api\/v1\/terrain\/tile/;
 const START_MS = 30_000;
+/**
+ * A string only the view's panel and only its scene carry (OnFootStageArea's host class, sun-mask.ts's uniform): a
+ * static import of either lands it in the first load whatever the chunk is called, which VIEW_FILES cannot see.
+ */
+const PANEL_MARK = 'on-foot__host';
+const SCENE_MARK = 'uSunMask';
+
+/** Keeps the text of every script the page loads, by URL, until `done` settles them. */
+function collectScripts(page: Page): { readonly done: () => Promise<Map<string, string>> } {
+  const texts = new Map<string, string>();
+  const reads: Promise<void>[] = [];
+  page.on('response', (response) => {
+    if (!/\.js(\?|$)/.test(response.url())) return;
+    reads.push(response.text().then((text) => void texts.set(response.url(), text)).catch(() => undefined));
+  });
+  return { done: async () => (await Promise.all(reads), texts) };
+}
+
+const carrying = (texts: Map<string, string>, mark: string): string[] =>
+  [...texts].filter(([, text]) => text.includes(mark)).map(([url]) => url);
 
 interface Open {
   readonly path: string;
@@ -55,12 +75,39 @@ interface Open {
   readonly real?: Date;
 }
 
+/** Counts the WebGL contexts the page gives up (`WEBGL_lose_context.loseContext`, what forceContextLoss calls). */
+async function countLostContexts(page: Page): Promise<void> {
+  await page.addInitScript(() => {
+    const w = window as unknown as { __lostContexts: number };
+    w.__lostContexts = 0;
+    for (const Context of [WebGLRenderingContext, WebGL2RenderingContext]) {
+      const proto = Context.prototype as unknown as { getExtension: (this: unknown, name: string) => unknown };
+      const getExtension = proto.getExtension;
+      proto.getExtension = function (this: unknown, name: string) {
+        const extension = getExtension.call(this, name) as { loseContext?: () => void } | null;
+        const lose = extension?.loseContext;
+        if (name === 'WEBGL_lose_context' && extension && lose) {
+          extension.loseContext = function (...args: []) {
+            w.__lostContexts += 1;
+            return lose.apply(this, args);
+          };
+        }
+        return extension;
+      };
+    }
+  });
+}
+
+const lostContexts = (page: Page): Promise<number> =>
+  page.evaluate(() => (window as unknown as { __lostContexts: number }).__lostContexts);
+
 async function open(page: Page, { path, wall = [300, 330], requests, real }: Open): Promise<void> {
   await page.clock.setFixedTime(real ?? AT);
   await page.addInitScript(() => {
     localStorage.setItem('ventana.dataSource', 'computed');
     localStorage.setItem('ventana.pinHint', 'seen');
   });
+  await countLostContexts(page);
   if (requests) page.on('request', (request) => requests.push(request.url()));
   await stubApi(page);
   if (real) await stubRealRelief(page);
@@ -116,14 +163,21 @@ test.describe('desktop, 1440x900', () => {
 
   test('the Horizon tab opens in third person, toggles to first person, and says what is illustrative', async ({ page }) => {
     const requests: string[] = [];
+    const scripts = collectScripts(page);
     await open(page, { path: `./${POINT}`, requests });
     await expect(page.locator('.globe-viewport')).toBeVisible();
     await page.waitForLoadState('networkidle');
     expect(requests.filter((url) => VIEW_FILES.test(url))).toEqual([]);
+    const first = await scripts.done();
+    expect(carrying(first, PANEL_MARK)).toEqual([]);
+    expect(carrying(first, SCENE_MARK)).toEqual([]);
     await page.getByRole('navigation', { name: 'View' }).getByRole('link', { name: 'Horizon' }).click();
     await expect(page).toHaveURL(/#horizon$/);
     await settled(page);
     expect(requests.some((url) => /terrain-scene\./.test(url))).toBe(true);
+    const all = await scripts.done();
+    expect(carrying(all, PANEL_MARK)).not.toEqual([]);
+    expect(carrying(all, SCENE_MARK)).not.toEqual([]);
     await expect(host(page)).toHaveAttribute('data-mode', 'third');
     const modes = view(page).getByRole('radiogroup', { name: 'Camera' });
     await expect(modes.getByRole('radio', { name: 'Third person' })).toHaveAttribute('aria-checked', 'true');
@@ -196,9 +250,13 @@ test.describe('phone, 390x844', () => {
 
   test('the Horizon tab fills the screen with the ground, third person first, the sheet at peek', async ({ page }) => {
     const requests: string[] = [];
+    const scripts = collectScripts(page);
     await open(page, { path: `./${POINT}`, requests });
     await page.waitForLoadState('networkidle');
     expect(requests.filter((url) => VIEW_FILES.test(url))).toEqual([]);
+    const first = await scripts.done();
+    expect(carrying(first, PANEL_MARK)).toEqual([]);
+    expect(carrying(first, SCENE_MARK)).toEqual([]);
     await page.getByRole('navigation', { name: 'Views' }).getByRole('button', { name: 'Horizon' }).click();
     await expect(page).toHaveURL(/#horizon$/);
     await settled(page);
@@ -218,6 +276,7 @@ test.describe('phone, 390x844', () => {
     await page.getByRole('navigation', { name: 'Views' }).getByRole('button', { name: 'Globe' }).click();
     await expect(page.locator('.globe')).toBeVisible();
     await expect(view(page)).toHaveCount(0);
+    await expect.poll(() => lostContexts(page)).toBeGreaterThanOrEqual(1);
   });
 
   test('IM-2 on its real LOLA relief, third person then first, the sheet at peek', async ({ page }) => {

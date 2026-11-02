@@ -35,6 +35,7 @@ import { pickQuality } from '../../globe/quality-pick';
 import { isPhoneViewport } from '../../lib/viewport';
 import { startLook, type Look } from '../view-camera';
 import { loadAstronaut } from './astronaut';
+import { markReadyWhenStanding } from './ready-mark';
 import { bindLook } from './controls';
 import { framer, type ViewState } from './scene-frame';
 import { controller, turner } from './scene-controller';
@@ -79,11 +80,11 @@ export function mountTerrainScene(
   const set = turner(view, hooks, () => loop);
   applyInput(world, input);
   const unbind = bindHost(host, world, view, set);
-  void loadAstronaut(world.astronaut, world.mask, console.warn).then(() => {
-    host.dataset['ready'] = 'true';
-    loop.invalidate();
-  });
+  const standing = loadAstronaut(world.astronaut, world.mask, console.warn);
+  const unmark = markReadyWhenStanding(host, standing, () =>
+    loop.invalidate());
   const teardown = (): void => {
+    unmark();
     loop.stop();
     unbind();
     labels.root.remove();

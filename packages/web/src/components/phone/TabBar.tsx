@@ -52,24 +52,19 @@ interface Tab {
   readonly icon: IconName;
   readonly label: string;
   readonly current?: boolean;
-  readonly onClick?: () => void;
+  readonly onClick: () => void;
 }
 
 function TabButton({ icon, label, current, onClick }: Tab) {
-  const soon = onClick === undefined;
-  const { t } = useI18n();
   return (
     <button
       type="button"
       className="tab"
       aria-current={current ? 'true' : undefined}
-      aria-disabled={soon ? 'true' : undefined}
-      aria-label={soon ? t('tabs.soonLabel', { label }) : undefined}
       onClick={onClick}
     >
       <Icon name={icon} />
       <span>{label}</span>
-      {soon ? <span className="tab__soon">{t('tabs.soon')}</span> : null}
     </button>
   );
 }

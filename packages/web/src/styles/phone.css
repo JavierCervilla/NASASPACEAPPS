@@ -409,16 +409,30 @@
 /*
  * Taller than the full sheet (a narrow phone at 200 % text, VENT-44): the
  * half sheet stops at full and the summary scrolls (src/sheet/
- * sheet-scroll.ts), its end clear of the tab bar by 12 px: --tab-clear is
- * the tab bar's reach from the bottom, 96px the sheet's own padding.
+ * sheet-scroll.ts), its end 12 px over the tab bar: --tab-clear is the tab
+ * bar's reach from the bottom, 96px the sheet's own padding, so the margin
+ * may be negative.
  */
 .summary[data-sheet-scroll] {
   flex: 0 1 auto;
   min-height: 0;
+  margin-bottom: calc(var(--tab-clear, 84px) + 12px - 96px);
   overflow-y: auto;
   overscroll-behavior: contain;
   touch-action: pan-y;
-  padding-bottom: max(0px, calc(var(--tab-clear, 0px) + 12px - 96px));
+}
+
+/*
+ * At its top, the summary leaves a finger pulling down to the sheet's drag
+ * (pan-down keeps only the scroll a finger pushing up starts); below the
+ * sheet's top, every move drags the sheet (src/sheet/sheet-pull.ts).
+ */
+.summary[data-sheet-scroll][data-sheet-pull='down'] {
+  touch-action: pan-down;
+}
+
+.summary[data-sheet-scroll][data-sheet-pull='any'] {
+  touch-action: none;
 }
 
 /* Below the head, the summary fades out towards peek, where only the

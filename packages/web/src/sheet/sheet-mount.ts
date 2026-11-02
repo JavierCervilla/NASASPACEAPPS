@@ -31,10 +31,11 @@
  * rises to fit (sheet-lift.ts).
  */
 import { createLoop, type Loop } from '../globe/loop';
-import { bindSheetDrag } from './sheet-drag';
+import { bindSheetDrag, type DragAllowance } from './sheet-drag';
 import { edgeDragTarget } from './sheet-edge-drag';
 import { halfLiftPx, watchLift } from './sheet-lift';
 import { SheetMotion } from './sheet-motion';
+import { sheetPull } from './sheet-pull';
 import { scrollingHalf } from './sheet-scroll';
 import {
   detentsFor,
@@ -58,7 +59,7 @@ export interface SheetMountOptions {
   /** Each frame, the sheet's top edge in px from the viewport's top. */
   readonly onEdge: (top: number) => void;
   /** Whether a press may drag the sheet (not inside a scrolling list). */
-  readonly canDrag: (event: PointerEvent) => boolean;
+  readonly canDrag: (event: PointerEvent) => DragAllowance;
   /** Where a drag up opens the closed sheet (the tab bar); null: none. */
   readonly edge: HTMLElement | null;
   /** The top bar the full sheet stays under; null: the canvas's gap. */
@@ -178,19 +179,18 @@ export function mountSheet(
   const layout = (): SheetLayout => layoutUnder(frame);
   const detents = detentsFor(heightPx(), layout());
   const state = createSheetState(detents, options.start);
-  const loop = sheetLoop(el, state, options);
+  // The summary that scrolls takes its share of the drags (sheet-pull.ts).
+  const own = { ...options, ...sheetPull(el, state, options) };
+  const loop = sheetLoop(el, state, own);
   const invalidate = (): void => loop.invalidate();
   const { reducedMotion, onDetent } = options;
   const deps = { heightPx, layout, reducedMotion, invalidate, onDetent };
   const motion = new SheetMotion(state, deps);
-  const unbind = bindDrags(el, { state, motion, options });
+  const unbind = bindDrags(el, { state, motion, options: own });
   const unwatch = watchLayout(frame, state, motion);
   placeSheet(el, state.axis.value, state.detents);
   invalidate();
-  const dispose = (): void => {
-    loop.stop();
-    unbind();
-    unwatch();
-  };
+  const stops = [() => loop.stop(), unbind, unwatch, own.dispose];
+  const dispose = (): void => stops.forEach((stop) => stop());
   return { motion, dispose };
 }

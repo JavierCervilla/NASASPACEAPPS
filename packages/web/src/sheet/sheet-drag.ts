@@ -39,6 +39,12 @@ export interface SheetDragTarget {
   release(vy: number): void;
 }
 
+/**
+ * What a press may do to the sheet: drag it, not, or drag it only if it
+ * first moves down (a scrolled-to-top summary, sheet-pull.ts).
+ */
+export type DragAllowance = boolean | 'down';
+
 type PointerType =
   | 'pointerdown'
   | 'pointermove'
@@ -49,7 +55,8 @@ type PointerType =
 const DRAG_THRESHOLD_PX = 6;
 
 class SheetGesture {
-  private press: { id: number; y: number } | null = null;
+  private press: { id: number; y: number; downOnly: boolean } | null =
+    null;
   private lastY = 0;
   private tracker = new VelocityTracker();
   private dragging = false;
@@ -62,11 +69,12 @@ class SheetGesture {
   ) {}
 
   /** Every press clears the click flag, even one that may not drag. */
-  down(event: PointerEvent, allowed: boolean): void {
+  down(event: PointerEvent, allowed: DragAllowance): void {
     this.swallowClick = false;
     if (!allowed || this.press) return;
     if (!event.isPrimary || event.button !== 0) return;
-    this.press = { id: event.pointerId, y: event.clientY };
+    const downOnly = allowed === 'down';
+    this.press = { id: event.pointerId, y: event.clientY, downOnly };
     this.lastY = event.clientY;
     this.tracker = new VelocityTracker();
     this.tracker.add(0, event.clientY, event.timeStamp);
@@ -77,6 +85,10 @@ class SheetGesture {
     if (!press || event.pointerId !== press.id) return;
     const moved = Math.abs(event.clientY - press.y);
     if (!this.dragging && moved < DRAG_THRESHOLD_PX) return;
+    if (!this.dragging && press.downOnly && event.clientY < press.y) {
+      this.press = null;
+      return;
+    }
     if (!this.dragging) {
       this.dragging = true;
       this.el.setPointerCapture(event.pointerId);
@@ -112,7 +124,7 @@ class SheetGesture {
 export function bindSheetDrag(
   el: HTMLElement,
   target: SheetDragTarget,
-  canDrag: (event: PointerEvent) => boolean,
+  canDrag: (event: PointerEvent) => DragAllowance,
   moves: EventTarget = el,
 ): () => void {
   const gesture = new SheetGesture(el, target);

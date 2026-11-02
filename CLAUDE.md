@@ -274,8 +274,9 @@ Every visible change follows `.claude/skills/apple-design/SKILL.md` (vendored fr
   phone's half sheet rises (never under its 344 px) until the summary's lowest line
   (`data-sheet-fit`, measured from the content's bottom) clears the tab bar by 12 px, at any width, language and text
   size (`src/sheet/sheet-lift.ts`); when even the full detent is too short (200 % text on a phone), it stops there and
-  the summary scrolls instead (`data-sheet-scroll`, `src/sheet/sheet-scroll.ts`), a press inside it scrolling rather
-  than dragging the sheet. For the Mooner session,
+  the summary scrolls instead (`data-sheet-scroll`, `src/sheet/sheet-scroll.ts`), its last line 12 px over the tab bar;
+  as on iOS, a finger pulling down on it at its top drags the sheet, any other move scrolls it, and below its top the
+  sheet drags from it both ways (`src/sheet/sheet-pull.ts`). For the Mooner session,
   `packages/sim/data/psr-flags.json` lists every curated site south of 80° S with `{id, lat, lon, avgSun, psrShare,
   onPsrFloor}` and a provenance header; `packages/server/tests/sites.test.ts` holds `sites.json` to it. Held by
   `tests/e2e/shadow.spec.ts`.

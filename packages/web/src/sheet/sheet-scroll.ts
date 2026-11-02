@@ -28,7 +28,7 @@
  * phone at 200 % text, VENT-44), the half sheet stops at full and its
  * content scrolls instead, so every line can be reached. Only then: a
  * content that fits keeps dragging the sheet (`data-sheet-scroll` makes a
- * press inside it scroll, never drag, components/phone/Sheet.tsx).
+ * press inside it scroll; sheet-pull.ts says when it drags the sheet).
  */
 import type { SheetLayout } from './sheet-physics';
 

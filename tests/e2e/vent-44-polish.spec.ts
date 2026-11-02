@@ -124,3 +124,73 @@ test.describe('phone, 360x740, 200 % text, Haworth', () => {
     expect((await page.locator('.sheet').boundingBox())!.y).toBe(sheetTop);
   });
 });
+
+/**
+ * At 100 % text in Spanish, Haworth's summary (shadow note, horizon strip, computed caption) is taller than the full
+ * detent, so it scrolls. As an iOS sheet does, a finger pulling down on it while it shows its top drags the sheet down
+ * to a lower detent; a finger pushing up scrolls it until its last line sits 12 px above the tab bar.
+ */
+test.describe('phone, 360x740, es, 100 % text, Haworth: a scrolling summary', () => {
+  test.use({ viewport: { width: 360, height: 740 }, hasTouch: true, isMobile: true });
+
+  async function scrollingSummary(page: Page) {
+    await open(page, './es/?site=artemis-haworth');
+    const summary = page.locator('.sheet [data-sheet-fit]');
+    await expect(summary.locator('.widget').first()).toBeVisible({ timeout: GLOBE_START_MS });
+    await expect(page.locator('.sheet')).not.toHaveAttribute('data-moving', { timeout: 30_000 });
+    // The precondition QA found: the summary outgrows the full detent and scrolls.
+    await expect(summary).toHaveAttribute('data-sheet-scroll');
+    return summary;
+  }
+
+  /**
+   * One finger from `from` to `to` (y) at `x`, in 10 px steps, through CDP as on a phone; `holdMs` keeps it still
+   * before it lifts, so the release carries no velocity and the sheet snaps by position alone.
+   */
+  async function swipe(page: Page, x: number, from: number, to: number, holdMs = 0): Promise<void> {
+    const cdp = await page.context().newCDPSession(page);
+    const step = to > from ? 10 : -10;
+    await cdp.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [{ x, y: from }] });
+    for (let y = from + step; step > 0 ? y <= to : y >= to; y += step) {
+      await cdp.send('Input.dispatchTouchEvent', { type: 'touchMove', touchPoints: [{ x, y }] });
+    }
+    if (holdMs > 0) await page.waitForTimeout(holdMs);
+    await cdp.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] });
+  }
+
+  const sheetTop = async (page: Page): Promise<number> => (await page.locator('.sheet').boundingBox())!.y;
+
+  test('a swipe down on the summary at its top drags the sheet down to a lower detent', async ({ page }) => {
+    const summary = await scrollingSummary(page);
+    const top = await sheetTop(page);
+    const box = (await summary.boundingBox())!;
+    const x = Math.round(box.x + box.width / 2);
+    const from = Math.round(box.y + 80);
+    // Held still at the end: 1:1 under the finger, then the nearest detent below.
+    await swipe(page, x, from, from + 300, 400);
+    await expect(page.locator('.sheet')).toHaveAttribute('data-detent', 'peek');
+    await expect(page.locator('.sheet')).not.toHaveAttribute('data-moving', { timeout: 30_000 });
+    expect(await sheetTop(page)).toBeGreaterThan(top + 200);
+    // Lowered, the summary drags the sheet both ways: a swipe up on its head brings it back to its top.
+    const head = (await summary.locator('.summary__head').boundingBox())!;
+    const y = Math.round(head.y + head.height / 2);
+    await swipe(page, x, y, y - 300);
+    await expect(page.locator('.sheet')).toHaveAttribute('data-detent', /^(half|full)$/);
+    await expect(page.locator('.sheet')).not.toHaveAttribute('data-moving', { timeout: 30_000 });
+    expect(await sheetTop(page)).toBe(top);
+  });
+
+  test('a swipe up scrolls the summary until its last line sits 12 px above the tab bar', async ({ page }) => {
+    const summary = await scrollingSummary(page);
+    const top = await sheetTop(page);
+    const box = (await summary.boundingBox())!;
+    const x = Math.round(box.x + box.width / 2);
+    for (let n = 0; n < 3; n += 1) await swipe(page, x, Math.round(box.y + box.height - 40), Math.round(box.y + 60));
+    const tabsTop = (await page.getByRole('navigation', { name: 'Vistas' }).boundingBox())!.y;
+    const lastLine = (): Promise<number> => summary.evaluate((el) =>
+      Math.max(...[...el.children].map((c) => c.getBoundingClientRect()).filter((b) => b.height > 0).map((b) => b.bottom)));
+    await expect.poll(lastLine).toBeLessThanOrEqual(tabsTop - 12 + 1);
+    expect(await lastLine()).toBeGreaterThanOrEqual(tabsTop - 12 - 2);
+    expect(await sheetTop(page)).toBe(top);
+  });
+});

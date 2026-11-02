@@ -3,6 +3,12 @@
 ## [Sin publicar]
 
 ### Cambiado
+- El astronauta de la vista 3D «Horizon» es ahora una figura con esqueleto (VENT-34): un traje EVA generado con Meshy,
+  de 1,91 m, sin banderas, logos ni insignias (se borraron del mapa de color las dos que el generador pintó por su
+  cuenta), que sustituye al modelo de NASA 3D Resources y su textura. Se carga con `GLTFLoader` solo cuando se abre la
+  vista (el globo del inicio no crece) y está de pie con su animación de reposo; esa animación solo avanza en los
+  fotogramas que la vista ya dibuja al girar o cargar, así que una vista quieta sigue sin dibujar nada, y con «reducir
+  movimiento» no se mueve. Su animación de andar queda cargada para más adelante.
 - La vista 3D «Horizon» dibuja ahora relieve real en anillos hasta el horizonte (VENT-46). En lugar de una sola
   tesela de 4 km con un muro plano a 6 km, la web pide a la API las teselas alineadas por niveles de detalle y las
   dibuja como geometría: el suelo de al lado (nivel 0, nodos de 15,6 m), el relieve medio (8 km), y el lejano (32 y

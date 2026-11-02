@@ -204,7 +204,7 @@ list (Mons Mouton uses Mons Mouton Plateau's; Nobile Rims 1 and 2 use Griffin-1'
 
 | File | Size | sha256 |
 |---|---|---|
-| `packages/web/models/astronaut.glb` | glTF 2.0 binary, 4 122 vertices, 6 381 triangles, no texture inside, 138 880 bytes; build input only, never shipped | `977be426b398161cde6a15fa70dfccc9d434d8dcffc86099e4c2f23e2f28c70e` |
+| `packages/web/models/astronaut.glb` | glTF 2.0 binary, 4 122 vertices, 6 381 triangles, no texture inside, 138 880 bytes; build input of the sprite bake only, never shipped; the on-foot view no longer reads it | `977be426b398161cde6a15fa70dfccc9d434d8dcffc86099e4c2f23e2f28c70e` |
 | `packages/web/models/astronaut-suit.webp` | the suit texture, 512 x 512 WebP, 11 630 bytes; build input only, never shipped | `c362b0560504a1a6f93059c1466bd08a05846b16746b2522110a4afca7aef312` |
 | `packages/web/src/astronaut/figures.webp` | the sprite sheet, kept for VENT-34 and not shipped since VENT-37, 900 x 440 lossless WebP (2 rows x 5 columns of 180 x 220), 76 642 bytes | `1b4b694ce7a15550b660022d670c8bedec4259377dee66b40fc9a5a5e6df6a22` |
 | `packages/web/src/astronaut/figures.json` | its manifest: layout, cell, visor colours, size and sha256 of the sheet | `553f54dcf34ef67c3a87d2d781695d11b8d3dd64a97ed59adf5d186e01959beb` |
@@ -497,5 +497,5 @@ All load on demand with the 3D view (file names `on-foot-*`, left out of the pre
   with WebP textures by URI (`EXT_texture_webp`). The armature keeps Meshy's centimetre bones under a 0.01 root
   scale; the figure is in metres, +Y up, facing +Z, feet on the origin. The rest pose is Meshy's rig pose (arms out);
   the `idle` clip lowers the arms to the sides. Credits for the whole asset: 44 (of the session's 104; the other
-  candidates and their renders are in the trajectory's notes). Read with three's GLTFLoader and an AnimationMixer, not `glb.ts`.
+  candidates and their renders are in the trajectory's notes). Read with three's GLTFLoader and an AnimationMixer, not `glb.ts`: the on-foot view loads it (`scene/astronaut.ts`) from the scene's chunk, the three maps through a loading manager's URL modifier, `idle` pinned to a pose and moved only by drawn frames, `walk` loaded and unused until VENT-48.
 

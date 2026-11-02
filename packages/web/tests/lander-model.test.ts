@@ -78,10 +78,4 @@ describe('the maps the shipped glbs name', () => {
     expect(primitives.some((p) => Math.abs((p.maps.normal?.scale ?? 1) - 0.35) < 1e-6)).toBe(true);
     expect(primitives.every((p) => !p.maps.normal?.clamp)).toBe(true);
   });
-
-  it('leaves the astronaut, which has no textures in its glb, with empty slots', () => {
-    for (const p of load('astronaut.glb').primitives) {
-      expect(p.maps).toEqual({ map: null, normal: null, occlusion: null, metalRough: null });
-    }
-  });
 });

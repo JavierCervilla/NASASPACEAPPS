@@ -67,6 +67,7 @@ export function framer(
   const frame = (dt: number): boolean => {
     const { stage } = world;
     const coasting = coast(view, dt, hooks);
+    world.idle?.advance(dt);
     fitStage(stage, host, hooks.band?.() ?? null);
     aimCamera(world, view.mode, view.look);
     stage.renderer.render(stage.scene, stage.camera);

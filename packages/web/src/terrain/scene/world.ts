@@ -38,6 +38,7 @@ import { backdropM } from '../ring/ring-plan';
 import type { RingLayer } from './ring-layer';
 import type { FarShade } from './ring-shade';
 import { applyRings } from './world-rings';
+import type { Idle } from './astronaut-idle';
 import { createSlicer, type Slicer } from './slicer';
 import { ringsMesh } from './rings';
 import { placeLander } from './lander-place';
@@ -54,6 +55,8 @@ export interface World {
   readonly mask: SunMask;
   readonly sky: SkyParts;
   readonly astronaut: Group;
+  /** The astronaut's idle once loaded: moved only by drawn frames. */
+  idle: Idle | null;
   /** The lander's holder: placed on the ground, filled when it loads. */
   readonly lander: Group;
   near: Group;
@@ -74,7 +77,7 @@ export function createWorld(stage: Stage, seed: number, shadowPx: number) {
   const mask = createSunMask();
   const slicer = createSlicer({ invalidate: () => world.invalidate() });
   const world: World = { stage, mask, sky: createSky(seed, shadowPx),
-    astronaut: new Group(), lander: new Group(), near: new Group(),
+    astronaut: new Group(), idle: null, lander: new Group(), near: new Group(),
     ground: () => 0,
     material: groundMaterial(mask), backdrop: null, input: null,
     rings: null, farShade: null, slicer, invalidate: () => undefined };

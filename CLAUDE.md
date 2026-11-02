@@ -214,10 +214,10 @@ Every visible change follows `.claude/skills/apple-design/SKILL.md` (vendored fr
   right of the Layers key's column (in rem, so it holds at 200 % text), centred over the globe and in the polar
   panel's top right corner, so it never covers the key; gone after the first drop
   or its ✕, kept in `localStorage` (`ventana.pinHint`, refused storage only brings it back next visit). The
-  astronaut came back in VENT-34's on-foot view (below), which loads its model only when that view opens: NASA's
-  «Astronaut» model (`packages/web/models/astronaut.glb` and its suit
+  astronaut came back in VENT-34's on-foot view (below), which loads its own model (a rigged Meshy figure) only when
+  that view opens. NASA's «Astronaut» model (`packages/web/models/astronaut.glb` and its suit
   texture `astronaut-suit.webp`, built by `packages/web/scripts/astronaut.mjs`: arms lowered, the NASA insignia and
-  the mission patch covered with fabric, the US flags kept) and its offline bake, `scripts/astronaut-figures.mjs`
+  the mission patch covered with fabric, the US flags kept) now only feeds the offline bake, `scripts/astronaut-figures.mjs`
   (Playwright's Chromium pinned to SwiftShader, byte-stable; `--check` re-bakes and compares), into the lossless
   sprite sheet `src/astronaut/figures.webp` (77 kB, manifest `figures.json`, held by
   `tests/astronaut-figures.test.ts`): two poses times five visor colours. The desktop Layers key is a 17rem column
@@ -420,10 +420,15 @@ Every visible change follows `.claude/skills/apple-design/SKILL.md` (vendored fr
   not a PMREM environment map, which cost about 9 s of software GL to bake. Rings at 25, 100 and 500 m with HTML labels, and the ridge that
   hides a body labelled with its height and distance (`on-foot-model.ts`); a text alternative says the heading, where
   each body is and what hides it (`view-alt.ts`); the desktop view keeps the horizon strip under it. The astronaut is
-  read by a small glb reader (`glb.ts`, with its UVs) and wears its suit texture (`models/astronaut-suit.webp`, which the
-  glb does not carry) on a `MeshStandardMaterial`, not GLTFLoader, whose classes would join the Three.js chunk the globe
-  loads at start (the scene builds its shapes itself for the same reason); the standard material, ACES and the Earth's
-  shader added 1.9 kB (0.4 %) to that chunk, the one cost of this look. Performance: the panel
+  a rigged, generated figure (Meshy, `models/astronaut-meshy.glb` and its three WebP maps, ASSETS.md; no flags, logos or
+  insignia: the generator's two stray marks were painted out), 1.91 m, read by three's `GLTFLoader` (VENT-34), which
+  only the scene's chunk imports (`scene/astronaut.ts`: the glb's maps are named by URI and a `LoadingManager`
+  URL modifier maps each to the file the bundler shipped, `scene/astronaut-assets.ts`), so the globe's start chunk
+  never carries it. Its `idle` clip is pinned to a pose and moved on only by frames the view draws anyway (a turn, a
+  coast, the slicer: `scene/astronaut-idle.ts`, `world.idle.advance(dt)` in the frame), never under reduced motion, so
+  an idle view still draws no frames; its `walk` clip is loaded and unused until VENT-48. The landers keep the small
+  glb reader (`glb.ts`); the standard material, ACES and the Earth's shader added 1.9 kB (0.4 %) to the globe's chunk,
+  the one cost of this look. Performance: the panel
   (`components/terrain/TerrainPanel.tsx`, `React.lazy` in `OnFootView.tsx`), its stylesheet (a React 19
   `<link precedence>`, so Astro does not inline it), the scene (`src/terrain/scene/terrain-scene.ts`, a dynamic import)
   and the astronaut load only when the view opens, and the service worker leaves them out of the precache

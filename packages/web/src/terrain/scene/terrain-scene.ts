@@ -86,8 +86,12 @@ function startLoading(host: HTMLElement, world: World,
   let alive = true;
   const lander = { into: world.lander, mask: world.mask,
     alive: () => alive };
+  const astronaut = { into: world.astronaut, mask: world.mask,
+    alive: () => alive, reducedMotion };
   const standing = Promise.all([
-    loadAstronaut(world.astronaut, world.mask, console.warn),
+    loadAstronaut(astronaut, console.warn).then((idle) => {
+      world.idle = idle;
+    }),
     loadLander(lander, world.input?.lander ?? 'generic', console.warn),
     loadSurfaces(world, console.warn),
   ]).then(() => undefined);

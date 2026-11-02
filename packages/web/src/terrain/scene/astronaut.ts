@@ -24,76 +24,78 @@
  */
 
 /**
- * The astronaut (VENT-34): NASA's «Astronaut» model with the insignia
- * covered (packages/web/models/astronaut.glb, ASSETS.md) and its suit
- * texture (astronaut-suit.webp, which the glb does not carry), loaded with
- * the scene only and read by glb.ts, as a physically based white suit and
- * a gold visor, 1.9 m tall, standing on the point in a soft contact
- * shadow. Third person shows it, facing where the view looks.
+ * The astronaut (VENT-34): a rigged Meshy figure (packages/web/models/
+ * astronaut-meshy.glb, ASSETS.md), read by three's GLTFLoader, which only
+ * this scene chunk imports (the globe's start chunk never carries it).
+ * The glb's WebP maps are named by URI; a loading manager maps each URI to
+ * the file the bundler shipped (astronaut-assets.ts). 1.91 m tall, feet
+ * on the origin, +Y up, facing +Z, standing in a soft contact shadow on
+ * its `idle` pose; its `walk` clip is loaded and left unused (VENT-48).
+ * Third person shows it, facing where the view looks.
  */
 import {
-  Box3,
-  BufferAttribute,
-  BufferGeometry,
-  Group,
-  Mesh,
-  type Texture,
+  type AnimationClip,
+  type Group,
+  LoadingManager,
+  type Mesh,
+  type Object3D,
 } from 'three';
-import modelUrl from '../../../models/astronaut.glb?url';
-import { readGlb, type GlbAccessor, type GlbPrimitive } from '../glb';
+import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+import files from './astronaut-assets';
+import { createIdle, type Idle } from './astronaut-idle';
 import { contactShadow } from './contact-shadow';
-import { loadSuit, materialOf } from './suit';
-import type { SunMask } from './sun-mask';
+import type { ModelFiles } from './model-files';
+import { maskSun, type SunMask } from './sun-mask';
 
-const HEIGHT_M = 1.9;
-/** A vertex attribute over `a`. */
-const attribute = (a: GlbAccessor): BufferAttribute =>
-  new BufferAttribute(a.array, a.itemSize, a.normalized);
+const SHADOW = { radius: 0.95, opacity: 0.6 } as const;
 
-/** A mesh of `p`, its light masked near the point. */
-function primitiveMesh(p: GlbPrimitive, i: number, suit: Texture,
-  mask: SunMask): Mesh {
-  const geometry = new BufferGeometry();
-  geometry.setAttribute('position', attribute(p.position));
-  geometry.setAttribute('normal', attribute(p.normal));
-  geometry.setAttribute('uv', attribute(p.uv));
-  geometry.setIndex(attribute(p.index));
-  const mesh = new Mesh(geometry, materialOf(i, suit, mask));
-  mesh.castShadow = mesh.receiveShadow = true;
-  return mesh;
+/** What the loader needs from the scene. */
+export interface AstronautHost {
+  readonly into: Group;
+  readonly mask: SunMask;
+  /** False once the scene is freed: nothing more is built. */
+  readonly alive: () => boolean;
+  /** Whether the person asked for less motion (asked every frame). */
+  readonly reducedMotion: () => boolean;
 }
 
-/** The figure, scaled to its height and stood on its feet. */
-function fitted(model: Group): Group {
-  const box = new Box3().setFromObject(model);
-  model.scale.multiplyScalar(HEIGHT_M / Math.max(box.max.y - box.min.y, 1e-6));
-  model.updateMatrixWorld(true);
-  const fit = new Box3().setFromObject(model);
-  model.position.set(-(fit.min.x + fit.max.x) / 2, -fit.min.y,
-    -(fit.min.z + fit.max.z) / 2);
-  const holder = new Group();
-  holder.add(model);
-  return holder;
+/** Maps a map's URI inside the glb to the file the bundler shipped. */
+export const urlModifierOf = (model: ModelFiles) =>
+  (url: string): string => model.images[url.split('/').pop() ?? url] ?? url;
+
+/** The clip called `name`, or null. */
+const clipNamed = (clips: readonly AnimationClip[], name: string):
+  AnimationClip | null => clips.find((c) => c.name === name) ?? null;
+
+/** Casts and receives shadows, with the Sun's mask on its direct light. */
+function dressed(root: Object3D, mask: SunMask): void {
+  root.traverse((object) => {
+    const mesh = object as Mesh;
+    if (!mesh.isMesh) return;
+    mesh.castShadow = mesh.receiveShadow = true;
+    [mesh.material].flat().forEach((m) => maskSun(m, mask, false));
+  });
 }
 
-/** Loads the astronaut into `into`; resolves when it stands, or failed. */
+/**
+ * Loads the astronaut into `host.into`; resolves with its idle (null when
+ * the glb has none), or null after a warning when it did not load.
+ */
 export async function loadAstronaut(
-  into: Group,
-  mask: SunMask,
+  host: AstronautHost,
   warn: (message: string) => void,
-): Promise<void> {
+): Promise<Idle | null> {
   try {
-    const [response, suit] = await Promise.all([fetch(modelUrl), loadSuit()]);
-    const glb = readGlb(await response.arrayBuffer());
-    const model = new Group();
-    glb.primitives.forEach((p, i) => model.add(primitiveMesh(p, i, suit,
-      mask)));
-    model.scale.setScalar(glb.scale);
-    model.position.set(...glb.translation);
-    const outer = new Group();
-    outer.add(model);
-    into.add(fitted(outer), contactShadow(0.95, 0.6));
+    const manager = new LoadingManager();
+    manager.setURLModifier(urlModifierOf(files));
+    const gltf = await new GLTFLoader(manager).loadAsync(files.glb);
+    if (!host.alive()) return null;
+    dressed(gltf.scene, host.mask);
+    host.into.add(gltf.scene, contactShadow(SHADOW.radius, SHADOW.opacity));
+    const idle = clipNamed(gltf.animations, 'idle');
+    return idle ? createIdle(gltf.scene, idle, host.reducedMotion) : null;
   } catch (error) {
     warn(`Ventana Lunar: the astronaut did not load (${String(error)}).`);
+    return null;
   }
 }

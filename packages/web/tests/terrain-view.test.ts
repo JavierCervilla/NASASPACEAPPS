@@ -369,21 +369,6 @@ describe('the astronaut’s pose', () => {
     aimCamera(world, 'third', startLook('third', 10));
     expect(world.astronaut.position.toArray()).toEqual([0, 7.5, 0]);
   });
-
-  it('has the shipped model’s visor on +z, the way the pose assumes', async () => {
-    const { readFileSync } = await import('node:fs');
-    const { readGlb } = await import('../src/terrain/glb');
-    const file = readFileSync(new URL('../models/astronaut.glb', import.meta.url));
-    const model = readGlb(file.buffer.slice(file.byteOffset, file.byteOffset + file.byteLength));
-    const meanZ = (p: (typeof model.primitives)[number]) => {
-      const a = p.position.array;
-      let sum = 0;
-      for (let i = 2; i < a.length; i += 3) sum += a[i]!;
-      return sum / (a.length / 3);
-    };
-    const [suit, visor] = model.primitives;
-    expect(meanZ(visor!)).toBeGreaterThan(meanZ(suit!));
-  });
 });
 
 describe('leaving the view', () => {
@@ -476,22 +461,7 @@ describe('the words', () => {
   });
 });
 
-describe('the astronaut and the shapes', () => {
-  it('reads the shipped glb: two primitives, packed int16 positions, indices in range', async () => {
-    const { readFileSync } = await import('node:fs');
-    const { readGlb } = await import('../src/terrain/glb');
-    const file = readFileSync(new URL('../models/astronaut.glb', import.meta.url));
-    const model = readGlb(file.buffer.slice(file.byteOffset, file.byteOffset + file.byteLength));
-    expect(model.primitives).toHaveLength(2);
-    const suit = model.primitives[0]!;
-    expect(suit.position.array).toBeInstanceOf(Int16Array);
-    expect(suit.position.array).toHaveLength(4020 * 3);
-    expect(suit.position.normalized).toBe(true);
-    expect(suit.index.array).toHaveLength(18639);
-    expect(Math.max(...suit.index.array)).toBeLessThan(4020);
-    expect(model.scale).toBeGreaterThan(1);
-  });
-
+describe('the glb reader and the shapes', () => {
   it('builds a unit sphere and rings sat on the ground', async () => {
     const { sphere } = await import('../src/terrain/shapes');
     const { ringRibbon } = await import('../src/terrain/ring-ribbon');

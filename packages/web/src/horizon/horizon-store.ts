@@ -27,10 +27,11 @@
  * The terrain horizon of each site as the page knows it (VENT-40): the
  * shipped profile of a curated site south of 80° S at once; a custom
  * point's from the API, asked once per point, the smooth sphere standing
- * in until it comes, and for good when it cannot (no terrain on the
- * server, an error, offline with nothing kept). Every change hands out
- * a new `terrain`, so the hours are read against the new profile and the
- * views draw it.
+ * in until it comes, and when it cannot: for good when the server has no
+ * terrain there, and until {@link HorizonStore.retryFailed} after a
+ * failure that may pass and outlasted its retries (VENT-45). Every change
+ * hands out a new `terrain`, so the hours are read against the new
+ * profile and the views draw it.
  */
 import type { HorizonProfile } from '@ventana/sim';
 import { customPointOf } from '../pin/custom-point';
@@ -40,13 +41,9 @@ import {
   type WatchedValue,
 } from '../lib/watched-value';
 import type { TerrainOf } from '../source/terrain-profiles';
-import {
-  createAsk,
-  createSerialQueue,
-  pointKey,
-  type Fetched,
-} from './horizon-ask';
+import { createRequests, pointKey, type Fetched } from './horizon-ask';
 import { createHorizonCache } from './horizon-cache';
+import type { Sleep } from './horizon-retry';
 import type { HorizonFetch, KnownHorizon } from './point-horizon';
 
 /** What the page knows of a site's horizon. */
@@ -70,9 +67,15 @@ export interface HorizonStore {
   readonly request: (id: string) => void;
   /**
    * Asks for `point`'s horizon in the background, after the points asked
-   * before it, one at a time; a point that failed is not asked again.
+   * before it, one at a time; a point that failed for good is not asked
+   * again.
    */
   readonly prefetch: (point: LatLon) => void;
+  /**
+   * Asks again for the points whose failure may pass and outlasted their
+   * retries: on «Try again», back online, or the page shown again.
+   */
+  readonly retryFailed: () => void;
   /** The profile kept for `point`; never asks the API. */
   readonly cached: (point: LatLon) => HorizonProfile | undefined;
   /**
@@ -88,6 +91,8 @@ export interface HorizonSources {
   /** The resolution the shipped profiles were read at, metres. */
   readonly shippedResolutionM: number;
   readonly fetchHorizon: HorizonFetch;
+  /** The wait between retries of a failure that may pass. */
+  readonly sleep: Sleep;
 }
 
 /** What the page knows of site `id`'s horizon. */
@@ -121,14 +126,8 @@ export function createHorizonStore(sources: HorizonSources): HorizonStore {
   };
   const terrain = createWatchedValue(profileOf());
   const changed = (): void => terrain.set(profileOf());
-  const ask = createAsk(sources.fetchHorizon, fetched, changed);
-  const request = (id: string): void => {
-    const point = customPointOf(id);
-    const key = point ? pointKey(point) : null;
-    if (key !== null) fetched.hold(key);
-    if (point) void ask(point, true);
-  };
-  const prefetch = createSerialQueue((point) => ask(point, false));
+  const { fetchHorizon, sleep } = sources;
+  const requests = createRequests({ fetchHorizon, sleep, fetched, changed });
   const cached = (point: LatLon) => profileAt(fetched, pointKey(point));
-  return { of, request, prefetch, cached, terrain };
+  return { ...requests, of, cached, terrain };
 }

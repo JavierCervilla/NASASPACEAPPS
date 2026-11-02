@@ -37,6 +37,7 @@ import {
   type ComputedLoader,
 } from '../source/computed-hours';
 import type { DataSource, SourceStore } from '../source/data-source';
+import type { HorizonStore } from '../horizon/horizon-store';
 import { monthView } from '../source/month-view';
 import { useMonthHours } from './calendar/hooks';
 
@@ -48,6 +49,8 @@ export interface HoursParts {
   readonly computed: ComputedLoader;
   /** The visitor's choice of source. */
   readonly source: SourceStore;
+  /** The terrain horizons, whose lapsed requests a retry asks again. */
+  readonly horizons?: Pick<HorizonStore, 'retryFailed'>;
 }
 
 /** The static page is built on the default, Horizons. */
@@ -60,9 +63,10 @@ export function useDataSource(source: SourceStore): DataSource {
 
 /**
  * The month of `atMs` of site `id` as the views show it, the source it
- * was chosen from, and a retry of the API's request. The computed hours
- * are worked out once per site and month, in the render: the answer is
- * there before the API's.
+ * was chosen from, and a retry of the API's requests: the month's hours
+ * and any point's terrain that failed in passing (VENT-45). The computed
+ * hours are worked out once per site and month, in the render: the
+ * answer is there before the API's.
  */
 export function useSiteHours(
   parts: HoursParts,
@@ -76,5 +80,9 @@ export function useSiteHours(
     () => (month === null ? null : computedMonth(parts.computed, id, month)),
     [parts.computed, id, month],
   );
-  return { ...monthView(source, horizons, computed), source, retry };
+  const again = (): void => {
+    retry();
+    parts.horizons?.retryFailed();
+  };
+  return { ...monthView(source, horizons, computed), source, retry: again };
 }

@@ -52,7 +52,7 @@ function queuedStore() {
   const fetchHorizon = vi.fn(
     () => new Promise<KnownHorizon>((ok, fail) => pending.push({ ok, fail: () => fail(new Error('503')) })),
   );
-  const store = createHorizonStore({ shipped: () => undefined, shippedResolutionM: 20, fetchHorizon });
+  const store = createHorizonStore({ shipped: () => undefined, shippedResolutionM: 20, fetchHorizon, sleep: async () => undefined });
   return { store, fetchHorizon, pending };
 }
 

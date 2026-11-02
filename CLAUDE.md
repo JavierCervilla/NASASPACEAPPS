@@ -33,8 +33,13 @@ epic: `VENT-1` (Dashboard project «Ventana Lunar», prefix `VENT`).
   (`src/source/shadowed-hours.ts`, `terrain-profiles.ts`) to both sources' hours. A custom point keeps the smooth
   sphere until `/api/v1/horizon` answers (`src/horizon/point-horizon.ts`, asked once per point by the horizon store,
   `src/horizon/horizon-store.ts`, which hands out a new `TerrainOf` on every change so the views read the hours
-  again); on an error or a 503 it keeps the smooth sphere for good, and offline the service worker's API cache
-  applies.
+  again); a 404 (no terrain covers the point) keeps the smooth sphere for good, a 503 «terrain data is not installed»
+  says so, and a failure that may pass (the network, a busy 503, a 429, any other 5xx, an answer that is not a
+  profile) is tried again after 2, 6 and 18 s or its Retry-After, capped at 30 s, the point «loading» meanwhile; once
+  those four tries run out it shows the smooth sphere until the page is shown again, the browser comes back online or
+  «Try again» is pressed (VENT-45, `horizon-retry.ts`, `retry-triggers.ts`); offline the service worker's API cache
+  applies. The API logs each error answer of `/api/*` as one line (method, path, status, ms; never the query, the
+  client's address or the body: `packages/server/src/error-log.ts`).
 - **Backend** (`packages/server`, Node + Hono; decided 2026-10-29): one service on Dokploy serves all site data, for the
   curated sites and for custom coordinates. It queries JPL Horizons and caches the responses on disk, because Horizons
   is slow and rate limited and the spec wants answers in under 3 s. The browser never calls Horizons directly. It

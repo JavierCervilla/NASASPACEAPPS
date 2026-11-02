@@ -59,6 +59,7 @@ import {
 } from '../source/terrain-profiles';
 import { createHorizonStore } from '../horizon/horizon-store';
 import { horizonFetch } from '../horizon/point-horizon';
+import { retryOnReturn } from '../horizon/retry-triggers';
 import { createSourceStore } from '../source/data-source';
 import { followClock } from '../calendar/follow-clock';
 import { createPlayer } from '../calendar/time-player';
@@ -113,6 +114,7 @@ function createClock(sitesUrl: string, sites: readonly CardSite[]) {
     shipped: shippedTerrain(),
     shippedResolutionM: SHIPPED_RESOLUTION_M,
     fetchHorizon: horizonFetch(globalThis.fetch.bind(globalThis), sitesUrl),
+    sleep: (ms) => new Promise((done) => window.setTimeout(done, ms)),
   });
   const raw = cachedComputed(pointsOf(sites));
   const source = createSourceStore(localStore());
@@ -128,7 +130,9 @@ function createClock(sitesUrl: string, sites: readonly CardSite[]) {
  * Both sources' hours carry the Sun answer of the sites in permanent
  * shadow (VENT-39) and each site's terrain horizon (VENT-40): the
  * curated sites' at once, a custom point's once the API answers, when
- * the loaders are made again so the views read the hours anew.
+ * the loaders are made again so the views read the hours anew; a point
+ * whose request failed in passing is asked again when the browser comes
+ * back online or the page is shown again (VENT-45).
  */
 function useCalendarParts(
   sitesUrl: string,
@@ -150,6 +154,7 @@ function useCalendarParts(
   }, [clock, api, terrainOf]);
   useEffect(() => followClock(clock.time, browserHourClock()), [clock]);
   useEffect(() => clock.player.pause, [clock]);
+  useEffect(() => retryOnReturn(clock.horizons.retryFailed), [clock]);
   return parts;
 }
 

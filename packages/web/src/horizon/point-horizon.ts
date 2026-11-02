@@ -34,6 +34,13 @@
 import { decodeProfile, type HorizonProfile } from '@ventana/sim';
 import type { LatLon } from '../lib/polar-projection';
 import { snapPoint } from '../pin/custom-point';
+import { failureOf, TransientHorizonError } from './horizon-errors';
+
+export {
+  NoTerrainHereError,
+  TerrainNotInstalledError,
+  TransientHorizonError,
+} from './horizon-errors';
 
 /** A terrain horizon and the finest grid it was read from, metres. */
 export interface KnownHorizon {
@@ -80,29 +87,9 @@ export function horizonOf(body: unknown): KnownHorizon | null {
 }
 
 /**
- * The server has no terrain installed yet (VENT-43): its 503 says so in
- * `error`, unlike a busy one, so the strip can tell the two apart.
+ * Fetches a point's horizon; rejects when there is none to show, with an
+ * error that says whether asking again may help (horizon-errors.ts).
  */
-export class TerrainNotInstalledError extends Error {
-  constructor() {
-    super('horizon: terrain not installed');
-    this.name = 'TerrainNotInstalledError';
-  }
-}
-
-/** The server's `error` for a 503 with no terrain installed. */
-const NOT_INSTALLED = 'terrain data is not installed';
-
-/** Whether `response` says the server has no terrain installed. */
-async function notInstalled(response: Response): Promise<boolean> {
-  if (response.status !== 503) return false;
-  const body = (await response.json().catch(() => null)) as {
-    readonly error?: unknown;
-  } | null;
-  return body?.error === NOT_INSTALLED;
-}
-
-/** Fetches a point's horizon; rejects when there is none to show. */
 export type HorizonFetch = (point: LatLon) => Promise<KnownHorizon>;
 
 /** A {@link HorizonFetch} over `fetch` against the sites endpoint. */
@@ -111,11 +98,15 @@ export function horizonFetch(
   sitesUrl: string,
 ): HorizonFetch {
   return async (point) => {
-    const response = await fetcher(pointHorizonUrl(sitesUrl, point));
-    if (await notInstalled(response)) throw new TerrainNotInstalledError();
-    if (!response.ok) throw new Error(`horizon ${response.status}`);
-    const known = horizonOf(await response.json());
-    if (!known) throw new Error('horizon: not a profile');
+    const response = await fetcher(pointHorizonUrl(sitesUrl, point)).catch(
+      (error: unknown) => {
+        throw new TransientHorizonError(null, `horizon: ${String(error)}`);
+      },
+    );
+    if (!response.ok) throw await failureOf(response);
+    // A page in place of the answer (a captive portal, a proxy) may pass.
+    const known = horizonOf(await response.json().catch(() => null));
+    if (!known) throw new TransientHorizonError(null, 'horizon: not a profile');
     return known;
   };
 }

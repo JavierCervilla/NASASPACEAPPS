@@ -121,7 +121,7 @@ export function SitePicker(props: PickerProps) {
       <PickerHead
         selected={selected}
         onDone={onDone}
-        withSave={props.withSave}
+        withSave={props.withSave === true}
       />
       <div className="picker__scroll" data-sheet-scroll>
         {props.languageRow}

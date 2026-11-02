@@ -74,13 +74,17 @@ export interface MountedSheet {
   readonly dispose: () => void;
 }
 
-/** The frame loop that springs the sheet, draws it and reports it. */
-function sheetLoop(
+/**
+ * The frame loop that springs the sheet, draws it and reports it;
+ * `schedule` runs its frames (`requestAnimationFrame` by default).
+ */
+export function sheetLoop(
   el: HTMLElement,
   state: SheetState,
   report: Pick<SheetMountOptions, 'onOpenness' | 'onEdge'>,
+  schedule?: (fn: (now: number) => void) => number,
 ): Loop {
-  return createLoop((dt) => {
+  const loop = createLoop((dt) => {
     const moving = stepSheet(state, dt);
     placeSheet(el, state.axis.value, state.detents);
     // CSS pauses what loops inside while the sheet moves (styles/dsn.css).
@@ -88,7 +92,18 @@ function sheetLoop(
     report.onOpenness(openness(state.detents, state.axis.value));
     report.onEdge(state.axis.value);
     return moving;
-  });
+  }, schedule);
+  // A settle moves the sheet from the instant it starts, when its detent
+  // is already announced, not from the next frame: nothing may read it at
+  // rest half way there. A drag holds the sheet on its target: no move.
+  const invalidate = (): void => {
+    const { value, target, velocity } = state.axis;
+    if (value !== target || velocity !== 0) {
+      el.toggleAttribute('data-moving', true);
+    }
+    loop.invalidate();
+  };
+  return { invalidate, stop: loop.stop };
 }
 
 interface DragParts {

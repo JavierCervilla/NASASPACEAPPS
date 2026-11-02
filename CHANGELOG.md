@@ -345,6 +345,13 @@
   comprobada en el lint.
 
 ### Corregido
+- Guardar un punto desde la hoja completa del móvil (VENT-42, encontrado por Javier en Android). Con la hoja a toda
+  altura (la lista «Landing sites» con «Done») no había forma de guardar el punto del pin, porque «Save» solo estaba
+  en la cabecera de la hoja a media altura. Ahora, junto a «Done», un botón con solo el icono del marcador (vacío sin
+  guardar, relleno guardado) aparece cuando lo seleccionado es un punto propio: guarda el punto con su nombre «Near …»
+  y, pulsado otra vez, lo borra con el aviso de deshacer, igual que «Save». Sin texto visible, pero con nombre para
+  lectores de pantalla («Save» / «Saved: press to remove it from this device»), 44 px de zona táctil y alcanzable con
+  el teclado. En el PC no cambia nada: la ficha del sitio, con su «Save», sigue a la vista con la lista abierta.
 - Modo DSN (VENT-7, pase adversario del cierre del MVP). Con la página abierta y la hora en directo, el instante sigue
   ahora al reloj minuto a minuto (y se pone al día al volver a una pestaña oculta): el relevo de antenas se ve en el
   minuto en que ocurre, en la ficha, en la vista «DSN» y en la tarjeta del móvil, en vez de seguir diciendo «Robledo ·

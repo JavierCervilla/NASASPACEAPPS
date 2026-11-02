@@ -57,23 +57,38 @@ function useSaved(site: PhoneSite) {
   return { kit, entry, full: !entry && sites.length >= SAVED_CAP };
 }
 
-/** «Save» or «Saved», for a custom point only. */
-export function SaveButton({ site }: Props) {
+/**
+ * What «Save» does for `site`, shared by the labelled button and the
+ * icon-only one (VENT-42): saving keeps the point under its «Near …» name,
+ * and unsaving deletes it with the undo. `toggle` is null where there is
+ * nothing to press: not a custom point, no saved sites, or the list full.
+ */
+export function useSaveToggle(site: PhoneSite) {
   const i18n = useI18n();
   const { kit, entry, full } = useSaved(site);
-  if (!site.custom || !kit) return null;
-  const near = site.custom.near;
-  const name = near || formatCoords(i18n, site.lat, site.lonEast);
+  if (!site.custom || !kit) {
+    return { shown: false, saved: false, full, toggle: null };
+  }
+  const name = site.custom.near || formatCoords(i18n, site.lat, site.lonEast);
   const toggle = (): void => {
     const removed = entry ? kit.saved.remove(entry.id) : null;
     if (removed) kit.undo.offer(removed);
     else if (!entry) kit.saved.save(site, name);
   };
-  const label = entry ? i18n.t('saved.unsave') : undefined;
+  const saved = entry !== null;
+  return { shown: true, saved, full, toggle: full ? null : toggle };
+}
+
+/** «Save» or «Saved», for a custom point only. */
+export function SaveButton({ site }: Props) {
+  const i18n = useI18n();
+  const { shown, saved, full, toggle } = useSaveToggle(site);
+  if (!shown) return null;
+  const label = saved ? i18n.t('saved.unsave') : undefined;
   return (
-    <button type="button" className="save-button" data-saved={entry !== null} aria-label={label} aria-disabled={full || undefined} onClick={full ? undefined : toggle}>
-      <Icon name={entry ? 'bookmarkFilled' : 'bookmark'} />
-      {i18n.t(entry ? 'saved.saved' : 'saved.save')}
+    <button type="button" className="save-button" data-saved={saved} aria-label={label} aria-disabled={full || undefined} onClick={toggle ?? undefined}>
+      <Icon name={saved ? 'bookmarkFilled' : 'bookmark'} />
+      {i18n.t(saved ? 'saved.saved' : 'saved.save')}
     </button>
   );
 }

@@ -59,13 +59,14 @@ afterAll(async () => {
   await rm(dir, { recursive: true, force: true });
 });
 
-function open(opts: { maxWaiting?: number; catalogue?: typeof CATALOGUE; dir?: string } = {}) {
+function open(opts: { maxWaiting?: number; lodMaxWaiting?: number; catalogue?: typeof CATALOGUE; dir?: string } = {}) {
   return TerrainService.open({
     dir: opts.dir ?? dir,
     catalogue: opts.catalogue ?? CATALOGUE,
     cacheBytes: 64 * 2 ** 20,
     maxRunning: 1,
     maxWaiting: opts.maxWaiting ?? 4,
+    ...(opts.lodMaxWaiting !== undefined && { lodMaxWaiting: opts.lodMaxWaiting }),
   });
 }
 
@@ -157,8 +158,8 @@ describe('lodTileIn', () => {
     await service.close();
   });
 
-  it('shares the computation gate: past its queue it is busy', async () => {
-    const service = await open({ maxWaiting: 0 });
+  it('has a gate of its own: past its queue it is busy', async () => {
+    const service = await open({ lodMaxWaiting: 0 });
     const first = lodTileIn(service, AT_POLE);
     await expect(lodTileIn(service, AT_POLE)).rejects.toThrow(TerrainBusyError);
     await first;

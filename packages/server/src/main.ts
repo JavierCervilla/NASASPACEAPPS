@@ -36,8 +36,11 @@
  * byte cap, default 256), TERRAIN_BLOCKS_MB (grid blocks kept in memory,
  * default 192), TERRAIN_TILE_CACHE_MB (byte cap of the height tiles on disk,
  * default 512), TERRAIN_LOD_CACHE_MB (the same for the levelled tiles,
- * default 512) and TERRAIN_MAX_RUNNING (horizons and tiles computed at once,
- * default 2).
+ * default 512), TERRAIN_MAX_RUNNING (horizons and tiles computed at once,
+ * default 2) and, for the levelled tiles, TERRAIN_LOD_MAX_RUNNING (computed
+ * at once, default 2), TERRAIN_LOD_MAX_WAITING (default 32),
+ * TERRAIN_LOD_PER_IP (in flight per client address, default 4) and
+ * TERRAIN_LOD_PER_IP_WAITING (more that may wait per address, default 4).
  * TERRAIN_FETCH_TIERS (VENT-43: `all` or tier ids separated by commas) has
  * the server fetch the tiers it lacks into TERRAIN_DIR once it listens.
  */
@@ -90,6 +93,7 @@ const app = createApp({
   terrain: terrain?.horizons,
   tiles: terrain?.tiles,
   lod: terrain?.lod,
+  lodSlots: terrain?.lodSlots,
   terrainStatus: terrainStatus && (() => terrainStatus.snapshot()),
 });
 // Aborted on SIGTERM: the fetch stops at once, keeps its part and lets go

@@ -29,11 +29,13 @@
  * `GET /api/v1/terrain/tiles/{scheme}/{level}/{x}/{y}[?v]` (one tile): see
  * docs/terrain-api.md. A tile's url carries the version token of the tiers
  * that served it, so under the current token it is immutable; a computation
- * counts against the client's tile limit, apart from the horizon's.
+ * counts against the client's tile limit, apart from the horizon's, and
+ * holds one of the client's few slots while it runs.
  */
 import { tilesAround, TILE_SAMPLES } from '@ventana/sim';
 import type { Context } from 'hono';
 import { clientIp } from '../client-ip.ts';
+import type { IpSlots } from '../ip-slots.ts';
 import { limitMisses, type MissLimiter } from '../miss-limiter.ts';
 import { CACHE_CONTROL, NOT_INSTALLED, errorResponse } from './horizon-route.ts';
 import type { LodAnswer } from './lod-answer.ts';
@@ -57,11 +59,18 @@ function matches(header: string | undefined, version: string): boolean {
   return (header ?? '').split(',').some((t) => t.trim().replace(/^W\//, '') === tag);
 }
 
+function notModified(c: Context, cacheControl: string, version: string) {
+  c.header('ETag', `"${version}"`);
+  c.header('Cache-Control', cacheControl);
+  return c.body(null, 304);
+}
+
 /** Answers a tile request; 503 when the server has no terrain. */
 export async function lodTileResponse(
   c: Context,
   source: LodSource | undefined,
   limiter: MissLimiter,
+  slots: IpSlots,
 ): Promise<Response> {
   if (!source) return c.json({ error: NOT_INSTALLED }, 503);
   try {
@@ -69,12 +78,11 @@ export async function lodTileResponse(
     const asked = parseVersion(c.req.query('v'));
     const current = source.version();
     if (matches(c.req.header('If-None-Match'), current)) {
-      c.header('ETag', `"${current}"`);
-      c.header('Cache-Control', cacheControlOf(asked, current));
-      return c.body(null, 304);
+      return notModified(c, cacheControlOf(asked, current), current);
     }
     const onMiss = limitMisses(limiter, () => clientIp(c));
-    const answer: LodAnswer = await source.tile(key, onMiss);
+    const slot = () => slots.acquire(clientIp(c));
+    const answer: LodAnswer = await source.tile(key, onMiss, slot);
     c.header('ETag', `"${answer.version}"`);
     c.header('Cache-Control', cacheControlOf(asked, answer.version));
     return c.json(answer);

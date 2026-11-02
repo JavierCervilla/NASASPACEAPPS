@@ -29,13 +29,14 @@
  * The variables are listed in main.ts and docs/terrain-api.md.
  */
 import { join } from 'node:path';
+import { IpSlots } from '../ip-slots.ts';
 import {
   DEFAULT_CATALOGUE_FILE,
   loadCatalogue,
   type TerrainCatalogue,
 } from './catalogue.ts';
 import { cachedHorizons, type HorizonSource } from './horizon-cache.ts';
-import { TerrainService } from './terrain-service.ts';
+import { TerrainService, type TerrainServiceOptions } from './terrain-service.ts';
 import { cachedLod, type LodSource } from './lod-cache.ts';
 import { cachedTiles, type TileSource } from './tile-cache.ts';
 
@@ -48,6 +49,10 @@ const DEFAULTS = {
   blocksMb: 192,
   maxRunning: 2,
   maxWaiting: 16,
+  lodMaxRunning: 2,
+  lodMaxWaiting: 32,
+  lodPerIp: 4,
+  lodPerIpWaiting: 4,
 };
 
 /** A positive number from `raw`, or `fallback` when unset. */
@@ -60,11 +65,49 @@ function positive(name: string, raw: string | undefined, fallback: number) {
   return value;
 }
 
+/** A whole positive number from the variable `name` of `env`. */
+function whole(
+  env: Env,
+  name: string,
+  fallback: number,
+): number {
+  return Math.floor(positive(name, env[name], fallback));
+}
+
+type Env = Readonly<Record<string, string | undefined>>;
+
+/** What the service is opened with: the gates and the blocks' memory. */
+function serviceOptions(
+  env: Env,
+  dir: string,
+  catalogue: TerrainCatalogue,
+): TerrainServiceOptions {
+  const blocksMb = positive('TERRAIN_BLOCKS_MB', env['TERRAIN_BLOCKS_MB'], DEFAULTS.blocksMb);
+  return {
+    dir,
+    catalogue,
+    cacheBytes: blocksMb * MB,
+    maxRunning: whole(env, 'TERRAIN_MAX_RUNNING', DEFAULTS.maxRunning),
+    maxWaiting: DEFAULTS.maxWaiting,
+    lodMaxRunning: whole(env, 'TERRAIN_LOD_MAX_RUNNING', DEFAULTS.lodMaxRunning),
+    lodMaxWaiting: whole(env, 'TERRAIN_LOD_MAX_WAITING', DEFAULTS.lodMaxWaiting),
+  };
+}
+
+/** The slots one address may hold for levelled tiles. */
+function lodSlotsOf(env: Env): IpSlots {
+  return new IpSlots({
+    running: whole(env, 'TERRAIN_LOD_PER_IP', DEFAULTS.lodPerIp),
+    waiting: whole(env, 'TERRAIN_LOD_PER_IP_WAITING', DEFAULTS.lodPerIpWaiting),
+  });
+}
+
 /** The terrain of a server: its horizons and what serves them. */
 export interface TerrainSetup {
   readonly horizons: HorizonSource;
   readonly tiles?: TileSource;
   readonly lod?: LodSource;
+  readonly lodSlots?: IpSlots;
   readonly service: TerrainService;
   readonly dir: string;
   readonly catalogue: TerrainCatalogue;
@@ -72,18 +115,13 @@ export interface TerrainSetup {
 
 /** The terrain of `env`, or undefined without TERRAIN_DIR. */
 export async function openTerrain(
-  env: Readonly<Record<string, string | undefined>>,
+  env: Env,
 ): Promise<TerrainSetup | undefined> {
   const dir = env['TERRAIN_DIR'];
   if (dir === undefined || dir.trim() === '') return undefined;
   const catalogue = await loadCatalogue(DEFAULT_CATALOGUE_FILE);
-  const service = await TerrainService.open({
-    dir,
-    catalogue,
-    cacheBytes: positive('TERRAIN_BLOCKS_MB', env['TERRAIN_BLOCKS_MB'], DEFAULTS.blocksMb) * MB,
-    maxRunning: Math.floor(positive('TERRAIN_MAX_RUNNING', env['TERRAIN_MAX_RUNNING'], DEFAULTS.maxRunning)),
-    maxWaiting: DEFAULTS.maxWaiting,
-  });
+  const options = serviceOptions(env, dir, catalogue);
+  const service = await TerrainService.open(options);
   const tiers = service.present.map((t) => t.id).join(', ') || 'none';
   process.stdout.write(`terrain: tiers present: ${tiers}\n`);
   const cacheMb = positive('TERRAIN_CACHE_MB', env['TERRAIN_CACHE_MB'], DEFAULTS.cacheMb);
@@ -94,5 +132,6 @@ export async function openTerrain(
   const tiles = cachedTiles(service, tileCache, tileMb * MB);
   const lodMb = positive('TERRAIN_LOD_CACHE_MB', env['TERRAIN_LOD_CACHE_MB'], DEFAULTS.lodCacheMb);
   const lod = cachedLod(service, join(cacheDir, 'lod'), lodMb * MB);
-  return { horizons, tiles, lod, service, dir, catalogue };
+  const lodSlots = lodSlotsOf(env);
+  return { horizons, tiles, lod, lodSlots, service, dir, catalogue };
 }

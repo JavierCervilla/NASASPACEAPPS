@@ -28,6 +28,11 @@
  * horizon, the height tile, the levelled tiles and the tiers' status.
  */
 import type { Hono } from 'hono';
+import {
+  DEFAULT_SLOTS_RUNNING,
+  DEFAULT_SLOTS_WAITING,
+  IpSlots,
+} from '../ip-slots.ts';
 import type { MissLimiter } from '../miss-limiter.ts';
 import type { TerrainStatusBody } from './fetch-status.ts';
 import type { HorizonSource } from './horizon-cache.ts';
@@ -45,10 +50,18 @@ export interface TerrainRouteDeps {
   readonly terrainStatus?: (() => TerrainStatusBody) | undefined;
   readonly missLimiter: MissLimiter;
   readonly lodLimiter: MissLimiter;
+  /** Caps the levelled tiles one address has in flight; has defaults. */
+  readonly lodSlots?: IpSlots | undefined;
 }
 
 /** Adds the terrain routes to `v1`. */
 export function mountTerrain(v1: Hono, deps: TerrainRouteDeps): void {
+  const lodSlots =
+    deps.lodSlots ??
+    new IpSlots({
+      running: DEFAULT_SLOTS_RUNNING,
+      waiting: DEFAULT_SLOTS_WAITING,
+    });
   // Any point: lat and lon (east longitude) in degrees, optional height.
   v1.get('/horizon', (c) => horizonResponse(c, deps.terrain, deps.missLimiter));
 
@@ -58,7 +71,7 @@ export function mountTerrain(v1: Hono, deps: TerrainRouteDeps): void {
   // The tiles of a ring around a point, then one tile (VENT-46).
   v1.get('/terrain/tiles', (c) => lodIndexResponse(c, deps.lod));
   v1.get('/terrain/tiles/:scheme/:level/:x/:y', (c) =>
-    lodTileResponse(c, deps.lod, deps.lodLimiter),
+    lodTileResponse(c, deps.lod, deps.lodLimiter, lodSlots),
   );
 
   // Tier ids, states and byte counts only: no paths.

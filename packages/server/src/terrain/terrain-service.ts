@@ -59,6 +59,10 @@ export interface TerrainServiceOptions {
   readonly maxRunning: number;
   /** Requests that may wait for a slot; past them, TerrainBusyError. */
   readonly maxWaiting: number;
+  /** Levelled tiles computed at once; by default `maxRunning`. */
+  readonly lodMaxRunning?: number;
+  /** Levelled tiles that may wait for a slot; by default `maxWaiting`. */
+  readonly lodMaxWaiting?: number;
 }
 
 /** Computes horizons from the tiers present under `dir`. */
@@ -67,8 +71,14 @@ export class TerrainService {
   readonly blocks: BlockLoader;
   /** The tiers found on disk at the last scan. */
   present: readonly Tier[];
-  /** The cap on computations, shared by horizons and tiles. */
+  /** The cap on computations, shared by horizons and height tiles. */
   readonly gate: Gate;
+  /**
+   * The cap on levelled tiles (VENT-46), apart from `gate`: a client may
+   * ask for dozens of them at once, and they must not fill the horizons'
+   * queue.
+   */
+  readonly lodGate: Gate;
   private readonly catalogue: TerrainCatalogue;
   private readonly dir: string;
 
@@ -78,6 +88,10 @@ export class TerrainService {
     this.catalogue = options.catalogue;
     this.blocks = new BlockLoader(options.dir, options.cacheBytes);
     this.gate = new Gate(options.maxRunning, options.maxWaiting);
+    this.lodGate = new Gate(
+      options.lodMaxRunning ?? options.maxRunning,
+      options.lodMaxWaiting ?? options.maxWaiting,
+    );
   }
 
   /** A service over the tiers of `options.catalogue` found on disk. */

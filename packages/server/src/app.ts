@@ -30,6 +30,7 @@ import { compress } from 'hono/compress';
 import { apiHeaders } from './api-headers.ts';
 import { errorLog } from './error-log.ts';
 import { clientIp } from './client-ip.ts';
+import type { IpSlots } from './ip-slots.ts';
 import { computeEphemeris, type EphemerisRequest } from './ephemeris.ts';
 import {
   HorizonsError,
@@ -91,6 +92,11 @@ export interface AppDeps {
    * {@link createMissLimiter} with `DEFAULT_LOD_MISSES_PER_WINDOW`.
    */
   readonly lodLimiter?: MissLimiter;
+  /**
+   * Caps the `lod` computations one client IP has in flight (and waiting);
+   * by default {@link IpSlots} with its defaults.
+   */
+  readonly lodSlots?: IpSlots | undefined;
   /**
    * The terrain's tiers and its fetch (VENT-43); absent without
    * TERRAIN_DIR, and then /terrain/status says so with no tiers.

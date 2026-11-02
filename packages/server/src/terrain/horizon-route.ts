@@ -39,6 +39,7 @@ import {
   limitMisses,
   type MissLimiter,
 } from '../miss-limiter.ts';
+import { SlotLimitError } from '../ip-slots.ts';
 import { ParamError, numberParam } from '../param-values.ts';
 import { roundToGrid } from '../params.ts';
 import {
@@ -83,15 +84,23 @@ export function parseHorizonParams(raw: RawHorizonParams): HorizonPoint {
   return { lat, lonEast, heightM: Math.round(height * 10) / 10 };
 }
 
+/** 429: the address is over its miss limit or its slots in flight. */
+function tooMany(c: Context, error: MissLimitError | SlotLimitError) {
+  c.header('Retry-After', String(error.retryAfterSec));
+  const message =
+    error instanceof SlotLimitError
+      ? 'too many tiles at once from this address; try again shortly'
+      : 'too many new points from this address; try again later';
+  return c.json({ error: message }, 429);
+}
+
 /** The HTTP answer for an error of the route; rethrows the rest. */
 export function errorResponse(c: Context, error: unknown): Response {
   if (error instanceof ParamError) {
     return c.json({ error: error.message }, 400);
   }
-  if (error instanceof MissLimitError) {
-    c.header('Retry-After', String(error.retryAfterSec));
-    const message = 'too many new points from this address; try again later';
-    return c.json({ error: message }, 429);
+  if (error instanceof MissLimitError || error instanceof SlotLimitError) {
+    return tooMany(c, error);
   }
   if (error instanceof TerrainUncoveredError) {
     return c.json({ error: 'no terrain data covers this point' }, 404);

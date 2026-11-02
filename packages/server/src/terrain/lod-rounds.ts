@@ -57,7 +57,8 @@ export async function readLod(
 }
 
 /**
- * The tile `key`, in turn with the horizons and the other tiles (one gate),
+ * The tile `key`, in turn with the other levelled tiles (a gate of their
+ * own, apart from the horizons' and the height tiles'),
  * from `present` (the caller's view of the tiers, so a cache key names the
  * tiers that answered) or the tiers present now.
  */
@@ -67,5 +68,5 @@ export function lodTileIn(
   present: readonly Tier[] = service.present,
 ): Promise<LodAnswer> {
   const { blocks } = service;
-  return service.gate.run(() => readLod({ blocks, present }, key));
+  return service.lodGate.run(() => readLod({ blocks, present }, key));
 }

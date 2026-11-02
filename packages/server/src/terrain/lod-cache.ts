@@ -37,10 +37,12 @@ import { InFlight } from '../horizons/in-flight.ts';
 import { TerrainNotInstalledError } from './horizon-cache.ts';
 import type { LodAnswer } from './lod-answer.ts';
 import { lodTileIn } from './lod-rounds.ts';
+import { underSlot, type SlotTaker } from './lod-slot.ts';
 import { lodVersion } from './lod-version.ts';
 import type { TerrainService } from './terrain-service.ts';
 
 export { lodVersion } from './lod-version.ts';
+export type { SlotTaker } from './lod-slot.ts';
 
 /** What the levelled tile routes need. */
 export interface LodSource {
@@ -51,10 +53,16 @@ export interface LodSource {
    */
   version(): string;
   /**
-   * The tile `key`; `onMiss` runs before a computation (it may throw to
-   * refuse it).
+   * The tile `key`. A computation first takes a client slot with `slot`
+   * (which may wait or throw to refuse it), then runs `onMiss` (it may throw
+   * too), and gives the slot back when it ends, failed or not. A tile read
+   * from disk takes neither.
    */
-  tile(key: TileKey, onMiss?: () => void): Promise<LodAnswer>;
+  tile(
+    key: TileKey,
+    onMiss?: () => void,
+    slot?: SlotTaker,
+  ): Promise<LodAnswer>;
 }
 
 /** The file name of a tile under the version of the tiers present. */
@@ -79,17 +87,17 @@ export function cachedLod(
   const inFlight = new InFlight<LodAnswer>();
   return {
     version: () => lodVersion(presentOf(service)),
-    async tile(key, onMiss) {
+    async tile(key, onMiss, slot) {
       const present = presentOf(service);
       const file = lodKey(key, lodVersion(present));
       const hit = await disk.lookup(file);
       if (hit !== null) return JSON.parse(hit) as LodAnswer;
-      onMiss?.();
-      return inFlight.share(file, async () => {
+      const compute = async () => {
         const answer = await lodTileIn(service, key, present);
         await disk.store(file, JSON.stringify(answer), false);
         return answer;
-      });
+      };
+      return underSlot(() => inFlight.share(file, compute), onMiss, slot);
     },
   };
 }

@@ -145,3 +145,21 @@ for (const viewport of VIEWPORTS) {
     });
   });
 }
+
+// QA VENT-42: with the bookmark in the head, «Done» must stay whole at 200 % text in long languages.
+for (const locale of ['fr', 'de', 'en-xa']) {
+  test(`phone, 360x740, ${locale} at 200 % text: «Done» and the bookmark stay on screen`, async ({ page }) => {
+    await page.setViewportSize({ width: 360, height: 740 });
+    await open(page, `./${locale}/${POINT}`);
+    await page.addStyleTag({ content: 'html { font-size: 200%; }' });
+    await page.locator('.tab').last().click();
+    const head = page.locator('.picker__head');
+    for (const part of [head.locator('.picker__done'), head.locator('.save-icon')]) {
+      await expect(part).toBeVisible();
+      const box = await part.boundingBox();
+      expect(box).not.toBeNull();
+      expect(box!.x).toBeGreaterThanOrEqual(0);
+      expect(box!.x + box!.width).toBeLessThanOrEqual(360);
+    }
+  });
+}

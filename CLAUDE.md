@@ -381,7 +381,7 @@ Every visible change follows `.claude/skills/apple-design/SKILL.md` (vendored fr
   finer level is loaded and draws it where that tile failed (a 404 or the tries ran out is a hole filled by the parent,
   never the view's failure, `ring-layout.ts`); a skirt hangs on every side of a drawn cell whose neighbour is not drawn
   (T-junctions and open edges, `ring-mesh.ts`); normals are taken across the tile edges when the neighbour is loaded and
-  blended into the parent's over 8 cells at a window's edge, so no seam shows a crease (`ring-normals.ts`); and the heights themselves are stitched: a node within 8 cells of its window's edge is pulled toward the parent's surface by a smoothstep, so the edge nodes lie exactly on it (`ring-stitch.ts`; where the levels read different LOLA tiers the raw step is metres), and a parent that arrives late places again only the nodes in that band (held by `tests/terrain-ring-stitch.test.ts` on the recorded IM-2 relief, L1 to L2 and L2 to L3). Nodes are
+  blended into the parent's over 8 cells at a window's edge, so no seam shows a crease (`ring-normals.ts`); and the heights themselves are stitched: a node within 8 cells of its window's edge is pulled toward the parent's surface by a smoothstep, so the edge nodes lie exactly on it (`ring-stitch.ts`; where the levels read different LOLA tiers the raw step is metres), and a parent that arrives late places again only the nodes in that band (the stitch held by `tests/terrain-ring-stitch.test.ts` on the recorded IM-2 relief, L1 to L2 and L2 to L3). Nodes are
   placed with `sampleDirection` and the site's frame (`ring-frame.ts`: x east, y up, z south, the site the origin and
   its ground height y = 0, the Moon's curvature in the positions: a node 2 km away is 1.15 m lower). The tier sets the
   rings (`ring-plan.ts`: high 4 levels at every node, about 520 k triangles; medium level 0 at every second node; low 3
@@ -427,8 +427,11 @@ Every visible change follows `.claude/skills/apple-design/SKILL.md` (vendored fr
   never carries it. Its `idle` clip is pinned to a pose and moved on only by frames the view draws anyway (a turn, a
   coast, the slicer: `scene/astronaut-idle.ts`, `world.idle.advance(dt)` in the frame), never under reduced motion, so
   an idle view still draws no frames; its `walk` clip is loaded and unused until VENT-48. The landers keep the small
-  glb reader (`glb.ts`); the standard material, ACES and the Earth's shader added 1.9 kB (0.4 %) to the globe's chunk,
-  the one cost of this look. Performance: the panel
+  glb reader (`glb.ts`). The cost of this look lands in the Three.js chunk the globe loads at start: the standard
+  material, ACES and the Earth's shader added 1.9 kB, and the skinned astronaut 11.7 kB gzip more (130 to 142 kB):
+  `three.core` is one module, so the classes GLTFLoader and AnimationMixer need (Skeleton, SkinnedMesh,
+  AnimationMixer, PropertyBinding) join that chunk while GLTFLoader itself stays in the scene's; the human accepted
+  it (2026-11-02) over an astronaut without a rig. Performance: the panel
   (`components/terrain/TerrainPanel.tsx`, `React.lazy` in `OnFootView.tsx`), its stylesheet (a React 19
   `<link precedence>`, so Astro does not inline it), the scene (`src/terrain/scene/terrain-scene.ts`, a dynamic import)
   and the astronaut load only when the view opens, and the service worker leaves them out of the precache
@@ -479,7 +482,7 @@ Every visible change follows `.claude/skills/apple-design/SKILL.md` (vendored fr
   `favicon.ico`, `favicon.svg` and the root `apple-touch-icon.png`), fetched past the HTTP cache (`cache: 'reload'`),
   and the build's digest over every file the worker may keep, which names the static cache (`ventana-static-<digest>`),
   so a deploy drops the old one. The install set has a hard budget of 5 MB (`PRECACHE_BUDGET`, human decision
-  2026-10-31): the build logs the precache total and fails over it (4.70 MB with VENT-34's on-foot view, its files left out; 4.68 MB with VENT-40's horizon strip; 4.63 MB with VENT-39's shadow notes; 4.57 MB with VENT-37's saved sites; 4.52 MB when it left the astronaut's sprites out, 4.60 MB with them). The 4K and 8K maps, and any build file not
+  2026-10-31): the build logs the precache total and fails over it (4.75 MB with VENT-46's rings, landers and rigged astronaut, their files left out; 4.70 MB with VENT-34's on-foot view, its files left out; 4.68 MB with VENT-40's horizon strip; 4.63 MB with VENT-39's shadow notes; 4.57 MB with VENT-37's saved sites; 4.52 MB when it left the astronaut's sprites out, 4.60 MB with them). The 4K and 8K maps, and any build file not
   precached, are kept cache first the first time the page fetches them. Under Save-Data the worker is not registered
   at all. Pages and API GETs are network first,
   build files cache first; the network's answer always wins (a copy that cannot be kept, a full quota, is skipped), only

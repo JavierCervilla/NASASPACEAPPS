@@ -383,7 +383,7 @@ All load on demand with the 3D view (file names `on-foot-*`, left out of the pre
   `world.topo.bathy.200412.3x5400x2700.jpg`, https://visibleearth.nasa.gov/images/73909), NASA imagery, public domain under the
   NASA media usage guidelines; sha256 of the source `a9f0088972dee0254610af851c4d6838ca3f2cf79176987e0a5713e2c15ec042`.
   Cloud-free, so it shows land and ocean, not the weather of the day.
-- **Astronaut suit**: the existing `astronaut-suit.webp` (above), now put on the model's UVs.
+- **Astronaut suit**: the existing `astronaut-suit.webp` (above). The on-foot view no longer uses it (VENT-46 replaced the model with the Meshy astronaut below); it stays for the sprite bake.
 - **Lander**: now the models of «On-foot view models v2» below, used by the on-foot view: the Apollo Lunar Module (NASA 3D Resources) on the
   Apollo sites and the generic robotic lander built from code on every other site and custom point (`lander-kind.ts`).
 
@@ -445,8 +445,9 @@ All load on demand with the 3D view (file names `on-foot-*`, left out of the pre
   Apollo sites.
 - **Known limits**: the bake is deterministic on one machine (fixed seeds), but Cycles bakes are not promised to be
   byte-identical across CPUs, so `--check` may report the baked maps of the two models built from code as changed on
-  another machine. Without an environment map, three.js shades the metal materials (foil, struts, bearings, visor)
-  darker than these previews, which light them with a grey sky. The page does not use these files yet.
+  another machine. The on-foot view lights the metal materials (foil, struts, bearings, visor) with an analytic
+  earthshine instead of an environment map (`scene/earthshine.ts`), so they read close to these previews, which light them
+  with a grey sky. The on-foot view uses these files (VENT-46).
 
 ## On-foot view astronaut, Meshy (VENT-34)
 

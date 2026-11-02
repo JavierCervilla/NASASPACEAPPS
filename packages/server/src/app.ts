@@ -30,6 +30,7 @@ import { compress } from 'hono/compress';
 import { apiHeaders } from './api-headers.ts';
 import { errorLog } from './error-log.ts';
 import { clientIp } from './client-ip.ts';
+import type { IpSlots } from './ip-slots.ts';
 import { computeEphemeris, type EphemerisRequest } from './ephemeris.ts';
 import {
   HorizonsError,
@@ -37,6 +38,7 @@ import {
   type PointsUsageSource,
 } from './horizons/client.ts';
 import {
+  DEFAULT_LOD_MISSES_PER_WINDOW,
   MissLimitError,
   createMissLimiter,
   limitMisses,
@@ -50,9 +52,9 @@ import {
 } from './params.ts';
 import type { HorizonSource } from './terrain/horizon-cache.ts';
 import type { TerrainStatusBody } from './terrain/fetch-status.ts';
-import { horizonResponse } from './terrain/horizon-route.ts';
+import type { LodSource } from './terrain/lod-cache.ts';
+import { mountTerrain } from './terrain/terrain-routes.ts';
 import type { TileSource } from './terrain/tile-cache.ts';
-import { tileResponse } from './terrain/tile-route.ts';
 
 /**
  * What the API needs from the outside world, injected so tests can replace it.
@@ -82,6 +84,20 @@ export interface AppDeps {
   /** The terrain's height tiles (VENT-34); absent like `terrain`. */
   readonly tiles?: TileSource | undefined;
   /**
+   * The terrain's levelled, aligned tiles (VENT-46); absent like `terrain`.
+   */
+  readonly lod?: LodSource | undefined;
+  /**
+   * Limits the computations of `lod` tiles per client IP; by default
+   * {@link createMissLimiter} with `DEFAULT_LOD_MISSES_PER_WINDOW`.
+   */
+  readonly lodLimiter?: MissLimiter;
+  /**
+   * Caps the `lod` computations one client IP has in flight (and waiting);
+   * by default {@link IpSlots} with its defaults.
+   */
+  readonly lodSlots?: IpSlots | undefined;
+  /**
    * The terrain's tiers and its fetch (VENT-43); absent without
    * TERRAIN_DIR, and then /terrain/status says so with no tiers.
    */
@@ -91,7 +107,10 @@ export interface AppDeps {
 }
 
 /** {@link AppDeps} with the limiter chosen, shared by every route. */
-type RouteDeps = AppDeps & { readonly missLimiter: MissLimiter };
+type RouteDeps = AppDeps & {
+  readonly missLimiter: MissLimiter;
+  readonly lodLimiter: MissLimiter;
+};
 
 // Answers for a fixed point and range only change if Horizons revises its
 // ephemeris, so browsers and proxies may keep them for a while.
@@ -184,16 +203,7 @@ function createV1(deps: RouteDeps): Hono {
   // dates or whole hours, optional at.
   v1.get('/ephemeris', (c) => ephemerisResponse(c, deps, c.req.query()));
 
-  // Any point: lat and lon (east longitude) in degrees, optional height.
-  v1.get('/horizon', (c) => horizonResponse(c, deps.terrain, deps.missLimiter));
-
-  // Any point: lat and lon (east longitude) in degrees, optional size.
-  v1.get('/terrain/tile', (c) => tileResponse(c, deps.tiles, deps.missLimiter));
-
-  // Tier ids, states and byte counts only: no paths.
-  v1.get('/terrain/status', (c) =>
-    c.json(deps.terrainStatus?.() ?? { fetch: 'off', tiers: [] }),
-  );
+  mountTerrain(v1, deps);
 
   v1.get('/sites', (c) => c.json({ sites: deps.sites }));
 
@@ -220,12 +230,15 @@ export function createApp(deps: AppDeps): Hono {
   // One limiter per app, shared by every route (and every version) that may
   // call Horizons.
   const missLimiter = deps.missLimiter ?? createMissLimiter({ now: deps.now });
+  const lodLimiter =
+    deps.lodLimiter ??
+    createMissLimiter({ now: deps.now, limit: DEFAULT_LOD_MISSES_PER_WINDOW });
   app.use('/api/*', errorLog({ log: deps.log ?? console.error, now: deps.now }));
   app.use('/api/*', apiHeaders());
   // JSON over 1 kB goes gzipped (or deflated) to a client that accepts it:
   // a 352 kB terrain tile (VENT-34) is the reason. Brotli would need
   // node:zlib by hand; Hono's middleware uses CompressionStream.
   app.use('/api/*', compress());
-  app.route('/api/v1', createV1({ ...deps, missLimiter }));
+  app.route('/api/v1', createV1({ ...deps, missLimiter, lodLimiter }));
   return app;
 }

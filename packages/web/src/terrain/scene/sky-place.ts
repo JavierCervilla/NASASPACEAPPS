@@ -25,11 +25,12 @@
 
 /**
  * The sky placed at the instant (VENT-34), and where the Sun's light
- * falls: the tile's shadows per vertex (sun-shade.ts), and the factors of
+ * falls: the near ground's shadows per vertex (sun-shade.ts), and the
+ * factors of
  * sun-mask.ts from what hides the Sun (ridge.ts): the far horizon darkens
  * the whole view, a ridge in reach only what it shades.
  */
-import type { BufferAttribute, Matrix3, Vector3 } from 'three';
+import type { Matrix3, Vector3 } from 'three';
 import type { HorizonProfile } from '@ventana/sim';
 import { blockerOf, ridgeAlong } from '../ridge';
 import { sunLit } from '../sun-shade';
@@ -78,7 +79,8 @@ function placeFill(parts: SkyParts, sky: SkyDirs): void {
 
 export interface Shading {
   readonly tiles: readonly PlacedTile[];
-  readonly lit: (key: string) => BufferAttribute | undefined;
+  /** Hears the near ground's Sun mask, per node of its grid. */
+  readonly onLit: (lit: Float32Array) => void;
   readonly profile: HorizonProfile | null;
   readonly mask: SunMask;
 }
@@ -89,11 +91,7 @@ export function shadeSun(shading: Shading, sky: SkyDirs): void {
   let centre = 1;
   for (const placed of shading.tiles) {
     const lit = sunLit(placed.tile, placed.ys, sun);
-    const attribute = shading.lit(placed.tile.key);
-    if (attribute) {
-      (attribute.array as Float32Array).set(lit);
-      attribute.needsUpdate = true;
-    }
+    if (placed === shading.tiles[0]) shading.onLit(lit);
     if (placed === shading.tiles[0]) {
       centre = lit[nearestSample(placed.tile, 0, 0)] ?? 1;
     }

@@ -33,6 +33,12 @@ import { FixedWindowLimiter } from './fixed-window-limiter.ts';
  * Cache misses one client IP may cause per window when the caller sets none.
  */
 export const DEFAULT_MISSES_PER_WINDOW = 30;
+/**
+ * Computations of levelled terrain tiles (VENT-46) one client IP may cause
+ * per window: a view streams a few dozen tiles at once, and each costs one
+ * block read like any other, so they have a limit of their own.
+ */
+export const DEFAULT_LOD_MISSES_PER_WINDOW = 600;
 /** Length of the miss-limit window when the caller sets none: 10 minutes. */
 export const DEFAULT_MISS_WINDOW_MS = 10 * 60 * 1000;
 // Keys the limiter keeps at most; past it the oldest key is dropped, so the map

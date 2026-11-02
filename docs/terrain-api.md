@@ -15,6 +15,8 @@ offline script and other projects call the same functions:
 | `terrain-codec.ts` | `encodeProfile` / `decodeProfile`: little-endian int16 in base64 (720 bins = 1920 characters) |
 | `sun-disc.ts` | `sunDiscVisible`: the fraction of the Sun's disc (radius 0.26645°, IAU nominal values) above the terrain |
 | `dem-grid.ts` | `DemGrid`: a grid's size, projection (polar stereographic or simple cylindrical, as the PDS labels define them) and a `dnAt(line, sample)` accessor; `demHeightAt` (bilinear), `pixelOf`, `arrayGrid` |
+| `tile-scheme.ts`, `tile-key.ts`, `tile-georef.ts`, `tile-locate.ts`, `tile-ring.ts`, `tile-candidates.ts` | The global tiling of VENT-46: `schemeFor`, `tileGeoref`, `sampleDirection`, `tileContaining`, `tilesAround`, `isTileKey` (see «Aligned tiles with levels of detail») |
+| `lod-tile.ts`, `tile-quant.ts` | `alignedTile(grids, key)`: the heights at a tile's nodes; `quantiseHeights` / `encodeQuantised` / `decodeQuantised`: the 16-bit form |
 | `terrain-tile.ts`, `tile-codec.ts` | `terrainTile(grids, centre, sizeM, n)`: an `n` x `n` height grid in the local tangent plane, and `encodeHeights` / `decodeHeights` (little-endian float32 in base64) |
 | `ray-stops.ts`, `ray-march.ts` | `terrainHorizon(bands, observer, bins = 720)`: great-circle rays on the sphere, curvature included, each stop reading the first grid of its band that has a height |
 | `terrain-hours.ts` | `terrainHours(hours, profile)`: marks `sunAboveTerrain`, `sunDisc` and `earthAboveTerrain` on each hour; `hasSun`, `hasEarth` and `earthLink` honour them |
@@ -115,6 +117,11 @@ LDEM_128 to a median 9 m at 84.5° to 85.5° N; the flipped orientation differs 
 | `TERRAIN_CACHE_MB` | 256 | byte cap of the answers, least recently used out first |
 | `TERRAIN_BLOCKS_MB` | 192 | grid blocks kept in memory between requests |
 | `TERRAIN_TILE_CACHE_MB` | 512 | byte cap of the height tiles on disk (`<TERRAIN_CACHE_DIR>/tiles`), least recently used out first |
+| `TERRAIN_LOD_CACHE_MB` | 512 | byte cap of the levelled tiles on disk (`<TERRAIN_CACHE_DIR>/lod`), least recently used out first |
+| `TERRAIN_LOD_MAX_RUNNING` | 2 | levelled tiles computed at once, on their own gate apart from the horizons' |
+| `TERRAIN_LOD_MAX_WAITING` | 32 | levelled tiles waiting for that gate; past it 503 with `Retry-After: 10` |
+| `TERRAIN_LOD_PER_IP` | 4 | levelled-tile computations one address may run at once |
+| `TERRAIN_LOD_PER_IP_WAITING` | 4 | further computations one address may queue in order; past it 429 with `Retry-After: 1` |
 | `TERRAIN_MAX_RUNNING` | 2 | horizons and tiles computed at once; 16 more may wait, then 503 |
 
 | `TERRAIN_FETCH_TIERS` | unset: no fetch | `all`, or tier ids separated by commas: the server fetches the missing ones at boot |
@@ -250,4 +257,187 @@ quantised form (int16 centimetres relative to `groundM`, half the size) as anoth
 LRU): 110 to 150 ms per tile, two passes over 66 049 samples (a probe that notes the blocks, then the real one); a third
 runs only when the real pass finds a block still missing (a sample read as a hole, NaN, that falls through to a
 coarser tier whose blocks the probe never noted). Not measured on the real 48.6 GB volume.
+
+## Aligned tiles with levels of detail (VENT-46)
+
+The 4 km tile above is centred on the point, so a viewer that walks gets a new, unrelated tile every time. For relief
+in rings out to 32 km (128 km on request) and for streaming while walking, the server also serves tiles of a **global,
+deterministic tiling**: a tile is the same square of the Moon whoever asks, so two clients, a CDN and the disk cache
+share it. The human's goal: the mid and far relief must look as good as the rest of the app.
+
+### The tiling (our choices, with the reasons)
+
+A fixed grid per anchor point would break sharing, and a grid in a local azimuthal frame is not shareable. So the tiles
+sit on the **projection grids of the LOLA data themselves**:
+
+| Scheme | Serves | Plane | A tile is |
+|---|---|---|---|
+| `polar-south`, `polar-north` | latitudes 60° to the pole | the polar stereographic plane of the PDS polar grids, true scale at the pole | a square of `2000 * 4^level` m of the plane |
+| `latlon` | below 60° | the simple cylindrical grid of the global tiers | `1/16 * 4^level` degrees a side |
+
+The scheme is chosen by the **anchor's** latitude (`schemeFor`: `|lat| >= 60`), so a view never mixes schemes; tiles of
+a scheme exist wherever its keys are valid (`isTileKey`: polar tiles reaching within 45° of the pole, lat-lon tiles
+below 75°). Our choice of 60° and not 80°: the stereographic plane is conformal (cells stay square on the ground; at
+latitude φ the ground is `(1 + sin φ) / 2` of the plane, 0.93 at 60° and 0.998 at 85°), while a lat-lon cell is
+`cos φ` as wide as it is tall (2:1 at 60°, 5.8:1 at 80°, which would make the cells of the south pole's sites
+slivers). The polar grids are only the plane: heights come from the finest tier covering each node, polar or global.
+
+**Levels.** Four, each tile 4 times the one below, every tile **129 x 129 samples** (128 cells):
+
+| Level | Tile side | Node spacing | Typical use |
+|---|---|---|---|
+| 0 | 2 km (lat-lon: 1/16° = 1.9 km) | 15.6 m | the ground around the viewer |
+| 1 | 8 km (1/4°) | 62.5 m | mid relief |
+| 2 | 32 km (1°) | 250 m | far relief |
+| 3 | 128 km (4°) | 1 km | the far horizon, on request |
+
+Why 129: a 129-sample tile is a 128 x 128 mesh, 33 k triangles; 257 would be 131 k a tile, too many to draw a ring of
+them on a laptop without a GPU. It is also 33 kB of 16-bit heights instead of 132. Why 15.6 m at level 0: it is the
+native spacing of LOLA's 20 m polar grid (a finer mesh would be smooth interpolation, not terrain; the answer's
+`resolutionM` says what is measured) and a power of two, so everything below is exact in a double.
+
+**Alignment.** Tiles of a level **share their edge samples**: sample 128 of a tile is sample 0 of its neighbour, the
+very same node, so heights agree bit for bit and a mesh has no crack between neighbours of a level (they decode alike
+because they share their `quantumM`, below). A node `(r, c)` of a tile is also a node of the level above **at the same
+place** whenever `r` and `c` are multiples of 4 (`tests/tile-scheme.test.ts`): the parent's samples are every 4th
+sample of each of its 16 children. **Its height there is only approximately the same.** Each level reads the tiers in
+its own order (see «Which tiers a level reads»), so a node shared by level 1 and level 2 can be measured by the 20 m
+tier in one and by the 80 m or global tier in the other, and the two differ by what the coarser tier averages away:
+metres on real relief, 475 m on the test fixture's crater wall (`tests/terrain-lod.test.ts`). Levels 0 and 1 read the
+same tiers in the same order (every tier of the catalogue is 20 m or coarser), so their shared nodes are equal
+(«a tile its parent level heights at every 4th sample»); where only one tier covers a node every level reads it, so
+the heights agree up to the two steps (0.1 and 0.2 m).
+**The viewer must stitch level boundaries**, and must not assume a parent's sample equals its child's: the fine edge
+has 4 samples for each of the coarse one's and they differ between the shared nodes too; hang a skirt on each tile's
+edge, or snap the fine edge's samples to the coarse edge's line. The tiling does not do it for the viewer. Why not
+exact: a node of level 3 is a node of every level below, so exactness means every level reads the finest tier at its
+nodes, which is the aliasing the tier rule avoids (20 m data point-sampled at 1 km) and a cost that is not bounded by
+a few blocks: a 128 km tile would touch the 20 m grid's blocks of 256 x 256 (5.1 km) over its whole area, about 625
+instead of a few of the 240 m tier, per computation. Not measured on the real volume; the test fixture's 12 km grid
+cannot show it (7 block reads either way). The 0° E seam is closed
+(tile `x = 359` of level 2 ends at 360° E, which is 0° E), and a polar tile at the pole has the pole as the corner node
+of four tiles.
+
+Heights are a function of the node and its level alone: from the first tier the level reads that covers it (bilinear,
+as the other routes do), so the answer for a tile does not depend on which other tiles were asked, in what order, or
+when.
+
+**Which tiers a level reads.** The finest data a level reads is a quarter of its node spacing (`minDataResolutionM`:
+3.9, 15.6, 62.5 and 250 m): point-sampling 20 m data at a 250 m spacing aliases the relief and reads blocks for nothing,
+and LOLA's coarse tiers are already averaged. So level 2 reads the 80 m polar tier (outside it the 118 m global one),
+level 3 the 240 m ones, and a finer tier fills in only where the coarser ones do not cover (the
+tiers a level may not use come last, coarsest first, `tiersForLevel`). The effect, by design (not measured on the real
+volume): **every tile reads about the same**, a few blocks of 256 x 256 whatever its level, so it counts as one
+computation for the gate and the limiter.
+
+### The ring: `GET /api/v1/terrain/tiles?lat&lon[&levels]`
+
+- `lat`, `lon`: as `/horizon` (0.01° grid, `lon` east from -180 to 360).
+- `levels`: 1 to 4, default 3 (to 32 km). Our choice: three levels are about 27 tiles.
+
+Level `L` covers a square of half-side one tile of that level around the point (2, 8, 32, 128 km). On the polar
+plane that is at most 3 x 3 tiles a level; on the lat-lon grid, where a tile is narrower than it is tall, up to 6 x 3
+at 60° (up to 20 tiles). Nearest first, the tile the point is in leading. Levels overlap (a coarse tile lies under the
+finer ones); what to draw where, and where to cut holes, is the viewer's.
+
+```json
+{
+  "lat": -85.87, "lonEast": 61.34, "scheme": "polar-south", "version": "3fa91c0b", "n": 129,
+  "levels": [
+    { "level": 0, "sizeM": 2000, "spacingM": 15.625, "tiles": [
+      { "x": 3, "y": -2, "url": "/api/v1/terrain/tiles/polar-south/0/3/-2?v=3fa91c0b" } ] }
+  ]
+}
+```
+
+`version` is eight hex digits naming the tiers present (and the method). Answers with `Cache-Control: public,
+max-age=300`; 400 (bad point or `levels`), 503 (`terrain data is not installed`). A client that wants the pure
+function has it in `@ventana/sim`: `tilesAround({ latDeg, lonEastDeg }, levels)`, and `tileContaining(scheme, level,
+lat, lon)` gives the tile under a point at any level, so a walking viewer can find the next tiles without the server.
+
+### The tile: `GET /api/v1/terrain/tiles/{scheme}/{level}/{x}/{y}[?v=<version>]`
+
+`scheme` is `polar-south`, `polar-north` or `latlon`; `level` 0 to 3; `x`, `y` whole numbers (negative allowed on the
+polar plane). A tile `(x, y)` covers `[x * size, (x + 1) * size]` on each axis of the plane (X east, Y up, see below),
+or `[x * size, (x + 1) * size]` degrees of east longitude and `[y * size, (y + 1) * size]` of latitude.
+
+```json
+{
+  "version": "3fa91c0b", "scheme": "polar-south", "level": 0, "x": 3, "y": -2, "n": 129,
+  "georef": { "kind": "polar", "pole": "south", "radiusM": 1737400, "minX": 6000, "maxY": -2000, "spacingM": 15.625 },
+  "quantumM": 0.1, "baseUnits": -34210, "noData": 65535, "heights": "<base64>",
+  "minM": -3421.04, "maxM": -2987.5,
+  "resolutionM": 20, "tiers": [{ "id": "polar-south-20m", "resolutionM": 20, "share": 1 }], "coverage": 1
+}
+```
+
+- **`heights`**: `n * n` little-endian **uint16** `q`, base64, rows from north to south (plane +Y), columns from west
+  to east (plane +X). Height in metres above the sphere of radius 1 737 400 m: `h = (baseUnits + q) * quantumM`,
+  and `q = 65535` (`noData`) is a node no tier covers. No ground reference: heights are absolute, so two tiles agree
+  without knowing each other. `decodeQuantised(heights, quantumM, baseUnits)` of `@ventana/sim` reads it (NaN for no
+  data). Why uint16 and not float32: the same tile is 33 kB of values instead of 66, and the step is 0.1 m
+  (**an error of at most 0.05 m** at levels 0 and 1, under the 0.1 m target and under LOLA's own 0.5 m DN step). The
+  step is a constant **of the level** and `baseUnits` a whole number of steps, not the tile's minimum, so a node shared
+  by two tiles of a level decodes to the same height in both, whatever else they hold. `quantumM` is 0.1 m at levels
+  0 and 1, 0.2 m at level 2 (13 km of relief) and 0.4 m at level 3 (26 km, more than the Moon's 20 km from its
+  lowest floor to its highest rim), so no tile of any level needs more than its level's step and the error is at most
+  0.05, 0.05, 0.1 and 0.2 m (the spacing is 15.6 m to 1 km). **Two tiles agree on a shared node only when they share
+  `quantumM`**: neighbours of a level always do; across levels the nodes differ by up to the two steps anyway.
+  (`levelQuantumM` of `@ventana/sim`; a tile whose relief still did not fit 65 534 steps would double the step as often
+  as it needs and say so in `quantumM`: it cannot happen on the Moon, but read `quantumM` of every answer.)
+- **`georef`** places every sample exactly, in the local frame of the client's choice:
+  - polar: sample `(row, col)` is at plane `X = minX + col * spacingM`, `Y = maxY - row * spacingM` metres; `pole`
+    is the pole of the plane. Plane and sphere, as the PDS grids and `pixelOf` define them: with `k = 2R / (1 - z)`
+    (south) or `2R / (1 + z)` (north) a unit vector `(p0, p1, z)` (x to 0° E, y to 90° E, z north) is at `X = k p1`,
+    `Y = k p0` (south) or `Y = -k p0` (north). So 90° E is +X on both and 0° E is +Y at the south pole and -Y at the
+    north. The inverse needs no trigonometry: `t = ρ / 2R`, `ρ = hypot(X, Y)`, the horizontal part of the unit vector is
+    `2t / (1 + t²)` along `(±Y, X) / ρ` and `z = ∓(1 - t²) / (1 + t²)`. **Plane metres are not ground metres**: the
+    ground is `(1 + sin |lat|) / 2` of the plane (0.998 at 85°); place the nodes with `sampleDirection`, not by
+    multiplying the spacing.
+  - lat-lon: `lat = northDeg - row * spacingDeg`, `lonEast = (westDeg + col * spacingDeg) mod 360`.
+  - `sampleDirection(georef, row, col)` of `@ventana/sim` is the unit vector of a sample in both; the point on the Moon
+    is that times `radiusM + h`. A viewer takes its anchor's unit vector `u` and builds the local east, north, up
+    frame from it (up = `u`; the sphere's curvature is already in `h`, nothing to subtract).
+- `resolutionM`, `tiers`, `coverage`: as the 4 km tile's. `minM`, `maxM`: the extremes, for bounding boxes and culling.
+  Compare the node spacing (`spacingM` for polar tiles) with `resolutionM` to say what is measured.
+
+**Cache.** `?v` is optional. Under the **current** version (`ETag: "<version>"`) the answer is
+`Cache-Control: public, max-age=31536000, immutable`: tiles change only when a tier is installed (VENT-43), which
+changes the token the ring route hands out. Without `v` it is `max-age=86400`; under a version that is no longer
+current it is `max-age=300` (the answer is the current tiles, and says its `version`, so the client re-reads the ring).
+`If-None-Match` with the current ETag answers **304** before the limiter and the gate: a revalidation costs nothing.
+
+**Errors and limits.** 400 (bad scheme, level, `x`, `y` or `v`, or a key outside the grid of its scheme and level), 404
+(no tier on this server covers a single node of the tile), 503 (`terrain data is not installed`, or the queue is full,
+with `Retry-After: 10`), 429. Every `/api/*` error answer is logged as one line (VENT-45). The disk cache holds tiles
+under `<TERRAIN_CACHE_DIR>/lod`, key = scheme, level, `x`, `y` and the version, so a new tier gives new tiles.
+
+**Limits for streaming.** A computation counts against its own per-address limit (**600 per 10 minutes**, the
+horizon's is 30; a ring of three levels is about 27 tiles), and two more guards keep a tile flood from starving the
+rest (Seguridad's finding on VENT-46):
+
+- **Its own gate.** Levelled tiles run on a gate apart from the horizons' and the height tiles' (`TERRAIN_LOD_MAX_RUNNING`
+  at once, `TERRAIN_LOD_MAX_WAITING` waiting, then 503 with `Retry-After: 10`), so a flood fills only that queue and
+  `/horizon` keeps answering. They still share the block LRU (`TERRAIN_BLOCKS_MB`), and up to the two gates' sum of
+  computations can read blocks at once.
+- **Slots per address.** One address holds at most `TERRAIN_LOD_PER_IP` (4) computations at once. A fifth waits its turn
+  in a room of `TERRAIN_LOD_PER_IP_WAITING` (4) places, in order; past it the answer is **429** with `Retry-After: 1`.
+  Waiting, not refusing, is deliberate: the web keeps 6 requests in flight, so on a cold cache two wait a few
+  milliseconds for a slot instead of failing and retrying after seconds, while one address can never hold more than 8
+  places (4 + 4) in the gate's queue or on the server's memory. Tiles read from the disk cache, a 304 and a request
+  that joins a computation already running for the same tile take **no slot and count no miss**. A request that had
+  to wait for a slot looks again once it has one: if the tile was stored meanwhile it is read from the disk, and if
+  another request started computing it, it joins that, so a waiter spends neither a computation nor a miss on a tile
+  somebody else produced. The slot is held until the tile is computed (or failed) and stored. The table of slots forgets an address when its last slot is given back, so it is never larger
+  than the requests in flight. Several people behind one address (a venue's Wi-Fi) share its 4 slots and 600 misses.
+
+A client should keep at most **6 requests in flight** and fetch the ring in the order the route lists it (nearest
+first); a retry waits `Retry-After`. Tiles read from the disk cache cost nothing.
+
+**Budget.** The answer is 44.7 kB of JSON (33 282 bytes of `q`, 44 376 characters of base64, plus about 400 of fields):
+a seventh of the 4 km tile's 352 kB. On a synthetic rough surface (a 400 m swell, a 25 m ripple and 0.8 m of noise,
+worse than LOLA's) it gzips to 31.9 kB against 63.9 kB for the same tile in float32; the API gzips every JSON answer
+over 1 kB. Measured on the test fixture (a 600 x 600 polar grid and a coarse globe, Node 22, cold LRU): 20 to 100 ms a
+tile (a probing pass and a real one over 16 641 nodes), `tilesAround` 0.05 ms. Not measured on the real 48.6 GB volume.
+A byte-plane shuffle of the 16-bit values (high bytes first) would shrink the gzip further; it is not built.
 

@@ -33,8 +33,11 @@
 import { createLoop } from '../../globe/loop';
 import { pickQuality } from '../../globe/quality-pick';
 import { isPhoneViewport } from '../../lib/viewport';
+import { coastOf } from '../look-coast';
+import { dragScale } from '../look-input';
 import { startLook, type Look } from '../view-camera';
 import { loadAstronaut } from './astronaut';
+import { loadLander } from './lander';
 import { markReadyWhenStanding } from './ready-mark';
 import { bindLook } from './controls';
 import { framer, type ViewState } from './scene-frame';
@@ -43,6 +46,10 @@ import type { SceneHooks, SceneInput, TerrainScene } from './scene-types';
 import { createStage, disposeStage } from './stage';
 import { loadSurfaces } from './surfaces';
 import { applyInput, createWorld, type World } from './world';
+
+/** Whether the person asked for less motion. */
+const reducedMotion = (): boolean =>
+  window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
 /** The world on a new stage in `host`; throws without WebGL. */
 function stageWorld(host: HTMLElement, seed: number): World {
@@ -58,7 +65,13 @@ function bindHost(host: HTMLElement, world: World, view: ViewState,
   const { camera } = world.stage;
   const unbind = bindLook(host, { mode: () => view.mode, set,
     look: () => view.look, home: () => view.home,
-    degPerPx: () => camera.fov / Math.max(host.clientHeight, 1) });
+    scale: () => dragScale(host.clientWidth, host.clientHeight, camera.fov),
+    fling: (vx, vy) => {
+      const scale = dragScale(host.clientWidth, host.clientHeight, camera.fov);
+      view.coast = coastOf({ x: vx, y: vy }, scale, reducedMotion());
+      if (view.coast) world.invalidate();
+    },
+    halt: () => void (view.coast = null) });
   const observer = new ResizeObserver(() => set(view.look));
   observer.observe(host);
   return () => {
@@ -70,14 +83,26 @@ function bindHost(host: HTMLElement, world: World, view: ViewState,
 /** Loads the astronaut and the maps; marks the host once both stand. */
 function startLoading(host: HTMLElement, world: World,
   loop: ReturnType<typeof createLoop>): () => void {
+  let alive = true;
+  const lander = { into: world.lander, mask: world.mask,
+    alive: () => alive };
+  const astronaut = { into: world.astronaut, mask: world.mask,
+    alive: () => alive, reducedMotion };
   const standing = Promise.all([
-    loadAstronaut(world.astronaut, world.mask, console.warn),
+    loadAstronaut(astronaut, console.warn).then((idle) => {
+      world.idle = idle;
+    }),
+    loadLander(lander, world.input?.lander ?? 'generic', console.warn),
     loadSurfaces(world, console.warn),
   ]).then(() => undefined);
-  return markReadyWhenStanding(host, standing, () => loop.invalidate());
+  const unmark = markReadyWhenStanding(host, standing,
+    () => loop.invalidate());
+  return () => {
+    alive = false;
+    unmark();
+  };
 }
 
-/** Mounts the view in `host` with `input`; throws without WebGL. */
 export function mountTerrainScene(
   host: HTMLElement,
   input: SceneInput,
@@ -85,9 +110,10 @@ export function mountTerrainScene(
 ): TerrainScene {
   const world = stageWorld(host, input.seed);
   const home = startLook(input.mode, input.startYawDeg);
-  const view: ViewState = { mode: input.mode, look: home, home };
+  const view: ViewState = { mode: input.mode, look: home, home, coast: null };
   const { labels, frame } = framer(world, host, hooks, view);
   const loop = createLoop(frame);
+  world.invalidate = () => loop.invalidate();
   const set = turner(view, hooks, () => loop);
   applyInput(world, input);
   const unbind = bindHost(host, world, view, set);

@@ -30,20 +30,20 @@
  * coordinates. Nothing once the scene draws.
  */
 import type { TextKey } from '../../i18n/catalogue';
-import type { TileState } from '../../terrain/tile-fetch';
+import type { RingState } from '../../terrain/ring/ring-session';
 import { useI18n } from '../i18n-context';
 import type { SceneStatus } from './use-terrain-scene';
 
 interface Props {
   readonly located: boolean;
-  readonly tile: TileState;
+  readonly tile: RingState;
   readonly scene: SceneStatus;
   readonly onRetry: () => void;
 }
 
-const TILE_WORDS: Readonly<Record<TileState['kind'], TextKey | null>> = {
+const TILE_WORDS: Readonly<Record<RingState['kind'], TextKey | null>> = {
   loading: 'onFoot.loading',
-  tile: null,
+  ready: null,
   noTerrain: 'onFoot.noTerrain',
   notInstalled: 'horizon.notInstalled',
   unavailable: 'onFoot.unavailable',
@@ -52,7 +52,7 @@ const TILE_WORDS: Readonly<Record<TileState['kind'], TextKey | null>> = {
 /** The message's key, or null when the scene shows. */
 function wordsOf({ located, tile, scene }: Props): TextKey | null {
   if (!located) return 'onFoot.noPoint';
-  if (tile.kind !== 'tile') return TILE_WORDS[tile.kind];
+  if (tile.kind !== 'ready') return TILE_WORDS[tile.kind];
   if (scene === 'failed') return 'onFoot.noWebgl';
   return scene === 'loading' ? 'onFoot.loading' : null;
 }

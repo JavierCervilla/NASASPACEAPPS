@@ -31,10 +31,12 @@
  * the panel can name them without loading the scene.
  */
 import type { HorizonProfile } from '@ventana/sim';
+import type { LanderKind } from '../lander-kind';
+import type { RingView } from '../ring/ring-session';
 import type { HeightTile } from '../tile';
 import type { CameraMode, Look } from '../view-camera';
 
-/** A tile and its mesh heights (tile-mesh.ts `meshHeights`). */
+/** The near ground and its mesh heights (the frame's y, ring-local.ts). */
 export interface PlacedTile {
   readonly tile: HeightTile;
   readonly ys: Float32Array;
@@ -56,8 +58,10 @@ export interface SceneWords {
 }
 
 export interface SceneInput {
-  /** The tiles the scene draws, by key; one around the point today. */
+  /** The near ground (props, feet, shadows): one around the point. */
   readonly tiles: readonly PlacedTile[];
+  /** The relief rings drawn, and the store their tiles arrive in. */
+  readonly ring: RingView;
   readonly profile: HorizonProfile | null;
   /** The illustrative detail's seed (seeded.ts). */
   readonly seed: number;
@@ -65,6 +69,8 @@ export interface SceneInput {
   /** The Earth's scene-to-body matrix, row-major (earth-orientation.ts). */
   readonly earthSpin: readonly number[];
   readonly mode: CameraMode;
+  /** The lander beside the astronaut (lander-kind.ts). */
+  readonly lander: LanderKind;
   /** Where the view opens: the Sun's azimuth, or the Earth's. */
   readonly startYawDeg: number;
   readonly words: SceneWords;

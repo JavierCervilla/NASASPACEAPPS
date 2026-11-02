@@ -25,22 +25,24 @@
 
 /**
  * The on-foot view's caption (VENT-34): what is measured and what is not.
- * «Fine detail illustrative · relief LOLA 20 m», then what stands in for
- * what we do not have yet: the lander's model and the Earth's map.
+ * «Fine detail illustrative · relief LOLA 20 m», then the lander's model
+ * (the Apollo LM is NASA's, the generic one is ours) and the Earth's map.
  */
+import type { LanderKind } from '../../terrain/lander-kind';
 import { detailCaption } from '../../terrain/view-text';
 import { useI18n } from '../i18n-context';
 
 interface Props {
   readonly resolutionM: number;
+  readonly lander: LanderKind;
 }
 
-export function OnFootCaption({ resolutionM }: Props) {
+export function OnFootCaption({ resolutionM, lander }: Props) {
   const i18n = useI18n();
   return (
     <p className="on-foot__caption">
       <span className="on-foot__caption-main">{detailCaption(i18n, resolutionM)}</span>
-      <span className="on-foot__caption-note">{i18n.t('onFoot.placeholders')}</span>
+      <span className="on-foot__caption-note">{i18n.t(lander === 'apollo' ? 'onFoot.captionApollo' : 'onFoot.captionGeneric')}</span>
     </p>
   );
 }

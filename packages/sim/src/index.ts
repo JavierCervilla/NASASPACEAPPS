@@ -125,3 +125,45 @@ export {
   type TileCentre,
 } from './terrain-tile.ts';
 export { decodeHeights, encodeHeights } from './tile-codec.ts';
+export {
+  LUNAR_RADIUS_M,
+  POLAR_MIN_LAT_DEG,
+  TILE_CELLS,
+  TILE_LEVELS,
+  TILE_SAMPLES,
+  levelSize,
+  nominalSpacingM,
+  schemeFor,
+  type TileKey,
+  type TileScheme,
+} from './tile-scheme.ts';
+export { isTileKey } from './tile-key.ts';
+export {
+  sampleDirection,
+  tileGeoref,
+  type LatLonGeoref,
+  type PolarGeoref,
+  type TileGeoref,
+} from './tile-georef.ts';
+export { planePoint, tileContaining } from './tile-locate.ts';
+export {
+  DEFAULT_LEVELS,
+  tilesAround,
+  type TilePlan,
+  type TileRing,
+} from './tile-ring.ts';
+export {
+  alignedTile,
+  minDataResolutionM,
+  type AlignedTile,
+} from './lod-tile.ts';
+export { levelQuantumM } from './level-quantum.ts';
+export {
+  MIN_QUANTUM_M,
+  NO_DATA,
+  decodeQuantised,
+  dequantiseHeights,
+  encodeQuantised,
+  quantiseHeights,
+  type QuantisedHeights,
+} from './tile-quant.ts';

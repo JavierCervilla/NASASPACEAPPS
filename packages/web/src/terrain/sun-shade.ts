@@ -43,20 +43,23 @@ const highest = (ys: Float32Array): number =>
 
 /**
  * 1 for each vertex the Sun at `azDeg`, `elDeg` reaches within the tile,
- * 0 for each in shadow.
+ * 0 for each in shadow; only the `slice`'s rows (from, to exclusive) into
+ * its array when given, so a big grid is shaded in slices.
  */
 export function sunLit(
   tile: HeightTile,
   ys: Float32Array,
   { azDeg, elDeg }: { azDeg: number; elDeg: number },
+  slice?: { into: Float32Array; rows: readonly [number, number] },
 ): Float32Array {
   const { n } = tile;
-  const lit = new Float32Array(n * n);
-  if (elDeg < NIGHT_DEG) return lit;
+  const lit = slice?.into ?? new Float32Array(n * n);
+  const [from, to] = slice?.rows ?? [0, n];
+  if (elDeg < NIGHT_DEG) return lit.fill(0, from * n, to * n);
   const [dx, , dz] = direction(azDeg, 0);
   const rise = Math.tan(elDeg * RAD);
   const top = highest(ys);
-  for (let i = 0; i < n * n; i++) {
+  for (let i = from * n; i < to * n; i++) {
     const shade = { col: i % n, row: Math.floor(i / n), y: ys[i] ?? 0 };
     lit[i] = reaches(tile, ys, shade, { dx, dz, rise, top }) ? 1 : 0;
   }

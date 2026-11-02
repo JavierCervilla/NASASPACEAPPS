@@ -59,7 +59,7 @@ import {
 } from '../source/terrain-profiles';
 import { createHorizonStore } from '../horizon/horizon-store';
 import { horizonFetch } from '../horizon/point-horizon';
-import { fetchTileSource } from '../terrain/tile-fetch';
+import { fetchRingSource } from '../terrain/ring/ring-fetch';
 import { retryOnReturn } from '../horizon/retry-triggers';
 import { createSourceStore } from '../source/data-source';
 import { followClock } from '../calendar/follow-clock';
@@ -117,7 +117,9 @@ function createClock(sitesUrl: string, sites: readonly CardSite[]) {
     fetchHorizon: horizonFetch(globalThis.fetch.bind(globalThis), sitesUrl),
     sleep: (ms) => new Promise((done) => window.setTimeout(done, ms)),
   });
-  const tiles = fetchTileSource(globalThis.fetch.bind(globalThis), sitesUrl);
+  const tiles = fetchRingSource(globalThis.fetch.bind(globalThis), sitesUrl,
+    { sleep: (ms) => new Promise((done) => setTimeout(done, ms)),
+      random: Math.random });
   const raw = cachedComputed(pointsOf(sites));
   const source = createSourceStore(localStore());
   const shadowOf = shadowsOf(sites);

@@ -24,10 +24,12 @@
  */
 
 /**
- * How a drag and the keys turn the on-foot view (VENT-34): a drag moves
- * the world under the pointer, one field-of-view per viewport height; the
- * arrows turn 5° (Shift: 15°) and tilt 3°, and Home goes back to where
- * the view opened. Pure.
+ * How a drag and the keys turn the on-foot view (VENT-34): a drag turns
+ * 180° across the view's width, so a full turn is two swipes on a phone and
+ * on a desktop alike, and tilts one field of view over the view's height
+ * (held to the pitch's range); the arrows turn 5° (Shift: 15°) and tilt 3°,
+ * and Home goes back to where the view opened. A release carries the
+ * finger's speed on (look-coast.ts). Pure.
  */
 import { turnLook, type CameraMode, type Look } from './view-camera';
 
@@ -35,14 +37,33 @@ const YAW_STEP = 5;
 const YAW_STEP_BIG = 15;
 const PITCH_STEP = 3;
 
-/** `look` after a drag of `dx`, `dy` px over a view `fovDeg` x `heightPx`. */
+/** Degrees a drag turns the view per px, on each axis. */
+export interface DragScale {
+  readonly yaw: number;
+  readonly pitch: number;
+}
+
+/** A swipe across the whole width turns this far, degrees (the human's). */
+export const SWIPE_DEG = 180;
+
+/** The scale of a view `widthPx` x `heightPx` with `fovDeg` vertically. */
+export function dragScale(
+  widthPx: number,
+  heightPx: number,
+  fovDeg: number,
+): DragScale {
+  return { yaw: SWIPE_DEG / Math.max(widthPx, 1),
+    pitch: fovDeg / Math.max(heightPx, 1) };
+}
+
+/** `look` after a drag of `dx`, `dy` px at `scale`. */
 export function dragLook(
   mode: CameraMode,
   look: Look,
   [dx, dy]: readonly [number, number],
-  degPerPx: number,
+  scale: DragScale,
 ): Look {
-  return turnLook(mode, look, -dx * degPerPx, dy * degPerPx);
+  return turnLook(mode, look, -dx * scale.yaw, dy * scale.pitch);
 }
 
 /** The turn of each arrow: yaw and pitch, in steps. */

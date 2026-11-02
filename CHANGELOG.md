@@ -2,6 +2,41 @@
 
 ## [Sin publicar]
 
+### Cambiado
+- El astronauta de la vista 3D «Horizon» es ahora una figura con esqueleto (VENT-34): un traje EVA generado con Meshy,
+  de 1,91 m, sin banderas, logos ni insignias (se borraron del mapa de color las dos que el generador pintó por su
+  cuenta), que sustituye al modelo de NASA 3D Resources y su textura. Se carga con `GLTFLoader` solo cuando se abre la
+  vista y está de pie con su animación de reposo (el código de Three.js que el globo carga al inicio crece 11,7 KB
+  comprimidos por las piezas de animación); esa animación solo avanza en los
+  fotogramas que la vista ya dibuja al girar o cargar, así que una vista quieta sigue sin dibujar nada, y con «reducir
+  movimiento» no se mueve. Su animación de andar queda cargada para más adelante.
+- La vista 3D «Horizon» dibuja ahora relieve real en anillos hasta el horizonte (VENT-46). En lugar de una sola
+  tesela de 4 km con un muro plano a 6 km, la web pide a la API las teselas alineadas por niveles de detalle y las
+  dibuja como geometría: el suelo de al lado (nivel 0, nodos de 15,6 m), el relieve medio (8 km), y el lejano (32 y
+  128 km), de modo que las crestas que esconden el Sol y la Tierra son montañas de verdad, con su sombreado por
+  normales y, en cada anillo, sombras duras del Sol. Cada nivel deja un hueco bajo el más fino, las costuras se cierran
+  con faldones y se mezclan las normales para que no se vea ningún pliegue; una tesela que falla es un hueco que
+  rellena el nivel de arriba. Las teselas se piden de 6 en 6, las más finas primero, y se decodifican y se mallan a
+  trozos de pocos milisegundos para no bloquear la página: la vista aparece en cuanto llegan los dos niveles más finos
+  y los anillos lejanos se van completando. En el móvil el nivel 0 y el 1 usan un nodo de cada dos y el nivel más lejano
+  se omite en el nivel de calidad bajo. El muro del horizonte queda solo como fondo más allá del último anillo.
+- Girar la vista 3D cuesta menos: un deslizamiento de lado a lado gira 180° (una vuelta entera en dos), en móvil y en
+  escritorio, y al soltar el dedo el giro sigue con su velocidad y se frena solo, como la bola del globo (nada de inercia
+  con «reducir movimiento»; un toque la para; no se dibujan fotogramas cuando se ha parado).
+
+- La vista 3D enseña ahora un módulo de aterrizaje de verdad (VENT-46). En los sitios Apolo se ve el Módulo Lunar de
+  NASA 3D Resources, con su lámina dorada y sus patas; en cualquier otro sitio y en los puntos libres, un módulo robótico
+  genérico (ilustrativo, sin logos). Está a 22 m del astronauta y algo a la derecha de hacia dónde mira la vista al abrir,
+  así que sale en el primer fotograma, también en el móvil. A la sombra lo ilumina la luz de la Tierra con un cálculo
+  analítico (un hemisferio de cielo y suelo en su sombreado), sin simular una luz del Sol que no está.
+- Los anillos de relieve cierran sus costuras: las alturas de los nodos del borde de cada nivel se acercan a la
+  superficie del nivel de arriba, de modo que no queda escalón entre el relieve fino y el grueso, aunque lean teselas
+  de resolución distinta. La API sirve los mismos lugares con alturas aproximadamente iguales entre niveles (con un paso
+  por nivel de 0,1, 0,1, 0,2 y 0,4 m), y el visor se encarga de coserlos.
+- La vista 3D carga bastante más rápido en equipos sin GPU: los anillos piden un fotograma como mucho cada 1,5 s mientras
+  se construyen, en lugar de uno por trozo de trabajo (la carga de IM-2 en calidad alta pasó de 36 a 12 s en el
+  renderizado por software, de 38 fotogramas a 6).
+
 ### Arreglado
 - Un fallo pasajero ya no deja un punto sin relieve toda la sesión (VENT-45). Si la API del horizonte no responde, está
   ocupada, limita las peticiones o da un error 5xx, la web vuelve a preguntar a los 2, 6 y 18 s (o cuando el servidor
@@ -23,6 +58,16 @@
     paren mientras comprueba un fichero, y la imagen rechaza `/data//` y `/data/./` como rutas de montaje.
 
 ### Añadido
+- Relieve alineado y por niveles de detalle para la vista 3D (VENT-46, solo servidor y simulador): la API sirve teselas
+  de relieve de una cuadrícula global y determinista, en cuatro niveles (2, 8, 32 y 128 km de lado, de 129 x 129
+  muestras), con el plano estereográfico polar de LOLA desde 60° hasta cada polo y una cuadrícula latitud-longitud entre
+  medias. Las teselas vecinas comparten su borde y cada nivel comparte sus muestras con el de arriba, así que el visor
+  puede construir anillos de relieve real hasta 32 km (o 128 km) y, más adelante, cargar teselas mientras camina.
+  `GET /api/v1/terrain/tiles?lat&lon` dice qué teselas cubren cada anillo y `GET /api/v1/terrain/tiles/{scheme}/{level}/{x}/{y}`
+  da una: alturas de 16 bits (error de 0,05 m, unos 33 kB frente a los 264 kB de la tesela de 4 km), su georreferencia
+  y las capas de LOLA que la sirvieron. Las URL llevan un token de los niveles presentes y son inmutables un año; el
+  ETag responde 304 sin recalcular. Cada tesela cuenta como una sola para el límite, que es propio y más holgado que el
+  del horizonte (`TERRAIN_LOD_CACHE_MB`, 512 por defecto). La tesela de 4 km de VENT-34 sigue como estaba.
 - Vista 3D a pie (VENT-34), en la pestaña «Horizon» del escritorio y del móvil: el sitio o el punto elegido visto desde
   el suelo, con el relieve LOLA que da nuestra API en 4 km alrededor. Abre en tercera persona, con el astronauta de NASA
   de pie en el punto mirando al Sol (o a la Tierra si el Sol está bajo el horizonte), y un conmutador «Third person |

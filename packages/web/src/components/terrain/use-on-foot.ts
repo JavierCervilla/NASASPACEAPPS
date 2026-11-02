@@ -30,7 +30,7 @@
  * the scene's input and what the text alternative says.
  */
 import { useMemo, useRef, useState } from 'react';
-import { skyAt, type SiteShadow } from '@ventana/sim';
+import { skyAt, type SiteGroup, type SiteShadow } from '@ventana/sim';
 import type { TimeStore } from '../../calendar/time-store';
 import type { HorizonStore } from '../../horizon/horizon-store';
 import { useTime } from '../calendar/hooks';
@@ -39,49 +39,50 @@ import { useI18n } from '../i18n-context';
 import { sceneWords, seenBodies, spinOf, startYaw } from '../../terrain/on-foot-model';
 import type { PlacedTile, SceneInput,
   SkyDirs } from '../../terrain/scene/scene-types';
+import { landerKindOf } from '../../terrain/lander-kind';
 import { seedOf } from '../../terrain/seeded';
-import { meshHeights } from '../../terrain/tile-mesh';
-import type { TileSource } from '../../terrain/tile';
+import type { RingSource } from '../../terrain/ring/ring-source';
 import type { CameraMode } from '../../terrain/view-camera';
-import { useTile } from './use-tile';
+import { useRing } from './use-ring';
 
 export interface OnFootSite {
   readonly id: string;
   readonly lat: number;
   readonly lonEast: number;
   readonly shadow?: SiteShadow | undefined;
+  /** Apollo sites get the Apollo lander (lander-kind.ts). */
+  readonly group?: SiteGroup | undefined;
 }
 
 export interface OnFootParts {
   readonly site: OnFootSite;
   readonly time: TimeStore;
   readonly horizons: HorizonStore;
-  /** Where the tiles come from (the page's, terrain/tile.ts). */
-  readonly tiles: TileSource;
+  /** Where the relief rings come from (the page's, ring-source.ts). */
+  readonly tiles: RingSource;
 }
 
 /** The point's tile, placed, and the sky over it at the instant. */
 function useGround({ site, time, tiles }: OnFootParts) {
   const { lat, lonEast } = site;
   const located = Number.isFinite(lat) && Number.isFinite(lonEast);
-  const tile = useTile(tiles, located ? { lat, lonEast } : null);
+  const tile = useRing(tiles, located ? { lat, lonEast } : null);
   const { state } = tile;
-  const placed = useMemo<PlacedTile | null>(() => (state.kind === 'tile'
-    ? { tile: state.tile, ys: meshHeights(state.tile) } : null), [state]);
+  const ring = state.kind === 'ready' ? state.ring : null;
+  const placed = ring?.near ?? null;
   const atMs = useTime(time)?.atMs ?? null;
   const sky = useMemo<SkyDirs | null>(() => {
     if (!located || atMs === null) return null;
     return skyAt({ latDeg: lat, lonEastDeg: lonEast }, atMs);
   }, [located, lat, lonEast, atMs]);
-  return { located, tile, placed, sky, atMs };
+  return { located, tile, ring, placed, sky, atMs };
 }
 
-/** Where the view opens for `placed`: kept until the tile changes. */
+/** Where the view opens for `placed`: kept until the ground changes. */
 function useOpening(placed: PlacedTile | null, sky: SkyDirs | null): number {
-  const kept = useRef<{ key: string; yaw: number } | null>(null);
-  const key = placed?.tile.key ?? '';
-  if (sky && kept.current?.key !== key) {
-    kept.current = { key, yaw: startYaw(sky) };
+  const kept = useRef<{ placed: PlacedTile | null; yaw: number } | null>(null);
+  if (sky && placed && kept.current?.placed !== placed) {
+    kept.current = { placed, yaw: startYaw(sky) };
   }
   return kept.current?.yaw ?? 0;
 }
@@ -90,7 +91,7 @@ function useOpening(placed: PlacedTile | null, sky: SkyDirs | null): number {
 export function useOnFoot(parts: OnFootParts) {
   const i18n = useI18n();
   const ground = useGround(parts);
-  const { placed, sky } = ground;
+  const { placed, ring, sky } = ground;
   const horizon = useSiteHorizon(parts.horizons, parts.site.id);
   const profile = horizon.kind === 'terrain' ? horizon.profile : null;
   const [mode, setMode] = useState<CameraMode>('third');
@@ -98,13 +99,14 @@ export function useOnFoot(parts: OnFootParts) {
   const bodies = useMemo(() => (placed && sky
     ? seenBodies(placed, profile, sky) : []), [placed, profile, sky]);
   const seed = seedOf(parts.site);
+  const lander = landerKindOf(parts.site);
   const input = useMemo<SceneInput | null>(() => {
-    if (!placed || !sky) return null;
+    if (!placed || !ring || !sky) return null;
     const words = sceneWords(i18n, bodies);
     const earthSpin = spinOf(parts.site.lat, sky, ground.atMs ?? 0);
-    return { tiles: [placed], profile, seed, sky, earthSpin, mode,
-      startYawDeg, words };
-  }, [placed, sky, profile, seed, mode, startYawDeg, bodies, i18n,
+    return { tiles: [placed], ring, profile, seed, sky, earthSpin, mode,
+      lander, startYawDeg, words };
+  }, [placed, ring, sky, profile, seed, lander, mode, startYawDeg, bodies, i18n,
     parts.site.lat, ground.atMs]);
-  return { ...ground, input, bodies, mode, setMode, startYawDeg };
+  return { ...ground, input, bodies, mode, setMode, startYawDeg, lander };
 }

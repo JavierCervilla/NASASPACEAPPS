@@ -24,9 +24,10 @@
  */
 
 /**
- * The far horizon's backdrop (VENT-34): the tile reaches 2 km, but the
- * ridges that hide the Sun or the Earth are often much farther. A wall
- * round the point, beyond the tile's corners, whose top stands at the
+ * The far horizon's backdrop (VENT-34, VENT-46): the rings reach 128 km (32
+ * on the lowest tier); a ridge beyond is the profile's. A wall round the
+ * point, beyond the rings' corners (ring-plan.ts `backdropM`), whose top
+ * stands at the
  * profile's elevation angle in each of its azimuth bins (packages/sim
  * terrain-profile.ts, read from the eye as the profile was) and whose foot
  * sinks far below the tile's edge, so no gap shows between them. Without a
@@ -37,8 +38,6 @@ import { horizonAt, type HorizonProfile } from '@ventana/sim';
 import { EYE_M, direction } from './view-camera';
 import { MOON_RADIUS_M } from './tile-mesh';
 
-/** Our choice: past an 8 km tile's corners, near enough for depth. */
-export const BACKDROP_M = 6_000;
 /** How far under the level its foot goes, degrees. */
 const FOOT_DEG = -12;
 const RAD = Math.PI / 180;
@@ -63,16 +62,17 @@ export function backdropWall(
   profile: HorizonProfile | null,
   eyeY: number,
   bins: number,
+  radiusM: number,
 ): { positions: Float32Array; index: Uint32Array } {
   const positions = new Float32Array((bins + 1) * 6);
   const index = new Uint32Array(bins * 6);
   for (let i = 0; i <= bins; i++) {
     const az = (i * 360) / bins;
     const [x, , z] = direction(az, 0);
-    const top = Math.tan(backdropTopDeg(profile, az) * RAD) * BACKDROP_M;
-    const foot = Math.tan(FOOT_DEG * RAD) * BACKDROP_M;
-    positions.set([x * BACKDROP_M, eyeY + top, z * BACKDROP_M], i * 6);
-    positions.set([x * BACKDROP_M, eyeY + foot, z * BACKDROP_M], i * 6 + 3);
+    const top = Math.tan(backdropTopDeg(profile, az) * RAD) * radiusM;
+    const foot = Math.tan(FOOT_DEG * RAD) * radiusM;
+    positions.set([x * radiusM, eyeY + top, z * radiusM], i * 6);
+    positions.set([x * radiusM, eyeY + foot, z * radiusM], i * 6 + 3);
     if (i < bins) {
       const [t, f] = [i * 2, i * 2 + 1];
       index.set([t, t + 2, f, f, t + 2, t + 3], i * 6);

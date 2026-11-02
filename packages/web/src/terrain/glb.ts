@@ -29,10 +29,14 @@
  * Three.js chunk the globe loads at start. A binary glTF's JSON and BIN
  * chunks, and each primitive's indices, positions, normals and UVs with
  * their byte stride and normalisation (KHR_mesh_quantization), its
- * material's colour, roughness and metalness, and the node's scale and
- * translation.
+ * material's colour, roughness, metalness and texture names, and the
+ * node's scale and translation.
  * Pure: arrays only; the scene makes the Three.js objects.
  */
+
+import { mapsOf, type GlbMaps, type MapsJson } from './glb-maps';
+
+export type { GlbMap, GlbMaps } from './glb-maps';
 
 const MAGIC = 0x46546c67;
 const JSON_CHUNK = 0x4e4f534a;
@@ -54,6 +58,8 @@ export interface GlbPrimitive {
   readonly color: readonly [number, number, number];
   readonly roughness: number;
   readonly metalness: number;
+  /** The textures the material wears, by URI (glb-maps.ts). */
+  readonly maps: GlbMaps;
 }
 
 export interface GlbModel {
@@ -62,7 +68,7 @@ export interface GlbModel {
   readonly translation: readonly [number, number, number];
 }
 
-interface Json {
+interface Json extends MapsJson {
   readonly accessors: readonly { bufferView: number; byteOffset?: number;
     componentType: number; type: string; count: number;
     normalized?: boolean }[];
@@ -70,9 +76,6 @@ interface Json {
     byteStride?: number }[];
   readonly meshes: readonly { primitives: readonly { attributes:
     Record<string, number>; indices: number; material: number }[] }[];
-  readonly materials: readonly { pbrMetallicRoughness?: {
-    baseColorFactor?: number[]; roughnessFactor?: number;
-    metallicFactor?: number } }[];
   readonly nodes: readonly { scale?: number[]; translation?: number[] }[];
 }
 
@@ -113,6 +116,7 @@ function primitives(json: Json, bin: DataView): GlbPrimitive[] {
       color: [r, g, b],
       roughness: pbr.roughnessFactor ?? 1,
       metalness: pbr.metallicFactor ?? 1,
+      maps: mapsOf(json, p.material),
     };
   });
 }

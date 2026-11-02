@@ -204,7 +204,7 @@ list (Mons Mouton uses Mons Mouton Plateau's; Nobile Rims 1 and 2 use Griffin-1'
 
 | File | Size | sha256 |
 |---|---|---|
-| `packages/web/models/astronaut.glb` | glTF 2.0 binary, 4 122 vertices, 6 381 triangles, no texture inside, 138 880 bytes; build input only, never shipped | `977be426b398161cde6a15fa70dfccc9d434d8dcffc86099e4c2f23e2f28c70e` |
+| `packages/web/models/astronaut.glb` | glTF 2.0 binary, 4 122 vertices, 6 381 triangles, no texture inside, 138 880 bytes; build input of the sprite bake only, never shipped; the on-foot view no longer reads it | `977be426b398161cde6a15fa70dfccc9d434d8dcffc86099e4c2f23e2f28c70e` |
 | `packages/web/models/astronaut-suit.webp` | the suit texture, 512 x 512 WebP, 11 630 bytes; build input only, never shipped | `c362b0560504a1a6f93059c1466bd08a05846b16746b2522110a4afca7aef312` |
 | `packages/web/src/astronaut/figures.webp` | the sprite sheet, kept for VENT-34 and not shipped since VENT-37, 900 x 440 lossless WebP (2 rows x 5 columns of 180 x 220), 76 642 bytes | `1b4b694ce7a15550b660022d670c8bedec4259377dee66b40fc9a5a5e6df6a22` |
 | `packages/web/src/astronaut/figures.json` | its manifest: layout, cell, visor colours, size and sha256 of the sheet | `553f54dcf34ef67c3a87d2d781695d11b8d3dd64a97ed59adf5d186e01959beb` |
@@ -383,6 +383,120 @@ All load on demand with the 3D view (file names `on-foot-*`, left out of the pre
   `world.topo.bathy.200412.3x5400x2700.jpg`, https://visibleearth.nasa.gov/images/73909), NASA imagery, public domain under the
   NASA media usage guidelines; sha256 of the source `a9f0088972dee0254610af851c4d6838ca3f2cf79176987e0a5713e2c15ec042`.
   Cloud-free, so it shows land and ocean, not the weather of the day.
-- **Astronaut suit**: the existing `astronaut-suit.webp` (above), now put on the model's UVs.
-- **Lander**: no model imported. NASA 3D Resources' landers are Apollo's; the site is a 2026 CLPS lander, so the view keeps its own
-  primitives and says so.
+- **Astronaut suit**: the existing `astronaut-suit.webp` (above). The on-foot view no longer uses it (VENT-46 replaced the model with the Meshy astronaut below); it stays for the sprite bake.
+- **Lander**: now the models of «On-foot view models v2» below, used by the on-foot view: the Apollo Lunar Module (NASA 3D Resources) on the
+  Apollo sites and the generic robotic lander built from code on every other site and custom point (`lander-kind.ts`).
+
+## On-foot view models v2 (VENT-34)
+
+| File | What | sha256 |
+|---|---|---|
+| `packages/web/models/astronaut-v2.glb` | EVA suit figure, 17 820 triangles, 6 materials, 1.91 m tall, 534 216 bytes | `ecf68c50beb336179ceaeff94dcf7ab04802cc9dae6a7c51422d6797b3cc1f10` |
+| `packages/web/models/astronaut-v2-ao.webp` | its baked ambient occlusion, 512 px, 63 624 bytes | `0fbd4f13a495173db873280e6209193d7d19617f8f61808e0844ff918ddc76d8` |
+| `packages/web/models/astronaut-v2-normal.webp` | its baked fabric folds, tangent-space normal (OpenGL), 1024 px, 51 492 bytes | `1bb074a69f88509eb6838d055e7dd87f2daf2f47d1880fba9d8334555d963f06` |
+| `packages/web/models/lander.glb` | generic robotic lander, 8 276 triangles, 6 materials, 4.35 m tall, 4.72 m across the pads, 296 536 bytes | `444832bce60561b9267b8b89d7707b54f62eaa3cae85f5f6a273a16a19dc6d7a` |
+| `packages/web/models/lander-ao.webp` | its baked ambient occlusion, 512 px, 71 718 bytes | `72e8b9fcc29e495777426605bdc9c47d979ca88b3cabccfca953663c7428b213` |
+| `packages/web/models/lander-normal.webp` | its baked crinkled blanket, seams and solar cells, 1024 px, 152 306 bytes | `e174ec30fe953d4dba9a8ce47d973558225851ff13363824c907997b6e5f4b96` |
+| `packages/web/models/apollo-lm.glb` | Apollo Lunar Module, 24 249 triangles, 12 materials, 9.40 m across the gear, 7.33 m tall, 1 192 380 bytes | `556a068caf150372dad324b024209174b9127def5b7b352c49eb4b79e66cc8b5` |
+| `packages/web/models/apollo-lm-0.webp` | crumpled-foil normal map (`foil_normal`), 512 px, 45 992 bytes | `a3de33de6f9b2b5c0ee156fbeb8bfe074ed8e523fd59aca84d9991ec0b3dca2e` |
+| `packages/web/models/apollo-lm-1.webp` | crumpled-foil metal-roughness map (`foil_metal_roughness`), 512 px, 8 008 bytes | `2a0c790afc2be27bed696ed630debf731ba9796458586ef7959681bafc2e484b` |
+| `packages/web/models/apollo-lm-2.webp` | the descent engine's striped booster texture (`BOOSTER3`), 400 px, 936 bytes | `df69e2c9ac02b49c77182cf18c8f31e020d3401157f9e4c2c7b3e59f7ef437c6` |
+
+- **How they are made**: `python3 packages/web/scripts/onfoot_models.py --source <apollo-lm.glb> [--previews <folder>]
+  [--check]`, with the studio's Blender 5.2.2 (`python3 -m studio install blender` in GAMESTUDIO, or `--blender`). It
+  runs `onfoot_blender.py` inside Blender, packs each export into a GLB (one mesh, one node, float positions, normals
+  and UVs, uint16 indices: the subset `src/terrain/glb.ts` reads), audits it (at most 25 000 triangles, textures at
+  most 1024 px, at most 1.5 MB with its textures) and copies it here. The textures are separate WebP files named by URI
+  through `EXT_texture_webp`, never inside the GLB: the page's CSP loads no `blob:` image. No Draco, no meshopt, no
+  quantization. Tests: `packages/web/scripts/test_onfoot_models.py`.
+- **Astronaut v2**: built from code, `packages/web/scripts/astronaut_model.py` (shapes in `onfoot_shapes.py`); no
+  third-party source, nothing to license or credit. A generic modern EVA suit: hard upper torso, soft lower torso,
+  pleated elbows and knees, bearings at the waist, shoulders, thighs and wrists, gauntlet gloves, boots with dark soles,
+  a life-support backpack with its propulsion unit, a chest control unit with hoses, a helmet with lamps and a gold
+  visor (`visor_gold`: metal, roughness 0.12, no maps). No insignia, patch, flag or lettering. The whole figure is
+  unwrapped into one atlas; Cycles bakes its ambient occlusion and a procedural fold pattern (bake only: wavy bands round
+  the limbs, faded in patches) into the two maps, which every material but the visor wears (`occlusionTexture`,
+  `normalTexture`). Feet on the origin, +Y up, the visor towards +Z, metres. It replaces NASA's Apollo-era «Astronaut»
+  (above, VENT-10) in the on-foot view once the page loads it; that model stays for the sprite sheet.
+- **Lander**: built from code, `packages/web/scripts/lander_model.py`; no third-party source. A generic lander of the
+  Nova-C class (hexagonal body 1.6 m flat to flat, about 4.3 m to the top of its dish, six legs), copying no single
+  design and wearing no logo, flag, lettering or trademark: gold and silver blankets with taped seams, three
+  body-mounted solar arrays, a radiator face, instrument boxes, an engine bell, two propellant tanks under the body, two
+  pressurant spheres and a payload box on the deck, a dish on a mast, thruster pods, six legs with a shock strut, two
+  side struts and a footpad each. Baked like the astronaut: ambient occlusion and a procedural crinkled blanket (two
+  sizes of Voronoi facets over a slow undulation, seams every 0.45 m), the solar arrays' cell grid. Footpads on the
+  origin, +Y up, metres. For robotic sites and custom points.
+- **Apollo LM**: from Mooner (JavierCervilla/Mooner, commit `cc528da`, `module_models_blender.py` and `foil_maps.py`),
+  baked from NASA 3D Resources' «Apollo Lunar Module»
+  (`3D Models/Apollo Lunar Module/Apollo Lunar Module.glb`, https://github.com/nasa/NASA-3D-Resources at commit
+  `11ebb4ee043715aefbba6aeec8a61746fad67fa7`), 716 840 bytes, sha256
+  `379101dfcee399267addf771709107c35e826b0b9e5233272f123e4c8a585c4e`, checked before every bake; the source stays out
+  of the repo. The repository's README says its models are «free and without copyright». Licence: NASA, public domain
+  under the NASA media usage guidelines (https://www.nasa.gov/nasa-brand-center/images-and-media/). Credit: NASA. NASA
+  does not endorse Ventana Lunar. The model's two decal textures, a US flag (`TEXTURE_`) and the «UNITED STATES»
+  lettering (`TEXTUREA`), each on a flat gold foil field (sRGB 196, 135, 14), are removed: their materials lose the
+  texture, take the field's colour and wear the crumpled foil like the rest of the blanket, so no flag, lettering or
+  insignia remains (the tests check that no such image is left); the model carries no other mark. The booster texture
+  is cut to 512 px at most (it is 400 px). `packages/web/scripts/apollo_lm_model.py` (ported, `apollo_lm_model.py`'s
+  docstring lists the changes) joins it, scales it so the gear spans 9.4 m footpad to footpad (NASA's figure; the
+  height comes out at 7.33 m, against NASA's 7.04 m: the model's proportions, not ours), sets the footpads on the
+  origin, box-projects the generated crumpled-foil maps (`foil_maps.py`, Mooner's, NumPy, seed 1969: no source, nothing
+  to license) on the foil and panel materials, decimates it from 97 588 to 24 249 triangles and smooths it by angle. For
+  Apollo sites.
+- **Known limits**: the bake is deterministic on one machine (fixed seeds), but Cycles bakes are not promised to be
+  byte-identical across CPUs, so `--check` may report the baked maps of the two models built from code as changed on
+  another machine. The on-foot view lights the metal materials (foil, struts, bearings, visor) with an analytic
+  earthshine instead of an environment map (`scene/earthshine.ts`), so they read close to these previews, which light them
+  with a grey sky. The on-foot view uses these files (VENT-46).
+
+## On-foot view astronaut, Meshy (VENT-34)
+
+| File | What | sha256 |
+|---|---|---|
+| `packages/web/models/astronaut-meshy.glb` | rigged EVA suit figure, skinned glTF (24 joints, 4 influences a vertex), clips `idle` (4.0 s) and `walk` (4.17 s, in place), 24 899 triangles, 1.91 m, 1 653 276 bytes | `317a2d4356e4d13b0a2602005d2885e4f624cf60106d73ab0213b4e30a3e2db7` |
+| `packages/web/models/astronaut-meshy-0.webp` | its normal map, 1024 px, 45 712 bytes | `35e22b2164e163ddcaf97b8a58df115c59ff76a1e9890dab1b49346479b30e9c` |
+| `packages/web/models/astronaut-meshy-1.webp` | its base colour, decals painted out, 1024 px, 131 040 bytes | `5df6df7b962c3743cf66c3d50ad3529b85f9f298786d8090987cffba887d43fd` |
+| `packages/web/models/astronaut-meshy-2.webp` | its metal-roughness map, 1024 px, 41 810 bytes | `1212e18e3d0ca6639248bca311c50111f98fc30b16984e1730e67684fd26fb27` |
+
+- **Source**: generated with Meshy (meshy.ai) through its API on the project owner's paid plan on 2026-11-02. Text to 3D
+  preview task `01a19d97-a512-72a8-a1c5-40b0354b3402` (`meshy-7.1`, remeshed to 25 000 triangles, A-pose) and refine
+  task `01a19d98-fbef-7508-88c9-eb78fec6db25` (PBR maps, 2K; source GLB 8 275 972 bytes, sha256
+  `1b339abb71dde8a89a5d4430f3385594eff17157fb68b3fc487fdf1adf53d05d`), then auto-rigging task
+  `01a19da4-010b-72c0-a5b1-fb75395be11a` at 1.91 m (same mesh, UVs and textures; rigged GLB sha256
+  `3fd1e74d75e6a173877bebc5003e52e2521d023fe97e97c4749289dc50a96537`) and animation task
+  `01a19da4-f7d5-75b8-a95a-08daf4bd2815` with the library actions 0 «Idle», 30 «Casual Walk» and 566 «Walking 2»
+  (the last one not kept). The bake's source is that task's GLB, 10 304 308 bytes, sha256
+  `9acf2bd95ff4018c2f7e1202add3d688ce204d0cea92d78957095324bb81f291` (`MESHY_SOURCE_SHA256`), outside the repo.
+  Credits: 30 (preview and refine) + 5 (rig) + 9 (three clips). Prompt: «Realistic modern lunar EVA spacesuit astronaut
+  standing upright in a relaxed A-pose, arms slightly away from the body, full body, adult human proportions. Bulky white
+  multi-layer fabric suit with visible soft folds at elbows, knees and waist, hard upper torso, metal bearing rings at
+  shoulders, waist and wrists, rectangular life-support backpack, small chest control box with two hoses, thick gauntlet
+  gloves, heavy boots with dark grey soles, round helmet with a gold reflective visor. Plain, clean, unmarked surfaces.
+  No logos, no text, no letters, no numbers, no flags, no insignia, no patches, no badges, no stripes of national
+  colours.»; texture prompt: «Off-white woven beta-cloth fabric with soft folds, brushed aluminium bearing rings, light
+  grey backpack, dark grey rubber soles, mirror-like gold visor. Plain unmarked suit.» plus the same exclusions.
+- **Licence**: Meshy's Terms of Service (last updated 2026-09-19): «customers on a paid Meshy plan own their Customer
+  Output», which §2 defines as content «generated by or otherwise output from the Service in response to Customer
+  Input»: the model, its rig and the retargeted clips (the docs give the animation library no other licence). The CC BY
+  4.0 credit applies only to free-plan assets. To confirm by the human on the account page before launch. Credit kept
+  anyway: models generated with Meshy (meshy.ai). Nothing was taken from Meshy's community library (its models are CC0
+  under §3.3, but every realistic astronaut there carries flags or agency insignia).
+- **Cleaning**: Meshy painted a small US flag on each upper arm and a «B3» label on the chest box despite the prompt.
+  `packages/web/scripts/astronaut_meshy_clean.py` places every atlas texel on the rest-pose figure (UV rasterisation)
+  and, inside three pinned spheres (`REGIONS`; the label's 6.5 cm), fills the flag colour or the label's ink, grown by
+  4 texels, by diffusion from the fabric around it (150 Laplace steps from the region's fabric median), feathered over
+  4 texels, in the base colour, normal and metal-roughness maps. Tests: `test_onfoot_models.py` checks that no flag
+  colour or ink is left in any region of the shipped base colour.
+- **How it is made**: `python3 packages/web/scripts/onfoot_models.py --only astronaut-meshy --meshy-source
+  <animations.glb>` (`astronaut_meshy_model.py` in Blender 5.2.2): the stray mesh dropped, the atlas cleaned and cut
+  to 1024 px, the mesh collapsed to 24 900 triangles before the skin and shaded smooth again by angle (50°; the collapse left
+  a hard seam down the visor), the hard upper torso, the helmet and the backpack bound to the upper spine (`Spine`) as
+  one rigid shell through 5 cm weight ramps (Meshy's weights bent and tore them with the neck and the spine), influences
+  limited to four and normalised, the clips renamed `idle` and `walk`, the idle's hips, spine and head rotations kept
+  at a quarter of their turn from the rest pose (the clip stoops far forward), the walk's hips drift removed so it
+  walks in place, exported as a skinned glTF
+  with WebP textures by URI (`EXT_texture_webp`). The armature keeps Meshy's centimetre bones under a 0.01 root
+  scale; the figure is in metres, +Y up, facing +Z, feet on the origin. The rest pose is Meshy's rig pose (arms out);
+  the `idle` clip lowers the arms to the sides. Credits for the whole asset: 44 (of the session's 104; the other
+  candidates and their renders are in the trajectory's notes). Read with three's GLTFLoader and an AnimationMixer, not `glb.ts`: the on-foot view loads it (`scene/astronaut.ts`) from the scene's chunk, the three maps through a loading manager's URL modifier, `idle` pinned to a pose and moved only by drawn frames, `walk` loaded and unused until VENT-48.
+

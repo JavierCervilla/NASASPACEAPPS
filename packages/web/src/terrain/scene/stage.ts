@@ -64,6 +64,9 @@ export function createStage(
   const renderer = new WebGLRenderer({
     antialias: quality.antialias,
     powerPreference: 'low-power',
+    // The rings reach 190 km and the sky is farther: a linear depth buffer
+    // would z-fight at 100 km with a near plane of 0.2 m.
+    logarithmicDepthBuffer: true,
   });
   renderer.setPixelRatio(Math.min(devicePixelRatio, quality.maxPixelRatio));
   renderer.setClearColor(0x000000, 1);
@@ -75,7 +78,7 @@ export function createStage(
   renderer.domElement.setAttribute('aria-hidden', 'true');
   host.prepend(renderer.domElement);
   const fov = phone ? FOV.phone : FOV.wide;
-  const camera = new PerspectiveCamera(fov, 1, 0.2, 120_000);
+  const camera = new PerspectiveCamera(fov, 1, 0.2, 1_200_000);
   return { renderer, scene: new Scene(), camera };
 }
 

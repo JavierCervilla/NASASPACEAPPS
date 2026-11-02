@@ -49,7 +49,11 @@ epic: `VENT-1` (Dashboard project «Ventana Lunar», prefix `VENT`).
   also answers the terrain horizon of any point, `GET /api/v1/horizon?lat&lon[&height]` (VENT-40), from the LOLA tiers
   present in `TERRAIN_DIR` (catalogue `packages/server/data/terrain-catalogue.json`, fetched by
   `packages/server/scripts/fetch-terrain.ts`, never in git or the image; without it the route answers 503), reading
-  only the grid blocks its rays cross: `docs/terrain-api.md`. The server fills that volume itself (VENT-43): with
+  only the grid blocks its rays cross: `docs/terrain-api.md`. From the same tiers, blocks, LRU, gate, limiter and
+  answer cache it serves `GET /api/v1/terrain/tile?lat&lon[&size]` (VENT-34), the relief of the 3D on-foot view and
+  its only source: a 257 x 257 float32 height grid (base64, metres relative to the centre) in the tangent plane,
+  `size` 2000, 4000 or 8000 m, each sample from the finest tier covering it (`terrainTile` in `@ventana/sim`,
+  `src/terrain/tile-*.ts`), with the tiers' shares so the client knows what is measured. The server fills that volume itself (VENT-43): with
   `TERRAIN_FETCH_TIERS` (`all` or tier ids) it fetches the missing tiers in the background once it listens, one file at
   a time, resumable (`.part` and HTTP Range), sha256-checked, stopping when the volume would keep under 2 GB free, and
   re-scans after each tier so it serves without a restart (`src/terrain/terrain-boot.ts`; progress at

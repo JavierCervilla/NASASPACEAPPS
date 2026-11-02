@@ -23,6 +23,13 @@
     paren mientras comprueba un fichero, y la imagen rechaza `/data//` y `/data/./` como rutas de montaje.
 
 ### Añadido
+- Nueva ruta `GET /api/v1/terrain/tile?lat&lon[&size]` con el relieve alrededor de un punto para la vista 3D a pie
+  (VENT-34; decisión de Javier: esa vista toma el relieve solo de nuestra API). Devuelve una malla de 257 x 257 alturas
+  LOLA (float32 en base64, en metros respecto al centro) sobre el plano tangente, de 2, 4 u 8 km de lado (4 por
+  defecto), cada muestra de la malla más fina que la cubre, e indica qué mallas sirvieron y en qué proporción, para que
+  el cliente sepa qué es medido y qué es interpolado. Usa las mismas mallas, caché de bloques, cola de cálculo,
+  límite por dirección y caché en disco que el horizonte, con los mismos errores (400, 404, 429 y 503 «terrain data is
+  not installed»). Una respuesta pesa unos 352 kB.
 - El servidor descarga solo el relieve LOLA (VENT-43). Con `TERRAIN_FETCH_TIERS=all` y el volumen montado en
   `/data/terrain`, la API baja en segundo plano, un fichero detrás de otro, las mallas que le faltan (unos 48,6 GB en
   total), empezando por las más pequeñas: retoma donde lo dejó tras un corte o un reinicio, comprueba el sha256 de cada

@@ -30,7 +30,7 @@
  * The heights cost disk, not memory: a request holds its blocks while it
  * runs, an LRU keeps at most `cacheBytes` of them between requests, and
  * at most `maxRunning` requests run at once. The same service is meant to
- * serve height tiles around a point for the 3D view later (VENT-34,
+ * serve height tiles around a point for the 3D view (VENT-34,
  * docs/terrain-api.md).
  *
  * A request reads in rounds (`horizon-rounds.ts`).
@@ -67,7 +67,8 @@ export class TerrainService {
   readonly blocks: BlockLoader;
   /** The tiers found on disk at the last scan. */
   present: readonly Tier[];
-  private readonly gate: Gate;
+  /** The cap on computations, shared by horizons and tiles. */
+  readonly gate: Gate;
   private readonly catalogue: TerrainCatalogue;
   private readonly dir: string;
 

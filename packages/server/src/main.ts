@@ -34,7 +34,9 @@
  * docs/terrain-api.md): TERRAIN_DIR (the LOLA grids; unset, /horizon answers
  * 503), TERRAIN_CACHE_DIR (default ./.cache/terrain), TERRAIN_CACHE_MB (its
  * byte cap, default 256), TERRAIN_BLOCKS_MB (grid blocks kept in memory,
- * default 192) and TERRAIN_MAX_RUNNING (horizons computed at once, default 2).
+ * default 192), TERRAIN_TILE_CACHE_MB (byte cap of the height tiles on disk,
+ * default 512) and TERRAIN_MAX_RUNNING (horizons and tiles computed at once,
+ * default 2).
  * TERRAIN_FETCH_TIERS (VENT-43: `all` or tier ids separated by commas) has
  * the server fetch the tiers it lacks into TERRAIN_DIR once it listens.
  */
@@ -85,6 +87,7 @@ const app = createApp({
   sites,
   now: Date.now,
   terrain: terrain?.horizons,
+  tiles: terrain?.tiles,
   terrainStatus: terrainStatus && (() => terrainStatus.snapshot()),
 });
 // Aborted on SIGTERM: the fetch stops at once, keeps its part and lets go

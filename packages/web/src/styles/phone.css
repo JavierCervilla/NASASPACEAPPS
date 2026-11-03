@@ -665,6 +665,30 @@
   cursor: pointer;
 }
 
+/*
+ * The gear beside «Done» that pushes the «Settings» page (VENT-57, canvas
+ * V-12 option C): a 44 px target, the icon alone in the text colour.
+ */
+.picker__gear {
+  display: inline-grid;
+  flex: none;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  border: 0;
+  border-radius: 22px;
+  background: transparent;
+  color: var(--text);
+  cursor: pointer;
+}
+
+.picker__gear:active {
+  background: var(--fill);
+  transform: scale(0.97);
+  transition: transform var(--dur-press) ease-out;
+}
+
 .search {
   position: relative;
   display: flex;

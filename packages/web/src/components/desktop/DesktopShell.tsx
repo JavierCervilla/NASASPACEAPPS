@@ -52,7 +52,7 @@ import { useI18n } from '../i18n-context';
 import { LanguageMenu } from '../lang/LanguageMenu';
 import { usePhone, useSelection } from '../phone/hooks';
 import { useSavedName } from '../saved/use-saved-name';
-import { SourceNotes } from '../source/SourceNotes';
+import { SourceCaption, SourceDown } from '../source/SourceNotes';
 import { SiteHorizon } from '../horizon/SiteHorizon';
 import type { HorizonStore } from '../../horizon/horizon-store';
 import { SiteCard } from './SiteCard';
@@ -99,12 +99,12 @@ function useCardState(
   const badge = siteState(result, atMs ?? null, i18n, computed);
   const model =
     atMs === undefined ? LOADING : siteCard(result, atMs, i18n, computed);
-  const notes = (
-    <SourceNotes month={calendar} atMs={atMs ?? null} shadow={site.shadow} />
-  );
+  const source = { month: calendar, atMs: atMs ?? null, shadow: site.shadow };
+  const down = <SourceDown {...source} />;
+  const caption = <SourceCaption {...source} />;
   const strip = { site, atMs: atMs ?? null, hours: result, horizons };
-  const horizon = <SiteHorizon {...strip} className="card-block horizon--card" />;
-  return { state, badge, model, computed, notes, horizon };
+  const horizon = <SiteHorizon {...strip} className="horizon--card" />;
+  return { state, badge, model, computed, down, caption, horizon };
 }
 
 /**

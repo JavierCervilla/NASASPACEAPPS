@@ -47,6 +47,7 @@ const BUTTONS = [
   '.undo-toast__undo',
   '.lang-page__back',
   '.pin-hint__close',
+  '.picker__gear',
 ];
 
 /** Rows and segments light up under the finger, as in iOS. */

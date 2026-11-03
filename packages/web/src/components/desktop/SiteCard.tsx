@@ -30,8 +30,10 @@
  * mission, its agency and date, the site, its point and how exact it is,
  * and whether NASA's maps put it in shadow (VENT-39);
  * «Sunset in» and «Earthset in» (or «…rise in») for the selected instant with
- * each body's elevation and where the terrain decides; the horizon strip
- * (VENT-40); who listens on Earth (VENT-7); and the month's
+ * each body's elevation and where the terrain decides; when Horizons
+ * failed, the note that says so, in view (VENT-57); the horizon strip
+ * (VENT-40) and who listens on Earth (VENT-7), folded into one block
+ * (VENT-57); and the month's
  * shares, longest window and longest night, with where the figures come
  * from. Grey blocks while the month loads, an honest error with «Try
  * again», and an honest state outside the data window. On a short screen
@@ -49,13 +51,13 @@ import {
   type CardSite,
 } from '../../card/site-facts';
 import type { CardModel } from '../../card/site-card';
-import { ListeningBlock, ListeningWaiting } from '../dsn/ListeningBlock';
 import type { Dsn } from '../dsn/use-dsn';
 import { useI18n } from '../i18n-context';
 import { SaveButton, SaveName } from '../saved/SaveControl';
 import { ShadowNote } from '../shadow/ShadowNote';
 import { SiteThumb } from '../SiteThumb';
 import { CardPoint } from './CardPoint';
+import { CardSky } from './CardSky';
 import { CardStatus } from './CardStatus';
 import { StateBadge } from './StateBadge';
 import { useScrollEdges } from './use-scroll-edges';
@@ -71,10 +73,12 @@ interface Props {
   /** The site's base path, for the image. */
   readonly base: string;
   /**
-   * Under the figures: the computed caption and, when Horizons failed,
-   * the note that says so (VENT-36).
+   * Under the tiles, in view without scrolling: the note that Horizons
+   * failed, with its retry (VENT-36; moved up by VENT-57).
    */
-  readonly notes?: ReactNode;
+  readonly down?: ReactNode;
+  /** At the card's end: the computed caption (VENT-36). */
+  readonly caption?: ReactNode;
   /** The DSN at the instant (VENT-7); null until it is known. */
   readonly dsn: Dsn | null;
   /** Under the tiles: the site's horizon strip (VENT-40). */
@@ -109,7 +113,10 @@ function CardMedia({ thumb, state, computed }: MediaProps) {
  * point leads with its name, then the site it is near, with «Save» at the
  * top right and, once saved, its name field (VENT-37).
  */
-type HeadProps = Omit<Props, 'model' | 'onRetry' | 'notes' | 'dsn' | 'horizon'>;
+type HeadProps = Omit<
+  Props,
+  'model' | 'onRetry' | 'down' | 'caption' | 'dsn' | 'horizon'
+>;
 
 function CardHead(props: HeadProps) {
   const { site, state, computed, base } = props;
@@ -148,9 +155,9 @@ function Tile({ widget, tone }: { widget: BodyWidget; tone: string }) {
   );
 }
 
-type FiguresProps = Pick<Props, 'model' | 'dsn' | 'horizon'>;
+type FiguresProps = Pick<Props, 'model' | 'dsn' | 'horizon' | 'down'>;
 
-function Figures({ model, dsn, horizon }: FiguresProps) {
+function Figures({ model, dsn, horizon, down }: FiguresProps) {
   if (model.kind !== 'ready') return null;
   return (
     <>
@@ -158,8 +165,8 @@ function Figures({ model, dsn, horizon }: FiguresProps) {
         <Tile widget={model.sun} tone="sun" />
         <Tile widget={model.earth} tone="earth" />
       </div>
-      {horizon}
-      {dsn ? <ListeningBlock dsn={dsn} /> : <ListeningWaiting />}
+      {down}
+      <CardSky horizon={horizon} dsn={dsn} />
       <dl className="card-block card-facts">
         {model.rows.map(({ label, value, tone }) => (
           <div key={label}>
@@ -174,7 +181,7 @@ function Figures({ model, dsn, horizon }: FiguresProps) {
 }
 
 export function SiteCard(props: Props) {
-  const { model, onRetry, notes, dsn, horizon, ...head } = props;
+  const { model, onRetry, down, caption, dsn, horizon, ...head } = props;
   const [scroller, edges] = useScrollEdges<HTMLDivElement>();
   // Focusable only while it overflows, so the keyboard can scroll it on a
   // short screen; on a tall one it would be an empty tab stop.
@@ -192,8 +199,8 @@ export function SiteCard(props: Props) {
         data-fade-bottom={edges.bottom}
       >
         <CardHead {...head} />
-        <Figures model={model} dsn={dsn} horizon={horizon} />
-        {model.kind === 'ready' ? notes : null}
+        <Figures model={model} dsn={dsn} horizon={horizon} down={down} />
+        {model.kind === 'ready' ? caption : null}
         <CardStatus kind={model.kind} onRetry={onRetry} />
       </div>
     </aside>

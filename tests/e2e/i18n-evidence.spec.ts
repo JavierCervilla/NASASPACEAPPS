@@ -64,9 +64,14 @@ test.describe('i18n evidence', () => {
         await expect(page.locator('.widget')).toHaveCount(4);
         await shot(page, `${locale}-phone-390-half`);
         await page.locator('.tab-bar .tab').last().click();
-        await expect(page.locator('.lang-row')).toBeVisible();
+        await expect(page.locator('.picker__gear')).toBeVisible();
         await page.waitForTimeout(400);
         await shot(page, `${locale}-phone-390-sites`);
+        // The Language row sits on the «Settings» page, behind the gear beside «Done» (VENT-57).
+        await page.locator('.picker__gear').click();
+        await expect(page.locator('.lang-row')).toBeVisible();
+        await page.waitForTimeout(400);
+        await shot(page, `${locale}-phone-390-settings`);
         await page.locator('.lang-row').click();
         await expect(page.locator('.lang-list')).toBeVisible();
         await page.waitForTimeout(800);

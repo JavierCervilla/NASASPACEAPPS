@@ -56,16 +56,16 @@
   pointer-events: none;
 }
 
-/* The hint's material, radius and paddings (pin.css). */
+/* The hint's material (the --float-* tokens, VENT-57 C-02), radius and paddings (pin.css). */
 .update-notice[data-shown],
 .offline-notice[data-shown],
 .undo-toast,
 .globe-load {
   padding: 4px;
   border-radius: 22px;
-  background: var(--surface);
-  backdrop-filter: blur(20px);
-  box-shadow: inset 0 0 0 1px var(--surface-edge);
+  background: var(--float-fill);
+  backdrop-filter: var(--float-blur);
+  box-shadow: var(--float-rim);
   color: var(--text);
   pointer-events: auto;
 }

@@ -63,6 +63,11 @@ describe('C-02: one frosted material for what floats over the Moon', () => {
     ['.pin-readout', 'pin.css'],
     ['.pin-hint', 'pin.css'],
     ['.globe-layers', 'globe.css'],
+    // Part B's rows (offline, undo, Save-Data) and the update row they copy: one material with the hint.
+    ['.update-notice[data-shown]', 'update.css'],
+    ['.offline-notice[data-shown]', 'update.css'],
+    ['.undo-toast', 'update.css'],
+    ['.globe-load', 'update.css'],
   ])('%s wears it', (selector, file) => {
     expect(valueOn(selector, 'background', file)).toBe('var(--float-fill)');
     expect(valueOn(selector, 'backdrop-filter', file)).toBe('var(--float-blur)');

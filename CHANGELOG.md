@@ -38,6 +38,21 @@
   renderizado por software, de 38 fotogramas a 6).
 
 ### Arreglado
+- Mitigaciones del cierre de la vista 3D en un Pixel 10 (VENT-51; la causa en el dispositivo sigue sin confirmar). En el
+  móvil, el globo que queda oculto bajo las vistas «Horizon» y «DSN» ya no dibuja nada ni se encoge a 0 × 0: antes se
+  redibujaba en cada cambio de minuto del reloj mientras la vista 3D usaba la GPU. Al volver al globo se dibuja una vez,
+  con el Sol del momento. Y si la página muere con la vista 3D abierta, la siguiente vez que se abre arranca un nivel de
+  calidad más abajo (una sola vez, nunca por debajo de bajo ni con `?quality=`), y «Copy report» dice por qué. Recargar
+  la página con la vista abierta cuenta igual.
+- El panel de `?debug` arranca plegado en una línea («N fps · slowest N ms», más el número de errores en rojo si los
+  hay) arriba a la izquierda, sobre el título, y ya no tapa la barra de pestañas del móvil, la llave de capas ni
+  «Third person | First person» (VENT-51). Corregido el aviso «ResizeObserver loop completed with undelivered
+  notifications» que el globo provocaba en cada carga en el móvil.
+- Retícula y brújula del globo (VENT-51): los rótulos miden su caja de verdad, que crece con el tamaño del texto, y se
+  apartan de los puntos de los sitios y del anillo también al 200 %; con el zoom máximo un rótulo que no cabe entero en
+  la vista se omite en vez de salir cortado. La marca de la Tierra en la brújula ya no se vacía al acercar el zoom. En
+  el móvil con el texto al 200 %, cuando la hoja tapa la brújula esta se retira (también del orden de tabulación) y
+  vuelve, pulsable, al bajar la hoja.
 - La vista 3D «Horizon» ya no se queda muerta cuando el navegador le quita la GPU (VENT-49). La vista se libera y dice
   «Terrain unavailable right now» con «Try again», que la abre de nuevo en calidad baja (nunca se reabre sola), y esa
   calidad se recuerda durante la sesión. Además, si un fotograma de la carga tarda demasiado para la GPU del móvil, la

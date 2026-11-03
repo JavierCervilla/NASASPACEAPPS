@@ -145,11 +145,16 @@ Every visible change follows `.claude/skills/apple-design/SKILL.md` (vendored fr
   a site without one shows nothing in its place. The globe framing a site (at load and on a pick in the list) turns
   just enough to land it in the free band between the phone's top bar and the sheet's top edge, or the tab bar below
   it (`src/globe/free-band.ts`, `src/globe/site-aim.ts`, `src/globe/site-framer.ts`), and again on the orbit's springs
-  when the band moves, until the user moves the globe. The
+  when the band moves, until the user moves the globe. The band's watcher (`src/globe/band-watch.ts`) starts observing a
+  bar it finds inside its own ResizeObserver callback on the next frame, never there: that raised «ResizeObserver loop
+  completed with undelivered notifications» on every phone load (VENT-51). The
   selected marker wears a ring in its state colour that pulses three times (2.4 s each) when the selection or its
   state changes, then rests lit, so an idle page draws no frames (still under reduced motion; `src/globe/marker-ring.ts`), placed with the
   markers (`src/globe/marker-layer.ts`) and hidden with its marker. Under Save-Data
-  the globe waits for a «Load the 3D globe» button and never loads more than its start map.
+  the globe waits for a «Load the 3D globe» button and never loads more than its start map. A hidden globe (the phone's
+  Horizon and DSN views, any view but the globe on desktop) keeps its stage size and draws nothing: its host reads 0 x 0,
+  frames asked meanwhile draw nothing, and showing it again refits the stage and draws once with the current Sun
+  (`src/globe/shown-frames.ts`, VENT-51).
 - Glass: the floating surfaces (phone top bar, sheet and tab bar; desktop header, site popover, Layers key,
   calendar strip and site card) wear Liquid glass or the frosted blur; the phone's site pill, inside the top
   bar's glass, takes only the Liquid rim. Liquid refracts through a
@@ -279,10 +284,14 @@ Every visible change follows `.claude/skills/apple-design/SKILL.md` (vendored fr
 - **Orientation on the globe** (VENT-50, canvas «A + full graticule, discreet», the human's decision). The globe keeps
   north up, so the **compass** (`src/components/compass/CompassButton.tsx`) is a 48 px glass button (`--compass-size`)
   in the globe's top right corner, on phones under the glass top bar and under the first-time hint while it shows
-  (measured, `compass-top.ts`; on desktop the hint keeps clear of it, `pin.css`). Its needle is fixed, with a small
+  (measured, `compass-top.ts`; on desktop the hint keeps clear of it, `pin.css`); while the phone sheet's top edge
+  covers any of it (at 200 % text the half sheet reaches the full detent) it is marked `data-covered` and leaves view
+  and the tab order, coming back as the sheet goes down (`compassCovered`, `use-compass-top.ts`, fed by the sheet edge,
+  VENT-51). Its needle is fixed, with a small
   «N», and an Earth mark rides its ring in the screen direction from the Moon's centre to the sub-Earth point at the
   shared instant (`earthMark`, `src/globe/earth-mark.ts`: the screen's axes from the camera's position alone), hollow
-  while that point is behind the limb, then at the direction it hides in. After each drawn frame the angle goes to the
+  while that point is behind the limb of the whole Moon as the opening zoom shows it (a zoom does not turn the Moon, so
+  it never hides the Earth; `LIMB_DISTANCE`, VENT-51), then at the direction it hides in. After each drawn frame the angle goes to the
   button as `--earth-angle` and `data-far`, with no re-render; the component hears only when the mark moves to another
   of eight places, which its accessible name says with what a press does (`compass-name.ts`, `compass.*` messages). A
   press brings the globe back to its opening view: `SOUTH_POLE_VIEW`, framed for the selected site in the free band,
@@ -293,7 +302,9 @@ Every visible change follows `.claude/skills/apple-design/SKILL.md` (vendored fr
   in the scene, depth-tested against the sphere so they vanish behind the limb, in a thin grey the tokens give
   (`--graticule-line`, never a signal colour). Its labels (10 px, written by `formatAngle`, so Spanish says «90° O»)
   and the cross on the south pole are HTML placed after each frame, under the markers, and hidden behind the limb. Each
-  label is moved straight in from the limb until its whole box is 14 px inside the Moon's disc (`disk.ts`), and is left
+  label's box is the one the page draws, measured by a hidden sizer holding every label's words (`room.ts`, so it grows
+  with the text size; VENT-51), moved straight in from the limb until it is 14 px inside the Moon's disc, left out
+  unless it is whole 8 px inside the globe's view (`disk.ts`: the zoomed-in Moon outgrows the view), and left
   out when it would touch a site marker, the selected site's ring or a label placed before it (`clearance.ts`,
   `place.ts`); a parallel may stand on any meridian every 15°, takes the one with the widest gap from the markers and
   keeps it while it stays clear, so labels do not hop as the globe turns. With the eight curated sites near the pole,
@@ -471,7 +482,11 @@ Every visible change follows `.claude/skills/apple-design/SKILL.md` (vendored fr
   (`webglcontextlost`, VENT-49) frees the scene, drops the tier to low and says «Terrain unavailable right now» with
   «Try again», which mounts it again at low and never happens by itself; the dead canvas and the labels leave the page
   in the browser's event, before the message shows (`guardLost` in `scene-guard.ts`), so no frozen frame or broken-WebGL
-  icon appears under it. A new instant lights and draws the view again only when the Sun or the Earth, seen from the
+  icon appears under it. A page that dies with the view open (no unmount: a GPU reset can take a phone's page down)
+  leaves `ventana.onFootOpen` set in `sessionStorage`; the next view starts one rung lower (kept, never below low, never
+  under `?quality=`), once, and its report says «tier dropped to X: previous run ended without unmount»
+  (`view-tier-open.ts`, `view-tier-state.ts`, VENT-51); leaving the view clears the mark, and a reload with the view
+  open counts as a death (`tests/e2e/on-foot-gpu.spec.ts`). A new instant lights and draws the view again only when the Sun or the Earth, seen from the
   point, moved 0.1° since the sky last placed (`src/terrain/relight.ts`, `scene/world-light.ts`; the live clock makes an
   instant a minute for a Sun that moves 0.008°, a scrub of hours always passes), and `input-change.ts` keeps an input
   that only has a new sky from drawing; the `lit` attribute is updated in place, since three r186 frees a GL buffer only
@@ -483,7 +498,9 @@ Every visible change follows `.claude/skills/apple-design/SKILL.md` (vendored fr
   breadcrumbs and the context watch, after the page has started (`src/lib/dev-tools-loader.ts`, the one place that
   imports `src/devtools/boot.ts`), for the globe and the on-foot canvas (`globe/dev-hook.ts`), with the report's steps
   marked in the breadcrumbs (`report-crumbs.ts`, the report stays the source); kept by the language switch, out of the
-  precache (`ON_DEMAND`), and Spector.js only in the dev server or a `PUBLIC_PERF_HUD=1` build.
+  precache (`ON_DEMAND`), and Spector.js only in the dev server or a `PUBLIC_PERF_HUD=1` build. The readout starts folded on every screen to one
+  line (the frame rate, the slowest frame and a count of the errors under the fold), top left over the header's title,
+  so it covers no control; a press unfolds it (VENT-51, `tests/e2e/debug.spec.ts`).
   `scripts/check-no-devtools.mjs` (decision in `devtools-guard.mjs`) fails a build whose pages, start chunks or precache
   carry the tools' markers, or any file Spector.js.
   `?onfoot=astronaut,lander,shadows,far,shade,logdepth`

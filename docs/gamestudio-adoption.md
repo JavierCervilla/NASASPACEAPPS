@@ -38,8 +38,12 @@ the vault, the hooks and the Dashboard scripts.
   `tests/e2e/`, not in `tests/unit/` or `tests/regression/`.
 - `.claude/docs/coding-standards.md` (cited by the web engine reference's `modules/input.md` and `modules/rendering.md`):
   this repository's code rules are the Clean Code section of `CLAUDE.md`.
-- `.claude/rules/skill-authoring.md` (cited by `.claude/rules/test-standards.md`): no GAMESTUDIO skills are carried.
+- `.claude/rules/skill-authoring.md` (cited by `.claude/rules/test-standards.md`): it is for writing skills, and the
+  four skills carried are used, not authored, here.
 - Paths and agents the specialists name that do not exist here and have no effect: `design/accessibility-requirements.md`
   and `production/qa/accessibility/` (accessibility-specialist), `assets/ASSET_LICENSES.md` (threejs-specialist; this
-  repository keeps provenance in `ASSETS.md`), the `/perf-profile` skill (performance-analyst), and the studio agents
-  ux-designer, art-director, technical-director, lead-programmer, engine-programmer, gameplay-programmer and producer.
+  repository keeps provenance in `ASSETS.md`), and the studio agents ux-designer, art-director, technical-director, lead-programmer, engine-programmer, gameplay-programmer and producer, and `qa-tester`, which `code-review` launches for Logic and Integration stories (here the framework's
+  `verificador` and `qa` review).
+- `.claude/docs/context-management.md` and `.claude/docs/directory-structure.md` (cited by `effects-map.md` and
+  `yaml-helper.sh`): this repository's layout and session rules are in `CLAUDE.md` and AgenticFramework.
+- `.claude/scripts/godot-parse-check.gd` (cited by `effects-map.md`): Godot only.

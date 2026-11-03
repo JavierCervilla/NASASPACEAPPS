@@ -247,6 +247,15 @@ describe('sheet view', () => {
     expect(openness(DETENTS, DETENTS.peek)).toBe(0);
     expect(openness(DETENTS, (DETENTS.half + DETENTS.full) / 2)).toBeCloseTo(0.5);
   });
+
+  // VENT-51: at 200 % text the half detent rises to full; the scrim must still clear as the sheet drops to peek.
+  it('clears the scrim at peek when the half detent has risen to full', () => {
+    const lifted = { ...DETENTS, half: DETENTS.full };
+    expect(openness(lifted, lifted.full)).toBe(1);
+    expect(openness(lifted, lifted.peek)).toBe(0);
+    expect(openness(lifted, lifted.closed)).toBe(0);
+    expect(openness(lifted, (lifted.peek + lifted.full) / 2)).toBeCloseTo(0.5);
+  });
 });
 
 describe('reveal below the summary head', () => {

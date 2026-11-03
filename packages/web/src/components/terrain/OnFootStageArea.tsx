@@ -30,6 +30,7 @@
  * when it cannot draw.
  */
 import type { RefObject } from 'react';
+import { parseLeaveOut } from '../../terrain/leave-out';
 import type { CameraMode } from '../../terrain/view-camera';
 import { useI18n } from '../i18n-context';
 import { ModeSwitch } from './ModeSwitch';
@@ -56,6 +57,7 @@ export function OnFootStageArea(props: Props) {
   const { t } = useI18n();
   const tile = view.tile.state;
   const resolution = tile.kind === 'ready' ? tile.ring.resolutionM : null;
+  const landerOut = parseLeaveOut(window.location.search).has('lander');
   return (
     <div className="on-foot__stage">
       <div ref={host} className="on-foot__host" tabIndex={0} role="application" aria-roledescription={t('onFoot.role')} aria-label={t('onFoot.view')} aria-describedby={altId} data-status={status} data-mode={view.mode} />
@@ -63,7 +65,8 @@ export function OnFootStageArea(props: Props) {
         <ModeSwitch mode={view.mode} onMode={onMode} />
         {resolution === null
           ? null
-          : <OnFootCaption resolutionM={resolution} lander={view.lander} />}
+          : <OnFootCaption resolutionM={resolution}
+            lander={landerOut ? null : view.lander} />}
       </div>
       <OnFootStatus located={view.located} tile={tile} scene={status}
         onRetry={onRetry} onCopyReport={onCopyReport} />

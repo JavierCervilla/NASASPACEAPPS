@@ -28,11 +28,25 @@
  * illustrative, and the distance rings' and the ridge's labels. Pure.
  */
 import type { I18n } from '../i18n/translate';
+import type { LanderKind } from './lander-kind';
 import type { Ridge } from './ridge';
 
 /** «Fine detail illustrative · relief LOLA 20 m». */
 export const detailCaption = (i18n: I18n, resolutionM: number): string =>
   i18n.t('onFoot.caption', { res: i18n.number(resolutionM) });
+
+/**
+ * The caption's second line: the lander's model and the Earth's map, or the
+ * map alone when `?onfoot=lander` leaves the lander out (VENT-51).
+ */
+export const captionNote = (
+  i18n: I18n,
+  lander: LanderKind | null,
+): string => {
+  if (lander === null) return i18n.t('onFoot.captionNoLander');
+  const apollo = lander === 'apollo';
+  return i18n.t(apollo ? 'onFoot.captionApollo' : 'onFoot.captionGeneric');
+};
 
 /** «100 m», a distance ring's label. */
 export const ringLabel = (i18n: I18n, metres: number): string =>

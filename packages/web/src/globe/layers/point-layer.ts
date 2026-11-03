@@ -35,7 +35,12 @@
  */
 import type { LatLon } from '../../lib/polar-projection';
 import { nearestMarker, type PlacedMarker } from '../marker-hit';
-import type { LayerContext, LayerFrame, LayerRenderer } from './registry';
+import type {
+  LayerContext,
+  LayerCover,
+  LayerFrame,
+  LayerRenderer,
+} from './registry';
 
 /** A point a layer draws. */
 export interface LayerPoint extends LatLon {
@@ -50,6 +55,11 @@ export interface PointLayerOptions {
   readonly className: string;
   /** Hears a clicked point's id. */
   readonly onPick?: (id: string) => void;
+  /**
+   * The radius, px, of what each shown point draws: the graticule's
+   * labels keep clear of it (VENT-52). Without it the layer covers nothing.
+   */
+  readonly coverPx?: number;
 }
 
 export interface PointLayer extends LayerRenderer {
@@ -148,5 +158,8 @@ export function pointLayer(options: PointLayerOptions): PointLayer {
     syncButtons(drawn);
   };
   const place = (frame: LayerFrame): void => placeAll(drawn, frame);
-  return { setPoints, mount, unmount, place };
+  const radius = options.coverPx;
+  const covers = (): LayerCover[] => radius === undefined ? [] :
+    drawn.placed.map(({ at }) => ({ at, radius }));
+  return { setPoints, mount, unmount, place, covers };
 }

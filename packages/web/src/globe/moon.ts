@@ -70,6 +70,8 @@ export interface MoonOptions {
   readonly onChange: () => void;
   /** A map went onto the Moon. */
   readonly onTextured?: (() => void) | undefined;
+  /** Whether the globe shows (shown-frames.ts). */
+  readonly shown: () => boolean;
   readonly warn: (message: string) => void;
 }
 

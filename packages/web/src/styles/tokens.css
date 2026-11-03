@@ -59,6 +59,8 @@
   --card-skeleton: #23252c;
   /* The polar map's panel, darker than the sky so the disk stands out. */
   --map-panel: #0c0d11;
+  /* Words beside the disk: the panel stays dark in both themes (VENT-52). */
+  --polar-label: #9a9ca6;
 
   /*
    * Liquid glass (VENT-27, src/glass/): each floating surface bends what
@@ -202,6 +204,7 @@
 
 @media (prefers-contrast: more) {
   :root {
+    --polar-label: #c9cad1;
     --surface: #15161b;
     --surface-edge: rgba(255, 255, 255, 0.5);
     --text-muted: #c9cad1;

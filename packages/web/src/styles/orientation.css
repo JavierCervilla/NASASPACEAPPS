@@ -177,8 +177,13 @@
   pointer-events: none;
 }
 
-/* 10 px at the default text size; moved by transform after each frame. */
-.graticule-label,
+/*
+ * 10 px at the default text size; moved by transform after each frame.
+ * Scoped by the globe's layer: the polar map's labels share the class
+ * (polar.css), and a bare rule here won over theirs or lost to it by the
+ * bundle's order (VENT-52).
+ */
+.globe-graticule .graticule-label,
 .graticule-sizer {
   position: absolute;
   top: 0;
@@ -193,7 +198,7 @@
   white-space: nowrap;
 }
 
-.graticule-label {
+.globe-graticule .graticule-label {
   translate: -50% -50%;
 }
 
@@ -225,7 +230,7 @@
       100% no-repeat;
 }
 
-.graticule-label[hidden],
+.globe-graticule .graticule-label[hidden],
 .graticule-pole[hidden] {
   display: none;
 }

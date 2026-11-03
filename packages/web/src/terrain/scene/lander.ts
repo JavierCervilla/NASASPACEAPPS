@@ -37,6 +37,7 @@ import {
   Group,
   Mesh,
 } from 'three';
+import { loadChunk } from '../../pwa/missing-chunk';
 import { readGlb, type GlbAccessor, type GlbPrimitive } from '../glb';
 import { LANDER_RADIUS_M, type LanderKind } from '../lander-kind';
 import { loadMaps } from './lander-maps';
@@ -48,8 +49,8 @@ import type { SunMask } from './sun-mask';
 const SHADOW = { scale: 1.15, opacity: 0.3 } as const;
 
 const filesOf = async (kind: LanderKind): Promise<ModelFiles> =>
-  (await (kind === 'apollo' ? import('./apollo-lm-assets')
-    : import('./lander-assets'))).default;
+  (await loadChunk(() => (kind === 'apollo' ? import('./apollo-lm-assets')
+    : import('./lander-assets')), window)).default;
 
 const attribute = (a: GlbAccessor): BufferAttribute =>
   new BufferAttribute(a.array, a.itemSize, a.normalized);

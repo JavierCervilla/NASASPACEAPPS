@@ -64,10 +64,16 @@ export function localeHref(
 export interface SwitchDeps {
   readonly storage: ChoiceStorage | null;
   readonly location: Pick<Location, 'search' | 'hash' | 'assign'>;
+  /**
+   * Runs just before the page is left: the app navigates on purpose, so
+   * what marks a page that died (the on-foot view's open mark) is cleared.
+   */
+  readonly leaving: () => void;
 }
 
 /** Keeps `locale` as the choice and opens its page, on the same view. */
 export function switchLocale(base: string, locale: Locale, deps: SwitchDeps) {
   saveChoice(deps.storage, locale);
+  deps.leaving();
   deps.location.assign(localeHref(base, locale, deps.location));
 }

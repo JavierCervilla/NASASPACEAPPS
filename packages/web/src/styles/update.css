@@ -1,0 +1,167 @@
+/*
+ *   _   _       _                         _ _
+ *  | | | |_ __ (_)_   _____ _ __ ___  ___| | | ___
+ *  | | | | '_ \| \ \ / / _ \ '__/ __|/ _ \ | |/ _ \
+ *  | |_| | | | | |\ V /  __/ |  \__ \  __/ | |  __/
+ *   \___/|_| |_|_| \_/ \___|_|  |___/\___|_|_|\___|
+ *
+ *             =++==--::.
+ *         %%%%##**++=--:..  .
+ *      ##**#%@%%#***+=--::.   .
+ *    #**=+*#*#**#++++=-:::.. .  .
+ *   #++-====*@%+*++==--::...   .  .    Ventana Lunar
+ *  #+=-=--++==+===-+==--:..   .  .  .  Sun, Earth and landing
+ * #----====-------=-=---:..  .  .  .   windows at the lunar
+ * #+---+=====--=---==-::..     .  .  . south pole
+ * #*----==---==-=-=-:-....    .  .  .
+ * *#----===+*===--:-::...    .  .  .   Built for the NASA Space
+ *  *----=*-+*%*+=-:::....   .  .  .    Apps Challenge 2026,
+ *   *------=+*=--:::-:::.. .  .  .     Madrid. Not endorsed
+ *    %*===-=-==--==-:::.  .  .  .      by NASA.
+ *      *+:--+:--::::::.  .  .  .
+ *         -=:::...:..   .  .           (c) 2026 Universelle
+ *             :::.. .  .               SPDX-License-Identifier: MIT
+ */
+
+/*
+ * «New version ready» (VENT-52, components/UpdateNotice.tsx; option D, the
+ * human's choice): the first-time pin hint's look (pin.css `.pin-hint`)
+ * in the offline notice's slot (offline.css), under the header (desktop)
+ * or the top bar (phones); `--top` is the lowest bar's bottom, measured.
+ * The whole row but the ✕ is the update; the ✕ is the hint's own
+ * (`.pin-hint__close`). Neutral, never a signal colour. While hidden only
+ * its empty live region stays, with no box and no taps.
+ */
+.update-notice {
+  position: fixed;
+  top: var(--top, calc(env(safe-area-inset-top, 0px) + 84px));
+  right: 0;
+  left: 0;
+  /* Over the first-time pin hint (6), which stacks under it. */
+  z-index: 7;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  box-sizing: border-box;
+  /* Centred at its own width: a box from 50% would wrap at half the view. */
+  width: fit-content;
+  max-width: calc(100vw - 32px);
+  margin-inline: auto;
+  pointer-events: none;
+}
+
+/* The hint's material, radius and paddings (pin.css). */
+.update-notice[data-shown] {
+  padding: 4px;
+  border-radius: 22px;
+  background: var(--surface);
+  backdrop-filter: blur(20px);
+  box-shadow: inset 0 0 0 1px var(--surface-edge);
+  color: var(--text);
+  pointer-events: auto;
+}
+
+/* Said once to a screen reader; the row's button shows the words. */
+.update-notice__live {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+.update-notice__update {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+  min-height: 44px;
+  padding: 0 6px 0 10px;
+  border: 0;
+  border-radius: 18px;
+  background: none;
+  color: inherit;
+  font: inherit;
+  text-align: start;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.update-notice__mark {
+  flex: none;
+}
+
+.update-notice__lines {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  line-height: 1.25;
+}
+
+.update-notice__title {
+  font-size: 0.9375rem;
+  font-weight: 600;
+}
+
+.update-notice__how {
+  font-size: 0.8125rem;
+  color: var(--text-muted);
+}
+
+.update-notice__update:focus-visible {
+  outline: 2px solid var(--marker);
+  outline-offset: 2px;
+}
+
+/* Response on the press (apple-design §1). */
+.update-notice__update:active {
+  transform: scale(0.97);
+  transition: transform var(--dur-press) ease-out;
+}
+
+/* It arrives as a material: blur, scale and opacity together. */
+@media (prefers-reduced-motion: no-preference) {
+  .update-notice[data-shown] {
+    transition:
+      opacity 0.3s ease-out,
+      scale 0.3s ease-out,
+      filter 0.3s ease-out;
+
+    @starting-style {
+      opacity: 0;
+      scale: 0.96;
+      filter: blur(6px);
+    }
+  }
+}
+
+/* Reduced motion: a plain fade, and no press scale. */
+@media (prefers-reduced-motion: reduce) {
+  .update-notice[data-shown] {
+    transition: opacity 0.2s linear;
+
+    @starting-style {
+      opacity: 0;
+    }
+  }
+
+  .update-notice__update:active {
+    transform: none;
+  }
+}
+
+/* As the hint handles them (pin.css). */
+@media (prefers-reduced-transparency: reduce) {
+  .update-notice[data-shown] {
+    backdrop-filter: none;
+    background: var(--surface-solid, #15161b);
+  }
+}
+
+@media (prefers-contrast: more) {
+  .update-notice[data-shown] {
+    border: 1px solid var(--surface-edge);
+  }
+}

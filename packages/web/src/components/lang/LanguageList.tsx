@@ -38,6 +38,7 @@ import { AUTONYMS, LOCALES, type Locale } from '../../i18n/locales';
 import { localePath } from '../../i18n/routes';
 import { switchLocale } from '../../i18n/switch';
 import { menuIndex } from '../../lib/menu-keys';
+import { leftOnPurpose } from '../../terrain/view-tier-open';
 import { useI18n } from '../i18n-context';
 
 interface Props {
@@ -94,7 +95,8 @@ function Option({ locale, base }: { locale: Locale; base: string }) {
   const current = locale === useI18n().locale;
   const choose = (event: MouseEvent<HTMLAnchorElement>): void => {
     event.preventDefault();
-    switchLocale(base, locale, { storage: localStore(), location });
+    switchLocale(base, locale,
+      { storage: localStore(), location, leaving: leftOnPurpose });
   };
   return (
     <li role="none">

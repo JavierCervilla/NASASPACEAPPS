@@ -211,11 +211,12 @@ export function mountGlobe(host: HTMLElement, options: GlobeOptions) {
   const stage = createStage(host, pickQuality(isPhoneViewport()));
   const orbit = createOrbit(SOUTH_POLE_VIEW);
   const invalidate = (): void => loop.invalidate();
-  const contents = addContents(host, options, stage, invalidate);
+  // The frames are made first: the Moon asks them whether the globe shows.
+  const frames = shownFrames((dt) => drawFrame(parts, dt));
+  const contents = addContents(host, options, stage, { ...frames, invalidate });
   const { markers, moon, layers, graticule } = contents;
   const link = linkView(stage, options.onView);
   const parts = { stage, orbit, moon, layers, graticule, ...link, markers };
-  const frames = shownFrames((dt) => drawFrame(parts, dt));
   const loop = createLoop(frames.frame);
   const input = bindInput(host, orbit, loop, options.reducedMotion);
   const globeParts = { markers, orbit, invalidate, camera: stage.camera };

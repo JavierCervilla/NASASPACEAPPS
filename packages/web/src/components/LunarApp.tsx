@@ -81,7 +81,7 @@ import { useView } from './desktop/use-view';
 import Globe from './Globe';
 import { I18nContext, useI18n } from './i18n-context';
 import { Layers } from './Layers';
-import { OfflineNotice } from './OfflineNotice';
+import { TopNotices } from './TopNotices';
 import { usePhone } from './phone/hooks';
 import { PhoneShell } from './phone/PhoneShell';
 import { useStateFeed } from './use-state-feed';
@@ -221,7 +221,7 @@ function Island({ sitesUrl, base, selectedId, sites }: Props) {
         <GlobeSection {...section} />
         <DesktopShell {...{ sites, store, parts, base, view }} />
         <PhoneShell {...{ sites, store, sheetEdge, parts, base, view }} />
-        <OfflineNotice base={base} />
+        <TopNotices base={base} />
         <PinLayers />
       </PinContext>
     </SavedContext>

@@ -69,9 +69,9 @@
   limbo y metidas 14 px dentro del disco de la Luna. Las etiquetas se apartan de los marcadores de los sitios y del
   anillo del sitio elegido (un paralelo se nombra en el meridiano más libre y se queda en él mientras siga libre), así
   que «85° S», que con los ocho sitios cercanos al polo no tiene sitio al abrir, aparece al acercar la Luna. No tiene
-  interruptor en las Capas y un globo quieto sigue sin dibujar fotogramas. El fondo de las etiquetas es más opaco que el
-  del lienzo (0,84 en lugar de 0,44): es lo mínimo que da 4,5:1 sobre el píxel más claro de los mapas de la Luna, que
-  es blanco puro.
+  interruptor en las Capas y un globo quieto sigue sin dibujar fotogramas. Las etiquetas van en blanco sobre un fondo al 61 %
+  (el lienzo tenía texto gris sobre un fondo al 44 %): es lo mínimo que da 4,5:1 sobre el píxel más claro de los mapas
+  de la Luna, que es blanco puro.
 - Relieve alineado y por niveles de detalle para la vista 3D (VENT-46, solo servidor y simulador): la API sirve teselas
   de relieve de una cuadrícula global y determinista, en cuatro niveles (2, 8, 32 y 128 km de lado, de 129 x 129
   muestras), con el plano estereográfico polar de LOLA desde 60° hasta cada polo y una cuadrícula latitud-longitud entre

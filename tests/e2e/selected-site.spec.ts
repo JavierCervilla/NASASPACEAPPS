@@ -81,7 +81,8 @@ test.describe('desktop, 1440x900', () => {
     // A 1x screen picks the 320 px file from the srcset.
     await expect.poll(() => image.evaluate((img) => (img as HTMLImageElement).complete && (img as HTMLImageElement).currentSrc)).toMatch(/\/thumbs\/im2-athena\.jpg$/);
     await expect(image).toHaveAttribute('data-ready', 'true');
-    expect((await media(page).boundingBox())?.height).toBe(150);
+    // The 96 px band at every window height (VENT-57, canvas V-04 option C).
+    expect((await media(page).boundingBox())?.height).toBe(96);
     await expect(media(page).locator('.card-media__badge')).toHaveText('Landing window now');
     await expect(media(page).locator('.card-media__caption')).toHaveText('LOLA · 30 km');
     // The relief sits inside the card's head, above the mission line.

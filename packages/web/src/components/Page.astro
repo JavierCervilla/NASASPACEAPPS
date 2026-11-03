@@ -51,6 +51,7 @@ import '../styles/source.css';
 import '../styles/offline.css';
 import '../styles/update.css';
 import '../styles/pin.css';
+import '../styles/controls.css';
 import '../styles/orientation.css';
 import '../styles/press.css';
 import '../styles/presence.css';
@@ -172,31 +173,19 @@ const views = [
     color: var(--text-muted);
   }
 
+  /* The look is the one segmented control's (styles/controls.css). */
   .views {
     display: flex;
-    padding: 2px;
-    border-radius: 10px;
-    background: var(--fill);
   }
 
-  /* A 44 px tall target (apple-design); four tabs since the DSN view
-     (VENT-7), so they pull in on a 1280 px screen to keep one header row. */
+  /* Four tabs since the DSN view (VENT-7), so they pull in on a 1280 px
+     screen to keep one header row. */
   .views > * {
     display: flex;
     align-items: center;
-    min-height: 44px;
     padding: 0 clamp(12px, 2.5vw - 20px, 16px);
-    border-radius: 8px;
     font-size: 0.875rem;
-    font-weight: 600;
-    color: var(--text-secondary);
     text-decoration: none;
-  }
-
-  .views [aria-current='page'] {
-    background: var(--fill-selected);
-    box-shadow: var(--fill-selected-shadow);
-    color: var(--text);
   }
 
   /* The globe, with the calendar strip under it. */

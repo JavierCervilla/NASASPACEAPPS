@@ -121,14 +121,17 @@ test.describe('phone, 390x844', () => {
     await expectFadesBothWays(page.locator('.picker__scroll'));
   });
 
-  // C-15: the segmented control and the search field are drawn at 32 and 40 px, and taken at 44.
+  // C-15: the segmented control and the search field are drawn at 40 px (a segment in its 44 px control since
+  // VENT-57, C-16), and taken at 44.
   test('the segmented control and the search field take a tap 44 px tall', async ({ page }) => {
     await open(page);
     await page.getByRole('navigation', { name: 'Views' }).getByRole('button', { name: 'Sites' }).click();
     const segment = page.getByRole('button', { name: 'Apollo', exact: true });
-    expect((await segment.boundingBox())!.height).toBe(32);
-    expect(await hitsAt(page, segment, 'top', 5)).toBe(true);
-    expect(await hitsAt(page, segment, 'bottom', 5)).toBe(true);
+    // At 44 px the control's last 2 px sit under the picker's scroll edge until it scrolls.
+    await segment.evaluate((el) => el.scrollIntoView({ block: 'center' }));
+    expect((await segment.boundingBox())!.height).toBe(40);
+    expect(await hitsAt(page, segment, 'top', 1.5)).toBe(true);
+    expect(await hitsAt(page, segment, 'bottom', 1.5)).toBe(true);
     const search = page.locator('.search');
     expect(await hitsAt(page, search, 'top', 1.5)).toBe(true);
     expect(await hitsAt(page, search, 'bottom', 1.5)).toBe(true);

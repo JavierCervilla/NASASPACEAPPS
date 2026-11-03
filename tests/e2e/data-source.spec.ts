@@ -132,8 +132,10 @@ async function evidence(page: Page, name: string): Promise<void> {
 test.describe('phone, 390x844', () => {
   test.use({ viewport: { width: 390, height: 844 }, hasTouch: true, isMobile: true });
 
+  // The switch lives on the Sites sheet's «Settings» page, behind the gear beside «Done» (VENT-57).
   const openSites = async (page: Page) => {
     await page.getByRole('navigation', { name: 'Views' }).getByRole('button', { name: 'Sites' }).click();
+    await page.locator(SHEET).getByRole('button', { name: 'Settings' }).click();
     await expect(switchIn(page, SHEET)).toBeVisible();
   };
 

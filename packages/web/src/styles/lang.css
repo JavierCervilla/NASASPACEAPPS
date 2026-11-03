@@ -277,15 +277,17 @@
  * sheet material, and at rest it is the sheet's own (no second tint).
  * Back or a push starts a frame or two before the spring moves: the page
  * is already opaque then, so the two lists never show through each other.
+ * Child combinators: the Settings page holds a push of its own (the
+ * language list over it, VENT-57), which only its own state moves.
  */
-.push[data-at='page'][data-pushed='true'] .push__root,
-.push[data-at='root'][data-pushed='false'] .push__page {
+.push[data-at='page'][data-pushed='true'] > .push__root,
+.push[data-at='root'][data-pushed='false'] > .push__page {
   visibility: hidden;
 }
 
-.push[data-at='moving'] .push__page,
-.push[data-at='page'][data-pushed='false'] .push__page,
-.push[data-at='root'][data-pushed='true'] .push__page {
+.push[data-at='moving'] > .push__page,
+.push[data-at='page'][data-pushed='false'] > .push__page,
+.push[data-at='root'][data-pushed='true'] > .push__page {
   background: var(--push-page);
 }
 
@@ -340,6 +342,37 @@
   font-size: 1rem;
   font-weight: 600;
   cursor: pointer;
+}
+
+/*
+ * The Sites sheet's «Settings» page (VENT-57, canvas V-12 option C): the
+ * Language page's head with «Done» at its end, over the groups that
+ * scroll as one (styles/saved.css, .picker__scroll).
+ */
+.settings-page__body {
+  gap: 12px;
+}
+
+/*
+ * Its Back names the list, longer than the Language page's «Back»: the
+ * sides share what the title leaves, and Back's words wrap (then a long
+ * word breaks) before the head grows past the sheet, as the picker's
+ * title does (long languages, 200 % text).
+ */
+.settings-page__head {
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+  column-gap: 8px;
+}
+
+.settings-page__head .lang-page__back {
+  min-width: 0;
+  overflow-wrap: anywhere;
+  text-align: start;
+}
+
+.settings-page__head .picker__done {
+  grid-column: 3;
+  justify-self: end;
 }
 
 .lang-page__title {

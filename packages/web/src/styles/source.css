@@ -33,15 +33,10 @@
 /*
  * The data source switch (VENT-36, validated canvas option C): «Data
  * source» and «Computed | Horizons | Compare» in the segmented control's
- * style (phone.css), under a hairline in the desktop Layers key, and in
+ * style (controls.css), under a hairline in the desktop Layers key, and in
  * the phone's Sites sheet grouped with the «Language» row. Neutral: it
  * never wears a signal colour.
  */
-.segmented [role='radio'][aria-checked='true'] {
-  background: var(--phone-segment-on);
-  box-shadow: var(--phone-segment-shadow);
-}
-
 .source-switch {
   flex: 1 1 auto;
   grid-template-columns: repeat(3, auto);
@@ -147,18 +142,6 @@
   flex-wrap: wrap;
   align-items: center;
   gap: 4px 8px;
-}
-
-.source-note__retry {
-  min-height: 44px;
-  padding: 0 4px;
-  border: 0;
-  background: none;
-  color: var(--text);
-  font: inherit;
-  font-weight: 600;
-  text-decoration: underline;
-  cursor: pointer;
 }
 
 .calendar .source-note,

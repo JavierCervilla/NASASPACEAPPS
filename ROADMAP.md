@@ -69,7 +69,7 @@ completa está en el documento «Ventana Lunar · Especificación y roadmap».
 - [x] Pulido según la guía de diseño de Apple tras la auditoría de toda la web (VENT-53): respuesta al pulsar en todos
   los controles, salidas que deshacen su entrada, efecto goma en los límites del globo, foco visible, escala tipográfica,
   contraste alto opaco, bordes que se funden al desplazar y zonas de toque de 44 px (VENT-55)
-- [ ] Cambios de forma elegidos en el lienzo de la auditoría: un solo material, un solo segmentado y un solo botón
+- [x] Cambios de forma elegidos en el lienzo de la auditoría: un solo material, un solo segmentado y un solo botón
   secundario, avisos en fila, tarjeta compacta y ajustes tras un engranaje (VENT-56 → VENT-57)
 - [ ] Comparador de sitios o exportar a .ics (VENT-8)
 - [ ] Página del proyecto, vídeo de 30 s y pitch; envío antes de las 20:00 (VENT-9)

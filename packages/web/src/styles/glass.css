@@ -60,7 +60,6 @@
     .tab-bar,
     .site-popover,
     .lang-popover,
-    .globe-layers,
     .strip,
     .card-block
   ) {
@@ -78,8 +77,7 @@
  */
 :root[data-glass='liquid'] :is(
     .phone-bar,
-    .tab-bar,
-    .globe-layers
+    .tab-bar
   )::before {
   content: '';
   position: absolute;
@@ -98,7 +96,7 @@
   box-shadow: var(--phone-sheet-edge), var(--glass-liquid-rim);
 }
 
-:root[data-glass='liquid'] :is(.bar, .globe-layers, .site-pill) {
+:root[data-glass='liquid'] :is(.bar, .site-pill) {
   box-shadow: var(--glass-liquid-rim);
 }
 

@@ -3,6 +3,23 @@
 ## [Sin publicar]
 
 ### Cambiado
+- Cambios de forma de la auditoría de diseño, las ocho variantes que Javier eligió en el lienzo (VENT-57):
+  - Un solo material: la brújula, la lectura del pin al arrastrarlo, la leyenda de capas y los avisos comparten el
+    esmerilado del aviso del pin (la leyenda deja el Liquid glass).
+  - Un solo control segmentado (pestañas de vista, regiones del selector y «Computed | Horizons | Compare»: carril
+    gris, marca #636366 en oscuro y blanca con sombra en claro, 44 px) y un solo botón secundario (píldora gris de
+    44 px, peso 600, sin subrayado: todos los «Try again» y «Now», que se atenúa en directo).
+  - «Saved» conserva la píldora gris de «Save» con el marcapáginas relleno; Reproducir es un círculo gris como las
+    flechas del mes.
+  - Los avisos son filas como «New version ready»: «Offline» con una nube tachada, «Showing data from <fecha>» y una ✕
+    que lo oculta hasta la próxima desconexión (nunca más de dos líneas en el móvil); «Load the 3D globe» con ahorro de
+    datos, con un globo y «Data saver is on», toda la fila el botón; y «Deleted <nombre> · Undo» con una papelera y
+    «Undo» en negrita, encima de la tira del calendario en escritorio (antes la tapaba) y de la barra de pestañas en el
+    móvil. Con movimiento reducido el aviso que se va se desmonta al acabar su fundido de 200 ms, no a los 400 ms.
+  - La tarjeta de escritorio, más compacta: la imagen es una banda de 96 px, el horizonte y «Listening on Earth» van
+    en un solo bloque y el aviso «Horizons unavailable · Try again» sube bajo las cifras, a la vista sin desplazar.
+  - En el teléfono, la hoja «Landing sites» empieza por «Drop a pin», el buscador y la lista; las capas, el idioma y
+    la fuente de datos pasan a una página «Settings» que abre un engranaje junto a «Done».
 - Se borra el astronauta antiguo (VENT-58, decisión de Javier): el modelo de NASA, los scripts que lo preparaban y lo
   horneaban en una hoja de imágenes, esa hoja, sus tests y las cuatro dependencias de desarrollo que solo usaban ellos
   (`@gltf-transform` y `draco3dgltf`). Nada de la web los leía desde que un pin elige el punto (VENT-37) y la vista 3D

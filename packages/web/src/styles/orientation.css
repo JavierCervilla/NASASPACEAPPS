@@ -33,8 +33,8 @@
  */
 
 /*
- * The compass: a 48 px disc, white glyphs on the app's glass like the
- * hint and the other floating controls. On desktop in the globe's top
+ * The compass: a 48 px disc in the hint's frosted material (VENT-57,
+ * C-02, tokens.css --float-*), like the other floating controls. On desktop in the globe's top
  * right corner; the first-time hint keeps clear of it (pin.css).
  */
 .compass {
@@ -48,9 +48,9 @@
   padding: 0;
   border: 0;
   border-radius: 50%;
-  background: var(--glass-label);
-  backdrop-filter: blur(20px);
-  box-shadow: inset 0 0 0 1px var(--glass-label-edge);
+  background: var(--float-fill);
+  backdrop-filter: var(--float-blur);
+  box-shadow: var(--float-rim);
   color: var(--glass-label-text);
   cursor: pointer;
   -webkit-tap-highlight-color: transparent;

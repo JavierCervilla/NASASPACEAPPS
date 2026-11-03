@@ -323,6 +323,17 @@
  */
 :is(.globe, .polar) .globe-layers {
   max-height: calc(100% - 40px);
+}
+
+/*
+ * The key's scroll box: inside its glass, so the scroll edge fade
+ * (scroll-fade.css) never cuts the glass's rim (VENT-55, C-10).
+ */
+.globe-layers__scroll {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-height: 0;
   overflow-y: auto;
   overscroll-behavior: contain;
 }

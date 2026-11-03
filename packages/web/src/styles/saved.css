@@ -127,6 +127,7 @@
 }
 
 .layer-row__label {
+  position: relative;
   display: flex;
   align-items: center;
   gap: 10px;
@@ -135,6 +136,18 @@
   /* The key lets clicks through to the globe; its switches take them. */
   pointer-events: auto;
   -webkit-tap-highlight-color: transparent;
+}
+
+/*
+ * Drawn 32 px tall, taken at 44 (VENT-55, C-15). Rows 38 px apart share
+ * their gap. Under the row, so its own drawing (and the switch) takes its
+ * own taps.
+ */
+.layer-row__label::after {
+  content: '';
+  position: absolute;
+  z-index: -1;
+  inset: -6px 0;
 }
 
 .layer-row[data-soon='true'] .layer-row__label {
@@ -590,6 +603,10 @@
   align-items: baseline;
   column-gap: 6px;
   max-width: none;
+}
+
+.summary__head:has(> .save-button) .summary__subtitle {
+  max-width: 100%;
 }
 
 .summary__head:has(> .save-button) .summary__subtitle::after {

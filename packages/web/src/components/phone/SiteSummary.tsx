@@ -42,6 +42,7 @@ import { useI18n } from '../i18n-context';
 import { SaveButton, SaveName } from '../saved/SaveControl';
 import { ShadowNote } from '../shadow/ShadowNote';
 import { SiteThumb } from '../SiteThumb';
+import { useScrollFade } from '../use-scroll-fade';
 import { Widgets } from './Widgets';
 
 interface Props {
@@ -101,8 +102,9 @@ function SummaryHead({ site, base }: Pick<Props, 'site' | 'base'>) {
 export function SiteSummary(props: Props) {
   const { site, result, onRetry, when, base, status, notes, dsn } = props;
   const ready = result.kind === 'ready';
+  const fade = useScrollFade<HTMLDivElement>();
   return (
-    <div className="summary" data-sheet-fit="">
+    <div className="summary scroll-fade" data-sheet-fit="" {...fade}>
       <SummaryHead site={site} base={base} />
       <ShadowNote shadow={site.shadow} className="summary__shadow" />
       <SaveName site={site} />

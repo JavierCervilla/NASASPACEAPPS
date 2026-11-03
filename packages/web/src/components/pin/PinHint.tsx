@@ -30,11 +30,13 @@
  * rendered and CSS shows one by `(pointer: coarse)`, so the static page
  * and the island agree). Above the view on desktop, under the top bar on
  * phones (measured, as the offline notice is). Gone after the first drop
- * or its ✕, for good (pin/first-hint.ts).
+ * or its ✕, for good (pin/first-hint.ts), leaving as it came: it stays
+ * mounted `out` for the exit (presence.ts, styles/presence.css).
  */
 import { useEffect, useRef, type RefObject } from 'react';
 import { useI18n } from '../i18n-context';
 import { Icon } from '../phone/Icon';
+import { usePresence } from '../presence';
 import { usePin, useWatched } from './context';
 
 /** Room under the phone's top bar, px. */
@@ -62,10 +64,11 @@ export function PinHint() {
   const { t } = useI18n();
   const shown = useWatched(kit?.hint.shown ?? null, false);
   const ref = useRef<HTMLDivElement>(null);
-  useUnderPhoneBar(ref, shown);
-  if (!kit || !shown) return null;
+  const { mounted, phase } = usePresence(shown);
+  useUnderPhoneBar(ref, mounted);
+  if (!kit || !mounted) return null;
   return (
-    <div ref={ref} className="pin-hint">
+    <div ref={ref} className="pin-hint" data-presence={phase}>
       <Icon name="pin" />
       <p className="pin-hint__text">
         <span className="pin-hint__fine">{t('pin.hint.click')}</span>

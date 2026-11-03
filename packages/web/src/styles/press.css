@@ -1,0 +1,79 @@
+/*
+ *   _   _       _                         _ _
+ *  | | | |_ __ (_)_   _____ _ __ ___  ___| | | ___
+ *  | | | | '_ \| \ \ / / _ \ '__/ __|/ _ \ | |/ _ \
+ *  | |_| | | | | |\ V /  __/ |  \__ \  __/ | |  __/
+ *   \___/|_| |_|_| \_/ \___|_|  |___/\___|_|_|\___|
+ *
+ *             =++==--::.
+ *         %%%%##**++=--:..  .
+ *      ##**#%@%%#***+=--::.   .
+ *    #**=+*#*#**#++++=-:::.. .  .
+ *   #++-====*@%+*++==--::...   .  .    Ventana Lunar
+ *  #+=-=--++==+===-+==--:..   .  .  .  Sun, Earth and landing
+ * #----====-------=-=---:..  .  .  .   windows at the lunar
+ * #+---+=====--=---==-::..     .  .  . south pole
+ * #*----==---==-=-=-:-....    .  .  .
+ * *#----===+*===--:-::...    .  .  .   Built for the NASA Space
+ *  *----=*-+*%*+=-:::....   .  .  .    Apps Challenge 2026,
+ *   *------=+*=--:::-:::.. .  .  .     Madrid. Not endorsed
+ *    %*===-=-==--==-:::.  .  .  .      by NASA.
+ *      *+:--+:--::::::.  .  .  .
+ *         -=:::...:..   .  .           (c) 2026 Universelle
+ *             :::.. .  .               SPDX-License-Identifier: MIT
+ */
+
+/*
+ * Press feedback for the controls that had none (VENT-55, apple-design
+ * §1 and §10: highlight on touch-down, not on release). Each family answers
+ * as the others already do: buttons shrink to 0.97 over --dur-press, as
+ * `.card-retry`, `.tab` or `.save-button`; rows and segments light up
+ * with the fill, as in iOS, laid over their own background so a selected
+ * segment or a card row keeps its colour; the dots on the Moon shrink, as
+ * `.polar-marker` does. The same under reduced motion: a 3 % shrink and a
+ * fill are no vestibular motion (§14), so no query splits them.
+ */
+
+.widgets-error button:active,
+.strip-status button:active,
+.source-note__retry:active,
+.undo-toast__undo:active,
+.lang-page__back:active,
+.pin-hint__close:active {
+  transform: scale(0.97);
+  transition: transform var(--dur-press) ease-out;
+}
+
+.views > *:active,
+.segmented button:active,
+.row-menu__item:active,
+.saved-row__more:active,
+.lang-row:active,
+.lang-option:active,
+.layer-row__label:active {
+  background-image: linear-gradient(var(--fill), var(--fill));
+}
+
+/* A disabled segment and a «soon» layer take no press. */
+.segmented button:disabled:active,
+.layer-row[data-soon='true'] .layer-row__label:active {
+  background-image: none;
+}
+
+/* The switch's row has no padding: the light spills 4 px around it. */
+.layer-row__label:active {
+  border-radius: 8px;
+  box-shadow: 0 0 0 4px var(--fill);
+}
+
+.layer-row[data-soon='true'] .layer-row__label:active {
+  box-shadow: none;
+}
+
+.globe-marker:active::after,
+.globe-point:active::before,
+.globe-point:active::after,
+.polar-saved:active::before,
+.polar-saved:active::after {
+  transform: scale(0.9);
+}

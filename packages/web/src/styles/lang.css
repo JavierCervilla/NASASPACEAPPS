@@ -168,16 +168,11 @@
   background: none;
 }
 
-/* It grows from the button that opened it (apple-design §7). */
-@media (prefers-reduced-motion: no-preference) {
-  .lang-popover:popover-open {
-    animation: popover-in var(--dur-enter) var(--ease-out);
-  }
+/* It grows from the button that opened it: styles/presence.css. */
 
-  .lang-button:active {
-    transform: scale(0.97);
-    transition: transform var(--dur-press) ease-out;
-  }
+.lang-button:active {
+  transform: scale(0.97);
+  transition: transform var(--dur-press) ease-out;
 }
 
 /* Phone: the row under the picker's title */

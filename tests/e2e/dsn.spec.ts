@@ -72,7 +72,8 @@ const headerTab = (page: Page, name: string) => page.getByRole('navigation', { n
 const tabs = (page: Page) => page.getByRole('navigation', { name: 'Views' });
 const slider = (page: Page) => page.getByRole('region', { name: 'Calendar' }).getByRole('slider', { name: 'Selected hour' });
 const playheadLeft = (page: Page) =>
-  view(page).locator('.dsn-band__playhead').evaluate((el) => (el as HTMLElement).style.left);
+  // The playhead rides a rail translated by the instant's share of the day (VENT-55: composited, not laid out).
+  view(page).locator('.dsn-band__playhead').evaluate((el) => (el.parentElement as HTMLElement).style.translate);
 
 /** The value of the card's list row `label`. */
 async function fact(page: Page, label: string): Promise<string> {

@@ -169,7 +169,8 @@ test.describe('desktop calendar strip, 1440x900', () => {
     await expect(slider(page)).toHaveAttribute('aria-valuetext', 'Mon 23 Nov · 18:00 UTC');
     await expect(date(page)).toHaveText('Mon 23 Nov · 18:00 UTC');
     // The instant line sits at hour 546 of 720, as on the canvas.
-    const left = await strip(page).locator('.instant-line').evaluate((el) => (el as HTMLElement).style.left);
+    // It rides a rail translated by the instant's share of the month (VENT-55: composited, not laid out).
+    const left = await strip(page).locator('.instant-line').evaluate((el) => (el.parentElement as HTMLElement).style.translate);
     expect(Number.parseFloat(left)).toBeCloseTo(75.83, 1);
     await expect(page.getByRole('region', { name: 'Lunar globe' }).locator('canvas')).toHaveCount(1);
     await expect(page.locator('[data-site-id="im2-athena"]')).toHaveAttribute('aria-pressed', 'true');

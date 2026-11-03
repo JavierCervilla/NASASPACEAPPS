@@ -68,6 +68,15 @@ export function clampPose(pose: OrbitPose): OrbitPose {
   };
 }
 
+/** `from` moved by `delta`, held inside {@link LIMITS}. */
+export function movedPose(from: OrbitPose, delta: OrbitPose): OrbitPose {
+  return clampPose({
+    latDeg: from.latDeg + delta.latDeg,
+    lonEastDeg: from.lonEastDeg + delta.lonEastDeg,
+    distance: from.distance + delta.distance,
+  });
+}
+
 /** The camera's position for a pose, in the globe's frame. */
 export function cameraPosition(pose: OrbitPose): Vec3 {
   return latLonToVector(pose.latDeg, pose.lonEastDeg, pose.distance);

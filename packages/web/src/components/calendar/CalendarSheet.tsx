@@ -140,7 +140,7 @@ function sliderProps(props: Omit<ColumnsProps, 'strip' | 'diff'>) {
 
 /** The columns: a vertical slider over the month's hours. */
 function Columns({ parts, strip, diff, atMs, i18n }: ColumnsProps) {
-  const top = `${instantPct(atMs)}%`;
+  const along = `0 ${instantPct(atMs)}%`;
   const slider = sliderProps({ parts, atMs, i18n });
   return (
     <div className="columns" data-sheet-scroll {...slider}>
@@ -152,8 +152,10 @@ function Columns({ parts, strip, diff, atMs, i18n }: ColumnsProps) {
       <SignalBar tone="sun" segments={strip.sun} axis="vertical" differs={diff?.sun} />
       <SignalBar tone="earth" segments={strip.earth} axis="vertical" differs={diff?.earth} />
       <SignalBar tone="window" segments={strip.window} axis="vertical" differs={diff?.window} />
-      <span className="columns__line" style={{ top }} aria-hidden="true">
-        <span className="columns__chip">{formatChip(atMs)}</span>
+      <span className="rail rail--y" style={{ translate: along }}>
+        <span className="columns__line" aria-hidden="true">
+          <span className="columns__chip">{formatChip(atMs)}</span>
+        </span>
       </span>
     </div>
   );

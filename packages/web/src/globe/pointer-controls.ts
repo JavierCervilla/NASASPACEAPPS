@@ -25,14 +25,17 @@
 
 /**
  * Drags become orbit moves: pixels to degrees, 1:1 at the centre of the
- * disc. A release becomes momentum only when the pointer was flicked, and
- * never under prefers-reduced-motion; a press stops that flick.
+ * disc, stretched past the limits (orbit-band.ts). A release becomes
+ * momentum only when the pointer was flicked, and never under
+ * prefers-reduced-motion; otherwise it settles back inside the limits. A
+ * press stops that flick.
  */
 import type { ControlDeps } from './control-deps';
 import type { DragTarget } from './drag';
 import { flickCoast } from './flick-coast';
 import { degreesPerPixel } from './framing';
 import { flingOrbit, moveOrbit, type Orbit } from './orbit';
+import { settleOnRelease, stretchPose } from './orbit-band';
 
 /** Release speeds below this, in px/s, are a placement, not a flick. */
 const FLICK_MIN_PX_S = 120;
@@ -42,16 +45,19 @@ export function pointerControls(orbit: Orbit, deps: ControlDeps): DragTarget {
   const scale = (): number =>
     degreesPerPixel(orbit.distance.value, deps.heightPx());
   const coast = flickCoast(orbit, deps);
+  const settle = settleOnRelease(orbit, deps);
   return {
     press: coast.press,
     drag: (dx, dy) => {
       const k = scale();
       const delta = { latDeg: dy * k, lonEastDeg: -dx * k, distance: 0 };
-      moveOrbit(orbit, delta, true);
+      moveOrbit(orbit, delta, true, stretchPose);
       deps.invalidate();
     },
     release: (vx, vy) => {
-      if (deps.reducedMotion() || Math.hypot(vx, vy) < FLICK_MIN_PX_S) return;
+      if (deps.reducedMotion() || Math.hypot(vx, vy) < FLICK_MIN_PX_S) {
+        return settle();
+      }
       const k = scale();
       flingOrbit(orbit, { latDeg: vy * k, lonEastDeg: -vx * k });
       coast.flung();
@@ -76,7 +82,11 @@ export function pinchControls(
   return (ratio) => {
     const from = orbit.distance.target;
     const distance = pinchDistance(from, ratio) - from;
-    moveOrbit(orbit, { latDeg: 0, lonEastDeg: 0, distance }, true);
+    const delta = { latDeg: 0, lonEastDeg: 0, distance };
+    moveOrbit(orbit, delta, true, stretchPose);
     deps.invalidate();
   };
 }
+
+/** The pinch's fingers lifted: a stretched zoom settles back. */
+export const pinchEnd = settleOnRelease;

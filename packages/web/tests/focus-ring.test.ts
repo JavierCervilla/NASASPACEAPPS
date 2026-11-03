@@ -31,10 +31,10 @@
  */
 import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
-import { allStyleSheets, declared, rootToken, rulesOf, styleSheet } from './css-rules';
+import { allSheets, declared, rootToken, rulesOf, sheet } from './css-rules';
 
 const PAGE = readFileSync(new URL('../src/components/Page.astro', import.meta.url), 'utf8');
-const SHEETS: [string, string][] = [...Object.entries(allStyleSheets()), ['Page.astro', PAGE.slice(PAGE.indexOf('<style>'))]];
+const SHEETS: [string, string][] = [...allSheets(), ['Page.astro', PAGE.slice(PAGE.indexOf('<style>'))]];
 /** On the Moon or its sky: the markers, the pins, the globe and the buttons drawn over it. */
 const ON_MOON = [
   '.globe-viewport', '.globe-marker', '.polar-marker', '.globe-point', '.polar-saved', '.pin', '.compass', '.globe-load',
@@ -68,14 +68,14 @@ describe('every focus ring uses a focus token, the Moon\'s only on the Moon', ()
 });
 
 describe('a common ring for the controls without their own', () => {
-  const common = rulesOf(styleSheet('global.css')).find((rule) => rule.selector.startsWith(':where(') && rule.selector.endsWith(':focus-visible'));
+  const common = rulesOf(sheet('global.css')).find((rule) => rule.selector.startsWith(':where(') && rule.selector.endsWith(':focus-visible'));
   it('is a zero-specificity rule in global.css, so a control\'s own ring still wins', () => {
     expect(common?.selector).toMatch(/:where\([^)]*\bbutton\b[^)]*\ba\b|:where\([^)]*\ba\b[^)]*\bbutton\b/);
     expect(declared(common?.body ?? '', 'outline')).toBe('2px solid var(--focus-ring)');
   });
 
   it('the globe\'s «Load the 3D globe» rings in the Moon\'s white, over the sky', () => {
-    const rule = rulesOf(styleSheet('globe.css')).find((r) => r.selector === '.globe-load:focus-visible');
+    const rule = rulesOf(sheet('globe.css')).find((r) => r.selector === '.globe-load:focus-visible');
     expect(ringColour(rule?.body ?? '')).toBe('--focus-ring-on-moon');
   });
 });

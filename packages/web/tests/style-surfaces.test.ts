@@ -32,11 +32,11 @@
 import { readdirSync, readFileSync, statSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import { contrast, over } from './colour-math';
-import { allStyleSheets, declared, rootToken, rulesOf, styleSheet } from './css-rules';
+import { allSheets, declared, rootToken, rulesOf, sheet } from './css-rules';
 
-const SHEETS = allStyleSheets();
+const SHEETS = allSheets();
 const ruleOf = (file: string, selector: string) => {
-  const found = rulesOf(styleSheet(file)).find((rule) => rule.selector === selector && rule.media.length === 0);
+  const found = rulesOf(sheet(file)).find((rule) => rule.selector === selector && rule.at.length === 0);
   if (!found) throw new Error(`no ${selector} in ${file}`);
   return found;
 };
@@ -66,7 +66,7 @@ function sourceText(dir = new URL('../src/', import.meta.url)): string {
 }
 
 describe('every token a stylesheet reads is set somewhere (C-08)', () => {
-  const css = Object.values(SHEETS).join('\n');
+  const css = [...SHEETS.values()].join('\n');
   const script = sourceText();
   const read = [...new Set([...css.matchAll(/var\((--[\w-]+)/g)].map((m) => m[1] ?? ''))];
   it.each(read)('%s', (name) => {
@@ -76,8 +76,8 @@ describe('every token a stylesheet reads is set somewhere (C-08)', () => {
   });
 
   it('the pin readout, the hint and the update notice turn the theme\'s opaque surface under reduced transparency', () => {
-    for (const [file, selector] of [['pin.css', '.pin-readout,\n  .pin-hint'], ['update.css', '.update-notice[data-shown]']] as const) {
-      const rule = rulesOf(styleSheet(file)).find((r) => r.selector === selector && r.media.some((m) => m.includes('reduced-transparency')));
+    for (const [file, selector] of [['pin.css', '.pin-readout, .pin-hint'], ['update.css', '.update-notice[data-shown]']] as const) {
+      const rule = rulesOf(sheet(file)).find((r) => r.selector === selector && r.at.some((m) => m.includes('reduced-transparency')));
       expect(declared(rule?.body ?? '', 'background')).toBe('var(--surface)');
     }
   });
@@ -101,8 +101,8 @@ describe('more contrast: near-opaque chrome and one border list (C-12)', () => {
     '.lang-popover', '.phone-bar', '.sheet', '.tab-bar', '.widget', '.site-list', '.settings-group', '.lang-list',
     '.saved-empty',
   ];
-  const bordered = Object.values(SHEETS).flatMap((css) => rulesOf(css))
-    .filter((rule) => rule.media.some((m) => m.includes(MORE)) && /var\(--surface-edge\)/.test(declared(rule.body, 'border') ?? ''))
+  const bordered = [...SHEETS.values()].flatMap((css) => rulesOf(css))
+    .filter((rule) => rule.at.some((m) => m.includes(MORE)) && /var\(--surface-edge\)/.test(declared(rule.body, 'border') ?? ''))
     .flatMap((rule) => rule.selector.split(',').map((s) => s.trim()));
   it.each(SURFACES)('%s gains the contrasting border', (surface) => {
     expect(bordered).toContain(surface);

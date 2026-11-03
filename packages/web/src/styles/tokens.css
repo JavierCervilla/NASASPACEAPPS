@@ -144,7 +144,13 @@
   --dsn-playhead: #f2f2f4;
   --dsn-on-playhead: #07080b;
 
-  /* Springs follow apple-design defaults: critically damped, response 0.3-0.4 s. */
+  /*
+   * Motion follows apple-design's defaults: entries, popovers and notices
+   * settle on a critically damped spring (damping 1.0, response 0.4 s),
+   * sampled as a CSS linear() curve; --ease-out is a plain ease for fades
+   * and colour changes, not a spring.
+   */
+  --spring: linear(0, 0.118, 0.329, 0.527, 0.682, 0.793, 0.868, 0.917, 0.949, 0.969, 0.981, 0.989, 0.993, 0.996, 0.998, 0.999, 1);
   --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
   --dur-press: 100ms;
   --dur-enter: 400ms;

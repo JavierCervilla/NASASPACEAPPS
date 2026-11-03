@@ -29,7 +29,7 @@
  * 1:1; a release hands its velocity to the springs; keys and the wheel move
  * the targets and the springs follow.
  */
-import { clampPose, type OrbitPose } from './framing';
+import { movedPose, type OrbitPose } from './framing';
 import { projectMomentum, stepSpring, type SpringAxis } from './spring';
 
 export interface Orbit {
@@ -69,20 +69,26 @@ export function poseOf(orbit: Orbit): OrbitPose {
   };
 }
 
+/** Where a move by `delta` from `from` lands (`movedPose`: held inside). */
+export type PlacePose = (from: OrbitPose, delta: PoseDelta) => OrbitPose;
+
 /**
- * Moves the targets by `delta`. With `follow` (a drag) the values jump with
- * them and stop: the globe stays glued to the pointer.
+ * Moves the targets by `delta`, placed by `place` (held at the limits, or
+ * stretched past them: orbit-band.ts). With `follow` (a drag) the values
+ * jump with them and stop: the globe stays glued to the pointer.
  */
 export function moveOrbit(
   orbit: Orbit,
   delta: PoseDelta,
   follow: boolean,
+  place: PlacePose = movedPose,
 ): void {
-  const target = clampPose({
-    latDeg: orbit.lat.target + delta.latDeg,
-    lonEastDeg: orbit.lon.target + delta.lonEastDeg,
-    distance: orbit.distance.target + delta.distance,
-  });
+  const from = {
+    latDeg: orbit.lat.target,
+    lonEastDeg: orbit.lon.target,
+    distance: orbit.distance.target,
+  };
+  const target = place(from, delta);
   const pairs: [SpringAxis, number][] = [
     [orbit.lat, target.latDeg],
     [orbit.lon, target.lonEastDeg],

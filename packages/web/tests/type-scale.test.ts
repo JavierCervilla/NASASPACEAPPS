@@ -30,13 +30,13 @@
  */
 import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
-import { allStyleSheets, declared, rootToken, rulesOf } from './css-rules';
+import { allSheets, declared, rootToken, rulesOf } from './css-rules';
 
 const STEPS = ['caption', 'footnote', 'subhead', 'body', 'headline', 'title', 'display'];
 const em = (value: string): number => Number(value.replace(/em$/, ''));
 const rem = (value: string): number => Number(value.replace(/rem$/, ''));
 const PAGE = readFileSync(new URL('../src/components/Page.astro', import.meta.url), 'utf8');
-const RULES = [...Object.entries(allStyleSheets()), ['Page.astro', PAGE.slice(PAGE.indexOf('<style>'))] as const]
+const RULES = [...allSheets(), ['Page.astro', PAGE.slice(PAGE.indexOf('<style>'))] as const]
   .flatMap(([file, css]) => rulesOf(css).map((rule) => ({ file, ...rule })));
 
 describe('the type scale', () => {

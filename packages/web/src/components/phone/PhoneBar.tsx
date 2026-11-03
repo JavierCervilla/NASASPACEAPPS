@@ -36,6 +36,7 @@ import type { NowState } from '../../phone/widget-types';
 import { useI18n } from '../i18n-context';
 import { FitLine } from './FitLine';
 import { Icon } from './Icon';
+import { usePillRoom } from './use-pill-room';
 
 interface Props {
   readonly site: PhoneSite;
@@ -65,8 +66,10 @@ function SitePill(props: Props) {
   const tone = state ?? 'unknown';
   const named = { name: site.name, state: lines[0] ?? '' };
   const label = t(computed ? 'pill.labelComputed' : 'pill.label', named);
+  const own = usePillRoom<HTMLButtonElement>(lines.join('\n'));
   return (
     <button
+      ref={own}
       type="button"
       className="site-pill"
       aria-label={label}

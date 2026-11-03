@@ -40,6 +40,7 @@ import type { NowState } from '../../phone/widget-types';
 import { useI18n } from '../i18n-context';
 import { SavedList } from '../saved/SavedList';
 import { SaveIcon } from '../saved/SaveIcon';
+import { useScrollFade } from '../use-scroll-fade';
 import { Icon } from './Icon';
 import { Regions, type Segment } from './PickerRegions';
 import { SiteList } from './SiteList';
@@ -110,6 +111,16 @@ function PickerList(props: PickerProps & { segment: Segment; query: string }) {
   );
 }
 
+/** Everything under the title, scrolling as one, its edges fading. */
+function PickerScroll({ children }: { readonly children: ReactNode }) {
+  const fade = useScrollFade<HTMLDivElement>();
+  return (
+    <div className="picker__scroll scroll-fade" data-sheet-scroll {...fade}>
+      {children}
+    </div>
+  );
+}
+
 export function SitePicker(props: PickerProps) {
   const { selected, onDone } = props;
   const [query, setQuery] = useState('');
@@ -123,12 +134,12 @@ export function SitePicker(props: PickerProps) {
         onDone={onDone}
         withSave={props.withSave === true}
       />
-      <div className="picker__scroll" data-sheet-scroll>
+      <PickerScroll>
         {props.languageRow}
         <Search value={query} onChange={setQuery} />
         <Regions value={segment} off={searching} onChange={setSegment} />
         <PickerList {...props} segment={segment} query={query} />
-      </div>
+      </PickerScroll>
     </div>
   );
 }

@@ -148,15 +148,19 @@
 }
 
 /*
- * The titles take what the pill leaves, wrapping down to their longest
- * word before the pill shortens its state (QA, PR #16).
+ * The titles keep one line while the pill can give way: a long site name
+ * ends in an ellipsis first (VENT-55, V-02). They wrap down to their
+ * longest word only to leave the pill its state's longest line
+ * (`--pill-need`, use-pill-room.ts), and only then does the pill shorten
+ * its state (QA, PR #16).
  */
 .phone-bar__titles {
   display: flex;
-  flex: 1 1 0;
+  flex: 0 0 auto;
   flex-direction: column;
   gap: 1px;
   min-width: min-content;
+  max-width: calc(100% - var(--pill-need, 0px) - 10px);
 }
 
 .phone-bar__title {
@@ -441,8 +445,16 @@
   opacity: var(--sheet-reveal, 1);
 }
 
+/*
+ * The name and the meta sit side by side while the point fits beside the
+ * name's longest word; at large text the meta wraps under the name, still
+ * on the right, instead of running over it (VENT-55, V-03). A container,
+ * so the subtitle's cap is a share of the head, not of the meta.
+ */
 .summary__head {
+  container-type: inline-size;
   display: flex;
+  flex-wrap: wrap;
   align-items: baseline;
   justify-content: space-between;
   gap: 8px;
@@ -471,7 +483,7 @@
 .summary__name {
   flex: 1;
   margin: 0;
-  min-width: 0;
+  min-width: min-content;
   font-size: 1.25rem;
   line-height: 1.2;
   font-weight: 700;
@@ -484,15 +496,14 @@
   flex: none;
   flex-direction: column;
   align-items: flex-end;
-  max-width: 55%;
-  margin: 0;
+  margin: 0 0 0 auto;
   font-size: 0.8125rem;
   line-height: 1.3;
   color: var(--text-muted);
 }
 
 .summary__subtitle {
-  max-width: 100%;
+  max-width: 55cqi;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -671,6 +682,7 @@
 }
 
 .search {
+  position: relative;
   display: flex;
   align-items: center;
   gap: 8px;
@@ -679,6 +691,18 @@
   border-radius: 12px;
   background: var(--phone-field);
   color: var(--text-muted);
+}
+
+/*
+ * Drawn 40 px tall, taken at 44 (VENT-55, C-15): the label's own box, so a
+ * tap just outside the field still focuses it. Under the field, so a tap
+ * on the text still places the caret.
+ */
+.search::after {
+  content: '';
+  position: absolute;
+  z-index: -1;
+  inset: -2px 0;
 }
 
 .search:focus-within {
@@ -708,6 +732,7 @@
 }
 
 .segmented button {
+  position: relative;
   min-height: 32px;
   border: 0;
   border-radius: 8px;
@@ -717,6 +742,13 @@
   font-size: 0.8125rem;
   font-weight: 600;
   cursor: pointer;
+}
+
+/* Drawn 32 px tall, taken at 44, as `.save-button` (VENT-55, C-15). */
+.segmented button::after {
+  content: '';
+  position: absolute;
+  inset: -6px 0;
 }
 
 .segmented button[aria-pressed='true'] {
@@ -748,13 +780,17 @@
   touch-action: pan-y;
 }
 
+/*
+ * Its padding keeps a row's second line off its bottom edge when the
+ * name takes two lines (VENT-55, V-18); one-line rows stay 56 px.
+ */
 .site-row {
   display: flex;
   align-items: center;
   gap: 12px;
   width: 100%;
   min-height: 56px;
-  padding: 0 14px;
+  padding: 8px 14px;
   border: 0;
   background: none;
   box-shadow: inset 0 -1px 0 var(--surface-edge);
@@ -984,4 +1020,13 @@
   place-content: center;
   background: #000;
   color: #c7c8ce;
+}
+
+/*
+ * The full sheet (Sites, Calendar) is the active view: the 3D view's notice
+ * under it, squeezed into the sliver between the top bar and the sheet,
+ * steps out of sight and of the accessibility tree (VENT-55, V-13).
+ */
+.phone:has(> .sheet[data-detent='full']) :is(.on-foot__status, .on-foot-wait > p) {
+  visibility: hidden;
 }

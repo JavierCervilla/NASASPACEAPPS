@@ -31,7 +31,12 @@
  * name, Escape the old one. Copy puts «85.87° S, 61.34° E» on the
  * clipboard and says so; Delete asks nothing and offers an undo instead.
  */
-import { useRef, useState, type KeyboardEvent } from 'react';
+import {
+  useRef,
+  useState,
+  type KeyboardEvent,
+  type MouseEvent,
+} from 'react';
 import { formatCoords } from '../../i18n/format';
 import type { NowState } from '../../phone/widget-types';
 import { NAME_MAX, type SavedSite } from '../../saved/saved-schema';
@@ -55,6 +60,26 @@ interface RenameProps {
   readonly onDone: (name: string | null) => void;
 }
 
+/**
+ * Focuses the field on the whole name, selected, its start in view
+ * (VENT-55, V-17): typing replaces it, an arrow keeps it.
+ */
+function selectWhole(input: HTMLInputElement | null): void {
+  if (!input) return;
+  input.focus();
+  input.setSelectionRange(0, input.value.length, 'backward');
+  input.scrollLeft = 0;
+}
+
+/**
+ * The row around the field takes a tap too (VENT-55, C-15), and keeps the
+ * field's focus, which leaving would end the rename.
+ */
+function keepFocus(event: MouseEvent<HTMLLabelElement>): void {
+  if (event.target instanceof HTMLInputElement) return;
+  event.preventDefault();
+}
+
 function RenameField({ site, onDone }: RenameProps) {
   const i18n = useI18n();
   // Enter, then the blur of the field going, would end it twice.
@@ -72,10 +97,10 @@ function RenameField({ site, onDone }: RenameProps) {
     end(null);
   };
   return (
-    <span className="site-row saved-row__edit">
+    <label className="site-row saved-row__edit" onMouseDown={keepFocus}>
       <span className="saved-glyph" aria-hidden="true" />
-      <input className="saved-row__input" defaultValue={site.name} maxLength={NAME_MAX} autoFocus aria-label={i18n.t('saved.renameLabel', { name: site.name })} onKeyDown={onKeyDown} onBlur={(e) => end(e.currentTarget.value)} />
-    </span>
+      <input ref={selectWhole} className="saved-row__input" defaultValue={site.name} maxLength={NAME_MAX} aria-label={i18n.t('saved.renameLabel', { name: site.name })} onKeyDown={onKeyDown} onBlur={(e) => end(e.currentTarget.value)} />
+    </label>
   );
 }
 

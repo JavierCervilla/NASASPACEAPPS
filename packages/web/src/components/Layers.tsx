@@ -27,6 +27,7 @@ import type { SourceStore } from '../source/data-source';
 import { DropPin } from './pin/DropPin';
 import { LayerToggles } from './saved/LayerToggles';
 import { useI18n } from './i18n-context';
+import { useScrollFade } from './use-scroll-fade';
 import { SourceRow } from './source/SourceSwitch';
 
 /**
@@ -38,12 +39,15 @@ import { SourceRow } from './source/SourceSwitch';
  */
 export function Layers({ source }: { readonly source: SourceStore }) {
   const { t } = useI18n();
+  const fade = useScrollFade<HTMLDivElement>();
   return (
     <aside className="globe-layers" aria-label={t('layers.title')}>
-      <h2>{t('layers.title')}</h2>
-      <LayerToggles />
-      <SourceRow source={source} />
-      <DropPin variant="key" />
+      <div className="globe-layers__scroll scroll-fade" {...fade}>
+        <h2>{t('layers.title')}</h2>
+        <LayerToggles />
+        <SourceRow source={source} />
+        <DropPin variant="key" />
+      </div>
     </aside>
   );
 }

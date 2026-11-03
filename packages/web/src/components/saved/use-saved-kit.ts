@@ -46,6 +46,7 @@ import type { PinKit } from '../../pin/kit';
 import type { SiteStore } from '../../phone/site-store';
 import type { SavedKit } from './context';
 import { useSavedGlobeLayer } from './use-saved-layer';
+import { useStandingCover } from './use-standing-cover';
 
 /** The kit, with the «Saved sites» layer on the globe (use-saved-layer.ts). */
 export function useCreateSavedKit(pin: PinKit, store: SiteStore): SavedKit {
@@ -61,5 +62,6 @@ export function useCreateSavedKit(pin: PinKit, store: SiteStore): SavedKit {
     applyFlags(kit.layers, localStore())), [kit]);
   useEffect(() => kit.undo.dismiss, [kit]);
   useSavedGlobeLayer(kit, pin, store);
+  useStandingCover(kit, pin);
   return kit;
 }

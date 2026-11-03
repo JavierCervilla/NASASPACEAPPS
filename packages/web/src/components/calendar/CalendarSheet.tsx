@@ -59,6 +59,7 @@ import {
   SignalBar,
 } from './parts';
 import { SourceNotes } from '../source/SourceNotes';
+import { useScrollFade } from '../use-scroll-fade';
 import { CompareNote } from './CompareNote';
 import { StripStatus } from './StripStatus';
 
@@ -202,11 +203,12 @@ export function CalendarSheet(props: Props) {
   const { parts, site } = props;
   const i18n = useI18n();
   const calendar = useCalendar(parts, site.id);
+  const fade = useScrollFade<HTMLDivElement>();
   const { state: time, strip, diff, playing, result } = calendar;
   if (!time) return null;
   const { pill, pillDetail } = siteLabels(site);
   return (
-    <div className="calendar">
+    <div className="calendar scroll-fade" {...fade}>
       <MonthArrows parts={parts} atMs={time.atMs}>
         <div className="calendar__title">
           <h2>{monthLabel(i18n, time.atMs)}</h2>
@@ -214,11 +216,9 @@ export function CalendarSheet(props: Props) {
         </div>
       </MonthArrows>
       <Shares calendar={calendar} shadow={site.shadow} />
-      {strip ? (
-        <Columns {...{ parts, strip, diff }} atMs={time.atMs} i18n={i18n} />
-      ) : (
-        <StripStatus calendar={calendar} />
-      )}
+      {strip
+        ? <Columns {...{ parts, strip, diff }} atMs={time.atMs} i18n={i18n} />
+        : <StripStatus calendar={calendar} />}
       <Controls {...props} {...time} playing={playing} result={result} />
     </div>
   );

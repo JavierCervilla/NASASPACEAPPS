@@ -164,7 +164,17 @@
   transform-origin: top right;
 }
 
+/*
+ * The list scrolls inside the popover, not the popover, so the scroll edge
+ * fade (scroll-fade.css) never cuts the glass's rim (VENT-55, C-10).
+ */
+.lang-popover:popover-open {
+  display: flex;
+  flex-direction: column;
+}
+
 .lang-popover .lang-list {
+  min-height: 0;
   background: none;
 }
 

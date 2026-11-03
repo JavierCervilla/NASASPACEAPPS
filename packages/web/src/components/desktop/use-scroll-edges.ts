@@ -36,7 +36,7 @@ const NONE: ScrollEdges = { top: false, bottom: false };
  * Calls `update` whenever `el` scrolls, resizes or its content changes
  * (the card grows as the month loads); returns the way to stop.
  */
-function watch(el: HTMLElement, update: () => void): () => void {
+export function watch(el: HTMLElement, update: () => void): () => void {
   el.addEventListener('scroll', update, { passive: true });
   const sizes = new ResizeObserver(update);
   sizes.observe(el);

@@ -32,6 +32,7 @@
  */
 import { formatInstant } from '../../calendar/instant-format';
 import { useI18n } from '../i18n-context';
+import { useScrollFade } from '../use-scroll-fade';
 import { DsnBand } from './DsnBand';
 import { DsnHeadline } from './DsnHeadline';
 import { DsnStations } from './DsnStations';
@@ -50,8 +51,9 @@ export function DsnEarth({ dsn }: { readonly dsn: Dsn }) {
 
 export function DsnView({ dsn }: { readonly dsn: Dsn | null }) {
   const { t } = useI18n();
+  const fade = useScrollFade<HTMLElement>();
   return (
-    <section className="dsn-view" aria-label={t('dsn.view')}>
+    <section className="dsn-view scroll-fade" aria-label={t('dsn.view')} {...fade}>
       {dsn ? (
         <div className="dsn-view__layout">
           <DsnEarth dsn={dsn} />

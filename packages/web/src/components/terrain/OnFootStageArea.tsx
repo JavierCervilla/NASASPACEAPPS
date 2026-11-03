@@ -26,11 +26,12 @@
 /**
  * The on-foot view's stage (VENT-34): the focusable host the scene draws
  * in (React renders nothing inside it: the scene owns its canvas and
- * labels), the loader over it until it has drawn (VENT-60), the caption
- * and the far relief's chip once it has, and what it says when it cannot
- * draw.
+ * labels), the loader over it until it has drawn (VENT-60), the caption,
+ * the far relief's chip and the compass (VENT-63) once it has, and what it
+ * says when it cannot draw.
  */
-import type { RefObject } from 'react';
+import type { ComponentProps, RefObject } from 'react';
+import { HeadingCompass } from '../compass/HeadingCompass';
 import { useI18n } from '../i18n-context';
 import { FarChip } from './loader/FarChip';
 import { OnFootLoader, type LoaderProps } from './loader/OnFootLoader';
@@ -53,6 +54,8 @@ interface Props {
   readonly onCopyReport: () => Promise<boolean>;
   /** The text alternative's id. */
   readonly altId: string;
+  /** The compass in the corner, shown once the view stands (VENT-63). */
+  readonly compass: ComponentProps<typeof HeadingCompass>;
 }
 
 export function OnFootStageArea(props: Props) {
@@ -71,6 +74,8 @@ export function OnFootStageArea(props: Props) {
           : <OnFootCaption resolutionM={resolution} />}
         <FarChip progress={view.tile.progress} drawn={props.drawn} />
       </div>
+      {props.drawn && status === 'ready'
+        ? <HeadingCompass {...props.compass} /> : null}
       <OnFootStatus located={view.located} tile={tile} scene={status}
         onRetry={onRetry} onCopyReport={onCopyReport} />
     </div>

@@ -391,6 +391,8 @@
   "onFoot.reportNotCopied": "Impossible de copier le rapport",
   "onFoot.noWebgl": "La vue 3D ne peut pas démarrer sur cet appareil",
   "onFoot.noPoint": "Ce site n'a pas de coordonnées où se placer",
+  "onFoot.compass.heading": "Cap de la vue {dir}.",
+  "onFoot.compass.press": "Appuie pour revenir à la vue initiale.",
   "onFoot.help": "Faites glisser ou utilisez les flèches pour regarder autour ; Début revient à la vue initiale.",
   "onFoot.alt": "Première personne, yeux à 2 m du sol. Cap de la vue {deg}°, {dir}.",
   "onFoot.ridgeHidesSun": "Une crête de {height} m, à {distance} km, cache le Soleil.",

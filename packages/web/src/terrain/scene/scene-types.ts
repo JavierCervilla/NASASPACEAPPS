@@ -110,6 +110,11 @@ export interface SceneHooks {
 
 export interface TerrainScene {
   readonly update: (input: SceneInput) => void;
+  /**
+   * Turns the view back to where it opened, on a spring (instant under
+   * reduced motion): the compass's press and Home (VENT-63).
+   */
+  readonly home: () => void;
   /** Draws once more (the band moved). */
   readonly invalidate: () => void;
   readonly dispose: () => void;

@@ -134,6 +134,14 @@
   justify-content: flex-end;
 }
 
+/*
+ * On desktop the compass stands in the stage's top right corner as on the
+ * globe (orientation.css, VENT-63): the caption keeps to its left.
+ */
+.on-foot--desktop .on-foot__top {
+  right: calc(20px + var(--compass-size) + 12px);
+}
+
 .on-foot__top > * { pointer-events: auto; }
 
 .on-foot__caption {

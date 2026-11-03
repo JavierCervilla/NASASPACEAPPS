@@ -27,8 +27,9 @@
  * How the on-foot view is turned (VENT-34): a drag with Pointer Events
  * and capture (mouse, pen or one finger; a swipe across the view turns it
  * 180°), a release that carries the finger's speed on (look-coast.ts), a
- * press that stops the coast, and the arrows and Home on the focused view
- * (look-input.ts). A key the view does not use is left to the page.
+ * press that stops the coast, the arrows on the focused view
+ * (look-input.ts), and Home, which turns it back to where it opened as the
+ * compass does (VENT-63). A key the view does not use is left to the page.
  */
 import { VelocityTracker } from '../../globe/velocity';
 import { keyLook, type DragScale } from '../look-input';
@@ -37,7 +38,8 @@ import type { Look } from '../view-camera';
 
 export interface LookTarget {
   readonly look: () => Look;
-  readonly home: () => Look;
+  /** Turns back to where the view opened (look-home.ts). */
+  readonly goHome: () => void;
   readonly set: (look: Look) => void;
   /** Degrees per px of drag, by axis. */
   readonly scale: () => DragScale;
@@ -81,10 +83,11 @@ function dragHandlers(el: HTMLElement, target: LookTarget): Handlers {
 /** Binds drag and keys on `el`; returns the unbind. */
 export function bindLook(el: HTMLElement, target: LookTarget): () => void {
   const key = (e: KeyboardEvent): void => {
-    const next = keyLook(target.look(), e, target.home());
-    if (!next) return;
+    const next = keyLook(target.look(), e);
+    if (!next && e.key !== 'Home') return;
     e.preventDefault();
-    target.set(next);
+    if (next) target.set(next);
+    else target.goHome();
   };
   const pairs: Handlers = [...dragHandlers(el, target),
     ['keydown', key as EventListener]];

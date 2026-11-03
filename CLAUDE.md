@@ -471,11 +471,25 @@ Every visible change follows `.claude/skills/apple-design/SKILL.md` (vendored fr
   and the sheet's edge) show the selected site or point from the ground, opening in **first person**, the eye 2 m over
   the point, facing the Sun when it is near the sky, else the Earth (VENT-54, the human's decision: no astronaut, no
   lander and no camera switch; `view-camera.ts` has one pose); drag (Pointer Events
-  with capture) or the arrows and Home on the focused view turn it (`src/terrain/look-input.ts`, `view-camera.ts`).
+  with capture) or the arrows on the focused view turn it (`src/terrain/look-input.ts`, `view-camera.ts`), and Home
+  turns it back to where it opened, as the compass's press does (below).
   Turning it: a swipe across the whole width turns 180° (a full turn in two swipes, on a phone and a desktop alike;
   the pitch by the field of view over the height, held to its range, `dragScale`, `look-input.ts`), and on release the
   finger's velocity goes on into the yaw and decays as the globe's flick does (`look-coast.ts`: 0.995 per ms, stops
   under 2°/s, never under reduced motion or for a slow drag; a press stops it; frames are drawn only while it lasts).
+  **The view's compass** (VENT-63, canvas «A + press = opening view», the human's decision): the globe's round glass
+  `.compass` button in the same corner (on a phone under the top bar through `useCompassTop`; the desktop caption keeps
+  to its left), `src/components/compass/HeadingCompass.tsx`: its rose (needle and an upright N, `.compass__rose`) turns
+  against the heading so N points to true north, and only the Earth rides the ring, at its azimuth relative to the
+  heading, drawn over the N and the needle, filled when the view sees it and hollow when the terrain or the horizon
+  hides it (the same answer as the text alternative, `seenBodies`; no Sun, no heading pill; pure parts in
+  `src/terrain/heading-compass.ts`). Its turns are custom properties written when the look changes, so an idle view
+  still draws no frames. Its name is the heading on eight points («View heading to the north.», `octantOf` in
+  `horizon-alt.ts`), the Earth's sentence of `horizon-alt.ts` and «Press to look back where the view opened.», so it
+  changes only with the octant. A press and Home turn the view back to where it opened through the scene's `home()`
+  (`TerrainScene`, `scene-controller.ts` `homer`), on critically damped springs of 0.4 s, the yaw the short way
+  (`src/terrain/look-home.ts`), at once under reduced motion; a drag or an arrow stops them. Held by
+  `tests/heading-compass.test.ts` and the compass cases of `tests/e2e/terrain-view.spec.ts`.
   The relief comes **only from our API, as rings of real 3D relief** from the aligned tiles with levels of detail
   (VENT-46, `docs/terrain-api.md`): `GET /api/v1/terrain/tiles?lat&lon&levels` lists the tiles and each is fetched from
   its immutable `?v=` URL, at most 6 in flight, nearest and finest first (`terrain/ring/ring-fetch.ts`, behind a

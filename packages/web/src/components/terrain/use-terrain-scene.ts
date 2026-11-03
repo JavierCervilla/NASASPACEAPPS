@@ -141,7 +141,8 @@ function useMountedScene(parts: MountParts): boolean {
 
 /**
  * The scene in `host` for `input` (null: not yet) at `tier`; its status,
- * whether it has drawn, and `retry`, which mounts it again after a loss.
+ * whether it has drawn, `retry`, which mounts it again after a loss, and
+ * `home`, which turns it back to where it opened (the compass, VENT-63).
  */
 export function useTerrainScene(
   host: RefObject<HTMLDivElement | null>,
@@ -159,5 +160,6 @@ export function useTerrainScene(
   useEffect(() => {
     if (input) scene.current?.update(input);
   }, [input]);
-  return { status, drawn, retry: () => setStatus('loading') };
+  const home = (): void => scene.current?.home();
+  return { status, drawn, retry: () => setStatus('loading'), home };
 }

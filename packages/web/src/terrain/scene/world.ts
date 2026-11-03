@@ -39,11 +39,9 @@ import { backdropM } from '../ring/ring-plan';
 import type { RingLayer } from './ring-layer';
 import type { FarShade } from './ring-shade';
 import { applyRings } from './world-rings';
-import type { Idle } from './astronaut-idle';
 import { createSlicer, type Slicer } from './slicer';
 import { ringsMesh } from './rings';
-import { placeLander } from './lander-place';
-import { landerSpot, rocksMesh } from './props';
+import { rocksMesh } from './props';
 import type { SceneInput, SceneSetup, SkyDirs } from './scene-types';
 import { createSky, type SkyParts } from './sky';
 import type { Stage } from './stage';
@@ -57,11 +55,6 @@ export interface World {
   readonly setup: SceneSetup;
   readonly mask: SunMask;
   readonly sky: SkyParts;
-  readonly astronaut: Group;
-  /** The astronaut's idle once loaded: moved only by drawn frames. */
-  idle: Idle | null;
-  /** The lander's holder: placed on the ground, filled when it loads. */
-  readonly lander: Group;
   near: Group;
   ground: Ground;
   material: MeshStandardMaterial;
@@ -86,12 +79,10 @@ export function createWorld(stage: Stage, seed: number, setup: SceneSetup) {
   const slicer = createSlicer({ invalidate: () => world.invalidate() });
   const shadowPx = setup.quality.tier === 'high' ? 2048 : 1024;
   const world: World = { stage, setup, mask, sky: createSky(seed, shadowPx),
-    astronaut: new Group(), idle: null, lander: new Group(), near: new Group(),
-    ground: () => 0,
+    near: new Group(), ground: () => 0,
     material: groundMaterial(mask), backdrop: null, input: null, lit: null,
     rings: null, farShade: null, slicer, invalidate: () => undefined };
-  stage.scene.add(world.sky.group, world.astronaut, world.lander,
-    world.near);
+  stage.scene.add(world.sky.group, world.near);
   return world;
 }
 
@@ -101,16 +92,14 @@ function applyTiles(world: World, input: SceneInput): void {
   rebuildNear(world, input);
 }
 
-/** The rocks, the lander and the rings over the new ground. */
+/** The rocks and the rings over the new ground. */
 function rebuildNear(world: World, input: SceneInput): void {
   world.stage.scene.remove(world.near);
   world.near.traverse((o) => (o as Partial<Mesh>).geometry?.dispose());
-  const spot = landerSpot(input.startYawDeg);
   world.near = new Group();
-  world.near.add(rocksMesh(input.seed, world.ground,
-    { spot, kind: input.lander }, world.mask), ringsMesh(world.ground));
+  world.near.add(rocksMesh(input.seed, world.ground, world.mask),
+    ringsMesh(world.ground));
   world.stage.scene.add(world.near);
-  placeLander(world.lander, world.ground, input);
   world.setup.report.step('near ground placed');
 }
 

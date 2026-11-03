@@ -24,15 +24,12 @@
  */
 
 /**
- * What the on-foot scene loads once it stands (VENT-34): the astronaut, the
- * lander and the ground's maps, the host marked when all are in. The
- * `?onfoot=` switches (leave-out.ts) can leave the astronaut or the lander
- * out, and the host says which parts are left out and the tier it draws at
+ * What the on-foot scene loads once it stands (VENT-34): the ground's maps,
+ * the host marked when they are in. The host also says which parts the
+ * `?onfoot=` switches (leave-out.ts) leave out and the tier it draws at
  * (`data-onfoot`, `data-tier`), for the tests and for a remote console.
  */
 import type { Loop } from '../../globe/loop';
-import { loadAstronaut } from './astronaut';
-import { loadLander } from './lander';
 import { markReadyWhenStanding } from './ready-mark';
 import type { SceneSetup } from './scene-types';
 import { loadSurfaces } from './surfaces';
@@ -45,36 +42,15 @@ export function markSetup(host: HTMLElement, setup: SceneSetup): void {
   else delete host.dataset['onfoot'];
 }
 
-/** Loads the parts the setup keeps, noting each in the crash report. */
-async function loadParts(world: World, alive: () => boolean,
-  reducedMotion: () => boolean): Promise<void> {
-  const { leave, report } = world.setup;
-  const lander = { into: world.lander, mask: world.mask, alive };
-  const astronaut = { into: world.astronaut, mask: world.mask, alive,
-    reducedMotion };
-  const loaded = (part: string) => (): void => report.step(`${part} loaded`);
-  await Promise.all([
-    leave.has('astronaut') ? undefined
-      : loadAstronaut(astronaut, console.warn).then((idle) => {
-        world.idle = idle;
-      }).then(loaded('astronaut')),
-    leave.has('lander') ? undefined
-      : loadLander(lander, world.input?.lander ?? 'generic', console.warn)
-        .then(loaded('lander')),
-    loadSurfaces(world, console.warn).then(loaded('surfaces')),
-  ]);
-  report.step('all parts loaded');
+/** Loads the ground's maps, noting it in the crash report. */
+async function loadParts(world: World): Promise<void> {
+  await loadSurfaces(world, console.warn);
+  world.setup.report.step('all parts loaded');
 }
 
-/** Loads the astronaut and the maps; marks the host once both stand. */
-export function startLoading(host: HTMLElement, world: World, loop: Loop,
-  reducedMotion: () => boolean): () => void {
-  let alive = true;
-  const standing = loadParts(world, () => alive, reducedMotion);
-  const unmark = markReadyWhenStanding(host, standing,
+/** Loads the maps; marks the host once they stand. */
+export function startLoading(host: HTMLElement, world: World,
+  loop: Loop): () => void {
+  return markReadyWhenStanding(host, loadParts(world),
     () => loop.invalidate());
-  return () => {
-    alive = false;
-    unmark();
-  };
 }

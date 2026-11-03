@@ -28,7 +28,7 @@
  * x `n` grid of the session's local frame, rows north to south, columns
  * west to east, centred on the site, resampled from the relief rings
  * (ring/ring-local.ts). The drawn relief is the rings' meshes; this grid is
- * what the props, the astronaut's feet, the ridge and the Sun's shadows
+ * what the props, the eye, the ridge and the Sun's shadows
  * stand on. Where the relief comes from is ring/ring-source.ts.
  */
 

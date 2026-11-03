@@ -68,13 +68,13 @@ describe('the on-foot steps in the breadcrumbs', () => {
   it('marks a run of repeated steps once, as the report folds it', () => {
     const report = recorder();
     const crumbs = trail();
-    report.begin({ tier: 'low', leftOut: 'astronaut' });
+    report.begin({ tier: 'low', leftOut: 'shade' });
     report.tap(crumbsOf(crumbs));
     for (let i = 0; i < 5; i++) report.step('turn', 'turn');
     report.step('coast starting');
     report.step('turn', 'turn');
     expect(crumbs.marks).toEqual([
-      'on-foot: mount at tier low, left out: astronaut', 'on-foot: turn', 'on-foot: coast starting', 'on-foot: turn',
+      'on-foot: mount at tier low, left out: shade', 'on-foot: turn', 'on-foot: coast starting', 'on-foot: turn',
     ]);
   });
 

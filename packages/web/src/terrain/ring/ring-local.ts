@@ -25,7 +25,7 @@
 
 /**
  * The rings resampled onto regular grids of the session's frame (VENT-46):
- * the near ground the props stand on, the astronaut's feet, the ridge and
+ * the near ground the props stand on, the eye, the ridge and
  * the Sun's shadow march read a square grid of metres east and north, as
  * the legacy tile was (257 x 257, 4 km at 15.6 m), and the shadow march of
  * each coarser level reads its own (16, 64, 256 km). Each node reads the

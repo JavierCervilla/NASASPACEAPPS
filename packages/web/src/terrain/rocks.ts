@@ -26,7 +26,7 @@
 /**
  * The illustrative rocks (VENT-34): smooth, rounded, all under 1 m, more
  * of the small ones, scattered round the point from its seed (seeded.ts),
- * none on the astronaut's spot or under the lander. LOLA cannot see them:
+ * none right under the eye. LOLA cannot see them:
  * the caption says so. Pure.
  */
 import { generator } from './seeded';
@@ -49,28 +49,20 @@ export interface Scatter {
   /** The ring they lie in, metres from the point. */
   readonly innerM: number;
   readonly outerM: number;
-  /** Discs kept clear: the lander's feet. */
-  readonly clear: readonly { east: number; north: number; r: number }[];
 }
-
-/** Whether a rock at `east`, `north` stays off every clear disc. */
-const isClear = (s: Scatter, east: number, north: number): boolean =>
-  s.clear.every((c) => Math.hypot(east - c.east, north - c.north) > c.r);
 
 /** The rocks of `seed`, the same every time. */
 export function scatterRocks(seed: number, scatter: Scatter): Rock[] {
   const next = generator(seed);
   const rocks: Rock[] = [];
   const span = scatter.outerM - scatter.innerM;
-  for (let tries = 0; rocks.length < scatter.count; tries++) {
-    if (tries > scatter.count * 4) break;
+  while (rocks.length < scatter.count) {
     const d = scatter.innerM + Math.pow(next(), 1.5) * span;
     const az = next() * 2 * Math.PI;
     const [east, north] = [Math.sin(az) * d, Math.cos(az) * d];
     const diameter = 0.06 + Math.pow(next(), 5) * (MAX_ROCK_M - 0.06);
     const squash = 0.45 + next() * 0.35;
     const yawRad = next() * 2 * Math.PI;
-    if (!isClear(scatter, east, north)) continue;
     rocks.push({ east, north, radius: diameter / 2, squash, yawRad });
   }
   return rocks;

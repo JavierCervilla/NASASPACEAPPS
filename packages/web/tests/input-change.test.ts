@@ -39,7 +39,7 @@ const WORDS: SceneWords = { rings: ['25 m', '100 m', '500 m'], ridge: { text: 'R
 
 const input = (patch: Partial<SceneInput> = {}): SceneInput => ({
   tiles: [TILE], ring: RING, profile: null, seed: 7,
-  sky: { sunAz: 339, sunEl: 5.7, earthAz: 314, earthEl: 9.1 }, earthSpin: [], mode: 'third', lander: 'generic',
+  sky: { sunAz: 339, sunEl: 5.7, earthAz: 314, earthEl: 9.1 }, earthSpin: [],
   startYawDeg: 339, words: WORDS, ...patch,
 }) as unknown as SceneInput;
 
@@ -72,14 +72,12 @@ describe('drawsAgain', () => {
     expect(drawsAgain(input(), next)).toBe(true);
   });
 
-  it('draws for a new ground, ring, profile, mode, lander or seed', () => {
+  it('draws for a new ground, ring, profile or seed', () => {
     const was = input();
     expect(drawsAgain(was, input({ tiles: [{ ...TILE } as never] }))).toBe(true);
     expect(drawsAgain(was, input({ tiles: [] }))).toBe(true);
     expect(drawsAgain(was, input({ ring: { ...RING } as never }))).toBe(true);
     expect(drawsAgain(was, input({ profile: {} as never }))).toBe(true);
-    expect(drawsAgain(was, input({ mode: 'first' }))).toBe(true);
-    expect(drawsAgain(was, input({ lander: 'apollo' }))).toBe(true);
     expect(drawsAgain(was, input({ seed: 8 }))).toBe(true);
   });
 });

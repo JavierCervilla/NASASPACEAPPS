@@ -33,10 +33,9 @@
 import { VelocityTracker } from '../../globe/velocity';
 import { keyLook, type DragScale } from '../look-input';
 import { release, startTracker, turn } from './drag-steps';
-import type { CameraMode, Look } from '../view-camera';
+import type { Look } from '../view-camera';
 
 export interface LookTarget {
-  readonly mode: () => CameraMode;
   readonly look: () => Look;
   readonly home: () => Look;
   readonly set: (look: Look) => void;
@@ -82,7 +81,7 @@ function dragHandlers(el: HTMLElement, target: LookTarget): Handlers {
 /** Binds drag and keys on `el`; returns the unbind. */
 export function bindLook(el: HTMLElement, target: LookTarget): () => void {
   const key = (e: KeyboardEvent): void => {
-    const next = keyLook(target.mode(), target.look(), e, target.home());
+    const next = keyLook(target.look(), e, target.home());
     if (!next) return;
     e.preventDefault();
     target.set(next);

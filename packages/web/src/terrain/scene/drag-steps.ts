@@ -52,6 +52,6 @@ export function turn(
   target: LookTarget,
   delta: readonly [number, number],
 ): void {
-  const { mode, look, scale } = target;
-  target.set(dragLook(mode(), look(), delta, scale()));
+  const { look, scale } = target;
+  target.set(dragLook(look(), delta, scale()));
 }

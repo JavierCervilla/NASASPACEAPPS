@@ -24,8 +24,8 @@
  */
 
 /**
- * The near ground's height anywhere (VENT-34, VENT-46): a rock or the
- * astronaut stands on the near grid's triangles (each cell split along its
+ * The near ground's height anywhere (VENT-34, VENT-46): a rock or the eye
+ * stands on the near grid's triangles (each cell split along its
  * north-east to south-west diagonal), which follow the drawn rings to
  * within the resampling. Pure.
  */

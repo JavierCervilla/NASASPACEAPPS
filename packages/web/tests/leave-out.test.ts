@@ -41,17 +41,22 @@ describe('?onfoot=', () => {
   });
 
   it('names each part the view can do without', () => {
-    expect(parts('?onfoot=astronaut,lander,shadows,far,shade,logdepth')).toEqual([
-      'astronaut', 'lander', 'shadows', 'far', 'shade', 'logdepth',
+    expect(parts('?onfoot=shadows,far,shade,logdepth')).toEqual([
+      'shadows', 'far', 'shade', 'logdepth',
     ]);
   });
 
   it('lists them in one order whatever the address says, each once', () => {
-    expect(parts('?onfoot=far,astronaut,far,lander')).toEqual(['astronaut', 'lander', 'far']);
+    expect(parts('?onfoot=logdepth,far,shadows,far')).toEqual(['shadows', 'far', 'logdepth']);
+  });
+
+  // VENT-54 took the astronaut and the landers out: an old link naming them still opens the view.
+  it('ignores the parts the view no longer has', () => {
+    expect(parts('?onfoot=astronaut,lander,far')).toEqual(['far']);
   });
 
   it('ignores unknown words, spaces, case and empty items', () => {
-    expect(parts('?onfoot=%20Shadows%20,,nonsense,LANDER,far=1,constructor,__proto__')).toEqual(['lander', 'shadows']);
+    expect(parts('?onfoot=%20Shadows%20,,nonsense,LOGDEPTH,far=1,constructor,__proto__')).toEqual(['shadows', 'logdepth']);
   });
 
   it('reads it among the other parameters, and never throws on a broken query', () => {
@@ -62,6 +67,6 @@ describe('?onfoot=', () => {
   it('answers a set to ask by name', () => {
     const left = parseLeaveOut('?onfoot=far');
     expect(left.has('far')).toBe(true);
-    expect(left.has('lander')).toBe(false);
+    expect(left.has('shade')).toBe(false);
   });
 });

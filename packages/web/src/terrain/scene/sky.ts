@@ -55,8 +55,8 @@ const EARTH_R_DEG = 0.95;
 const GLARE_R_DEG = 2.5;
 /**
  * The legibility fill, indirect: near neutral with a cool hint of
- * earthshine from above, darker from below, so slopes, rocks and the
- * astronaut keep their form where the Sun does not reach. Three.js divides
+ * earthshine from above, darker from below, so slopes and rocks keep
+ * their form where the Sun does not reach. Three.js divides
  * indirect light by pi: this is a dim grey on level ground.
  */
 const FILL = { sky: 0x9097a8, ground: 0x8a857d, intensity: 1.1 } as const;

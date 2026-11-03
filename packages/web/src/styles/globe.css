@@ -417,22 +417,55 @@
 }
 
 /* Under Save-Data the globe waits for this button (components/Globe.tsx). */
+/*
+ * «Load the 3D globe» under Save-Data (VENT-57, V-09 variant B,
+ * components/GlobeLoad.tsx): «New version ready»'s row, its material
+ * from update.css, where the button stood; the whole row is the button.
+ */
 .globe-load {
   position: absolute;
   top: 40%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  min-height: 44px;
-  padding: 0 20px;
-  border: 1px solid var(--glass-label-edge);
-  border-radius: 22px;
-  background: var(--glass-label);
-  color: var(--glass-label-text);
+  /* Centred at its own width: a box from 50% would wrap at half the view. */
+  right: 0;
+  left: 0;
+  width: fit-content;
+  max-width: calc(100% - 32px);
+  margin-inline: auto;
+  transform: translateY(-50%);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  box-sizing: border-box;
+  min-height: 52px;
+  border: 0;
   font: inherit;
-  font-size: 0.9375rem;
-  font-weight: 600;
-  letter-spacing: -0.01em;
+  text-align: start;
   cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* The update button's inner room (update.css `.update-notice__update`). */
+.globe-load .notice-row__mark {
+  width: 22px;
+  height: 22px;
+  margin-inline-start: 10px;
+}
+
+.globe-load .notice-row__lines {
+  margin-inline-end: 12px;
+}
+
+@media (prefers-reduced-transparency: reduce) {
+  .globe-load {
+    backdrop-filter: none;
+    background: var(--surface);
+  }
+}
+
+@media (prefers-contrast: more) {
+  .globe-load {
+    border: 1px solid var(--surface-edge);
+  }
 }
 
 /* Over the sky, which stays dark in both themes. */
@@ -442,7 +475,7 @@
 }
 
 .globe-load:active {
-  transform: translate(-50%, -50%) scale(0.97);
+  transform: translateY(-50%) scale(0.97);
   transition: transform var(--dur-press) ease-out;
 }
 

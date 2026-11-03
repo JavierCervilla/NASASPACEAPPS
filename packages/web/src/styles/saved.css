@@ -679,26 +679,21 @@
   min-height: 44px;
 }
 
-/* «Deleted Cabeus ridge · Undo»: above the tab bar, or the strip. */
+/* «Deleted Cabeus ridge · Undo»: a row in update.css's look, above the strip or the tab bar. */
 .undo-toast {
   position: fixed;
   /* Centred by its margins, so its width is its words', up to the edges. */
   left: 16px;
   right: 16px;
-  bottom: 24px;
+  /* Above the strip or the tab bar, measured (undo-anchor.ts). */
+  bottom: var(--undo-bottom, 24px);
   width: fit-content;
   margin-inline: auto;
   z-index: 40;
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 10px;
   box-sizing: border-box;
-  padding: 6px 6px 6px 18px;
-  border-radius: 26px;
-  background: var(--phone-tabs, var(--surface));
-  backdrop-filter: blur(24px) saturate(180%);
-  box-shadow: var(--popover-shadow), inset 0 0 0 1px var(--surface-edge);
-  color: var(--text);
   /*
    * It rises from below as a material and goes back down the same way
    * (apple-design §7, §12). Visible at once on the way in, so the focus a
@@ -729,16 +724,25 @@
   line-height: 1.3;
 }
 
+/* A trash mark in front of the words, as the update row's mark. */
+.undo-toast .notice-row__mark {
+  width: 20px;
+  height: 20px;
+  margin-inline-start: 10px;
+}
+
+/* «Undo» is bold text, not a filled pill (VENT-57, V-11 variant B). */
 .undo-toast__undo {
   flex: none;
   min-width: 44px;
   min-height: 44px;
-  padding: 0 16px;
+  padding: 0 14px;
   border: 0;
-  border-radius: 22px;
-  background: var(--fill);
+  border-radius: 18px;
+  background: none;
   color: var(--text);
   font: inherit;
+  font-size: 0.9375rem;
   font-weight: 600;
   cursor: pointer;
 }
@@ -750,7 +754,7 @@
 
 @media (max-width: 767px) {
   .undo-toast {
-    bottom: calc(96px + env(safe-area-inset-bottom));
+    bottom: var(--undo-bottom, calc(96px + env(safe-area-inset-bottom)));
   }
 }
 
@@ -758,12 +762,12 @@
 @media (prefers-reduced-motion: reduce) {
   .undo-toast {
     transition:
-      opacity 200ms linear,
+      opacity var(--dur-fade) linear,
       visibility 0s linear var(--toast-hide-after);
   }
 
   .undo-toast[data-open='false'] {
-    --toast-hide-after: 200ms;
+    --toast-hide-after: var(--dur-fade);
     translate: none;
     scale: none;
     filter: none;
@@ -772,7 +776,7 @@
 
 @media (prefers-reduced-transparency: reduce) {
   .undo-toast {
-    background: var(--card);
+    background: var(--surface);
     backdrop-filter: none;
   }
 }

@@ -24,46 +24,47 @@
  */
 
 /*
- * The offline notice (VENT-28, components/OfflineNotice.tsx): a small
- * glass pill under the header (desktop) or the top bar (phones), above
- * the globe and the sheet. Empty while online. `--top` is the lowest
- * bar's bottom, measured; at most two lines, the date cut with an
- * ellipsis under very large text, and taps go through to the globe.
+ * «Offline» (VENT-28; a row since VENT-57, V-08 variant B,
+ * components/OfflineRow.tsx): «New version ready»'s row in its slot
+ * under the header (desktop) or the top bar (phones), placed and dressed
+ * by update.css; `--top` is the lowest bar's bottom, measured. A crossed
+ * cloud in front, «Offline» over «Showing data from …», the hint's ✕.
+ * Each line keeps to one, the date cut with an ellipsis under very large
+ * text, so the row is two lines at most. Empty and box-less while online.
  */
-.offline-notice {
-  position: fixed;
-  top: var(--top, calc(env(safe-area-inset-top, 0px) + 84px));
-  left: 50%;
-  z-index: 5;
-  max-width: calc(100vw - 32px);
+.offline-notice .notice-row__mark {
+  width: 22px;
+  height: 22px;
+  margin-inline-start: 10px;
+}
+
+.offline-notice .notice-row__lines {
   margin: 0;
-  padding: 8px 14px;
-  /* Half a one-line pill's height: a pill, or a rounded box on two. */
-  border-radius: calc(0.8125rem * 1.35 / 2 + 8px);
-  translate: -50% 0;
-  background: var(--chrome);
-  backdrop-filter: blur(20px) saturate(180%);
-  box-shadow: inset 0 0 0 1px var(--surface-edge);
-  font-size: 0.8125rem;
-  line-height: 1.35;
-  font-weight: 600;
-  color: var(--text);
-  text-align: center;
-  display: -webkit-box;
-  -webkit-box-orient: vertical;
-  -webkit-line-clamp: 2;
-  line-clamp: 2;
+  padding-inline-end: 4px;
+}
+
+.offline-notice .notice-row__title,
+.offline-notice .notice-row__how {
   overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+/* Its taps stop as the exit starts (presence.css). */
+.offline-notice[data-shown][data-presence='out'] {
   pointer-events: none;
 }
 
-.offline-notice:empty {
-  display: none;
+/* As the update row handles them (update.css). */
+@media (prefers-reduced-transparency: reduce) {
+  .offline-notice[data-shown] {
+    backdrop-filter: none;
+    background: var(--surface);
+  }
 }
 
-@media (prefers-reduced-transparency: reduce) {
-  .offline-notice {
-    backdrop-filter: none;
-    background: var(--bg);
+@media (prefers-contrast: more) {
+  .offline-notice[data-shown] {
+    border: 1px solid var(--surface-edge);
   }
 }

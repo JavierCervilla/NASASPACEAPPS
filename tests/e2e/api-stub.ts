@@ -97,7 +97,7 @@ interface StubOptions {
   readonly status?: number;
   /** The site route answers only once this settles: a slow API. */
   readonly hold?: Promise<void>;
-  /** The route for any point (the astronaut's custom point) answers only once this settles. */
+  /** The route for any point (a pinned custom point) answers only once this settles. */
   readonly pointHold?: Promise<void> | undefined;
   /** Answers `/api/v1/horizon` (VENT-40); without it the route is left alone, as before. */
   readonly horizon?: HorizonStub | undefined;

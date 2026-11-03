@@ -374,7 +374,7 @@ describe('the host’s ready mark', () => {
   };
   const flush = () => new Promise((resolve) => setTimeout(resolve, 0));
 
-  it('is set when the astronaut stands, and the view draws again', async () => {
+  it('is set when the scene\'s parts are in, and the view draws again', async () => {
     const host = { dataset: {} as DOMStringMap };
     const standing = deferred();
     const drawn = vi.fn();
@@ -386,7 +386,7 @@ describe('the host’s ready mark', () => {
     expect(drawn).toHaveBeenCalledTimes(1);
   });
 
-  it('starts clear on a host a previous scene marked, and a stale astronaut never marks the new scene', async () => {
+  it('starts clear on a host a previous scene marked, and a stale load never marks the new scene', async () => {
     const host = { dataset: { ready: 'true' } as DOMStringMap };
     const stale = deferred();
     const cancelStale = markReadyWhenStanding(host, stale.promise, vi.fn());

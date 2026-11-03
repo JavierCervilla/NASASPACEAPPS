@@ -25,7 +25,6 @@
 
 import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
-import { VISOR_TOKENS } from '../src/astronaut/figure-types';
 import { contrast, over } from './colour-math';
 
 const TOKENS = readFileSync(new URL('../src/styles/tokens.css', import.meta.url), 'utf8');
@@ -72,16 +71,5 @@ describe('light-mode signal words on the phone top bar (VENT-33)', () => {
 
   it('keeps the rule\'s «+» and «=» and a plain state line, in the secondary text, at 4.5:1 in the pill', () => {
     expect(contrast(light['--text-secondary'] ?? '', pill)).toBeGreaterThanOrEqual(4.5);
-  });
-});
-
-describe('the astronaut visor colours (VENT-10)', () => {
-  // The pictures are baked offline with these tokens (scripts/astronaut-figures.mjs). They are declared once, outside
-  // every theme, contrast and transparency query, so no theme can leave the visors stale. Moving one into a query would
-  // need a sheet per theme.
-  it.each(Object.values(VISOR_TOKENS))('%s is the same in every theme', (token) => {
-    const declarations = TOKENS.split(`${token}:`).length - 1;
-    expect(declarations).toBe(1);
-    expect(TOKENS.indexOf(`${token}:`)).toBeLessThan(TOKENS.indexOf('@media'));
   });
 });

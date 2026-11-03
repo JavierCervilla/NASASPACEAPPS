@@ -288,3 +288,73 @@ test.describe('the production CSP with the worker and the live favicon', () => {
     });
   }
 });
+
+/** The update row's three parts. */
+const updateRow = (page: Page) => ({
+  text: page.locator('.update-notice__text'),
+  update: page.getByRole('button', { name: 'Update', exact: true }),
+  dismiss: page.getByRole('button', { name: 'Not now' }),
+});
+
+/**
+ * A deploy as the open page sees it: a new worker installs with `skipWaiting`, activates with `clients.claim` and takes
+ * the page over. Playwright cannot answer the browser's own update fetch of `sw.js` (neither `route` nor a CDP `Fetch`
+ * sees it), so the new worker comes from the same script under another URL, which the browser installs as a new
+ * version whatever its bytes. The check on the return to the foreground is held by tests/pwa-update.test.ts.
+ */
+async function deployNewVersion(page: Page): Promise<void> {
+  await page.evaluate(async (root) => {
+    await navigator.serviceWorker.register(`${root}sw.js?build=next`, { scope: root });
+  }, base);
+}
+
+/** Opens IM-2 on the DSN view, lets the first worker take the page over, and checks that offered nothing. */
+async function firstInstall(context: BrowserContext, page: Page): Promise<void> {
+  await open(context, page, '?site=im2-athena#dsn');
+  await controlled(page);
+  await expect(updateRow(page).update).toHaveCount(0);
+  await expect(updateRow(page).text).toBeEmpty();
+}
+
+test.describe('a new version (VENT-52)', () => {
+  test('390x844: «Update» reloads the same address', async ({
+    context,
+    page,
+  }) => {
+    await page.setViewportSize({ width: 390, height: 844 });
+    await firstInstall(context, page);
+    const before = page.url();
+    await deployNewVersion(page);
+    const row = updateRow(page);
+    await expect(row.text).toHaveText('New version ready');
+    for (const button of [row.update, row.dismiss]) {
+      const box = (await button.boundingBox())!;
+      expect(Math.min(box.width, box.height)).toBeGreaterThanOrEqual(44);
+    }
+    const bar = (await page.locator('.phone-bar').boundingBox())!;
+    expect((await page.locator('.update-notice').boundingBox())!.y).toBeGreaterThanOrEqual(bar.y + bar.height);
+    await Promise.all([page.waitForEvent('load'), row.update.click()]);
+    expect(page.url()).toBe(before);
+    await expect(page.locator('.globe-markers')).toHaveAttribute('data-state', 'window');
+    await expect(page.locator('html')).toHaveAttribute('lang', 'en');
+  });
+
+  for (const [name, size, scheme] of [
+    ['390x844 dark', { width: 390, height: 844 }, 'dark'],
+    ['390x844 light', { width: 390, height: 844 }, 'light'],
+    ['1440x900 dark', { width: 1440, height: 900 }, 'dark'],
+  ] as const) {
+    test(`${name}: the ✕ hides it`, async ({ context, page }) => {
+      await page.setViewportSize(size);
+      await firstInstall(context, page);
+      await page.emulateMedia({ colorScheme: scheme });
+      await deployNewVersion(page);
+      const row = updateRow(page);
+      await expect(row.update).toBeVisible();
+      await page.screenshot({ path: test.info().outputPath(`update-${size.width}-${scheme}.png`) });
+      await row.dismiss.click();
+      await expect(row.update).toHaveCount(0);
+      await expect(row.text).toBeEmpty();
+    });
+  }
+});

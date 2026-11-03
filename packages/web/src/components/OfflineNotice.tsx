@@ -30,10 +30,11 @@
  * from the start so the change is announced. It sits under whichever top
  * bar shows, measured, so large text never puts it over the site pill.
  */
-import { useEffect, useRef, useState, type RefObject } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { syncDate, syncedAt, syncUrl } from '../pwa/offline-status';
 import { useI18n } from './i18n-context';
 import { useOnline } from './use-online';
+import { useUnderBars } from './use-under-bars';
 
 /** When the API last answered, read each time the page goes offline. */
 function useSyncedAt(base: string, online: boolean): number | null {
@@ -50,33 +51,6 @@ function useSyncedAt(base: string, online: boolean): number | null {
     };
   }, [base, online]);
   return atMs;
-}
-
-/** The top bars: the desktop header and the phone's glass bar. */
-const BARS = 'header.bar, .phone-bar';
-const GAP_PX = 8;
-
-/** Keeps `note` GAP_PX under the lowest top bar on screen while shown. */
-function useUnderBars(
-  note: RefObject<HTMLElement | null>,
-  shown: boolean,
-): void {
-  useEffect(() => {
-    const el = note.current;
-    if (!shown || !el) return undefined;
-    const bars = [...document.querySelectorAll(BARS)];
-    const place = (): void => {
-      const bottoms = bars
-        .map((bar) => bar.getBoundingClientRect())
-        .filter((box) => box.height > 0)
-        .map((box) => box.bottom);
-      el.style.setProperty('--top', `${Math.max(0, ...bottoms) + GAP_PX}px`);
-    };
-    const observer = new ResizeObserver(place);
-    for (const bar of bars) observer.observe(bar);
-    place();
-    return () => observer.disconnect();
-  }, [note, shown]);
 }
 
 export function OfflineNotice({ base }: { readonly base: string }) {

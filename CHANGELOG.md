@@ -3,6 +3,15 @@
 ## [Sin publicar]
 
 ### Cambiado
+- Maquetación revisada según la guía de diseño de Apple (VENT-55, de la auditoría VENT-53): en el teléfono, un sitio
+  guardado de nombre largo ya no hace crecer la barra superior (el nombre se corta con «…» antes de que el título o la
+  regla salten de línea), y a 200 % de texto la cabecera de la hoja pone las coordenadas bajo el nombre en vez de
+  montarlas encima. Todo lo que se desplaza funde el borde tras el que hay más contenido (la lista de sitios, el menú
+  de idioma, el resumen y el calendario del teléfono, la leyenda de capas y la vista DSN). El control segmentado, las
+  filas de la leyenda, la búsqueda y el campo de renombrar aceptan el toque en 44 px, y un toque junto al campo de
+  renombrar ya no cancela la edición. Con la hoja de sitios abierta sobre la vista 3D, su aviso ya no asoma; en la vista
+  «Horizon» de escritorio queda una sola tira de horizonte; renombrar abre con el nombre entero seleccionado; las filas
+  de sitios con dos líneas dejan aire debajo, y las etiquetas de la retícula del globo dejan libre el anillo del pin.
 - Pulsar y moverse se notan como en una app de Apple (VENT-55, de la auditoría VENT-53): todos los controles responden
   al apoyar el dedo o el ratón (pestañas, segmentos, filas, menús, los botones de reintentar y deshacer, el ✕ de los
   avisos, los interruptores de capas y los puntos del globo), también con «reducir movimiento». Los menús emergentes,

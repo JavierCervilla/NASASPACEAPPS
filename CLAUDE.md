@@ -106,6 +106,13 @@ Every visible change follows `.claude/skills/apple-design/SKILL.md` (vendored fr
   (the strip's instant line, the phone calendar's line, the DSN playhead) ride `.rail--x|--y` translated by their share
   (`styles/rail.css`), and the phone compass moves by `translate`. Held by `tests/press-motion-css.test.ts`,
   `tests/globe-rubber.test.ts` and `tests/e2e/press-motion.spec.ts`.
+- Scroll and targets (VENT-55): everything that scrolls fades the edge it hides content past (apple-design §12): the
+  desktop card (`use-scroll-edges.ts`) and, through `useScrollFade` (`src/components/use-scroll-fade.ts`, a callback
+  ref) and the `scroll-fade` class (`src/styles/scroll-fade.css`, masked only while an edge fades), the site picker, the
+  language list, the phone summary and calendar, the Layers key (its inner `.globe-layers__scroll`, so the glass rim is
+  never masked) and the DSN view. Controls drawn under 44 px take 44 through a pseudo-element without changing their
+  drawing (`.save-button`, `.segmented button`, `.search`, `.layer-row__label`); the rename field's row is its label,
+  which keeps the field's focus. Held by `tests/e2e/vent-55-layout.spec.ts` and `tests/standing-cover.test.ts`.
 - It feels like an app, not a document (VENT-38): `body` sets `user-select: none`, `-webkit-touch-callout: none` and
   a transparent tap highlight (`src/styles/global.css`), so a long press selects no text (no Android search panel)
   and opens no iOS callout; images are not draggable. Selectable again: text fields (`input` other than range,
@@ -157,7 +164,9 @@ Every visible change follows `.claude/skills/apple-design/SKILL.md` (vendored fr
   top bar's subtitle is the legend's rule, «Sun + Earth = window», each word in its signal colour (`--bar-*-ink`,
   deeper on the light bar for 4.5:1), and the site pill shows the short name over the state at the shared instant with
   its time left in its colour («Window · 7 d left», «Sun · …», «Earth · …», «Neither · …»; `src/phone/site-state.ts`;
-  the titles wrap first, then a narrow pill drops «left», then the name, never the time: `FitLine.tsx`),
+  a long site name in the pill ends in an ellipsis first, since the bar keeps the pill its state's longest line
+  (`--pill-need`, `src/components/phone/use-pill-room.ts`, VENT-55), then the titles wrap, then a narrow pill drops
+  «left», then the name, never the time: `FitLine.tsx`),
   its accessible name the full site name and the state; the sheet's head carries the site's LOLA relief thumbnail. On
   desktop the thumbnail heads the site card, with the state badge and its frame, as a 96 px band on short windows.
   Thumbnails exist only south of 80° S (320 px, and 640 px through `srcset` for 2x screens; rendered offline by
@@ -264,7 +273,9 @@ Every visible change follows `.claude/skills/apple-design/SKILL.md` (vendored fr
   clicks; the selected site's marker always shows). `pointLayer` (`point-layer.ts`) draws a layer's points as 44 px
   buttons (`.globe-point`), hidden behind the limb, a click routed to the point nearest the pointer. A renderer may report what it covers (`covers()`, `LayerCover`;
   `pointLayer`'s `coverPx`): `bindLayers.place` returns the shown layers' covers and the graticule's labels keep clear of
-  them (`clearOf`, `graticule/place.ts`), so they avoid the saved sites' silver pins (`SAVED_PIN_RADIUS_PX` 7, VENT-52). The flags are
+  them (`clearOf`, `graticule/place.ts`), so they avoid the saved sites' silver pins (`SAVED_PIN_RADIUS_PX` 7, VENT-52) and the standing pin's ring, which a
+  cover-only layer declares (`coverLayer`, `src/globe/layers/cover-layer.ts`, registered by `use-standing-cover.ts` at
+  `RING_RADIUS_PX`; VENT-55). The flags are
   kept in `localStorage` (`ventana.layers`, read defensively by `kept-flags.ts`; each write starts from what storage
   holds, and another tab's switch is taken in on the `storage` event, `applyFlags`) and the polar map follows them
   (`components/polar/use-polar-layers.ts`). The Layers key is switches (`components/saved/LayerToggles.tsx`: a
@@ -446,7 +457,7 @@ Every visible change follows `.claude/skills/apple-design/SKILL.md` (vendored fr
   the Sun and the Earth are real geometry out to 128 km. Each level draws a window of 256 x 256 of its cells around the
   site (4, 16, 64 and 256 km across, `ring-window.ts`), aligned to the parent's cells: the parent leaves a hole where the
   finer level is loaded and draws it where that tile failed (a 404 or the tries ran out is a hole filled by the parent,
-  never the view's failure, `ring-layout.ts`; but when every tile of levels 0 and 1 is a 404 the list was answered for a point with no terrain, and the view ends in the route's final «No terrain covers this point on the server», no «Try again» and no mode switch, the coarse tiles no longer asked, `ring-absent.ts`); a skirt hangs on every side of a drawn cell whose neighbour is not drawn
+  never the view's failure, `ring-layout.ts`; but when every tile of levels 0 and 1 is a 404 the list was answered for a point with no terrain, and the view ends in the route's final «No terrain covers this point on the server», no «Try again», the coarse tiles no longer asked, `ring-absent.ts`); a skirt hangs on every side of a drawn cell whose neighbour is not drawn
   (T-junctions and open edges, `ring-mesh.ts`); normals are taken across the tile edges when the neighbour is loaded and
   blended into the parent's over 8 cells at a window's edge, so no seam shows a crease (`ring-normals.ts`); and the heights themselves are stitched: a node within 8 cells of its window's edge is pulled toward the parent's surface by a smoothstep, so the edge nodes lie exactly on it (`ring-stitch.ts`; where the levels read different LOLA tiers the raw step is metres), and a parent that arrives late places again only the nodes in that band (the stitch held by `tests/terrain-ring-stitch.test.ts` on the recorded IM-2 relief, L1 to L2 and L2 to L3). Nodes are
   placed with `sampleDirection` and the site's frame (`ring-frame.ts`: x east, y up, z south, the site the origin and
@@ -478,7 +489,7 @@ Every visible change follows `.claude/skills/apple-design/SKILL.md` (vendored fr
   albedo and normal, 1K WebP in `src/terrain/maps/`, ASSETS.md) tiled at 3.5 m and read twice, turned and at another
   scale, with a slow brightness noise and a fade with distance so it never repeats (`scene/ground-shader.ts`). Rings at 25, 100 and 500 m with HTML labels, and the ridge that
   hides a body labelled with its height and distance (`on-foot-model.ts`); a text alternative says the heading, where
-  each body is and what hides it (`view-alt.ts`); the desktop view keeps the horizon strip under it. The view loads no model
+  each body is and what hides it (`view-alt.ts`); the desktop view keeps the horizon strip under it, and the site card beside it leaves its own strip out (VENT-55). The view loads no model
   (VENT-54 removed the astronaut, the two landers, their glb reader, GLTFLoader, earthshine, contact shadows and the
   idle clip): the Three.js chunk the globe loads at start is back to about 131 kB gzip (the skinned astronaut had
   taken it to 142 kB), the scene's chunk is 15.6 kB smaller, and at the medium tier the view draws 32 to 35 calls and
@@ -498,7 +509,8 @@ Every visible change follows `.claude/skills/apple-design/SKILL.md` (vendored fr
   in the browser's event, before the message shows (`guardLost` in `scene-guard.ts`), so no frozen frame or broken-WebGL
   icon appears under it. On a phone the notice keeps to the free band between the top bar and the sheet's measured
   edge at any detent (`use-status-band.ts` writes `--on-foot-band-top` and `--on-foot-band-height` through the CSSOM,
-  `src/terrain/status-band.ts`), the mode switch and caption stepping aside while it shows; when a lost context's notice
+  `src/terrain/status-band.ts`), the caption stepping aside while it shows, and hidden under the full sheet (Sites,
+  Calendar; VENT-55); when a lost context's notice
   has no room there (200 % text lifts the half sheet to full) the sheet drops to peek once for that loss, and the scrim
   clears, since `openness` measures from peek when half has risen to full (VENT-51). «Report copied» resets whenever
   the scene's state changes. On a phone the caption keeps under the band's top, which follows the top bar's size too
@@ -575,7 +587,7 @@ Every visible change follows `.claude/skills/apple-design/SKILL.md` (vendored fr
   `favicon.ico`, `favicon.svg` and the root `apple-touch-icon.png`), fetched past the HTTP cache (`cache: 'reload'`),
   and the build's digest over every file the worker may keep, which names the static cache (`ventana-static-<digest>`),
   so a deploy drops the old one. The install set has a hard budget of 5 MB (`PRECACHE_BUDGET`, human decision
-  2026-10-31): the build logs the precache total and fails over it (4.74 MB with VENT-54, no models; 4.78 MB with VENT-52's update row; 4.77 MB with VENT-50's compass and graticule; 4.75 MB with VENT-46's rings, landers and rigged astronaut, their files left out; 4.70 MB with VENT-34's on-foot view, its files left out; 4.68 MB with VENT-40's horizon strip; 4.63 MB with VENT-39's shadow notes; 4.57 MB with VENT-37's saved sites; 4.52 MB when it left the astronaut's sprites out, 4.60 MB with them). The 4K and 8K maps, and any build file not
+  2026-10-31): the build logs the precache total and fails over it (4.75 MB with VENT-55's press, presence, rail and scroll-fade sheets; 4.74 MB with VENT-54, no models; 4.78 MB with VENT-52's update row; 4.77 MB with VENT-50's compass and graticule; 4.75 MB with VENT-46's rings, landers and rigged astronaut, their files left out; 4.70 MB with VENT-34's on-foot view, its files left out; 4.68 MB with VENT-40's horizon strip; 4.63 MB with VENT-39's shadow notes; 4.57 MB with VENT-37's saved sites; 4.52 MB when it left the astronaut's sprites out, 4.60 MB with them). The 4K and 8K maps, and any build file not
   precached, are kept cache first the first time the page fetches them. Under Save-Data the worker is not registered
   at all. Pages and API GETs are network first,
   build files cache first; the network's answer always wins (a copy that cannot be kept, a full quota, is skipped), only

@@ -47,6 +47,8 @@ export interface ShownFrames {
   readonly frame: FrameFn;
   /** Reads the host: hidden at 0 wide or tall; shown, fits and redraws. */
   readonly fit: (host: HostFit) => void;
+  /** Whether the host showed at its last fit (VENT-52). */
+  readonly shown: () => boolean;
 }
 
 /** Gates `draw` on whether the host shows, as its last fit read it. */
@@ -61,5 +63,6 @@ export function shownFrames(draw: FrameFn): ShownFrames {
       resize(width, height);
       invalidate();
     },
+    shown: () => shown,
   };
 }

@@ -37,12 +37,18 @@ import { addMoon } from './moon';
 import { pickQuality } from './quality-pick';
 import type { Stage } from './stage';
 
+/** How the contents ask for a frame, and whether the globe shows. */
+export interface ContentsFrames {
+  readonly invalidate: () => void;
+  readonly shown: () => boolean;
+}
+
 /** The Moon, the graticule, the markers and the layers on `stage`. */
 export function addContents(
   host: HTMLElement,
   options: GlobeOptions,
   stage: Stage,
-  invalidate: () => void,
+  { invalidate, shown }: ContentsFrames,
 ) {
   const { store } = options;
   const pick = (id: string): void => store.select(id, 'globe');
@@ -52,7 +58,8 @@ export function addContents(
   const markers = new MarkerLayer(host, store.get().id, invalidate, pick);
   // The Moon takes its tier from the quality settings.
   const quality = pickQuality(isPhoneViewport());
-  const moon = addMoon(stage, { ...options, ...quality, onChange: invalidate });
+  const moon = addMoon(
+    stage, { ...options, ...quality, onChange: invalidate, shown });
   const layers = mountGlobeLayers(
     { host, scene: stage.scene, invalidate, markers }, options.layers);
   return { graticule, markers, moon, layers };

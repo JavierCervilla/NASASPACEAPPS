@@ -32,6 +32,7 @@
 import type { Scene } from 'three';
 import type { Vec3 } from '../geo';
 import type { Mark } from '../marker-cull';
+import type { LayerCover } from '../layers/registry';
 import type { Projector } from '../marker-layer';
 import { createGraticuleLayer } from './layer';
 import { addGraticuleLines, readLook } from './scene';
@@ -44,7 +45,12 @@ export interface GraticuleParts {
 }
 
 export interface Graticule {
-  place(project: Projector, eye: Vec3, marks: readonly Mark[]): void;
+  place(
+    project: Projector,
+    eye: Vec3,
+    marks: readonly Mark[],
+    covers?: readonly LayerCover[],
+  ): void;
   dispose(): void;
 }
 

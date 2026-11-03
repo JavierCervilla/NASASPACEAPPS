@@ -307,6 +307,48 @@ test.describe('desktop, 1440x900', () => {
     }
   });
 
+  test('no label touches a saved site\'s silver pin (VENT-52)', async ({ page }) => {
+    await page.emulateMedia({ reducedMotion: 'reduce' });
+    // Twenty saved sites on the 70° S and 80° S parallels, where those parallels' labels stand, leaving them room.
+    const sites = [-70, -80].flatMap((lat, row) =>
+      Array.from({ length: 10 }, (_, i) => {
+        const lonEast = -180 + i * 36 + row * 7;
+        return { id: `@${lat.toFixed(2)},${lonEast.toFixed(2)}`, name: `Spot ${row}-${i}`, lat, lonEast, savedAt: 1 + row * 10 + i };
+      }));
+    await page.addInitScript((kept) => localStorage.setItem('ventana.savedSites', kept), JSON.stringify({ v: 1, sites }));
+    await open(page, './');
+    await expect(page.locator('.graticule-label:not([hidden])').first()).toBeVisible({ timeout: GLOBE_START_MS });
+    await expect(page.locator('.saved-marker:not([hidden])').first()).toBeVisible();
+    for (const zoomed of [false, true]) {
+      if (zoomed) {
+        await page.getByRole('application', { name: GLOBE_NAME }).focus();
+        await page.keyboard.press('+');
+      }
+      await idle(page);
+      const touching = await page.evaluate(() => {
+        const box = (el: Element) => el.getBoundingClientRect();
+        // The pin's drawn ring is 14 px (saved.css `.saved-marker::before`), inside its 44 px button.
+        const pins = [...document.querySelectorAll('.saved-marker:not([hidden])')].map((el) => ({
+          x: box(el).x + box(el).width / 2,
+          y: box(el).y + box(el).height / 2,
+          r: Number.parseFloat(getComputedStyle(el, '::before').width) / 2,
+        }));
+        const hits: string[] = [];
+        for (const label of document.querySelectorAll('.graticule-label:not([hidden])')) {
+          const b = box(label);
+          for (const d of pins) {
+            const dx = Math.max(b.x - d.x, 0, d.x - (b.x + b.width));
+            const dy = Math.max(b.y - d.y, 0, d.y - (b.y + b.height));
+            if (Math.hypot(dx, dy) < d.r) hits.push(label.textContent ?? '');
+          }
+        }
+        return hits;
+      });
+      expect(touching).toEqual([]);
+      expect(await page.locator('.graticule-label:not([hidden])').count()).toBeGreaterThan(0);
+    }
+  });
+
   test('at 200 % text the labels measure their box: none touches a marker\'s dot or the ring, none leaves the view (VENT-51)', async ({ page }) => {
     await page.emulateMedia({ reducedMotion: 'reduce' });
     await largeText(page);

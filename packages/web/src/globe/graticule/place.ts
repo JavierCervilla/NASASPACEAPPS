@@ -88,6 +88,14 @@ export function labelFrame(
   return { project, eye, disk, obstacles, box: room.box, view: room.view };
 }
 
+/** `frame` with the discs `covers` as obstacles too (VENT-52). */
+export function clearOf(
+  frame: LabelFrame,
+  covers: readonly Obstacle[] = [],
+): LabelFrame {
+  return { ...frame, obstacles: [...frame.obstacles, ...covers] };
+}
+
 /** A label that shows, the longitude it stands at, and its centre, px. */
 export interface PlacedLabel {
   readonly id: string;

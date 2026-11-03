@@ -43,7 +43,8 @@ import {
 import { gapToLabel, gapToObstacle, LABEL_BOX, obstaclesOf, RING_RADIUS_PX } from '../src/globe/graticule/clearance';
 import { insideDisk, LIMB_MARGIN_PX, moonDisk, VIEW_MARGIN_PX } from '../src/globe/graticule/disk';
 import { graticuleLabels, PARALLEL_STEP_DEG } from '../src/globe/graticule/labels';
-import { CLEAR_PX, labelFrame, placeLabels, type PlacedLabel } from '../src/globe/graticule/place';
+import { CLEAR_PX, clearOf, labelFrame, placeLabels, type PlacedLabel } from '../src/globe/graticule/place';
+import { SAVED_PIN_RADIUS_PX } from '../src/components/saved/use-saved-layer';
 import type { Mark } from '../src/globe/marker-cull';
 import { EN, i18nOf } from './i18n-factories';
 
@@ -273,6 +274,17 @@ describe('the graticule\'s labels clear of the site markers', () => {
     const moved = place(ring).find(({ id }) => id === 'parallel:-85')!;
     expect(moved.lonEast).not.toBe(first.lonEast);
     expect(gapToObstacle(moved.at, ring.obstacles[0]!)).toBeGreaterThanOrEqual(CLEAR_PX);
+  });
+
+  it('moves a parallel\'s label off a saved site\'s pin that covers it (VENT-52)', () => {
+    const open = frameOf(SOUTH_POLE_VIEW, 1100, 700);
+    const first = place(open).find(({ id }) => id === 'parallel:-80')!;
+    const pin = { at: first.at, radius: SAVED_PIN_RADIUS_PX };
+    const covered = clearOf(open, [pin]);
+    const moved = place(covered).find(({ id }) => id === 'parallel:-80')!;
+    expect(moved.lonEast).not.toBe(first.lonEast);
+    expect(gapToObstacle(moved.at, pin)).toBeGreaterThanOrEqual(CLEAR_PX);
+    expect(clearOf(open).obstacles).toEqual(open.obstacles);
   });
 
   it('takes the meridian with the widest gap from the markers, not just a clear one', () => {

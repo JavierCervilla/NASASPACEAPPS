@@ -210,6 +210,28 @@ const southFrame: LayerFrame = {
   },
 };
 
+describe('what the shown layers cover (VENT-52)', () => {
+  it('the binder hands back the discs a shown point layer covers, and nothing while the layer is hidden', () => {
+    const { registry, frame } = bound();
+    const saved = pointLayer({ className: 'saved-marker', coverPx: 7 });
+    saved.setPoints([RIM, NORTH]);
+    registry.register({ id: 'saved', z: 20, renderer: saved });
+    registry.register({ id: 'tracks', z: 30, renderer: spyRenderer() });
+    const rim = project(latLonToVector(RIM.lat, RIM.lonEast));
+    expect(frame()).toEqual([{ at: rim, radius: 7 }]);
+    registry.setVisible('saved', false);
+    expect(frame()).toEqual([]);
+  });
+
+  it('a point layer without a cover size covers nothing', () => {
+    const { registry, frame } = bound();
+    const layer = pointLayer({ className: 'saved-marker' });
+    layer.setPoints([RIM]);
+    registry.register({ id: 'saved', z: 20, renderer: layer });
+    expect(frame()).toEqual([]);
+  });
+});
+
 describe('the point layer', () => {
   it('makes no button before it is mounted, then a hidden, named button per point', () => {
     const layer = pointLayer({ className: 'saved-marker' });

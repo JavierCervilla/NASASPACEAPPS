@@ -38,6 +38,7 @@ import type { Scene } from 'three';
 import { isFacing, latLonToVector, type Vec3 } from '../geo';
 import type { Projector } from '../marker-layer';
 import type {
+  LayerCover,
   LayerFrame,
   LayerRegistry,
   LayerRenderer,
@@ -123,15 +124,16 @@ export function bindLayers(registry: LayerRegistry, deps: LayerHost) {
   const stop = registry.subscribe((change) => {
     if (started) sync(registry, mounted, deps, change.kind !== 'visibility');
   });
-  const place = (project: Projector, eye: Vec3): void => {
+  // Returns what the shown layers cover, for the graticule's labels.
+  const place = (project: Projector, eye: Vec3): LayerCover[] => {
     if (!started) {
       started = true;
       sync(registry, mounted, deps, true);
     }
     const frame = frameOf(project, eye);
-    for (const layer of mounted.values()) {
-      if (layer.visible) layer.renderer?.place?.(frame);
-    }
+    const shown = [...mounted.values()].filter((layer) => layer.visible);
+    shown.forEach((layer) => layer.renderer?.place?.(frame));
+    return shown.flatMap((layer) => layer.renderer?.covers?.() ?? []);
   };
   const dispose = (): void => {
     stop();

@@ -40,7 +40,7 @@ import type { SiteStore } from '../phone/site-store';
 import type { NowState } from '../phone/widget-types';
 import { describeCarry, describeDrop } from './announce';
 import { createCarrier, type Carrier, type CarryEnd } from './carrier';
-import { after, nextFrame } from './clocks';
+import { after, nextFrame, now } from './clocks';
 import type { CarryView } from './carry-view';
 import { createPinHint, type HintStorage, type PinHint } from './first-hint';
 import { carryByKeys, dropAtStart, type KeyCarryDeps } from './key-carry';
@@ -141,7 +141,7 @@ export function createKit(deps: KitDeps): PinKit {
     keys: (home?: ClientPoint) => carryByKeys(byKeys, home),
     dropHere: () => dropAtStart(byKeys),
     placeOn: (host: HTMLElement) =>
-      bindPlacing(host, { carrier, surfaces, after, keys: window }),
+      bindPlacing(host, { carrier, surfaces, after, now, keys: window }),
   };
   const hint = createPinHint(deps.storage, carrier);
   const shared = { places, carrier, surfaces, live, stateAt, hint };

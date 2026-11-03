@@ -33,10 +33,11 @@
  * soon as it changes, from the last frame.
  */
 import { isFacing, latLonToVector, type Vec3 } from '../geo';
+import type { LayerCover } from '../layers/registry';
 import type { Projector } from '../marker-layer';
 import type { Mark } from '../marker-cull';
 import { graticuleLabels, type GraticuleLabel } from './labels';
-import { labelFrame, placeLabels, type LabelRoom } from './place';
+import { clearOf, labelFrame, placeLabels, type LabelRoom } from './place';
 import { watchRoom } from './room';
 import type { GraticuleText } from './text';
 
@@ -46,9 +47,15 @@ const SOUTH_POLE = latLonToVector(-90, 0);
 export interface GraticuleLayer {
   /**
    * Moves the labels and the cross to where `project` puts them, clear of
-   * the site markers `marks` as the marker layer placed them.
+   * the site markers `marks` as the marker layer placed them and of what
+   * the registry's layers `covers` (the saved sites' pins).
    */
-  place(project: Projector, eye: Vec3, marks: readonly Mark[]): void;
+  place(
+    project: Projector,
+    eye: Vec3,
+    marks: readonly Mark[],
+    covers?: readonly LayerCover[],
+  ): void;
   dispose(): void;
 }
 
@@ -80,6 +87,8 @@ function labelPart(
   return el;
 }
 
+type PlaceArgs = Parameters<GraticuleLayer['place']>;
+
 /** The layer's elements: the labels by id and the pole cross. */
 interface Parts {
   readonly labels: readonly GraticuleLabel[];
@@ -90,8 +99,8 @@ interface Parts {
 /** Places `parts` for a frame, in the room `room` gives, kept by `memory`. */
 function placer(parts: Parts, room: () => LabelRoom) {
   const memory = new Map<string, number>();
-  return (project: Projector, eye: Vec3, marks: readonly Mark[]): void => {
-    const frame = labelFrame(project, eye, marks, room());
+  return (...[project, eye, marks, covers]: PlaceArgs): void => {
+    const frame = clearOf(labelFrame(project, eye, marks, room()), covers);
     const shown = new Map(
       placeLabels(parts.labels, frame, memory).map(({ id, at }) => [id, at]),
     );

@@ -48,6 +48,15 @@ export interface LayerFrame {
   project(point: LatLon): ScreenPoint | null;
 }
 
+/**
+ * A disc a layer covers on the canvas, px: what the globe's own overlays
+ * (the graticule's labels) keep clear of (VENT-52).
+ */
+export interface LayerCover {
+  readonly at: ScreenPoint;
+  readonly radius: number;
+}
+
 /** What a renderer gets when the globe mounts it. */
 export interface LayerContext {
   /**
@@ -68,6 +77,8 @@ export interface LayerRenderer {
   mount?(context: LayerContext): void;
   /** A frame was drawn and the layer shows: move what it draws. */
   place?(frame: LayerFrame): void;
+  /** What the last placed frame drew covers; none if not given. */
+  covers?(): readonly LayerCover[];
   /** The layer was shown or hidden (its root already is). */
   show?(visible: boolean): void;
   /** The globe is going: take off what the layer drew. */

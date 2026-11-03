@@ -32,7 +32,7 @@
  * the view open counts as a death too: a page hung on its GPU is ended by
  * the person's reload, and telling the two apart is not possible from here.
  */
-import { keepOpen } from './view-tier-memory';
+import { keepOpen, tierStorage } from './view-tier-memory';
 import type { ViewTierLive } from './view-tier-state';
 
 export interface OpenMarks {
@@ -58,4 +58,13 @@ export function openMarks(now: () => ViewTierLive): OpenMarks {
     },
     closed: () => keepOpen(now().storage, false),
   };
+}
+
+/**
+ * The app leaves the page on purpose with the view maybe open (a language
+ * switch, VENT-52): not a death, so the next page's tier keeps its rung. If
+ * the next page opens the view again, it marks it open again.
+ */
+export function leftOnPurpose(storage = tierStorage()): void {
+  keepOpen(storage, false);
 }

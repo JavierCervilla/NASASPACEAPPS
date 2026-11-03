@@ -33,6 +33,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import type { Tier } from '../src/lib/quality';
 import { createViewTier } from '../src/terrain/view-tier';
 import { keptTier, tierStorage, type TierStorage } from '../src/terrain/view-tier-memory';
+import { leftOnPurpose } from '../src/terrain/view-tier-open';
 
 const KEY = 'ventana.onFootTier';
 
@@ -192,6 +193,15 @@ describe('a run that ended without unmount', () => {
     const fourth = store('high', { kept: memory }).view;
     expect(fourth.get().tier).toBe('low');
     expect(fourth.opened()).toBeNull();
+  });
+
+  it('does not step down after a page the app left on purpose with the view open (VENT-52)', () => {
+    const memory = storage();
+    expect(run(store('high', { kept: memory }).view, true)).toBeNull();
+    leftOnPurpose(memory);
+    const next = store('high', { kept: memory }).view;
+    expect(next.get().tier).toBe('high');
+    expect(next.opened()).toBeNull();
   });
 
   it('never steps down a tier the address forced', () => {

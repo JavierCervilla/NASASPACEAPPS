@@ -32,6 +32,7 @@
  */
 import type { RefObject } from 'react';
 import type { View } from '../../lib/view-tabs';
+import { bandMoves } from '../../phone/band-moves';
 import type { WatchedValue } from '../../lib/watched-value';
 import type { CalendarParts } from '../calendar/hooks';
 import { DsnStage } from '../dsn/DsnPhone';
@@ -64,6 +65,7 @@ export function ViewStage(props: Props) {
     <OnFootView layout="phone" site={site} time={parts.time}
       horizons={parts.horizons} tiles={parts.tiles}
       viewTier={parts.viewTier} band={band}
-      bandMoves={sheetEdge.subscribe} makeRoom={props.makeRoom} />
+      bandMoves={bandMoves(() => bar.current, sheetEdge.subscribe)}
+      makeRoom={props.makeRoom} />
   );
 }

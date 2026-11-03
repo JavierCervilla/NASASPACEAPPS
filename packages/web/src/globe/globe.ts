@@ -58,6 +58,7 @@ import { createSiteFramer, type SiteFramerParts } from './site-framer';
 import type { GraticuleText } from './graticule/text';
 import { addContents } from './contents';
 import { createStage, disposeStage, resizeStage, type Stage } from './stage';
+import { shownFrames, type ShownFrames } from './shown-frames';
 import { bindSun } from './sun-light';
 
 export interface GlobeOptions {
@@ -101,12 +102,22 @@ export interface GlobeOptions {
   readonly layers?: LayerRegistry;
 }
 
-/** Keeps the canvas the host's size; redraws after a restored context. */
-function watchHost(host: HTMLElement, stage: Stage, loop: Loop): () => void {
-  const fit = (): void => {
-    resizeStage(stage, host.clientWidth, host.clientHeight);
-    loop.invalidate();
-  };
+/**
+ * Keeps the canvas the host's size, but not a hidden host's 0 x 0, and
+ * draws nothing while hidden (shown-frames.ts); redraws after a restored
+ * context.
+ */
+function watchHost(
+  host: HTMLElement,
+  stage: Stage,
+  loop: Loop,
+  frames: ShownFrames,
+): () => void {
+  const fit = (): void => frames.fit({
+    size: () => ({ width: host.clientWidth, height: host.clientHeight }),
+    resize: (width, height) => resizeStage(stage, width, height),
+    invalidate: () => loop.invalidate(),
+  });
   const observer = new ResizeObserver(fit);
   observer.observe(host);
   fit();
@@ -204,7 +215,8 @@ export function mountGlobe(host: HTMLElement, options: GlobeOptions) {
   const { markers, moon, layers, graticule } = contents;
   const link = linkView(stage, options.onView);
   const parts = { stage, orbit, moon, layers, graticule, ...link, markers };
-  const loop = createLoop((dt) => drawFrame(parts, dt));
+  const frames = shownFrames((dt) => drawFrame(parts, dt));
+  const loop = createLoop(frames.frame);
   const input = bindInput(host, orbit, loop, options.reducedMotion);
   const globeParts = { markers, orbit, invalidate, camera: stage.camera };
   const sites = bindSites(host, options, globeParts);
@@ -212,7 +224,7 @@ export function mountGlobe(host: HTMLElement, options: GlobeOptions) {
   const { onCompass } = options;
   const compass = linkCompass({ stage, frames: link, home, onCompass });
   const sun = bindSun(stage.scene, options.time, invalidate);
-  const watch = watchHost(host, stage, loop);
+  const watch = watchHost(host, stage, loop, frames);
   const devTools = attachDevTools(stage.renderer, moon.textureBytes);
   const unbind = [() => loop.stop(), link.unlink, compass, watch, ...input];
   const end = [sun, layers.dispose, graticule.dispose,

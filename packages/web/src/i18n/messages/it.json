@@ -375,6 +375,7 @@
   "onFoot.caption": "Dettaglio fine illustrativo · rilievo LOLA {res} m",
   "onFoot.captionGeneric": "Lander generico (illustrativo) · Terra: NASA Blue Marble · ombre schiarite per la leggibilità",
   "onFoot.captionApollo": "Modulo lunare Apollo: NASA 3D Resources · Terra: NASA Blue Marble · ombre schiarite per la leggibilità",
+  "onFoot.captionNoLander": "Terra: NASA Blue Marble · ombre schiarite per la leggibilità",
   "onFoot.ring": "{distance} m",
   "onFoot.ridge": "Cresta {height} m · {distance} km",
   "onFoot.loading": "Caricamento del terreno…",

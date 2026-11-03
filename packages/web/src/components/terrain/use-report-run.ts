@@ -27,7 +27,9 @@
  * Starts the crash report's run when the on-foot view opens (VENT-49), so
  * the trail has the ring's tiles coming in, not only the scene's mount: the
  * run is the view's, from its opening to its closing, and a «Try again»
- * after a lost context goes on in the same one.
+ * after a lost context goes on in the same one. The view's tier is told it
+ * opened and, on unmount, that it closed: a page that dies in between steps
+ * the next one down (VENT-51), and the run says so when it does.
  */
 import { useEffect } from 'react';
 import { parseLeaveOut } from '../../terrain/leave-out';
@@ -39,5 +41,8 @@ export function useReportRun(report: Recorder, view: ViewTier): void {
   useEffect(() => {
     const leftOut = [...parseLeaveOut(window.location.search)].join();
     report.begin({ tier: view.get().tier, leftOut });
+    const dropped = view.opened();
+    if (dropped !== null) report.step(dropped);
+    return view.closed;
   }, [report, view]);
 }

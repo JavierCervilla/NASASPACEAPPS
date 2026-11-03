@@ -31,7 +31,7 @@
 import type { PerspectiveCamera } from 'three';
 import { describe, expect, it, vi } from 'vitest';
 import { compassName } from '../src/components/compass/compass-name';
-import { compassTop } from '../src/components/compass/compass-top';
+import { compassCovered, compassTop } from '../src/components/compass/compass-top';
 import { earthMark, sectorOf } from '../src/globe/earth-mark';
 import { cameraPosition, SOUTH_POLE_VIEW, type OrbitPose } from '../src/globe/framing';
 import { AIM_MARGIN_PX, offsetForAngle, type AimView } from '../src/globe/site-aim';
@@ -83,6 +83,19 @@ describe('the Earth mark: where the Earth lies on the screen', () => {
     expect(behind.angleDeg).toBeCloseTo(90, 6);
   });
 
+  it('stays filled as the globe zooms in on the opening view, down to the closest zoom: a zoom does not turn the Moon (VENT-51)', () => {
+    for (const distance of [8, 5, 3, 2.4, 2, 1.6]) {
+      expect(earthMark(eyeOf({ ...SOUTH_POLE_VIEW, distance }), EARTH).far, `${distance}`).toBe(false);
+    }
+  });
+
+  it('stays hollow as the globe zooms in on the far side', () => {
+    for (const distance of [8, 5, 1.6]) {
+      const turned = { ...SOUTH_POLE_VIEW, lonEastDeg: SOUTH_POLE_VIEW.lonEastDeg + 180, distance };
+      expect(earthMark(eyeOf(turned), EARTH).far, `${distance}`).toBe(true);
+    }
+  });
+
   it('names eight directions of 45° around the ring', () => {
     const named = [0, 45, 90, 135, 180, -180, -135, -90, -45, 20, -20, 70].map(sectorOf);
     expect(named).toEqual([
@@ -123,6 +136,17 @@ describe('where the compass sits under the phone\'s bars', () => {
 
   it('goes one gap under the first-time hint too, while it shows: the hint is one gap under the bar', () => {
     expect(compassTop(84, 44)).toBe(84 + 8 + 44 + 8);
+  });
+
+  it('stands while its whole button is above the sheet\'s top edge (VENT-51)', () => {
+    expect(compassCovered(92, 48, 330)).toBe(false);
+    expect(compassCovered(92, 48, 140)).toBe(false);
+    expect(compassCovered(92, 48, null)).toBe(false);
+  });
+
+  it('is covered once the sheet\'s edge rises over it: at 200 % text the half sheet reaches the full detent', () => {
+    expect(compassCovered(92, 48, 139)).toBe(true);
+    expect(compassCovered(compassTop(207, null), 48, 220)).toBe(true);
   });
 });
 

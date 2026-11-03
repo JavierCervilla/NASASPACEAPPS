@@ -33,8 +33,9 @@ import type { Mark, ScreenPoint } from '../marker-cull';
 import type { Box } from './disk';
 
 /**
- * The room a label takes, px: the longest «90° W» at 10 px with its
- * padding. Two labels nearer than this on both axes overprint.
+ * The room a label takes at the default text size, px: the longest
+ * «90° W» at 10 px with its padding. The page measures the real box
+ * (room.ts), which grows with the text size; this stands in until then.
  */
 export const LABEL_BOX: Box = { width: 46, height: 16 };
 
@@ -57,17 +58,25 @@ export function obstaclesOf(marks: readonly Mark[]): Obstacle[] {
   }));
 }
 
-/** The gap between the label box centred at `at` and `obstacle`. */
-export function gapToObstacle(at: ScreenPoint, obstacle: Obstacle): number {
-  const dx = Math.max(Math.abs(obstacle.at.x - at.x) - LABEL_BOX.width / 2, 0);
-  const dy = Math.max(Math.abs(obstacle.at.y - at.y) - LABEL_BOX.height / 2, 0);
+/** The gap between the label `box` centred at `at` and `obstacle`. */
+export function gapToObstacle(
+  at: ScreenPoint,
+  obstacle: Obstacle,
+  box: Box = LABEL_BOX,
+): number {
+  const dx = Math.max(Math.abs(obstacle.at.x - at.x) - box.width / 2, 0);
+  const dy = Math.max(Math.abs(obstacle.at.y - at.y) - box.height / 2, 0);
   return Math.hypot(dx, dy) - obstacle.radius;
 }
 
-/** The gap between the label boxes centred at `a` and `b`. */
-export function gapToLabel(a: ScreenPoint, b: ScreenPoint): number {
+/** The gap between the label boxes `box` centred at `a` and `b`. */
+export function gapToLabel(
+  a: ScreenPoint,
+  b: ScreenPoint,
+  box: Box = LABEL_BOX,
+): number {
   return Math.max(
-    Math.abs(a.x - b.x) - LABEL_BOX.width,
-    Math.abs(a.y - b.y) - LABEL_BOX.height,
+    Math.abs(a.x - b.x) - box.width,
+    Math.abs(a.y - b.y) - box.height,
   );
 }

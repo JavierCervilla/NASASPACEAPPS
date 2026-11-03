@@ -32,6 +32,7 @@ import type { RefObject } from 'react';
 import type { TimeStore } from '../calendar/time-store';
 import type { GlobeCompass } from '../globe/compass-link';
 import type { GlobeView } from '../globe/globe-view';
+import type { WatchedValue } from '../lib/watched-value';
 import type { SiteStore } from '../phone/site-store';
 import { CompassButton } from './compass/CompassButton';
 import { GlobePin } from './pin/GlobePin';
@@ -43,13 +44,15 @@ interface Props {
   readonly compass: GlobeCompass | null;
   readonly store: SiteStore;
   readonly time: TimeStore;
+  readonly sheetEdge: WatchedValue<number | null>;
 }
 
-export function GlobeOverlays({ host, view, compass, store, time }: Props) {
+export function GlobeOverlays(props: Props) {
+  const { host, view, compass, store, time, sheetEdge } = props;
   return (
     <>
       <GlobePin host={host} view={view} store={store} />
-      <CompassButton compass={compass} time={time} />
+      <CompassButton compass={compass} time={time} sheetEdge={sheetEdge} />
     </>
   );
 }

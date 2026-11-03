@@ -175,7 +175,8 @@ function PhoneUi(props: Props) {
   return (
     <div className="phone">
       <div ref={scrim} className="phone-scrim" aria-hidden="true" />
-      <ViewStage {...props} dsn={phone.dsn} site={site} bar={bar} />
+      <ViewStage {...props} dsn={phone.dsn} site={site} bar={bar}
+        makeRoom={() => phone.setDetent('peek')} />
       <PhoneBar ref={bar} {...pill} />
       <Sheet {...sheet}>
         <SheetBody phone={phone} {...props} />

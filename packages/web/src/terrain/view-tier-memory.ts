@@ -36,6 +36,12 @@ import { TIERS, type Tier } from '../lib/quality';
 export type TierStorage = Pick<Storage, 'getItem' | 'setItem'>;
 
 const KEY = 'ventana.onFootTier';
+/**
+ * Whether the view is open (VENT-51): set when it opens, cleared when it
+ * unmounts. Still set when a page starts, the page before it died with the
+ * view open, as a GPU reset takes a phone's page down with no loss told.
+ */
+const OPEN_KEY = 'ventana.onFootOpen';
 
 /** The session's storage, or null when the browser refuses it. */
 export function tierStorage(): TierStorage | null {
@@ -62,5 +68,23 @@ export function keepTier(storage: TierStorage | null, tier: Tier): void {
     storage?.setItem(KEY, tier);
   } catch {
     // Full or refused storage: the next load starts at the device's tier.
+  }
+}
+
+/** Whether a page before this one left the view open: it died in it. */
+export function wasOpen(storage: TierStorage | null): boolean {
+  try {
+    return storage?.getItem(OPEN_KEY) === 'true';
+  } catch {
+    return false;
+  }
+}
+
+/** Marks the view open, or closed by an unmount. */
+export function keepOpen(storage: TierStorage | null, open: boolean): void {
+  try {
+    storage?.setItem(OPEN_KEY, String(open));
+  } catch {
+    // Refused storage: a page that dies is not told to the next one.
   }
 }

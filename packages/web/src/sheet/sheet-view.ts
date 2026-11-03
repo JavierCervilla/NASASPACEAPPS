@@ -71,12 +71,16 @@ export function grabberLabel(i18n: I18n, detent: DetentName): string {
 
 /**
  * How far the sheet is open past half, 0 to 1: the scrim over the globe
- * darkens with it as the picker rises.
+ * darkens with it as the picker rises. When the half detent has risen to
+ * full (200 % text), it is measured from peek instead, so the scrim
+ * clears as the sheet drops (VENT-51).
  */
 export function openness(detents: Detents, y: number): number {
-  const span = detents.half - detents.full;
+  const lifted = detents.half <= detents.full;
+  const from = lifted ? detents.peek : detents.half;
+  const span = from - detents.full;
   if (span <= 0) return 1;
-  return Math.min(1, Math.max(0, (detents.half - y) / span));
+  return Math.min(1, Math.max(0, (from - y) / span));
 }
 
 /**

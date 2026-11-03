@@ -46,6 +46,7 @@ import { OnFootStageArea } from './OnFootStageArea';
 import { copyReport } from './use-copy-report';
 import { useOnFoot, type OnFootParts } from './use-on-foot';
 import { useReportRun } from './use-report-run';
+import { useStatusBand } from './use-status-band';
 import { useTerrainScene, type BandMoves } from './use-terrain-scene';
 
 export interface PanelProps extends OnFootParts {
@@ -54,6 +55,8 @@ export interface PanelProps extends OnFootParts {
   readonly hours?: HoursResult;
   readonly band?: SceneHooks['band'];
   readonly bandMoves?: BandMoves;
+  /** Asks the phone's sheet to make room for the notice of a lost view. */
+  readonly makeRoom?: () => void;
 }
 
 /** The view's state, its scene and the heading its text alternative says. */
@@ -63,9 +66,11 @@ function usePanel(props: PanelProps) {
   const view = useOnFoot(props, report);
   const host = useRef<HTMLDivElement>(null);
   const [yaw, setYaw] = useState<number | null>(null);
+  const { band, bandMoves, makeRoom } = props;
   const hooks = { onLook: (look: { yawDeg: number }) => setYaw(look.yawDeg),
-    band: props.band, bandMoves: props.bandMoves, report };
+    band, bandMoves, report };
   const scene = useTerrainScene(host, view.input, hooks, props.viewTier);
+  useStatusBand({ host, status: scene.status, band, bandMoves, makeRoom });
   const onMode = (mode: typeof view.mode): void => {
     setYaw(null);
     view.setMode(mode);

@@ -140,6 +140,77 @@ describe('the view tier', () => {
   });
 });
 
+const DIED = 'tier dropped to medium: previous run ended without unmount';
+
+/** A page's run of the view: opened, and closed unless the page dies. */
+function run(view: ReturnType<typeof store>['view'], dies: boolean): string | null {
+  const note = view.opened();
+  if (!dies) view.closed();
+  return note;
+}
+
+// VENT-51: a Pixel's page died with the view open (no loss recorded, no unmount), and the next run opened at the same
+// tier, because nothing had been recorded to step down from.
+describe('a run that ended without unmount', () => {
+  it('starts the next page\'s view one rung lower, kept, and says why once', () => {
+    const memory = storage();
+    expect(run(store('high', { kept: memory }).view, true)).toBeNull();
+    const next = store('high', { kept: memory }).view;
+    expect(next.get()).toEqual({ tier: 'medium', steppable: true });
+    expect(memory.items.get(KEY)).toBe('medium');
+    expect(next.opened()).toBe(DIED);
+    expect(next.opened()).toBeNull();
+  });
+
+  it('does not step down after a run that closed: leaving the view, a tier switch or a loss inside it', () => {
+    const memory = storage();
+    run(store('high', { kept: memory }).view, false);
+    const next = store('high', { kept: memory }).view;
+    expect(next.get().tier).toBe('high');
+    expect(next.opened()).toBeNull();
+    next.stepDown();
+    next.closed();
+    expect(store('high', { kept: memory }).view.get().tier).toBe('medium');
+  });
+
+  it('steps down once per died run, not again on the page after', () => {
+    const memory = storage();
+    run(store('high', { kept: memory }).view, true);
+    expect(run(store('high', { kept: memory }).view, false)).toBe(DIED);
+    const third = store('high', { kept: memory }).view;
+    expect(third.get().tier).toBe('medium');
+    expect(third.opened()).toBeNull();
+  });
+
+  it('steps down again when the next run dies too, never below low', () => {
+    const memory = storage();
+    run(store('high', { kept: memory }).view, true);
+    run(store('high', { kept: memory }).view, true);
+    const third = store('high', { kept: memory }).view;
+    expect(third.get().tier).toBe('low');
+    run(third, true);
+    const fourth = store('high', { kept: memory }).view;
+    expect(fourth.get().tier).toBe('low');
+    expect(fourth.opened()).toBeNull();
+  });
+
+  it('never steps down a tier the address forced', () => {
+    const memory = storage();
+    run(store('high', { kept: memory }).view, true);
+    const forced = store('high', { forced: true, kept: memory }).view;
+    expect(forced.get()).toEqual({ tier: 'high', steppable: false });
+    expect(forced.opened()).toBeNull();
+  });
+
+  it('costs nothing but the memory when the storage throws or is missing', () => {
+    for (const kept of [storage(true), null]) {
+      const view = store('high', { kept }).view;
+      expect(run(view, true)).toBeNull();
+      expect(store('high', { kept }).view.get().tier).toBe('high');
+    }
+  });
+});
+
 describe('the session storage', () => {
   afterEach(() => {
     Reflect.deleteProperty(globalThis, 'sessionStorage');

@@ -33,7 +33,8 @@ import { Component, type ReactNode } from 'react';
 import { MissingChunkError } from '../pwa/missing-chunk';
 
 interface Props {
-  readonly fallback: ReactNode;
+  /** What stands in the view's place, told why (`offline` or gone). */
+  readonly fallback: (error: MissingChunkError) => ReactNode;
   readonly children: ReactNode;
 }
 
@@ -51,7 +52,7 @@ export class ChunkBoundary extends Component<Props, State> {
   override render(): ReactNode {
     const { error } = this.state;
     if (error === null) return this.props.children;
-    if (error instanceof MissingChunkError) return this.props.fallback;
+    if (error instanceof MissingChunkError) return this.props.fallback(error);
     throw error;
   }
 }

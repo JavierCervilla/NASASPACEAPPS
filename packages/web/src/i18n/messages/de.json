@@ -268,6 +268,7 @@
   "update.click": "Zum Aktualisieren klicken",
   "update.dismiss": "Nicht jetzt",
   "update.view": "Aktualisiere die App, um diese Ansicht zu öffnen",
+  "update.offline": "Offline: Diese Ansicht braucht eine Verbindung zum Laden",
   "custom.title": "Eigener Punkt",
   "custom.near": "Nahe {name}",
   "custom.km": "{n} km",

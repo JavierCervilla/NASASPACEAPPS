@@ -50,13 +50,20 @@ const FETCH_FAILED = [
   /^Unable to preload CSS for /,
 ];
 
-/** The import rejected because the chunk could not be fetched. */
+/**
+ * The import rejected because the chunk could not be fetched: `offline`
+ * when the browser had no network then, so it is no new version.
+ */
 export class MissingChunkError extends Error {
-  constructor(cause: unknown) {
+  constructor(cause: unknown, readonly offline = false) {
     super(`chunk missing: ${String(cause)}`, { cause });
     this.name = 'MissingChunkError';
   }
 }
+
+/** Whether the browser says it is online (no navigator: assume it is). */
+const browserOnline = (): boolean =>
+  globalThis.navigator?.onLine !== false;
 
 /** Whether `error` is the browser's failure to fetch a module. */
 export function isMissingChunk(error: unknown): boolean {
@@ -67,15 +74,20 @@ export function isMissingChunk(error: unknown): boolean {
 /**
  * Runs the dynamic import `load`; a missing chunk tells `target` and
  * rejects with a MissingChunkError, any other error passes untouched.
+ * Offline the same failure is the network's (an on-demand chunk is not
+ * kept for offline use): it rejects marked `offline` and tells nobody, so
+ * no «New version ready» shows for a version that is not new.
  */
 export async function loadChunk<T>(
   load: () => Promise<T>,
   target: EventTarget,
+  online: () => boolean = browserOnline,
 ): Promise<T> {
   try {
     return await load();
   } catch (error) {
     if (!isMissingChunk(error)) throw error;
+    if (!online()) throw new MissingChunkError(error, true);
     target.dispatchEvent(new Event(MISSING_CHUNK_EVENT));
     throw new MissingChunkError(error);
   }

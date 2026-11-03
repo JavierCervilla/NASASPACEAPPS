@@ -319,7 +319,8 @@ Every visible change follows `.claude/skills/apple-design/SKILL.md` (vendored fr
   0.84 chip for grey): the least that keeps the text 4.5:1 over the brightest texel the Moon maps hold, which is white (the 2K, 4K and 8K LROC maps reach 255, 255, 255 and the Sun lights a
   texel at most 1.02 times, `tests/graticule-contrast.test.ts`). The globe's label rules in `orientation.css` are scoped under `.globe-graticule`; the bare `.graticule-label` belongs
   to the polar map (`polar.css`): unscoped, the globe's rules loaded later and piled the polar map's five labels in its
-  corner (VENT-52, `tests/graticule-label-css.test.ts`, `tests/e2e/polar-graticule.spec.ts`). Held by
+  corner; on the panel, dark in both themes, they take `--polar-label` (4.5:1 in every theme and contrast,
+  `tests/polar-label-contrast.test.ts`) (VENT-52, `tests/graticule-label-css.test.ts`, `tests/e2e/polar-graticule.spec.ts`). Held by
   `tests/globe-compass.test.ts`, `tests/globe-graticule.test.ts` and `tests/e2e/globe-orientation.spec.ts`.
 - **Sites in permanent shadow** (VENT-39, canvas option B, the human's decision). NASA's illumination maps (PGDA
   product 69, LRO LOLA, Mazarico et al. 2011; sources, sha256 and the scales read from the PDS labels in `ASSETS.md`)
@@ -589,8 +590,9 @@ Every visible change follows `.claude/skills/apple-design/SKILL.md` (vendored fr
   opens again; it yields to the offline notice while offline. While it shows it writes `--update-row-space` on the root,
   so the first-time pin hint stacks under it and the phone's compass sits under both (`stackHeight`, `compass-top.ts`).
   A chunk loaded on demand that is gone after a deploy (`src/pwa/missing-chunk.ts`: only the dynamic import's own fetch
-  failure counts; a module that throws while evaluating, or any render or mount error, is a real error) dispatches
-  `ventana:missing-chunk`, which shows the row even after a ✕; `ChunkBoundary.tsx` holds «Update the app to open this
+  failure counts; a module that throws while evaluating, or any render or mount error, is a real error; offline the same
+  failure is the network's, marked `offline`, and the view says «Offline: this view needs a connection to load» with no
+  update row) dispatches `ventana:missing-chunk`, which shows the row even after a ✕; `ChunkBoundary.tsx` holds «Update the app to open this
   view» in the view's place instead of unmounting the island, and the scene says `missing` (`terrain/scene/load-scene.ts`;
   VENT-52, `tests/e2e/missing-chunk.spec.ts`). Registered in
   production builds only; e2e specs block service workers except `tests/e2e/pwa.spec.ts`. Emergency kill switch

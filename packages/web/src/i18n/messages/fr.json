@@ -273,6 +273,7 @@
   "update.click": "Cliquez pour mettre à jour",
   "update.dismiss": "Plus tard",
   "update.view": "Mettez à jour l’app pour ouvrir cette vue",
+  "update.offline": "Hors ligne : cette vue a besoin d’une connexion pour se charger",
   "custom.title": "Point libre",
   "custom.near": "Près de {name}",
   "custom.km": "{n} km",

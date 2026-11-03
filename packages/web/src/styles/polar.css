@@ -109,7 +109,7 @@
   position: absolute;
   font-size: 0.75rem;
   line-height: 1;
-  color: var(--text-muted);
+  color: var(--polar-label);
   white-space: nowrap;
   pointer-events: none;
 }

@@ -273,6 +273,7 @@
   "update.click": "Fai clic per aggiornare",
   "update.dismiss": "Non ora",
   "update.view": "Aggiorna l’app per aprire questa vista",
+  "update.offline": "Offline: questa vista ha bisogno di una connessione per caricarsi",
   "custom.title": "Punto libero",
   "custom.near": "Vicino a {name}",
   "custom.km": "{n} km",

@@ -49,19 +49,31 @@ function Waiting({ layout }: { readonly layout: PanelProps['layout'] }) {
   );
 }
 
-/** Shown when the panel's chunk is gone: «New version ready» says why. */
-function NeedsUpdate({ layout }: { readonly layout: PanelProps['layout'] }) {
+interface NeedsProps {
+  readonly layout: PanelProps['layout'];
+  readonly offline: boolean;
+}
+
+/**
+ * Shown when the panel's chunk could not load: gone after a deploy
+ * («New version ready» says why), or not fetched while offline.
+ */
+function NeedsUpdate({ layout, offline }: NeedsProps) {
   const { t } = useI18n();
   return (
     <section className={`on-foot-wait on-foot-wait--${layout}`}>
-      <p>{t('update.view')}</p>
+      <p>{t(offline ? 'update.offline' : 'update.view')}</p>
     </section>
   );
 }
 
 export function OnFootView(props: PanelProps) {
   return (
-    <ChunkBoundary fallback={<NeedsUpdate layout={props.layout} />}>
+    <ChunkBoundary
+      fallback={(error) => (
+        <NeedsUpdate layout={props.layout} offline={error.offline} />
+      )}
+    >
       <Suspense fallback={<Waiting layout={props.layout} />}>
         <TerrainPanel {...props} />
       </Suspense>

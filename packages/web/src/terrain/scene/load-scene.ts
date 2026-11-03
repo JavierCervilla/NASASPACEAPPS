@@ -34,6 +34,13 @@ import { loadChunk, MissingChunkError } from '../../pwa/missing-chunk';
 export const loadTerrainScene = (target: EventTarget) =>
   loadChunk(() => import('./terrain-scene'), target);
 
-/** Why the scene did not start: its chunk is gone, or it failed. */
-export const sceneFailure = (error: unknown): 'missing' | 'failed' =>
-  error instanceof MissingChunkError ? 'missing' : 'failed';
+/**
+ * Why the scene did not start: its chunk is gone, it could not be fetched
+ * offline, or the scene failed.
+ */
+export function sceneFailure(
+  error: unknown,
+): 'missing' | 'offline' | 'failed' {
+  if (!(error instanceof MissingChunkError)) return 'failed';
+  return error.offline ? 'offline' : 'missing';
+}

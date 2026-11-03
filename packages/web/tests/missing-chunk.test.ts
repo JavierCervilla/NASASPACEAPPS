@@ -78,6 +78,22 @@ describe('loadChunk', () => {
     expect(heard).not.toHaveBeenCalled();
   });
 
+  it('offline, a chunk it could not fetch is no new version: it rejects marked offline and tells nobody', async () => {
+    const target = new EventTarget();
+    const heard = vi.fn();
+    onMissingChunk(target, heard);
+    const gone = new TypeError('Failed to fetch dynamically imported module: /_astro/x.js');
+    const loading = loadChunk(() => Promise.reject(gone), target, () => false);
+    await expect(loading).rejects.toMatchObject({ name: 'MissingChunkError', offline: true });
+    expect(heard).not.toHaveBeenCalled();
+  });
+
+  it('online, the same failure is a missing chunk of an older build', async () => {
+    const gone = new TypeError('Failed to fetch dynamically imported module: /_astro/x.js');
+    const loading = loadChunk(() => Promise.reject(gone), new EventTarget(), () => true);
+    await expect(loading).rejects.toMatchObject({ name: 'MissingChunkError', offline: false });
+  });
+
   it('lets the listener go', () => {
     const target = new EventTarget();
     const heard = vi.fn();
@@ -88,7 +104,9 @@ describe('loadChunk', () => {
 });
 
 describe('ChunkBoundary', () => {
-  const fallback = createElement('p', null, 'calm');
+  const calm = createElement('p', null, 'calm');
+  const offline = createElement('p', null, 'offline');
+  const fallback = (error: MissingChunkError) => (error.offline ? offline : calm);
   const child = createElement('i', null, 'view');
 
   /** The boundary after `error`, rendered. */
@@ -103,7 +121,11 @@ describe('ChunkBoundary', () => {
   });
 
   it('holds the calm state for a missing chunk', () => {
-    expect(renderAfter(new MissingChunkError(new TypeError('Failed to fetch dynamically imported module')))()).toBe(fallback);
+    expect(renderAfter(new MissingChunkError(new TypeError('Failed to fetch dynamically imported module')))()).toBe(calm);
+  });
+
+  it('hands the fallback the error, so an offline failure says offline', () => {
+    expect(renderAfter(new MissingChunkError(new TypeError('Failed to fetch dynamically imported module'), true))()).toBe(offline);
   });
 
   it('passes a real error on to the boundary above', () => {
@@ -117,5 +139,6 @@ describe('sceneFailure', () => {
     const { sceneFailure } = await import('../src/terrain/scene/load-scene');
     expect(sceneFailure(new MissingChunkError(new TypeError('Failed to fetch dynamically imported module')))).toBe('missing');
     expect(sceneFailure(new Error('WebGL unavailable'))).toBe('failed');
+    expect(sceneFailure(new MissingChunkError(new TypeError('Failed to fetch dynamically imported module'), true))).toBe('offline');
   });
 });

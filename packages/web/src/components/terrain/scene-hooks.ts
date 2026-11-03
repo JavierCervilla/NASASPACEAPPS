@@ -26,8 +26,8 @@
 /**
  * What the on-foot scene tells the panel (VENT-49): the look and the band
  * (the panel's own), a lost GPU context (the tier drops to low, then the
- * panel frees the scene and says so) and a slow load (a tier down, when the
- * tier may step down at all).
+ * panel frees the scene and says so), a slow load (a tier down, when the
+ * tier may step down at all) and the first frame drawn.
  */
 import type { RefObject } from 'react';
 import type { ReportSink } from '../../terrain/report/sink';
@@ -43,11 +43,13 @@ export interface HookParts {
   readonly report: Pick<ReportSink, 'step'>;
   /** The context was lost, and the tier has been dropped. */
   readonly onLost: () => void;
+  /** The scene drew its first frame (VENT-60). */
+  readonly onDrawn: () => void;
 }
 
 /** The scene's hooks: the panel's, a loss and a slow load. */
 export function sceneHooks(parts: HookParts): SceneHooks {
-  const { panel, tier, report, onLost } = parts;
+  const { panel, tier, report, onLost, onDrawn } = parts;
   return {
     onLook: (look) => panel.current.onLook(look),
     band: () => panel.current.band?.() ?? null,
@@ -56,6 +58,7 @@ export function sceneHooks(parts: HookParts): SceneHooks {
       report.step(`tier dropped to ${tier.get().tier} for the next mount`);
       onLost();
     },
+    onDrawn,
     onSlowFrame: tier.get().steppable ? () => {
       report.step(`frame probe: slow frame at ${tier.get().tier}, stepping down`);
       tier.stepDown();

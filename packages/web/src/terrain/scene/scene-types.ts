@@ -99,6 +99,8 @@ export interface SceneHooks {
    * probe, frame-probe.ts); absent when the tier may not step down.
    */
   readonly onSlowFrame?: (() => void) | undefined;
+  /** The first frame is drawn: the loader hands over (VENT-60). */
+  readonly onDrawn?: (() => void) | undefined;
   /**
    * The band of the host the view is framed in (the phone's free band
    * between its top bar and sheet), px from the host's top; none: whole.

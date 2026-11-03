@@ -43,6 +43,8 @@ import stylesUrl from '../../styles/on-foot.css?url';
 import { SiteHorizon } from '../horizon/SiteHorizon';
 import { useI18n } from '../i18n-context';
 import { OnFootStageArea } from './OnFootStageArea';
+import { useLoaderProps } from './loader/use-loader-props';
+import loaderStylesUrl from '../../styles/on-foot-loader.css?url';
 import { copyReport } from './use-copy-report';
 import { useOnFoot, type OnFootParts } from './use-on-foot';
 import { useReportRun } from './use-report-run';
@@ -78,21 +80,25 @@ function usePanel(props: PanelProps) {
   };
   const onCopyReport = (): Promise<boolean> => copyReport(report);
   const yawDeg = yaw ?? view.startYawDeg;
-  return { view, host, status: scene.status, onRetry, onCopyReport, yawDeg };
+  const loader = useLoaderProps({ panel: props, view, scene });
+  return { view, host, status: scene.status, drawn: scene.drawn, loader,
+    onRetry, onCopyReport, yawDeg };
 }
 
 export default function TerrainPanel(props: PanelProps) {
   const i18n = useI18n();
-  const { view, host, status, onRetry, onCopyReport, yawDeg } =
-    usePanel(props);
+  const { view, host, status, drawn, loader, onRetry, onCopyReport,
+    yawDeg } = usePanel(props);
   const altId = useId();
   const alt = view.input
     ? viewAlt(i18n, { yawDeg, bodies: view.bodies }) : '';
-  const area = { view, host, status, onRetry, onCopyReport, altId };
+  const area = { view, host, status, drawn, loader, onRetry, onCopyReport,
+    altId };
   const { layout, hours } = props;
   return (
     <section className={`on-foot on-foot--${layout}`} aria-label={i18n.t('onFoot.view')}>
       <link rel="stylesheet" href={stylesUrl} precedence="on-foot" />
+      <link rel="stylesheet" href={loaderStylesUrl} precedence="on-foot" />
       <OnFootStageArea {...area} />
       <p id={altId} className="visually-hidden">
         {`${alt} ${i18n.t('onFoot.help')}`.trim()}

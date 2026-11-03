@@ -388,5 +388,26 @@
   "onFoot.ridgeHidesSun": "A ridge {height} m high, {distance} km away, hides the Sun.",
   "onFoot.ridgeHidesEarth": "A ridge {height} m high, {distance} km away, hides the Earth.",
   "onFoot.farHidesSun": "Terrain more than {distance} km away hides the Sun.",
-  "onFoot.farHidesEarth": "Terrain more than {distance} km away hides the Earth."
+  "onFoot.farHidesEarth": "Terrain more than {distance} km away hides the Earth.",
+  "onFoot.loader.list": "Finding the terrain tiles",
+  "onFoot.loader.listNote": "LOLA relief around the point",
+  "onFoot.loader.near": {
+    "one": "Terrain · {done} of {n} tile",
+    "other": "Terrain · {done} of {n} tiles"
+  },
+  "onFoot.loader.nearNote": "Near relief · rings of {near} and {mid} km",
+  "onFoot.loader.shaping": "Shaping the ground",
+  "onFoot.loader.shapingNote": {
+    "one": "{done} of {n} tile · building the 3D view",
+    "other": "{done} of {n} tiles · building the 3D view"
+  },
+  "onFoot.loader.ring": "{size} km tiles · {spacing} m",
+  "onFoot.loader.far": "Far relief",
+  "onFoot.loader.farCount": {
+    "one": "{done} of {n} tile",
+    "other": "{done} of {n} tiles"
+  },
+  "onFoot.loader.farIn": "{sizes} km in",
+  "onFoot.loader.north": "N",
+  "onFoot.loader.body": "{body} {deg}°"
 }

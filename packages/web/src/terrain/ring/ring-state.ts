@@ -34,6 +34,7 @@ import type { PlacedTile } from '../scene/scene-types';
 import type { Frame } from './ring-frame';
 import type { RingTier } from './ring-plan';
 import type { RingSource } from './ring-source';
+import type { ProgressStore } from './progress-store';
 import type { RingStore } from './ring-store';
 import type { Window } from './ring-window';
 
@@ -65,6 +66,8 @@ export interface RingRun {
   readonly breathe: () => Promise<void>;
   /** Tells the crash report how the ring is coming (VENT-49). */
   readonly note?: ((text: string) => void) | undefined;
+  /** Hears how the tiles come, for the loader (VENT-60). */
+  readonly progress?: ProgressStore | undefined;
 }
 
 /** What a final `error` leaves the view. */

@@ -396,5 +396,29 @@
   "onFoot.ridgeHidesSun": "Une crête de {height} m, à {distance} km, cache le Soleil.",
   "onFoot.ridgeHidesEarth": "Une crête de {height} m, à {distance} km, cache la Terre.",
   "onFoot.farHidesSun": "Un relief à plus de {distance} km cache le Soleil.",
-  "onFoot.farHidesEarth": "Un relief à plus de {distance} km cache la Terre."
+  "onFoot.farHidesEarth": "Un relief à plus de {distance} km cache la Terre.",
+  "onFoot.loader.list": "Recherche des tuiles du terrain",
+  "onFoot.loader.listNote": "Relief LOLA autour du point",
+  "onFoot.loader.near": {
+    "one": "Terrain · {done} sur {n} tuile",
+    "many": "Terrain · {done} sur {n} de tuiles",
+    "other": "Terrain · {done} sur {n} tuiles"
+  },
+  "onFoot.loader.nearNote": "Relief proche · anneaux de {near} et {mid} km",
+  "onFoot.loader.shaping": "Mise en forme du sol",
+  "onFoot.loader.shapingNote": {
+    "one": "{done} sur {n} tuile · construction de la vue 3D",
+    "many": "{done} sur {n} de tuiles · construction de la vue 3D",
+    "other": "{done} sur {n} tuiles · construction de la vue 3D"
+  },
+  "onFoot.loader.ring": "Tuiles de {size} km · {spacing} m",
+  "onFoot.loader.far": "Relief lointain",
+  "onFoot.loader.farCount": {
+    "one": "{done} sur {n} tuile",
+    "many": "{done} sur {n} de tuiles",
+    "other": "{done} sur {n} tuiles"
+  },
+  "onFoot.loader.farIn": "{sizes} km chargés",
+  "onFoot.loader.north": "N",
+  "onFoot.loader.body": "{body} {deg}°"
 }

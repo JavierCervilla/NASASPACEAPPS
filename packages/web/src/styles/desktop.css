@@ -421,12 +421,6 @@
   }
 }
 
-@media (prefers-reduced-motion: reduce) {
-  .card-retry:active {
-    transition: none;
-  }
-}
-
 /* The on-foot view's place while its panel downloads (VENT-34). */
 @media (min-width: 768px) {
   .on-foot-wait {

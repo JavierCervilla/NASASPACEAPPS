@@ -194,12 +194,13 @@
   outline-offset: 2px;
 }
 
-/* Press feedback, instant on the press (apple-design §1). */
-@media (prefers-reduced-motion: no-preference) {
-  :is(.round-button, .play-button, .now-button, .site-button):active {
-    transform: scale(0.97);
-    transition: transform var(--dur-press) ease-out;
-  }
+/*
+ * Press feedback, instant on the press (apple-design §1), and the same
+ * under reduced motion: a 3 % shrink is no vestibular motion (§14).
+ */
+:is(.round-button, .play-button, .now-button, .site-button):active {
+  transform: scale(0.97);
+  transition: transform var(--dur-press) ease-out;
 }
 
 .strip-status {
@@ -460,19 +461,7 @@
   flex-direction: column;
 }
 
-/* It grows from the button that opened it (apple-design §7). */
-@media (prefers-reduced-motion: no-preference) {
-  .site-popover:popover-open {
-    animation: popover-in var(--dur-enter) var(--ease-out);
-  }
-}
-
-@keyframes popover-in {
-  from {
-    opacity: 0;
-    transform: scale(0.96);
-  }
-}
+/* It grows from the button that opened it: styles/presence.css. */
 
 /* Phone calendar, in the sheet at full */
 

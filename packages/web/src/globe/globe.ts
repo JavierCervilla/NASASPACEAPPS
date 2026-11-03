@@ -50,7 +50,11 @@ import type { LayerRegistry } from './layers/registry';
 import type { GlobeSite } from './markers';
 import { createOrbit, type Orbit } from './orbit';
 import { bindPinch } from './pinch';
-import { pinchControls, pointerControls } from './pointer-controls';
+import {
+  pinchControls,
+  pinchEnd,
+  pointerControls,
+} from './pointer-controls';
 import { pickQuality } from './quality-pick';
 import { bindSheetEdge, frameInset } from './sheet-edge';
 import { loadSelection, type SelectionParts } from './selection';
@@ -146,7 +150,7 @@ function bindInput(
   const keys = keyControls(orbit, deps);
   return [
     bindDrag(host, pointerControls(orbit, deps)),
-    bindPinch(host, pinchControls(orbit, deps)),
+    bindPinch(host, pinchControls(orbit, deps), pinchEnd(orbit, deps)),
     bindKeys(host, keys),
     bindWheel(host, keys),
   ];

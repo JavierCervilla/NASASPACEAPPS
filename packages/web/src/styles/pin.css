@@ -36,10 +36,9 @@
  * approximate zone, which is a dashed ring without a dot.
  */
 
-/* Each drop and lift settles on a critically damped spring (0.4 s). */
+/* Each drop and lift settles on the critically damped --spring (tokens). */
 .pin,
 .pin-carry {
-  --spring: linear(0, 0.118, 0.329, 0.527, 0.682, 0.793, 0.868, 0.917, 0.949, 0.969, 0.981, 0.989, 0.993, 0.996, 0.998, 0.999, 1);
   --tone: #f2f2f4;
 }
 
@@ -501,10 +500,6 @@
 
   .pin-carry[data-phase='return'] {
     opacity: 0;
-  }
-
-  .pin-drop:active {
-    transform: none;
   }
 }
 

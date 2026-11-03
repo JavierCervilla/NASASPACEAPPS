@@ -53,14 +53,19 @@ class PinchTracker {
   private readonly points = new Map<number, Point>();
   private spread = 0;
 
-  constructor(private readonly zoom: (ratio: number) => void) {}
+  constructor(
+    private readonly zoom: (ratio: number) => void,
+    private readonly end: () => void,
+  ) {}
 
-  /** A finger lands (`down`) or lifts. */
+  /** A finger lands (`down`) or lifts; the pinch ends with its two. */
   press(event: PointerEvent, down: boolean): void {
     const point = { x: event.clientX, y: event.clientY };
     if (down) this.points.set(event.pointerId, point);
     else this.points.delete(event.pointerId);
+    const pinching = this.spread > 0;
     this.spread = spreadOf(this.points);
+    if (pinching && this.spread === 0) this.end();
   }
 
   /** A finger moves: the zoom follows the new spread. */
@@ -76,13 +81,14 @@ class PinchTracker {
 
 /**
  * Calls `zoom` with each change of spread (2 = the fingers twice as far
- * apart); returns the unbind.
+ * apart) and `end` when the pinch's fingers lift; returns the unbind.
  */
 export function bindPinch(
   el: HTMLElement,
   zoom: (ratio: number) => void,
+  end: () => void = () => undefined,
 ): () => void {
-  const pinch = new PinchTracker(zoom);
+  const pinch = new PinchTracker(zoom, end);
   const listeners: [PointerType, (event: PointerEvent) => void][] = [
     ['pointerdown', (e) => pinch.press(e, true)],
     ['pointermove', (e) => pinch.move(e)],

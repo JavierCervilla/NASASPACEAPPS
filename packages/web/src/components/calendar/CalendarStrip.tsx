@@ -99,7 +99,12 @@ function WindowMarks({ strip, atMs }: { strip: MonthStrip; atMs: number }) {
   return (
     <>
       <NoWindowNote strip={strip} className="signal-bar__note" />
-      <span className="instant-line" style={{ left: `${instantPct(atMs)}%` }} />
+      <span
+        className="rail rail--x"
+        style={{ translate: `${instantPct(atMs)}% 0` }}
+      >
+        <span className="instant-line" />
+      </span>
     </>
   );
 }

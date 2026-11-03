@@ -125,9 +125,11 @@
 
 /* Phones: under the glass top bar, and under the hint while it shows (measured). */
 @media (max-width: 767.98px) {
+  /* Placed by translate, so a move under the hint is composited (§11). */
   .compass {
     position: fixed;
-    top: var(--compass-top, 92px);
+    top: 0;
+    translate: 0 var(--compass-top, 92px);
     right: 12px;
     z-index: 4;
   }
@@ -147,7 +149,7 @@
   .compass {
     transition:
       scale var(--dur-press) ease-out,
-      top var(--dur-enter) var(--ease-out),
+      translate var(--dur-enter) var(--spring),
       opacity var(--dur-press) ease-out,
       visibility var(--dur-press);
   }

@@ -1,0 +1,126 @@
+/*
+ *   _   _       _                         _ _
+ *  | | | |_ __ (_)_   _____ _ __ ___  ___| | | ___
+ *  | | | | '_ \| \ \ / / _ \ '__/ __|/ _ \ | |/ _ \
+ *  | |_| | | | | |\ V /  __/ |  \__ \  __/ | |  __/
+ *   \___/|_| |_|_| \_/ \___|_|  |___/\___|_|_|\___|
+ *
+ *             =++==--::.
+ *         %%%%##**++=--:..  .
+ *      ##**#%@%%#***+=--::.   .
+ *    #**=+*#*#**#++++=-:::.. .  .
+ *   #++-====*@%+*++==--::...   .  .    Ventana Lunar
+ *  #+=-=--++==+===-+==--:..   .  .  .  Sun, Earth and landing
+ * #----====-------=-=---:..  .  .  .   windows at the lunar
+ * #+---+=====--=---==-::..     .  .  . south pole
+ * #*----==---==-=-=-:-....    .  .  .
+ * *#----===+*===--:-::...    .  .  .   Built for the NASA Space
+ *  *----=*-+*%*+=-:::....   .  .  .    Apps Challenge 2026,
+ *   *------=+*=--:::-:::.. .  .  .     Madrid. Not endorsed
+ *    %*===-=-==--==-:::.  .  .  .      by NASA.
+ *      *+:--+:--::::::.  .  .  .
+ *         -=:::...:..   .  .           (c) 2026 Universelle
+ *             :::.. .  .               SPDX-License-Identifier: MIT
+ */
+
+/*
+ * How floating surfaces arrive and leave (VENT-55, apple-design §7 and
+ * §12): they leave along the path they came in, and the glass ones
+ * materialise, blur and scale with the opacity, as «New version ready»
+ * does (update.css). They move on the critically damped --spring over
+ * --dur-enter; components/presence.ts keeps a leaving surface mounted
+ * for that long. Under reduced motion a plain fade (§14).
+ */
+
+/*
+ * The site, language and «…» popovers grow from the button that opened
+ * them (their transform-origin) and shrink back into it: kept on the top
+ * layer and displayed until the way out ends.
+ */
+.site-popover,
+.lang-popover,
+.row-menu {
+  opacity: 0;
+  scale: 0.96;
+  filter: blur(6px);
+  transition:
+    opacity var(--dur-enter) var(--spring),
+    scale var(--dur-enter) var(--spring),
+    filter var(--dur-enter) var(--spring),
+    overlay var(--dur-enter) allow-discrete,
+    display var(--dur-enter) allow-discrete;
+}
+
+.site-popover:popover-open,
+.lang-popover:popover-open,
+.row-menu:popover-open {
+  opacity: 1;
+  scale: 1;
+  filter: none;
+}
+
+@starting-style {
+  .site-popover:popover-open,
+  .lang-popover:popover-open,
+  .row-menu:popover-open {
+    opacity: 0;
+    scale: 0.96;
+    filter: blur(6px);
+  }
+}
+
+/*
+ * The first-time pin hint and the offline notice: `in` while shown, `out`
+ * through the exit, then gone. Their taps stop as the exit starts.
+ */
+[data-presence] {
+  transition:
+    opacity var(--dur-enter) var(--spring),
+    scale var(--dur-enter) var(--spring),
+    filter var(--dur-enter) var(--spring);
+}
+
+[data-presence='out'] {
+  opacity: 0;
+  scale: 0.96;
+  filter: blur(6px);
+  pointer-events: none;
+}
+
+@starting-style {
+  [data-presence='in'] {
+    opacity: 0;
+    scale: 0.96;
+    filter: blur(6px);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .site-popover,
+  .lang-popover,
+  .row-menu {
+    scale: none;
+    filter: none;
+    transition:
+      opacity 200ms linear,
+      overlay 200ms allow-discrete,
+      display 200ms allow-discrete;
+  }
+
+  [data-presence],
+  [data-presence='out'] {
+    scale: none;
+    filter: none;
+    transition: opacity 200ms linear;
+  }
+
+  @starting-style {
+    .site-popover:popover-open,
+    .lang-popover:popover-open,
+    .row-menu:popover-open,
+    [data-presence='in'] {
+      scale: none;
+      filter: none;
+    }
+  }
+}

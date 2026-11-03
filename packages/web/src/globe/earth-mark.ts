@@ -31,14 +31,16 @@
  * view tilts, right is east. The Earth is so far off that its direction is
  * the sub-Earth point's, the same from anywhere near the Moon. Pure.
  */
+import { SOUTH_POLE_VIEW } from './framing';
 import { isFacing, latLonToVector, type Vec3 } from './geo';
 
 export interface EarthMark {
   /** Degrees clockwise from the top of the screen, in (-180, 180]. */
   readonly angleDeg: number;
   /**
-   * True when the sub-Earth point is behind the limb: the Earth is behind
-   * the Moon. The mark then keeps the direction it is hidden in.
+   * True when the sub-Earth point is behind the limb of the whole Moon as
+   * the opening zoom shows it: the Earth is behind the Moon. The mark then
+   * keeps the direction it is hidden in.
    */
   readonly far: boolean;
   /** How far the point is from the Moon's centre on screen, in radii. */
@@ -68,6 +70,15 @@ const SECTORS: readonly Sector[] = [
 ];
 
 const RAD = Math.PI / 180;
+
+/**
+ * The camera distance, Moon radii, whose limb says whether the Earth is
+ * behind the Moon: the opening view's, for every zoom. A zoom does not
+ * turn the Moon, so it must not hide the Earth (VENT-51): from the
+ * closest zoom (1.6 radii) the visible cap is 51° round the view's centre
+ * and the opening view's Earth, about 66° from it, would leave it.
+ */
+const LIMB_DISTANCE = SOUTH_POLE_VIEW.distance;
 const NORTH: Vec3 = { x: 0, y: 1, z: 0 };
 
 const dot = (a: Vec3, b: Vec3): number => a.x * b.x + a.y * b.y + a.z * b.z;
@@ -98,9 +109,14 @@ export function earthMark(
   const up = cross(back, right);
   const point = latLonToVector(earth.latDeg, earth.lonEastDeg);
   const [x, y] = [dot(point, right), dot(point, up)];
+  const limbEye = {
+    x: back.x * LIMB_DISTANCE,
+    y: back.y * LIMB_DISTANCE,
+    z: back.z * LIMB_DISTANCE,
+  };
   return {
     angleDeg: Math.atan2(x, y) / RAD,
-    far: !isFacing(point, eye),
+    far: !isFacing(point, limbEye),
     offset: Math.hypot(x, y),
   };
 }

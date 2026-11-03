@@ -35,6 +35,7 @@
 import { useRef } from 'react';
 import type { TimeStore } from '../../calendar/time-store';
 import type { GlobeCompass } from '../../globe/compass-link';
+import type { WatchedValue } from '../../lib/watched-value';
 import { useI18n } from '../i18n-context';
 import { compassName } from './compass-name';
 import { useCompassTop } from './use-compass-top';
@@ -45,13 +46,15 @@ interface Props {
   readonly compass: GlobeCompass | null;
   /** The selected instant: the Earth's place follows it. */
   readonly time: TimeStore;
+  /** The phone sheet's top edge, px from the viewport's top; null: none. */
+  readonly sheetEdge: WatchedValue<number | null>;
 }
 
-export function CompassButton({ compass, time }: Props) {
+export function CompassButton({ compass, time, sheetEdge }: Props) {
   const i18n = useI18n();
   const button = useRef<HTMLButtonElement>(null);
   const mark = useEarthMark(compass, time, button);
-  useCompassTop(button, compass !== null);
+  useCompassTop(button, compass !== null, sheetEdge);
   if (!compass) return null;
   // Before the first frame the name is the press alone: no Earth to place.
   const name = mark ? compassName(i18n, mark) : i18n.t('compass.press');

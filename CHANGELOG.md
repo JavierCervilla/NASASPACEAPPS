@@ -3,6 +3,10 @@
 ## [Sin publicar]
 
 ### Cambiado
+- Se borra el astronauta antiguo (VENT-58, decisión de Javier): el modelo de NASA, los scripts que lo preparaban y lo
+  horneaban en una hoja de imágenes, esa hoja, sus tests y las cuatro dependencias de desarrollo que solo usaban ellos
+  (`@gltf-transform` y `draco3dgltf`). Nada de la web los leía desde que un pin elige el punto (VENT-37) y la vista 3D
+  dejó de dibujar figura (VENT-54); su origen y su licencia quedan en el historial de git.
 - Maquetación revisada según la guía de diseño de Apple (VENT-55, de la auditoría VENT-53): en el teléfono, un sitio
   guardado de nombre largo ya no hace crecer la barra superior (el nombre se corta con «…» antes de que el título o la
   regla salten de línea), y a 200 % de texto la cabecera de la hoja pone las coordenadas bajo el nombre en vez de

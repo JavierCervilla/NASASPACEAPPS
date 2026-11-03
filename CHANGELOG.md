@@ -3,6 +3,10 @@
 ## [Sin publicar]
 
 ### Cambiado
+- Se borra el astronauta antiguo (VENT-58, decisión de Javier): el modelo de NASA, los scripts que lo preparaban y lo
+  horneaban en una hoja de imágenes, esa hoja, sus tests y las cuatro dependencias de desarrollo que solo usaban ellos
+  (`@gltf-transform` y `draco3dgltf`). Nada de la web los leía desde que un pin elige el punto (VENT-37) y la vista 3D
+  dejó de dibujar figura (VENT-54); su origen y su licencia quedan en el historial de git.
 - La vista 3D «Horizon» es solo en primera persona (VENT-54, decisión de Javier): abre con los ojos a 2 m del suelo,
   mirando al Sol si está cerca del cielo y, si no, a la Tierra. Se quitan el astronauta, los dos módulos de aterrizaje
   (el del Apolo y el genérico) y el selector «Third person | First person»; el pie ya solo dice «Fine detail

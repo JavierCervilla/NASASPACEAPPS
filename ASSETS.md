@@ -200,50 +200,16 @@ list (Mons Mouton uses Mons Mouton Plateau's; Nobile Rims 1 and 2 use Griffin-1'
   (2 mu / (mu + mu0)) over the relief normals, rendered at twice the size and resized with Lanczos; the ring is drawn
   at four times the size with round caps. Two runs give byte-identical files.
 
-## Astronaut model (VENT-10)
+## Astronaut model removed (VENT-58)
 
-| File | Size | sha256 |
-|---|---|---|
-| `packages/web/models/astronaut.glb` | glTF 2.0 binary, 4 122 vertices, 6 381 triangles, no texture inside, 138 880 bytes; build input of the sprite bake only, never shipped; the on-foot view no longer reads it | `977be426b398161cde6a15fa70dfccc9d434d8dcffc86099e4c2f23e2f28c70e` |
-| `packages/web/models/astronaut-suit.webp` | the suit texture, 512 x 512 WebP, 11 630 bytes; build input only, never shipped | `c362b0560504a1a6f93059c1466bd08a05846b16746b2522110a4afca7aef312` |
-| `packages/web/src/astronaut/figures.webp` | the sprite sheet, not shipped since VENT-37 and used by nothing in the app since VENT-54 removed the on-foot astronaut, 900 x 440 lossless WebP (2 rows x 5 columns of 180 x 220), 76 642 bytes | `1b4b694ce7a15550b660022d670c8bedec4259377dee66b40fc9a5a5e6df6a22` |
-| `packages/web/src/astronaut/figures.json` | its manifest: layout, cell, visor colours, size and sha256 of the sheet | `553f54dcf34ef67c3a87d2d781695d11b8d3dd64a97ed59adf5d186e01959beb` |
-
-- **Source**: NASA 3D Resources, «Astronaut» (`3D Models/Astronaut/Astronaut.glb`, https://github.com/nasa/NASA-3D-Resources/tree/master/3D%20Models/Astronaut,
-  commit `11ebb4ee043715aefbba6aeec8a61746fad67fa7` of 2025-06-03), 762 988 bytes, sha256
-  `d18c141410542b935113d1c25a9271d90c40d44015a64295b7b68a30f0ce2820`. An Apollo-era suit with its backpack, Draco
-  compressed, with a 1024 x 1024 suit texture.
-- **What it is**: the astronaut that was dragged onto the Moon (VENT-10). It is drawn offline, in two poses and with the
-  visor in each state colour, into one sprite sheet (`figures.webp`) that the page showed as a plain image. Since VENT-37
-  a pin picks points and nothing imports the sheet, so the build ships neither it nor the model; both stay here for
-  VENT-34, where the astronaut comes back (dropped, it takes you to the 3D terrain).
-- **Licence**: NASA, public domain under the NASA media usage guidelines
-  (https://www.nasa.gov/nasa-brand-center/images-and-media/). NASA does not endorse Ventana Lunar. The guidelines do not
-  let the NASA insignia be used, so the build covers the «meatball» on the backpack with the fabric next to it. It also
-  covers the circular mission patch on the suit (a figure on blue with a gold border) with the plain fabric of the same
-  band. Those two are the marks removed; the two US flags remain, and the model carries no other
-  NASA mark.
-- **How it was made**: `node packages/web/scripts/astronaut.mjs <Astronaut.glb>` (`@gltf-transform` 4.5.1, `draco3dgltf`
-  1.5.7 to read the source, `sharp` for the texture, all pinned in `packages/web/package.json`): it bakes the root
-  transform into the mesh, lowers the arms that the source holds out (`scripts/astronaut-mesh.mjs`), covers the
-  insignia and the mission patch (`COVERED_MARKS` there), names the materials `suit` and `visor` (the visor loses its
-  texture: the page tints it), welds the vertices and quantizes positions and normals (KHR_mesh_quantization); the
-  suit texture, shrunk to 512 px WebP at
-  quality 82, is written beside the model and put back on by the page. No Draco or meshopt: both would need
-  WebAssembly in the browser, and a texture inside the GLB would load through a `blob:` URL; the page's CSP allows
-  neither. Two runs give byte-identical files. The model and its texture live in `packages/web/models/`, outside
-  `public/`: they are the input of the sprite bake below, not files the site serves.
-- **The sprite sheet**: `node packages/web/scripts/astronaut-figures.mjs` (`PW_CHROMIUM_PATH` picks the Chromium, as
-  for the e2e suite) loads the model with the workspace's three 0.186.1 in Playwright's headless Chromium pinned to
-  SwiftShader (`--use-angle=swiftshader`: a CPU rasteriser, no GPU in the path), draws each picture with the scene,
-  lights and ACES tone mapping the page used to draw at runtime (`scripts/astronaut-figures-page.mjs`: orthographic
-  camera, feet at 50 % x 95 %, stand turned -0.45 rad, carry turned -0.35 and tilted -0.3), the visor in neutral silver
-  `#a7acb6` and in the four signal colours read from `src/styles/tokens.css`, and copies the PNGs pixel for pixel into
-  one lossless WebP (`sharp` 0.35.5, `exact`). Rows: stand, carry; columns: silver, window, Sun, Earth, neither. Every
-  cell is identical, channel for channel, to the picture the runtime renderer drew before (compared on
-  2026-11-01); two runs give byte-identical files, and `--check` bakes again and fails when the committed sheet or its
-  manifest differ. `packages/web/tests/astronaut-figures.test.ts` holds the manifest to the page's layout, the sheet's
-  sha256 and the tokens.
+VENT-58 deleted the old astronaut, the human's decision («Borra el astronauta antiguo, ya no se usa»): nothing had read
+it since VENT-37 (a pin picks points) and VENT-54 (no figure in the 3D view). Gone from the repo: the model built from
+NASA 3D Resources' «Astronaut» (`packages/web/models/astronaut.glb` and `astronaut-suit.webp`), its build
+(`scripts/astronaut.mjs`, `astronaut-mesh.mjs`), the offline sprite bake (`scripts/astronaut-figures.mjs`,
+`astronaut-figures-page.mjs`), the sprite sheet and its manifest (`src/astronaut/`), their tests, and the build
+dependencies only they used (`@gltf-transform/core`, `extensions` and `functions`, `draco3dgltf`). Their source,
+licence, sha256 and how they were made stay in git history (the section «Astronaut model (VENT-10)» of this file
+before VENT-58).
 
 ## Earth land mask (VENT-7)
 

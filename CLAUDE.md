@@ -222,13 +222,9 @@ Every visible change follows `.claude/skills/apple-design/SKILL.md` (vendored fr
   globe and in the polar panel's corner on desktop, under the top bar on phones (measured); on desktop it keeps to the room
   right of the Layers key's column (in rem, so it holds at 200 % text), centred over the globe and in the polar
   panel's top right corner, so it never covers the key; gone after the first drop
-  or its ✕, kept in `localStorage` (`ventana.pinHint`, refused storage only brings it back next visit). VENT-34's
-  on-foot view brought an astronaut back until VENT-54 removed it. NASA's «Astronaut» model (`packages/web/models/astronaut.glb` and its suit
-  texture `astronaut-suit.webp`, built by `packages/web/scripts/astronaut.mjs`: arms lowered, the NASA insignia and
-  the mission patch covered with fabric, the US flags kept) now only feeds the offline bake, `scripts/astronaut-figures.mjs`
-  (Playwright's Chromium pinned to SwiftShader, byte-stable; `--check` re-bakes and compares), into the lossless
-  sprite sheet `src/astronaut/figures.webp` (77 kB, manifest `figures.json`, held by
-  `tests/astronaut-figures.test.ts`): two poses times five visor colours. The desktop Layers key is a 17rem column
+  or its ✕, kept in `localStorage` (`ventana.pinHint`, refused storage only brings it back next visit). The old
+  astronaut (NASA's «Astronaut» model, its offline bake into a sprite sheet and the build dependencies only it used)
+  was deleted in VENT-58: nothing has read it since VENT-37 and VENT-54. The desktop Layers key is a 17rem column
   (`--layers-w`) clear of the globe's Moon, and the polar disk is fitted beside the keys in its panel
   (`src/polar/disk-fit.ts`). The Moon's maps are sampled by sphere point, not by the vertices' UVs
   (`src/globe/pole-uv.ts`), so the south pole shows no star; its gradient choices (the 180° seam, the polar cap) are

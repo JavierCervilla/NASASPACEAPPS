@@ -90,6 +90,7 @@ test.describe('desktop, 1440x900', () => {
         const s = getComputedStyle(el);
         return [s.backgroundColor, s.padding, s.borderRadius, s.fontSize, s.translate, s.top, s.left].join(' | ');
       }));
-    expect(new Set(looks)).toEqual(new Set(['rgba(28, 28, 30, 0.61) | 2px 4px | 4px | 10px | -50% -50% | 0px | 0px']));
+    // 11 px, the type scale's caption and the floor for text (VENT-55, C-24).
+    expect(new Set(looks)).toEqual(new Set(['rgba(28, 28, 30, 0.61) | 2px 4px | 4px | 11px | -50% -50% | 0px | 0px']));
   });
 });

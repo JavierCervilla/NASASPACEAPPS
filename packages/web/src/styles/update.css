@@ -111,7 +111,7 @@
 }
 
 .update-notice__update:focus-visible {
-  outline: 2px solid var(--marker);
+  outline: 2px solid var(--focus-ring);
   outline-offset: 2px;
 }
 
@@ -156,7 +156,7 @@
 @media (prefers-reduced-transparency: reduce) {
   .update-notice[data-shown] {
     backdrop-filter: none;
-    background: var(--surface-solid, #15161b);
+    background: var(--surface);
   }
 }
 

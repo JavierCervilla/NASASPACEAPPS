@@ -77,11 +77,12 @@
 .lang-option__check {
   grid-column: 2;
   grid-row: 1 / span 2;
-  color: var(--signal-window-ink);
+  /* Neutral, as the site list's check: a signal colour is never decoration. */
+  color: var(--text);
 }
 
 .lang-option:focus-visible {
-  outline: 2px solid var(--text);
+  outline: 2px solid var(--focus-ring);
   outline-offset: -2px;
   border-radius: 10px;
 }
@@ -140,7 +141,7 @@
 }
 
 .lang-button:focus-visible {
-  outline: 2px solid var(--text);
+  outline: 2px solid var(--focus-ring);
   outline-offset: 2px;
 }
 
@@ -232,7 +233,7 @@
 
 .lang-row:focus-visible,
 .lang-page__back:focus-visible {
-  outline: 2px solid var(--text);
+  outline: 2px solid var(--focus-ring);
   outline-offset: 2px;
 }
 
@@ -349,5 +350,12 @@
   .lang-popover {
     background: var(--strip);
     backdrop-filter: none;
+  }
+}
+
+/* Here, after the popover's own border: 0 (calendar.css loads first). */
+@media (prefers-contrast: more) {
+  .lang-popover {
+    border: 1px solid var(--surface-edge);
   }
 }

@@ -149,6 +149,42 @@
   --dur-press: 100ms;
   --dur-enter: 400ms;
 
+  /*
+   * The focus ring (VENT-55): the text colour on the page's surfaces, so it
+   * is dark on light glass and light on dark; the markers' white only on
+   * the Moon and its sky, which stay dark in both themes.
+   */
+  --focus-ring: var(--text);
+  --focus-ring-on-moon: var(--marker);
+
+  /*
+   * The type scale (apple-design §15): size, leading and tracking as one
+   * set. Tracking is size-specific: slightly positive on small text, near 0
+   * on body, negative as the size grows; leading tightens with it. Set it
+   * per text, never on a container, where every size would inherit one.
+   */
+  --type-caption-size: 0.6875rem;
+  --type-caption-leading: 1.35;
+  --type-caption-tracking: 0.01em;
+  --type-footnote-size: 0.75rem;
+  --type-footnote-leading: 1.35;
+  --type-footnote-tracking: 0.005em;
+  --type-subhead-size: 0.8125rem;
+  --type-subhead-leading: 1.35;
+  --type-subhead-tracking: 0;
+  --type-body-size: 0.9375rem;
+  --type-body-leading: 1.35;
+  --type-body-tracking: -0.01em;
+  --type-headline-size: 1.0625rem;
+  --type-headline-leading: 1.25;
+  --type-headline-tracking: -0.022em;
+  --type-title-size: 1.5rem;
+  --type-title-leading: 1.15;
+  --type-title-tracking: -0.025em;
+  --type-display-size: 1.75rem;
+  --type-display-leading: 1.1;
+  --type-display-tracking: -0.03em;
+
   --space-1: 0.25rem;
   --space-2: 0.5rem;
   --space-3: 1rem;
@@ -202,12 +238,19 @@
   }
 }
 
+/*
+ * More contrast (apple-design §14): near-solid chrome with a contrasting
+ * border (the surfaces that take it are listed per stylesheet, under
+ * prefers-contrast: more).
+ */
 @media (prefers-contrast: more) {
   :root {
     --polar-label: #c9cad1;
     --surface: #15161b;
     --surface-edge: rgba(255, 255, 255, 0.5);
     --text-muted: #c9cad1;
+    --chrome: #101116;
+    --glass-label: #2e3036;
   }
 }
 
@@ -224,6 +267,8 @@
     --surface: #ffffff;
     --surface-edge: rgba(0, 0, 0, 0.6);
     --text-muted: #3a3a3c;
+    --chrome: #f2f2f7;
+    --glass-label: #ffffff;
   }
 }
 

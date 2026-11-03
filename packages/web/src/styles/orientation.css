@@ -63,7 +63,7 @@
 }
 
 .compass:focus-visible {
-  outline: 2px solid var(--marker);
+  outline: 2px solid var(--focus-ring-on-moon);
   outline-offset: 2px;
 }
 
@@ -82,7 +82,8 @@
   left: 50%;
   top: 11px;
   translate: -50% 0;
-  font-size: 9px;
+  /* In px: the letter sits over the needle of a 48 px button. */
+  font-size: 11px;
   font-weight: 600;
   line-height: 1;
   letter-spacing: 0;
@@ -192,9 +193,9 @@
   border-radius: 4px;
   background: var(--graticule-label-chip);
   color: var(--graticule-label);
-  font-size: 0.625rem;
+  font-size: var(--type-caption-size);
   line-height: 1;
-  letter-spacing: 0;
+  letter-spacing: var(--type-caption-tracking);
   white-space: nowrap;
 }
 

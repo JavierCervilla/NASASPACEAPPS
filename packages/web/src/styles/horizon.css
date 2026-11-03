@@ -87,7 +87,8 @@
 .horizon__plot {
   position: relative;
   height: 3.25rem;
-  font-size: 0.625rem;
+  font-size: var(--type-caption-size);
+  letter-spacing: var(--type-caption-tracking);
 }
 
 .horizon--card .horizon__plot {
@@ -110,7 +111,8 @@
 
 .horizon__level-label,
 .horizon__label {
-  font-size: 0.625rem;
+  font-size: var(--type-caption-size);
+  letter-spacing: var(--type-caption-tracking);
   fill: var(--text-muted);
 }
 
@@ -153,7 +155,7 @@
   position: relative;
   height: 1.1em;
   margin: -2px 0 0;
-  font-size: 0.625rem;
+  font-size: var(--type-caption-size);
   line-height: 1.1;
   letter-spacing: 0.04em;
   color: var(--text-muted);

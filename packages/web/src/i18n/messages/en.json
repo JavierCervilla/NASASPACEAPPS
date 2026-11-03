@@ -367,6 +367,7 @@
   "onFoot.caption": "Fine detail illustrative · relief LOLA {res} m",
   "onFoot.captionGeneric": "Generic lander (illustrative) · Earth: NASA Blue Marble · shadows lifted for legibility",
   "onFoot.captionApollo": "Apollo LM: NASA 3D Resources · Earth: NASA Blue Marble · shadows lifted for legibility",
+  "onFoot.captionNoLander": "Earth: NASA Blue Marble · shadows lifted for legibility",
   "onFoot.ring": "{distance} m",
   "onFoot.ridge": "Ridge {height} m · {distance} km",
   "onFoot.loading": "Loading the terrain…",

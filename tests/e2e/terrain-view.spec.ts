@@ -178,6 +178,21 @@ async function shot(page: Page, name: string): Promise<void> {
   await page.screenshot({ path: `${SHOTS}/${name}.png` });
 }
 
+/** Takes the GPU context away from the view's canvas, as a GPU process restart does. */
+const loseContext = (page: Page) => host(page).locator('canvas').evaluate((canvas) => {
+  (canvas as HTMLCanvasElement).getContext('webgl2')?.getExtension('WEBGL_lose_context')?.loseContext();
+});
+
+/** Whether `button` is on the screen and on top: its box inside the viewport and its centre's topmost element in it. */
+async function pressable(page: Page, button: ReturnType<Page['locator']>): Promise<boolean> {
+  return button.evaluate((el) => {
+    const box = el.getBoundingClientRect();
+    const inside = box.left >= 0 && box.top >= 0 && box.right <= innerWidth && box.bottom <= innerHeight;
+    const top = document.elementFromPoint(box.left + box.width / 2, box.top + box.height / 2);
+    return inside && box.width > 0 && top !== null && el.contains(top);
+  });
+}
+
 test.describe('desktop, 1440x900', () => {
   test.use({ viewport: { width: 1440, height: 900 } });
 
@@ -325,6 +340,25 @@ test.describe('desktop, 1440x900', () => {
     await expect(view(page).getByRole('status')).toContainText('Could not copy the report');
   });
 
+  // VENT-51 M2: «Report copied» belongs to one lost state; after «Try again» the next loss has copied nothing yet.
+  test('a second lost context does not say «Report copied» from the first', async ({ page, context }) => {
+    await context.grantPermissions(['clipboard-read', 'clipboard-write']);
+    await open(page, { path: `./${POINT}&quality=medium#horizon` });
+    await settled(page);
+    const lose = () => host(page).locator('canvas').evaluate((canvas) => {
+      (canvas as HTMLCanvasElement).getContext('webgl2')?.getExtension('WEBGL_lose_context')?.loseContext();
+    });
+    await lose();
+    await view(page).getByRole('button', { name: 'Copy report' }).click();
+    await expect(view(page).getByRole('status')).toContainText('Report copied');
+    await view(page).getByRole('button', { name: 'Try again' }).click();
+    await expect(host(page)).toHaveAttribute('data-tier', 'low');
+    await settled(page);
+    await lose();
+    await expect(view(page).getByRole('status')).toContainText('Terrain unavailable right now');
+    await expect(view(page).getByRole('status')).not.toContainText(/Report copied|Could not copy/);
+  });
+
   // VENT-49 part 2: a Pixel's GPU reset a while after the view opened, with the live clock re-lighting every ring each minute
   // for a Sun that moves 0.008 degrees. Only a move of 0.1 degrees lights and draws again.
   test('the live clock does not relight or draw the view each minute; a scrub of an hour does, and the trail says both', async ({ page }) => {
@@ -365,6 +399,15 @@ test.describe('desktop, 1440x900', () => {
     const settledAt = await idle(page);
     await page.waitForTimeout(1500);
     expect(await frames(page)).toBe(settledAt);
+  });
+
+  // VENT-51 L1: with the lander left out the caption must not name a lander the view does not draw.
+  test('?onfoot=lander leaves the lander out of the caption too', async ({ page }) => {
+    await open(page, { path: `./${POINT}&onfoot=lander#horizon` });
+    const caption = view(page).locator('.on-foot__caption');
+    await expect(caption).toContainText('Fine detail illustrative');
+    await expect(caption).toContainText('Earth: NASA Blue Marble');
+    await expect(caption).not.toContainText(/lander|Apollo/i);
   });
 
   test('the Sun is drawn where the profile shows it', async ({ page }) => {
@@ -484,6 +527,54 @@ test.describe('phone, 390x844', () => {
     await expect(host(page)).toHaveAttribute('data-mode', 'first');
     await idle(page);
     await shot(page, 'phone-first');
+  });
+
+  // VENT-51 A1: the phone stage fills the screen, so a notice centred on it sat under the sheet at half.
+  test('a lost context at the sheet at half says so in the band over the sheet, both buttons pressable', async ({ page }) => {
+    await open(page, { path: `./${POINT}&quality=medium#horizon` });
+    await expect(page.locator('.sheet')).toHaveAttribute('data-detent', 'half');
+    await settled(page);
+    await loseContext(page);
+    await expect(view(page).getByRole('status')).toContainText('Terrain unavailable right now');
+    const words = view(page).locator('.on-foot__status p').first();
+    const [wordsBox, sheetBox, barBox] = await Promise.all([
+      words.boundingBox(), page.locator('.sheet').boundingBox(), page.locator('.phone-bar').boundingBox()]);
+    expect(wordsBox?.y ?? -1).toBeGreaterThanOrEqual((barBox?.y ?? 0) + (barBox?.height ?? 0));
+    expect((wordsBox?.y ?? 0) + (wordsBox?.height ?? 999)).toBeLessThanOrEqual(sheetBox?.y ?? 0);
+    for (const name of ['Try again', 'Copy report']) {
+      expect(await pressable(page, view(page).getByRole('button', { name })), name).toBe(true);
+    }
+    // There was room: the sheet stays where the visitor left it.
+    await expect(page.locator('.sheet')).toHaveAttribute('data-detent', 'half');
+    await shot(page, 'phone-lost-half');
+    await view(page).getByRole('button', { name: 'Try again' }).tap();
+    await expect(host(page)).toHaveAttribute('data-tier', 'low');
+  });
+
+  // VENT-51 A2: at 200 % text the top bar grows and the half sheet rises to full, leaving no band: the sheet drops to
+  // peek so the notice shows.
+  test('a lost context at 200 % text in Spanish drops the sheet to peek so the notice and its buttons show', async ({ page }) => {
+    await open(page, { path: `./es/${POINT}&quality=medium#horizon` });
+    // The view's names are Spanish here, so it is found by its classes.
+    const stage = page.locator('.on-foot__host');
+    await expect(stage).toHaveAttribute('data-ready', 'true', { timeout: START_MS });
+    await page.evaluate(() => {
+      document.documentElement.style.fontSize = '200%';
+    });
+    await page.waitForTimeout(500);
+    await expect(page.locator('.sheet')).toHaveAttribute('data-detent', 'half');
+    await stage.locator('canvas').evaluate((canvas) => {
+      (canvas as HTMLCanvasElement).getContext('webgl2')?.getExtension('WEBGL_lose_context')?.loseContext();
+    });
+    await expect(page.locator('.on-foot__status')).toContainText('Terreno no disponible ahora');
+    await expect(page.locator('.sheet')).toHaveAttribute('data-detent', 'peek');
+    for (const name of ['Reintentar', 'Copiar informe']) {
+      const button = page.locator('.on-foot__status').getByRole('button', { name });
+      await expect.poll(() => pressable(page, button), { message: name }).toBe(true);
+    }
+    // The half sheet had risen to full, so the scrim was dark; at peek it clears, or the notice reads at half contrast.
+    await expect.poll(() => page.locator('.phone-scrim').evaluate((el) => getComputedStyle(el).opacity)).toBe('0');
+    await shot(page, 'phone-lost-es-200');
   });
 });
 

@@ -88,7 +88,7 @@ function Actions({ lost, onRetry, onCopy }: ActionsProps) {
 
 export function OnFootStatus(props: Props) {
   const { t } = useI18n();
-  const copy = useCopyReport(props.onCopyReport);
+  const copy = useCopyReport(props.onCopyReport, props.scene);
   const key = wordsOf(props);
   if (!key) return null;
   const lost = props.scene === 'lost';

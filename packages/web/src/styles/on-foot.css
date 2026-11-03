@@ -208,6 +208,25 @@
   pointer-events: none;
 }
 
+/*
+ * On a phone the stage fills the screen under the top bar and the sheet,
+ * so the notice keeps to the free band between them at any detent, as
+ * use-status-band.ts writes it; the whole stage until it is measured.
+ */
+.on-foot--phone .on-foot__status {
+  top: var(--on-foot-band-top, 0px);
+  bottom: auto;
+  height: var(--on-foot-band-height, 100%);
+}
+
+/*
+ * The band is short, and with nothing drawn the switch and the caption
+ * have nothing to act on or describe: they step aside for the notice.
+ */
+.on-foot--phone .on-foot__stage:has(> .on-foot__status) .on-foot__top {
+  visibility: hidden;
+}
+
 .on-foot__status p { margin: 0; }
 
 .on-foot__actions {

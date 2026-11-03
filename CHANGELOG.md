@@ -3,6 +3,12 @@
 ## [Sin publicar]
 
 ### Cambiado
+- Pulido de color, foco y tipografía según la guía de diseño de Apple (VENT-55, de la auditoría VENT-53): la marca del
+  idioma actual y la franja del calendario mientras carga ya no usan colores de señal; todos los controles llevan un
+  anillo de foco visible en tema claro y oscuro; con «reducir transparencia» en tema claro, el aviso y la lectura del pin
+  son legibles; con «aumentar contraste», la cabecera, las barras y la hoja del móvil son opacas y todos los paneles
+  llevan borde; el texto gris sobre vidrio gana peso; el espaciado entre letras va por tamaño de texto y ningún texto
+  baja de 11 px (salvo las pestañas del móvil por debajo de 400 px de ancho).
 - La vista 3D «Horizon» es solo en primera persona (VENT-54, decisión de Javier): abre con los ojos a 2 m del suelo,
   mirando al Sol si está cerca del cielo y, si no, a la Tierra. Se quitan el astronauta, los dos módulos de aterrizaje
   (el del Apolo y el genérico) y el selector «Third person | First person»; el pie ya solo dice «Fine detail

@@ -86,6 +86,13 @@ Every visible change follows `.claude/skills/apple-design/SKILL.md` (vendored fr
   them for decoration.
 - System font; tracking and leading change with size. Springs critically damped by default. Honour
   `prefers-reduced-motion`, `prefers-reduced-transparency` and `prefers-contrast`.
+- Colour, focus and type (VENT-55): the focus ring is `--focus-ring` (the text colour) on page surfaces and
+  `--focus-ring-on-moon` (`--marker`) only on the Moon and its sky; buttons and links without their own ring take the
+  zero-specificity `:where(button, a):focus-visible` of `global.css`. Type comes from the scale in `tokens.css`
+  (`--type-<step>-size|leading|tracking`, caption 11 px to display 28 px): tracking is set per text, never on a
+  container; nothing under 11 px except the phone tab bar under 400 px (VENT-44). More contrast makes `--chrome`,
+  `--glass-label` and `--phone-bar|sheet|tabs` opaque. Held by `tests/{style-surfaces,type-scale,focus-ring}.test.ts`
+  and `tests/e2e/colour-focus-type.spec.ts`.
 - It feels like an app, not a document (VENT-38): `body` sets `user-select: none`, `-webkit-touch-callout: none` and
   a transparent tap highlight (`src/styles/global.css`), so a long press selects no text (no Android search panel)
   and opens no iOS callout; images are not draggable. Selectable again: text fields (`input` other than range,
@@ -305,7 +312,7 @@ Every visible change follows `.claude/skills/apple-design/SKILL.md` (vendored fr
   layer of the registry and has no switch in the Layers key: the parallels at 85° S, 80° S and 70° S and the meridians
   at 0°, 45° and 90° east and west, pole to pole, are one indexed `LineSegments` of about 500 vertices at radius 1.002
   in the scene, depth-tested against the sphere so they vanish behind the limb, in a thin grey the tokens give
-  (`--graticule-line`, never a signal colour). Its labels (10 px, written by `formatAngle`, so Spanish says «90° O»)
+  (`--graticule-line`, never a signal colour). Its labels (11 px, the caption step since VENT-55, written by `formatAngle`, so Spanish says «90° O»)
   and the cross on the south pole are HTML placed after each frame, under the markers, and hidden behind the limb. Each
   label's box is the one the page draws, measured by a hidden sizer holding every label's words (`room.ts`, so it grows
   with the text size; VENT-51), moved straight in from the limb until it is 14 px inside the Moon's disc, left out

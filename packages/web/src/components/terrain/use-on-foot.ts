@@ -109,5 +109,5 @@ export function useOnFoot(parts: OnFootParts, report: Recorder) {
       startYawDeg, words };
   }, [placed, ring, sky, profile, seed, startYawDeg, bodies, i18n,
     parts.site.lat, ground.atMs]);
-  return { ...ground, input, bodies, startYawDeg };
+  return { ...ground, input, bodies, startYawDeg, profile };
 }

@@ -388,5 +388,26 @@
   "onFoot.ridgeHidesSun": "Ein {height} m hoher Grat in {distance} km verdeckt die Sonne.",
   "onFoot.ridgeHidesEarth": "Ein {height} m hoher Grat in {distance} km verdeckt die Erde.",
   "onFoot.farHidesSun": "Gelände in mehr als {distance} km verdeckt die Sonne.",
-  "onFoot.farHidesEarth": "Gelände in mehr als {distance} km verdeckt die Erde."
+  "onFoot.farHidesEarth": "Gelände in mehr als {distance} km verdeckt die Erde.",
+  "onFoot.loader.list": "Geländekacheln werden gesucht",
+  "onFoot.loader.listNote": "LOLA-Relief rund um den Punkt",
+  "onFoot.loader.near": {
+    "one": "Gelände · {done} von {n} Kachel",
+    "other": "Gelände · {done} von {n} Kacheln"
+  },
+  "onFoot.loader.nearNote": "Nahes Relief · Ringe von {near} und {mid} km",
+  "onFoot.loader.shaping": "Der Boden entsteht",
+  "onFoot.loader.shapingNote": {
+    "one": "{done} von {n} Kachel · 3D-Ansicht wird aufgebaut",
+    "other": "{done} von {n} Kacheln · 3D-Ansicht wird aufgebaut"
+  },
+  "onFoot.loader.ring": "{size}-km-Kacheln · {spacing} m",
+  "onFoot.loader.far": "Fernes Relief",
+  "onFoot.loader.farCount": {
+    "one": "{done} von {n} Kachel",
+    "other": "{done} von {n} Kacheln"
+  },
+  "onFoot.loader.farIn": "{sizes} km geladen",
+  "onFoot.loader.north": "N",
+  "onFoot.loader.body": "{body} {deg}°"
 }

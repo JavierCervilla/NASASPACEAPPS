@@ -27,7 +27,8 @@
  * One frame of the on-foot scene (VENT-34): fit the stage to its host and
  * band, aim the camera at the look, draw, place the labels, and mark on
  * the host where the Sun and the Earth fall and how many frames were
- * drawn (`data-frames`, which the tests read: an idle view draws none).
+ * drawn (`data-frames`, which the tests read: an idle view draws none);
+ * the first frame tells the panel, whose loader then hands over.
  */
 import type { FrameProbe } from '../frame-probe';
 import { stepCoast, type Coast } from '../look-coast';
@@ -86,6 +87,7 @@ export function framer(
   const labels = labelLayer(host, world.stage.camera, () => world.ground);
   const { renderer } = world.stage;
   const probe = stageProbe(renderer, world.setup.quality, hooks.onSlowFrame);
+  let first = true;
   const frame = (dt: number): boolean => {
     const coasting = coast(view, dt, hooks);
     fitStage(world.stage, host, hooks.band?.() ?? null);
@@ -95,6 +97,8 @@ export function framer(
     markBodies(world, host);
     markFrame(world, host);
     reportFrame(world, drawMs);
+    if (first) hooks.onDrawn?.();
+    first = false;
     return coasting;
   };
   return { labels, frame };

@@ -66,6 +66,6 @@ export function ViewStage(props: Props) {
       horizons={parts.horizons} tiles={parts.tiles}
       viewTier={parts.viewTier} band={band}
       bandMoves={bandMoves(() => bar.current, sheetEdge.subscribe)}
-      makeRoom={props.makeRoom} />
+      makeRoom={props.makeRoom} sheetEdge={sheetEdge} />
   );
 }

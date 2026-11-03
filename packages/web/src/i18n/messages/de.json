@@ -383,6 +383,8 @@
   "onFoot.reportNotCopied": "Der Bericht konnte nicht kopiert werden",
   "onFoot.noWebgl": "Die 3D-Ansicht kann auf diesem Gerät nicht starten",
   "onFoot.noPoint": "Dieser Ort hat keine Koordinaten zum Stehen",
+  "onFoot.compass.heading": "Blickrichtung {dir}.",
+  "onFoot.compass.press": "Drücke, um zur Anfangsansicht zurückzukehren.",
   "onFoot.help": "Ziehen oder Pfeiltasten zum Umsehen; Pos1 kehrt zur Anfangsansicht zurück.",
   "onFoot.alt": "Erste Person, Augen 2 m über dem Boden. Blickrichtung {deg}°, {dir}.",
   "onFoot.ridgeHidesSun": "Ein {height} m hoher Grat in {distance} km verdeckt die Sonne.",

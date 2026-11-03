@@ -383,6 +383,8 @@
   "onFoot.reportNotCopied": "Could not copy the report",
   "onFoot.noWebgl": "The 3D view cannot start on this device",
   "onFoot.noPoint": "This site has no coordinates to stand on",
+  "onFoot.compass.heading": "View heading {dir}.",
+  "onFoot.compass.press": "Press to look back where the view opened.",
   "onFoot.help": "Drag or use the arrow keys to look around; Home looks back where it opened.",
   "onFoot.alt": "First person, eyes 2 m above the ground. View heading {deg}°, {dir}.",
   "onFoot.ridgeHidesSun": "A ridge {height} m high, {distance} km away, hides the Sun.",

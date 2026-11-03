@@ -96,11 +96,9 @@ describe('the camera', () => {
     expect(dragLook({ yawDeg: 10, pitchDeg: 0 }, [100, 0], { yaw: 0.2, pitch: 0.1 })).toEqual({ yawDeg: 350, pitchDeg: 0 });
     expect(turnLook({ yawDeg: 0, pitchDeg: 70 }, 0, 50).pitchDeg).toBe(80);
     expect(turnLook({ yawDeg: 0, pitchDeg: -50 }, 0, -50).pitchDeg).toBe(-60);
-    const home = startLook(200);
     const look = { yawDeg: 0, pitchDeg: 0 };
-    expect(keyLook(look, { key: 'ArrowRight', shiftKey: true }, home)).toEqual({ yawDeg: 15, pitchDeg: 0 });
-    expect(keyLook(look, { key: 'Home', shiftKey: false }, home)).toBe(home);
-    expect(keyLook(look, { key: 'a', shiftKey: false }, home)).toBeNull();
+    expect(keyLook(look, { key: 'ArrowRight', shiftKey: true })).toEqual({ yawDeg: 15, pitchDeg: 0 });
+    expect(keyLook(look, { key: 'a', shiftKey: false })).toBeNull();
   });
 });
 
@@ -193,7 +191,7 @@ describe('the drag handlers', () => {
   function rig() {
     const el = Object.assign(new EventTarget(), { setPointerCapture: () => undefined }) as unknown as HTMLElement;
     const log: string[] = [];
-    const target = { look: () => ({ yawDeg: 0, pitchDeg: 0 }), home: () => ({ yawDeg: 0, pitchDeg: 0 }),
+    const target = { look: () => ({ yawDeg: 0, pitchDeg: 0 }), goHome: () => log.push('home'),
       set: () => log.push('set'), scale: () => dragScale(400, 800, 50),
       fling: (vx: number) => log.push(`fling ${Math.round(vx)}`), halt: () => log.push('halt') };
     bindLook(el, target);
@@ -207,6 +205,17 @@ describe('the drag handlers', () => {
     el.dispatchEvent(pointer('pointermove', 180, 80));
     el.dispatchEvent(pointer('pointerup', 180, 80));
     expect(log).toEqual(['halt', 'set', 'set', 'fling 1000']);
+  });
+
+  it('sends Home to the way back (VENT-63), turns on an arrow and leaves any other key to the page', () => {
+    const { el, log } = rig();
+    const keys = ['Home', 'ArrowLeft', 'a'].map((key) => {
+      const e = new Event('keydown', { cancelable: true });
+      return Object.defineProperties(e, { key: { value: key }, shiftKey: { value: false } });
+    });
+    for (const key of keys) el.dispatchEvent(key);
+    expect(log).toEqual(['home', 'set']);
+    expect(keys.map((key) => key.defaultPrevented)).toEqual([true, true, false]);
   });
 
   it('hands nothing on from a cancelled drag, and a second press halts again', () => {

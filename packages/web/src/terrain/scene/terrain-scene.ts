@@ -38,7 +38,7 @@ import { startLook } from '../view-camera';
 import { markSetup, startLoading } from './scene-loading';
 import { bindHost } from './scene-host';
 import { framer, type ViewState } from './scene-frame';
-import { controller, turner } from './scene-controller';
+import { controller, homer, turner } from './scene-controller';
 import { guardLost } from './scene-guard';
 import { reportStage } from './scene-report';
 import type {
@@ -62,7 +62,7 @@ function openScene(host: HTMLElement, input: SceneInput, hooks: SceneHooks,
   const world = stageWorld(host, input.seed, setup);
   reportStage(world);
   const home = startLook(input.startYawDeg);
-  const view: ViewState = { look: home, home, coast: null };
+  const view: ViewState = { look: home, home, coast: null, homing: null };
   const { labels, frame } = framer(world, host, hooks, view);
   const loop = createLoop(frame);
   world.invalidate = () => loop.invalidate();
@@ -90,8 +90,9 @@ export function mountTerrainScene(
 ): TerrainScene {
   const { world, view, labels, loop } = openScene(host, input, hooks, setup);
   const set = turner(view, hooks, () => loop);
+  const goHome = homer(view, set, () => loop);
   applyInput(world, input);
-  const unbind = bindHost(host, world, view, set);
+  const unbind = bindHost(host, world, view, { set, goHome });
   markSetup(host, setup);
   const unmark = startLoading(host, world, loop);
   const unwatch = guardLost({ canvas: world.stage.renderer.domElement,
@@ -99,5 +100,5 @@ export function mountTerrainScene(
   const tools = attachDevTools(world.stage.renderer);
   const teardown = freeScene({ world, labels, loop,
     steps: [tools, unwatch, unmark, unbind] });
-  return controller({ world, loop, teardown });
+  return controller({ world, loop, home: goHome, teardown });
 }

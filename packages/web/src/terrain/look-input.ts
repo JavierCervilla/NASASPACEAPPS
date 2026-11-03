@@ -27,9 +27,10 @@
  * How a drag and the keys turn the on-foot view (VENT-34): a drag turns
  * 180° across the view's width, so a full turn is two swipes on a phone and
  * on a desktop alike, and tilts one field of view over the view's height
- * (held to the pitch's range); the arrows turn 5° (Shift: 15°) and tilt 3°,
- * and Home goes back to where the view opened. A release carries the
- * finger's speed on (look-coast.ts). Pure.
+ * (held to the pitch's range); the arrows turn 5° (Shift: 15°) and tilt 3°.
+ * Home, like the compass, turns back to where the view opened on a spring
+ * (look-home.ts), so the scene handles it (scene/controls.ts). A release
+ * carries the finger's speed on (look-coast.ts). Pure.
  */
 import { turnLook, type Look } from './view-camera';
 
@@ -78,16 +79,8 @@ export interface KeyPress {
   readonly shiftKey: boolean;
 }
 
-/**
- * `look` after `press`, `home` for Home; null when the key is not the
- * view's, so the page keeps it.
- */
-export function keyLook(
-  look: Look,
-  press: KeyPress,
-  home: Look,
-): Look | null {
-  if (press.key === 'Home') return home;
+/** `look` after an arrow; null for any other key, which is not a turn. */
+export function keyLook(look: Look, press: KeyPress): Look | null {
   const arrow = ARROWS[press.key];
   if (!arrow) return null;
   const yaw = press.shiftKey ? YAW_STEP_BIG : YAW_STEP;

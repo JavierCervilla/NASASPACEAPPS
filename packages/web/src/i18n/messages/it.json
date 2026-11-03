@@ -391,6 +391,8 @@
   "onFoot.reportNotCopied": "Impossibile copiare il rapporto",
   "onFoot.noWebgl": "La vista 3D non può avviarsi su questo dispositivo",
   "onFoot.noPoint": "Questo sito non ha coordinate su cui stare",
+  "onFoot.compass.heading": "Direzione della vista {dir}.",
+  "onFoot.compass.press": "Premi per tornare alla vista iniziale.",
   "onFoot.help": "Trascina o usa le frecce per guardarti intorno; Inizio torna alla vista iniziale.",
   "onFoot.alt": "Prima persona, occhi a 2 m dal suolo. Direzione della vista {deg}°, {dir}.",
   "onFoot.ridgeHidesSun": "Una cresta di {height} m, a {distance} km, nasconde il Sole.",

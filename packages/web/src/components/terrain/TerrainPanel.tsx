@@ -41,6 +41,8 @@ import type { SceneHooks } from '../../terrain/scene/scene-types';
 import { viewAlt } from '../../terrain/view-alt';
 import stylesUrl from '../../styles/on-foot.css?url';
 import { SiteHorizon } from '../horizon/SiteHorizon';
+import { createWatchedValue, type WatchedValue }
+  from '../../lib/watched-value';
 import { useI18n } from '../i18n-context';
 import { OnFootStageArea } from './OnFootStageArea';
 import { useLoaderProps } from './loader/use-loader-props';
@@ -59,9 +61,17 @@ export interface PanelProps extends OnFootParts {
   readonly bandMoves?: BandMoves;
   /** Asks the phone's sheet to make room for the notice of a lost view. */
   readonly makeRoom?: () => void;
+  /** The phone sheet's top edge, for the compass (VENT-63); none: desktop. */
+  readonly sheetEdge?: WatchedValue<number | null>;
 }
 
-/** The view's state, its scene and the heading its text alternative says. */
+/** No sheet: the desktop's edge, never set. */
+const NO_SHEET = createWatchedValue<number | null>(null);
+
+/**
+ * The view's state, its scene, the heading its text alternative says and
+ * what its compass shows (VENT-63).
+ */
 function usePanel(props: PanelProps) {
   const report = pageReport();
   useReportRun(report, props.viewTier);
@@ -81,19 +91,21 @@ function usePanel(props: PanelProps) {
   const onCopyReport = (): Promise<boolean> => copyReport(report);
   const yawDeg = yaw ?? view.startYawDeg;
   const loader = useLoaderProps({ panel: props, view, scene });
+  const compass = { yawDeg, onHome: scene.home, sheetEdge: props.sheetEdge
+    ?? NO_SHEET, earth: view.bodies.find((body) => body.id === 'earth') };
   return { view, host, status: scene.status, drawn: scene.drawn, loader,
-    onRetry, onCopyReport, yawDeg };
+    onRetry, onCopyReport, yawDeg, compass };
 }
 
 export default function TerrainPanel(props: PanelProps) {
   const i18n = useI18n();
   const { view, host, status, drawn, loader, onRetry, onCopyReport,
-    yawDeg } = usePanel(props);
+    yawDeg, compass } = usePanel(props);
   const altId = useId();
   const alt = view.input
     ? viewAlt(i18n, { yawDeg, bodies: view.bodies }) : '';
   const area = { view, host, status, drawn, loader, onRetry, onCopyReport,
-    altId };
+    altId, compass };
   const { layout, hours } = props;
   return (
     <section className={`on-foot on-foot--${layout}`} aria-label={i18n.t('onFoot.view')}>

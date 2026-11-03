@@ -179,6 +179,11 @@
     paren mientras comprueba un fichero, y la imagen rechaza `/data//` y `/data/./` como rutas de montaje.
 
 ### Añadido
+- **Brújula en la vista Horizonte (VENT-63, variante A del lienzo con la pulsación de B).** El mismo botón redondo de
+  cristal que en el globo, en la misma esquina (en el móvil, bajo la barra superior): la rosa gira con el rumbo para que
+  la N apunte al norte real, y en el anillo solo está la Tierra, rellena si se ve y hueca si la tapan el relieve o el
+  horizonte. Al pulsarla (o con Inicio) la vista vuelve con un muelle a su rumbo inicial, al instante con movimiento
+  reducido. Su nombre accesible dice el rumbo, dónde está la Tierra y qué hace la pulsación, en los cinco idiomas.
 - Aviso de versión nueva (VENT-52): cuando la app instalada (o cualquier página con el service worker) recibe una
   versión nueva, una fila con el aspecto de la pista del pin dice «New version ready» y debajo «Tap to update» (o «Click to
   update» con ratón); tocarla recarga la misma dirección (sitio, punto y vista) y su ✕ la oculta hasta la próxima vez que

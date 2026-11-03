@@ -43,7 +43,8 @@ export interface SheetLayout {
   readonly halfPx: number;
   /**
    * Visible sheet at peek: the name and the coordinates, clear of the
-   * floating tab bar (22 px off the bottom, 61 px tall) by 12 px.
+   * floating tab bar (22 px off the bottom, 61 px tall) by 12 px; it
+   * rises for a taller head (sheet-peek.ts).
    */
   readonly peekPx: number;
   /**

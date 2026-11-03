@@ -1,0 +1,38 @@
+# Machine-readable config read by the GAMESTUDIO skills this repository carries (resolve_config in
+# .claude/hooks/yaml-helper.sh; docs/gamestudio-adoption.md). Schema: .claude/docs/effects-map.md. The source of
+# truth for the stack, rules and limits is CLAUDE.md; this file only feeds those skills.
+schema_version: 1
+
+framework:
+  version: 1.1.3
+  # GAMESTUDIO commit the curated subset was copied from (docs/gamestudio-adoption.md).
+  template_commit: 42553a8917c2ff8f2c4905707859f4795a834397
+
+modes:
+  rigor: standard
+  automation: collaborative
+
+project:
+  stage: Production
+  kind: tool
+
+engine:
+  name: Web
+  version: "2026.10"
+  language: TypeScript
+  rendering: three.js WebGL2
+  physics: none
+
+platform:
+  targets: [Web, Mobile]
+  primary_input: Touch
+  touch_support: Full
+  gamepad_support: None
+  multiplayer: false
+  online: true
+
+specialists:
+  code: typescript-specialist
+  shader: threejs-specialist
+  ui: web-specialist
+  additional: [node-server-specialist, technical-artist, ui-programmer, performance-analyst, accessibility-specialist]

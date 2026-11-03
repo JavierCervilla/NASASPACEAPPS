@@ -36,6 +36,7 @@ import {
   Scene,
   WebGLRenderer,
 } from 'three';
+import { VIEW_FOV } from '../view-fov';
 import type { SceneSetup } from './scene-types';
 
 export interface Stage {
@@ -51,9 +52,6 @@ const EXPOSURE = 1.35;
  * opens up, as a camera set for the dark would, instead of lighting it.
  */
 const DARK_EXPOSURE = 2.8;
-
-/** Vertical field of view, degrees: wider on a phone held upright. */
-const FOV = { phone: 62, wide: 50 } as const;
 
 /** A stage in a new canvas in `host`; throws without WebGL. */
 export function createStage(
@@ -78,7 +76,7 @@ export function createStage(
   renderer.shadowMap.autoUpdate = true;
   renderer.domElement.setAttribute('aria-hidden', 'true');
   host.prepend(renderer.domElement);
-  const fov = phone ? FOV.phone : FOV.wide;
+  const fov = phone ? VIEW_FOV.phone : VIEW_FOV.wide;
   const camera = new PerspectiveCamera(fov, 1, 0.2, 1_200_000);
   return { renderer, scene: new Scene(), camera };
 }

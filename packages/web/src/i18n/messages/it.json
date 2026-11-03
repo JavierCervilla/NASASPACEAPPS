@@ -396,5 +396,29 @@
   "onFoot.ridgeHidesSun": "Una cresta di {height} m, a {distance} km, nasconde il Sole.",
   "onFoot.ridgeHidesEarth": "Una cresta di {height} m, a {distance} km, nasconde la Terra.",
   "onFoot.farHidesSun": "Un rilievo a oltre {distance} km nasconde il Sole.",
-  "onFoot.farHidesEarth": "Un rilievo a oltre {distance} km nasconde la Terra."
+  "onFoot.farHidesEarth": "Un rilievo a oltre {distance} km nasconde la Terra.",
+  "onFoot.loader.list": "Ricerca dei riquadri del terreno",
+  "onFoot.loader.listNote": "Rilievo LOLA intorno al punto",
+  "onFoot.loader.near": {
+    "one": "Terreno · {done} di {n} riquadro",
+    "many": "Terreno · {done} di {n} di riquadri",
+    "other": "Terreno · {done} di {n} riquadri"
+  },
+  "onFoot.loader.nearNote": "Rilievo vicino · anelli di {near} e {mid} km",
+  "onFoot.loader.shaping": "Il suolo prende forma",
+  "onFoot.loader.shapingNote": {
+    "one": "{done} di {n} riquadro · costruzione della vista 3D",
+    "many": "{done} di {n} di riquadri · costruzione della vista 3D",
+    "other": "{done} di {n} riquadri · costruzione della vista 3D"
+  },
+  "onFoot.loader.ring": "Riquadri di {size} km · {spacing} m",
+  "onFoot.loader.far": "Rilievo lontano",
+  "onFoot.loader.farCount": {
+    "one": "{done} di {n} riquadro",
+    "many": "{done} di {n} di riquadri",
+    "other": "{done} di {n} riquadri"
+  },
+  "onFoot.loader.farIn": "{sizes} km caricati",
+  "onFoot.loader.north": "N",
+  "onFoot.loader.body": "{body} {deg}°"
 }

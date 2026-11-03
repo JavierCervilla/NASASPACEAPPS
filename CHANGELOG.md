@@ -3,6 +3,13 @@
 ## [Sin publicar]
 
 ### Cambiado
+- **Vista 3D: un cargador que ya enseña el sitio (VENT-60, variante B→A del lienzo).** Mientras llegan las 18 teselas
+  cercanas (2 y 8 km) se ve el plano desde arriba, cada tesela sombreada con sus propias alturas en su orden real, con
+  el punto, el campo de la vista y el Sol y la Tierra reales en el borde, y «Terrain · n of 18 tiles»; con las cercanas
+  dentro el plano se tumba hacia el rumbo y queda el horizonte del sitio dibujado con la cámara de la escena, con el Sol
+  y la Tierra donde los pintará, y el 3D aparece debajo sin salto. El relieve lejano sigue con un rótulo discreto «Far
+  relief · n of 18 tiles». Movimiento reducido: fundidos. Si falla, el horizonte queda atenuado con «Try again». Sin
+  WebGL ni descargas nuevas: Canvas 2D, SVG y transformaciones CSS.
 - Fix forward 9 (VENT-59):
   - La vista 3D y la ficha dicen lo mismo sobre el Sol en IM-2: manda el perfil del horizonte, el mismo que usa la
     ficha, y la cresta cercana solo dice qué lo tapa (decisión de Javier). El relieve de prueba de IM-2 se ha vuelto a

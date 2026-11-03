@@ -28,7 +28,8 @@
  * from the {@link RingSource} when the point changes (the ring route, then
  * the tiles, VENT-45's retries inside), the near ground resampled as the
  * finest two levels land, and the coarser rings left to arrive into the
- * view's store; «Try again» asks once more.
+ * view's store; «Try again» asks once more. How the tiles come is told to
+ * a progress store, for the loader (VENT-60).
  */
 import { useEffect, useMemo, useState, useSyncExternalStore } from 'react';
 import type { LatLon } from '../../lib/polar-projection';
@@ -39,6 +40,7 @@ import {
   type RingTier,
 } from '../../terrain/ring/ring-plan';
 import type { RingSource } from '../../terrain/ring/ring-source';
+import { createProgressStore } from '../../terrain/ring/progress-store';
 import { runRing, type RingState } from '../../terrain/ring/ring-session';
 import type { ViewTier } from '../../terrain/view-tier';
 
@@ -72,6 +74,7 @@ export function useRing(
 ) {
   const [state, setState] = useState<RingState>(LOADING);
   const [attempt, setAttempt] = useState(0);
+  const [progress] = useState(createProgressStore);
   const tier = useRingTier(view);
   const lat = point?.lat;
   const lonEast = point?.lonEast;
@@ -80,9 +83,9 @@ export function useRing(
     const abort = new AbortController();
     setState(LOADING);
     const run = { source, point: { lat, lonEast }, tier, breathe, note,
-      signal: abort.signal };
+      progress, signal: abort.signal };
     void runRing(run, setState);
     return () => abort.abort();
-  }, [source, lat, lonEast, tier, attempt, note]);
-  return { state, retry: () => setAttempt((n) => n + 1) };
+  }, [source, lat, lonEast, tier, attempt, note, progress]);
+  return { state, progress, retry: () => setAttempt((n) => n + 1) };
 }

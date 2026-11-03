@@ -396,5 +396,29 @@
   "onFoot.ridgeHidesSun": "Una cresta de {height} m, a {distance} km, oculta el Sol.",
   "onFoot.ridgeHidesEarth": "Una cresta de {height} m, a {distance} km, oculta la Tierra.",
   "onFoot.farHidesSun": "El terreno a más de {distance} km oculta el Sol.",
-  "onFoot.farHidesEarth": "El terreno a más de {distance} km oculta la Tierra."
+  "onFoot.farHidesEarth": "El terreno a más de {distance} km oculta la Tierra.",
+  "onFoot.loader.list": "Buscando las teselas del terreno",
+  "onFoot.loader.listNote": "Relieve LOLA alrededor del punto",
+  "onFoot.loader.near": {
+    "one": "Terreno · {done} de {n} tesela",
+    "many": "Terreno · {done} de {n} de teselas",
+    "other": "Terreno · {done} de {n} teselas"
+  },
+  "onFoot.loader.nearNote": "Relieve cercano · anillos de {near} y {mid} km",
+  "onFoot.loader.shaping": "Dando forma al suelo",
+  "onFoot.loader.shapingNote": {
+    "one": "{done} de {n} tesela · construyendo la vista 3D",
+    "many": "{done} de {n} de teselas · construyendo la vista 3D",
+    "other": "{done} de {n} teselas · construyendo la vista 3D"
+  },
+  "onFoot.loader.ring": "Teselas de {size} km · {spacing} m",
+  "onFoot.loader.far": "Relieve lejano",
+  "onFoot.loader.farCount": {
+    "one": "{done} de {n} tesela",
+    "many": "{done} de {n} de teselas",
+    "other": "{done} de {n} teselas"
+  },
+  "onFoot.loader.farIn": "{sizes} km listos",
+  "onFoot.loader.north": "N",
+  "onFoot.loader.body": "{body} {deg}°"
 }

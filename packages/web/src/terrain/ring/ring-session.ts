@@ -33,14 +33,15 @@
  * as the horizon's states (VENT-45).
  */
 import { unitOf } from './ring-frame';
-import type { RingEntry } from './ring-answer';
 import { stand, type Live } from './ring-near';
 import { finish } from './ring-nodes';
+import { NOT_LISTED, land, settle } from './ring-progress';
+import { tell, wantedBy } from './ring-wanted';
 import type { RingRun, RingState } from './ring-state';
 import { settledState } from './ring-state';
 import type { RingFeed } from './ring-source';
 import { RingStore } from './ring-store';
-import { touches, windowsFor } from './ring-window';
+import { windowsFor } from './ring-window';
 
 export type { RingRun, RingState, RingView } from './ring-state';
 export { settledState } from './ring-state';
@@ -58,9 +59,13 @@ function feedFor(
       live.store = new RingStore(scheme);
       live.windows = windowsFor(scheme, dir, run.tier.levels);
     },
-    tile: (tile) => live.store?.add(tile),
+    tile: (tile) => {
+      live.store?.add(tile);
+      tell(run, (p) => land(p, tile));
+    },
     settled: (level) => {
       run.note?.(`ring level ${level} settled`);
+      tell(run, (p) => settle(p, level));
       if (level === second) void stand(run, live, report);
     },
   };
@@ -73,11 +78,8 @@ export async function runRing(
 ): Promise<void> {
   const { point, tier, signal } = run;
   const live: Live = { store: null, windows: [], standing: false };
-  const wanted = (_scheme: string, entries: readonly RingEntry[]) =>
-    entries.filter((e) => {
-      const w = live.windows[e.level];
-      return e.level < tier.levels && w !== undefined && touches(w, e.x, e.y);
-    });
+  const wanted = wantedBy(run, live);
+  tell(run, () => NOT_LISTED);
   try {
     const request = { point, levels: tier.levels, wanted };
     await run.source.load(request, feedFor(run, live, report), signal);

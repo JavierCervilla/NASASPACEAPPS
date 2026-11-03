@@ -71,5 +71,8 @@ completa está en el documento «Ventana Lunar · Especificación y roadmap».
   contraste alto opaco, bordes que se funden al desplazar y zonas de toque de 44 px (VENT-55)
 - [x] Cambios de forma elegidos en el lienzo de la auditoría: un solo material, un solo segmentado y un solo botón
   secundario, avisos en fila, tarjeta compacta y ajustes tras un engranaje (VENT-56 → VENT-57)
+- [x] Cargador de la vista 3D que ya enseña el sitio: el plano desde arriba con cada tesela en su orden real de
+  llegada, el Sol y la Tierra en el borde, y luego el horizonte del sitio que da paso al 3D sin salto (VENT-60)
+- [ ] Variante C del cargador, el descenso, en equipos potentes (VENT-61)
 - [ ] Comparador de sitios o exportar a .ics (VENT-8)
 - [ ] Página del proyecto, vídeo de 30 s y pitch; envío antes de las 20:00 (VENT-9)

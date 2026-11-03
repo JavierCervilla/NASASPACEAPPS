@@ -98,8 +98,9 @@ Every visible change follows `.claude/skills/apple-design/SKILL.md` (vendored fr
   highlight laid over their own background, Moon dots `scale(0.9)` (`styles/press.css`). Popovers, the undo toast, the
   first-time pin hint and the offline notice leave the way they came in, with opacity, scale 0.96 and a 6 px blur, on
   `--spring` (critically damped `linear()`, in `tokens.css`) over `--dur-enter` (`styles/presence.css`: `@starting-style`
-  and `overlay`/`display` allow-discrete for popovers; `data-presence="in|out"`, kept mounted for `EXIT_MS` by
-  `usePresence` in `components/presence.ts`); a plain fade under reduced motion. The globe's pole tilt and zoom stretch
+  and `overlay`/`display` allow-discrete for popovers; `data-presence="in|out"`, kept mounted by
+  `usePresence` in `components/presence.ts` for `exitMs(reducedMotion)`: `EXIT_MS`, 400 ms, or `FADE_MS` (`--dur-fade`,
+  200 ms) under reduced motion, VENT-57); a plain fade under reduced motion. The globe's pole tilt and zoom stretch
   past their limits on the sheet's rubber band under a drag, a pinch or the wheel (`GIVE`: at most 3° of tilt, and 0.25
   or 1.5 of camera distance near or far) and settle back on the orbit's springs on release, at the pinch's end, after 150 ms of wheel rest or on a
   press that stops a flick (`src/globe/orbit-band.ts`); the keys and the framer still stop at the limit. Moving lines
@@ -111,8 +112,34 @@ Every visible change follows `.claude/skills/apple-design/SKILL.md` (vendored fr
   ref) and the `scroll-fade` class (`src/styles/scroll-fade.css`, masked only while an edge fades), the site picker, the
   language list, the phone summary and calendar, the Layers key (its inner `.globe-layers__scroll`, so the glass rim is
   never masked) and the DSN view. Controls drawn under 44 px take 44 through a pseudo-element without changing their
-  drawing (`.save-button`, `.segmented button`, `.search`, `.layer-row__label`); the rename field's row is its label,
+  drawing (`.save-button`, `.search`, `.layer-row__label`; segments are 40 px in a 44 px control and take the track's 2 px
+  through their `::after`, VENT-57); the rename field's row is its label,
   which keeps the field's focus. Held by `tests/e2e/vent-55-layout.spec.ts` and `tests/standing-cover.test.ts`.
+- Material and controls (VENT-57, the variants the human chose on the VENT-56 canvas): what floats over the Moon
+  wears the first pin hint's frosted recipe, the tokens `--float-fill`, `--float-blur` and `--float-rim` in
+  `tokens.css` (the surface fill, a 20 px blur, a 1 px inner rim; the phone bar's `--phone-tabs` and `--phone-bar-edge`
+  below 768 px): the hint, the compass, the carried pin's readout, the desktop Layers key (which left the Liquid glass)
+  and the notice rows. `styles/controls.css` holds one segmented control (the header's view tabs, the site picker's
+  regions, «Computed | Horizons | Compare»: a `--fill` track 2 px around a 40 px mark, 44 px in all, radius 12/10, the
+  mark `--segment-on`, #636366 in dark and white with `--segment-shadow` in light, text in `--text`; the phone tab bar
+  keeps its own look) and one secondary button (`.card-retry`, the strip's and the widgets' retry,
+  `.source-note__retry`, `.on-foot__retry` with the dark theme's fill on the 3D view, `.now-button`: a grey pill fully
+  rounded, 44 px, weight 600, no underline, dimmed text when disabled). «Saved» keeps «Save»'s grey pill, only its
+  bookmark fills; Play is a grey circle like the month arrows. The notices are rows in the update row's look, sharing
+  `update.css` (`.update-notice[data-shown]`, `.offline-notice[data-shown]`, `.undo-toast`, `.globe-load` and the
+  `notice-row__mark|lines|title|how` parts). Held by `tests/vent-57-controls.test.ts`, `tests/vent-57-notices.test.ts`,
+  `tests/e2e/vent-57-controls.spec.ts` and `tests/e2e/vent-57-notices.spec.ts`.
+- Card and Sites sheet (VENT-57): on the desktop card the horizon strip and «Listening on Earth» are one block
+  (`components/desktop/CardSky.tsx`): the strip, a hairline, then the small Earth beside «Listening on Earth» and one
+  flowing row (complex · place and Moon · time left), with «Next: …» under it; in the Horizon view the block holds the
+  DSN alone. «Horizons unavailable: showing the computed sky · Try again» sits under the Sunset/Earthset tiles as a row
+  of its own (`SourceDown`), and the computed caption stays at the card's end (`SourceCaption`). The phone's Sites
+  sheet starts with «Drop a pin», the search, the regions and the list; a gear beside «Done» (`.picker__gear`, 44 px,
+  named «Settings») pushes the «Settings» page (`components/phone/SettingsPage.tsx`): «‹ Landing sites», «Settings»,
+  «Done», then the «Layers» group (with the empty «Saved sites» hint) and the «Language» row grouped with the «Data
+  source» switch. The Language row pushes the language list over it (`lang.css` uses child combinators, so each push
+  hides only its own pages); Back or Escape goes back one page and returns the focus to the gear or the row
+  (`useFocusOnReturn`, `escapeTo` in `use-push.ts`). Held by `tests/e2e/vent-57-layout.spec.ts`.
 - It feels like an app, not a document (VENT-38): `body` sets `user-select: none`, `-webkit-touch-callout: none` and
   a transparent tap highlight (`src/styles/global.css`), so a long press selects no text (no Android search panel)
   and opens no iOS callout; images are not draggable. Selectable again: text fields (`input` other than range,
@@ -148,8 +175,8 @@ Every visible change follows `.claude/skills/apple-design/SKILL.md` (vendored fr
   never further off than the direction it is read from. With Horizons or Compare chosen and Horizons down, the
   «Horizons unavailable» note offers «Try again» (`src/source/month-view.ts`). The computed cache is keyed by point and range, so a moved point is computed again. A «Data source» switch,
   «Computed | Horizons | Compare» (radiogroup in the segmented control's style, never a signal colour,
-  `src/components/source/SourceSwitch.tsx`), sits under a hairline in the desktop Layers key and in the phone's Sites
-  sheet grouped with the «Language» row; default Horizons, kept in `localStorage` (`src/source/data-source.ts`).
+  `src/components/source/SourceSwitch.tsx`), sits under a hairline in the desktop Layers key and in the phone's «Settings»
+  page grouped with the «Language» row (VENT-57); default Horizons, kept in `localStorage` (`src/source/data-source.ts`).
   Computed: the simulator's hours always, for any month (no data window: the month arrows go past 2026-2027),
   dot hollow for good, card source «computed here». Horizons and Compare keep the API's window and say «Outside the
   data window» beyond it. Compare: Horizons shown, and the desktop strip and the phone Calendar sheet hatch the hours
@@ -168,7 +195,7 @@ Every visible change follows `.claude/skills/apple-design/SKILL.md` (vendored fr
   (`--pill-need`, `src/components/phone/use-pill-room.ts`, VENT-55), then the titles wrap, then a narrow pill drops
   «left», then the name, never the time: `FitLine.tsx`),
   its accessible name the full site name and the state; the sheet's head carries the site's LOLA relief thumbnail. On
-  desktop the thumbnail heads the site card, with the state badge and its frame, as a 96 px band on short windows.
+  desktop the thumbnail heads the site card, with the state badge and its frame, as a 96 px band at every height (VENT-57).
   Thumbnails exist only south of 80° S (320 px, and 640 px through `srcset` for 2x screens; rendered offline by
   `scripts/site_thumbs.py` and committed, manifest `src/thumbs/thumbs.json`, drawn by `src/components/SiteThumb.tsx`);
   a site without one shows nothing in its place. The globe framing a site (at load and on a pick in the list) turns
@@ -180,21 +207,23 @@ Every visible change follows `.claude/skills/apple-design/SKILL.md` (vendored fr
   selected marker wears a ring in its state colour that pulses three times (2.4 s each) when the selection or its
   state changes, then rests lit, so an idle page draws no frames (still under reduced motion; `src/globe/marker-ring.ts`), placed with the
   markers (`src/globe/marker-layer.ts`) and hidden with its marker. Under Save-Data
-  the globe waits for a «Load the 3D globe» button and never loads more than its start map. A hidden globe (the phone's
+  the globe waits for a «Load the 3D globe» row (`GlobeLoad.tsx`, VENT-57: a globe mark, «Load the 3D globe» over «Data
+  saver is on», the whole row one button named by its title and described by the second line) and never loads more
+  than its start map. A hidden globe (the phone's
   Horizon and DSN views, any view but the globe on desktop) keeps its stage size and draws nothing: its host reads 0 x 0,
   frames asked meanwhile draw nothing, and showing it again refits the stage and draws once with the current Sun
   (`src/globe/shown-frames.ts`, VENT-51). While hidden, a Moon map that finishes loading is not uploaded
   (`initTexture` is skipped, `moon-textures.ts` reading `ShownFrames.shown()`); the first frame drawn once the globe
   shows again uploads it (VENT-52).
-- Glass: the floating surfaces (phone top bar, sheet and tab bar; desktop header, site popover, Layers key,
+- Glass: the floating surfaces (phone top bar, sheet and tab bar; desktop header, site popover,
   calendar strip and site card) wear Liquid glass or the frosted blur; the phone's site pill, inside the top
   bar's glass, takes only the Liquid rim. Liquid refracts through a
   lens per surface: a rounded-rect displacement map that pulls the backdrop in at the edge (`src/glass/lens-map.ts`),
   added as its own filter to the inline SVG of `src/components/GlassFilter.astro` and named on the surface in
   `--glass-lens` (CSSOM), rebuilt only when the surface's layout size settles (`src/glass/lens-set.ts`); the shared
   `#glass-liquid` filter covers a surface until its lens is built (`--glass-lens` is registered non-inheriting, so a
-  surface never borrows its parent's lens; `--glass-liquid-*` tokens, `src/styles/glass.css`). On the top bar, tab bar
-  and Layers key the text sits on a feathered scrim held in from the edge, so it keeps 4.5:1 over the Moon
+  surface never borrows its parent's lens; `--glass-liquid-*` tokens, `src/styles/glass.css`). On the top bar and tab
+  bar the text sits on a feathered scrim held in from the edge, so it keeps 4.5:1 over the Moon
   while the rim still refracts. The glass gate (`src/glass/`) sets `data-glass="liquid|frosted"` on the root: Liquid only on Chromium
   with `backdrop-filter: url()` (Safari and Firefox parse it but do not draw it), at the medium or high tier, without
   reduced transparency, more contrast or Save-Data, and while a 2 s frame probe holds the tier's budget (timed at load
@@ -281,7 +310,7 @@ Every visible change follows `.claude/skills/apple-design/SKILL.md` (vendored fr
   (`components/polar/use-polar-layers.ts`). The Layers key is switches (`components/saved/LayerToggles.tsx`: a
   checkbox with `role="switch"` per row, its key mark, the whole row its label; neutral track, never a signal colour):
   «Landing sites», «Approximate zones», «Saved sites N», «Ghost rovers · soon» off and disabled; on desktop in the key
-  (which scrolls when taller than its view), on phones as a «Layers» group in the Sites sheet, where an empty «Saved
+  (which scrolls when taller than its view), on phones as a «Layers» group in the Sites sheet's «Settings» page, where an empty «Saved
   sites» row says «Drop a pin on the Moon and tap Save to keep a site here». Saving (option A,
   `components/saved/SaveControl.tsx`): «Save» with a bookmark in the head of the desktop card and of the phone sheet
   for a custom point; saved it reads «Saved» (bookmark filled; a press deletes it, with the undo) and a «Name this
@@ -306,7 +335,9 @@ Every visible change follows `.claude/skills/apple-design/SKILL.md` (vendored fr
   shared instant with its dot, the point and the check on the selected one, and a «…» menu (`RowMenu.tsx`, a WAI-ARIA
   menu in the browser's popover, on the top layer: Rename in place, Copy coordinates, said in the live region,
   Delete). A delete asks nothing: «Deleted <name> · Undo» (`UndoToast.tsx`, polite live region, 5 s, the time stopped
-  while the focus or the pointer is on it; `src/saved/undo.ts`) puts it back where it was. Deletes in a row join one
+  while the focus or the pointer is on it; `src/saved/undo.ts`) puts it back where it was. The offer is a row in the update
+  row's look with a trash mark and a bold «Undo» (VENT-57), 12 px above the calendar strip on desktop and above the tab
+  bar on the phone, both measured (`components/saved/undo-anchor.ts`, `--undo-bottom`). Deletes in a row join one
   offer, «Deleted 2 sites», whose Undo puts every one back at its index. A delete from the keyboard sends the focus to
   Undo; Undo then focuses the site put back and Escape lets the offer go and focuses the row in its place
   (`undo-parts.ts`). Pressing Undo leaves the desktop site popover open: on pointerdown the button becomes a «show»
@@ -593,8 +624,11 @@ Every visible change follows `.claude/skills/apple-design/SKILL.md` (vendored fr
   build files cache first; the network's answer always wins (a copy that cannot be kept, a full quota, is skipped), only
   ok answers are kept, a page is kept under its URL without the query string and never as a redirected answer. The
   API's answers live in `ventana-api-v1`, stamped with when they came, the 24 latest only (`src/pwa/sw-api.ts`, like
-  `hours-cache.ts`). Offline, the page shows «Offline · data from <date>» (`OfflineNotice.tsx`, under the lowest top
-  bar, measured, two lines at most), and when the network returns the hours are asked again quietly. When a new build's worker takes the page over
+  `hours-cache.ts`). Offline, the page shows a row in the update row's look (VENT-57, `OfflineNotice.tsx`, `OfflineRow.tsx`): a
+  crossed-out cloud, «Offline» over «Showing data from <date>» (each one line, the date cut with an ellipsis, so two lines
+  at most at any text size), and the hint's ✕ (`DismissButton` in `UpdateButtons.tsx`), which hides it until the app
+  goes offline again (`dismissalAfter`, `pwa/offline-status.ts`); under the lowest top bar, measured, it writes
+  `--update-row-space` like the update row, so the pin hint and the phone compass stack under it, and when the network returns the hours are asked again quietly. When a new build's worker takes the page over
   (`controllerchange` on a page that already had a controller, so never on the first install; checked with
   `registration.update()` when the app opens and on each return to the foreground, `src/pwa/update-watch.ts`), a row in
   the pin hint's look (option D among four mockups, the human's choice; `UpdateNotice.tsx`, `UpdateButtons.tsx`,

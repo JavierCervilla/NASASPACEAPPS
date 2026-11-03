@@ -93,6 +93,44 @@ describe('free band wiring (VENT-33)', () => {
     stop();
   });
 
+  it('band-watch never starts observing an anchor inside its own ResizeObserver callback (VENT-51)', () => {
+    // An element observed during a ResizeObserver delivery that is shallower than the element being delivered (the
+    // top bar and tab bar sit above the globe's host) cannot be delivered in that loop: the browser reports
+    // «ResizeObserver loop completed with undelivered notifications». New anchors are adopted on the next frame.
+    let fire = (): void => undefined;
+    const observed: unknown[] = [];
+    class RecordingObserver {
+      constructor(callback: () => void) {
+        fire = callback;
+      }
+      observe(el: unknown): void {
+        observed.push(el);
+      }
+      disconnect(): void {}
+    }
+    vi.stubGlobal('ResizeObserver', RecordingObserver);
+    const frames: (() => void)[] = [];
+    vi.stubGlobal('requestAnimationFrame', (callback: () => void) => frames.push(callback));
+    vi.stubGlobal('cancelAnimationFrame', () => undefined);
+    const band = new FreeBandWatch();
+    const host = drawn(0, 844);
+    const bar = drawn(12, 93);
+    const tabs = drawn(762, 826);
+    let present = { bar: null as HTMLElement | null, tabs: null as HTMLElement | null };
+    const stop = watchBand({ host, band, anchors: () => present, changes: () => () => undefined });
+    expect(observed).toEqual([host]);
+    present = { bar, tabs };
+    fire();
+    // Measured at once, observed only on the next frame.
+    expect(band.band()).toEqual({ top: 93, bottom: 762 });
+    expect(observed).toEqual([host]);
+    frames.splice(0).forEach((frame) => frame());
+    expect(observed).toEqual([host, bar, tabs]);
+    fire();
+    expect(frames).toEqual([]);
+    stop();
+  });
+
   it('sheet-edge hands the band the sheet\'s top edge, in the host\'s coordinates, as the sheet moves', () => {
     vi.stubGlobal('ResizeObserver', StillObserver);
     vi.stubGlobal('window', { innerHeight: 844 });

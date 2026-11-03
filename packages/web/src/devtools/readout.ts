@@ -56,6 +56,15 @@ function frameLine(frame: FrameReading): string {
   return `${fps} fps · ${ms} ms · ${PERF_TEXT.slowest} ${worst} ms`;
 }
 
+/**
+ * The folded readout's one line: the rate and the slowest frame, the two a
+ * hitch shows in. Short enough to sit over the phone's title (VENT-51).
+ */
+export function foldedLine(frame: FrameReading): string {
+  const worst = frame.worstMs.toFixed(0);
+  return `${frame.fps.toFixed(0)} fps · ${PERF_TEXT.slowest} ${worst} ms`;
+}
+
 function textureLine(stats: RenderStats): string[] {
   if (stats.textureMB === undefined) return [];
   const count = stats.textures === undefined ? '' : ` (${stats.textures})`;

@@ -66,6 +66,8 @@ export function keyToMove(
 export interface KeyTarget {
   rotate(delta: Omit<PoseDelta, 'distance'>): void;
   zoom(steps: number): void;
+  /** A wheel or trackpad zoom: it may stretch past the zoom's ends. */
+  wheel(steps: number): void;
 }
 
 /** Listens for keys on `el` (focused); returns the unbind function. */
@@ -86,7 +88,7 @@ export function bindWheel(el: HTMLElement, target: KeyTarget): () => void {
   const onWheel = (event: WheelEvent): void => {
     event.preventDefault();
     const px = event.deltaMode === 0 ? event.deltaY : event.deltaY * 40;
-    target.zoom(px / WHEEL_PX_PER_STEP);
+    target.wheel(px / WHEEL_PX_PER_STEP);
   };
   el.addEventListener('wheel', onWheel, { passive: false });
   return () => el.removeEventListener('wheel', onWheel);

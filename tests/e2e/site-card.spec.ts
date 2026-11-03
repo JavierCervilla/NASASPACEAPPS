@@ -130,6 +130,10 @@ test.describe('desktop site card and polar map, 1440x900', () => {
     await expect(im2).toHaveAttribute('aria-pressed', 'true');
     await expect(im2).toHaveAttribute('data-state', 'window');
     await expect(map(page).getByRole('button', { name: /^Haworth .*approximate zone$/ })).toBeVisible();
+    // The first pin hint in the panel's corner enters on the spring, scale 0.96 to 1 (VENT-55): the targets are
+    // measured at rest, once no transition runs in the map (the markers' pulses are animations, not transitions).
+    await expect.poll(() => map(page).evaluate((el) =>
+      el.getAnimations({ subtree: true }).filter((a) => a instanceof CSSTransition).length)).toBe(0);
     for (const box of await map(page).getByRole('button').evaluateAll((els) => els.map((el) => el.getBoundingClientRect()))) {
       expect(box.width).toBeGreaterThanOrEqual(44);
       expect(box.height).toBeGreaterThanOrEqual(44);

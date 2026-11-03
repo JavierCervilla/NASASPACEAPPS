@@ -47,7 +47,6 @@
   position: relative;
   min-width: 0;
   color: var(--text);
-  letter-spacing: -0.01em;
 }
 
 /*
@@ -94,7 +93,7 @@
 
 .site-card:has(> .site-card__scroll:focus-visible) {
   border-radius: 18px;
-  outline: 2px solid var(--text);
+  outline: 2px solid var(--focus-ring);
   outline-offset: 2px;
 }
 
@@ -119,8 +118,9 @@
 /*
  * The site's LOLA relief across the head's top (VENT-33, canvases
  * «DeskThumbH1440» and «DeskThumbH1280»), with the state's badge and the
- * ground it spans; south of 80° S only. A short window (a 720 px laptop)
- * takes a lower band, so the countdowns stay above the fold.
+ * ground it spans; south of 80° S only. A 96 px band at every height
+ * (VENT-57, canvas V-04 option C, the band a short window already took),
+ * so the countdowns and the Horizons note stay above the fold.
  */
 /* Clip, not hidden: a hidden box could shrink in the scrolling column. */
 .card-head:has(> .card-media) {
@@ -130,7 +130,7 @@
 .card-media {
   position: relative;
   flex: none;
-  height: 150px;
+  height: 96px;
   margin: -18px -18px 10px;
   background: var(--card-skeleton);
 }
@@ -230,22 +230,18 @@
   padding: 1px 6px;
   border-radius: 999px;
   background: rgba(7, 8, 11, 0.55);
-  font-size: 0.625rem;
+  font-size: var(--type-caption-size);
+  letter-spacing: var(--type-caption-tracking);
   color: rgba(242, 242, 244, 0.8);
-}
-
-@media (max-height: 800px) {
-  .card-media {
-    height: 96px;
-  }
 }
 
 .card-head__mission,
 .card-tile__label,
 .card-tile__detail,
 .card-source {
-  font-size: 0.75rem;
-  line-height: 1.35;
+  font-size: var(--type-footnote-size);
+  line-height: var(--type-footnote-leading);
+  letter-spacing: var(--type-footnote-tracking);
 }
 
 .card-head__mission,
@@ -337,6 +333,39 @@
   padding: 0 4px;
 }
 
+/*
+ * The horizon strip and the DSN row folded into one block (VENT-57,
+ * canvas V-04 option C), a hairline between them; the block clips them
+ * to its corners.
+ */
+.card-sky {
+  display: flex;
+  flex-direction: column;
+  overflow: clip;
+}
+
+.card-sky > .horizon--card + .dsn-block {
+  border-top: 1px solid var(--surface-edge);
+}
+
+/*
+ * Under the tiles, Horizons down is a row of its own: the words beside
+ * their retry, never under it, so it stays in view without scrolling.
+ */
+.site-card .source-note--down {
+  flex-wrap: nowrap;
+  justify-content: space-between;
+  padding: 4px 12px;
+  border-radius: 14px;
+  background: var(--card);
+  box-shadow: var(--strip-edge);
+}
+
+.site-card .source-note__retry {
+  flex: none;
+  white-space: nowrap;
+}
+
 .card-loading {
   display: flex;
   flex-direction: column;
@@ -368,18 +397,6 @@
   margin: 0;
 }
 
-.card-retry {
-  min-height: 44px;
-  padding: 0 16px;
-  border: 0;
-  border-radius: 12px;
-  background: var(--fill);
-  color: var(--text);
-  font: inherit;
-  font-weight: 600;
-  cursor: pointer;
-}
-
 /* Feedback on the press (apple-design §1). */
 .card-retry:active {
   transform: scale(0.97);
@@ -387,7 +404,7 @@
 }
 
 .card-retry:focus-visible {
-  outline: 2px solid var(--text);
+  outline: 2px solid var(--focus-ring);
   outline-offset: 2px;
 }
 
@@ -408,7 +425,8 @@
 }
 
 @media (prefers-contrast: more) {
-  .card-block {
+  .card-block,
+  .site-card .source-note--down {
     border: 1px solid var(--surface-edge);
   }
 
@@ -418,12 +436,6 @@
   .card-source,
   .card-facts dt {
     color: var(--text-secondary);
-  }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .card-retry:active {
-    transition: none;
   }
 }
 

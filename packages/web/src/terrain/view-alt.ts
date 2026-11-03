@@ -34,7 +34,6 @@ import { bodySentence, directionOf } from '../horizon/horizon-alt';
 import type { BodyAt } from '../horizon/strip-marks';
 import type { Blocker } from './ridge';
 import { localSize } from './ring/ring-local';
-import type { CameraMode } from './view-camera';
 import { ridgeParams } from './view-text';
 
 export interface SeenBody extends BodyAt {
@@ -58,16 +57,15 @@ function hiderSentence(i18n: I18n, body: SeenBody): string | null {
 }
 
 export interface ViewWords {
-  readonly mode: CameraMode;
   readonly yawDeg: number;
   readonly bodies: readonly SeenBody[];
 }
 
 /** The view's text alternative. */
 export function viewAlt(i18n: I18n, view: ViewWords): string {
-  const key = view.mode === 'third' ? 'onFoot.altThird' : 'onFoot.altFirst';
   const deg = i18n.number(Math.round(view.yawDeg) % 360);
-  const head = i18n.t(key, { deg, dir: directionOf(i18n, view.yawDeg) });
+  const dir = directionOf(i18n, view.yawDeg);
+  const head = i18n.t('onFoot.alt', { deg, dir });
   const lines = view.bodies.flatMap((body) => {
     const hider = hiderSentence(i18n, body);
     const seen = bodySentence(i18n, body, true);

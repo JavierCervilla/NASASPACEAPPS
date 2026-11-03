@@ -44,8 +44,17 @@
   /* Header bar, segmented control, and the glass label over the globe. */
   --chrome: rgba(18, 19, 24, 0.72);
   --fill: rgba(120, 120, 128, 0.24);
-  --fill-selected: #2c2c2e;
-  --fill-selected-shadow: none;
+  /* The segmented control's mark (VENT-57, C-16; styles/controls.css). */
+  --segment-on: #636366;
+  --segment-shadow: none;
+  /*
+   * What floats over the Moon (VENT-57, C-02): the first pin hint's frosted
+   * recipe, worn by the hint, the compass, the carried pin's readout and the
+   * desktop Layers key. On phones it takes the phone bar's fill and edge.
+   */
+  --float-fill: var(--surface);
+  --float-blur: blur(20px);
+  --float-rim: inset 0 0 0 1px var(--surface-edge);
   /* Lighter than the chrome, with a hairline: it must read over the night side. */
   --glass-label: rgba(58, 60, 68, 0.8);
   --glass-label-edge: rgba(255, 255, 255, 0.16);
@@ -59,6 +68,8 @@
   --card-skeleton: #23252c;
   /* The polar map's panel, darker than the sky so the disk stands out. */
   --map-panel: #0c0d11;
+  /* Words beside the disk: the panel stays dark in both themes (VENT-52). */
+  --polar-label: #9a9ca6;
 
   /*
    * Liquid glass (VENT-27, src/glass/): each floating surface bends what
@@ -86,6 +97,24 @@
    */
   --sky: radial-gradient(120% 90% at 50% 40%, #11131a 0%, #07080b 70%);
   --marker: #f2f2f4;
+
+  /*
+   * The globe's orientation references (VENT-50): a faint grid on the Moon,
+   * never a signal colour, and the same in both themes (the globe stays
+   * dark). The line is drawn in the scene (src/globe/graticule/scene.ts reads
+   * these two); the labels and the pole cross are HTML (styles/orientation.css).
+   * The label is white (the human's choice over grey text on a darker chip)
+   * on the canvas's rgba(28, 28, 30) chip, its opacity the least that keeps
+   * the label 4.5:1 over the brightest Moon the globe shows
+   * (tests/graticule-contrast.test.ts).
+   */
+  --graticule-line: #8e8e93;
+  --graticule-line-alpha: 0.4;
+  --graticule-label: #ffffff;
+  --graticule-label-chip: rgba(28, 28, 30, 0.61);
+  --graticule-pole: rgba(174, 174, 178, 0.75);
+  /* The compass over the globe: the round glass button's size. */
+  --compass-size: 48px;
 
   --signal-sun: #f5c542;
   --signal-earth: #4a9cff;
@@ -124,10 +153,54 @@
   --dsn-playhead: #f2f2f4;
   --dsn-on-playhead: #07080b;
 
-  /* Springs follow apple-design defaults: critically damped, response 0.3-0.4 s. */
+  /*
+   * Motion follows apple-design's defaults: entries, popovers and notices
+   * settle on a critically damped spring (damping 1.0, response 0.4 s),
+   * sampled as a CSS linear() curve; --ease-out is a plain ease for fades
+   * and colour changes, not a spring.
+   */
+  --spring: linear(0, 0.118, 0.329, 0.527, 0.682, 0.793, 0.868, 0.917, 0.949, 0.969, 0.981, 0.989, 0.993, 0.996, 0.998, 0.999, 1);
   --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
   --dur-press: 100ms;
   --dur-enter: 400ms;
+  /* The reduced-motion fade; components/presence.ts waits as long. */
+  --dur-fade: 200ms;
+
+  /*
+   * The focus ring (VENT-55): the text colour on the page's surfaces, so it
+   * is dark on light glass and light on dark; the markers' white only on
+   * the Moon and its sky, which stay dark in both themes.
+   */
+  --focus-ring: var(--text);
+  --focus-ring-on-moon: var(--marker);
+
+  /*
+   * The type scale (apple-design §15): size, leading and tracking as one
+   * set. Tracking is size-specific: slightly positive on small text, near 0
+   * on body, negative as the size grows; leading tightens with it. Set it
+   * per text, never on a container, where every size would inherit one.
+   */
+  --type-caption-size: 0.6875rem;
+  --type-caption-leading: 1.35;
+  --type-caption-tracking: 0.01em;
+  --type-footnote-size: 0.75rem;
+  --type-footnote-leading: 1.35;
+  --type-footnote-tracking: 0.005em;
+  --type-subhead-size: 0.8125rem;
+  --type-subhead-leading: 1.35;
+  --type-subhead-tracking: 0;
+  --type-body-size: 0.9375rem;
+  --type-body-leading: 1.35;
+  --type-body-tracking: -0.01em;
+  --type-headline-size: 1.0625rem;
+  --type-headline-leading: 1.25;
+  --type-headline-tracking: -0.022em;
+  --type-title-size: 1.5rem;
+  --type-title-leading: 1.15;
+  --type-title-tracking: -0.025em;
+  --type-display-size: 1.75rem;
+  --type-display-leading: 1.1;
+  --type-display-tracking: -0.03em;
 
   --space-1: 0.25rem;
   --space-2: 0.5rem;
@@ -152,8 +225,8 @@
 
     --chrome: rgba(242, 242, 247, 0.78);
     --fill: rgba(120, 120, 128, 0.12);
-    --fill-selected: #ffffff;
-    --fill-selected-shadow: 0 1px 3px rgba(0, 0, 0, 0.12);
+    --segment-on: #ffffff;
+    --segment-shadow: 0 1px 3px rgba(0, 0, 0, 0.12);
     --glass-label: rgba(255, 255, 255, 0.86);
     --glass-label-edge: rgba(0, 0, 0, 0.08);
     --glass-label-text: #1c1c1e;
@@ -182,11 +255,27 @@
   }
 }
 
+/* Phones: what floats over the Moon takes the phone bar's glass (phone.css). */
+@media (max-width: 767.98px) {
+  :root {
+    --float-fill: var(--phone-tabs);
+    --float-rim: var(--phone-bar-edge);
+  }
+}
+
+/*
+ * More contrast (apple-design §14): near-solid chrome with a contrasting
+ * border (the surfaces that take it are listed per stylesheet, under
+ * prefers-contrast: more).
+ */
 @media (prefers-contrast: more) {
   :root {
+    --polar-label: #c9cad1;
     --surface: #15161b;
     --surface-edge: rgba(255, 255, 255, 0.5);
     --text-muted: #c9cad1;
+    --chrome: #101116;
+    --glass-label: #2e3036;
   }
 }
 
@@ -203,6 +292,8 @@
     --surface: #ffffff;
     --surface-edge: rgba(0, 0, 0, 0.6);
     --text-muted: #3a3a3c;
+    --chrome: #f2f2f7;
+    --glass-label: #ffffff;
   }
 }
 

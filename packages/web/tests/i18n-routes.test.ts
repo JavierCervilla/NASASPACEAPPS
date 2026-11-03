@@ -136,8 +136,11 @@ describe('the kept choice and the switch', () => {
   it('opens the chosen locale on the same view, and keeps the choice', () => {
     const storage = memoryStorage();
     const assign = vi.fn();
-    switchLocale('/', 'fr', { storage, location: { search: '', hash: '#polar-map', assign } });
+    const leaving = vi.fn();
+    switchLocale('/', 'fr', { storage, location: { search: '', hash: '#polar-map', assign }, leaving });
     expect(assign).toHaveBeenCalledWith('/fr/#polar-map');
+    expect(leaving).toHaveBeenCalledOnce();
+    expect(leaving.mock.invocationCallOrder[0]).toBeLessThan(assign.mock.invocationCallOrder[0] ?? 0);
     expect(storage.items.get(CHOICE_KEY)).toBe('fr');
     expect(localeHref('/', 'en', { search: '', hash: '' })).toBe('/');
   });

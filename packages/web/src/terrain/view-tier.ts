@@ -31,10 +31,12 @@
  * down one rung when a slow frame says so, drops to `low` after a lost
  * context, and is kept for the session (view-tier-memory.ts). A tier the
  * address forced (`?quality=`) is never stepped down, so the tests stay
- * deterministic; only a lost context overrides it.
+ * deterministic; only a lost context overrides it. A page that died with
+ * the view open starts the next page's a rung lower (view-tier-open.ts).
  */
 import type { Tier } from '../lib/quality';
 import { keepTier } from './view-tier-memory';
+import { openMarks, type OpenMarks } from './view-tier-open';
 import {
   begin,
   lowerRung,
@@ -44,7 +46,7 @@ import {
   type ViewTierState,
 } from './view-tier-state';
 
-export interface ViewTier {
+export interface ViewTier extends OpenMarks {
   /** The same object until the tier changes. */
   readonly get: () => ViewTierState;
   /** One rung down, unless forced or already at the lowest. */
@@ -77,5 +79,6 @@ export function createViewTier(options: ViewTierOptions): ViewTier {
       listeners.add(listener);
       return () => void listeners.delete(listener);
     },
+    ...openMarks(now),
   };
 }

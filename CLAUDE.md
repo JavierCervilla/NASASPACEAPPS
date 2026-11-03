@@ -86,6 +86,60 @@ Every visible change follows `.claude/skills/apple-design/SKILL.md` (vendored fr
   them for decoration.
 - System font; tracking and leading change with size. Springs critically damped by default. Honour
   `prefers-reduced-motion`, `prefers-reduced-transparency` and `prefers-contrast`.
+- Colour, focus and type (VENT-55): the focus ring is `--focus-ring` (the text colour) on page surfaces and
+  `--focus-ring-on-moon` (`--marker`) only on the Moon and its sky; buttons and links without their own ring take the
+  zero-specificity `:where(button, a):focus-visible` of `global.css`. Type comes from the scale in `tokens.css`
+  (`--type-<step>-size|leading|tracking`, caption 11 px to display 28 px): tracking is set per text, never on a
+  container; nothing under 11 px except the phone tab bar under 400 px (VENT-44). More contrast makes `--chrome`,
+  `--glass-label` and `--phone-bar|sheet|tabs` opaque. Held by `tests/{style-surfaces,type-scale,focus-ring}.test.ts`
+  and `tests/e2e/colour-focus-type.spec.ts`.
+- Press and motion (VENT-55): every control answers on pointer-down, the same under reduced motion (no `:active` rule
+  sits inside a `prefers-reduced-motion` query): buttons `scale(0.97)` over `--dur-press`, rows and segments a `--fill`
+  highlight laid over their own background, Moon dots `scale(0.9)` (`styles/press.css`). Popovers, the undo toast, the
+  first-time pin hint and the offline notice leave the way they came in, with opacity, scale 0.96 and a 6 px blur, on
+  `--spring` (critically damped `linear()`, in `tokens.css`) over `--dur-enter` (`styles/presence.css`: `@starting-style`
+  and `overlay`/`display` allow-discrete for popovers; `data-presence="in|out"`, kept mounted by
+  `usePresence` in `components/presence.ts` for `exitMs(reducedMotion)`: `EXIT_MS`, 400 ms, or `FADE_MS` (`--dur-fade`,
+  200 ms) under reduced motion, VENT-57); a plain fade under reduced motion. The globe's pole tilt and zoom stretch
+  past their limits on the sheet's rubber band under a drag, a pinch or the wheel (`GIVE`: at most 3° of tilt, and 0.25
+  or 1.5 of camera distance near or far) and settle back on the orbit's springs on release, at the pinch's end, after 150 ms of wheel rest or on a
+  press that stops a flick (`src/globe/orbit-band.ts`); the keys and the framer still stop at the limit. Moving lines
+  (the strip's instant line, the phone calendar's line, the DSN playhead) ride `.rail--x|--y` translated by their share
+  (`styles/rail.css`), and the phone compass moves by `translate`. Held by `tests/press-motion-css.test.ts`,
+  `tests/globe-rubber.test.ts` and `tests/e2e/press-motion.spec.ts`.
+- Scroll and targets (VENT-55): everything that scrolls fades the edge it hides content past (apple-design §12): the
+  desktop card (`use-scroll-edges.ts`) and, through `useScrollFade` (`src/components/use-scroll-fade.ts`, a callback
+  ref) and the `scroll-fade` class (`src/styles/scroll-fade.css`, masked only while an edge fades), the site picker, the
+  language list, the phone summary and calendar, the Layers key (its inner `.globe-layers__scroll`, so the glass rim is
+  never masked) and the DSN view. Controls drawn under 44 px take 44 through a pseudo-element without changing their
+  drawing (`.save-button`, `.search`, `.layer-row__label`; segments are 40 px in a 44 px control and take the track's 2 px
+  through their `::after`, VENT-57); the rename field's row is its label,
+  which keeps the field's focus. Held by `tests/e2e/vent-55-layout.spec.ts` and `tests/standing-cover.test.ts`.
+- Material and controls (VENT-57, the variants the human chose on the VENT-56 canvas): what floats over the Moon
+  wears the first pin hint's frosted recipe, the tokens `--float-fill`, `--float-blur` and `--float-rim` in
+  `tokens.css` (the surface fill, a 20 px blur, a 1 px inner rim; the phone bar's `--phone-tabs` and `--phone-bar-edge`
+  below 768 px): the hint, the compass, the carried pin's readout, the desktop Layers key (which left the Liquid glass)
+  and the notice rows. `styles/controls.css` holds one segmented control (the header's view tabs, the site picker's
+  regions, «Computed | Horizons | Compare»: a `--fill` track 2 px around a 40 px mark, 44 px in all, radius 12/10, the
+  mark `--segment-on`, #636366 in dark and white with `--segment-shadow` in light, text in `--text`; the phone tab bar
+  keeps its own look) and one secondary button (`.card-retry`, the strip's and the widgets' retry,
+  `.source-note__retry`, `.on-foot__retry` with the dark theme's fill on the 3D view, `.now-button`: a grey pill fully
+  rounded, 44 px, weight 600, no underline, dimmed text when disabled). «Saved» keeps «Save»'s grey pill, only its
+  bookmark fills; Play is a grey circle like the month arrows. The notices are rows in the update row's look, sharing
+  `update.css` (`.update-notice[data-shown]`, `.offline-notice[data-shown]`, `.undo-toast`, `.globe-load` and the
+  `notice-row__mark|lines|title|how` parts). Held by `tests/vent-57-controls.test.ts`, `tests/vent-57-notices.test.ts`,
+  `tests/e2e/vent-57-controls.spec.ts` and `tests/e2e/vent-57-notices.spec.ts`.
+- Card and Sites sheet (VENT-57): on the desktop card the horizon strip and «Listening on Earth» are one block
+  (`components/desktop/CardSky.tsx`): the strip, a hairline, then the small Earth beside «Listening on Earth» and one
+  flowing row (complex · place and Moon · time left), with «Next: …» under it; in the Horizon view the block holds the
+  DSN alone. «Horizons unavailable: showing the computed sky · Try again» sits under the Sunset/Earthset tiles as a row
+  of its own (`SourceDown`), and the computed caption stays at the card's end (`SourceCaption`). The phone's Sites
+  sheet starts with «Drop a pin», the search, the regions and the list; a gear beside «Done» (`.picker__gear`, 44 px,
+  named «Settings») pushes the «Settings» page (`components/phone/SettingsPage.tsx`): «‹ Landing sites», «Settings»,
+  «Done», then the «Layers» group (with the empty «Saved sites» hint) and the «Language» row grouped with the «Data
+  source» switch. The Language row pushes the language list over it (`lang.css` uses child combinators, so each push
+  hides only its own pages); Back or Escape goes back one page and returns the focus to the gear or the row
+  (`useFocusOnReturn`, `escapeTo` in `use-push.ts`). Held by `tests/e2e/vent-57-layout.spec.ts`.
 - It feels like an app, not a document (VENT-38): `body` sets `user-select: none`, `-webkit-touch-callout: none` and
   a transparent tap highlight (`src/styles/global.css`), so a long press selects no text (no Android search panel)
   and opens no iOS callout; images are not draggable. Selectable again: text fields (`input` other than range,
@@ -121,8 +175,8 @@ Every visible change follows `.claude/skills/apple-design/SKILL.md` (vendored fr
   never further off than the direction it is read from. With Horizons or Compare chosen and Horizons down, the
   «Horizons unavailable» note offers «Try again» (`src/source/month-view.ts`). The computed cache is keyed by point and range, so a moved point is computed again. A «Data source» switch,
   «Computed | Horizons | Compare» (radiogroup in the segmented control's style, never a signal colour,
-  `src/components/source/SourceSwitch.tsx`), sits under a hairline in the desktop Layers key and in the phone's Sites
-  sheet grouped with the «Language» row; default Horizons, kept in `localStorage` (`src/source/data-source.ts`).
+  `src/components/source/SourceSwitch.tsx`), sits under a hairline in the desktop Layers key and in the phone's «Settings»
+  page grouped with the «Language» row (VENT-57); default Horizons, kept in `localStorage` (`src/source/data-source.ts`).
   Computed: the simulator's hours always, for any month (no data window: the month arrows go past 2026-2027),
   dot hollow for good, card source «computed here». Horizons and Compare keep the API's window and say «Outside the
   data window» beyond it. Compare: Horizons shown, and the desktop strip and the phone Calendar sheet hatch the hours
@@ -137,28 +191,39 @@ Every visible change follows `.claude/skills/apple-design/SKILL.md` (vendored fr
   top bar's subtitle is the legend's rule, «Sun + Earth = window», each word in its signal colour (`--bar-*-ink`,
   deeper on the light bar for 4.5:1), and the site pill shows the short name over the state at the shared instant with
   its time left in its colour («Window · 7 d left», «Sun · …», «Earth · …», «Neither · …»; `src/phone/site-state.ts`;
-  the titles wrap first, then a narrow pill drops «left», then the name, never the time: `FitLine.tsx`),
+  a long site name in the pill ends in an ellipsis first, since the bar keeps the pill its state's longest line
+  (`--pill-need`, `src/components/phone/use-pill-room.ts`, VENT-55), then the titles wrap, then a narrow pill drops
+  «left», then the name, never the time: `FitLine.tsx`),
   its accessible name the full site name and the state; the sheet's head carries the site's LOLA relief thumbnail. On
-  desktop the thumbnail heads the site card, with the state badge and its frame, as a 96 px band on short windows.
+  desktop the thumbnail heads the site card, with the state badge and its frame, as a 96 px band at every height (VENT-57).
   Thumbnails exist only south of 80° S (320 px, and 640 px through `srcset` for 2x screens; rendered offline by
   `scripts/site_thumbs.py` and committed, manifest `src/thumbs/thumbs.json`, drawn by `src/components/SiteThumb.tsx`);
   a site without one shows nothing in its place. The globe framing a site (at load and on a pick in the list) turns
   just enough to land it in the free band between the phone's top bar and the sheet's top edge, or the tab bar below
   it (`src/globe/free-band.ts`, `src/globe/site-aim.ts`, `src/globe/site-framer.ts`), and again on the orbit's springs
-  when the band moves, until the user moves the globe. The
+  when the band moves, until the user moves the globe. The band's watcher (`src/globe/band-watch.ts`) starts observing a
+  bar it finds inside its own ResizeObserver callback on the next frame, never there: that raised «ResizeObserver loop
+  completed with undelivered notifications» on every phone load (VENT-51). The
   selected marker wears a ring in its state colour that pulses three times (2.4 s each) when the selection or its
   state changes, then rests lit, so an idle page draws no frames (still under reduced motion; `src/globe/marker-ring.ts`), placed with the
   markers (`src/globe/marker-layer.ts`) and hidden with its marker. Under Save-Data
-  the globe waits for a «Load the 3D globe» button and never loads more than its start map.
-- Glass: the floating surfaces (phone top bar, sheet and tab bar; desktop header, site popover, Layers key,
+  the globe waits for a «Load the 3D globe» row (`GlobeLoad.tsx`, VENT-57: a globe mark, «Load the 3D globe» over «Data
+  saver is on», the whole row one button named by its title and described by the second line) and never loads more
+  than its start map. A hidden globe (the phone's
+  Horizon and DSN views, any view but the globe on desktop) keeps its stage size and draws nothing: its host reads 0 x 0,
+  frames asked meanwhile draw nothing, and showing it again refits the stage and draws once with the current Sun
+  (`src/globe/shown-frames.ts`, VENT-51). While hidden, a Moon map that finishes loading is not uploaded
+  (`initTexture` is skipped, `moon-textures.ts` reading `ShownFrames.shown()`); the first frame drawn once the globe
+  shows again uploads it (VENT-52).
+- Glass: the floating surfaces (phone top bar, sheet and tab bar; desktop header, site popover,
   calendar strip and site card) wear Liquid glass or the frosted blur; the phone's site pill, inside the top
   bar's glass, takes only the Liquid rim. Liquid refracts through a
   lens per surface: a rounded-rect displacement map that pulls the backdrop in at the edge (`src/glass/lens-map.ts`),
   added as its own filter to the inline SVG of `src/components/GlassFilter.astro` and named on the surface in
   `--glass-lens` (CSSOM), rebuilt only when the surface's layout size settles (`src/glass/lens-set.ts`); the shared
   `#glass-liquid` filter covers a surface until its lens is built (`--glass-lens` is registered non-inheriting, so a
-  surface never borrows its parent's lens; `--glass-liquid-*` tokens, `src/styles/glass.css`). On the top bar, tab bar
-  and Layers key the text sits on a feathered scrim held in from the edge, so it keeps 4.5:1 over the Moon
+  surface never borrows its parent's lens; `--glass-liquid-*` tokens, `src/styles/glass.css`). On the top bar and tab
+  bar the text sits on a feathered scrim held in from the edge, so it keeps 4.5:1 over the Moon
   while the rim still refracts. The glass gate (`src/glass/`) sets `data-glass="liquid|frosted"` on the root: Liquid only on Chromium
   with `backdrop-filter: url()` (Safari and Firefox parse it but do not draw it), at the medium or high tier, without
   reduced transparency, more contrast or Save-Data, and while a 2 s frame probe holds the tier's budget (timed at load
@@ -171,7 +236,9 @@ Every visible change follows `.claude/skills/apple-design/SKILL.md` (vendored fr
   (`src/pin/place-gesture.ts`, bound on each drop surface's element): a click on the globe or the polar disk drops it
   on the point under it (a mouse or a pen); a finger held still for 450 ms (`HOLD_MS`, `src/pin/place-press.ts`) lifts
   it under the finger, to drop in place or drag on, where it rides 64 px above the finger once the finger travels
-  (`heldOffset`, `src/pin/carry-geometry.ts`). A press that travels 4 px or more turns the globe and drops no pin (one
+  (`heldOffset`, `src/pin/carry-geometry.ts`). A hold timer that fires more than 250 ms late (`HOLD_LATE_MS`,
+  `src/pin/hold-timer.ts`, a busy main thread) waits the whole hold again, counting only the stillness the page saw, so
+  a drag the browser had queued ends the press instead of lifting a pin (VENT-52). A press that travels 4 px or more turns the globe and drops no pin (one
   constant and one comparison for both, `PRESS_SLOP_PX` and `pastSlop` in `src/lib/press-slop.ts`), and a short tap
   does nothing; a press on a globe still coasting from a flick stops it where it is, like Maps, and drops or lifts no
   pin (`src/globe/flick-coast.ts`: the globe marks that `pointerdown` handled); a press on a site marker or a button is theirs (the marker wins); a second finger is a pinch. Once a
@@ -213,14 +280,9 @@ Every visible change follows `.claude/skills/apple-design/SKILL.md` (vendored fr
   globe and in the polar panel's corner on desktop, under the top bar on phones (measured); on desktop it keeps to the room
   right of the Layers key's column (in rem, so it holds at 200 % text), centred over the globe and in the polar
   panel's top right corner, so it never covers the key; gone after the first drop
-  or its ✕, kept in `localStorage` (`ventana.pinHint`, refused storage only brings it back next visit). The
-  astronaut came back in VENT-34's on-foot view (below), which loads its own model (a rigged Meshy figure) only when
-  that view opens. NASA's «Astronaut» model (`packages/web/models/astronaut.glb` and its suit
-  texture `astronaut-suit.webp`, built by `packages/web/scripts/astronaut.mjs`: arms lowered, the NASA insignia and
-  the mission patch covered with fabric, the US flags kept) now only feeds the offline bake, `scripts/astronaut-figures.mjs`
-  (Playwright's Chromium pinned to SwiftShader, byte-stable; `--check` re-bakes and compares), into the lossless
-  sprite sheet `src/astronaut/figures.webp` (77 kB, manifest `figures.json`, held by
-  `tests/astronaut-figures.test.ts`): two poses times five visor colours. The desktop Layers key is a 17rem column
+  or its ✕, kept in `localStorage` (`ventana.pinHint`, refused storage only brings it back next visit). The old
+  astronaut (NASA's «Astronaut» model, its offline bake into a sprite sheet and the build dependencies only it used)
+  was deleted in VENT-58: nothing has read it since VENT-37 and VENT-54. The desktop Layers key is a 17rem column
   (`--layers-w`) clear of the globe's Moon, and the polar disk is fitted beside the keys in its panel
   (`src/polar/disk-fit.ts`). The Moon's maps are sampled by sphere point, not by the vertices' UVs
   (`src/globe/pole-uv.ts`), so the south pole shows no star; its gradient choices (the 180° seam, the polar cap) are
@@ -234,13 +296,17 @@ Every visible change follows `.claude/skills/apple-design/SKILL.md` (vendored fr
   its own stacking context at z-index 0) and registers the two site layers on it (`site-layers.ts`: «Landing sites»
   and «Approximate zones» show or hide their kind on the one marker layer, which keeps its cull and nearest-dot
   clicks; the selected site's marker always shows). `pointLayer` (`point-layer.ts`) draws a layer's points as 44 px
-  buttons (`.globe-point`), hidden behind the limb, a click routed to the point nearest the pointer. The flags are
+  buttons (`.globe-point`), hidden behind the limb, a click routed to the point nearest the pointer. A renderer may report what it covers (`covers()`, `LayerCover`;
+  `pointLayer`'s `coverPx`): `bindLayers.place` returns the shown layers' covers and the graticule's labels keep clear of
+  them (`clearOf`, `graticule/place.ts`), so they avoid the saved sites' silver pins (`SAVED_PIN_RADIUS_PX` 7, VENT-52) and the standing pin's ring, which a
+  cover-only layer declares (`coverLayer`, `src/globe/layers/cover-layer.ts`, registered by `use-standing-cover.ts` at
+  `RING_RADIUS_PX`; VENT-55). The flags are
   kept in `localStorage` (`ventana.layers`, read defensively by `kept-flags.ts`; each write starts from what storage
   holds, and another tab's switch is taken in on the `storage` event, `applyFlags`) and the polar map follows them
   (`components/polar/use-polar-layers.ts`). The Layers key is switches (`components/saved/LayerToggles.tsx`: a
   checkbox with `role="switch"` per row, its key mark, the whole row its label; neutral track, never a signal colour):
   «Landing sites», «Approximate zones», «Saved sites N», «Ghost rovers · soon» off and disabled; on desktop in the key
-  (which scrolls when taller than its view), on phones as a «Layers» group in the Sites sheet, where an empty «Saved
+  (which scrolls when taller than its view), on phones as a «Layers» group in the Sites sheet's «Settings» page, where an empty «Saved
   sites» row says «Drop a pin on the Moon and tap Save to keep a site here». Saving (option A,
   `components/saved/SaveControl.tsx`): «Save» with a bookmark in the head of the desktop card and of the phone sheet
   for a custom point; saved it reads «Saved» (bookmark filled; a press deletes it, with the undo) and a «Name this
@@ -265,7 +331,9 @@ Every visible change follows `.claude/skills/apple-design/SKILL.md` (vendored fr
   shared instant with its dot, the point and the check on the selected one, and a «…» menu (`RowMenu.tsx`, a WAI-ARIA
   menu in the browser's popover, on the top layer: Rename in place, Copy coordinates, said in the live region,
   Delete). A delete asks nothing: «Deleted <name> · Undo» (`UndoToast.tsx`, polite live region, 5 s, the time stopped
-  while the focus or the pointer is on it; `src/saved/undo.ts`) puts it back where it was. Deletes in a row join one
+  while the focus or the pointer is on it; `src/saved/undo.ts`) puts it back where it was. The offer is a row in the update
+  row's look with a trash mark and a bold «Undo» (VENT-57), 12 px above the calendar strip on desktop and above the tab
+  bar on the phone, both measured (`components/saved/undo-anchor.ts`, `--undo-bottom`). Deletes in a row join one
   offer, «Deleted 2 sites», whose Undo puts every one back at its index. A delete from the keyboard sends the focus to
   Undo; Undo then focuses the site put back and Escape lets the offer go and focuses the row in its place
   (`undo-parts.ts`). Pressing Undo leaves the desktop site popover open: on pointerdown the button becomes a «show»
@@ -276,6 +344,41 @@ Every visible change follows `.claude/skills/apple-design/SKILL.md` (vendored fr
   selection is always marked. Under the picker's title everything scrolls as one (`.picker__scroll`), so the phone
   sheet's settings never squeeze the list. The site popover opens and closes its list only on its own toggle, not on
   a nested menu's.
+- **Orientation on the globe** (VENT-50, canvas «A + full graticule, discreet», the human's decision). The globe keeps
+  north up, so the **compass** (`src/components/compass/CompassButton.tsx`) is a 48 px glass button (`--compass-size`)
+  in the globe's top right corner, on phones under the glass top bar and under the first-time hint while it shows
+  (measured, `compass-top.ts`; on desktop the hint keeps clear of it, `pin.css`); while the phone sheet's top edge
+  covers any of it (at 200 % text the half sheet reaches the full detent) it is marked `data-covered` and leaves view
+  and the tab order, coming back as the sheet goes down (`compassCovered`, `use-compass-top.ts`, fed by the sheet edge,
+  VENT-51). Its needle is fixed, with a small
+  «N», and an Earth mark rides its ring in the screen direction from the Moon's centre to the sub-Earth point at the
+  shared instant (`earthMark`, `src/globe/earth-mark.ts`: the screen's axes from the camera's position alone), hollow
+  while that point is behind the limb of the whole Moon as the opening zoom shows it (a zoom does not turn the Moon, so
+  it never hides the Earth; `LIMB_DISTANCE`, VENT-51), then at the direction it hides in. After each drawn frame the angle goes to the
+  button as `--earth-angle` and `data-far`, with no re-render; the component hears only when the mark moves to another
+  of eight places, which its accessible name says with what a press does (`compass-name.ts`, `compass.*` messages). A
+  press brings the globe back to its opening view: `SOUTH_POLE_VIEW`, framed for the selected site in the free band,
+  on the orbit's springs and at once under reduced motion (`SiteFramer.home`; the globe hands the page its
+  `GlobeCompass` through `onCompass`, `src/globe/compass-link.ts`). The **graticule** (`src/globe/graticule/`) is no
+  layer of the registry and has no switch in the Layers key: the parallels at 85° S, 80° S and 70° S and the meridians
+  at 0°, 45° and 90° east and west, pole to pole, are one indexed `LineSegments` of about 500 vertices at radius 1.002
+  in the scene, depth-tested against the sphere so they vanish behind the limb, in a thin grey the tokens give
+  (`--graticule-line`, never a signal colour). Its labels (11 px, the caption step since VENT-55, written by `formatAngle`, so Spanish says «90° O»)
+  and the cross on the south pole are HTML placed after each frame, under the markers, and hidden behind the limb. Each
+  label's box is the one the page draws, measured by a hidden sizer holding every label's words (`room.ts`, so it grows
+  with the text size; VENT-51), moved straight in from the limb until it is 14 px inside the Moon's disc, left out
+  unless it is whole 8 px inside the globe's view (`disk.ts`: the zoomed-in Moon outgrows the view), and left
+  out when it would touch a site marker, the selected site's ring or a label placed before it (`clearance.ts`,
+  `place.ts`); a parallel may stand on any meridian every 15°, takes the one with the widest gap from the markers and
+  keeps it while it stays clear, so labels do not hop as the globe turns. With the eight curated sites near the pole,
+  the 85° S label has no room at the opening zoom and shows from about 3.5 radii. An idle globe still draws no
+  frames. The label is white on a chip 0.61 opaque (the canvas had grey text on 0.44; the human chose white text over a
+  0.84 chip for grey): the least that keeps the text 4.5:1 over the brightest texel the Moon maps hold, which is white (the 2K, 4K and 8K LROC maps reach 255, 255, 255 and the Sun lights a
+  texel at most 1.02 times, `tests/graticule-contrast.test.ts`). The globe's label rules in `orientation.css` are scoped under `.globe-graticule`; the bare `.graticule-label` belongs
+  to the polar map (`polar.css`): unscoped, the globe's rules loaded later and piled the polar map's five labels in its
+  corner; on the panel, dark in both themes, they take `--polar-label` (4.5:1 in every theme and contrast,
+  `tests/polar-label-contrast.test.ts`) (VENT-52, `tests/graticule-label-css.test.ts`, `tests/e2e/polar-graticule.spec.ts`). Held by
+  `tests/globe-compass.test.ts`, `tests/globe-graticule.test.ts` and `tests/e2e/globe-orientation.spec.ts`.
 - **Sites in permanent shadow** (VENT-39, canvas option B, the human's decision). NASA's illumination maps (PGDA
   product 69, LRO LOLA, Mazarico et al. 2011; sources, sha256 and the scales read from the PDS labels in `ASSETS.md`)
   put four approximate sites on a permanently shadowed crater floor: Shackleton (`change7-target`), Haworth, de
@@ -295,7 +398,9 @@ Every visible change follows `.claude/skills/apple-design/SKILL.md` (vendored fr
   one line (or stands alone with Horizons): «Sun from NASA's permanent-shadow map (LRO LOLA, Mazarico 2011)». The
   phone's half sheet rises (never under its 344 px) until the summary's lowest line
   (`data-sheet-fit`, measured from the content's bottom) clears the tab bar by 12 px, at any width, language and text
-  size (`src/sheet/sheet-lift.ts`); when even the full detent is too short (200 % text on a phone), it stops there and
+  size (`src/sheet/sheet-lift.ts`), and the peek detent rises the same way (never under its 156 px) until the summary's
+  head (`data-sheet-peek`: the name, «Save» for a custom point, the coordinates) clears the tab bar by 12 px, re-measured
+  while it rests there (`src/sheet/sheet-peek.ts`, VENT-52, `tests/e2e/sheet-peek-card.spec.ts`); when even the full detent is too short (200 % text on a phone), it stops there and
   the summary scrolls instead (`data-sheet-scroll`, `src/sheet/sheet-scroll.ts`), its last line 12 px over the tab bar;
   as on iOS, a finger pulling down on it at its top drags the sheet, any other move scrolls it, and below its top the
   sheet drags from it both ways (`src/sheet/sheet-pull.ts`). For the Mooner session,
@@ -355,16 +460,17 @@ Every visible change follows `.claude/skills/apple-design/SKILL.md` (vendored fr
   the night side from the Earth's real sub-solar point (`earthSubSolarPoint`, `subLunarPoint` in
   `packages/sim/src/earth-view.ts`), the active antenna white with a soft glow that breathes three times when it starts
   listening, then rests lit (an endless loop kept every page drawing frames; still under reduced motion; held while
-  the phone sheet moves, `data-moving`, so the move keeps its frames), labels in HTML over it (so they follow the text size),
+  the phone sheet moves, `data-moving`, so the move keeps its frames), a resting antenna in sight stands in a moat the land mask clears (`LandMask`, 2 units), so its
+  ring is not lost among the land dots (VENT-59), labels in HTML over it (so they follow the text size),
   each moved sideways to stay inside the picture (`src/dsn/label-shift.ts`, `components/dsn/use-label-fit.ts`, through
   a `--label-shift` property set in the CSSOM, so at 200 % text on a phone no label leaves the screen). Never the signal
   colours: `--dsn-*` tokens; the Earth and the DSN view's panel stay dark in both themes. The month's figures add «Hours with DSN» (hours with any complex
   listening, `card/month-facts.ts`).
 - **3D terrain view** (VENT-34, the human's verdict on the canvas): the «Horizon» header tab (`#horizon`,
   `src/lib/view-tabs.ts`) and the phone's Horizon tab (sheet at peek, the ground framed in the band between the top bar
-  and the sheet's edge) show the selected site or point from the ground, opening in **third person** (camera behind and
-  above NASA's astronaut on the point, facing the Sun when it is near the sky, else the Earth), with «Third person |
-  First person» (`ModeSwitch.tsx`, a radiogroup, 44 px targets; first person: the eye 2 m up); drag (Pointer Events
+  and the sheet's edge) show the selected site or point from the ground, opening in **first person**, the eye 2 m over
+  the point, facing the Sun when it is near the sky, else the Earth (VENT-54, the human's decision: no astronaut, no
+  lander and no camera switch; `view-camera.ts` has one pose); drag (Pointer Events
   with capture) or the arrows and Home on the focused view turn it (`src/terrain/look-input.ts`, `view-camera.ts`).
   Turning it: a swipe across the whole width turns 180° (a full turn in two swipes, on a phone and a desktop alike;
   the pitch by the field of view over the height, held to its range, `dragScale`, `look-input.ts`), and on release the
@@ -379,7 +485,7 @@ Every visible change follows `.claude/skills/apple-design/SKILL.md` (vendored fr
   the Sun and the Earth are real geometry out to 128 km. Each level draws a window of 256 x 256 of its cells around the
   site (4, 16, 64 and 256 km across, `ring-window.ts`), aligned to the parent's cells: the parent leaves a hole where the
   finer level is loaded and draws it where that tile failed (a 404 or the tries ran out is a hole filled by the parent,
-  never the view's failure, `ring-layout.ts`; but when every tile of levels 0 and 1 is a 404 the list was answered for a point with no terrain, and the view ends in the route's final «No terrain covers this point on the server», no «Try again» and no mode switch, the coarse tiles no longer asked, `ring-absent.ts`); a skirt hangs on every side of a drawn cell whose neighbour is not drawn
+  never the view's failure, `ring-layout.ts`; but when every tile of levels 0 and 1 is a 404 the list was answered for a point with no terrain, and the view ends in the route's final «No terrain covers this point on the server», no «Try again», the coarse tiles no longer asked, `ring-absent.ts`); a skirt hangs on every side of a drawn cell whose neighbour is not drawn
   (T-junctions and open edges, `ring-mesh.ts`); normals are taken across the tile edges when the neighbour is loaded and
   blended into the parent's over 8 cells at a window's edge, so no seam shows a crease (`ring-normals.ts`); and the heights themselves are stitched: a node within 8 cells of its window's edge is pulled toward the parent's surface by a smoothstep, so the edge nodes lie exactly on it (`ring-stitch.ts`; where the levels read different LOLA tiers the raw step is metres), and a parent that arrives late places again only the nodes in that band (the stitch held by `tests/terrain-ring-stitch.test.ts` on the recorded IM-2 relief, L1 to L2 and L2 to L3). Nodes are
   placed with `sampleDirection` and the site's frame (`ring-frame.ts`: x east, y up, z south, the site the origin and
@@ -390,7 +496,7 @@ Every visible change follows `.claude/skills/apple-design/SKILL.md` (vendored fr
   frame draws every ring built so far and in software GL costs a second; `data-working` says when the slices are all run), tile by tile, the finest level first, so the view
   stands as soon as level 0 and 1 land (`ring-session.ts`, `ring-near.ts`) and the coarser rings fill in; a tile that
   arrives rebuilds itself, its neighbours and its parent (`scene/ring-layer.ts`) and every mesh is freed when the view
-  leaves. The near ground (props, the astronaut's feet, the ridge, the Sun's shadow march) is a 257 x 257 grid over 4
+  leaves. The near ground (props, the eye, the ridge, the Sun's shadow march) is a 257 x 257 grid over 4
   km resampled from the rings (`ring-local.ts`, the `HeightTile` of `tile.ts`), not a second copy of the relief. The
   horizon profile's wall stays as the backdrop beyond the farthest ring (190 km, 40 km on the low tier,
   `far-horizon.ts`), so a ridge past 128 km is still the profile's. Failures are the horizon's (VENT-45: 404 «No
@@ -400,41 +506,26 @@ Every visible change follows `.claude/skills/apple-design/SKILL.md` (vendored fr
   true size and direction is the key light, with hard shadows near the point (shadow map), per vertex over the near ground and, level by level, over
   each ring from a grid of its own (16, 64 and 256 km at 62.5 m to 1 km, `scene/ring-shade.ts`, in slices, no cast shadow beyond a grid's edge; distant rings are shaded by their normals, no haze: the Moon has no
   atmosphere) (`sun-shade.ts`), darkening the whole view when terrain beyond the near ground hides it (`ridge.ts` `blockerOf`,
-  `scene/sun-mask.ts`); the Earth at its true size with its true phase, wearing NASA's Blue Marble turned to the face the Moon sees
+  `scene/sun-mask.ts`; whether a body is hidden is the horizon profile's answer, the card's, and the near ground only
+  names the ridge that does it: VENT-59, the human's decision, held by `tests/terrain-im2-verdict.test.ts`); the Earth at its true size with its true phase, wearing NASA's Blue Marble turned to the face the Moon sees
   (`earth-orientation.ts`, from the sub-lunar point and the ecliptic roll, about 2° accurate); faint seeded stars; the fill is
   the Earth's light by its lit share, the ground's bounce by the Sun's height and a dim sky floor (`sky-light.ts`), and
   when the Sun does not reach the point the exposure opens up instead of faking sunlight (`exposureFor`, `stage.ts`).
   Rendering: ACES filmic tone mapping, `MeshStandardMaterial` everywhere, the Sun a hard key with a 60 m PCF shadow, baked
-  contact occlusion on the stones (`contactAo`) and soft contact shadows under the astronaut and the lander's pads. Illustrative and said so in the caption («Fine detail illustrative · relief LOLA
-  20 m», «Generic lander (illustrative) · …» or «Apollo LM: NASA 3D Resources · Earth: NASA Blue Marble · shadows lifted for legibility»): rounded rocks under
+  contact occlusion on the stones (`contactAo`). Illustrative and said so in the caption («Fine detail illustrative · relief
+  LOLA 20 m» over «Earth: NASA Blue Marble · shadows lifted for legibility», `captionNote`, `onFoot.captionNote`): rounded rocks under
   1 m seeded from the point (`seeded.ts`, `rocks.ts`), the regolith a CC0 photographed material (Poly Haven «Moon 02»,
   albedo and normal, 1K WebP in `src/terrain/maps/`, ASSETS.md) tiled at 3.5 m and read twice, turned and at another
-  scale, with a slow brightness noise and a fade with distance so it never repeats (`scene/ground-shader.ts`), and the
-  lander, one of two models of ours, chosen by the site (`lander-kind.ts`: an Apollo site, `group: 'apollo'`, wears the
-  Apollo Lunar Module of NASA 3D Resources, `models/apollo-lm.glb`; every other site and every custom point a generic robotic lander built
-  from code, `models/lander.glb`, with its baked occlusion and blanket normals; both read by the glb reader and its map loaders,
-  `glb-maps.ts`, `scene/lander*.ts`, so no GLTFLoader joins the chunk), standing 22 m from the astronaut and 14° to the right of the opening heading
-  (`landerSpot`, `props.ts`), so it is in the first frame, on a phone too, its pads on the highest ground under them (`lander-place.ts`).
-  The metals and the gold foil are lit by the Sun and, in shadow, by an analytic earthshine: a sky-and-ground hemisphere injected into the
-  lander's shader as radiance (`scene/earthshine.ts`, zenith and horizon blues, a near-black ground, scaled by one intensity that is not the Sun's),
-  not a PMREM environment map, which cost about 9 s of software GL to bake. Rings at 25, 100 and 500 m with HTML labels, and the ridge that
+  scale, with a slow brightness noise and a fade with distance so it never repeats (`scene/ground-shader.ts`). Rings at 25, 100 and 500 m with HTML labels, and the ridge that
   hides a body labelled with its height and distance (`on-foot-model.ts`); a text alternative says the heading, where
-  each body is and what hides it (`view-alt.ts`); the desktop view keeps the horizon strip under it. The astronaut is
-  a rigged, generated figure (Meshy, `models/astronaut-meshy.glb` and its three WebP maps, ASSETS.md; no flags, logos or
-  insignia: the generator's two stray marks were painted out), 1.91 m, read by three's `GLTFLoader` (VENT-34), which
-  only the scene's chunk imports (`scene/astronaut.ts`: the glb's maps are named by URI and a `LoadingManager`
-  URL modifier maps each to the file the bundler shipped, `scene/astronaut-assets.ts`), so the globe's start chunk
-  never carries it. Its `idle` clip is pinned to a pose and moved on only by frames the view draws anyway (a turn, a
-  coast, the slicer: `scene/astronaut-idle.ts`, `world.idle.advance(dt)` in the frame), never under reduced motion, so
-  an idle view still draws no frames; its `walk` clip is loaded and unused until VENT-48. The landers keep the small
-  glb reader (`glb.ts`). The cost of this look lands in the Three.js chunk the globe loads at start: the standard
-  material, ACES and the Earth's shader added 1.9 kB, and the skinned astronaut 11.7 kB gzip more (130 to 142 kB):
-  `three.core` is one module, so the classes GLTFLoader and AnimationMixer need (Skeleton, SkinnedMesh,
-  AnimationMixer, PropertyBinding) join that chunk while GLTFLoader itself stays in the scene's; the human accepted
-  it (2026-11-02) over an astronaut without a rig. Performance: the panel
+  each body is and what hides it (`view-alt.ts`); the desktop view keeps the horizon strip under it, and the site card beside it leaves its own strip out (VENT-55). The view loads no model
+  (VENT-54 removed the astronaut, the two landers, their glb reader, GLTFLoader, earthshine, contact shadows and the
+  idle clip): the Three.js chunk the globe loads at start is back to about 131 kB gzip (the skinned astronaut had
+  taken it to 142 kB), the scene's chunk is 15.6 kB smaller, and at the medium tier the view draws 32 to 35 calls and
+  about 360 to 400 k triangles. Performance: the panel
   (`components/terrain/TerrainPanel.tsx`, `React.lazy` in `OnFootView.tsx`), its stylesheet (a React 19
   `<link precedence>`, so Astro does not inline it), the scene (`src/terrain/scene/terrain-scene.ts`, a dynamic import)
-  and the astronaut load only when the view opens, and the service worker leaves them out of the precache
+  load only when the view opens, and the service worker leaves them out of the precache
   (`ON_DEMAND` in `scripts/service-worker.mjs`); it draws only on change (`globe/loop.ts`, counted in `data-frames`),
   the pixel ratio capped by the quality tier, and frees the GPU context on leave. The view's tier is one store for the
   page session (`src/terrain/view-tier.ts`, kept in `sessionStorage` as `ventana.onFootTier`) that the scene and the
@@ -445,7 +536,23 @@ Every visible change follows `.claude/skills/apple-design/SKILL.md` (vendored fr
   (`webglcontextlost`, VENT-49) frees the scene, drops the tier to low and says «Terrain unavailable right now» with
   «Try again», which mounts it again at low and never happens by itself; the dead canvas and the labels leave the page
   in the browser's event, before the message shows (`guardLost` in `scene-guard.ts`), so no frozen frame or broken-WebGL
-  icon appears under it. A new instant lights and draws the view again only when the Sun or the Earth, seen from the
+  icon appears under it. On a phone the notice keeps to the free band between the top bar and the sheet's measured
+  edge at any detent (`use-status-band.ts` writes `--on-foot-band-top` and `--on-foot-band-height` through the CSSOM,
+  `src/terrain/status-band.ts`), the caption stepping aside while it shows, and hidden under the full sheet (Sites,
+  Calendar; VENT-55); when a lost context's notice
+  has no room there (200 % text lifts the half sheet to full) the sheet drops to peek once for that loss, and the scrim
+  clears, since `openness` measures from peek when half has risen to full (VENT-51). «Report copied» resets whenever
+  the scene's state changes. On a phone the caption keeps under the band's top, which follows the top bar's size too
+  (`src/phone/band-moves.ts`: the sheet's edge and a ResizeObserver on the bar), and 10 px over the sheet's measured
+  edge (`--on-foot-band-*`), clipped where the band has no room (VENT-59); the scale's labels never overlap (ridge
+  first, then 25, 100 and 500 m, a label over a placed one hidden for the frame, `scene/label-declutter.ts`); the host's
+  focus ring is an outline at -4 px drawn over its canvas (VENT-52). A language switch is not a died run:
+  `switchLocale` calls its injected `leaving` before `location.assign`, wired to `leftOnPurpose` (`view-tier-open.ts`),
+  which clears `ventana.onFootOpen`; a reload by the person still counts. A page that dies with the view open (no unmount: a GPU reset can take a phone's page down)
+  leaves `ventana.onFootOpen` set in `sessionStorage`; the next view starts one rung lower (kept, never below low, never
+  under `?quality=`), once, and its report says «tier dropped to X: previous run ended without unmount»
+  (`view-tier-open.ts`, `view-tier-state.ts`, VENT-51); leaving the view clears the mark, and a reload with the view
+  open counts as a death (`tests/e2e/on-foot-gpu.spec.ts`). A new instant lights and draws the view again only when the Sun or the Earth, seen from the
   point, moved 0.1° since the sky last placed (`src/terrain/relight.ts`, `scene/world-light.ts`; the live clock makes an
   instant a minute for a Sun that moves 0.008°, a scrub of hours always passes), and `input-change.ts` keeps an input
   that only has a new sky from drawing; the `lit` attribute is updated in place, since three r186 frees a GL buffer only
@@ -457,15 +564,37 @@ Every visible change follows `.claude/skills/apple-design/SKILL.md` (vendored fr
   breadcrumbs and the context watch, after the page has started (`src/lib/dev-tools-loader.ts`, the one place that
   imports `src/devtools/boot.ts`), for the globe and the on-foot canvas (`globe/dev-hook.ts`), with the report's steps
   marked in the breadcrumbs (`report-crumbs.ts`, the report stays the source); kept by the language switch, out of the
-  precache (`ON_DEMAND`), and Spector.js only in the dev server or a `PUBLIC_PERF_HUD=1` build.
+  precache (`ON_DEMAND`), and Spector.js only in the dev server or a `PUBLIC_PERF_HUD=1` build. The readout starts folded on every screen to one
+  line (the frame rate, the slowest frame and a count of the errors under the fold), top left over the header's title,
+  so it covers no control; a press unfolds it (VENT-51, `tests/e2e/debug.spec.ts`).
   `scripts/check-no-devtools.mjs` (decision in `devtools-guard.mjs`) fails a build whose pages, start chunks or precache
   carry the tools' markers, or any file Spector.js.
-  `?onfoot=astronaut,lander,shadows,far,shade,logdepth`
+  `?onfoot=shadows,far,shade,logdepth` (`astronaut` and `lander` from before VENT-54 are ignored, so old links still open)
   leaves parts out to bisect a crash from a phone's address bar (`src/terrain/leave-out.ts`, unknown words ignored,
   listed in `data-onfoot`, kept by the language switch like `?site=`). The API gzips its JSON
   (`compress()` in `packages/server/src/app.ts`; base64 floats shrink about 26 %). Held by `tests/terrain-view.test.ts`,
-  `tests/terrain-ring.test.ts`, `tests/view-tier.test.ts`, `tests/frame-probe.test.ts`, `tests/leave-out.test.ts`, `tests/relight.test.ts`, `tests/input-change.test.ts`, `tests/on-foot-report.test.ts`, `tests/on-foot-device.test.ts`, `tests/scene-guard.test.ts` and `tests/e2e/terrain-view.spec.ts` (the ring and tile routes answered by the simulator's own core over a synthetic polar grid, or by real LOLA tiles of IM-2 recorded from a local server, `fixtures/terrain-ring-im2/`: third then first person, the caption, no idle
+  `tests/terrain-ring.test.ts`, `tests/view-tier.test.ts`, `tests/frame-probe.test.ts`, `tests/leave-out.test.ts`, `tests/relight.test.ts`, `tests/input-change.test.ts`, `tests/on-foot-report.test.ts`, `tests/on-foot-device.test.ts`, `tests/scene-guard.test.ts` and `tests/e2e/terrain-view.spec.ts` (the ring and tile routes answered by the simulator's own core over a synthetic polar grid, or by real LOLA tiles of IM-2 recorded from the production API at the 20 m tier (VENT-59), `fixtures/terrain-ring-im2/`: first person only, no camera switch, no `.glb` fetched, the caption naming no lander, no idle
   frames, the Sun drawn hidden behind a far wall, none of the view's files in the first load).
+  The loader (VENT-60, the human's verdict B→A on the canvas): from the tile list to the scene's first frame, in the
+  band the scene frames. `runRing` tells a progress store how the tiles come (`ring/ring-progress.ts`, immutable:
+  each wanted tile waiting, landed with its order of arrival and heights, or missed when its level settles;
+  `progress-store.ts`, `ring-wanted.ts`), and the panel's loader (`components/terrain/loader/`, styles in
+  `styles/on-foot-loader.css`, on demand) reads it: «Finding the terrain tiles», then the plan from above while the
+  18 near tiles (levels 0 and 1) land (`LoaderPlan.tsx`: a round scope, heading up, each tile placed by its own corners
+  through `sampleDirection` (`terrain/loader/plan-geometry.ts`) and shaded once from its own heights in a job of a
+  slicer (`hillshade.ts`, `use-tile-shader.ts`), dashed while waiting, a short flash when it lands, zoomed out once
+  the 8 km tiles start; north and the real Sun and Earth on the rim; «Terrain · n of 18 tiles» with a determinate
+  bar), then, with the near tiles in, the plan lies down toward the heading (a CSS tilt) and the site's skyline takes
+  over (`LoaderSkyline.tsx`: the horizon profile drawn with the scene's own camera, `skyline-camera.ts`, held to
+  three's PerspectiveCamera by `tests/vent-60-loader.test.ts`; `VIEW_FOV` in `terrain/view-fov.ts` is shared with
+  `stage.ts`; seeded stars, the dashed level, a compositor glint) with «Shaping the ground». The scene's first frame
+  (`SceneHooks.onDrawn`, `drawn` from `useTerrainScene`) hands over: the scene fades in under the skyline and the
+  line goes after it; the loader unmounts after `HANDOVER_MS` (1.2 s), then the caption shows and «Far relief · n of
+  18 tiles» (`FarChip.tsx`, not a live region) until «Far relief · 32 and 128 km in», and goes. Reduced motion: plain
+  fades. A failure keeps the skyline and the sky dimmed under the notice, its words centred in the ground when they
+  fit (`data-words`). The loader's picture is chosen in one place by the view's tier (`loader-picture.ts`: B→A on
+  every tier today). No WebGL and no new request; every move is a transform or an opacity. Held by
+  `tests/vent-60-loader.test.ts` and `tests/e2e/vent-60-loader.spec.ts`.
 - **Five interface languages** (VENT-35): English (the default and the fallback), Spanish, French, German and Italian,
   each on its own static route (`/`, `/es/`, `/fr/`, `/de/`, `/it/`; `pages/[locale]/index.astro`) with `<html lang>`,
   `hreflang` links and `x-default` → `/`. This replaces the Language rule below for the interface only: every word a
@@ -508,14 +637,33 @@ Every visible change follows `.claude/skills/apple-design/SKILL.md` (vendored fr
   `favicon.ico`, `favicon.svg` and the root `apple-touch-icon.png`), fetched past the HTTP cache (`cache: 'reload'`),
   and the build's digest over every file the worker may keep, which names the static cache (`ventana-static-<digest>`),
   so a deploy drops the old one. The install set has a hard budget of 5 MB (`PRECACHE_BUDGET`, human decision
-  2026-10-31): the build logs the precache total and fails over it (4.75 MB with VENT-46's rings, landers and rigged astronaut, their files left out; 4.70 MB with VENT-34's on-foot view, its files left out; 4.68 MB with VENT-40's horizon strip; 4.63 MB with VENT-39's shadow notes; 4.57 MB with VENT-37's saved sites; 4.52 MB when it left the astronaut's sprites out, 4.60 MB with them). The 4K and 8K maps, and any build file not
+  2026-10-31): the build logs the precache total and fails over it (4.76 MB with VENT-60's loader, its styles on demand; 4.75 MB with VENT-55's press, presence, rail and scroll-fade sheets; 4.74 MB with VENT-54, no models; 4.78 MB with VENT-52's update row; 4.77 MB with VENT-50's compass and graticule; 4.75 MB with VENT-46's rings, landers and rigged astronaut, their files left out; 4.70 MB with VENT-34's on-foot view, its files left out; 4.68 MB with VENT-40's horizon strip; 4.63 MB with VENT-39's shadow notes; 4.57 MB with VENT-37's saved sites; 4.52 MB when it left the astronaut's sprites out, 4.60 MB with them). The 4K and 8K maps, and any build file not
   precached, are kept cache first the first time the page fetches them. Under Save-Data the worker is not registered
   at all. Pages and API GETs are network first,
   build files cache first; the network's answer always wins (a copy that cannot be kept, a full quota, is skipped), only
   ok answers are kept, a page is kept under its URL without the query string and never as a redirected answer. The
   API's answers live in `ventana-api-v1`, stamped with when they came, the 24 latest only (`src/pwa/sw-api.ts`, like
-  `hours-cache.ts`). Offline, the page shows «Offline · data from <date>» (`OfflineNotice.tsx`, under the lowest top
-  bar, measured, two lines at most), and when the network returns the hours are asked again quietly. Registered in
+  `hours-cache.ts`). Offline, the page shows a row in the update row's look (VENT-57, `OfflineNotice.tsx`, `OfflineRow.tsx`): a
+  crossed-out cloud, «Offline» over «Showing data from <date>» (each one line, the date cut with an ellipsis, so two lines
+  at most at any text size), and the hint's ✕ (`DismissButton` in `UpdateButtons.tsx`), which hides it until the app
+  goes offline again (`dismissalAfter`, `pwa/offline-status.ts`); under the lowest top bar, measured, it writes
+  `--update-row-space` like the update row, so the pin hint and the phone compass stack under it, and when the network returns the hours are asked again quietly. When a new build's worker takes the page over
+  (`controllerchange` on a page that already had a controller, so never on the first install; checked with
+  `registration.update()` when the app opens and on each return to the foreground, `src/pwa/update-watch.ts`), a row in
+  the pin hint's look (option D among four mockups, the human's choice; `UpdateNotice.tsx`, `UpdateButtons.tsx`,
+  `TopNotices.tsx`) is the update: a reload icon, «New version ready» over «Tap to update» or «Click to update» by
+  `(pointer: coarse)`, the whole row reloads the same address, and the hint's own ✕ beside it hides it until the app
+  opens again; it yields to the offline notice while offline. While it shows it writes `--update-row-space` on the root,
+  so the first-time pin hint stacks under it and the phone's compass sits under both (`stackHeight`, `compass-top.ts`).
+  A chunk loaded on demand that is gone after a deploy (`src/pwa/missing-chunk.ts`: only the dynamic import's own fetch
+  failure counts; a module that throws while evaluating, or any render or mount error, is a real error; offline the same
+  failure is the network's, marked `offline`, and the view says «Offline: this view needs a connection to load» with no
+  update row; the on-foot panel and scene load through `loadOnDemandChunk` (`src/pwa/on-demand-chunk.ts`), which calls
+  no `import()` while the browser says it is offline, since a failed module fetch stays failed for the page's life, and
+  the view tries the panel again on `online` with a new `React.lazy`, VENT-59; the globe's chunk is precached, so its
+  `loadChunk` still imports offline) dispatches `ventana:missing-chunk`, which shows the row even after a ✕; `ChunkBoundary.tsx` holds «Update the app to open this
+  view» in the view's place instead of unmounting the island, and the scene says `missing` (`terrain/scene/load-scene.ts`;
+  VENT-52, `tests/e2e/missing-chunk.spec.ts`). Registered in
   production builds only; e2e specs block service workers except `tests/e2e/pwa.spec.ts`. Emergency kill switch
   (unregister and delete the caches everywhere): `docs/service-worker.md`. nginx serves `sw.js` and the manifests with `no-cache`, the manifests as
   `application/manifest+json`. The CSP did not change: `default-src 'self'` already covers the worker, the manifest

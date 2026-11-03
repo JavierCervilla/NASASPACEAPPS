@@ -28,7 +28,8 @@ import { SOUTH_POLE_VIEW } from '../src/globe/framing';
 import type { MarkerLayer } from '../src/globe/marker-layer';
 import { createOrbit, poseOf } from '../src/globe/orbit';
 import { spreadOf } from '../src/globe/pinch';
-import { pinchControls, pinchDistance } from '../src/globe/pointer-controls';
+import { GIVE } from '../src/globe/orbit-band';
+import { pinchControls, pinchDistance, pinchEnd } from '../src/globe/pointer-controls';
 import { phoneTier } from '../src/globe/quality-pick';
 import { bindSelection, flyTo } from '../src/globe/selection';
 import { createSiteFramer } from '../src/globe/site-framer';
@@ -57,12 +58,16 @@ describe('pinch', () => {
     expect(pinchDistance(3, 0.5)).toBe(5);
   });
 
-  it('zooms the orbit 1:1 with the fingers, within the limits', () => {
+  it('zooms the orbit 1:1 with the fingers, resisted past the limits, and settles on them when they lift', () => {
     const orbit = createOrbit(SOUTH_POLE_VIEW);
     pinchControls(orbit, deps)(2);
     expect(poseOf(orbit).distance).toBe(3);
     pinchControls(orbit, deps)(100);
-    expect(poseOf(orbit).distance).toBe(1.6);
+    // VENT-55: the closest zoom is a rubber band, no longer a wall (apple-design §9).
+    expect(poseOf(orbit).distance).toBeLessThan(1.6);
+    expect(poseOf(orbit).distance).toBeGreaterThan(1.6 - GIVE.nearDistance);
+    pinchEnd(orbit, deps)();
+    expect(orbit.distance.target).toBe(1.6);
   });
 });
 

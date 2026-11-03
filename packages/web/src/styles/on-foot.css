@@ -31,7 +31,6 @@
 .on-foot {
   --on-foot-ink: #f2f2f4;
   --on-foot-muted: #a7adb8;
-  --on-foot-glass: rgba(28, 28, 32, 0.72);
   --on-foot-edge: rgba(255, 255, 255, 0.12);
   position: relative;
   display: flex;
@@ -79,8 +78,14 @@
 
 .on-foot__host:active { cursor: grabbing; }
 
+/*
+ * An outline, as the globe's: it paints over the host's own canvas, where
+ * an inset shadow is painted under it and never shows (VENT-52).
+ */
 .on-foot__host:focus-visible {
-  box-shadow: inset 0 0 0 2px var(--on-foot-ink);
+  outline: 2px solid var(--on-foot-ink);
+  outline-offset: -4px;
+  border-radius: inherit;
 }
 
 .on-foot__host canvas {
@@ -97,67 +102,39 @@
   display: flex;
   flex-wrap: wrap;
   align-items: flex-start;
-  justify-content: space-between;
+  justify-content: flex-end;
   gap: 8px;
   pointer-events: none;
 }
 
 /*
- * On a phone the controls live in the free band between the top bar and
- * the sheet at peek (156 px, src/sheet/): the switch under the bar, the
- * caption low, just over the sheet's edge, so the two never crowd.
+ * On a phone the caption lives in the free band between the top bar and
+ * the sheet at peek (156 px, src/sheet/), low, just over the sheet's edge.
+ * The bar grows with the text (200 %): the band keeps 12 px under its
+ * measured bottom, the band's top (use-status-band.ts), and never rises
+ * above its place at the default size (VENT-52). The sheet rises too (its
+ * head at peek, sheet-peek.ts): the band keeps 10 px over its measured
+ * edge, and what the sheet leaves no room for is clipped, not drawn under
+ * the glass (VENT-59).
  */
 .on-foot--phone .on-foot__top {
-  top: calc(env(safe-area-inset-top) + 108px);
-  bottom: 166px;
+  top: max(
+    calc(env(safe-area-inset-top) + 108px),
+    calc(var(--on-foot-band-top, 0px) + 12px)
+  );
+  bottom: max(
+    166px,
+    calc(100% - var(--on-foot-band-top, 0px)
+      - var(--on-foot-band-height, 100%) + 10px)
+  );
+  overflow: hidden;
   flex-direction: column;
   flex-wrap: nowrap;
   align-items: stretch;
-  justify-content: space-between;
+  justify-content: flex-end;
 }
-
-.on-foot--phone .on-foot__modes { align-self: center; }
 
 .on-foot__top > * { pointer-events: auto; }
-
-.on-foot__switch {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  padding: 3px;
-  border-radius: 14px;
-  background: var(--on-foot-glass);
-  box-shadow: inset 0 0 0 1px var(--on-foot-edge);
-  backdrop-filter: blur(14px) saturate(160%);
-  -webkit-backdrop-filter: blur(14px) saturate(160%);
-}
-
-.on-foot__switch button {
-  min-width: 7.5rem;
-  min-height: 44px;
-  padding: 0 14px;
-  border: 0;
-  border-radius: 11px;
-  background: transparent;
-  color: var(--on-foot-muted);
-  font: inherit;
-  font-size: 0.875rem;
-  font-weight: 600;
-  letter-spacing: -0.006em;
-  cursor: pointer;
-  transition: background-color 100ms ease-out, transform 100ms ease-out;
-}
-
-.on-foot__switch button:active { transform: scale(0.97); }
-
-.on-foot__switch button[aria-checked='true'] {
-  background: rgba(255, 255, 255, 0.16);
-  color: var(--on-foot-ink);
-}
-
-.on-foot__switch button:focus-visible {
-  outline: 2px solid var(--on-foot-ink);
-  outline-offset: -2px;
-}
 
 .on-foot__caption {
   display: flex;
@@ -208,6 +185,25 @@
   pointer-events: none;
 }
 
+/*
+ * On a phone the stage fills the screen under the top bar and the sheet,
+ * so the notice keeps to the free band between them at any detent, as
+ * use-status-band.ts writes it; the whole stage until it is measured.
+ */
+.on-foot--phone .on-foot__status {
+  top: var(--on-foot-band-top, 0px);
+  bottom: auto;
+  height: var(--on-foot-band-height, 100%);
+}
+
+/*
+ * The band is short, and with nothing drawn the caption has nothing to
+ * describe: it steps aside for the notice.
+ */
+.on-foot--phone .on-foot__stage:has(> .on-foot__status) .on-foot__top {
+  visibility: hidden;
+}
+
 .on-foot__status p { margin: 0; }
 
 .on-foot__actions {
@@ -217,23 +213,30 @@
   gap: 8px;
 }
 
+/*
+ * «Try again» is the secondary button (controls.css, VENT-57); the view
+ * is dark in both themes, so it takes the dark theme's fill.
+ */
+.on-foot .on-foot__retry {
+  background: rgba(120, 120, 128, 0.24);
+  color: var(--on-foot-ink);
+}
+
 .on-foot__retry,
 .on-foot__copy {
-  min-height: 44px;
-  padding: 0 18px;
-  border: 0;
-  border-radius: 12px;
-  background: rgba(255, 255, 255, 0.16);
-  color: var(--on-foot-ink);
-  font: inherit;
-  font-weight: 600;
   pointer-events: auto;
-  cursor: pointer;
   transition: background-color 100ms ease-out, transform 100ms ease-out;
 }
 
 /* The second action is quieter: «Try again» stays the one to press. */
 .on-foot__copy {
+  min-height: 44px;
+  padding: 0 18px;
+  border: 0;
+  border-radius: 12px;
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
   background: transparent;
   color: var(--on-foot-muted);
   box-shadow: inset 0 0 0 1px var(--on-foot-edge);
@@ -293,24 +296,11 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .on-foot__switch button,
   .on-foot__retry,
   .on-foot__copy { transition: none; }
-  .on-foot__switch button:active,
-  .on-foot__retry:active,
-  .on-foot__copy:active { transform: none; }
-}
-
-@media (prefers-reduced-transparency: reduce) {
-  .on-foot__switch {
-    background: #1c1c20;
-    backdrop-filter: none;
-    -webkit-backdrop-filter: none;
-  }
 }
 
 @media (prefers-contrast: more) {
-  .on-foot__switch,
   .on-foot__caption,
   .on-foot__retry,
   .on-foot__copy { box-shadow: inset 0 0 0 1px var(--on-foot-ink); }

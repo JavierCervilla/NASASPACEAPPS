@@ -27,10 +27,12 @@
  * What fills the phone's screen behind the top bar and the sheet when a
  * view other than the globe is chosen: the DSN view's Earth (VENT-7), or
  * the on-foot 3D view (VENT-34) framed in the band between the bar and
- * the sheet's edge, drawn again when that edge moves.
+ * the sheet's edge, drawn again when that edge moves; when the view is
+ * lost and its notice has no room in that band, the sheet drops to peek.
  */
 import type { RefObject } from 'react';
 import type { View } from '../../lib/view-tabs';
+import { bandMoves } from '../../phone/band-moves';
 import type { WatchedValue } from '../../lib/watched-value';
 import type { CalendarParts } from '../calendar/hooks';
 import { DsnStage } from '../dsn/DsnPhone';
@@ -47,6 +49,8 @@ interface Props {
   readonly bar: RefObject<HTMLElement | null>;
   /** The sheet's top edge, the band's bottom; null: no sheet. */
   readonly sheetEdge: WatchedValue<number | null>;
+  /** Lowers the sheet, for a notice the band has no room for. */
+  readonly makeRoom: () => void;
 }
 
 export function ViewStage(props: Props) {
@@ -61,6 +65,7 @@ export function ViewStage(props: Props) {
     <OnFootView layout="phone" site={site} time={parts.time}
       horizons={parts.horizons} tiles={parts.tiles}
       viewTier={parts.viewTier} band={band}
-      bandMoves={sheetEdge.subscribe} />
+      bandMoves={bandMoves(() => bar.current, sheetEdge.subscribe)}
+      makeRoom={props.makeRoom} />
   );
 }

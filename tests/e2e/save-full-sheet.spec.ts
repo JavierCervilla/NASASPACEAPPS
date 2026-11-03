@@ -133,6 +133,9 @@ for (const viewport of VIEWPORTS) {
       const picker = await fullSheet(page);
       const save = headSave(picker);
       await picker.getByRole('button', { name: 'Done' }).focus();
+      // The settings gear sits between the bookmark and «Done» (VENT-57).
+      await page.keyboard.press('Shift+Tab');
+      await expect(picker.getByRole('button', { name: 'Settings' })).toBeFocused();
       await page.keyboard.press('Shift+Tab');
       await expect(save).toBeFocused();
       await page.keyboard.press('Enter');
@@ -146,7 +149,8 @@ for (const viewport of VIEWPORTS) {
   });
 }
 
-// QA VENT-42: with the bookmark in the head, «Done» must stay whole at 200 % text in long languages.
+// QA VENT-42: with the bookmark in the head, «Done» must stay whole at 200 % text in long languages; the settings gear
+// beside it too (VENT-57).
 for (const locale of ['fr', 'de', 'en-xa']) {
   test(`phone, 360x740, ${locale} at 200 % text: «Done» and the bookmark stay on screen`, async ({ page }) => {
     await page.setViewportSize({ width: 360, height: 740 });
@@ -154,7 +158,7 @@ for (const locale of ['fr', 'de', 'en-xa']) {
     await page.addStyleTag({ content: 'html { font-size: 200%; }' });
     await page.locator('.tab').last().click();
     const head = page.locator('.picker__head');
-    for (const part of [head.locator('.picker__done'), head.locator('.save-icon')]) {
+    for (const part of [head.locator('.picker__done'), head.locator('.save-icon'), head.locator('.picker__gear')]) {
       await expect(part).toBeVisible();
       const box = await part.boundingBox();
       expect(box).not.toBeNull();

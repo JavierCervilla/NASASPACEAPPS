@@ -24,16 +24,29 @@
  */
 
 /**
- * «Offline · data from 31 October 2026»: shown while the browser is
- * offline, with the day the API last answered (the service worker keeps
- * its answers, pwa/sw-strategies.ts). A polite live region, present
- * from the start so the change is announced. It sits under whichever top
- * bar shows, measured, so large text never puts it over the site pill.
+ * «Offline» over «Showing data from 31 October 2026» (VENT-28; a row
+ * since VENT-57, OfflineRow.tsx): shown while the browser is offline,
+ * with the day the API last answered (the service worker keeps its
+ * answers, pwa/sw-strategies.ts). It sits under whichever top bar shows,
+ * measured, so large text never puts it over the site pill, and writes
+ * its room in `--update-row-space` as «New version ready» does, so the
+ * pin hint and the phone's compass stack under it. Its ✕ hides it until
+ * the app goes offline again. Back online it keeps its words through
+ * the exit (presence.ts), so it leaves as it came instead of vanishing.
  */
-import { useEffect, useRef, useState, type RefObject } from 'react';
-import { syncDate, syncedAt, syncUrl } from '../pwa/offline-status';
+import { useEffect, useRef, useState } from 'react';
+import {
+  dismissalAfter,
+  syncDate,
+  syncedAt,
+  syncUrl,
+} from '../pwa/offline-status';
+import { OfflineRow } from './OfflineRow';
+import { useRowSpace } from './UpdateNotice';
 import { useI18n } from './i18n-context';
+import { usePresence } from './presence';
 import { useOnline } from './use-online';
+import { useUnderBars } from './use-under-bars';
 
 /** When the API last answered, read each time the page goes offline. */
 function useSyncedAt(base: string, online: boolean): number | null {
@@ -52,46 +65,35 @@ function useSyncedAt(base: string, online: boolean): number | null {
   return atMs;
 }
 
-/** The top bars: the desktop header and the phone's glass bar. */
-const BARS = 'header.bar, .phone-bar';
-const GAP_PX = 8;
-
-/** Keeps `note` GAP_PX under the lowest top bar on screen while shown. */
-function useUnderBars(
-  note: RefObject<HTMLElement | null>,
-  shown: boolean,
-): void {
-  useEffect(() => {
-    const el = note.current;
-    if (!shown || !el) return undefined;
-    const bars = [...document.querySelectorAll(BARS)];
-    const place = (): void => {
-      const bottoms = bars
-        .map((bar) => bar.getBoundingClientRect())
-        .filter((box) => box.height > 0)
-        .map((box) => box.bottom);
-      el.style.setProperty('--top', `${Math.max(0, ...bottoms) + GAP_PX}px`);
-    };
-    const observer = new ResizeObserver(place);
-    for (const bar of bars) observer.observe(bar);
-    place();
-    return () => observer.disconnect();
-  }, [note, shown]);
+/** Whether the row was hidden with its ✕, and how to hide it. */
+function useDismissed(online: boolean): readonly [boolean, () => void] {
+  const [dismissed, setDismissed] = useState(false);
+  const [wasOnline, setWasOnline] = useState(online);
+  if (online !== wasOnline) {
+    setWasOnline(online);
+    setDismissed(dismissalAfter({ dismissed, wasOnline, online }));
+  }
+  return [dismissed, () => setDismissed(true)];
 }
 
 export function OfflineNotice({ base }: { readonly base: string }) {
   const { t, tag } = useI18n();
   const online = useOnline();
   const atMs = useSyncedAt(base, online);
-  const note = useRef<HTMLParagraphElement>(null);
-  useUnderBars(note, !online);
-  const text =
-    atMs === null
-      ? t('offline.plain')
-      : t('offline.notice', { date: syncDate(tag, atMs) });
+  const [dismissed, dismiss] = useDismissed(online);
+  const row = useRef<HTMLDivElement>(null);
+  const { mounted, phase } = usePresence(!online && !dismissed);
+  useUnderBars(row, mounted);
+  useRowSpace(row, mounted);
+  const how =
+    atMs === null ? null : t('offline.since', { date: syncDate(tag, atMs) });
   return (
-    <p ref={note} className="offline-notice" role="status">
-      {online ? null : text}
-    </p>
+    <OfflineRow
+      ref={row}
+      shown={mounted}
+      phase={phase}
+      how={how}
+      onDismiss={dismiss}
+    />
   );
 }

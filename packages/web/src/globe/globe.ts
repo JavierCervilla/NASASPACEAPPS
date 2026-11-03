@@ -34,6 +34,7 @@ import type { WatchedValue } from '../lib/watched-value';
 import type { SiteStore } from '../phone/site-store';
 import type { NowState } from '../phone/widget-types';
 import { watchBand, type BandAnchors } from './band-watch';
+import { linkCompass, type GlobeCompass } from './compass-link';
 import { attachDevTools } from './dev-hook';
 import { bindDrag } from './drag';
 import { drawFrame } from './frame';
@@ -43,20 +44,25 @@ import { FreeBandWatch } from './free-band';
 import { keyControls } from './key-controls';
 import { bindKeys, bindWheel } from './keys';
 import { createLoop, type Loop } from './loop';
-import { MarkerLayer } from './marker-layer';
+import type { MarkerLayer } from './marker-layer';
 import { linkView } from './view-link';
-import { mountGlobeLayers } from './layers/globe-layers';
 import type { LayerRegistry } from './layers/registry';
 import type { GlobeSite } from './markers';
-import { addMoon } from './moon';
 import { createOrbit, type Orbit } from './orbit';
 import { bindPinch } from './pinch';
-import { pinchControls, pointerControls } from './pointer-controls';
+import {
+  pinchControls,
+  pinchEnd,
+  pointerControls,
+} from './pointer-controls';
 import { pickQuality } from './quality-pick';
 import { bindSheetEdge, frameInset } from './sheet-edge';
 import { loadSelection, type SelectionParts } from './selection';
 import { createSiteFramer, type SiteFramerParts } from './site-framer';
+import type { GraticuleText } from './graticule/text';
+import { addContents } from './contents';
 import { createStage, disposeStage, resizeStage, type Stage } from './stage';
+import { shownFrames, type ShownFrames } from './shown-frames';
 import { bindSun } from './sun-light';
 
 export interface GlobeOptions {
@@ -87,18 +93,35 @@ export interface GlobeOptions {
    */
   readonly onView?: (view: GlobeView | null) => void;
   /**
+   * Hears the globe's compass, once mounted, and null once gone
+   * (VENT-50): the camera, the way back to the opening view, the frames.
+   */
+  readonly onCompass?: (compass: GlobeCompass | null) => void;
+  /** The words on the graticule's labels, in the visitor's language. */
+  readonly graticuleText: GraticuleText;
+  /**
    * The page's globe layers (VENT-37): mounted while the globe runs, with
    * the landing sites and the approximate zones registered on it.
    */
   readonly layers?: LayerRegistry;
 }
 
-/** Keeps the canvas the host's size; redraws after a restored context. */
-function watchHost(host: HTMLElement, stage: Stage, loop: Loop): () => void {
-  const fit = (): void => {
-    resizeStage(stage, host.clientWidth, host.clientHeight);
-    loop.invalidate();
-  };
+/**
+ * Keeps the canvas the host's size, but not a hidden host's 0 x 0, and
+ * draws nothing while hidden (shown-frames.ts); redraws after a restored
+ * context.
+ */
+function watchHost(
+  host: HTMLElement,
+  stage: Stage,
+  loop: Loop,
+  frames: ShownFrames,
+): () => void {
+  const fit = (): void => frames.fit({
+    size: () => ({ width: host.clientWidth, height: host.clientHeight }),
+    resize: (width, height) => resizeStage(stage, width, height),
+    invalidate: () => loop.invalidate(),
+  });
   const observer = new ResizeObserver(fit);
   observer.observe(host);
   fit();
@@ -127,7 +150,7 @@ function bindInput(
   const keys = keyControls(orbit, deps);
   return [
     bindDrag(host, pointerControls(orbit, deps)),
-    bindPinch(host, pinchControls(orbit, deps)),
+    bindPinch(host, pinchControls(orbit, deps), pinchEnd(orbit, deps)),
     bindKeys(host, keys),
     bindWheel(host, keys),
   ];
@@ -155,14 +178,15 @@ function bindState(
 /**
  * Binds the markers to the page: loads the API sites into them, frames
  * the selected one in the free band above the phone sheet, follows the
- * shared selection and its state.
+ * shared selection and its state. `home` is the compass's way back to
+ * the opening view.
  */
 function bindSites(
   host: HTMLElement,
   options: GlobeOptions,
   globe: Pick<SiteFramerParts, 'orbit' | 'invalidate'> &
     Pick<SelectionParts, 'markers'> & Pick<Stage, 'camera'>,
-): () => void {
+) {
   const { markers } = globe;
   const { store, reducedMotion, anchors, sheetEdge, markerName } = options;
   const band = new FreeBandWatch();
@@ -170,14 +194,17 @@ function bindSites(
   const get = globalThis.fetch.bind(globalThis);
   const source = { fetch: get, url: options.sitesUrl, warn: options.warn };
   const changes = sheetEdge.subscribe;
+  const selection = loadSelection(
+    { store, markers, framer, nameOf: markerName }, source);
   const unbind = [
-    loadSelection({ store, markers, framer, nameOf: markerName }, source),
+    selection.stop,
     bindSheetEdge(host, { ...globe, band }, sheetEdge),
     watchBand({ host, band, anchors, changes }),
     bindState(options.state, markers),
     framer.dispose,
   ];
-  return () => unbind.forEach((fn) => fn());
+  const stop = (): void => unbind.forEach((fn) => fn());
+  return { home: selection.home, stop };
 }
 
 /**
@@ -185,28 +212,28 @@ function bindSites(
  * browser has no WebGL; the caller shows the text alternative instead.
  */
 export function mountGlobe(host: HTMLElement, options: GlobeOptions) {
-  const quality = pickQuality(isPhoneViewport());
-  const stage = createStage(host, quality);
+  const stage = createStage(host, pickQuality(isPhoneViewport()));
   const orbit = createOrbit(SOUTH_POLE_VIEW);
   const invalidate = (): void => loop.invalidate();
-  const { store } = options;
-  const pick = (id: string): void => store.select(id, 'globe');
-  const markers = new MarkerLayer(host, store.get().id, invalidate, pick);
-  // The Moon takes its tier from the quality settings.
-  const moon = addMoon(stage, { ...options, ...quality, onChange: invalidate });
+  // The frames are made first: the Moon asks them whether the globe shows.
+  const frames = shownFrames((dt) => drawFrame(parts, dt));
+  const contents = addContents(host, options, stage, { ...frames, invalidate });
+  const { markers, moon, layers, graticule } = contents;
   const link = linkView(stage, options.onView);
-  const layers = mountGlobeLayers(
-    { host, scene: stage.scene, invalidate, markers }, options.layers);
-  const parts = { stage, orbit, markers, moon, drawn: link.drawn, layers };
-  const loop = createLoop((dt) => drawFrame(parts, dt));
+  const parts = { stage, orbit, moon, layers, graticule, ...link, markers };
+  const loop = createLoop(frames.frame);
   const input = bindInput(host, orbit, loop, options.reducedMotion);
   const globeParts = { markers, orbit, invalidate, camera: stage.camera };
   const sites = bindSites(host, options, globeParts);
+  const home = sites.home;
+  const { onCompass } = options;
+  const compass = linkCompass({ stage, frames: link, home, onCompass });
   const sun = bindSun(stage.scene, options.time, invalidate);
-  const watch = watchHost(host, stage, loop);
-  const unbind = [() => loop.stop(), link.unlink, watch, ...input, sites];
-  const end = [sun, layers.dispose, () => markers.dispose(), moon.dispose,
-    attachDevTools(stage.renderer, moon.textureBytes)];
-  const teardown = [...unbind, ...end, () => disposeStage(stage)];
-  return () => teardown.forEach((fn) => fn());
+  const watch = watchHost(host, stage, loop, frames);
+  const devTools = attachDevTools(stage.renderer, moon.textureBytes);
+  const unbind = [() => loop.stop(), link.unlink, compass, watch, ...input];
+  const end = [sun, layers.dispose, graticule.dispose,
+    () => markers.dispose()];
+  const teardown = [...unbind, sites.stop, ...end, moon.dispose, devTools];
+  return () => [...teardown, () => disposeStage(stage)].forEach((fn) => fn());
 }

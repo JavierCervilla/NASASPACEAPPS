@@ -30,6 +30,8 @@
 import { Vector2, Vector3 } from 'three';
 import { cameraPosition } from './framing';
 import type { Vec3 } from './geo';
+import type { Mark } from './marker-cull';
+import type { LayerCover } from './layers/registry';
 import type { Projector, MarkerLayer } from './marker-layer';
 import type { Moon } from './moon';
 import { poseOf, stepOrbit, type Orbit } from './orbit';
@@ -41,8 +43,25 @@ export interface FrameParts {
   readonly markers: MarkerLayer;
   /** Fetches sharper maps as the zoom heads in. */
   readonly moon: Pick<Moon, 'track'>;
-  /** The registry's layers (layers/bind.ts), placed after the markers. */
-  readonly layers?: { place(project: Projector, eye: Vec3): void };
+  /**
+   * The registry's layers (layers/bind.ts), placed after the markers;
+   * they hand back what they cover.
+   */
+  readonly layers?: {
+    place(project: Projector, eye: Vec3): readonly LayerCover[];
+  };
+  /**
+   * The graticule's labels (graticule/), placed clear of the markers and
+   * of what the layers cover.
+   */
+  readonly graticule?: {
+    place(
+      project: Projector,
+      eye: Vec3,
+      marks: readonly Mark[],
+      covers: readonly LayerCover[],
+    ): void;
+  };
   /** Hears that a frame was drawn (the standing pin follows it). */
   readonly drawn?: () => void;
 }
@@ -69,8 +88,9 @@ export function drawFrame(parts: FrameParts, dt: number): boolean {
   stage.renderer.render(stage.scene, stage.camera);
   const project = projector(stage);
   const eye = cameraPosition(pose);
-  markers.place(project, eye);
-  parts.layers?.place(project, eye);
+  const marks = markers.place(project, eye);
+  const covers = parts.layers?.place(project, eye) ?? [];
+  parts.graticule?.place(project, eye, marks, covers);
   parts.drawn?.();
   return moving;
 }

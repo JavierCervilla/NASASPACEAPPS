@@ -25,8 +25,8 @@
 
 /**
  * The on-foot 3D view (VENT-34, the human's verdict on the canvas): the
- * selected site or point from the ground, opening in third person behind
- * the astronaut, with «Third person | First person»; the real relief from
+ * selected site or point from the ground, in first person, the eye 2 m
+ * over the point (VENT-54); the real relief from
  * our API, the far horizon from the point's profile, the Sun and the
  * Earth at the shared instant, illustrative fine detail said so in the
  * caption, the scale's rings, and on desktop the horizon strip under it.
@@ -43,9 +43,12 @@ import stylesUrl from '../../styles/on-foot.css?url';
 import { SiteHorizon } from '../horizon/SiteHorizon';
 import { useI18n } from '../i18n-context';
 import { OnFootStageArea } from './OnFootStageArea';
+import { useLoaderProps } from './loader/use-loader-props';
+import loaderStylesUrl from '../../styles/on-foot-loader.css?url';
 import { copyReport } from './use-copy-report';
 import { useOnFoot, type OnFootParts } from './use-on-foot';
 import { useReportRun } from './use-report-run';
+import { useStatusBand } from './use-status-band';
 import { useTerrainScene, type BandMoves } from './use-terrain-scene';
 
 export interface PanelProps extends OnFootParts {
@@ -54,6 +57,8 @@ export interface PanelProps extends OnFootParts {
   readonly hours?: HoursResult;
   readonly band?: SceneHooks['band'];
   readonly bandMoves?: BandMoves;
+  /** Asks the phone's sheet to make room for the notice of a lost view. */
+  readonly makeRoom?: () => void;
 }
 
 /** The view's state, its scene and the heading its text alternative says. */
@@ -63,13 +68,11 @@ function usePanel(props: PanelProps) {
   const view = useOnFoot(props, report);
   const host = useRef<HTMLDivElement>(null);
   const [yaw, setYaw] = useState<number | null>(null);
+  const { band, bandMoves, makeRoom } = props;
   const hooks = { onLook: (look: { yawDeg: number }) => setYaw(look.yawDeg),
-    band: props.band, bandMoves: props.bandMoves, report };
+    band, bandMoves, report };
   const scene = useTerrainScene(host, view.input, hooks, props.viewTier);
-  const onMode = (mode: typeof view.mode): void => {
-    setYaw(null);
-    view.setMode(mode);
-  };
+  useStatusBand({ host, status: scene.status, band, bandMoves, makeRoom });
   const onRetry = (): void => {
     report.step('«Try again» pressed');
     scene.retry();
@@ -77,22 +80,25 @@ function usePanel(props: PanelProps) {
   };
   const onCopyReport = (): Promise<boolean> => copyReport(report);
   const yawDeg = yaw ?? view.startYawDeg;
-  return { view, host, status: scene.status, onMode, onRetry, onCopyReport,
-    yawDeg };
+  const loader = useLoaderProps({ panel: props, view, scene });
+  return { view, host, status: scene.status, drawn: scene.drawn, loader,
+    onRetry, onCopyReport, yawDeg };
 }
 
 export default function TerrainPanel(props: PanelProps) {
   const i18n = useI18n();
-  const { view, host, status, onMode, onRetry, onCopyReport, yawDeg } =
-    usePanel(props);
+  const { view, host, status, drawn, loader, onRetry, onCopyReport,
+    yawDeg } = usePanel(props);
   const altId = useId();
   const alt = view.input
-    ? viewAlt(i18n, { mode: view.mode, yawDeg, bodies: view.bodies }) : '';
-  const area = { view, host, status, onMode, onRetry, onCopyReport, altId };
+    ? viewAlt(i18n, { yawDeg, bodies: view.bodies }) : '';
+  const area = { view, host, status, drawn, loader, onRetry, onCopyReport,
+    altId };
   const { layout, hours } = props;
   return (
     <section className={`on-foot on-foot--${layout}`} aria-label={i18n.t('onFoot.view')}>
       <link rel="stylesheet" href={stylesUrl} precedence="on-foot" />
+      <link rel="stylesheet" href={loaderStylesUrl} precedence="on-foot" />
       <OnFootStageArea {...area} />
       <p id={altId} className="visually-hidden">
         {`${alt} ${i18n.t('onFoot.help')}`.trim()}

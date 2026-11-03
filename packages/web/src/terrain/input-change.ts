@@ -51,7 +51,6 @@ const sameTiles = (a: SceneInput, b: SceneInput): boolean =>
 export function drawsAgain(was: SceneInput | null, next: SceneInput): boolean {
   if (!was) return true;
   return !sameTiles(was, next) || was.ring !== next.ring ||
-    was.profile !== next.profile || was.mode !== next.mode ||
-    was.lander !== next.lander || was.seed !== next.seed ||
+    was.profile !== next.profile || was.seed !== next.seed ||
     !sameWords(was.words, next.words);
 }

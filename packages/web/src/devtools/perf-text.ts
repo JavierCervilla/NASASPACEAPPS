@@ -57,4 +57,6 @@ export const PERF_TEXT = {
   contextRestored: 'WebGL context restored',
   noGpu: 'unknown GPU',
   label: 'Performance readout',
+  /** The folded readout's count of the errors it holds under the fold. */
+  errors: (count: number) => `${count} ${count === 1 ? 'error' : 'errors'}`,
 } as const;

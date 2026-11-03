@@ -26,11 +26,11 @@
 /**
  * The on-foot view's state (VENT-34): the selected point's tile and mesh
  * heights, its horizon profile for the far horizon (useSiteHorizon), the
- * sky at the shared instant (`skyAt`), the camera's mode, and from them
+ * sky at the shared instant (`skyAt`), and from them
  * the scene's input and what the text alternative says.
  */
-import { useCallback, useMemo, useRef, useState } from 'react';
-import { skyAt, type SiteGroup, type SiteShadow } from '@ventana/sim';
+import { useCallback, useMemo, useRef } from 'react';
+import { skyAt, type SiteShadow } from '@ventana/sim';
 import type { TimeStore } from '../../calendar/time-store';
 import type { HorizonStore } from '../../horizon/horizon-store';
 import { useTime } from '../calendar/hooks';
@@ -39,12 +39,10 @@ import { useI18n } from '../i18n-context';
 import { sceneWords, seenBodies, spinOf, startYaw } from '../../terrain/on-foot-model';
 import type { PlacedTile, SceneInput,
   SkyDirs } from '../../terrain/scene/scene-types';
-import { landerKindOf } from '../../terrain/lander-kind';
 import { seedOf } from '../../terrain/seeded';
 import type { Recorder } from '../../terrain/report/recorder';
 import type { RingSource } from '../../terrain/ring/ring-source';
 import type { ViewTier } from '../../terrain/view-tier';
-import type { CameraMode } from '../../terrain/view-camera';
 import { useRing } from './use-ring';
 
 export interface OnFootSite {
@@ -52,8 +50,6 @@ export interface OnFootSite {
   readonly lat: number;
   readonly lonEast: number;
   readonly shadow?: SiteShadow | undefined;
-  /** Apollo sites get the Apollo lander (lander-kind.ts). */
-  readonly group?: SiteGroup | undefined;
 }
 
 export interface OnFootParts {
@@ -101,19 +97,17 @@ export function useOnFoot(parts: OnFootParts, report: Recorder) {
   const { placed, ring, sky } = ground;
   const horizon = useSiteHorizon(parts.horizons, parts.site.id);
   const profile = horizon.kind === 'terrain' ? horizon.profile : null;
-  const [mode, setMode] = useState<CameraMode>('third');
   const startYawDeg = useOpening(placed, sky);
   const bodies = useMemo(() => (placed && sky
     ? seenBodies(placed, profile, sky) : []), [placed, profile, sky]);
   const seed = seedOf(parts.site);
-  const lander = landerKindOf(parts.site);
   const input = useMemo<SceneInput | null>(() => {
     if (!placed || !ring || !sky) return null;
     const words = sceneWords(i18n, bodies);
     const earthSpin = spinOf(parts.site.lat, sky, ground.atMs ?? 0);
-    return { tiles: [placed], ring, profile, seed, sky, earthSpin, mode,
-      lander, startYawDeg, words };
-  }, [placed, ring, sky, profile, seed, lander, mode, startYawDeg, bodies, i18n,
+    return { tiles: [placed], ring, profile, seed, sky, earthSpin,
+      startYawDeg, words };
+  }, [placed, ring, sky, profile, seed, startYawDeg, bodies, i18n,
     parts.site.lat, ground.atMs]);
-  return { ...ground, input, bodies, mode, setMode, startYawDeg, lander };
+  return { ...ground, input, bodies, startYawDeg, profile };
 }

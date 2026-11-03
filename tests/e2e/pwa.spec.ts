@@ -25,7 +25,7 @@
 
 /**
  * The installable app (VENT-28): every locale links its own manifest with the J2 icons; the service worker registers,
- * and the app opens without a network, with the last data and a translated «Offline · data from <date>» notice; the
+ * and the app opens without a network, with the last data and a translated «Offline» row over «Showing data from <date>»; the
  * live favicon follows the Moon's phase at the selected instant and the selected site's state; and the production CSP
  * lets all of it run with no violation on every locale.
  */
@@ -140,17 +140,19 @@ test.describe('manifests', () => {
 });
 
 test.describe('offline', () => {
-  for (const [path, lang, notice] of [
-    ['', 'en', /^Offline · data from \d{1,2} \w+ \d{4}$/],
-    ['es/', 'es', /^Sin conexión · datos del \d{1,2} de \w+ de \d{4}$/],
-    ['de/', 'de', /^Offline · Daten vom \d{1,2}\. \w+ \d{4}$/],
+  for (const [path, lang, title, since] of [
+    ['', 'en', 'Offline', /^Showing data from \d{1,2} \w+ \d{4}$/],
+    ['es/', 'es', 'Sin conexión', /^Mostrando datos del \d{1,2} de \w+ de \d{4}$/],
+    ['de/', 'de', 'Offline', /^Zeigt Daten vom \d{1,2}\. \w+ \d{4}$/],
   ] as const) {
     test(`/${path} opens without a network, with the last data and the ${lang} notice`, async ({ context, page }) => {
       const map = await offlineVisit(context, page, path);
       // The map the visit used comes from the worker's cache.
       expect(map.fromServiceWorker()).toBe(true);
       await expect(page.locator('html')).toHaveAttribute('lang', lang);
-      await expect(page.locator('.offline-notice')).toHaveText(notice);
+      const status = page.locator('.offline-notice').getByRole('status');
+      await expect(status.locator('.notice-row__title')).toHaveText(title);
+      await expect(status.locator('.notice-row__how')).toHaveText(since);
       await expect(page.locator('.globe-markers')).toHaveAttribute('data-state', 'window');
       await page.screenshot({ path: test.info().outputPath(`offline-${lang}.png`) });
       await context.setOffline(false);
@@ -210,16 +212,19 @@ test.describe('offline notice, 390x844 at 200 % text', () => {
       document.documentElement.style.fontSize = '200%';
     });
     const notice = page.locator('.offline-notice');
-    await expect(notice).toHaveText(/^Offline · data from/);
+    await expect(notice.locator('.notice-row__title')).toHaveText('Offline');
+    await expect(notice.locator('.notice-row__how')).toHaveText(/^Showing data from/);
     const box = async (selector: string) => (await page.locator(selector).boundingBox())!;
     await expect.poll(async () => (await box('.offline-notice')).y >= (await box('.phone-bar')).y + (await box('.phone-bar')).height).toBe(true);
     const pill = await box('.site-pill');
     const note = await box('.offline-notice');
     const apart = note.y >= pill.y + pill.height || note.x >= pill.x + pill.width || note.x + note.width <= pill.x;
     expect(apart).toBe(true);
-    // Two lines at most, so it covers little of the globe.
-    const lineHeight = await notice.evaluate((el) => parseFloat(getComputedStyle(el).lineHeight));
-    expect(note.height).toBeLessThanOrEqual(2 * lineHeight + 20);
+    // Two lines at most, so it covers little of the globe: «Offline» on one, the date cut on the other (VENT-57).
+    for (const line of [notice.locator('.notice-row__title'), notice.locator('.notice-row__how')]) {
+      const [height, lineHeight] = await line.evaluate((el) => [el.getBoundingClientRect().height, parseFloat(getComputedStyle(el).lineHeight)]);
+      expect(Math.round(height / lineHeight)).toBe(1);
+    }
     await page.screenshot({ path: test.info().outputPath('offline-200.png') });
   });
 });
@@ -287,4 +292,109 @@ test.describe('the production CSP with the worker and the live favicon', () => {
       expect(await page.evaluate(() => (window as unknown as { violations: string[] }).violations)).toEqual([]);
     });
   }
+});
+
+/** The update row's three parts. */
+const updateRow = (page: Page) => ({
+  text: page.locator('.update-notice__live'),
+  update: page.getByRole('button', { name: 'New version ready: update now' }),
+  dismiss: page.getByRole('button', { name: 'Not now' }),
+});
+
+/**
+ * A deploy as the open page sees it: a new worker installs with `skipWaiting`, activates with `clients.claim` and takes
+ * the page over. Playwright cannot answer the browser's own update fetch of `sw.js` (neither `route` nor a CDP `Fetch`
+ * sees it), so the new worker comes from the same script under another URL, which the browser installs as a new
+ * version whatever its bytes. The check on the return to the foreground is held by tests/pwa-update.test.ts.
+ */
+async function deployNewVersion(page: Page): Promise<void> {
+  await page.evaluate(async (root) => {
+    await navigator.serviceWorker.register(`${root}sw.js?build=next`, { scope: root });
+  }, base);
+}
+
+/** Opens IM-2 on the DSN view, lets the first worker take the page over, and checks that offered nothing. */
+async function firstInstall(context: BrowserContext, page: Page): Promise<void> {
+  await open(context, page, '?site=im2-athena#dsn');
+  await controlled(page);
+  await expect(updateRow(page).update).toHaveCount(0);
+  await expect(updateRow(page).text).toBeEmpty();
+}
+
+test.describe('a new version (VENT-52)', () => {
+  test('390x844: «Update» reloads the same address', async ({
+    context,
+    page,
+  }) => {
+    await page.setViewportSize({ width: 390, height: 844 });
+    await firstInstall(context, page);
+    const before = page.url();
+    await deployNewVersion(page);
+    const row = updateRow(page);
+    await expect(row.text).toHaveText('New version ready');
+    // The whole row is the update: the mark, «New version ready» and how to update (the mouse's line on this page).
+    await expect(row.update).toContainText('New version ready');
+    await expect(row.update.locator('.pin-hint__fine')).toHaveText('Click to update');
+    await expect(row.update.locator('.pin-hint__coarse')).toBeHidden();
+    for (const button of [row.update, row.dismiss]) {
+      const box = (await button.boundingBox())!;
+      expect(Math.min(box.width, box.height)).toBeGreaterThanOrEqual(44);
+    }
+    const bar = (await page.locator('.phone-bar').boundingBox())!;
+    expect((await page.locator('.update-notice').boundingBox())!.y).toBeGreaterThanOrEqual(bar.y + bar.height);
+    await Promise.all([page.waitForEvent('load'), row.update.click()]);
+    expect(page.url()).toBe(before);
+    await expect(page.locator('.globe-markers')).toHaveAttribute('data-state', 'window');
+    await expect(page.locator('html')).toHaveAttribute('lang', 'en');
+  });
+
+  for (const [name, size, scheme] of [
+    ['390x844 dark', { width: 390, height: 844 }, 'dark'],
+    ['390x844 light', { width: 390, height: 844 }, 'light'],
+    ['1440x900 dark', { width: 1440, height: 900 }, 'dark'],
+  ] as const) {
+    test(`${name}: the ✕ hides it`, async ({ context, page }) => {
+      await page.setViewportSize(size);
+      await firstInstall(context, page);
+      await page.emulateMedia({ colorScheme: scheme });
+      await deployNewVersion(page);
+      const row = updateRow(page);
+      await expect(row.update).toBeVisible();
+      await page.screenshot({ path: test.info().outputPath(`update-${size.width}-${scheme}.png`) });
+      await row.dismiss.click();
+      await expect(row.update).toHaveCount(0);
+      await expect(row.text).toBeEmpty();
+    });
+  }
+});
+
+/** Whether two boxes share any pixel. */
+const overlaps = (a: { x: number; y: number; width: number; height: number }, b: typeof a): boolean =>
+  a.x < b.x + b.width && b.x < a.x + a.width && a.y < b.y + b.height && b.y < a.y + a.height;
+
+test.describe('the update row on the phone’s globe (VENT-52)', () => {
+  test('390x844: the row, then the pin hint, then the compass, none over another', async ({ context, page }) => {
+    await page.setViewportSize({ width: 390, height: 844 });
+    await open(context, page, '?site=im2-athena');
+    await controlled(page);
+    const compass = page.locator('.compass');
+    await expect(page.locator('.pin-hint')).toBeVisible();
+    await deployNewVersion(page);
+    await expect(updateRow(page).update).toBeVisible();
+    const box = async (selector: string) => (await page.locator(selector).boundingBox())!;
+    await expect
+      .poll(async () => (await box('.compass')).y >= (await box('.pin-hint')).y + (await box('.pin-hint')).height)
+      .toBe(true);
+    const row = await box('.update-notice');
+    const hint = await box('.pin-hint');
+    expect(hint.y).toBeGreaterThanOrEqual(row.y + row.height);
+    expect(overlaps(row, await compass.boundingBox().then((b) => b!))).toBe(false);
+    expect(overlaps(hint, await compass.boundingBox().then((b) => b!))).toBe(false);
+    await page.screenshot({ path: test.info().outputPath('update-stack-390.png') });
+    // Without the hint the compass comes up under the row alone, still clear of it.
+    await page.locator('.pin-hint .pin-hint__close').click();
+    await expect(page.locator('.pin-hint')).toHaveCount(0);
+    await expect.poll(async () => overlaps(await box('.update-notice'), await box('.compass'))).toBe(false);
+    await expect.poll(async () => (await box('.compass')).y < hint.y + hint.height).toBe(true);
+  });
 });

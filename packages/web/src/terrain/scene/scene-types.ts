@@ -27,17 +27,16 @@
  * What the on-foot scene takes (VENT-34): terrain as transferable tiles
  * placed by key in the session's local frame (tile.ts, the seam of the
  * streaming to come), the far horizon's profile, the sky at the shared
- * instant, the camera's mode and the words it draws. No Three.js here, so
- * the panel can name them without loading the scene.
+ * instant, where the view opens and the words it draws. No Three.js here,
+ * so the panel can name them without loading the scene.
  */
 import type { HorizonProfile } from '@ventana/sim';
 import type { QualitySettings } from '../../lib/quality';
-import type { LanderKind } from '../lander-kind';
 import type { LeaveOut } from '../leave-out';
 import type { ReportSink } from '../report/sink';
 import type { RingView } from '../ring/ring-session';
 import type { HeightTile } from '../tile';
-import type { CameraMode, Look } from '../view-camera';
+import type { Look } from '../view-camera';
 
 /** The near ground and its mesh heights (the frame's y, ring-local.ts). */
 export interface PlacedTile {
@@ -71,9 +70,6 @@ export interface SceneInput {
   readonly sky: SkyDirs;
   /** The Earth's scene-to-body matrix, row-major (earth-orientation.ts). */
   readonly earthSpin: readonly number[];
-  readonly mode: CameraMode;
-  /** The lander beside the astronaut (lander-kind.ts). */
-  readonly lander: LanderKind;
   /** Where the view opens: the Sun's azimuth, or the Earth's. */
   readonly startYawDeg: number;
   readonly words: SceneWords;
@@ -103,6 +99,8 @@ export interface SceneHooks {
    * probe, frame-probe.ts); absent when the tier may not step down.
    */
   readonly onSlowFrame?: (() => void) | undefined;
+  /** The first frame is drawn: the loader hands over (VENT-60). */
+  readonly onDrawn?: (() => void) | undefined;
   /**
    * The band of the host the view is framed in (the phone's free band
    * between its top bar and sheet), px from the host's top; none: whole.

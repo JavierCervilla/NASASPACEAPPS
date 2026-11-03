@@ -32,13 +32,21 @@
  * Each item is a real link to its locale's page; choosing one keeps the
  * choice and opens that page on the same view.
  */
-import { useEffect, useRef, type KeyboardEvent, type MouseEvent } from 'react';
+import {
+  useCallback,
+  useEffect,
+  useRef,
+  type KeyboardEvent,
+  type MouseEvent,
+} from 'react';
 import { localStore } from '../../i18n/choice';
 import { AUTONYMS, LOCALES, type Locale } from '../../i18n/locales';
 import { localePath } from '../../i18n/routes';
 import { switchLocale } from '../../i18n/switch';
 import { menuIndex } from '../../lib/menu-keys';
+import { leftOnPurpose } from '../../terrain/view-tier-open';
 import { useI18n } from '../i18n-context';
+import { useScrollFade } from '../use-scroll-fade';
 
 interface Props {
   /** The site's base path, for the locales' pages. */
@@ -94,7 +102,8 @@ function Option({ locale, base }: { locale: Locale; base: string }) {
   const current = locale === useI18n().locale;
   const choose = (event: MouseEvent<HTMLAnchorElement>): void => {
     event.preventDefault();
-    switchLocale(base, locale, { storage: localStore(), location });
+    switchLocale(base, locale,
+      { storage: localStore(), location, leaving: leftOnPurpose });
   };
   return (
     <li role="none">
@@ -115,6 +124,11 @@ function Option({ locale, base }: { locale: Locale; base: string }) {
 
 export function LanguageList({ base, onClose }: Props) {
   const list = useRef<HTMLUListElement>(null);
+  const { ref: fadeRef, ...fade } = useScrollFade<HTMLUListElement>();
+  const ref = useCallback((el: HTMLUListElement | null) => {
+    list.current = el;
+    fadeRef(el);
+  }, [fadeRef]);
   const { t } = useI18n();
   useEffect(() => {
     const items = list.current?.querySelectorAll('a');
@@ -122,7 +136,7 @@ export function LanguageList({ base, onClose }: Props) {
     (current ?? items?.[0])?.focus();
   }, []);
   return (
-    <ul ref={list} className="lang-list" role="menu" aria-label={t('lang.label')} onKeyDown={menuKeys(onClose)}>
+    <ul ref={ref} {...fade} className="lang-list scroll-fade" role="menu" aria-label={t('lang.label')} onKeyDown={menuKeys(onClose)}>
       {LOCALES.map((locale) => (
         <Option key={locale} locale={locale} base={base} />
       ))}

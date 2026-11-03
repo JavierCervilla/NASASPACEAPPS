@@ -31,7 +31,7 @@
  * and Home goes back to where the view opened. A release carries the
  * finger's speed on (look-coast.ts). Pure.
  */
-import { turnLook, type CameraMode, type Look } from './view-camera';
+import { turnLook, type Look } from './view-camera';
 
 const YAW_STEP = 5;
 const YAW_STEP_BIG = 15;
@@ -58,12 +58,11 @@ export function dragScale(
 
 /** `look` after a drag of `dx`, `dy` px at `scale`. */
 export function dragLook(
-  mode: CameraMode,
   look: Look,
   [dx, dy]: readonly [number, number],
   scale: DragScale,
 ): Look {
-  return turnLook(mode, look, -dx * scale.yaw, dy * scale.pitch);
+  return turnLook(look, -dx * scale.yaw, dy * scale.pitch);
 }
 
 /** The turn of each arrow: yaw and pitch, in steps. */
@@ -84,7 +83,6 @@ export interface KeyPress {
  * view's, so the page keeps it.
  */
 export function keyLook(
-  mode: CameraMode,
   look: Look,
   press: KeyPress,
   home: Look,
@@ -93,5 +91,5 @@ export function keyLook(
   const arrow = ARROWS[press.key];
   if (!arrow) return null;
   const yaw = press.shiftKey ? YAW_STEP_BIG : YAW_STEP;
-  return turnLook(mode, look, arrow[0] * yaw, arrow[1] * PITCH_STEP);
+  return turnLook(look, arrow[0] * yaw, arrow[1] * PITCH_STEP);
 }

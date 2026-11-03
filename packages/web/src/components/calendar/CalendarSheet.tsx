@@ -59,6 +59,7 @@ import {
   SignalBar,
 } from './parts';
 import { SourceNotes } from '../source/SourceNotes';
+import { useScrollFade } from '../use-scroll-fade';
 import { CompareNote } from './CompareNote';
 import { StripStatus } from './StripStatus';
 
@@ -140,7 +141,7 @@ function sliderProps(props: Omit<ColumnsProps, 'strip' | 'diff'>) {
 
 /** The columns: a vertical slider over the month's hours. */
 function Columns({ parts, strip, diff, atMs, i18n }: ColumnsProps) {
-  const top = `${instantPct(atMs)}%`;
+  const along = `0 ${instantPct(atMs)}%`;
   const slider = sliderProps({ parts, atMs, i18n });
   return (
     <div className="columns" data-sheet-scroll {...slider}>
@@ -152,8 +153,10 @@ function Columns({ parts, strip, diff, atMs, i18n }: ColumnsProps) {
       <SignalBar tone="sun" segments={strip.sun} axis="vertical" differs={diff?.sun} />
       <SignalBar tone="earth" segments={strip.earth} axis="vertical" differs={diff?.earth} />
       <SignalBar tone="window" segments={strip.window} axis="vertical" differs={diff?.window} />
-      <span className="columns__line" style={{ top }} aria-hidden="true">
-        <span className="columns__chip">{formatChip(atMs)}</span>
+      <span className="rail rail--y" style={{ translate: along }}>
+        <span className="columns__line" aria-hidden="true">
+          <span className="columns__chip">{formatChip(atMs)}</span>
+        </span>
       </span>
     </div>
   );
@@ -200,11 +203,12 @@ export function CalendarSheet(props: Props) {
   const { parts, site } = props;
   const i18n = useI18n();
   const calendar = useCalendar(parts, site.id);
+  const fade = useScrollFade<HTMLDivElement>();
   const { state: time, strip, diff, playing, result } = calendar;
   if (!time) return null;
   const { pill, pillDetail } = siteLabels(site);
   return (
-    <div className="calendar">
+    <div className="calendar scroll-fade" {...fade}>
       <MonthArrows parts={parts} atMs={time.atMs}>
         <div className="calendar__title">
           <h2>{monthLabel(i18n, time.atMs)}</h2>
@@ -212,11 +216,9 @@ export function CalendarSheet(props: Props) {
         </div>
       </MonthArrows>
       <Shares calendar={calendar} shadow={site.shadow} />
-      {strip ? (
-        <Columns {...{ parts, strip, diff }} atMs={time.atMs} i18n={i18n} />
-      ) : (
-        <StripStatus calendar={calendar} />
-      )}
+      {strip
+        ? <Columns {...{ parts, strip, diff }} atMs={time.atMs} i18n={i18n} />
+        : <StripStatus calendar={calendar} />}
       <Controls {...props} {...time} playing={playing} result={result} />
     </div>
   );

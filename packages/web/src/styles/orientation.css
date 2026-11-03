@@ -1,0 +1,239 @@
+/*
+ *   _   _       _                         _ _
+ *  | | | |_ __ (_)_   _____ _ __ ___  ___| | | ___
+ *  | | | | '_ \| \ \ / / _ \ '__/ __|/ _ \ | |/ _ \
+ *  | |_| | | | | |\ V /  __/ |  \__ \  __/ | |  __/
+ *   \___/|_| |_|_| \_/ \___|_|  |___/\___|_|_|\___|
+ *
+ *             =++==--::.
+ *         %%%%##**++=--:..  .
+ *      ##**#%@%%#***+=--::.   .
+ *    #**=+*#*#**#++++=-:::.. .  .
+ *   #++-====*@%+*++==--::...   .  .    Ventana Lunar
+ *  #+=-=--++==+===-+==--:..   .  .  .  Sun, Earth and landing
+ * #----====-------=-=---:..  .  .  .   windows at the lunar
+ * #+---+=====--=---==-::..     .  .  . south pole
+ * #*----==---==-=-=-:-....    .  .  .
+ * *#----===+*===--:-::...    .  .  .   Built for the NASA Space
+ *  *----=*-+*%*+=-:::....   .  .  .    Apps Challenge 2026,
+ *   *------=+*=--:::-:::.. .  .  .     Madrid. Not endorsed
+ *    %*===-=-==--==-:::.  .  .  .      by NASA.
+ *      *+:--+:--::::::.  .  .  .
+ *         -=:::...:..   .  .           (c) 2026 Universelle
+ *             :::.. .  .               SPDX-License-Identifier: MIT
+ */
+
+/*
+ * The globe's orientation references (VENT-50, validated canvas «A + full
+ * graticule, discreet»): the compass, a round glass button over the globe
+ * whose fixed needle points north and whose small Earth mark rides the ring
+ * where the Earth lies (src/components/compass/), and the graticule's labels
+ * and pole cross (src/globe/graticule/), whose lines are drawn in the
+ * scene. Tokens: styles/tokens.css.
+ */
+
+/*
+ * The compass: a 48 px disc in the hint's frosted material (VENT-57,
+ * C-02, tokens.css --float-*), like the other floating controls. On desktop in the globe's top
+ * right corner; the first-time hint keeps clear of it (pin.css).
+ */
+.compass {
+  position: absolute;
+  top: 20px;
+  right: 20px;
+  z-index: 5;
+  box-sizing: border-box;
+  width: var(--compass-size);
+  height: var(--compass-size);
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: var(--float-fill);
+  backdrop-filter: var(--float-blur);
+  box-shadow: var(--float-rim);
+  color: var(--glass-label-text);
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  transition: scale var(--dur-press) ease-out;
+}
+
+/* Response on the press (apple-design §1). */
+.compass:active {
+  scale: 0.94;
+}
+
+.compass:focus-visible {
+  outline: 2px solid var(--focus-ring-on-moon);
+  outline-offset: 2px;
+}
+
+/* The ring the Earth mark rides, its centre line 16.5 px from the middle. */
+.compass::before {
+  content: '';
+  position: absolute;
+  inset: 7px;
+  border-radius: 50%;
+  border: 1px solid color-mix(in srgb, currentColor 35%, transparent);
+}
+
+/* North is fixed: the globe never turns its north off the top. */
+.compass__n {
+  position: absolute;
+  left: 50%;
+  top: 11px;
+  translate: -50% 0;
+  /* In px: the letter sits over the needle of a 48 px button. */
+  font-size: 11px;
+  font-weight: 600;
+  line-height: 1;
+  letter-spacing: 0;
+}
+
+.compass__needle {
+  position: absolute;
+  left: 50%;
+  top: 22px;
+  width: 6px;
+  height: 10px;
+  translate: -50% 0;
+  background: currentColor;
+  clip-path: polygon(50% 0, 100% 100%, 50% 78%, 0 100%);
+}
+
+/*
+ * The Earth: a disc on the ring, turned to the direction the Earth lies
+ * from the Moon's centre on screen (src/components/compass/use-earth-mark.ts
+ * sets --earth-angle after every globe frame). Hollow while the Earth is
+ * behind the Moon.
+ */
+.compass__earth {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 7px;
+  height: 7px;
+  margin: -3.5px 0 0 -3.5px;
+  border-radius: 50%;
+  box-sizing: border-box;
+  background: currentColor;
+  transform: rotate(var(--earth-angle, 0deg)) translateY(-16.5px);
+}
+
+.compass[data-far='true'] .compass__earth {
+  background: none;
+  box-shadow: inset 0 0 0 1.5px currentColor;
+}
+
+/* Phones: under the glass top bar, and under the hint while it shows (measured). */
+@media (max-width: 767.98px) {
+  /* Placed by translate, so a move under the hint is composited (§11). */
+  .compass {
+    position: fixed;
+    top: 0;
+    translate: 0 var(--compass-top, 92px);
+    right: 12px;
+    z-index: 4;
+  }
+
+  /*
+   * The sheet covers the globe it turns (200 % text: the half sheet at the
+   * full detent): out of view and of the tab order (VENT-51).
+   */
+  .compass[data-covered='true'] {
+    visibility: hidden;
+    opacity: 0;
+  }
+}
+
+/* Moves aside when the hint comes or goes, unless motion is reduced. */
+@media (prefers-reduced-motion: no-preference) {
+  .compass {
+    transition:
+      scale var(--dur-press) ease-out,
+      translate var(--dur-enter) var(--spring),
+      opacity var(--dur-press) ease-out,
+      visibility var(--dur-press);
+  }
+}
+
+@media (prefers-contrast: more) {
+  .compass {
+    box-shadow: inset 0 0 0 1.5px currentColor;
+  }
+}
+
+@media (prefers-reduced-transparency: reduce) {
+  .compass {
+    backdrop-filter: none;
+  }
+}
+
+/*
+ * The graticule's HTML: its own stacking context under the markers' (the
+ * globe mounts it first) and under every floating surface, letting every
+ * click through.
+ */
+.globe-graticule {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+}
+
+/*
+ * 10 px at the default text size; moved by transform after each frame.
+ * Scoped by the globe's layer: the polar map's labels share the class
+ * (polar.css), and a bare rule here won over theirs or lost to it by the
+ * bundle's order (VENT-52).
+ */
+.globe-graticule .graticule-label,
+.graticule-sizer {
+  position: absolute;
+  top: 0;
+  left: 0;
+  padding: 2px 4px;
+  border-radius: 4px;
+  background: var(--graticule-label-chip);
+  color: var(--graticule-label);
+  font-size: var(--type-caption-size);
+  line-height: 1;
+  letter-spacing: var(--type-caption-tracking);
+  white-space: nowrap;
+}
+
+.globe-graticule .graticule-label {
+  translate: -50% -50%;
+}
+
+/*
+ * The labels' box as the page draws them (src/globe/graticule/room.ts):
+ * every label's words in one cell, so it is the widest; never seen.
+ */
+.graticule-sizer {
+  display: inline-grid;
+  visibility: hidden;
+}
+
+.graticule-sizer > span {
+  grid-area: 1 / 1;
+}
+
+/* The cross on the south pole: two hairlines. */
+.graticule-pole {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 9px;
+  height: 9px;
+  translate: -50% -50%;
+  background:
+    linear-gradient(var(--graticule-pole), var(--graticule-pole)) center / 100%
+      1px no-repeat,
+    linear-gradient(var(--graticule-pole), var(--graticule-pole)) center / 1px
+      100% no-repeat;
+}
+
+.globe-graticule .graticule-label[hidden],
+.graticule-pole[hidden] {
+  display: none;
+}

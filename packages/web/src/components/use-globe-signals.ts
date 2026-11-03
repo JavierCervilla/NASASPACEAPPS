@@ -26,22 +26,25 @@
 /**
  * What the mounted globe tells the page: that its first map is on the
  * Moon (the loading state may go), and its view, where the pin is dropped
- * and stands (VENT-37). `restart` forgets the map when the globe
- * starts again.
+ * and stands (VENT-37), and its compass (VENT-50). `restart` forgets the
+ * map when the globe starts again.
  */
 import { useMemo, useState } from 'react';
+import type { GlobeCompass } from '../globe/compass-link';
 import type { GlobeView } from '../globe/globe-view';
 
 export function useGlobeSignals() {
   const [textured, setTextured] = useState(false);
   const [view, setView] = useState<GlobeView | null>(null);
+  const [compass, setCompass] = useState<GlobeCompass | null>(null);
   const signals = useMemo(
     () => ({
       onTextured: (): void => setTextured(true),
       onView: setView,
+      onCompass: setCompass,
       restart: (): void => setTextured(false),
     }),
     [],
   );
-  return { textured, view, signals };
+  return { textured, view, compass, signals };
 }

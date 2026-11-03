@@ -210,10 +210,10 @@ describe('the report text', () => {
   });
 
   it('names what it does not know, and the parts left out', () => {
-    const bare: Run = { ...startRun(STARTED, { ...ENV, leftOut: 'astronaut,lander', gpu: null, threads: null,
+    const bare: Run = { ...startRun(STARTED, { ...ENV, leftOut: 'shadows,far', gpu: null, threads: null,
       deviceMemoryGb: null, battery: null }) };
     const text = reportText({ current: bare, previous: null }, STARTED);
-    expect(text).toContain('Left out (?onfoot=): astronaut,lander');
+    expect(text).toContain('Left out (?onfoot=): shadows,far');
     expect(text).toContain('GPU: unknown');
     expect(text).toContain('Canvas: unknown');
     expect(text).toContain('CPU threads: unknown');

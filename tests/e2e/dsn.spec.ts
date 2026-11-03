@@ -36,6 +36,7 @@
 import { execFileSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import { expect, test, type Page } from '@playwright/test';
+import sharp from 'sharp';
 import { stubApi } from './api-stub';
 
 const CANVAS = new Date('2026-11-22T20:00:00Z');
@@ -72,7 +73,8 @@ const headerTab = (page: Page, name: string) => page.getByRole('navigation', { n
 const tabs = (page: Page) => page.getByRole('navigation', { name: 'Views' });
 const slider = (page: Page) => page.getByRole('region', { name: 'Calendar' }).getByRole('slider', { name: 'Selected hour' });
 const playheadLeft = (page: Page) =>
-  view(page).locator('.dsn-band__playhead').evaluate((el) => (el as HTMLElement).style.left);
+  // The playhead rides a rail translated by the instant's share of the day (VENT-55: composited, not laid out).
+  view(page).locator('.dsn-band__playhead').evaluate((el) => (el.parentElement as HTMLElement).style.translate);
 
 /** The value of the card's list row `label`. */
 async function fact(page: Page, label: string): Promise<string> {
@@ -229,6 +231,38 @@ test.describe('phone, 390x844', () => {
     await expect(widget).toContainText('Earth below the horizon');
     await expect(widget).toContainText('Robledo would listen');
     await evidence(page, 'nolink-phone');
+  });
+
+  // VENT-59 (V-20): Goldstone at the limb drew as a hollow grey ring the size and tone of the land dots and hid among
+  // them. A resting antenna's ring now stands in a dark moat cleared of land, so its shape tells it from the dots.
+  test('C · a resting antenna stands in a moat clear of land dots, its ring bright on the ocean', async ({ page }) => {
+    await open(page);
+    await tabs(page).getByRole('button', { name: 'DSN', exact: true }).click();
+    const ring = page.locator('.dsn-stage .dsn-earth__station');
+    await expect(ring).toHaveCount(1);
+    const box = (await ring.boundingBox()) ?? { x: 0, y: 0, width: 0, height: 0 };
+    // The ring's radius is 0.9 of the marks' unit and its stroke reaches 1.1 (EarthMarks.tsx), where its box ends.
+    const half = box.width / 2;
+    const unit = half / 1.1;
+    const [cx, cy] = [box.x + half, box.y + half];
+    const side = Math.ceil(4 * unit);
+    const clip = { x: Math.round(cx - side / 2), y: Math.round(cy - side / 2), width: side, height: side };
+    const { data, info } = await sharp(await page.screenshot({ clip, scale: 'css' })).removeAlpha().raw()
+      .toBuffer({ resolveWithObject: true });
+    const brightest = (from: number, to: number): number => {
+      let max = 0;
+      for (let y = 0; y < info.height; y++) {
+        for (let x = 0; x < info.width; x++) {
+          const d = Math.hypot(clip.x + x + 0.5 - cx, clip.y + y + 0.5 - cy) / unit;
+          const i = (y * info.width + x) * 3;
+          if (d >= from && d <= to) max = Math.max(max, data[i] ?? 0, data[i + 1] ?? 0, data[i + 2] ?? 0);
+        }
+      }
+      return max;
+    };
+    expect(brightest(1.35, 1.75)).toBeLessThan(80);
+    expect(brightest(0.8, 1)).toBeGreaterThan(150);
+    await page.screenshot({ path: test.info().outputPath('goldstone-moat.png'), clip });
   });
 
   test('C · the DSN tab shows the Earth over the screen and the band in the sheet; Globe goes back', async ({ page }) => {

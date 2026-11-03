@@ -74,7 +74,7 @@ function setUp(coasting = false) {
     hold = fn;
     return () => void (hold = null);
   };
-  bindPlacing(host, { carrier, surfaces, after, keys: new EventTarget() });
+  bindPlacing(host, { carrier, surfaces, after, now: () => 0, keys: new EventTarget() });
   const turn = { drag: vi.fn(), release: vi.fn(), press: vi.fn(() => coasting) };
   const zoom = vi.fn();
   bindDrag(host, turn);

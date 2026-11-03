@@ -25,30 +25,13 @@
 
 /**
  * What stands near the point (VENT-34): the illustrative rocks (rocks.ts,
- * stones.ts) as one mesh of rounded stones, kept clear of the lander
- * (lander.ts), and where that lander stands: beside where the view opens.
+ * stones.ts) as one mesh of rounded stones.
  */
 import { BufferAttribute, Mesh, MeshStandardMaterial } from 'three';
-import { LANDER_RADIUS_M, type LanderKind } from '../lander-kind';
 import { scatterRocks } from '../rocks';
 import { contactAo, stonesBuffers, type GroundAt } from '../stones';
-import { direction } from '../view-camera';
 import { geometryOf } from './mesh-of';
 import { maskSun, type SunMask } from './sun-mask';
-
-/**
- * 22 m from the astronaut and 14° right of where the view opens, so the
- * lander is in the first frame on a phone's 30° of width too.
- */
-const LANDER = { distanceM: 22, offsetDeg: 14 } as const;
-/** Stones keep this far from the footpads' ring, metres. */
-const ROCK_CLEARANCE_M = 2;
-
-/** Where the lander stands, east and north of the astronaut. */
-export function landerSpot(yawDeg: number): readonly [number, number] {
-  const [x, , z] = direction(yawDeg + LANDER.offsetDeg, 0);
-  return [x * LANDER.distanceM, -z * LANDER.distanceM];
-}
 
 function masked(color: number, mask: SunMask, roughness = 0.92) {
   const material = new MeshStandardMaterial({ color, roughness,
@@ -57,19 +40,13 @@ function masked(color: number, mask: SunMask, roughness = 0.92) {
   return material;
 }
 
-/** The scatter of stones, clear of a lander of `kind` at `spot`. */
+/** The scatter of stones of `seed` on `ground`. */
 export function rocksMesh(
   seed: number,
   ground: GroundAt,
-  lander: { readonly spot: readonly [number, number];
-    readonly kind: LanderKind },
   mask: SunMask,
 ): Mesh {
-  const { spot, kind } = lander;
-  const clear = [{ east: spot[0], north: spot[1],
-    r: LANDER_RADIUS_M[kind] + ROCK_CLEARANCE_M }];
-  const rocks = scatterRocks(seed, { count: 420, innerM: 2.5,
-    outerM: 120, clear });
+  const rocks = scatterRocks(seed, { count: 420, innerM: 2.5, outerM: 120 });
   const buffers = stonesBuffers(rocks, ground);
   const geometry = geometryOf(buffers);
   geometry.setAttribute('color', new BufferAttribute(

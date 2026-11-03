@@ -151,6 +151,8 @@ test.describe('phone language list, 390x844', () => {
   test('the Sites sheet’s Language row pushes the list; Back and Escape bring the focus home', async ({ page }) => {
     await open(page, '');
     await page.getByRole('navigation', { name: 'Views' }).getByRole('button', { name: 'Sites' }).click();
+    // The row sits on the «Settings» page, behind the gear beside «Done» (VENT-57).
+    await page.getByRole('button', { name: 'Settings' }).click();
     const row = page.getByRole('button', { name: /^Language\s*English/ });
     await expect(row).toBeVisible();
     expect((await row.boundingBox())!.height).toBeGreaterThanOrEqual(44);
@@ -180,27 +182,40 @@ const overlap = (a: { x: number; y: number; width: number; height: number }, b: 
 test.describe('phone language list with motion on, 390x844 (QA PR #17)', () => {
   test.use({ viewport: { width: 390, height: 844 }, hasTouch: true, isMobile: true });
 
-  test('the push settles with the list alone on screen, and Back brings the sites back alone', async ({ page }) => {
+  test('each push settles with its page alone on screen, and Back brings the one under it back alone', async ({ page }) => {
     await page.emulateMedia({ reducedMotion: 'no-preference', colorScheme: 'dark' });
     await page.clock.setFixedTime(NOW);
     await stubApi(page);
     await page.goto('./de/');
     await expect(page.locator('.globe-markers')).toHaveAttribute('data-state', 'window');
     await page.locator('.tab-bar .tab').last().click();
-    await page.locator('.lang-row').click();
+    // The sites push «Einstellungen» (VENT-57), which pushes the language list.
+    const sites = page.locator('.push:not(.settings-page)');
+    const settings = page.locator('.settings-page');
+    await page.locator('.picker__gear').click();
     // Wait for the spring to report rest, not for a fixed time: a busy CI
     // runner draws fewer frames, so a fixed sleep raced the settle.
-    await expect(page.locator('.push')).toHaveAttribute('data-at', 'page', { timeout: 5000 });
+    await expect(sites).toHaveAttribute('data-at', 'page', { timeout: 5000 });
     await expect(page.locator('.picker__title')).toBeHidden({ timeout: 100 });
     await expect(page.getByRole('list', { name: 'Landeplätze' })).toBeHidden();
-    const back = (await page.locator('.lang-page__back').boundingBox())!;
-    const title = (await page.locator('.lang-page__title').boundingBox())!;
+    const head = (selector: string) => settings.locator(`.settings-page__head ${selector}`).boundingBox();
+    expect(overlap((await head('.lang-page__back'))!, (await head('.lang-page__title'))!)).toBe(false);
+    expect(await sites.locator('> .push__page').evaluate((el) => el.getBoundingClientRect().left)).toBeGreaterThanOrEqual(0);
+    await page.locator('.lang-row').click();
+    await expect(settings).toHaveAttribute('data-at', 'page', { timeout: 5000 });
+    await expect(page.locator('.lang-row')).toBeHidden({ timeout: 100 });
+    const back = (await page.locator('.lang-page .lang-page__back').boundingBox())!;
+    const title = (await page.locator('.lang-page .lang-page__title').boundingBox())!;
     expect(overlap(back, title)).toBe(false);
-    expect(await page.locator('.push__page').evaluate((el) => el.getBoundingClientRect().left)).toBeGreaterThanOrEqual(0);
-    await page.locator('.lang-page__back').click();
-    await expect(page.locator('.push')).toHaveAttribute('data-at', 'root', { timeout: 3000 });
-    await expect(page.locator('.picker__title')).toBeVisible();
+    expect(await settings.locator('> .push__page').evaluate((el) => el.getBoundingClientRect().left)).toBeGreaterThanOrEqual(0);
+    await page.locator('.lang-page .lang-page__back').click();
+    await expect(settings).toHaveAttribute('data-at', 'root', { timeout: 3000 });
+    await expect(page.locator('.lang-row')).toBeVisible();
     await expect(page.locator('.lang-list')).toHaveCount(0);
+    await settings.locator('.settings-page__head .lang-page__back').click();
+    await expect(sites).toHaveAttribute('data-at', 'root', { timeout: 3000 });
+    await expect(page.locator('.picker__title')).toBeVisible();
+    await expect(settings).toHaveCount(0);
     const done = (await page.locator('.picker__done').boundingBox())!;
     expect(overlap((await page.locator('.picker__title').boundingBox())!, done)).toBe(false);
   });
@@ -253,8 +268,8 @@ for (const [path, name] of [['de/', 'German'], ['fr/', 'French'], ['en-xa/', 'th
         expect(await allWhole(page, '.tab > span:not(.tab__soon)')).toEqual([]);
         expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
         await page.getByRole('navigation').locator('.tab').last().click();
-        await expect(page.locator('.lang-row')).toBeVisible();
-        expect(await outside(page, '.lang-row, .lang-row__value, .picker__done, .segmented')).toEqual([]);
+        await expect(page.locator('.picker__gear')).toBeVisible();
+        expect(await outside(page, '.picker__gear, .picker__done, .segmented')).toEqual([]);
         expect(await allWhole(page, '.segmented button')).toEqual([]);
         // The search field's placeholder is drawn whole, never cut mid-word (QA PR #17).
         expect(await page.locator('.search input').evaluate((input: HTMLInputElement) => {
@@ -264,6 +279,13 @@ for (const [path, name] of [['de/', 'German'], ['fr/', 'French'], ['en-xa/', 'th
           const room = input.clientWidth - parseFloat(style.paddingLeft) - parseFloat(style.paddingRight);
           return context.measureText(input.placeholder).width <= room;
         })).toBe(true);
+        // The Language row and the Data source switch, on the «Settings» page behind the gear (VENT-57).
+        await page.locator('.picker__gear').click();
+        await expect(page.locator('.push').first()).toHaveAttribute('data-at', 'page');
+        await expect(page.locator('.lang-row')).toBeVisible();
+        const settings = '.settings-page :is(.lang-row, .lang-row__value, .picker__done, .lang-page__back, .segmented)';
+        expect(await outside(page, settings)).toEqual([]);
+        expect(await allWhole(page, '.settings-page .segmented button')).toEqual([]);
       });
     });
   }

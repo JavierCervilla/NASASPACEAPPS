@@ -36,7 +36,7 @@
 const FIT = '[data-sheet-fit]';
 
 /** Room kept between the content's bottom and the tab bar. */
-const TAB_GAP_PX = 12;
+export const TAB_GAP_PX = 12;
 
 /** The bottom of the lowest laid-out child of `el`, or its own. */
 function contentBottom(el: Element): number {

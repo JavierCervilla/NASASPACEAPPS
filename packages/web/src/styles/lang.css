@@ -77,11 +77,12 @@
 .lang-option__check {
   grid-column: 2;
   grid-row: 1 / span 2;
-  color: var(--signal-window-ink);
+  /* Neutral, as the site list's check: a signal colour is never decoration. */
+  color: var(--text);
 }
 
 .lang-option:focus-visible {
-  outline: 2px solid var(--text);
+  outline: 2px solid var(--focus-ring);
   outline-offset: -2px;
   border-radius: 10px;
 }
@@ -140,7 +141,7 @@
 }
 
 .lang-button:focus-visible {
-  outline: 2px solid var(--text);
+  outline: 2px solid var(--focus-ring);
   outline-offset: 2px;
 }
 
@@ -163,20 +164,25 @@
   transform-origin: top right;
 }
 
+/*
+ * The list scrolls inside the popover, not the popover, so the scroll edge
+ * fade (scroll-fade.css) never cuts the glass's rim (VENT-55, C-10).
+ */
+.lang-popover:popover-open {
+  display: flex;
+  flex-direction: column;
+}
+
 .lang-popover .lang-list {
+  min-height: 0;
   background: none;
 }
 
-/* It grows from the button that opened it (apple-design §7). */
-@media (prefers-reduced-motion: no-preference) {
-  .lang-popover:popover-open {
-    animation: popover-in var(--dur-enter) var(--ease-out);
-  }
+/* It grows from the button that opened it: styles/presence.css. */
 
-  .lang-button:active {
-    transform: scale(0.97);
-    transition: transform var(--dur-press) ease-out;
-  }
+.lang-button:active {
+  transform: scale(0.97);
+  transition: transform var(--dur-press) ease-out;
 }
 
 /* Phone: the row under the picker's title */
@@ -232,7 +238,7 @@
 
 .lang-row:focus-visible,
 .lang-page__back:focus-visible {
-  outline: 2px solid var(--text);
+  outline: 2px solid var(--focus-ring);
   outline-offset: 2px;
 }
 
@@ -271,15 +277,17 @@
  * sheet material, and at rest it is the sheet's own (no second tint).
  * Back or a push starts a frame or two before the spring moves: the page
  * is already opaque then, so the two lists never show through each other.
+ * Child combinators: the Settings page holds a push of its own (the
+ * language list over it, VENT-57), which only its own state moves.
  */
-.push[data-at='page'][data-pushed='true'] .push__root,
-.push[data-at='root'][data-pushed='false'] .push__page {
+.push[data-at='page'][data-pushed='true'] > .push__root,
+.push[data-at='root'][data-pushed='false'] > .push__page {
   visibility: hidden;
 }
 
-.push[data-at='moving'] .push__page,
-.push[data-at='page'][data-pushed='false'] .push__page,
-.push[data-at='root'][data-pushed='true'] .push__page {
+.push[data-at='moving'] > .push__page,
+.push[data-at='page'][data-pushed='false'] > .push__page,
+.push[data-at='root'][data-pushed='true'] > .push__page {
   background: var(--push-page);
 }
 
@@ -336,6 +344,37 @@
   cursor: pointer;
 }
 
+/*
+ * The Sites sheet's «Settings» page (VENT-57, canvas V-12 option C): the
+ * Language page's head with «Done» at its end, over the groups that
+ * scroll as one (styles/saved.css, .picker__scroll).
+ */
+.settings-page__body {
+  gap: 12px;
+}
+
+/*
+ * Its Back names the list, longer than the Language page's «Back»: the
+ * sides share what the title leaves, and Back's words wrap (then a long
+ * word breaks) before the head grows past the sheet, as the picker's
+ * title does (long languages, 200 % text).
+ */
+.settings-page__head {
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+  column-gap: 8px;
+}
+
+.settings-page__head .lang-page__back {
+  min-width: 0;
+  overflow-wrap: anywhere;
+  text-align: start;
+}
+
+.settings-page__head .picker__done {
+  grid-column: 3;
+  justify-self: end;
+}
+
 .lang-page__title {
   grid-column: 2;
   margin: 0;
@@ -349,5 +388,12 @@
   .lang-popover {
     background: var(--strip);
     backdrop-filter: none;
+  }
+}
+
+/* Here, after the popover's own border: 0 (calendar.css loads first). */
+@media (prefers-contrast: more) {
+  .lang-popover {
+    border: 1px solid var(--surface-edge);
   }
 }

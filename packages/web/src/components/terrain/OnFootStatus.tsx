@@ -25,11 +25,12 @@
 
 /**
  * What the on-foot view says when it cannot show the ground (VENT-34):
- * loading, no terrain here, none installed on the server, a failure that
+ * no terrain here, none installed on the server, a failure that
  * outlasted its retries (with «Try again»), no WebGL, a GPU context the
  * browser took away (the same words and «Try again» as an unavailable
  * terrain, plus a quieter «Copy report» that copies the crash report,
- * VENT-49), or a site with no coordinates. Nothing once the scene draws.
+ * VENT-49), or a site with no coordinates. Nothing once the scene draws,
+ * and nothing while it loads: the loader says that (VENT-60).
  */
 import type { TextKey } from '../../i18n/catalogue';
 import type { RingState } from '../../terrain/ring/ring-session';
@@ -54,10 +55,18 @@ const TILE_WORDS: Readonly<Record<RingState['kind'], TextKey | null>> = {
   unavailable: 'onFoot.unavailable',
 };
 
-/** The message's key, or null when the scene shows. */
-function wordsOf({ located, tile, scene }: Props): TextKey | null {
+/** What decides the message. */
+export type StatusFacts = Pick<Props, 'located' | 'tile' | 'scene'>;
+
+/**
+ * The message's key, or null when the scene shows; `onFoot.loading` while
+ * it loads, which the loader says (VENT-60).
+ */
+export function wordsOf({ located, tile, scene }: StatusFacts): TextKey | null {
   if (!located) return 'onFoot.noPoint';
   if (scene === 'lost') return 'onFoot.unavailable';
+  if (scene === 'missing') return 'update.view';
+  if (scene === 'offline') return 'update.offline';
   if (tile.kind !== 'ready') return TILE_WORDS[tile.kind];
   if (scene === 'failed') return 'onFoot.noWebgl';
   return scene === 'loading' ? 'onFoot.loading' : null;
@@ -88,9 +97,9 @@ function Actions({ lost, onRetry, onCopy }: ActionsProps) {
 
 export function OnFootStatus(props: Props) {
   const { t } = useI18n();
-  const copy = useCopyReport(props.onCopyReport);
+  const copy = useCopyReport(props.onCopyReport, props.scene);
   const key = wordsOf(props);
-  if (!key) return null;
+  if (!key || key === 'onFoot.loading') return null;
   const lost = props.scene === 'lost';
   const copied = copy.outcome === 'copied';
   return (

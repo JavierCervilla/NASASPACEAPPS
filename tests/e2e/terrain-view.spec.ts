@@ -25,7 +25,7 @@
 
 /**
  * The on-foot 3D view (VENT-34, the human's verdict): the «Horizon» tab opens the selected point from the ground in
- * third person, with «Third person | First person»; the relief comes from the stubbed `/api/v1/terrain/tile`, the far
+ * first person, the eye 2 m up, with no camera switch, astronaut or lander (VENT-54); the relief comes from the stubbed `/api/v1/terrain/tile`, the far
  * horizon from the point's profile, so the Sun is drawn hidden exactly where the profile hides it; the caption says
  * what is illustrative; an idle view draws no frames; and none of the view's files is in the first load.
  *
@@ -43,7 +43,9 @@ const RIDGE_AT = new Date('2026-11-30T20:00:00Z');
 const POINT = '?lat=-85.50&lon=40.00';
 const SHOTS = process.env.VENT34_SHOTS;
 /** The view's files, never in the first load (scripts/service-worker.mjs ON_DEMAND). */
-const VIEW_FILES = /\/_astro\/(TerrainPanel|terrain-scene|on-foot|astronaut)[.-]|\/api\/v1\/terrain\/tile/;
+const VIEW_FILES = /\/_astro\/(TerrainPanel|terrain-scene|on-foot)[.-]|\/api\/v1\/terrain\/tile/;
+/** A model the view no longer draws (VENT-54): no glb, no astronaut, no lander. */
+const MODEL_FILES = /\.glb(\?|$)|astronaut|lander|apollo-lm/;
 const START_MS = 30_000;
 /**
  * A string only the view's panel and only its scene carry (OnFootStageArea's host class, sun-mask.ts's uniform): a
@@ -137,30 +139,83 @@ async function shotsAround(page: Page, name: string): Promise<void> {
 const view = (page: Page) => page.getByRole('region', { name: 'On foot at the site' });
 const host = (page: Page) => view(page).getByRole('application', { name: 'On foot at the site' });
 
-/** Waits until the scene stands (the astronaut loaded) and has drawn. */
+/** Waits until the scene stands (its maps loaded) and has drawn. */
 async function settled(page: Page): Promise<void> {
   await expect(host(page)).toHaveAttribute('data-ready', 'true', { timeout: START_MS });
   await expect.poll(async () => Number(await host(page).getAttribute('data-frames')), { timeout: START_MS }).toBeGreaterThan(0);
 }
 
+/**
+ * The view is first person only (VENT-54): its text alternative says so, it offers no camera switch, and its caption
+ * credits no lander or astronaut.
+ */
+async function firstPersonOnly(page: Page): Promise<void> {
+  await expect(host(page)).toHaveAccessibleDescription(/^First person, eyes 2 m above the ground\. View heading /);
+  await expect(view(page).getByRole('radiogroup')).toHaveCount(0);
+  await expect(view(page).getByRole('radio')).toHaveCount(0);
+  await expect(view(page)).not.toContainText(/Third person/);
+  await expect(view(page).locator('.on-foot__caption')).not.toContainText(/lander|Apollo|astronaut/i);
+}
+
 const frames = async (page: Page): Promise<number> => Number(await host(page).getAttribute('data-frames'));
 
 /**
- * Waits until no frame has been drawn for 600 ms (a resize or the sheet settling) and the ring's slices are all run
+ * Waits until no frame has been drawn on `at` (the view's host) for 600 ms (a resize or the sheet settling) and the ring's slices are all run
  * (`data-working`, written by every frame: the slices ask for a frame every 1.5 s at most, so a quiet 600 ms is no
  * proof), and returns the count.
  */
-async function idle(page: Page): Promise<number> {
+async function idle(page: Page, at = host(page)): Promise<number> {
   let last = -1;
   await expect
     .poll(async () => {
-      const now = await frames(page);
-      const still = now === last && (await host(page).getAttribute('data-working')) !== 'true';
+      const now = Number(await at.getAttribute('data-frames'));
+      const still = now === last && (await at.getAttribute('data-working')) !== 'true';
       last = now;
       return still;
     }, { intervals: [600], timeout: 15_000 })
     .toBe(true);
   return last;
+}
+
+const heading = async (page: Page): Promise<number> =>
+  Number(/View heading (\d+)°/.exec((await host(page).getAttribute('aria-describedby').then((id) =>
+    page.locator(`[id="${id ?? ''}"]`).textContent())) ?? '')?.[1]);
+
+/**
+ * A swipe of 10 moves of `stepPx` to the right, `gapMs` apart, across the view's middle, then the release. The pointer
+ * events are dispatched with those times as their `timeStamp`: in software GL each move draws a frame of about 300 ms
+ * on the main thread, so a real mouse's moves arrive 300 ms apart and no swipe is ever fast. Returns how far the
+ * heading has gone past where the drag alone left it (a swipe across the whole width is 180°, look-input.ts), in
+ * degrees from -180 to 180, and the coast's predicted travel (look-coast.ts: speed over the decay rate, -ln 0.995 per
+ * ms), which it reaches within the 0.4° a coast leaves when it stops at 2°/s.
+ */
+async function swipe(page: Page, { stepPx, gapMs }: { stepPx: number; gapMs: number }) {
+  const before = await heading(page);
+  const width = await host(page).evaluate((el) => el.clientWidth);
+  await host(page).evaluate((el, { stepPx, gapMs }) => {
+    const box = el.getBoundingClientRect();
+    const [x0, y, t0] = [box.left + box.width / 2 - 5 * stepPx, box.top + box.height / 2, performance.now()];
+    const send = (type: string, i: number): void => {
+      const event = new PointerEvent(type, { pointerId: 1, pointerType: 'mouse', isPrimary: true, button: 0, buttons: 1,
+        clientX: x0 + i * stepPx, clientY: y, bubbles: true, cancelable: true });
+      Object.defineProperty(event, 'timeStamp', { value: t0 + i * gapMs });
+      el.dispatchEvent(event);
+    };
+    send('pointerdown', 0);
+    for (let i = 1; i <= 10; i++) send('pointermove', i);
+    send('pointerup', 10);
+  }, { stepPx, gapMs });
+  const dragged = before - (10 * stepPx * 180) / width;
+  const past = async () => ((((await heading(page)) - dragged + 180) % 360) + 360) % 360 - 180;
+  const predicted = -((stepPx / gapMs) * 1000 * (180 / width)) / (-Math.log(0.995) * 1000);
+  return { past, predicted };
+}
+
+/** Waits until the view draws no frame for 1.5 s (a coast in software GL draws about one a second). */
+async function atRest(page: Page): Promise<void> {
+  const still = await idle(page);
+  await page.waitForTimeout(1500);
+  expect(await frames(page)).toBe(still);
 }
 
 /** The brightest channel around «x,y» on the screen, 0 to 255. */
@@ -178,10 +233,25 @@ async function shot(page: Page, name: string): Promise<void> {
   await page.screenshot({ path: `${SHOTS}/${name}.png` });
 }
 
+/** Takes the GPU context away from the view's canvas, as a GPU process restart does. */
+const loseContext = (page: Page) => host(page).locator('canvas').evaluate((canvas) => {
+  (canvas as HTMLCanvasElement).getContext('webgl2')?.getExtension('WEBGL_lose_context')?.loseContext();
+});
+
+/** Whether `button` is on the screen and on top: its box inside the viewport and its centre's topmost element in it. */
+async function pressable(page: Page, button: ReturnType<Page['locator']>): Promise<boolean> {
+  return button.evaluate((el) => {
+    const box = el.getBoundingClientRect();
+    const inside = box.left >= 0 && box.top >= 0 && box.right <= innerWidth && box.bottom <= innerHeight;
+    const top = document.elementFromPoint(box.left + box.width / 2, box.top + box.height / 2);
+    return inside && box.width > 0 && top !== null && el.contains(top);
+  });
+}
+
 test.describe('desktop, 1440x900', () => {
   test.use({ viewport: { width: 1440, height: 900 } });
 
-  test('the Horizon tab opens in third person, toggles to first person, and says what is illustrative', async ({ page }) => {
+  test('the Horizon tab opens in first person, with no camera switch and no model fetched, and says what is illustrative', async ({ page }) => {
     const requests: string[] = [];
     const scripts = collectScripts(page);
     await open(page, { path: `./${POINT}`, requests });
@@ -198,16 +268,13 @@ test.describe('desktop, 1440x900', () => {
     const all = await scripts.done();
     expect(carrying(all, PANEL_MARK)).not.toEqual([]);
     expect(carrying(all, SCENE_MARK)).not.toEqual([]);
-    await expect(host(page)).toHaveAttribute('data-mode', 'third');
-    const modes = view(page).getByRole('radiogroup', { name: 'Camera' });
-    await expect(modes.getByRole('radio', { name: 'Third person' })).toHaveAttribute('aria-checked', 'true');
+    await firstPersonOnly(page);
     await expect(view(page)).toContainText('Fine detail illustrative · relief LOLA 20 m');
-    await expect(view(page)).toContainText('Generic lander (illustrative)');
+    await expect(view(page)).toContainText('Earth: NASA Blue Marble · shadows lifted for legibility');
     await expect(view(page).getByRole('region', { name: 'Horizon' })).toBeVisible();
     await expect(view(page).locator('.on-foot__label--ring').first()).toBeVisible();
-    await shot(page, 'synthetic-desktop-third');
-    await modes.getByRole('radio', { name: 'First person' }).click();
-    await expect(host(page)).toHaveAttribute('data-mode', 'first');
+    await idle(page);
+    expect(requests.filter((url) => MODEL_FILES.test(url))).toEqual([]);
     await shot(page, 'synthetic-desktop-first');
   });
 
@@ -221,6 +288,49 @@ test.describe('desktop, 1440x900', () => {
     await page.keyboard.press('ArrowLeft');
     await expect.poll(() => frames(page)).toBeGreaterThan(settledAt);
     await expect(host(page)).toHaveAccessibleDescription(/View heading 334°, to the north-west\. .*The Sun is to the north, above the terrain\./);
+  });
+
+  // VENT-59 (qa of VENT-54): the coast had no e2e. A fast swipe carries the heading on past where the finger let go
+  // and the view draws until it stops; a slow drag and a swipe under reduced motion stop where the finger did.
+  // A coast steps at most 50 ms a frame (globe/loop.ts) and a frame costs about 300 ms in software GL: the swipes are
+  // just fast enough to coast (about 50°/s, 13 frames) and the far rings are left out, so the frames stay few and cheap.
+  // The tier is forced, so no frame probe steps it down and mounts the view again mid-coast.
+  test('a fast swipe coasts on as far as its speed carries and comes to rest; a slow drag does not', async ({ page }) => {
+    await open(page, { path: `./${POINT}&quality=low&onfoot=far#horizon` });
+    await settled(page);
+    await idle(page);
+    const fast = await swipe(page, { stepPx: 3, gapMs: 10 });
+    expect(fast.predicted).toBeLessThan(-3);
+    // As idle() waits: a frame can take longer than its 600 ms polls, so the coast is waited out by where it ends.
+    await expect.poll(async () => Math.abs((await fast.past()) - fast.predicted), { intervals: [600], timeout: 15_000 })
+      .toBeLessThanOrEqual(1.5);
+    await atRest(page);
+    expect(Math.abs((await fast.past()) - fast.predicted)).toBeLessThanOrEqual(1.5);
+    const slow = await swipe(page, { stepPx: 2, gapMs: 50 });
+    await atRest(page);
+    expect(Math.abs(await slow.past())).toBeLessThanOrEqual(1);
+  });
+
+  test('a fast swipe does not coast under reduced motion', async ({ page }) => {
+    await page.emulateMedia({ reducedMotion: 'reduce' });
+    await open(page, { path: `./${POINT}&quality=low&onfoot=far#horizon` });
+    await settled(page);
+    await idle(page);
+    const fast = await swipe(page, { stepPx: 3, gapMs: 10 });
+    await atRest(page);
+    expect(Math.abs(await fast.past())).toBeLessThanOrEqual(1);
+  });
+
+  // VENT-52: the host's ring was an inset box-shadow, painted under its own canvas, so focus showed nothing.
+  test('the view shows a focus ring over its canvas when the keyboard focuses it', async ({ page }) => {
+    await open(page, { path: `./${POINT}#horizon` });
+    await settled(page);
+    await idle(page);
+    const box = await host(page).boundingBox();
+    const edge = `${Math.round((box?.width ?? 0) / 2)},3`;
+    const before = await brightness(page, edge);
+    await host(page).focus();
+    await expect.poll(() => brightness(page, edge)).toBeGreaterThan(Math.max(before + 100, 200));
   });
 
   // VENT-49: a Pixel's GPU process restarted under the view; a lost context frees the scene and never remounts itself.
@@ -325,6 +435,25 @@ test.describe('desktop, 1440x900', () => {
     await expect(view(page).getByRole('status')).toContainText('Could not copy the report');
   });
 
+  // VENT-51 M2: «Report copied» belongs to one lost state; after «Try again» the next loss has copied nothing yet.
+  test('a second lost context does not say «Report copied» from the first', async ({ page, context }) => {
+    await context.grantPermissions(['clipboard-read', 'clipboard-write']);
+    await open(page, { path: `./${POINT}&quality=medium#horizon` });
+    await settled(page);
+    const lose = () => host(page).locator('canvas').evaluate((canvas) => {
+      (canvas as HTMLCanvasElement).getContext('webgl2')?.getExtension('WEBGL_lose_context')?.loseContext();
+    });
+    await lose();
+    await view(page).getByRole('button', { name: 'Copy report' }).click();
+    await expect(view(page).getByRole('status')).toContainText('Report copied');
+    await view(page).getByRole('button', { name: 'Try again' }).click();
+    await expect(host(page)).toHaveAttribute('data-tier', 'low');
+    await settled(page);
+    await lose();
+    await expect(view(page).getByRole('status')).toContainText('Terrain unavailable right now');
+    await expect(view(page).getByRole('status')).not.toContainText(/Report copied|Could not copy/);
+  });
+
   // VENT-49 part 2: a Pixel's GPU reset a while after the view opened, with the live clock re-lighting every ring each minute
   // for a Sun that moves 0.008 degrees. Only a move of 0.1 degrees lights and draws again.
   test('the live clock does not relight or draw the view each minute; a scrub of an hour does, and the trail says both', async ({ page }) => {
@@ -354,12 +483,13 @@ test.describe('desktop, 1440x900', () => {
     expect(last?.text).toMatch(/Sun moved 0\.[45]\d\d deg/);
   });
 
-  // VENT-49: the diagnostic switch for bisecting a crash on a phone's address bar.
+  // VENT-49: the diagnostic switch for bisecting a crash on a phone's address bar. An old link that still names the
+  // astronaut or the lander (gone in VENT-54) opens the view all the same: those words are ignored.
   test('?onfoot= leaves parts out, says which on the host, and the view still settles with no idle frames', async ({ page }) => {
     const requests: string[] = [];
     await open(page, { path: `./${POINT}&onfoot=astronaut,lander,far#horizon`, requests });
     await settled(page);
-    await expect(host(page)).toHaveAttribute('data-onfoot', 'astronaut,lander,far');
+    await expect(host(page)).toHaveAttribute('data-onfoot', 'far');
     expect(requests.some((url) => /\/terrain\/tiles\?.*levels=2(&|$)/.test(url))).toBe(true);
     expect(requests.some((url) => /\/terrain\/tiles\?.*levels=[34]/.test(url))).toBe(false);
     const settledAt = await idle(page);
@@ -391,12 +521,11 @@ test.describe('desktop, 1440x900', () => {
     await open(page, { path: './?site=im2-athena&quality=high#horizon', real: RIDGE_AT });
     await settled(page);
     await idle(page);
-    await expect(view(page)).toContainText('Fine detail illustrative · relief LOLA 80 m');
-    await expect(host(page)).toHaveAccessibleDescription(/The Sun is to the .*, above the terrain\./);
-    await shot(page, 'desktop-third');
-    await shotsAround(page, 'desktop-third-round');
-    await view(page).getByRole('radio', { name: 'First person' }).click();
-    await expect(host(page)).toHaveAttribute('data-mode', 'first');
+    await expect(view(page)).toContainText('Fine detail illustrative · relief LOLA 20 m');
+    // VENT-59: the Sun's own sentence; `.*` ran on into the Earth's and passed while a ridge hid the Sun.
+    await expect(host(page)).toHaveAccessibleDescription(/The Sun is to the [a-z-]+, above the terrain\./);
+    await expect(host(page)).not.toHaveAccessibleDescription(/hides the Sun/);
+    await firstPersonOnly(page);
     await shot(page, 'desktop-first');
     await shotsAround(page, 'desktop-first-round');
   });
@@ -442,7 +571,7 @@ test.describe('desktop, 1440x900', () => {
 test.describe('phone, 390x844', () => {
   test.use({ viewport: { width: 390, height: 844 }, hasTouch: true, isMobile: true });
 
-  test('the Horizon tab fills the screen with the ground, third person first, the sheet at peek', async ({ page }) => {
+  test('the Horizon tab fills the screen with the ground in first person, the sheet at peek', async ({ page }) => {
     const requests: string[] = [];
     const scripts = collectScripts(page);
     await open(page, { path: `./${POINT}`, requests });
@@ -454,15 +583,10 @@ test.describe('phone, 390x844', () => {
     await page.getByRole('navigation', { name: 'Views' }).getByRole('button', { name: 'Horizon' }).click();
     await expect(page).toHaveURL(/#horizon$/);
     await settled(page);
-    await expect(host(page)).toHaveAttribute('data-mode', 'third');
+    await firstPersonOnly(page);
     await expect(page.locator('.globe')).toBeHidden();
     await expect(view(page)).toContainText('Fine detail illustrative · relief LOLA 20 m');
-    const radio = view(page).getByRole('radio', { name: 'First person' });
-    const size = await radio.boundingBox();
-    expect(size?.height ?? 0).toBeGreaterThanOrEqual(44);
-    await shot(page, 'synthetic-phone-third');
-    await radio.tap();
-    await expect(host(page)).toHaveAttribute('data-mode', 'first');
+    expect(requests.filter((url) => MODEL_FILES.test(url))).toEqual([]);
     const still = await idle(page);
     await page.waitForTimeout(1500);
     expect(await frames(page)).toBe(still);
@@ -473,17 +597,116 @@ test.describe('phone, 390x844', () => {
     await expect.poll(() => lostContexts(page)).toBeGreaterThanOrEqual(1);
   });
 
-  test('IM-2 on its real LOLA relief, third person then first, the sheet at peek', async ({ page }) => {
+  test('IM-2 on its real LOLA relief, in first person, the sheet at peek', async ({ page }) => {
     await open(page, { path: './?site=im2-athena', real: RIDGE_AT });
     await page.getByRole('navigation', { name: 'Views' }).getByRole('button', { name: 'Horizon' }).click();
     await settled(page);
     await idle(page);
-    await expect(host(page)).toHaveAttribute('data-mode', 'third');
-    await shot(page, 'phone-third');
-    await view(page).getByRole('radio', { name: 'First person' }).tap();
-    await expect(host(page)).toHaveAttribute('data-mode', 'first');
-    await idle(page);
+    await firstPersonOnly(page);
     await shot(page, 'phone-first');
+  });
+
+  // VENT-52 (qa of PR #32): at 200 % text the site pill overflowed and the ridge's label and the 100 m ring's were
+  // drawn over each other. (The camera switch the top bar covered is gone since VENT-54.)
+  test('at 200 % text the pill fits and no two labels overlap', async ({ page }) => {
+    await open(page, { path: './?site=im2-athena', real: RIDGE_AT });
+    await page.getByRole('navigation', { name: 'Views' }).getByRole('button', { name: 'Horizon' }).click();
+    await settled(page);
+    await page.evaluate(() => {
+      document.documentElement.style.fontSize = '200%';
+    });
+    const pill = page.locator('.site-pill');
+    expect(await pill.evaluate((el) => el.scrollWidth <= el.clientWidth)).toBe(true);
+    await idle(page);
+    const boxes = await view(page).locator('.on-foot__label:not([hidden])').evaluateAll((els) =>
+      els.map((el) => el.getBoundingClientRect()).map(({ left, top, right, bottom }) => ({ left, top, right, bottom })));
+    expect(boxes.length).toBeGreaterThan(0);
+    const pairs = boxes.flatMap((a, i) => boxes.slice(i + 1).map((b) => [a, b] as const));
+    const overlapping = pairs.filter(([a, b]) => a.left < b.right && b.left < a.right && a.top < b.bottom && b.top < a.bottom);
+    expect(overlapping).toEqual([]);
+    await shot(page, 'phone-200-first');
+  });
+
+  // VENT-59 (qa of VENT-52 and VENT-54): at 200 % text the peek sheet rises for its head (sheet-peek.ts), but the
+  // caption kept its place over the usual 156 px peek and the sheet cut it.
+  test('at 200 % text the caption stays whole between the top bar and the risen peek sheet, over the ground', async ({ page }) => {
+    await open(page, { path: './?site=im2-athena', real: RIDGE_AT });
+    await page.getByRole('navigation', { name: 'Views' }).getByRole('button', { name: 'Horizon' }).click();
+    await settled(page);
+    await page.evaluate(() => {
+      document.documentElement.style.fontSize = '200%';
+    });
+    const sheet = page.locator('.sheet');
+    await expect(sheet).toHaveAttribute('data-detent', 'peek');
+    await idle(page);
+    const box = (selector: string) => page.locator(selector).first().evaluate((el) => {
+      const { top, bottom } = el.getBoundingClientRect();
+      return { top, bottom };
+    });
+    const [bar, caption, edge] = [await box('.phone-bar'), await box('.on-foot__caption'), await box('.sheet')];
+    expect(edge.top).toBeLessThan(844 - 156);
+    expect(caption.bottom).toBeLessThanOrEqual(edge.top);
+    expect(caption.top).toBeGreaterThanOrEqual(bar.bottom);
+    await shot(page, 'phone-200-caption');
+  });
+
+  // VENT-51 A1: the phone stage fills the screen, so a notice centred on it sat under the sheet at half.
+  test('a lost context at the sheet at half says so in the band over the sheet, both buttons pressable', async ({ page }) => {
+    await open(page, { path: `./${POINT}&quality=medium#horizon` });
+    await expect(page.locator('.sheet')).toHaveAttribute('data-detent', 'half');
+    await settled(page);
+    await loseContext(page);
+    await expect(view(page).getByRole('status')).toContainText('Terrain unavailable right now');
+    const words = view(page).locator('.on-foot__status p').first();
+    const [wordsBox, sheetBox, barBox] = await Promise.all([
+      words.boundingBox(), page.locator('.sheet').boundingBox(), page.locator('.phone-bar').boundingBox()]);
+    expect(wordsBox?.y ?? -1).toBeGreaterThanOrEqual((barBox?.y ?? 0) + (barBox?.height ?? 0));
+    expect((wordsBox?.y ?? 0) + (wordsBox?.height ?? 999)).toBeLessThanOrEqual(sheetBox?.y ?? 0);
+    for (const name of ['Try again', 'Copy report']) {
+      expect(await pressable(page, view(page).getByRole('button', { name })), name).toBe(true);
+    }
+    // There was room: the sheet stays where the visitor left it.
+    await expect(page.locator('.sheet')).toHaveAttribute('data-detent', 'half');
+    await shot(page, 'phone-lost-half');
+    await view(page).getByRole('button', { name: 'Try again' }).tap();
+    await expect(host(page)).toHaveAttribute('data-tier', 'low');
+  });
+
+  // VENT-51 A2: at 200 % text the top bar grows and the half sheet rises to full, leaving no band: the sheet drops to
+  // peek so the notice shows.
+  test('a lost context at 200 % text in Spanish drops the sheet to peek so the notice and its buttons show', async ({ page }) => {
+    // The sheet moves without its spring, so each of its moves costs one frame of the view, not a second's worth.
+    await page.emulateMedia({ reducedMotion: 'reduce' });
+    await open(page, { path: `./es/${POINT}&quality=medium#horizon` });
+    // The view's names are Spanish here, so it is found by its classes.
+    const stage = page.locator('.on-foot__host');
+    await expect(stage).toHaveAttribute('data-ready', 'true', { timeout: START_MS });
+    // A frame of the rings costs seconds in software GL: the sheet's rise is timed once they are built.
+    await idle(page, stage);
+    const sheet = page.locator('.sheet');
+    const sheetAt = () => sheet.evaluate((el) => ({ top: el.getBoundingClientRect().top, moving: el.hasAttribute('data-moving') }));
+    const before = (await sheetAt()).top;
+    await page.evaluate(() => {
+      document.documentElement.style.fontSize = '200%';
+    });
+    // The half sheet rises for the grown summary: waits until it has risen and come to rest.
+    await expect.poll(async () => {
+      const now = await sheetAt();
+      return !now.moving && now.top < before;
+    }).toBe(true);
+    await expect(sheet).toHaveAttribute('data-detent', 'half');
+    await stage.locator('canvas').evaluate((canvas) => {
+      (canvas as HTMLCanvasElement).getContext('webgl2')?.getExtension('WEBGL_lose_context')?.loseContext();
+    });
+    await expect(page.locator('.on-foot__status')).toContainText('Terreno no disponible ahora');
+    await expect(page.locator('.sheet')).toHaveAttribute('data-detent', 'peek');
+    for (const name of ['Reintentar', 'Copiar informe']) {
+      const button = page.locator('.on-foot__status').getByRole('button', { name });
+      await expect.poll(() => pressable(page, button), { message: name }).toBe(true);
+    }
+    // The half sheet had risen to full, so the scrim was dark; at peek it clears, or the notice reads at half contrast.
+    await expect.poll(() => page.locator('.phone-scrim').evaluate((el) => getComputedStyle(el).opacity)).toBe('0');
+    await shot(page, 'phone-lost-es-200');
   });
 });
 

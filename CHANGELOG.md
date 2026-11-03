@@ -3,6 +3,71 @@
 ## [Sin publicar]
 
 ### Cambiado
+- **Vista 3D: un cargador que ya enseña el sitio (VENT-60, variante B→A del lienzo).** Mientras llegan las 18 teselas
+  cercanas (2 y 8 km) se ve el plano desde arriba, cada tesela sombreada con sus propias alturas en su orden real, con
+  el punto, el campo de la vista y el Sol y la Tierra reales en el borde, y «Terrain · n of 18 tiles»; con las cercanas
+  dentro el plano se tumba hacia el rumbo y queda el horizonte del sitio dibujado con la cámara de la escena, con el Sol
+  y la Tierra donde los pintará, y el 3D aparece debajo sin salto. El relieve lejano sigue con un rótulo discreto «Far
+  relief · n of 18 tiles». Movimiento reducido: fundidos. Si falla, el horizonte queda atenuado con «Try again». Sin
+  WebGL ni descargas nuevas: Canvas 2D, SVG y transformaciones CSS.
+- Fix forward 9 (VENT-59):
+  - La vista 3D y la ficha dicen lo mismo sobre el Sol en IM-2: manda el perfil del horizonte, el mismo que usa la
+    ficha, y la cresta cercana solo dice qué lo tapa (decisión de Javier). El relieve de prueba de IM-2 se ha vuelto a
+    grabar desde producción con LOLA a 20 m.
+  - Al 200 % de texto en el móvil, el pie de la vista 3D ya no queda cortado por la hoja.
+  - La vista 3D abierta sin conexión carga sola cuando vuelve la red, sin recargar la página.
+  - En la vista DSN, una antena en reposo (como Goldstone en el limbo) queda en un hueco libre de puntos de tierra y ya
+    no se confunde con ellos.
+- Cambios de forma de la auditoría de diseño, las ocho variantes que Javier eligió en el lienzo (VENT-57):
+  - Un solo material: la brújula, la lectura del pin al arrastrarlo, la leyenda de capas y los avisos comparten el
+    esmerilado del aviso del pin (la leyenda deja el Liquid glass).
+  - Un solo control segmentado (pestañas de vista, regiones del selector y «Computed | Horizons | Compare»: carril
+    gris, marca #636366 en oscuro y blanca con sombra en claro, 44 px) y un solo botón secundario (píldora gris de
+    44 px, peso 600, sin subrayado: todos los «Try again» y «Now», que se atenúa en directo).
+  - «Saved» conserva la píldora gris de «Save» con el marcapáginas relleno; Reproducir es un círculo gris como las
+    flechas del mes.
+  - Los avisos son filas como «New version ready»: «Offline» con una nube tachada, «Showing data from <fecha>» y una ✕
+    que lo oculta hasta la próxima desconexión (nunca más de dos líneas en el móvil); «Load the 3D globe» con ahorro de
+    datos, con un globo y «Data saver is on», toda la fila el botón; y «Deleted <nombre> · Undo» con una papelera y
+    «Undo» en negrita, encima de la tira del calendario en escritorio (antes la tapaba) y de la barra de pestañas en el
+    móvil. Con movimiento reducido el aviso que se va se desmonta al acabar su fundido de 200 ms, no a los 400 ms.
+  - La tarjeta de escritorio, más compacta: la imagen es una banda de 96 px, el horizonte y «Listening on Earth» van
+    en un solo bloque y el aviso «Horizons unavailable · Try again» sube bajo las cifras, a la vista sin desplazar.
+  - En el teléfono, la hoja «Landing sites» empieza por «Drop a pin», el buscador y la lista; las capas, el idioma y
+    la fuente de datos pasan a una página «Settings» que abre un engranaje junto a «Done».
+- Se borra el astronauta antiguo (VENT-58, decisión de Javier): el modelo de NASA, los scripts que lo preparaban y lo
+  horneaban en una hoja de imágenes, esa hoja, sus tests y las cuatro dependencias de desarrollo que solo usaban ellos
+  (`@gltf-transform` y `draco3dgltf`). Nada de la web los leía desde que un pin elige el punto (VENT-37) y la vista 3D
+  dejó de dibujar figura (VENT-54); su origen y su licencia quedan en el historial de git.
+- Maquetación revisada según la guía de diseño de Apple (VENT-55, de la auditoría VENT-53): en el teléfono, un sitio
+  guardado de nombre largo ya no hace crecer la barra superior (el nombre se corta con «…» antes de que el título o la
+  regla salten de línea), y a 200 % de texto la cabecera de la hoja pone las coordenadas bajo el nombre en vez de
+  montarlas encima. Todo lo que se desplaza funde el borde tras el que hay más contenido (la lista de sitios, el menú
+  de idioma, el resumen y el calendario del teléfono, la leyenda de capas y la vista DSN). El control segmentado, las
+  filas de la leyenda, la búsqueda y el campo de renombrar aceptan el toque en 44 px, y un toque junto al campo de
+  renombrar ya no cancela la edición. Con la hoja de sitios abierta sobre la vista 3D, su aviso ya no asoma; en la vista
+  «Horizon» de escritorio queda una sola tira de horizonte; renombrar abre con el nombre entero seleccionado; las filas
+  de sitios con dos líneas dejan aire debajo, y las etiquetas de la retícula del globo dejan libre el anillo del pin.
+- Pulsar y moverse se notan como en una app de Apple (VENT-55, de la auditoría VENT-53): todos los controles responden
+  al apoyar el dedo o el ratón (pestañas, segmentos, filas, menús, los botones de reintentar y deshacer, el ✕ de los
+  avisos, los interruptores de capas y los puntos del globo), también con «reducir movimiento». Los menús emergentes,
+  el aviso de deshacer, el del primer pin y el de sin conexión se van por donde vinieron, con desenfoque y escala (con
+  «reducir movimiento», solo un fundido). El zoom y la inclinación del globo ceden con efecto goma al llegar a su límite
+  y vuelven con un resorte al soltar. La línea del instante, la del calendario y la de la DSN se mueven con
+  transformaciones, sin recalcular la página.
+- Pulido de color, foco y tipografía según la guía de diseño de Apple (VENT-55, de la auditoría VENT-53): la marca del
+  idioma actual y la franja del calendario mientras carga ya no usan colores de señal; todos los controles llevan un
+  anillo de foco visible en tema claro y oscuro; con «reducir transparencia» en tema claro, el aviso y la lectura del pin
+  son legibles; con «aumentar contraste», la cabecera, las barras y la hoja del móvil son opacas y todos los paneles
+  llevan borde; el texto gris sobre vidrio gana peso; el espaciado entre letras va por tamaño de texto y ningún texto
+  baja de 11 px (salvo las pestañas del móvil por debajo de 400 px de ancho).
+- La vista 3D «Horizon» es solo en primera persona (VENT-54, decisión de Javier): abre con los ojos a 2 m del suelo,
+  mirando al Sol si está cerca del cielo y, si no, a la Tierra. Se quitan el astronauta, los dos módulos de aterrizaje
+  (el del Apolo y el genérico) y el selector «Third person | First person»; el pie ya solo dice «Fine detail
+  illustrative · relief LOLA» y «Earth: NASA Blue Marble». La vista no descarga ningún modelo (antes, 3,6 MB al abrirla),
+  el código de Three.js que el globo carga al arrancar pesa 11 kB menos comprimido y la escena 15,6 kB menos, y en el
+  móvil dibuja menos (de 49 a 32 llamadas y de 431 000 a 362 000 triángulos en IM-2). Los enlaces antiguos con
+  `?onfoot=astronaut` o `lander` siguen abriendo la vista.
 - El astronauta de la vista 3D «Horizon» es ahora una figura con esqueleto (VENT-34): un traje EVA generado con Meshy,
   de 1,91 m, sin banderas, logos ni insignias (se borraron del mapa de color las dos que el generador pintó por su
   cuenta), que sustituye al modelo de NASA 3D Resources y su textura. Se carga con `GLTFLoader` solo cuando se abre la
@@ -38,6 +103,42 @@
   renderizado por software, de 38 fotogramas a 6).
 
 ### Arreglado
+- Tras un despliegue, una página abierta que no puede cargar una vista bajo demanda (Horizon, su escena 3D, el globo o
+  el módulo de aterrizaje) ya no se queda en blanco (VENT-52): el hueco de la vista dice «Update the app to open this
+  view» y aparece el aviso de versión nueva. Sin conexión, la misma vista dice «Offline: this view needs a connection to
+  load» y no ofrece una versión nueva que no existe.
+- Vista 3D (VENT-52): cambiar de idioma con la vista abierta ya no cuenta como una página caída (no baja la calidad); al
+  llegar con el tabulador se ve un anillo de foco sobre la escena; en el móvil con el texto al 200 %, el selector «Third
+  person | First person» queda bajo la barra superior y cabe en la pantalla, y los rótulos de distancia y de cresta ya no
+  se pisan (el que no cabe se oculta).
+- En el móvil, la hoja en su posición baja (peek) sube lo que haga falta para que su cabecera (el nombre, «Save» en un
+  punto propio y las coordenadas) quede 12 px por encima de la barra de pestañas, con cualquier tamaño de texto e idioma
+  (VENT-52); antes, con un punto propio o al 200 %, la barra tapaba «Save» y la línea del punto.
+- Globo y pin (VENT-52): mantener pulsado el globo ya no levanta el pin bajo un dedo que lo estaba girando cuando la
+  página iba cargada; el globo oculto ya no sube texturas a la GPU; las etiquetas de la retícula se apartan también de
+  los pines de los sitios guardados; y las cinco etiquetas del mapa polar (0°, 90° E, 180°, 90° O, 85° S) vuelven a su
+  sitio alrededor del disco, legibles también en tema claro: desde VENT-50 se amontonaban en su esquina con el estilo
+  del globo.
+- Vista 3D en el móvil (VENT-51): si se pierde el contexto gráfico, el aviso «Terrain unavailable right now» con «Try
+  again» y «Copy report» aparece en la franja libre entre la barra superior y la hoja, esté la hoja donde esté (antes
+  quedaba debajo de la hoja a media altura); si no cabe (texto al 200 %), la hoja baja a su posición mínima una vez y el
+  velo oscuro se retira. «Report copied» ya no reaparece en una pérdida posterior, y con `?onfoot=lander` el pie de foto
+  ya no nombra un módulo que no se dibuja.
+- Mitigaciones del cierre de la vista 3D en un Pixel 10 (VENT-51; la causa en el dispositivo sigue sin confirmar). En el
+  móvil, el globo que queda oculto bajo las vistas «Horizon» y «DSN» ya no dibuja nada ni se encoge a 0 × 0: antes se
+  redibujaba en cada cambio de minuto del reloj mientras la vista 3D usaba la GPU. Al volver al globo se dibuja una vez,
+  con el Sol del momento. Y si la página muere con la vista 3D abierta, la siguiente vez que se abre arranca un nivel de
+  calidad más abajo (una sola vez, nunca por debajo de bajo ni con `?quality=`), y «Copy report» dice por qué. Recargar
+  la página con la vista abierta cuenta igual.
+- El panel de `?debug` arranca plegado en una línea («N fps · slowest N ms», más el número de errores en rojo si los
+  hay) arriba a la izquierda, sobre el título, y ya no tapa la barra de pestañas del móvil, la llave de capas ni
+  «Third person | First person» (VENT-51). Corregido el aviso «ResizeObserver loop completed with undelivered
+  notifications» que el globo provocaba en cada carga en el móvil.
+- Retícula y brújula del globo (VENT-51): los rótulos miden su caja de verdad, que crece con el tamaño del texto, y se
+  apartan de los puntos de los sitios y del anillo también al 200 %; con el zoom máximo un rótulo que no cabe entero en
+  la vista se omite en vez de salir cortado. La marca de la Tierra en la brújula ya no se vacía al acercar el zoom. En
+  el móvil con el texto al 200 %, cuando la hoja tapa la brújula esta se retira (también del orden de tabulación) y
+  vuelve, pulsable, al bajar la hoja.
 - La vista 3D «Horizon» ya no se queda muerta cuando el navegador le quita la GPU (VENT-49). La vista se libera y dice
   «Terrain unavailable right now» con «Try again», que la abre de nuevo en calidad baja (nunca se reabre sola), y esa
   calidad se recuerda durante la sesión. Además, si un fotograma de la carga tarda demasiado para la GPU del móvil, la
@@ -78,6 +179,25 @@
     paren mientras comprueba un fichero, y la imagen rechaza `/data//` y `/data/./` como rutas de montaje.
 
 ### Añadido
+- Aviso de versión nueva (VENT-52): cuando la app instalada (o cualquier página con el service worker) recibe una
+  versión nueva, una fila con el aspecto de la pista del pin dice «New version ready» y debajo «Tap to update» (o «Click to
+  update» con ratón); tocarla recarga la misma dirección (sitio, punto y vista) y su ✕ la oculta hasta la próxima vez que
+  se abra la app. Se comprueba al abrir la app y cada vez que vuelve a primer plano; la pista del pin y la brújula se
+  colocan debajo de ella. Javier eligió este diseño entre cuatro maquetas, en lugar de la píldora blanca «Update».
+- Referencias de orientación en el globo (VENT-50). Una **brújula** de cristal de 48 px en la esquina superior derecha
+  del globo (en el móvil, bajo la barra superior y bajo la pista del primer uso mientras se ve): su aguja señala siempre
+  el norte, que el globo mantiene arriba, y una pequeña marca de la Tierra recorre su anillo hacia donde está la Tierra
+  desde el centro de la Luna en el instante elegido; si la Tierra queda detrás de la Luna, la marca es hueca. Al pulsarla,
+  el globo vuelve a su encuadre inicial para el sitio elegido (al instante con «reducir movimiento»), y su nombre
+  accesible dice dónde está la Tierra y qué hace la pulsación, en los cinco idiomas. Y una **retícula** discreta sobre la
+  Luna: los paralelos de 85° S, 80° S y 70° S y los meridianos de 0°, 45° y 90° al este y al oeste, con una cruz en el
+  polo sur, en gris neutro al 40 %, con sus etiquetas de 10 px («85° S», «90° E», en español «90° O») ocultas tras el
+  limbo y metidas 14 px dentro del disco de la Luna. Las etiquetas se apartan de los marcadores de los sitios y del
+  anillo del sitio elegido (un paralelo se nombra en el meridiano más libre y se queda en él mientras siga libre), así
+  que «85° S», que con los ocho sitios cercanos al polo no tiene sitio al abrir, aparece al acercar la Luna. No tiene
+  interruptor en las Capas y un globo quieto sigue sin dibujar fotogramas. Las etiquetas van en blanco sobre un fondo al 61 %
+  (el lienzo tenía texto gris sobre un fondo al 44 %): es lo mínimo que da 4,5:1 sobre el píxel más claro de los mapas
+  de la Luna, que es blanco puro.
 - «?debug» en la dirección abre el panel de rendimiento para diagnosticar (VENT-49): en la web publicada, añadir
   `?debug` muestra, cuando la página ya ha arrancado, el panel del estudio con fotogramas por segundo, tiempos de
   fotograma, llamadas de dibujo, triángulos y memoria de texturas, más el rastro de pasos que sobrevive a un fallo de la

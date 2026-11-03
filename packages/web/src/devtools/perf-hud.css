@@ -105,17 +105,20 @@
 }
 
 /*
- * On a phone the header and title sit at the top, so the readout moves to the bottom, where it covers the least (it
- * also starts folded there: boot.ts).
+ * Folded (the default), the panel is one line in the top left corner: on a
+ * desktop the header is empty there, on a phone it sits over the top bar's
+ * title, which takes no clicks, and stops short of the site pill (VENT-51).
  */
-@media (max-width: 480px) {
-  .ventana-perf-hud {
-    top: auto;
-    bottom: calc(var(--space-2) + env(safe-area-inset-bottom, 0px));
-    left: auto;
-    right: calc(var(--space-2) + env(safe-area-inset-right, 0px));
-  }
+.ventana-perf-hud:has(> [aria-expanded='false']) {
+  padding: var(--space-1) var(--space-2);
+  max-inline-size: min(60vw, 13rem);
+}
 
+.ventana-perf-hud__alert {
+  color: var(--hud-error);
+}
+
+@media (max-width: 480px) {
   .ventana-perf-hud__trail {
     max-block-size: 20vh;
   }

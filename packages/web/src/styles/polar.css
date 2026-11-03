@@ -109,7 +109,7 @@
   position: absolute;
   font-size: 0.75rem;
   line-height: 1;
-  color: var(--text-muted);
+  color: var(--polar-label);
   white-space: nowrap;
   pointer-events: none;
 }
@@ -219,7 +219,7 @@
 }
 
 .polar-marker:focus-visible {
-  outline: 2px solid var(--marker);
+  outline: 2px solid var(--focus-ring-on-moon);
   outline-offset: -4px;
 }
 
@@ -284,7 +284,8 @@
   background: rgba(20, 20, 22, 0.85);
   box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.35);
   color: #f2f2f4;
-  font-size: 10px;
+  /* In px: src/polar/badge-layout.ts places the 16 px box around it. */
+  font-size: 11px;
   font-weight: 700;
   line-height: 1;
   font-variant-numeric: tabular-nums;
@@ -317,6 +318,8 @@
 .polar-key__title {
   margin: 0 0 6px;
   font-size: 0.75rem;
+  /* Grey on glass: heavier, a little looser (apple-design §12). */
+  font-weight: 600;
   letter-spacing: 0.01em;
   color: var(--text-muted);
 }

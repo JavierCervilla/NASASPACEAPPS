@@ -36,6 +36,7 @@
  * marks the `pointerdown` handled): it neither drops nor lifts a pin.
  */
 import type { Carrier } from './carrier';
+import { armHold } from './hold-timer';
 import {
   forget,
   HOLD_MS,
@@ -48,12 +49,15 @@ import {
 import type { Surfaces } from './surfaces';
 
 export { HOLD_MS, PRESS_SLOP_PX } from './place-press';
+export { HOLD_LATE_MS } from './hold-timer';
 
 export interface PlaceDeps {
   readonly carrier: Carrier;
   readonly surfaces: Surfaces;
   /** Calls `fn` once after `ms`; returns how to call it off. */
   readonly after: (fn: () => void, ms: number) => () => void;
+  /** The time now, ms, on the clock `after` keeps. */
+  readonly now: () => number;
   /** Where Escape is heard (the window). */
   readonly keys: EventTarget;
 }
@@ -64,7 +68,7 @@ function hold(state: PressState, deps: PlaceDeps): void {
   if (!press || press.down.defaultPrevented) return;
   if (!deps.surfaces.at(press.from)?.point) return;
   const pointer = press.from;
-  const t = performance.now();
+  const t = deps.now();
   const start = { mode: 'hold', pointer, at: pointer, touch: true, t } as const;
   state.held = deps.carrier.lift(start);
   state.press = null;
@@ -82,7 +86,7 @@ function down(state: PressState, deps: PlaceDeps, event: PointerEvent) {
   const touch = event.pointerType === 'touch';
   const from = pointOf(event);
   state.press = { id: event.pointerId, from, touch, down: event };
-  if (touch) state.stopTimer = deps.after(() => hold(state, deps), HOLD_MS);
+  if (touch) state.stopTimer = armHold(deps, () => hold(state, deps), HOLD_MS);
 }
 
 function move(state: PressState, event: PointerEvent): void {

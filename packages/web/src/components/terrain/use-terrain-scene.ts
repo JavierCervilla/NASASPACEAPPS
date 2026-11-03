@@ -30,7 +30,10 @@
  * leaving the view frees it. It draws at the view's tier (view-tier.ts); a
  * lost GPU context frees the scene, drops the tier to low and says `lost`,
  * and the scene mounts again only when asked (`retry`): a loop of lost
- * contexts is worse than one tap.
+ * contexts is worse than one tap. A scene chunk that is gone (an old
+ * page after a deploy, VENT-52) says `missing`, not `failed`. It also says
+ * when the mounted scene has drawn its first frame, for the loader's
+ * hand-over (VENT-60).
  */
 import {
   useEffect,
@@ -43,10 +46,14 @@ import { parseLeaveOut } from '../../terrain/leave-out';
 import type { Recorder } from '../../terrain/report/recorder';
 import type { SceneInput, SceneSetup, TerrainScene }
   from '../../terrain/scene/scene-types';
+import { loadTerrainScene, sceneFailure }
+  from '../../terrain/scene/load-scene';
 import type { ViewTier } from '../../terrain/view-tier';
+import { useLatest } from '../use-latest';
 import { sceneHooks, type PanelHooks } from './scene-hooks';
 
-export type SceneStatus = 'loading' | 'ready' | 'failed' | 'lost';
+export type SceneStatus =
+  'loading' | 'ready' | 'failed' | 'lost' | 'missing' | 'offline';
 
 /** Subscribes to the moves of the view's band; returns the unsubscribe. */
 export type BandMoves = (listener: () => void) => () => void;
@@ -67,6 +74,8 @@ interface Mount {
   readonly scene: RefObject<TerrainScene | null>;
   readonly tier: ViewTier;
   readonly onStatus: (status: SceneStatus) => void;
+  /** The mounted scene has drawn its first frame. */
+  readonly onDrawn: () => void;
 }
 
 /** What this mount draws at, told to the crash report as it starts. */
@@ -84,19 +93,19 @@ function mountScene(m: Mount): () => void {
   let live = true;
   let off: (() => void) | undefined;
   m.onStatus('loading');
-  void import('../../terrain/scene/terrain-scene').then((module) => {
+  void loadTerrainScene(window).then((module) => {
     const input = m.latest.current;
     if (!live || !input) return;
     const setup = setupOf(m);
     const hooks = sceneHooks({ panel: m.hooks, tier: m.tier,
-      report: setup.report, onLost: () => m.onStatus('lost') });
+      report: setup.report, onLost: () => m.onStatus('lost'), onDrawn: m.onDrawn });
     m.scene.current = module.mountTerrainScene(m.el, input, hooks, setup);
     off = m.hooks.current.bandMoves?.(() => m.scene.current?.invalidate());
     m.onStatus('ready');
   }).catch((error: unknown) => {
     console.warn(`Ventana Lunar: the 3D view could not start (${String(error)}).`);
     m.hooks.current.report.step(`scene failed to start: ${String(error)}`);
-    if (live) m.onStatus('failed');
+    if (live) m.onStatus(sceneFailure(error));
   });
   return () => {
     live = false;
@@ -106,16 +115,33 @@ function mountScene(m: Mount): () => void {
   };
 }
 
-/** `value` as of the latest render, for callbacks that outlive it. */
-function useLatest<T>(value: T): RefObject<T> {
-  const ref = useRef(value);
-  ref.current = value;
-  return ref;
+interface MountParts extends Omit<Mount, 'el' | 'onDrawn'> {
+  readonly host: RefObject<HTMLDivElement | null>;
+  /** There is an input to mount the scene on. */
+  readonly ready: boolean;
+  readonly lost: boolean;
+}
+
+/** Mounts the scene while there is input and no loss; whether it drew. */
+function useMountedScene(parts: MountParts): boolean {
+  const { host, ready, lost, latest, hooks, scene, tier, onStatus } = parts;
+  const [drawn, setDrawn] = useState(false);
+  useEffect(() => {
+    const el = host.current;
+    if (!ready || !el || lost) return undefined;
+    const unmount = mountScene({ el, latest, hooks, scene, tier, onStatus,
+      onDrawn: () => setDrawn(true) });
+    return () => {
+      unmount();
+      setDrawn(false);
+    };
+  }, [host, ready, lost, tier, latest, hooks, scene, onStatus]);
+  return drawn;
 }
 
 /**
- * The scene in `host` for `input` (null: not yet) at `tier`; its status, and
- * `retry`, which mounts it again after a loss.
+ * The scene in `host` for `input` (null: not yet) at `tier`; its status,
+ * whether it has drawn, and `retry`, which mounts it again after a loss.
  */
 export function useTerrainScene(
   host: RefObject<HTMLDivElement | null>,
@@ -127,17 +153,11 @@ export function useTerrainScene(
   const latest = useLatest(input);
   const hooksRef = useLatest(hooks);
   const [status, setStatus] = useState<SceneStatus>('loading');
-  const lost = status === 'lost';
-  const ready = input !== null;
-  useEffect(() => {
-    const el = host.current;
-    if (!ready || !el || lost) return undefined;
-    const m = { el, latest, hooks: hooksRef, scene, tier,
-      onStatus: setStatus };
-    return mountScene(m);
-  }, [host, ready, lost, tier, latest, hooksRef]);
+  const drawn = useMountedScene({ host, ready: input !== null,
+    lost: status === 'lost', latest, hooks: hooksRef, scene, tier,
+    onStatus: setStatus });
   useEffect(() => {
     if (input) scene.current?.update(input);
   }, [input]);
-  return { status, retry: () => setStatus('loading') };
+  return { status, drawn, retry: () => setStatus('loading') };
 }

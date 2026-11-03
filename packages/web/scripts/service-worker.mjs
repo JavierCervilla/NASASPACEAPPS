@@ -51,12 +51,12 @@ const START_MAPS = new Set([
 const WHOLE_FOLDERS = ['_astro/', 'icons/', 'thumbs/'];
 const ROOT_FILES = new Set(['favicon.ico', 'favicon.svg', 'apple-touch-icon.png']);
 /**
- * The on-foot 3D view's files (VENT-34): its panel, styles, scene and the astronaut download only when the view opens,
+ * The on-foot 3D view's files (VENT-34): its panel, styles and scene download only when the view opens,
  * so they stay out of the install set; the worker keeps them cache first the first time the page asks for them.
  */
 // The dev tools' chunk and styles (boot, perf-hud) are only asked for by `?debug` (VENT-49), and Spector.js, in a
 // PUBLIC_PERF_HUD=1 build, only by `#stats-spector`.
-const ON_DEMAND = /^_astro\/(TerrainPanel|terrain-scene|on-foot|astronaut|lander|apollo-lm|boot|perf-hud|spector)[.-][^/]+$/;
+const ON_DEMAND = /^_astro\/(TerrainPanel|terrain-scene|on-foot|boot|perf-hud|spector)[.-][^/]+$/;
 /** The pseudo-locale's folder (src/i18n/locales.ts): never offered, never cached. */
 const PSEUDO = 'en-xa/';
 

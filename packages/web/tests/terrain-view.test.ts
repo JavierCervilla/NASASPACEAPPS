@@ -31,7 +31,7 @@
 import { encodeProfile, horizonAt, quantiseDeg } from '@ventana/sim';
 import { describe, expect, it, vi } from 'vitest';
 import { backdropTopDeg, backdropWall, dipDeg } from '../src/terrain/far-horizon';
-import { BufferGeometry, DataTexture, Mesh, MeshLambertMaterial, PerspectiveCamera, Group, Scene, Vector3, type BufferAttribute } from 'three';
+import { BufferGeometry, DataTexture, Mesh, MeshLambertMaterial, PerspectiveCamera, Scene, Vector3, type BufferAttribute } from 'three';
 import { markReadyWhenStanding } from '../src/terrain/scene/ready-mark';
 import { disposeStage, type Stage } from '../src/terrain/scene/stage';
 import { createSunMask } from '../src/terrain/scene/sun-mask';
@@ -53,7 +53,7 @@ import { sunLit } from '../src/terrain/sun-shade';
 import type { HeightTile } from '../src/terrain/tile';
 import { surfaceHeight } from '../src/terrain/tile-mesh';
 import { nearestSample } from '../src/terrain/tile-sample';
-import { EYE_M, ORBIT_M, cameraPose, direction, startLook, turnLook } from '../src/terrain/view-camera';
+import { EYE_M, cameraPose, direction, startLook, turnLook } from '../src/terrain/view-camera';
 
 const N = 5;
 
@@ -85,33 +85,22 @@ describe('the camera', () => {
     expect(direction(0, 90)[1]).toBeCloseTo(1, 9);
   });
 
-  it('opens in third person behind the astronaut, looking past it toward the yaw', () => {
-    const look = startLook('third', 90);
-    const { position, target } = cameraPose('third', look, 5, () => 0);
-    expect(position[0]).toBeLessThan(0);
-    expect(Math.hypot(position[0], position[1] - target[1], position[2])).toBeCloseTo(ORBIT_M, 6);
-    expect(position[1]).toBeGreaterThan(target[1]);
-  });
-
-  it('stands the first-person eye 2 m over the ground', () => {
-    const { position } = cameraPose('first', startLook('first', 0), 5, () => 0);
+  it('stands the eye 2 m over the ground, looking toward the yaw', () => {
+    const { position, target } = cameraPose(startLook(90), 5);
     expect(position).toEqual([0, 5 + EYE_M, 0]);
-  });
-
-  it('keeps the third-person camera above a hill behind it', () => {
-    const { position } = cameraPose('third', startLook('third', 0), 0, () => 30);
-    expect(position[1]).toBeCloseTo(30.5, 6);
+    expect(target[0]).toBeGreaterThan(0.99);
+    expect(target[1]).toBeGreaterThan(position[1]);
   });
 
   it('turns with a drag and the keys, wrapping the yaw and holding the pitch in range', () => {
-    expect(dragLook('first', { yawDeg: 10, pitchDeg: 0 }, [100, 0], { yaw: 0.2, pitch: 0.1 })).toEqual({ yawDeg: 350, pitchDeg: 0 });
-    expect(turnLook('first', { yawDeg: 0, pitchDeg: 70 }, 0, 50).pitchDeg).toBe(80);
-    expect(turnLook('third', { yawDeg: 0, pitchDeg: 10 }, 0, -50).pitchDeg).toBe(3);
-    const home = startLook('first', 200);
+    expect(dragLook({ yawDeg: 10, pitchDeg: 0 }, [100, 0], { yaw: 0.2, pitch: 0.1 })).toEqual({ yawDeg: 350, pitchDeg: 0 });
+    expect(turnLook({ yawDeg: 0, pitchDeg: 70 }, 0, 50).pitchDeg).toBe(80);
+    expect(turnLook({ yawDeg: 0, pitchDeg: -50 }, 0, -50).pitchDeg).toBe(-60);
+    const home = startLook(200);
     const look = { yawDeg: 0, pitchDeg: 0 };
-    expect(keyLook('first', look, { key: 'ArrowRight', shiftKey: true }, home)).toEqual({ yawDeg: 15, pitchDeg: 0 });
-    expect(keyLook('first', look, { key: 'Home', shiftKey: false }, home)).toBe(home);
-    expect(keyLook('first', look, { key: 'a', shiftKey: false }, home)).toBeNull();
+    expect(keyLook(look, { key: 'ArrowRight', shiftKey: true }, home)).toEqual({ yawDeg: 15, pitchDeg: 0 });
+    expect(keyLook(look, { key: 'Home', shiftKey: false }, home)).toBe(home);
+    expect(keyLook(look, { key: 'a', shiftKey: false }, home)).toBeNull();
   });
 });
 
@@ -119,11 +108,11 @@ describe('turning by swiping', () => {
   it('turns 180° across the view’s width, whatever the width, and the pitch by the field of view over the height', () => {
     for (const width of [390, 1440]) {
       const scale = dragScale(width, 844, 62);
-      const turned = dragLook('first', { yawDeg: 0, pitchDeg: 0 }, [-width, 0], scale);
+      const turned = dragLook({ yawDeg: 0, pitchDeg: 0 }, [-width, 0], scale);
       expect(turned.yawDeg).toBeCloseTo(180, 6);
     }
     expect(dragScale(390, 844, 62).pitch).toBeCloseTo(62 / 844, 9);
-    expect(dragLook('first', { yawDeg: 0, pitchDeg: 0 }, [0, 5000], dragScale(390, 844, 62)).pitchDeg).toBe(80);
+    expect(dragLook({ yawDeg: 0, pitchDeg: 0 }, [0, 5000], dragScale(390, 844, 62)).pitchDeg).toBe(80);
   });
 
   const scale = dragScale(390, 844, 62);
@@ -136,7 +125,7 @@ describe('turning by swiping', () => {
     let steps = 0;
     while (state.coast && steps < 2000) {
       speeds.push(state.coast.yaw);
-      state = stepCoast('first', state.look, state.coast, 1 / 60) as typeof state;
+      state = stepCoast(state.look, state.coast, 1 / 60) as typeof state;
       steps += 1;
     }
     expect(state.coast).toBeNull();
@@ -155,7 +144,7 @@ describe('turning by swiping', () => {
     const loop = createLoop((dt) => {
       drawn += 1;
       if (!state.coast) return false;
-      state = stepCoast('first', state.look, state.coast, dt) as typeof state;
+      state = stepCoast(state.look, state.coast, dt) as typeof state;
       return state.coast !== null;
     }, (fn) => queue.push(fn), () => undefined);
     loop.invalidate();
@@ -175,9 +164,9 @@ describe('turning by swiping', () => {
   });
 
   it('is exact for any frame time', () => {
-    const once = stepCoast('first', { yawDeg: 0, pitchDeg: 0 }, flick!, 0.5);
-    const first = stepCoast('first', { yawDeg: 0, pitchDeg: 0 }, flick!, 0.25);
-    const twice = stepCoast('first', first.look, first.coast!, 0.25);
+    const once = stepCoast({ yawDeg: 0, pitchDeg: 0 }, flick!, 0.5);
+    const first = stepCoast({ yawDeg: 0, pitchDeg: 0 }, flick!, 0.25);
+    const twice = stepCoast(first.look, first.coast!, 0.25);
     expect(twice.look.yawDeg).toBeCloseTo(once.look.yawDeg, 6);
   });
 
@@ -185,7 +174,7 @@ describe('turning by swiping', () => {
     expect(coastOf({ x: FLING_MIN_PX_S - 1, y: 0 }, scale, false)).toBeNull();
     expect(coastOf({ x: -2000, y: 0 }, scale, true)).toBeNull();
     const up = coastOf({ x: 0, y: 3000 }, scale, false)!;
-    const step = stepCoast('first', { yawDeg: 0, pitchDeg: 79 }, up, 1);
+    const step = stepCoast({ yawDeg: 0, pitchDeg: 79 }, up, 1);
     expect(step.look.pitchDeg).toBe(80);
     expect(step.coast).toBeNull();
   });
@@ -204,7 +193,7 @@ describe('the drag handlers', () => {
   function rig() {
     const el = Object.assign(new EventTarget(), { setPointerCapture: () => undefined }) as unknown as HTMLElement;
     const log: string[] = [];
-    const target = { mode: () => 'first' as const, look: () => ({ yawDeg: 0, pitchDeg: 0 }), home: () => ({ yawDeg: 0, pitchDeg: 0 }),
+    const target = { look: () => ({ yawDeg: 0, pitchDeg: 0 }), home: () => ({ yawDeg: 0, pitchDeg: 0 }),
       set: () => log.push('set'), scale: () => dragScale(400, 800, 50),
       fling: (vx: number) => log.push(`fling ${Math.round(vx)}`), halt: () => log.push('halt') };
     bindLook(el, target);
@@ -230,21 +219,20 @@ describe('the drag handlers', () => {
 });
 
 describe('the illustrative detail', () => {
-  const scatter = { count: 300, innerM: 3, outerM: 90, clear: [{ east: 20, north: 20, r: 5 }] };
+  const scatter = { count: 300, innerM: 3, outerM: 90 };
 
   it('seeds by the point on the 0.01° grid', () => {
     expect(seedOf({ lat: -84.79, lonEast: 29.2 })).toBe(seedOf({ lat: -84.7901, lonEast: 29.2002 }));
     expect(seedOf({ lat: -84.79, lonEast: 29.2 })).not.toBe(seedOf({ lat: -84.79, lonEast: 29.21 }));
   });
 
-  it('scatters the same rocks for the same seed, all under 1 m, none in a clear disc', () => {
+  it('scatters the same rocks for the same seed, all under 1 m, none inside the inner ring', () => {
     const a = scatterRocks(7, scatter);
     expect(a).toEqual(scatterRocks(7, scatter));
     expect(a).not.toEqual(scatterRocks(8, scatter));
     expect(a).toHaveLength(300);
     for (const rock of a) {
       expect(rock.radius * 2).toBeLessThanOrEqual(MAX_ROCK_M);
-      expect(Math.hypot(rock.east - 20, rock.north - 20)).toBeGreaterThan(5);
       expect(Math.hypot(rock.east, rock.north)).toBeGreaterThanOrEqual(3);
     }
   });
@@ -301,6 +289,14 @@ describe('what hides a body', () => {
     expect(blockerOf({ azDeg: 100, elDeg: 9 }, flat, wallProfile())).toEqual({ kind: 'clear' });
   });
 
+  // VENT-59: the card reads the profile, so the profile is the one judge; the tile only names what hides a body.
+  it('leaves a body the profile shows clear, even when the tile’s ridge stands over it', () => {
+    const low = { centiDeg: new Int16Array(720).fill(quantiseDeg(-1)) };
+    expect(ridge.elDeg).toBeGreaterThan(5);
+    expect(blockerOf({ azDeg: 0, elDeg: 5 }, ridge, low)).toEqual({ kind: 'clear' });
+    expect(blockerOf({ azDeg: 0, elDeg: -2 }, ridge, low)).toMatchObject({ kind: 'ridge', heightM: ridge.heightM });
+  });
+
   it('shades the ground behind the ridge from a low Sun in the north, and nothing from one overhead', () => {
     const low = sunLit(tile, ys, { azDeg: 0, elDeg: 5 });
     const at = (row: number, col: number) => low[row * 41 + col];
@@ -320,7 +316,7 @@ describe('a tile centred off the site', () => {
     const ground = groundOf([{ tile: off, ys: off.heights }]);
     // The site is at tile-local (60, -40): 0.5 * 60 + 0.25 * -40 = 20; the centre's ground is 0.
     expect(ground(0, 0)).toBeCloseTo(20, 4);
-    expect(cameraPose('first', startLook('first', 0), ground(0, 0), ground).position[1]).toBeCloseTo(20 + EYE_M, 4);
+    expect(cameraPose(startLook(0), ground(0, 0)).position[1]).toBeCloseTo(20 + EYE_M, 4);
   });
 
   it('finds the sample north of the site by the tile’s own origin, rows running north to south', () => {
@@ -346,28 +342,21 @@ describe('a tile centred off the site', () => {
   });
 });
 
-describe('the astronaut’s pose', () => {
-  const worldOf = (ground: (e: number, n: number) => number) => ({
-    stage: { camera: new PerspectiveCamera() }, astronaut: new Group(), ground,
-  }) as unknown as World;
-
-  it('faces where the view looks, its back to the third-person camera', () => {
+describe('the camera on the stage', () => {
+  it('stands the eye 2 m over the ground at the site and looks toward the yaw', () => {
     for (const yaw of [0, 37, 90, 180, 251, 359]) {
-      const world = worldOf(() => 0);
-      aimCamera(world, 'third', startLook('third', yaw));
-      const facing = world.astronaut.getWorldDirection(new Vector3());
-      const [dx, , dz] = direction(yaw, 0);
+      const world = { stage: { camera: new PerspectiveCamera() }, ground: () => 7.5 } as unknown as World;
+      const look = startLook(yaw);
+      aimCamera(world, look);
+      const { camera } = world.stage;
+      expect(camera.position.toArray()).toEqual([0, 7.5 + EYE_M, 0]);
+      const facing = camera.getWorldDirection(new Vector3());
+      // VENT-59: the look's own pitch, to 1e-6; at 1 decimal a camera 2° off its yaw still passed.
+      const [dx, dy, dz] = direction(look.yawDeg, look.pitchDeg);
       expect(facing.x).toBeCloseTo(dx, 6);
+      expect(facing.y).toBeCloseTo(dy, 6);
       expect(facing.z).toBeCloseTo(dz, 6);
-      const toCamera = world.stage.camera.position.clone().setY(0).normalize();
-      expect(facing.dot(toCamera)).toBeLessThan(-0.99);
     }
-  });
-
-  it('stands on the ground at the site', () => {
-    const world = worldOf(() => 7.5);
-    aimCamera(world, 'third', startLook('third', 10));
-    expect(world.astronaut.position.toArray()).toEqual([0, 7.5, 0]);
   });
 });
 
@@ -396,7 +385,7 @@ describe('the host’s ready mark', () => {
   };
   const flush = () => new Promise((resolve) => setTimeout(resolve, 0));
 
-  it('is set when the astronaut stands, and the view draws again', async () => {
+  it('is set when the scene\'s parts are in, and the view draws again', async () => {
     const host = { dataset: {} as DOMStringMap };
     const standing = deferred();
     const drawn = vi.fn();
@@ -408,7 +397,7 @@ describe('the host’s ready mark', () => {
     expect(drawn).toHaveBeenCalledTimes(1);
   });
 
-  it('starts clear on a host a previous scene marked, and a stale astronaut never marks the new scene', async () => {
+  it('starts clear on a host a previous scene marked, and a stale load never marks the new scene', async () => {
     const host = { dataset: { ready: 'true' } as DOMStringMap };
     const stale = deferred();
     const cancelStale = markReadyWhenStanding(host, stale.promise, vi.fn());
@@ -437,7 +426,6 @@ describe('the words', () => {
     const { viewAlt } = await import('../src/terrain/view-alt');
     const ridge = { kind: 'ridge', elDeg: 4, distanceM: 1240, heightM: 47.6 } as const;
     const alt = viewAlt(EN, {
-      mode: 'third',
       yawDeg: 253.4,
       bodies: [
         { id: 'sun', azDeg: 253, elDeg: 1, visible: false, blocker: ridge },
@@ -445,7 +433,7 @@ describe('the words', () => {
       ],
     });
     expect(alt).toBe(
-      'Third person: an astronaut stands on the point. View heading 253°, to the west. ' +
+      'First person, eyes 2 m above the ground. View heading 253°, to the west. ' +
         'The Sun is to the west, hidden by the terrain. A ridge 48 m high, 1.2 km away, hides the Sun. ' +
         'The Earth is to the north-west, hidden by the terrain. Terrain more than 2 km away hides the Earth.',
     );

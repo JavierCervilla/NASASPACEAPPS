@@ -41,13 +41,16 @@ completa está en el documento «Ventana Lunar · Especificación y roadmap».
 - [x] Horizonte real con el relieve LOLA (VENT-11, hecho en VENT-40): el Sol y la Tierra contra el relieve de cada
   sitio, horizontes de los sitios al sur de 80° S dentro de la web, ruta `/api/v1/horizon` para cualquier punto,
   franja «Horizon» con la silueta en la ficha y en la hoja, y palabras honestas cuando decide el relieve
-- [x] Vista 3D a pie (VENT-34): pestaña «Horizon» con el relieve LOLA de nuestra API alrededor del punto, en tercera
-  persona con el astronauta y en primera persona, el horizonte lejano del perfil del punto, el Sol y la Tierra del
+- [x] Vista 3D a pie (VENT-34): pestaña «Horizon» con el relieve LOLA de nuestra API alrededor del punto, en primera
+  persona (VENT-54 quitó el astronauta y el módulo), el horizonte lejano del perfil del punto, el Sol y la Tierra del
   instante elegido, detalle fino ilustrativo marcado y anillos de distancia; se carga solo al abrirla
 - [ ] Relieve en streaming para caminar (VENT-34 C a E): teselas alineadas con LOD en el servidor, un Web Worker que
   las sirve y el movimiento a pie o en vehículo
 - [x] Globo lunar 3D con el terminador del Sol real y los sitios de la API (VENT-6); la luz sigue al instante elegido
   en la cinta de calendario (VENT-4)
+- [x] Referencias de orientación en el globo (VENT-50): brújula con el norte fijo y la marca de la Tierra, que al
+  pulsarla devuelve el globo a su encuadre inicial, y retícula discreta de paralelos y meridianos con etiquetas en cinco
+  idiomas, oculta tras el limbo
 - [x] Versión móvil: globo, hoja inferior con cuatro tarjetas (ventana, Sol, Tierra, antena DSN) y selector de sitios
   (VENT-23)
 - [x] Detalle del globo al acercar (texturas 4K y 8K según el zoom y el equipo), relieve LOLA en el globo y hoja del
@@ -63,5 +66,13 @@ completa está en el documento «Ventana Lunar · Especificación y roadmap».
   pin» para teclado y pista la primera vez (VENT-37, parte 1)
 - [x] Capas del globo como interruptores y sitios guardados en el dispositivo, con la API de capas documentada para
   Mooner (`docs/globe-layers.md`) (VENT-37, parte 2)
+- [x] Pulido según la guía de diseño de Apple tras la auditoría de toda la web (VENT-53): respuesta al pulsar en todos
+  los controles, salidas que deshacen su entrada, efecto goma en los límites del globo, foco visible, escala tipográfica,
+  contraste alto opaco, bordes que se funden al desplazar y zonas de toque de 44 px (VENT-55)
+- [x] Cambios de forma elegidos en el lienzo de la auditoría: un solo material, un solo segmentado y un solo botón
+  secundario, avisos en fila, tarjeta compacta y ajustes tras un engranaje (VENT-56 → VENT-57)
+- [x] Cargador de la vista 3D que ya enseña el sitio: el plano desde arriba con cada tesela en su orden real de
+  llegada, el Sol y la Tierra en el borde, y luego el horizonte del sitio que da paso al 3D sin salto (VENT-60)
+- [ ] Variante C del cargador, el descenso, en equipos potentes (VENT-61)
 - [ ] Comparador de sitios o exportar a .ics (VENT-8)
 - [ ] Página del proyecto, vídeo de 30 s y pitch; envío antes de las 20:00 (VENT-9)

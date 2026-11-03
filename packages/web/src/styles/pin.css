@@ -36,10 +36,9 @@
  * approximate zone, which is a dashed ring without a dot.
  */
 
-/* Each drop and lift settles on a critically damped spring (0.4 s). */
+/* Each drop and lift settles on the critically damped --spring (tokens). */
 .pin,
 .pin-carry {
-  --spring: linear(0, 0.118, 0.329, 0.527, 0.682, 0.793, 0.868, 0.917, 0.949, 0.969, 0.981, 0.989, 0.993, 0.996, 0.998, 0.999, 1);
   --tone: #f2f2f4;
 }
 
@@ -72,7 +71,7 @@
 }
 
 .pin:focus-visible {
-  outline: 2px solid var(--marker);
+  outline: 2px solid var(--focus-ring-on-moon);
   outline-offset: 0;
 }
 
@@ -200,9 +199,9 @@
   margin: -72px 0 0 24px;
   padding: 8px 12px;
   border-radius: 12px;
-  background: var(--surface);
-  backdrop-filter: blur(20px);
-  box-shadow: inset 0 0 0 1px var(--surface-edge);
+  background: var(--float-fill);
+  backdrop-filter: var(--float-blur);
+  box-shadow: var(--float-rim);
   color: var(--text);
   font-size: 0.9375rem;
   font-weight: 600;
@@ -272,7 +271,7 @@
 }
 
 .pin-drop:focus-visible {
-  outline: 2px solid var(--marker);
+  outline: 2px solid var(--focus-ring);
   outline-offset: 2px;
 }
 
@@ -293,7 +292,7 @@
 }
 
 .pin-drop--row:focus-visible {
-  outline-color: var(--text);
+  outline-color: var(--focus-ring);
   outline-offset: -2px;
 }
 
@@ -306,7 +305,8 @@
 /* The first-time hint: one line over the Moon, then gone for good. */
 .pin-hint {
   position: absolute;
-  top: 20px;
+  /* Under «New version ready» while it shows (update.css). */
+  top: calc(20px + var(--update-row-space, 0px));
   left: 50%;
   z-index: 6;
   display: flex;
@@ -316,9 +316,9 @@
   max-width: calc(100% - 40px);
   padding: 4px 4px 4px 14px;
   border-radius: 22px;
-  background: var(--surface);
-  backdrop-filter: blur(20px);
-  box-shadow: inset 0 0 0 1px var(--surface-edge);
+  background: var(--float-fill);
+  backdrop-filter: var(--float-blur);
+  box-shadow: var(--float-rim);
   color: var(--text);
   transform: translateX(-50%);
 }
@@ -380,7 +380,7 @@
 }
 
 .pin-hint__close:focus-visible {
-  outline: 2px solid var(--marker);
+  outline: 2px solid var(--focus-ring);
   outline-offset: 2px;
 }
 
@@ -400,7 +400,8 @@
 @media (min-width: 768px) {
   .globe .pin-hint {
     left: calc(var(--layers-w) + 40px);
-    right: 20px;
+    /* Nor over the compass in the corner (VENT-50): its size, a gap and the margin. */
+    right: calc(20px + var(--compass-size) + 12px);
     width: fit-content;
     max-width: none;
     margin-inline: auto;
@@ -424,14 +425,12 @@
 @media (max-width: 767px) {
   .pin-hint {
     position: fixed;
-    top: var(--top, 100px);
+    top: calc(var(--top, 100px) + var(--update-row-space, 0px));
     left: 12px;
     right: 12px;
     z-index: 4;
     max-width: none;
     transform: none;
-    background: var(--phone-tabs);
-    box-shadow: var(--phone-bar-edge);
   }
 
   .pin-hint__text {
@@ -500,17 +499,13 @@
   .pin-carry[data-phase='return'] {
     opacity: 0;
   }
-
-  .pin-drop:active {
-    transform: none;
-  }
 }
 
 @media (prefers-reduced-transparency: reduce) {
   .pin-readout,
   .pin-hint {
     backdrop-filter: none;
-    background: var(--surface-solid, #15161b);
+    background: var(--surface);
   }
 }
 

@@ -28,13 +28,15 @@
  * that draws it, the drag gestures (on the sheet, and on the edge that
  * opens it when closed), the viewport resize, the top bar's height,
  * which the full sheet stays under, and the content the half sheet
- * rises to fit (sheet-lift.ts).
+ * rises to fit (sheet-lift.ts), and the head the peek sheet rises to
+ * show (sheet-peek.ts).
  */
 import { createLoop, type Loop } from '../globe/loop';
 import { bindSheetDrag, type DragAllowance } from './sheet-drag';
 import { edgeDragTarget } from './sheet-edge-drag';
 import { halfLiftPx, watchLift } from './sheet-lift';
 import { SheetMotion } from './sheet-motion';
+import { peekLiftPx, watchPeek } from './sheet-peek';
 import { sheetPull } from './sheet-pull';
 import { scrollingHalf } from './sheet-scroll';
 import {
@@ -140,7 +142,8 @@ interface Frame {
 /**
  * The canvas's layout, with the full sheet `BAR_GAP_PX` under the bar's
  * bottom edge when the bar outgrows the canvas's (large text), and the
- * half sheet raised until its content clears the tab bar.
+ * half sheet raised until its content clears the tab bar, the peek
+ * sheet until its head does.
  */
 function layoutUnder(frame: Frame): SheetLayout {
   const { el, bar, tabs } = frame;
@@ -148,7 +151,9 @@ function layoutUnder(frame: Frame): SheetLayout {
   const fullGapPx = Math.max(SHEET_LAYOUT.fullGapPx, bottom + BAR_GAP_PX);
   const base = SHEET_LAYOUT.halfPx;
   const halfPx = base + halfLiftPx(el, tabs, base);
-  return { ...SHEET_LAYOUT, fullGapPx, halfPx };
+  const peek = SHEET_LAYOUT.peekPx;
+  const peekPx = peek + peekLiftPx(el, tabs, peek);
+  return { ...SHEET_LAYOUT, fullGapPx, halfPx, peekPx };
 }
 
 /**
@@ -203,9 +208,10 @@ export function mountSheet(
   const motion = new SheetMotion(state, deps);
   const unbind = bindDrags(el, { state, motion, options: own });
   const unwatch = watchLayout(frame, state, motion);
+  const unwatchPeek = watchPeek(el, frame.tabs, state, motion);
   placeSheet(el, state.axis.value, state.detents);
   invalidate();
-  const stops = [() => loop.stop(), unbind, unwatch, own.dispose];
+  const stops = [() => loop.stop(), unbind, unwatch, unwatchPeek, own.dispose];
   const dispose = (): void => stops.forEach((stop) => stop());
   return { motion, dispose };
 }

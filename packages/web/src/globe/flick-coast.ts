@@ -30,6 +30,7 @@
  */
 import type { ControlDeps } from './control-deps';
 import type { Orbit } from './orbit';
+import { settleOrbit } from './orbit-band';
 
 /** Stops the turn where it is; true when it was turning. Zoom goes on. */
 function haltTurn(orbit: Orbit): boolean {
@@ -57,6 +58,8 @@ export function flickCoast(orbit: Orbit, deps: ControlDeps) {
     const ours = flung === turnTargets(orbit);
     const stopped = ours && haltTurn(orbit);
     flung = null;
+    // Stopped past a limit (a flick from a stretch), it settles back on it.
+    if (stopped) settleOrbit(orbit, deps.reducedMotion());
     if (stopped) deps.invalidate();
     return stopped;
   };

@@ -29,7 +29,12 @@
  * one. See view-tier.ts for the store they serve.
  */
 import { TIERS, type Tier } from '../lib/quality';
-import { keptTier, type TierStorage } from './view-tier-memory';
+import {
+  keepTier,
+  keptTier,
+  wasOpen,
+  type TierStorage,
+} from './view-tier-memory';
 
 export interface ViewTierState {
   readonly tier: Tier;
@@ -54,9 +59,13 @@ export interface ViewTierLive {
   readonly forced: boolean;
   readonly storage: TierStorage | null;
   readonly state: ViewTierState;
+  /** Why the tier starts a rung lower than it would have; null: it does not. */
+  readonly note: string | null;
 }
 
 const rung = (tier: Tier): number => TIERS.indexOf(tier);
+/** What the crash report says of a run its page did not unmount. */
+const DIED = 'previous run ended without unmount';
 
 /** The state of `tier` under an address that forced one, or did not. */
 export const stateOf = (tier: Tier, forced: boolean): ViewTierState =>
@@ -67,12 +76,20 @@ export const lowerRung = (tier: Tier): Tier => TIERS[rung(tier) - 1] ?? 'low';
 
 /**
  * Reads the device and the session's memory: the device's tier, or the
- * kept one when it is lower; a tier the address forced wins over memory.
+ * kept one when it is lower, a rung lower again (and kept) when the page
+ * before died with the view open (VENT-51); a tier the address forced wins
+ * over memory.
  */
 export function begin(options: ViewTierOptions): ViewTierLive {
   const { tier, forced } = options.start();
   const storage = options.storage();
   const kept = forced ? null : keptTier(storage);
   const from = kept && rung(kept) < rung(tier) ? kept : tier;
-  return { forced, storage, state: stateOf(from, forced) };
+  if (forced || from === 'low' || !wasOpen(storage)) {
+    return { forced, storage, state: stateOf(from, forced), note: null };
+  }
+  const lower = lowerRung(from);
+  keepTier(storage, lower);
+  const note = `tier dropped to ${lower}: ${DIED}`;
+  return { forced, storage, state: stateOf(lower, forced), note };
 }

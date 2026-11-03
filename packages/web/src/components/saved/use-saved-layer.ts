@@ -40,6 +40,9 @@ import type { SavedSite } from '../../saved/saved-schema';
 import { useI18n } from '../i18n-context';
 import type { SavedKit } from './context';
 
+/** The silver pin's drawn radius, px (saved.css `.saved-marker::before`). */
+export const SAVED_PIN_RADIUS_PX = 7;
+
 /** The points of `sites` but the selected one, named for a screen reader. */
 export function savedPoints(
   sites: readonly SavedSite[],
@@ -67,7 +70,9 @@ export function useSavedGlobeLayer(
       const site = kit.saved.find(id);
       if (site) pin.places.drop(site);
     };
-    const layer = pointLayer({ className: 'saved-marker', onPick: pick });
+    const layer = pointLayer({
+      className: 'saved-marker', onPick: pick, coverPx: SAVED_PIN_RADIUS_PX,
+    });
     const update = (): void =>
       layer.setPoints(savedPoints(kit.saved.get(), store.get().id, i18n));
     update();

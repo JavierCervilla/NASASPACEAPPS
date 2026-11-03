@@ -86,9 +86,15 @@ test.describe('desktop calendar strip, 1440x900', () => {
     const tabs = page.getByRole('navigation', { name: 'View' }).locator('> *');
     // Globe, Polar map, DSN (VENT-7) and Horizon.
     await expect(tabs).toHaveCount(4);
-    for (const box of await tabs.evaluateAll((els) => els.map((el) => el.getBoundingClientRect().height))) {
-      expect(box).toBeGreaterThanOrEqual(44);
-    }
+    // Drawn 40 px tall in the 44 px segmented control (VENT-57, C-16); the track's 2 px above and below are theirs.
+    const reach = await tabs.evaluateAll((els) => els.map((el) => {
+      const box = el.getBoundingClientRect();
+      const x = box.left + box.width / 2;
+      const hits = (y: number) => el.contains(document.elementFromPoint(x, y));
+      return box.bottom - box.top >= 40 && hits(box.top - 1.5) && hits(box.bottom + 1.5);
+    }));
+    expect(reach).toEqual([true, true, true, true]);
+    expect((await page.getByRole('navigation', { name: 'View' }).boundingBox())!.height).toBeGreaterThanOrEqual(44);
   });
 
   test('the whole strip fits at 900 px tall too', async ({ page }) => {
@@ -169,7 +175,8 @@ test.describe('desktop calendar strip, 1440x900', () => {
     await expect(slider(page)).toHaveAttribute('aria-valuetext', 'Mon 23 Nov · 18:00 UTC');
     await expect(date(page)).toHaveText('Mon 23 Nov · 18:00 UTC');
     // The instant line sits at hour 546 of 720, as on the canvas.
-    const left = await strip(page).locator('.instant-line').evaluate((el) => (el as HTMLElement).style.left);
+    // It rides a rail translated by the instant's share of the month (VENT-55: composited, not laid out).
+    const left = await strip(page).locator('.instant-line').evaluate((el) => (el.parentElement as HTMLElement).style.translate);
     expect(Number.parseFloat(left)).toBeCloseTo(75.83, 1);
     await expect(page.getByRole('region', { name: 'Lunar globe' }).locator('canvas')).toHaveCount(1);
     await expect(page.locator('[data-site-id="im2-athena"]')).toHaveAttribute('aria-pressed', 'true');

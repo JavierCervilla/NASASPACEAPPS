@@ -31,7 +31,7 @@ import { createCarrier, type CarryEnd } from '../src/pin/carrier';
 import { TOUCH_LIFT_PX } from '../src/pin/carry-geometry';
 import { createPinHint, HINT_KEY, type HintStorage } from '../src/pin/first-hint';
 import { dropAtStart } from '../src/pin/key-carry';
-import { bindPlacing, HOLD_MS, PRESS_SLOP_PX } from '../src/pin/place-gesture';
+import { bindPlacing, HOLD_LATE_MS, HOLD_MS, PRESS_SLOP_PX } from '../src/pin/place-gesture';
 import { createSurfaces, type DropSurface } from '../src/pin/surfaces';
 import type { LatLon } from '../src/lib/polar-projection';
 
@@ -51,15 +51,22 @@ function fakeMoon(): DropSurface {
   };
 }
 
-/** A timer the test fires by hand. */
+/** A timer the test fires by hand, `late` ms after it was due, on a clock it moves. */
 function manualTimer() {
   let due: (() => void) | null = null;
+  let dueAt = 0;
+  let clock = 0;
   return {
-    after: (fn: () => void) => {
+    after: (fn: () => void, ms: number) => {
       due = fn;
+      dueAt = clock + ms;
       return () => void (due = null);
     },
-    fire: () => due?.(),
+    now: () => clock,
+    fire: (late = 0) => {
+      clock = dueAt + late;
+      due?.();
+    },
     pending: () => due !== null,
   };
 }
@@ -76,7 +83,7 @@ function setUp() {
   carrier.ended.subscribe(() => ends.push(carrier.ended.get()));
   const timer = manualTimer();
   const keys = new EventTarget();
-  const unbind = bindPlacing(moon.host, { carrier, surfaces, after: timer.after, keys });
+  const unbind = bindPlacing(moon.host, { carrier, surfaces, after: timer.after, now: timer.now, keys });
   return { moon, surfaces, carrier, drop, ends, timer, keys, unbind };
 }
 
@@ -202,6 +209,35 @@ describe('a finger on the Moon', () => {
     expect(carrier.view.get()).toMatchObject({ phase: 'return' });
     expect(drop).not.toHaveBeenCalled();
     expect(ends).toEqual([]);
+  });
+
+  // A busy main thread fires the hold's timer late, while a drag the browser queued is not delivered yet: the
+  // late timer must not read the finger as still (VENT-52).
+  it(`whose hold fires over ${HOLD_LATE_MS} ms late waits again: a queued drag turns the globe, no pin`, () => {
+    const { moon, carrier, timer } = setUp();
+    send(moon.host, 'pointerdown', touch(200, 200));
+    timer.fire(HOLD_LATE_MS + 1);
+    expect(carrier.current()).toBeNull();
+    expect(timer.pending()).toBe(true);
+    send(moon.host, 'pointermove', touch(200, 200 + PRESS_SLOP_PX + 1));
+    expect(timer.pending()).toBe(false);
+    expect(carrier.current()).toBeNull();
+  });
+
+  it('whose late hold waits again lifts the pin once the page saw the finger still the whole hold', () => {
+    const { moon, carrier, timer } = setUp();
+    send(moon.host, 'pointerdown', touch(220, 200));
+    timer.fire(HOLD_LATE_MS + 300);
+    expect(carrier.current()).toBeNull();
+    timer.fire();
+    expect(carrier.view.get()).toMatchObject({ mode: 'hold', at: { x: 220, y: 200 } });
+  });
+
+  it(`whose hold fires up to ${HOLD_LATE_MS} ms late still lifts the pin`, () => {
+    const { moon, carrier, timer } = setUp();
+    send(moon.host, 'pointerdown', touch(220, 200));
+    timer.fire(HOLD_LATE_MS);
+    expect(carrier.current()).not.toBeNull();
   });
 
   it('held off the Moon lifts nothing', () => {

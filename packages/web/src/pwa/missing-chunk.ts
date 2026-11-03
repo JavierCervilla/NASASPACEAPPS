@@ -76,13 +76,17 @@ export function isMissingChunk(error: unknown): boolean {
  * rejects with a MissingChunkError, any other error passes untouched.
  * Offline the same failure is the network's (an on-demand chunk is not
  * kept for offline use): it rejects marked `offline` and tells nobody, so
- * no «New version ready» shows for a version that is not new.
+ * no «New version ready» shows for a version that is not new. A browser
+ * that knows it is offline is not asked at all: it keeps a module it
+ * failed to fetch failed for the page's life, so a try once back online
+ * would fail without a request (VENT-59).
  */
 export async function loadChunk<T>(
   load: () => Promise<T>,
   target: EventTarget,
   online: () => boolean = browserOnline,
 ): Promise<T> {
+  if (!online()) throw new MissingChunkError('offline', true);
   try {
     return await load();
   } catch (error) {

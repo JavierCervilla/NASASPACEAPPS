@@ -289,6 +289,14 @@ describe('what hides a body', () => {
     expect(blockerOf({ azDeg: 100, elDeg: 9 }, flat, wallProfile())).toEqual({ kind: 'clear' });
   });
 
+  // VENT-59: the card reads the profile, so the profile is the one judge; the tile only names what hides a body.
+  it('leaves a body the profile shows clear, even when the tile’s ridge stands over it', () => {
+    const low = { centiDeg: new Int16Array(720).fill(quantiseDeg(-1)) };
+    expect(ridge.elDeg).toBeGreaterThan(5);
+    expect(blockerOf({ azDeg: 0, elDeg: 5 }, ridge, low)).toEqual({ kind: 'clear' });
+    expect(blockerOf({ azDeg: 0, elDeg: -2 }, ridge, low)).toMatchObject({ kind: 'ridge', heightM: ridge.heightM });
+  });
+
   it('shades the ground behind the ridge from a low Sun in the north, and nothing from one overhead', () => {
     const low = sunLit(tile, ys, { azDeg: 0, elDeg: 5 });
     const at = (row: number, col: number) => low[row * 41 + col];
@@ -338,13 +346,16 @@ describe('the camera on the stage', () => {
   it('stands the eye 2 m over the ground at the site and looks toward the yaw', () => {
     for (const yaw of [0, 37, 90, 180, 251, 359]) {
       const world = { stage: { camera: new PerspectiveCamera() }, ground: () => 7.5 } as unknown as World;
-      aimCamera(world, startLook(yaw));
+      const look = startLook(yaw);
+      aimCamera(world, look);
       const { camera } = world.stage;
       expect(camera.position.toArray()).toEqual([0, 7.5 + EYE_M, 0]);
       const facing = camera.getWorldDirection(new Vector3());
-      const [dx, , dz] = direction(yaw, 0);
-      expect(facing.x).toBeCloseTo(dx, 1);
-      expect(facing.z).toBeCloseTo(dz, 1);
+      // VENT-59: the look's own pitch, to 1e-6; at 1 decimal a camera 2° off its yaw still passed.
+      const [dx, dy, dz] = direction(look.yawDeg, look.pitchDeg);
+      expect(facing.x).toBeCloseTo(dx, 6);
+      expect(facing.y).toBeCloseTo(dy, 6);
+      expect(facing.z).toBeCloseTo(dz, 6);
     }
   });
 });

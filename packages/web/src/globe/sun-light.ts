@@ -34,8 +34,12 @@ import { subSolarPoint } from '@ventana/sim';
 import type { TimeStore } from '../calendar/time-store';
 import { sunDirection } from './geo';
 
-/** Sunlight, and the faint fill that stands in for earthshine. */
-const SUN_INTENSITY = 3.2;
+/**
+ * Sunlight, and the faint fill that stands in for earthshine. The sunlight
+ * lights a Lambert surface facing it by this over π (1.02): the brightest
+ * the globe draws a map's texel (tests/graticule-contrast.test.ts).
+ */
+export const SUN_INTENSITY = 3.2;
 const FILL_INTENSITY = 0.05;
 /** How far out the light sits; only its direction matters. */
 const SUN_DISTANCE = 10;

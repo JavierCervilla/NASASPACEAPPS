@@ -52,6 +52,12 @@ export interface ScreenPoint {
   readonly y: number;
 }
 
+/** A site marker as placed after a frame, for what must keep clear of it. */
+export interface Mark {
+  readonly at: ScreenPoint;
+  readonly selected: boolean;
+}
+
 /** A facing marker about to be placed. */
 export interface Candidate {
   readonly at: ScreenPoint;

@@ -36,13 +36,13 @@ import type { SiteStore } from '../phone/site-store';
 import type { MarkerLayer } from './marker-layer';
 import type { GlobeSite } from './markers';
 import { moveOrbit, type Orbit } from './orbit';
-import type { SiteFramer } from './site-framer';
+import type { FramedSite, SiteFramer } from './site-framer';
 import { loadSites, type SitesSource } from './sites-client';
 
 export interface SelectionParts {
   readonly store: SiteStore;
   readonly markers: MarkerLayer;
-  readonly framer: Pick<SiteFramer, 'fly' | 'hold'>;
+  readonly framer: Pick<SiteFramer, 'fly' | 'hold' | 'home'>;
   /** A marker's accessible name, in the visitor's language. */
   readonly nameOf: (site: GlobeSite) => string;
 }
@@ -64,6 +64,13 @@ export function flyTo(
   moveOrbit(orbit, delta, follow);
 }
 
+/** The place of the selection `id`: a listed site or a custom point. */
+function placeOf(id: string, sites: readonly GlobeSite[]): FramedSite | null {
+  const point = customPointOf(id);
+  const custom = point && { id, name: '', ...point, approximate: false };
+  return sites.find((site) => site.id === id) ?? custom ?? null;
+}
+
 /** Frames the selected site among `sites`, once they have loaded. */
 function holdSelected(
   parts: SelectionParts,
@@ -82,27 +89,34 @@ export function bindSelection(
   return store.subscribe(() => {
     const { id, origin } = store.get();
     markers.select(id);
-    const point = customPointOf(id);
-    const custom = point && { id, name: '', ...point, approximate: false };
-    const site = sites().find((s) => s.id === id) ?? custom;
+    const site = placeOf(id, sites());
     if (origin === 'list' && site) framer.fly(site);
     else framer.hold(null);
   });
 }
 
+/** The loaded selection: how to stop it, and the compass's way home. */
+export interface LoadedSelection {
+  readonly stop: () => void;
+  /** Back to the opening view, framing the selected site (VENT-50). */
+  readonly home: () => void;
+}
+
 /**
  * Loads the sites into the markers, frames the selected one once they
- * are in, and follows the store; returns how to stop following it.
+ * are in, and follows the store.
  */
 export function loadSelection(
   parts: SelectionParts,
   source: SitesSource,
-): () => void {
+): LoadedSelection {
   let sites: readonly GlobeSite[] = [];
   void loadSites(source).then((loaded) => {
     sites = loaded;
     parts.markers.setSites(loaded, parts.nameOf);
     holdSelected(parts, loaded);
   });
-  return bindSelection(parts, () => sites);
+  const home = (): void =>
+    parts.framer.home(placeOf(parts.store.get().id, sites));
+  return { stop: bindSelection(parts, () => sites), home };
 }

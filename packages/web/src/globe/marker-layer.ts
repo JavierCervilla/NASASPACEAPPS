@@ -40,7 +40,7 @@
  */
 import { isFacing, latLonToVector, type Vec3 } from './geo';
 import { markerButton } from './marker-button';
-import { cullZones, inLayers } from './marker-cull';
+import { cullZones, inLayers, type Mark } from './marker-cull';
 import { pickedSite, type PlacedMarker } from './marker-hit';
 import {
   mergeColocated,
@@ -133,8 +133,11 @@ export class MarkerLayer {
     this.onChange();
   }
 
-  /** Moves every marker and the ring to where `project` puts them. */
-  place(project: Projector, eye: Vec3): void {
+  /**
+   * Moves every marker and the ring to where `project` puts them; says
+   * where the markers that show are, for what must keep clear of them.
+   */
+  place(project: Projector, eye: Vec3): Mark[] {
     const facing = inLayers(this.markers, this.kinds, this.selected)
       .filter(({ point }) => isFacing(point, eye))
       .map((marker) => ({
@@ -155,6 +158,7 @@ export class MarkerLayer {
     this.placed = shown.map(({ marker, at }) => ({ id: marker.site.id, at }));
     // The ring hides with the selected marker (behind the limb).
     this.ring.place(shown.find(({ selected }) => selected)?.at);
+    return shown.map(({ at, selected }) => ({ at, selected }));
   }
 
   /** Takes the markers and the ring off the page. */

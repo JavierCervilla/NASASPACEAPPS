@@ -276,6 +276,32 @@ Every visible change follows `.claude/skills/apple-design/SKILL.md` (vendored fr
   selection is always marked. Under the picker's title everything scrolls as one (`.picker__scroll`), so the phone
   sheet's settings never squeeze the list. The site popover opens and closes its list only on its own toggle, not on
   a nested menu's.
+- **Orientation on the globe** (VENT-50, canvas «A + full graticule, discreet», the human's decision). The globe keeps
+  north up, so the **compass** (`src/components/compass/CompassButton.tsx`) is a 48 px glass button (`--compass-size`)
+  in the globe's top right corner, on phones under the glass top bar and under the first-time hint while it shows
+  (measured, `compass-top.ts`; on desktop the hint keeps clear of it, `pin.css`). Its needle is fixed, with a small
+  «N», and an Earth mark rides its ring in the screen direction from the Moon's centre to the sub-Earth point at the
+  shared instant (`earthMark`, `src/globe/earth-mark.ts`: the screen's axes from the camera's position alone), hollow
+  while that point is behind the limb, then at the direction it hides in. After each drawn frame the angle goes to the
+  button as `--earth-angle` and `data-far`, with no re-render; the component hears only when the mark moves to another
+  of eight places, which its accessible name says with what a press does (`compass-name.ts`, `compass.*` messages). A
+  press brings the globe back to its opening view: `SOUTH_POLE_VIEW`, framed for the selected site in the free band,
+  on the orbit's springs and at once under reduced motion (`SiteFramer.home`; the globe hands the page its
+  `GlobeCompass` through `onCompass`, `src/globe/compass-link.ts`). The **graticule** (`src/globe/graticule/`) is no
+  layer of the registry and has no switch in the Layers key: the parallels at 85° S, 80° S and 70° S and the meridians
+  at 0°, 45° and 90° east and west, pole to pole, are one indexed `LineSegments` of about 500 vertices at radius 1.002
+  in the scene, depth-tested against the sphere so they vanish behind the limb, in a thin grey the tokens give
+  (`--graticule-line`, never a signal colour). Its labels (10 px, written by `formatAngle`, so Spanish says «90° O»)
+  and the cross on the south pole are HTML placed after each frame, under the markers, and hidden behind the limb. Each
+  label is moved straight in from the limb until its whole box is 14 px inside the Moon's disc (`disk.ts`), and is left
+  out when it would touch a site marker, the selected site's ring or a label placed before it (`clearance.ts`,
+  `place.ts`); a parallel may stand on any meridian every 15°, takes the one with the widest gap from the markers and
+  keeps it while it stays clear, so labels do not hop as the globe turns. With the eight curated sites near the pole,
+  the 85° S label has no room at the opening zoom and shows from about 3.5 radii. An idle globe still draws no
+  frames. The label is white on a chip 0.61 opaque (the canvas had grey text on 0.44; the human chose white text over a
+  0.84 chip for grey): the least that keeps the text 4.5:1 over the brightest texel the Moon maps hold, which is white (the 2K, 4K and 8K LROC maps reach 255, 255, 255 and the Sun lights a
+  texel at most 1.02 times, `tests/graticule-contrast.test.ts`). Held by
+  `tests/globe-compass.test.ts`, `tests/globe-graticule.test.ts` and `tests/e2e/globe-orientation.spec.ts`.
 - **Sites in permanent shadow** (VENT-39, canvas option B, the human's decision). NASA's illumination maps (PGDA
   product 69, LRO LOLA, Mazarico et al. 2011; sources, sha256 and the scales read from the PDS labels in `ASSETS.md`)
   put four approximate sites on a permanently shadowed crater floor: Shackleton (`change7-target`), Haworth, de
@@ -482,7 +508,7 @@ Every visible change follows `.claude/skills/apple-design/SKILL.md` (vendored fr
   `favicon.ico`, `favicon.svg` and the root `apple-touch-icon.png`), fetched past the HTTP cache (`cache: 'reload'`),
   and the build's digest over every file the worker may keep, which names the static cache (`ventana-static-<digest>`),
   so a deploy drops the old one. The install set has a hard budget of 5 MB (`PRECACHE_BUDGET`, human decision
-  2026-10-31): the build logs the precache total and fails over it (4.75 MB with VENT-46's rings, landers and rigged astronaut, their files left out; 4.70 MB with VENT-34's on-foot view, its files left out; 4.68 MB with VENT-40's horizon strip; 4.63 MB with VENT-39's shadow notes; 4.57 MB with VENT-37's saved sites; 4.52 MB when it left the astronaut's sprites out, 4.60 MB with them). The 4K and 8K maps, and any build file not
+  2026-10-31): the build logs the precache total and fails over it (4.77 MB with VENT-50's compass and graticule; 4.75 MB with VENT-46's rings, landers and rigged astronaut, their files left out; 4.70 MB with VENT-34's on-foot view, its files left out; 4.68 MB with VENT-40's horizon strip; 4.63 MB with VENT-39's shadow notes; 4.57 MB with VENT-37's saved sites; 4.52 MB when it left the astronaut's sprites out, 4.60 MB with them). The 4K and 8K maps, and any build file not
   precached, are kept cache first the first time the page fetches them. Under Save-Data the worker is not registered
   at all. Pages and API GETs are network first,
   build files cache first; the network's answer always wins (a copy that cannot be kept, a full quota, is skipped), only

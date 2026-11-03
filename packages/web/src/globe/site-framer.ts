@@ -30,9 +30,12 @@
  * sheet between detents, a resize), the camera turns just enough to keep the
  * site's marker in the free band (site-aim.ts), on the orbit's springs, so it
  * lands at once under reduced motion. Once the user turns or zooms the globe,
- * the view is theirs: the framer stops until the next pick.
+ * the view is theirs: the framer stops until the next pick. The compass
+ * (VENT-50) gives it back: `home` returns to the opening view.
  */
 import type { PerspectiveCamera } from 'three';
+import { wrapDeg } from '@ventana/sim';
+import { SOUTH_POLE_VIEW } from './framing';
 import type { GlobeSite } from './markers';
 import { moveOrbit, type Orbit } from './orbit';
 import { flyTo } from './selection';
@@ -60,6 +63,12 @@ export interface SiteFramer {
    * the globe since the last framing; null: frame nothing.
    */
   hold(site: FramedSite | null): void;
+  /**
+   * Turns the globe back to its opening view, on the springs (at once under
+   * reduced motion), and frames `site`, the selected one, as at load; null:
+   * the opening view as it is.
+   */
+  home(site: FramedSite | null): void;
   /** Stops following the free band. */
   dispose(): void;
 }
@@ -102,6 +111,20 @@ function refit(parts: SiteFramerParts, framing: Framing): void {
   parts.invalidate();
 }
 
+/** Moves the orbit's targets to the opening view, the short way round. */
+function goHome(orbit: Orbit, follow: boolean): void {
+  const view = SOUTH_POLE_VIEW;
+  moveOrbit(
+    orbit,
+    {
+      latDeg: view.latDeg - orbit.lat.target,
+      lonEastDeg: wrapDeg(view.lonEastDeg - orbit.lon.target),
+      distance: view.distance - orbit.distance.target,
+    },
+    follow,
+  );
+}
+
 /** A framer over `parts`; the orbit's aim at creation counts as framed. */
 export function createSiteFramer(parts: SiteFramerParts): SiteFramer {
   const { orbit } = parts;
@@ -116,6 +139,12 @@ export function createSiteFramer(parts: SiteFramerParts): SiteFramer {
     parts.invalidate();
     hold(site);
   };
+  const home = (site: FramedSite | null): void => {
+    goHome(orbit, parts.reducedMotion());
+    framing.aimed = targetsOf(orbit);
+    parts.invalidate();
+    hold(site);
+  };
   const dispose = parts.band.watch(() => refit(parts, framing));
-  return { fly, hold, dispose };
+  return { fly, hold, home, dispose };
 }

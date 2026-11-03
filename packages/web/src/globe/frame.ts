@@ -30,6 +30,7 @@
 import { Vector2, Vector3 } from 'three';
 import { cameraPosition } from './framing';
 import type { Vec3 } from './geo';
+import type { Mark } from './marker-cull';
 import type { Projector, MarkerLayer } from './marker-layer';
 import type { Moon } from './moon';
 import { poseOf, stepOrbit, type Orbit } from './orbit';
@@ -43,6 +44,10 @@ export interface FrameParts {
   readonly moon: Pick<Moon, 'track'>;
   /** The registry's layers (layers/bind.ts), placed after the markers. */
   readonly layers?: { place(project: Projector, eye: Vec3): void };
+  /** The graticule's labels (graticule/), placed clear of the markers. */
+  readonly graticule?: {
+    place(project: Projector, eye: Vec3, marks: readonly Mark[]): void;
+  };
   /** Hears that a frame was drawn (the standing pin follows it). */
   readonly drawn?: () => void;
 }
@@ -69,7 +74,8 @@ export function drawFrame(parts: FrameParts, dt: number): boolean {
   stage.renderer.render(stage.scene, stage.camera);
   const project = projector(stage);
   const eye = cameraPosition(pose);
-  markers.place(project, eye);
+  const marks = markers.place(project, eye);
+  parts.graticule?.place(project, eye, marks);
   parts.layers?.place(project, eye);
   parts.drawn?.();
   return moving;

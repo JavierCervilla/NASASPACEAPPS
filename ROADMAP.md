@@ -48,6 +48,9 @@ completa está en el documento «Ventana Lunar · Especificación y roadmap».
   las sirve y el movimiento a pie o en vehículo
 - [x] Globo lunar 3D con el terminador del Sol real y los sitios de la API (VENT-6); la luz sigue al instante elegido
   en la cinta de calendario (VENT-4)
+- [x] Referencias de orientación en el globo (VENT-50): brújula con el norte fijo y la marca de la Tierra, que al
+  pulsarla devuelve el globo a su encuadre inicial, y retícula discreta de paralelos y meridianos con etiquetas en cinco
+  idiomas, oculta tras el limbo
 - [x] Versión móvil: globo, hoja inferior con cuatro tarjetas (ventana, Sol, Tierra, antena DSN) y selector de sitios
   (VENT-23)
 - [x] Detalle del globo al acercar (texturas 4K y 8K según el zoom y el equipo), relieve LOLA en el globo y hoja del

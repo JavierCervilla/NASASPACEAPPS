@@ -73,16 +73,19 @@ export interface BodyDir {
 }
 
 /**
- * What hides `body`: the profile decides whether it is hidden (the smooth
- * sphere without one); the tile, whether a ridge in reach does it.
+ * What hides `body`: the profile decides whether it is hidden, as the card
+ * reads it (VENT-59: the tile's coarser relief may stand over the profile's
+ * skyline); without one, the tile or the smooth sphere. The tile says
+ * whether a ridge in reach does it.
  */
 export function blockerOf(
   body: BodyDir,
   ridge: Ridge,
   profile: HorizonProfile | null,
 ): Blocker {
-  const horizon = profile ? horizonAt(profile, body.azDeg) : dipDeg(EYE_M);
-  const skyline = Math.max(horizon, ridge.elDeg);
+  const skyline = profile
+    ? horizonAt(profile, body.azDeg)
+    : Math.max(dipDeg(EYE_M), ridge.elDeg);
   if (body.elDeg > skyline) return { kind: 'clear' };
   if (ridge.elDeg >= body.elDeg && ridge.heightM > 0) {
     return { kind: 'ridge', ...ridge };

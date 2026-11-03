@@ -83,3 +83,23 @@ test.describe('a view whose chunk is gone after a deploy, 1440x900', () => {
     await page.screenshot({ path: test.info().outputPath('missing-scene.png') });
   });
 });
+
+// VENT-59 (verificador of VENT-52): React.lazy kept the offline import's failure, so the view stayed «Offline» after
+// the connection came back, until a reload.
+test.describe('a view opened offline, 1440x900', () => {
+  test('says it needs a connection, and loads once the browser is back online, without a reload', async ({ page, context }) => {
+    await openWithout(page, 'no-chunk-is-missing');
+    await expect.poll(() => buttons(page)).toBeGreaterThan(20);
+    await page.evaluate(() => {
+      (window as unknown as { __sameDocument: boolean }).__sameDocument = true;
+    });
+    await context.setOffline(true);
+    await page.getByRole('navigation', { name: 'View' }).getByRole('link', { name: 'Horizon' }).click();
+    await expect(page.getByText('Offline: this view needs a connection to load')).toBeVisible();
+    await expect(page.getByRole('button', { name: 'New version ready: update now' })).toHaveCount(0);
+    await context.setOffline(false);
+    await expect(page.getByRole('application', { name: 'On foot at the site' })).toBeVisible();
+    await expect(page.getByText('Offline: this view needs a connection to load')).toHaveCount(0);
+    expect(await page.evaluate(() => (window as unknown as { __sameDocument?: boolean }).__sameDocument)).toBe(true);
+  });
+});

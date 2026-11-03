@@ -31,7 +31,7 @@
  * then asks for the update (VENT-52) instead of emptying the app.
  */
 import { lazy, Suspense, useEffect, useState } from 'react';
-import { loadChunk } from '../../pwa/missing-chunk';
+import { loadOnDemandChunk } from '../../pwa/on-demand-chunk';
 import { ChunkBoundary } from '../ChunkBoundary';
 import { useI18n } from '../i18n-context';
 import type { PanelProps } from './TerrainPanel';
@@ -41,7 +41,7 @@ import type { PanelProps } from './TerrainPanel';
  * try after an offline failure needs a new one (VENT-59).
  */
 const lazyPanel = () => lazy(() =>
-  loadChunk(() => import('./TerrainPanel'), window));
+  loadOnDemandChunk(() => import('./TerrainPanel'), window));
 
 /** Shown while the panel downloads. */
 function Waiting({ layout }: { readonly layout: PanelProps['layout'] }) {

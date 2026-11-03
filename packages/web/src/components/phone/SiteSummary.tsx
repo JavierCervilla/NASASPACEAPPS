@@ -28,8 +28,9 @@
  * 80° S), its name with what tells it apart (IM-2 and the Mons Mouton
  * zone share a place), its coordinates, the note when NASA's maps put it
  * in shadow (VENT-39), the horizon strip (VENT-40) and the widgets; the
- * half sheet rises to fit it all (`data-sheet-fit`). For the custom
- * point, «Save» and, once saved, its name field (VENT-37).
+ * half sheet rises to fit it all (`data-sheet-fit`) and the peek sheet
+ * to show the head (`data-sheet-peek`). For the custom point, «Save»
+ * and, once saved, its name field (VENT-37).
  */
 import type { ReactNode } from 'react';
 import { formatCoords } from '../../i18n/format';
@@ -83,7 +84,7 @@ function SummaryHead({ site, base }: Pick<Props, 'site' | 'base'>) {
   const i18n = useI18n();
   const thumb = thumbOf({ id: site.id, place: title }, base, i18n);
   return (
-    <div className="summary__head">
+    <div className="summary__head" data-sheet-peek="">
       <SiteThumb thumb={thumb} sizes={THUMB_SIZES} className="summary__thumb" />
       <h2 className="summary__name">{title}</h2>
       <SaveButton site={site} />

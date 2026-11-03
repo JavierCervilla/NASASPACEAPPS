@@ -205,23 +205,30 @@
   gap: 8px;
 }
 
+/*
+ * «Try again» is the secondary button (controls.css, VENT-57); the view
+ * is dark in both themes, so it takes the dark theme's fill.
+ */
+.on-foot .on-foot__retry {
+  background: rgba(120, 120, 128, 0.24);
+  color: var(--on-foot-ink);
+}
+
 .on-foot__retry,
 .on-foot__copy {
-  min-height: 44px;
-  padding: 0 18px;
-  border: 0;
-  border-radius: 12px;
-  background: rgba(255, 255, 255, 0.16);
-  color: var(--on-foot-ink);
-  font: inherit;
-  font-weight: 600;
   pointer-events: auto;
-  cursor: pointer;
   transition: background-color 100ms ease-out, transform 100ms ease-out;
 }
 
 /* The second action is quieter: «Try again» stays the one to press. */
 .on-foot__copy {
+  min-height: 44px;
+  padding: 0 18px;
+  border: 0;
+  border-radius: 12px;
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
   background: transparent;
   color: var(--on-foot-muted);
   box-shadow: inset 0 0 0 1px var(--on-foot-edge);

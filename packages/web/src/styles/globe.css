@@ -311,9 +311,11 @@
   margin: 0;
   padding: 10px 14px;
   border-radius: 14px;
-  background: var(--surface);
+  /* The hint's frosted material (VENT-57, C-02), not the Liquid glass. */
+  background: var(--float-fill);
   color: var(--text);
-  backdrop-filter: blur(20px);
+  backdrop-filter: var(--float-blur);
+  box-shadow: var(--float-rim);
   pointer-events: none;
 }
 

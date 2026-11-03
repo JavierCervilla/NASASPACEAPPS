@@ -44,8 +44,17 @@
   /* Header bar, segmented control, and the glass label over the globe. */
   --chrome: rgba(18, 19, 24, 0.72);
   --fill: rgba(120, 120, 128, 0.24);
-  --fill-selected: #2c2c2e;
-  --fill-selected-shadow: none;
+  /* The segmented control's mark (VENT-57, C-16; styles/controls.css). */
+  --segment-on: #636366;
+  --segment-shadow: none;
+  /*
+   * What floats over the Moon (VENT-57, C-02): the first pin hint's frosted
+   * recipe, worn by the hint, the compass, the carried pin's readout and the
+   * desktop Layers key. On phones it takes the phone bar's fill and edge.
+   */
+  --float-fill: var(--surface);
+  --float-blur: blur(20px);
+  --float-rim: inset 0 0 0 1px var(--surface-edge);
   /* Lighter than the chrome, with a hairline: it must read over the night side. */
   --glass-label: rgba(58, 60, 68, 0.8);
   --glass-label-edge: rgba(255, 255, 255, 0.16);
@@ -214,8 +223,8 @@
 
     --chrome: rgba(242, 242, 247, 0.78);
     --fill: rgba(120, 120, 128, 0.12);
-    --fill-selected: #ffffff;
-    --fill-selected-shadow: 0 1px 3px rgba(0, 0, 0, 0.12);
+    --segment-on: #ffffff;
+    --segment-shadow: 0 1px 3px rgba(0, 0, 0, 0.12);
     --glass-label: rgba(255, 255, 255, 0.86);
     --glass-label-edge: rgba(0, 0, 0, 0.08);
     --glass-label-text: #1c1c1e;
@@ -241,6 +250,14 @@
     --signal-earth-ink: #0062cc;
     /* 5.1:1 on the white card (#248a3d gave 4.4:1, QA H3). */
     --signal-window-ink: #1f7f37;
+  }
+}
+
+/* Phones: what floats over the Moon takes the phone bar's glass (phone.css). */
+@media (max-width: 767.98px) {
+  :root {
+    --float-fill: var(--phone-tabs);
+    --float-rim: var(--phone-bar-edge);
   }
 }
 

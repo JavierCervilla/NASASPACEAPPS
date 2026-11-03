@@ -556,11 +556,6 @@
   -webkit-tap-highlight-color: transparent;
 }
 
-.save-button[data-saved='true'] {
-  background: var(--text);
-  color: var(--bg);
-}
-
 .save-button[aria-disabled='true'] {
   color: var(--text-muted);
   cursor: default;

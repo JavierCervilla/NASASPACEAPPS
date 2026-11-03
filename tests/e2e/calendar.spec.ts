@@ -86,9 +86,15 @@ test.describe('desktop calendar strip, 1440x900', () => {
     const tabs = page.getByRole('navigation', { name: 'View' }).locator('> *');
     // Globe, Polar map, DSN (VENT-7) and Horizon.
     await expect(tabs).toHaveCount(4);
-    for (const box of await tabs.evaluateAll((els) => els.map((el) => el.getBoundingClientRect().height))) {
-      expect(box).toBeGreaterThanOrEqual(44);
-    }
+    // Drawn 40 px tall in the 44 px segmented control (VENT-57, C-16); the track's 2 px above and below are theirs.
+    const reach = await tabs.evaluateAll((els) => els.map((el) => {
+      const box = el.getBoundingClientRect();
+      const x = box.left + box.width / 2;
+      const hits = (y: number) => el.contains(document.elementFromPoint(x, y));
+      return box.bottom - box.top >= 40 && hits(box.top - 1.5) && hits(box.bottom + 1.5);
+    }));
+    expect(reach).toEqual([true, true, true, true]);
+    expect((await page.getByRole('navigation', { name: 'View' }).boundingBox())!.height).toBeGreaterThanOrEqual(44);
   });
 
   test('the whole strip fits at 900 px tall too', async ({ page }) => {

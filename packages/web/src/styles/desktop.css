@@ -369,18 +369,6 @@
   margin: 0;
 }
 
-.card-retry {
-  min-height: 44px;
-  padding: 0 16px;
-  border: 0;
-  border-radius: 12px;
-  background: var(--fill);
-  color: var(--text);
-  font: inherit;
-  font-weight: 600;
-  cursor: pointer;
-}
-
 /* Feedback on the press (apple-design §1). */
 .card-retry:active {
   transform: scale(0.97);

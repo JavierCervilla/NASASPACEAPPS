@@ -61,6 +61,16 @@ textarea {
   -webkit-touch-callout: default;
 }
 
+/*
+ * One focus ring for the buttons and links without their own (VENT-55):
+ * zero specificity, so a control's own ring still wins, and in the text
+ * colour, so it shows on the light theme's white glass too.
+ */
+:where(button, a):focus-visible {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: 2px;
+}
+
 /* No picture starts a native drag over the app's own gestures. */
 img {
   -webkit-user-drag: none;

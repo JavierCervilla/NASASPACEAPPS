@@ -70,7 +70,7 @@
 
 .globe-point:focus-visible,
 .polar-saved:focus-visible {
-  outline: 2px solid var(--marker);
+  outline: 2px solid var(--focus-ring-on-moon);
   outline-offset: 0;
 }
 
@@ -151,12 +151,17 @@
 
 .layer-row__count {
   color: var(--text-muted);
+  /* Grey on glass: heavier, a little looser (apple-design §12). */
+  font-weight: 500;
+  letter-spacing: 0.01em;
   font-variant-numeric: tabular-nums;
 }
 
 .layer-row__note {
   font-size: 0.8125rem;
   line-height: 1.3;
+  font-weight: 500;
+  letter-spacing: 0.01em;
   color: var(--text-muted);
 }
 
@@ -215,7 +220,7 @@
 }
 
 .layer-switch:focus-visible {
-  outline: 2px solid var(--marker);
+  outline: 2px solid var(--focus-ring);
   outline-offset: 2px;
 }
 
@@ -399,7 +404,7 @@
 }
 
 .saved-row__more:focus-visible {
-  outline: 2px solid var(--text);
+  outline: 2px solid var(--focus-ring);
   outline-offset: -2px;
 }
 
@@ -428,7 +433,7 @@
 
 .saved-row__input:focus,
 .save-name__input:focus {
-  box-shadow: inset 0 0 0 2px var(--text);
+  box-shadow: inset 0 0 0 2px var(--focus-ring);
 }
 
 /* Nothing saved yet: the pin, a title and how to save one. */
@@ -551,7 +556,7 @@
 }
 
 .save-button:focus-visible {
-  outline: 2px solid var(--text);
+  outline: 2px solid var(--focus-ring);
   outline-offset: 2px;
 }
 
@@ -623,7 +628,7 @@
 }
 
 .save-icon:focus-visible {
-  outline: 2px solid var(--text);
+  outline: 2px solid var(--focus-ring);
   outline-offset: 2px;
 }
 
@@ -706,7 +711,7 @@
 }
 
 .undo-toast__undo:focus-visible {
-  outline: 2px solid var(--text);
+  outline: 2px solid var(--focus-ring);
   outline-offset: 2px;
 }
 

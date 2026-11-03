@@ -72,7 +72,7 @@
 }
 
 .pin:focus-visible {
-  outline: 2px solid var(--marker);
+  outline: 2px solid var(--focus-ring-on-moon);
   outline-offset: 0;
 }
 
@@ -272,7 +272,7 @@
 }
 
 .pin-drop:focus-visible {
-  outline: 2px solid var(--marker);
+  outline: 2px solid var(--focus-ring);
   outline-offset: 2px;
 }
 
@@ -293,7 +293,7 @@
 }
 
 .pin-drop--row:focus-visible {
-  outline-color: var(--text);
+  outline-color: var(--focus-ring);
   outline-offset: -2px;
 }
 
@@ -381,7 +381,7 @@
 }
 
 .pin-hint__close:focus-visible {
-  outline: 2px solid var(--marker);
+  outline: 2px solid var(--focus-ring);
   outline-offset: 2px;
 }
 
@@ -512,7 +512,7 @@
   .pin-readout,
   .pin-hint {
     backdrop-filter: none;
-    background: var(--surface-solid, #15161b);
+    background: var(--surface);
   }
 }
 

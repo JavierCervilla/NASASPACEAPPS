@@ -96,8 +96,13 @@ function Lane({ playhead, words }: { playhead: number; words: Words }) {
   return (
     <>
       <span className="dsn-band__lane" aria-hidden="true">
-        <span className="dsn-band__playhead" style={{ left: `${playhead * 100}%` }}>
-          <span className="dsn-band__chip">{words.chip}</span>
+        <span
+          className="rail rail--x"
+          style={{ translate: `${playhead * 100}% 0` }}
+        >
+          <span className="dsn-band__playhead">
+            <span className="dsn-band__chip">{words.chip}</span>
+          </span>
         </span>
       </span>
       <span className="dsn-band__hours" aria-hidden="true">

@@ -60,7 +60,7 @@
 }
 
 .globe-viewport:focus-visible {
-  outline: 2px solid var(--marker);
+  outline: 2px solid var(--focus-ring-on-moon);
   outline-offset: -4px;
   border-radius: 18px;
 }
@@ -213,7 +213,7 @@
 }
 
 .globe-marker:focus-visible {
-  outline: 2px solid var(--marker);
+  outline: 2px solid var(--focus-ring-on-moon);
   outline-offset: 0;
 }
 
@@ -323,6 +323,17 @@
  */
 :is(.globe, .polar) .globe-layers {
   max-height: calc(100% - 40px);
+}
+
+/*
+ * The key's scroll box: inside its glass, so the scroll edge fade
+ * (scroll-fade.css) never cuts the glass's rim (VENT-55, C-10).
+ */
+.globe-layers__scroll {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-height: 0;
   overflow-y: auto;
   overscroll-behavior: contain;
 }
@@ -330,7 +341,8 @@
 .globe-layers h2 {
   margin: 0;
   font-size: 0.75rem;
-  font-weight: 400;
+  /* Grey on glass: heavier, a little looser (apple-design §12). */
+  font-weight: 600;
   letter-spacing: 0.01em;
   color: var(--text-muted);
 }
@@ -421,6 +433,12 @@
   font-weight: 600;
   letter-spacing: -0.01em;
   cursor: pointer;
+}
+
+/* Over the sky, which stays dark in both themes. */
+.globe-load:focus-visible {
+  outline: 2px solid var(--focus-ring-on-moon);
+  outline-offset: 2px;
 }
 
 .globe-load:active {

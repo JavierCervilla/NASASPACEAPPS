@@ -283,8 +283,6 @@
 @media (prefers-reduced-motion: reduce) {
   .on-foot__retry,
   .on-foot__copy { transition: none; }
-  .on-foot__retry:active,
-  .on-foot__copy:active { transform: none; }
 }
 
 @media (prefers-contrast: more) {

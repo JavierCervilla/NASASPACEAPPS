@@ -190,16 +190,17 @@
 
 :is(.round-button, .play-button, .now-button, .site-button):focus-visible,
 .columns:focus-visible {
-  outline: 2px solid var(--text);
+  outline: 2px solid var(--focus-ring);
   outline-offset: 2px;
 }
 
-/* Press feedback, instant on the press (apple-design §1). */
-@media (prefers-reduced-motion: no-preference) {
-  :is(.round-button, .play-button, .now-button, .site-button):active {
-    transform: scale(0.97);
-    transition: transform var(--dur-press) ease-out;
-  }
+/*
+ * Press feedback, instant on the press (apple-design §1), and the same
+ * under reduced motion: a 3 % shrink is no vestibular motion (§14).
+ */
+:is(.round-button, .play-button, .now-button, .site-button):active {
+  transform: scale(0.97);
+  transition: transform var(--dur-press) ease-out;
 }
 
 .strip-status {
@@ -228,9 +229,10 @@
   cursor: pointer;
 }
 
+/* Loading is not «neither»: the card's skeleton grey, never a signal. */
 .strip-status--loading {
   border-radius: 4px;
-  background: var(--signal-none);
+  background: var(--card-skeleton);
 }
 
 /* Desktop strip under the globe */
@@ -246,7 +248,6 @@
   background: var(--strip);
   box-shadow: var(--strip-edge);
   color: var(--text);
-  letter-spacing: -0.01em;
 }
 
 .strip__head {
@@ -320,7 +321,8 @@
 }
 
 .strip__label {
-  font-size: 0.75rem;
+  font-size: var(--type-footnote-size);
+  letter-spacing: var(--type-footnote-tracking);
   color: var(--text-muted);
 }
 
@@ -357,8 +359,9 @@
   grid-column: 2;
   position: relative;
   height: 1.4em;
-  font-size: 0.75rem;
+  font-size: var(--type-footnote-size);
   line-height: 1.4;
+  letter-spacing: var(--type-footnote-tracking);
   color: var(--text-muted);
   font-variant-numeric: tabular-nums;
 }
@@ -428,6 +431,9 @@
   overflow: hidden;
   text-overflow: ellipsis;
   font-size: 0.8125rem;
+  /* Grey on glass: heavier, a little looser (apple-design §12). */
+  font-weight: 500;
+  letter-spacing: 0.01em;
   color: var(--text-muted);
   white-space: nowrap;
 }
@@ -460,19 +466,7 @@
   flex-direction: column;
 }
 
-/* It grows from the button that opened it (apple-design §7). */
-@media (prefers-reduced-motion: no-preference) {
-  .site-popover:popover-open {
-    animation: popover-in var(--dur-enter) var(--ease-out);
-  }
-}
-
-@keyframes popover-in {
-  from {
-    opacity: 0;
-    transform: scale(0.96);
-  }
-}
+/* It grows from the button that opened it: styles/presence.css. */
 
 /* Phone calendar, in the sheet at full */
 
@@ -537,7 +531,8 @@
   margin: 0;
   padding: 0;
   list-style: none;
-  font-size: 0.75rem;
+  font-size: var(--type-footnote-size);
+  letter-spacing: var(--type-footnote-tracking);
   text-align: center;
 }
 
@@ -585,8 +580,9 @@
 .columns__days {
   position: relative;
   container-type: size;
-  font-size: 0.6875rem;
+  font-size: var(--type-caption-size);
   line-height: 1.2;
+  letter-spacing: var(--type-caption-tracking);
   color: var(--text-muted);
   font-variant-numeric: tabular-nums;
 }
@@ -631,8 +627,9 @@
   border-radius: 9px;
   background: var(--text);
   color: var(--bg);
-  font-size: 0.6875rem;
+  font-size: var(--type-caption-size);
   line-height: 1;
+  letter-spacing: var(--type-caption-tracking);
   font-weight: 700;
   font-variant-numeric: tabular-nums;
   white-space: nowrap;
@@ -662,7 +659,8 @@
 }
 
 .calendar__state {
-  font-size: 0.75rem;
+  font-size: var(--type-footnote-size);
+  letter-spacing: var(--type-footnote-tracking);
   color: var(--text-muted);
 }
 

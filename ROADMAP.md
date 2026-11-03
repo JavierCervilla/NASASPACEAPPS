@@ -41,8 +41,8 @@ completa está en el documento «Ventana Lunar · Especificación y roadmap».
 - [x] Horizonte real con el relieve LOLA (VENT-11, hecho en VENT-40): el Sol y la Tierra contra el relieve de cada
   sitio, horizontes de los sitios al sur de 80° S dentro de la web, ruta `/api/v1/horizon` para cualquier punto,
   franja «Horizon» con la silueta en la ficha y en la hoja, y palabras honestas cuando decide el relieve
-- [x] Vista 3D a pie (VENT-34): pestaña «Horizon» con el relieve LOLA de nuestra API alrededor del punto, en tercera
-  persona con el astronauta y en primera persona, el horizonte lejano del perfil del punto, el Sol y la Tierra del
+- [x] Vista 3D a pie (VENT-34): pestaña «Horizon» con el relieve LOLA de nuestra API alrededor del punto, en primera
+  persona (VENT-54 quitó el astronauta y el módulo), el horizonte lejano del perfil del punto, el Sol y la Tierra del
   instante elegido, detalle fino ilustrativo marcado y anillos de distancia; se carga solo al abrirla
 - [ ] Relieve en streaming para caminar (VENT-34 C a E): teselas alineadas con LOD en el servidor, un Web Worker que
   las sirve y el movimiento a pie o en vehículo
@@ -66,5 +66,10 @@ completa está en el documento «Ventana Lunar · Especificación y roadmap».
   pin» para teclado y pista la primera vez (VENT-37, parte 1)
 - [x] Capas del globo como interruptores y sitios guardados en el dispositivo, con la API de capas documentada para
   Mooner (`docs/globe-layers.md`) (VENT-37, parte 2)
+- [x] Pulido según la guía de diseño de Apple tras la auditoría de toda la web (VENT-53): respuesta al pulsar en todos
+  los controles, salidas que deshacen su entrada, efecto goma en los límites del globo, foco visible, escala tipográfica,
+  contraste alto opaco, bordes que se funden al desplazar y zonas de toque de 44 px (VENT-55)
+- [ ] Cambios de forma elegidos en el lienzo de la auditoría: un solo material, un solo segmentado y un solo botón
+  secundario, avisos en fila, tarjeta compacta y ajustes tras un engranaje (VENT-56 → VENT-57)
 - [ ] Comparador de sitios o exportar a .ics (VENT-8)
 - [ ] Página del proyecto, vídeo de 30 s y pitch; envío antes de las 20:00 (VENT-9)

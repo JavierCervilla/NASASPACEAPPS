@@ -111,7 +111,7 @@
 }
 
 .update-notice__update:focus-visible {
-  outline: 2px solid var(--marker);
+  outline: 2px solid var(--focus-ring);
   outline-offset: 2px;
 }
 
@@ -125,9 +125,9 @@
 @media (prefers-reduced-motion: no-preference) {
   .update-notice[data-shown] {
     transition:
-      opacity 0.3s ease-out,
-      scale 0.3s ease-out,
-      filter 0.3s ease-out;
+      opacity 0.3s var(--spring),
+      scale 0.3s var(--spring),
+      filter 0.3s var(--spring);
 
     @starting-style {
       opacity: 0;
@@ -137,7 +137,7 @@
   }
 }
 
-/* Reduced motion: a plain fade, and no press scale. */
+/* Reduced motion: a plain fade; the press keeps its scale (§14). */
 @media (prefers-reduced-motion: reduce) {
   .update-notice[data-shown] {
     transition: opacity 0.2s linear;
@@ -146,17 +146,13 @@
       opacity: 0;
     }
   }
-
-  .update-notice__update:active {
-    transform: none;
-  }
 }
 
 /* As the hint handles them (pin.css). */
 @media (prefers-reduced-transparency: reduce) {
   .update-notice[data-shown] {
     backdrop-filter: none;
-    background: var(--surface-solid, #15161b);
+    background: var(--surface);
   }
 }
 

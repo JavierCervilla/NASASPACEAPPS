@@ -52,6 +52,10 @@ import '../styles/offline.css';
 import '../styles/update.css';
 import '../styles/pin.css';
 import '../styles/orientation.css';
+import '../styles/press.css';
+import '../styles/presence.css';
+import '../styles/rail.css';
+import '../styles/scroll-fade.css';
 
 interface Props {
   readonly locale: UiLocale;
@@ -158,10 +162,13 @@ const views = [
     letter-spacing: -0.022em;
   }
 
+  /* Grey on glass: heavier, a little looser (apple-design §12). */
   .subtitle {
     margin: 0;
     font-size: 0.8125rem;
     line-height: 1.35;
+    font-weight: 500;
+    letter-spacing: 0.01em;
     color: var(--text-muted);
   }
 

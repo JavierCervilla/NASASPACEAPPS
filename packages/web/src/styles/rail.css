@@ -1,0 +1,62 @@
+/*
+ *   _   _       _                         _ _
+ *  | | | |_ __ (_)_   _____ _ __ ___  ___| | | ___
+ *  | | | | '_ \| \ \ / / _ \ '__/ __|/ _ \ | |/ _ \
+ *  | |_| | | | | |\ V /  __/ |  \__ \  __/ | |  __/
+ *   \___/|_| |_|_| \_/ \___|_|  |___/\___|_|_|\___|
+ *
+ *             =++==--::.
+ *         %%%%##**++=--:..  .
+ *      ##**#%@%%#***+=--::.   .
+ *    #**=+*#*#**#++++=-:::.. .  .
+ *   #++-====*@%+*++==--::...   .  .    Ventana Lunar
+ *  #+=-=--++==+===-+==--:..   .  .  .  Sun, Earth and landing
+ * #----====-------=-=---:..  .  .  .   windows at the lunar
+ * #+---+=====--=---==-::..     .  .  . south pole
+ * #*----==---==-=-=-:-....    .  .  .
+ * *#----===+*===--:-::...    .  .  .   Built for the NASA Space
+ *  *----=*-+*%*+=-:::....   .  .  .    Apps Challenge 2026,
+ *   *------=+*=--:::-:::.. .  .  .     Madrid. Not endorsed
+ *    %*===-=-==--==-:::.  .  .  .      by NASA.
+ *      *+:--+:--::::::.  .  .  .
+ *         -=:::...:..   .  .           (c) 2026 Universelle
+ *             :::.. .  .               SPDX-License-Identifier: MIT
+ */
+
+/*
+ * A line that moves along its track every frame of a scrub or a play (the
+ * strip's instant line, the phone calendar's line, the DSN playhead) rides
+ * a rail as wide, or as tall, as the track, moved by `translate` with the
+ * instant's share: a percentage translate is the rail's own size, so the
+ * track's, and the move is composited instead of laid out again
+ * (apple-design §11). The rail lies one track before the track and ends at
+ * its start, so it never adds scrollable overflow; its line stands at its
+ * far end, and so on the track at the share.
+ */
+.rail--x,
+.rail--y {
+  position: absolute;
+  pointer-events: none;
+}
+
+.rail--x {
+  top: 0;
+  bottom: 0;
+  left: -100%;
+  width: 100%;
+}
+
+.rail--y {
+  left: 0;
+  right: 0;
+  top: -100%;
+  height: 100%;
+}
+
+.rail--x > * {
+  left: 100%;
+}
+
+.rail--y > * {
+  top: 100%;
+}

@@ -107,6 +107,11 @@ function useCardState(
   return { state, badge, model, computed, notes, horizon };
 }
 
+/**
+ * The view, the card, the strip and the site menu. In the Horizon view the
+ * card leaves its horizon strip to the view's own, so one site never shows
+ * two stretches side by side (VENT-55, V-16).
+ */
 function DesktopUi({ sites, store, parts, base, view }: Props) {
   const { id } = useSelection(store);
   const site = selectedSite(sites, id, useI18n(), useSavedName());
@@ -124,6 +129,7 @@ function DesktopUi({ sites, store, parts, base, view }: Props) {
     <>
       <DesktopView {...shown} hours={calendar.result} />
       <SiteCard {...card} {...{ site, base, dsn }} state={card.badge}
+        horizon={view === 'horizon' ? null : card.horizon}
         onRetry={calendar.retry} />
       <CalendarStrip parts={parts} calendar={calendar} />
       {slot ? createPortal(<SiteMenu {...menu} />, slot) : null}

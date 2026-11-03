@@ -1,0 +1,55 @@
+/*
+ *   _   _       _                         _ _
+ *  | | | |_ __ (_)_   _____ _ __ ___  ___| | | ___
+ *  | | | | '_ \| \ \ / / _ \ '__/ __|/ _ \ | |/ _ \
+ *  | |_| | | | | |\ V /  __/ |  \__ \  __/ | |  __/
+ *   \___/|_| |_|_| \_/ \___|_|  |___/\___|_|_|\___|
+ *
+ *             =++==--::.
+ *         %%%%##**++=--:..  .
+ *      ##**#%@%%#***+=--::.   .
+ *    #**=+*#*#**#++++=-:::.. .  .
+ *   #++-====*@%+*++==--::...   .  .    Ventana Lunar
+ *  #+=-=--++==+===-+==--:..   .  .  .  Sun, Earth and landing
+ * #----====-------=-=---:..  .  .  .   windows at the lunar
+ * #+---+=====--=---==-::..     .  .  . south pole
+ * #*----==---==-=-=-:-....    .  .  .
+ * *#----===+*===--:-::...    .  .  .   Built for the NASA Space
+ *  *----=*-+*%*+=-:::....   .  .  .    Apps Challenge 2026,
+ *   *------=+*=--:::-:::.. .  .  .     Madrid. Not endorsed
+ *    %*===-=-==--==-:::.  .  .  .      by NASA.
+ *      *+:--+:--::::::.  .  .  .
+ *         -=:::...:..   .  .           (c) 2026 Universelle
+ *             :::.. .  .               SPDX-License-Identifier: MIT
+ */
+
+/*
+ * Scroll edge effect (apple-design §12, VENT-55 C-10), as the desktop card
+ * has it: the edge that hides more content fades, so a cut-off list says
+ * it scrolls. The mask stays put while the content scrolls under it, and
+ * is painted only while an edge fades, so nothing else is clipped. Put on
+ * the scroll box inside a glass surface, never on the surface itself,
+ * whose rim and shadow a mask would cut. Driven by use-scroll-fade.ts.
+ */
+.scroll-fade {
+  --fade-top: 0px;
+  --fade-bottom: 0px;
+}
+
+.scroll-fade[data-fade-top='true'] {
+  --fade-top: 24px;
+}
+
+.scroll-fade[data-fade-bottom='true'] {
+  --fade-bottom: 24px;
+}
+
+.scroll-fade:is([data-fade-top='true'], [data-fade-bottom='true']) {
+  mask-image: linear-gradient(
+    to bottom,
+    transparent 0,
+    #000 var(--fade-top),
+    #000 calc(100% - var(--fade-bottom)),
+    transparent 100%
+  );
+}

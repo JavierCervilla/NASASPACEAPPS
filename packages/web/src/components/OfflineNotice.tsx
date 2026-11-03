@@ -29,10 +29,13 @@
  * its answers, pwa/sw-strategies.ts). A polite live region, present
  * from the start so the change is announced. It sits under whichever top
  * bar shows, measured, so large text never puts it over the site pill.
+ * Back online it keeps its words through the exit (presence.ts), so it
+ * leaves as it came instead of vanishing.
  */
 import { useEffect, useRef, useState } from 'react';
 import { syncDate, syncedAt, syncUrl } from '../pwa/offline-status';
 import { useI18n } from './i18n-context';
+import { usePresence } from './presence';
 import { useOnline } from './use-online';
 import { useUnderBars } from './use-under-bars';
 
@@ -58,14 +61,20 @@ export function OfflineNotice({ base }: { readonly base: string }) {
   const online = useOnline();
   const atMs = useSyncedAt(base, online);
   const note = useRef<HTMLParagraphElement>(null);
-  useUnderBars(note, !online);
+  const { mounted, phase } = usePresence(!online);
+  useUnderBars(note, mounted);
   const text =
     atMs === null
       ? t('offline.plain')
       : t('offline.notice', { date: syncDate(tag, atMs) });
   return (
-    <p ref={note} className="offline-notice" role="status">
-      {online ? null : text}
+    <p
+      ref={note}
+      className="offline-notice"
+      role="status"
+      data-presence={phase}
+    >
+      {mounted ? text : null}
     </p>
   );
 }

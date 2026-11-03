@@ -3,6 +3,28 @@
 ## [Sin publicar]
 
 ### Cambiado
+- Maquetación revisada según la guía de diseño de Apple (VENT-55, de la auditoría VENT-53): en el teléfono, un sitio
+  guardado de nombre largo ya no hace crecer la barra superior (el nombre se corta con «…» antes de que el título o la
+  regla salten de línea), y a 200 % de texto la cabecera de la hoja pone las coordenadas bajo el nombre en vez de
+  montarlas encima. Todo lo que se desplaza funde el borde tras el que hay más contenido (la lista de sitios, el menú
+  de idioma, el resumen y el calendario del teléfono, la leyenda de capas y la vista DSN). El control segmentado, las
+  filas de la leyenda, la búsqueda y el campo de renombrar aceptan el toque en 44 px, y un toque junto al campo de
+  renombrar ya no cancela la edición. Con la hoja de sitios abierta sobre la vista 3D, su aviso ya no asoma; en la vista
+  «Horizon» de escritorio queda una sola tira de horizonte; renombrar abre con el nombre entero seleccionado; las filas
+  de sitios con dos líneas dejan aire debajo, y las etiquetas de la retícula del globo dejan libre el anillo del pin.
+- Pulsar y moverse se notan como en una app de Apple (VENT-55, de la auditoría VENT-53): todos los controles responden
+  al apoyar el dedo o el ratón (pestañas, segmentos, filas, menús, los botones de reintentar y deshacer, el ✕ de los
+  avisos, los interruptores de capas y los puntos del globo), también con «reducir movimiento». Los menús emergentes,
+  el aviso de deshacer, el del primer pin y el de sin conexión se van por donde vinieron, con desenfoque y escala (con
+  «reducir movimiento», solo un fundido). El zoom y la inclinación del globo ceden con efecto goma al llegar a su límite
+  y vuelven con un resorte al soltar. La línea del instante, la del calendario y la de la DSN se mueven con
+  transformaciones, sin recalcular la página.
+- Pulido de color, foco y tipografía según la guía de diseño de Apple (VENT-55, de la auditoría VENT-53): la marca del
+  idioma actual y la franja del calendario mientras carga ya no usan colores de señal; todos los controles llevan un
+  anillo de foco visible en tema claro y oscuro; con «reducir transparencia» en tema claro, el aviso y la lectura del pin
+  son legibles; con «aumentar contraste», la cabecera, las barras y la hoja del móvil son opacas y todos los paneles
+  llevan borde; el texto gris sobre vidrio gana peso; el espaciado entre letras va por tamaño de texto y ningún texto
+  baja de 11 px (salvo las pestañas del móvil por debajo de 400 px de ancho).
 - La vista 3D «Horizon» es solo en primera persona (VENT-54, decisión de Javier): abre con los ojos a 2 m del suelo,
   mirando al Sol si está cerca del cielo y, si no, a la Tierra. Se quitan el astronauta, los dos módulos de aterrizaje
   (el del Apolo y el genérico) y el selector «Third person | First person»; el pie ya solo dice «Fine detail

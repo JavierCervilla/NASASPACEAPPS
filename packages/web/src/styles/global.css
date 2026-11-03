@@ -61,6 +61,16 @@ textarea {
   -webkit-touch-callout: default;
 }
 
+/*
+ * One focus ring for the buttons and links without their own (VENT-55):
+ * zero specificity, so a control's own ring still wins, and in the text
+ * colour, so it shows on the light theme's white glass too.
+ */
+:where(button, a):focus-visible {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: 2px;
+}
+
 /* No picture starts a native drag over the app's own gestures. */
 img {
   -webkit-user-drag: none;
@@ -92,7 +102,7 @@ img {
 
 @media (prefers-reduced-motion: no-preference) {
   .enter {
-    animation: enter var(--dur-enter) var(--ease-out) both;
+    animation: enter var(--dur-enter) var(--spring) both;
   }
   .enter:nth-child(2) { animation-delay: 60ms; }
   .enter:nth-child(3) { animation-delay: 120ms; }

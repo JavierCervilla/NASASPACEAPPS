@@ -30,19 +30,27 @@
  * text report a person copies from the lost state. Nothing leaves the page.
  */
 import type { Mount } from './environment';
-import { beginRun, createCore, load, type Core, type RecorderDeps }
+import { createCore, load, type Core, type RecorderDeps }
   from './recorder-core';
 import { sinkOf } from './recorder-sink';
+import { tapped, type StepTap } from './recorder-taps';
 import { reportText } from './report-text';
 import type { ReportSink } from './sink';
 
 export type { RecorderDeps } from './recorder-core';
+export type { StepTap } from './recorder-taps';
 
 export interface Recorder extends ReportSink {
   /** Starts a run: the one before it becomes the previous run. */
   readonly begin: (mount: Mount) => void;
   /** The report of the current and the previous run. */
   readonly text: () => string;
+  /**
+   * Hears every step the run keeps: the current run's so far at once, then
+   * each new one (a step folded into a repeat comes again, its count
+   * raised). Returns what stops it. The dev tools' breadcrumbs listen here.
+   */
+  readonly tap: (listener: StepTap) => () => void;
 }
 
 /** The report's text; it reads what a page before this one left. */
@@ -55,9 +63,6 @@ function textOf(core: Core): string {
 /** A recorder over `deps`. */
 export function createRecorder(deps: RecorderDeps): Recorder {
   const core = createCore(deps);
-  return {
-    ...sinkOf(core),
-    begin: (mount) => beginRun(core, mount),
-    text: () => textOf(core),
-  };
+  const sink = sinkOf(core);
+  return { ...sink, ...tapped(core, sink), text: () => textOf(core) };
 }

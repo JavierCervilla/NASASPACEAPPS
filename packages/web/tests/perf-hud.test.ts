@@ -32,17 +32,17 @@ import { readout } from '../src/devtools/readout';
 describe('perf hud', () => {
   it('reads the tier and Spector from the address hash', () => {
     const flags = parseDebugHash('#stats-low-spector-bogus');
-    expect(flags).toEqual({ tier: 'low', spector: true });
+    expect(flags).toEqual({ tier: 'low', capture: true });
   });
 
   it('reads an empty hash as nothing forced', () => {
-    expect(parseDebugHash('')).toEqual({ tier: null, spector: false });
+    expect(parseDebugHash('')).toEqual({ tier: null, capture: false });
   });
 
   it('writes a hash that reads back the same', () => {
-    const hash = debugHash({ tier: 'medium', spector: true });
+    const hash = debugHash({ tier: 'medium', capture: true });
     expect(hash).toBe('stats-medium-spector');
-    expect(parseDebugHash(`#${hash}`)).toEqual({ tier: 'medium', spector: true });
+    expect(parseDebugHash(`#${hash}`)).toEqual({ tier: 'medium', capture: true });
   });
 
   it('averages frames over half a second and keeps the slowest one', () => {
@@ -74,13 +74,13 @@ describe('perf hud', () => {
   });
 
   it('turns Spector on only for the whole word', () => {
-    expect(parseDebugHash('#stats-nospector').spector).toBe(false);
+    expect(parseDebugHash('#stats-nospector').capture).toBe(false);
   });
 
   it('writes nothing forced as the bare stats hash', () => {
-    const hash = debugHash({ tier: null, spector: false });
+    const hash = debugHash({ tier: null, capture: false });
     expect(hash).toBe('stats');
-    expect(parseDebugHash(`#${hash}`)).toEqual({ tier: null, spector: false });
+    expect(parseDebugHash(`#${hash}`)).toEqual({ tier: null, capture: false });
   });
 
   it('shows fps, draw calls, triangles, texture memory and the GPU', () => {

@@ -28,14 +28,16 @@
  * to `/`, and the browser goes to that locale's page with the same view
  * (the hash: `#globe`, `#polar-map`) and the same place: the address's own
  * parameters (`?site=`, the pin's `?lat&lon`, `?glass=`, the on-foot
- * view's diagnostic `?onfoot=`) go along, any other is left behind.
+ * view's diagnostic `?onfoot=`, the dev tools' `?debug`) go along, any
+ * other is left behind.
  */
 import { saveChoice, type ChoiceStorage } from './choice';
 import type { Locale } from './locales';
 import { localePath } from './routes';
 
 /** The query parameters that say what the page shows. */
-const KEPT_PARAMS = ['site', 'lat', 'lon', 'glass', 'onfoot'] as const;
+const KEPT_PARAMS =
+  ['site', 'lat', 'lon', 'glass', 'onfoot', 'debug'] as const;
 
 /** `search`'s kept parameters, as a query string; empty when none is. */
 function keptQuery(search: string): string {

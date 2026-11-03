@@ -205,8 +205,8 @@ export function mountGlobe(host: HTMLElement, options: GlobeOptions) {
   const sun = bindSun(stage.scene, options.time, invalidate);
   const watch = watchHost(host, stage, loop);
   const unbind = [() => loop.stop(), link.unlink, watch, ...input, sites];
-  const end = [sun, layers.dispose, () => markers.dispose(), moon.dispose];
+  const end = [sun, layers.dispose, () => markers.dispose(), moon.dispose,
+    attachDevTools(stage.renderer, moon.textureBytes)];
   const teardown = [...unbind, ...end, () => disposeStage(stage)];
-  void attachDevTools(stage.renderer, moon.textureBytes);
   return () => teardown.forEach((fn) => fn());
 }

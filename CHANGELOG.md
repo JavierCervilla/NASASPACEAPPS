@@ -78,6 +78,11 @@
     paren mientras comprueba un fichero, y la imagen rechaza `/data//` y `/data/./` como rutas de montaje.
 
 ### Añadido
+- «?debug» en la dirección abre el panel de rendimiento para diagnosticar (VENT-49): en la web publicada, añadir
+  `?debug` muestra, cuando la página ya ha arrancado, el panel del estudio con fotogramas por segundo, tiempos de
+  fotograma, llamadas de dibujo, triángulos y memoria de texturas, más el rastro de pasos que sobrevive a un fallo de la
+  GPU (y que, con la vista «Horizon» abierta, anota también sus pasos). Sin `?debug` no se descarga nada de esto, no
+  entra en la caché sin conexión, y el cambio de idioma lo conserva. Spector.js sigue fuera de la web publicada.
 - Relieve alineado y por niveles de detalle para la vista 3D (VENT-46, solo servidor y simulador): la API sirve teselas
   de relieve de una cuadrícula global y determinista, en cuatro niveles (2, 8, 32 y 128 km de lado, de 129 x 129
   muestras), con el plano estereográfico polar de LOLA desde 60° hasta cada polo y una cuadrícula latitud-longitud entre

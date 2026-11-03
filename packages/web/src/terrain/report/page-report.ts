@@ -32,18 +32,24 @@
 import { readEnvironment, watchBattery, type BatteryHost }
   from './environment';
 import { createRecorder, type Recorder } from './recorder';
+import { crumbStepsWhenOn } from './report-crumbs';
 import { reportStorage } from './run-store';
 
 let page: Recorder | null = null;
 
-/** The recorder the on-foot view writes to and the lost state copies from. */
+/**
+ * The recorder the on-foot view writes to and the lost state copies from;
+ * with the dev tools on (`?debug`), its steps are marked in their trail too.
+ */
 export function pageReport(): Recorder {
-  page ??= createRecorder({
+  if (page) return page;
+  page = createRecorder({
     storage: reportStorage,
     now: () => performance.now(),
     date: () => new Date(),
     environment: (mount) => readEnvironment(window, mount),
     battery: (hear) => watchBattery(navigator as BatteryHost, hear),
   });
+  crumbStepsWhenOn(page);
   return page;
 }

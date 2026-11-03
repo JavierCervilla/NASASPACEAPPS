@@ -44,7 +44,7 @@ function hud(options: Partial<PerfHudOptions> = {}): PerfHud {
   return new PerfHud({
     tier: 'high',
     gpu: 'Test GPU',
-    flags: { tier: null, spector: false },
+    flags: { tier: null, capture: false },
     previous: [],
     current: () => [],
     ...options,

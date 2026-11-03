@@ -32,7 +32,7 @@
  * (`studio/engines/web/scaffold/packages/client/src/engine/perf-hud.ts`).
  */
 import { TIERS, type Tier } from '../lib/quality';
-import { debugHash, type DebugFlags } from './debug-flags';
+import { CAPTURE_WORD, debugHash, type DebugFlags } from './debug-flags';
 import { HUD_MARKER, PERF_TEXT } from './perf-text';
 
 function row(parent: HTMLElement): HTMLElement {
@@ -62,7 +62,10 @@ function restart(flags: DebugFlags): void {
   window.location.reload();
 }
 
-/** Appends the tier and Spector.js buttons to `parent`, in one row. */
+/**
+ * Appends the tier buttons to `parent`, in one row, and the Spector.js one
+ * in a build that has it.
+ */
 export function appendControls(
   parent: HTMLElement,
   current: Tier,
@@ -75,7 +78,8 @@ export function appendControls(
       restart({ ...flags, tier }),
     );
   }
-  toggle(controls, PERF_TEXT.spector, flags.spector, () =>
-    restart({ tier: current, spector: !flags.spector }),
+  if (CAPTURE_WORD === null) return;
+  toggle(controls, PERF_TEXT.capture, flags.capture, () =>
+    restart({ tier: current, capture: !flags.capture }),
   );
 }

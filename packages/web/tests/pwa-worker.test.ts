@@ -135,6 +135,13 @@ describe('precache', () => {
     expect(precached('_astro/LunarApp.Ab1.js')).toBe(true);
   });
 
+  it('leaves the dev tools that ?debug loads to the runtime cache (VENT-49)', () => {
+    for (const file of ['_astro/boot.Ab1.js', '_astro/perf-hud.Ab1.css', '_astro/spector.bundle.Ab1.js']) {
+      expect(precached(file)).toBe(false);
+    }
+    expect(precached('_astro/dev-tools-loader.Ab1.js')).toBe(true);
+  });
+
   it('caches the offline set at install: pages, build files, manifests, icons, phase frames, thumbnails, start maps', () => {
     expect(precacheOf(dist(BUILD)).precache.toSorted()).toEqual([
       '',

@@ -452,7 +452,14 @@ Every visible change follows `.claude/skills/apple-design/SKILL.md` (vendored fr
   with its geometry. «Copy report» in the lost state copies a plain-English crash report (`src/terrain/report/`: at most
   40 steps with seconds since the view opened, the last 8 frames, `renderer.info.memory`, the GPU, browser, screen,
   cores, memory and battery; kept in memory and in `sessionStorage` as `ventana.onFootReport`, the current run and the
-  previous one, per-frame data written with the next step; nothing is sent anywhere).
+  previous one, per-frame data written with the next step; nothing is sent anywhere). `?debug` (any value, or none;
+  the human's decision, VENT-49) loads the studio's dev tools in production too: the performance readout, the
+  breadcrumbs and the context watch, after the page has started (`src/lib/dev-tools-loader.ts`, the one place that
+  imports `src/devtools/boot.ts`), for the globe and the on-foot canvas (`globe/dev-hook.ts`), with the report's steps
+  marked in the breadcrumbs (`report-crumbs.ts`, the report stays the source); kept by the language switch, out of the
+  precache (`ON_DEMAND`), and Spector.js only in the dev server or a `PUBLIC_PERF_HUD=1` build.
+  `scripts/check-no-devtools.mjs` (decision in `devtools-guard.mjs`) fails a build whose pages, start chunks or precache
+  carry the tools' markers, or any file Spector.js.
   `?onfoot=astronaut,lander,shadows,far,shade,logdepth`
   leaves parts out to bisect a crash from a phone's address bar (`src/terrain/leave-out.ts`, unknown words ignored,
   listed in `data-onfoot`, kept by the language switch like `?site=`). The API gzips its JSON

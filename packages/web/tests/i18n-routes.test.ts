@@ -149,6 +149,11 @@ describe('the kept choice and the switch', () => {
     );
     expect(localeHref('/base', 'de', { search: '?q=1', hash: '' })).toBe('/base/de/');
   });
+
+  it('keeps ?debug, bare or with a value, so the dev tools stay on in the other language (VENT-49)', () => {
+    expect(localeHref('/', 'es', { search: '?debug', hash: '#horizon' })).toBe('/es/?debug=#horizon');
+    expect(localeHref('/', 'fr', { search: '?site=im-2&debug=1', hash: '' })).toBe('/fr/?site=im-2&debug=1');
+  });
 });
 
 describe('menu keys', () => {

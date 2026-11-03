@@ -28,8 +28,10 @@
  * dynamic import, so the scene's code and the astronaut download only
  * when the view opens (and are left out of the service worker's
  * precache). It draws only on change (a turn, a new instant, a resize, the
- * band moving): an idle view draws no frames.
+ * band moving): an idle view draws no frames. With `?debug` the dev tools'
+ * readout reads its renderer while it is mounted (globe/dev-hook.ts).
  */
+import { attachDevTools } from '../../globe/dev-hook';
 import { createLoop, type Loop } from '../../globe/loop';
 import { isPhoneViewport } from '../../lib/viewport';
 import { startLook } from '../view-camera';
@@ -94,7 +96,8 @@ export function mountTerrainScene(
   const unmark = startLoading(host, world, loop, reducedMotion);
   const unwatch = guardLost({ canvas: world.stage.renderer.domElement,
     labels, loop, report: setup.report, onLost: hooks.onLost });
+  const tools = attachDevTools(world.stage.renderer);
   const teardown = freeScene({ world, labels, loop,
-    steps: [unwatch, unmark, unbind] });
+    steps: [tools, unwatch, unmark, unbind] });
   return controller({ world, view, set, loop, teardown });
 }

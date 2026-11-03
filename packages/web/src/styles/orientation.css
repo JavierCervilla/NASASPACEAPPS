@@ -131,6 +131,15 @@
     right: 12px;
     z-index: 4;
   }
+
+  /*
+   * The sheet covers the globe it turns (200 % text: the half sheet at the
+   * full detent): out of view and of the tab order (VENT-51).
+   */
+  .compass[data-covered='true'] {
+    visibility: hidden;
+    opacity: 0;
+  }
 }
 
 /* Moves aside when the hint comes or goes, unless motion is reduced. */
@@ -138,7 +147,9 @@
   .compass {
     transition:
       scale var(--dur-press) ease-out,
-      top var(--dur-enter) var(--ease-out);
+      top var(--dur-enter) var(--ease-out),
+      opacity var(--dur-press) ease-out,
+      visibility var(--dur-press);
   }
 }
 
@@ -167,11 +178,11 @@
 }
 
 /* 10 px at the default text size; moved by transform after each frame. */
-.graticule-label {
+.graticule-label,
+.graticule-sizer {
   position: absolute;
   top: 0;
   left: 0;
-  translate: -50% -50%;
   padding: 2px 4px;
   border-radius: 4px;
   background: var(--graticule-label-chip);
@@ -180,6 +191,23 @@
   line-height: 1;
   letter-spacing: 0;
   white-space: nowrap;
+}
+
+.graticule-label {
+  translate: -50% -50%;
+}
+
+/*
+ * The labels' box as the page draws them (src/globe/graticule/room.ts):
+ * every label's words in one cell, so it is the widest; never seen.
+ */
+.graticule-sizer {
+  display: inline-grid;
+  visibility: hidden;
+}
+
+.graticule-sizer > span {
+  grid-area: 1 / 1;
 }
 
 /* The cross on the south pole: two hairlines. */

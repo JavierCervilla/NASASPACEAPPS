@@ -27,7 +27,8 @@
  * The Moon's disc on the screen, and keeping a label inside it (VENT-50): a
  * label that stands at the limb would hang over the sky, so it is moved
  * toward the disc's centre until its whole box is inside, a margin from
- * the edge. Pure.
+ * the edge; and inside the globe's view, which the zoomed-in Moon
+ * outgrows (VENT-51). Pure.
  */
 import type { Vec3 } from '../geo';
 import type { ScreenPoint } from '../marker-cull';
@@ -40,6 +41,9 @@ export interface Disk {
 
 /** The room a label's box keeps from the Moon's edge, px. */
 export const LIMB_MARGIN_PX = 14;
+
+/** The room a label's box keeps from the edges of the globe's view, px. */
+export const VIEW_MARGIN_PX = 8;
 
 /** A label's box, px. */
 export interface Box {
@@ -92,4 +96,24 @@ export function insideDisk(
   if (a === 0 || a + 2 * b + kx * kx + ky * ky <= reach * reach) return at;
   const t = (-b + Math.sqrt(b * b + a * room)) / a;
   return { x: disk.at.x + vx * t, y: disk.at.y + vy * t };
+}
+
+/**
+ * Whether the whole `box` centred at `at` lies `VIEW_MARGIN_PX` inside a
+ * `view` whose top left corner is the screen's origin: zoomed in, the Moon
+ * is wider than the view, and a label inside the disc may still be cut
+ * off by the view's edge. No `view`: nothing cuts it off.
+ */
+export function insideView(
+  at: ScreenPoint,
+  box: Box,
+  view: Box | null,
+): boolean {
+  if (!view) return true;
+  const [halfW, halfH] = [box.width / 2, box.height / 2];
+  const inX = at.x - halfW >= VIEW_MARGIN_PX
+    && at.x + halfW <= view.width - VIEW_MARGIN_PX;
+  const inY = at.y - halfH >= VIEW_MARGIN_PX
+    && at.y + halfH <= view.height - VIEW_MARGIN_PX;
+  return inX && inY;
 }

@@ -41,7 +41,7 @@ import {
   graticuleGeometry,
 } from '../src/globe/graticule/lines';
 import { gapToLabel, gapToObstacle, LABEL_BOX, obstaclesOf, RING_RADIUS_PX } from '../src/globe/graticule/clearance';
-import { insideDisk, LIMB_MARGIN_PX, moonDisk } from '../src/globe/graticule/disk';
+import { insideDisk, LIMB_MARGIN_PX, moonDisk, VIEW_MARGIN_PX } from '../src/globe/graticule/disk';
 import { graticuleLabels, PARALLEL_STEP_DEG } from '../src/globe/graticule/labels';
 import { CLEAR_PX, labelFrame, placeLabels, type PlacedLabel } from '../src/globe/graticule/place';
 import type { Mark } from '../src/globe/marker-cull';
@@ -322,6 +322,70 @@ describe('the graticule\'s labels clear of the site markers', () => {
     expect(label(5)).toEqual(expect.arrayContaining(['parallel:-80', 'parallel:-70', 'meridian:0', 'meridian:45']));
     expect(label(5)).not.toContain('parallel:-85');
     expect(label(3.2)).toContain('parallel:-85');
+  });
+});
+
+/** The box a label measures at 200 % text, px: the widest «90° W» at 20 px with its padding (VENT-51). */
+const BOX_200 = { width: 68, height: 24 };
+
+/** Whether the label box `box` centred at `at` lies whole inside a `width` x `height` px view, `margin` px in. */
+const insideView = (at: PlacedLabel['at'], box: typeof BOX_200, [width, height, margin]: readonly number[]): boolean =>
+  at.x - box.width / 2 >= margin! && at.x + box.width / 2 <= width! - margin! &&
+  at.y - box.height / 2 >= margin! && at.y + box.height / 2 <= height! - margin!;
+
+/** The gap between the box `box` centred at `at` and a disc, computed here rather than by the code under test. */
+function boxToDisc(at: PlacedLabel['at'], box: typeof BOX_200, disc: { at: PlacedLabel['at']; radius: number }): number {
+  const dx = Math.max(Math.abs(disc.at.x - at.x) - box.width / 2, 0);
+  const dy = Math.max(Math.abs(disc.at.y - at.y) - box.height / 2, 0);
+  return Math.hypot(dx, dy) - disc.radius;
+}
+
+/** The gap between two boxes `box` centred at `a` and `b`: negative on both axes is an overlap. */
+const boxToBox = (a: PlacedLabel['at'], b: PlacedLabel['at'], box: typeof BOX_200): number =>
+  Math.max(Math.abs(a.x - b.x) - box.width, Math.abs(a.y - b.y) - box.height);
+
+describe('the graticule\'s labels as they measure, inside the view (VENT-51)', () => {
+  it('keeps the box the label measures clear of every marker and label, at 200 % text, in every view', () => {
+    for (const [name, pose, width, height] of VIEWS) {
+      const marks = marksOf(pose, width, height);
+      const frame = labelFrame(projectorOf(pose, width, height), cameraPosition(pose), marks, {
+        box: BOX_200,
+        view: { width, height },
+      });
+      const placed = place(frame);
+      for (const [i, { at, id }] of placed.entries()) {
+        for (const obstacle of obstaclesOf(marks)) {
+          expect(boxToDisc(at, BOX_200, obstacle), `${name} ${id}`).toBeGreaterThanOrEqual(CLEAR_PX);
+        }
+        for (const other of placed.slice(i + 1)) {
+          expect(boxToBox(at, other.at, BOX_200), `${name} ${id} ${other.id}`).toBeGreaterThanOrEqual(CLEAR_PX);
+        }
+      }
+    }
+  });
+
+  it('leaves out a label whose box would leave the view: zoomed in, the Moon is wider than the canvas', () => {
+    for (const [width, height] of [[1050, 540], [390, 554]] as const) {
+      const pose = { ...SOUTH_POLE_VIEW, distance: 1.6 };
+      const frame = labelFrame(projectorOf(pose, width, height), cameraPosition(pose), [], {
+        box: LABEL_BOX,
+        view: { width, height },
+      });
+      const placed = place(frame);
+      expect(placed.length, `${width}x${height}`).toBeGreaterThan(0);
+      for (const { at, id } of placed) {
+        expect(insideView(at, LABEL_BOX, [width, height, VIEW_MARGIN_PX]), `${width}x${height} ${id}`).toBe(true);
+      }
+    }
+  });
+
+  it('places a label that fits the view where it stood, with nothing to clear', () => {
+    const pose = SOUTH_POLE_VIEW;
+    const bounded = labelFrame(projectorOf(pose, 1050, 540), cameraPosition(pose), [], {
+      box: LABEL_BOX,
+      view: { width: 1050, height: 540 },
+    });
+    expect(place(bounded)).toEqual(place(frameOf(pose, 1050, 540)));
   });
 });
 

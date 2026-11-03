@@ -29,12 +29,15 @@
  * (marker-layer.ts) and hidden behind the limb. Labels and cross are for
  * the eye only: they let every click through and no assistive technology
  * hears them. The root sits under the markers' (globe.ts mounts it first).
+ * They are placed in the room the page measures (room.ts), and again as
+ * soon as it changes, from the last frame.
  */
 import { isFacing, latLonToVector, type Vec3 } from '../geo';
 import type { Projector } from '../marker-layer';
 import type { Mark } from '../marker-cull';
 import { graticuleLabels, type GraticuleLabel } from './labels';
-import { labelFrame, placeLabels } from './place';
+import { labelFrame, placeLabels, type LabelRoom } from './place';
+import { watchRoom } from './room';
 import type { GraticuleText } from './text';
 
 /** The south pole, where the cross stands. */
@@ -77,6 +80,27 @@ function labelPart(
   return el;
 }
 
+/** The layer's elements: the labels by id and the pole cross. */
+interface Parts {
+  readonly labels: readonly GraticuleLabel[];
+  readonly els: ReadonlyMap<string, HTMLElement>;
+  readonly pole: HTMLElement;
+}
+
+/** Places `parts` for a frame, in the room `room` gives, kept by `memory`. */
+function placer(parts: Parts, room: () => LabelRoom) {
+  const memory = new Map<string, number>();
+  return (project: Projector, eye: Vec3, marks: readonly Mark[]): void => {
+    const frame = labelFrame(project, eye, marks, room());
+    const shown = new Map(
+      placeLabels(parts.labels, frame, memory).map(({ id, at }) => [id, at]),
+    );
+    for (const [id, el] of parts.els) putAt(el, shown.get(id) ?? null);
+    const pole = isFacing(SOUTH_POLE, eye) ? project(SOUTH_POLE) : null;
+    putAt(parts.pole, pole);
+  };
+}
+
 /** The labels and the pole cross, in a new root appended to `host`. */
 export function createGraticuleLayer(
   host: HTMLElement,
@@ -87,18 +111,19 @@ export function createGraticuleLayer(
   root.setAttribute('aria-hidden', 'true');
   host.append(root);
   const labels = graticuleLabels();
-  const parts = new Map(
-    labels.map((label) => [label.id, labelPart(root, label, text)]),
-  );
+  const els = new Map(labels.map((l) => [l.id, labelPart(root, l, text)]));
   const pole = hiddenPart(root, 'graticule-pole');
-  const memory = new Map<string, number>();
-  const place = (project: Projector, eye: Vec3, marks: readonly Mark[]) => {
-    const frame = labelFrame(project, eye, marks);
-    const shown = new Map(
-      placeLabels(labels, frame, memory).map(({ id, at }) => [id, at]),
-    );
-    for (const [id, el] of parts) putAt(el, shown.get(id) ?? null);
-    putAt(pole, isFacing(SOUTH_POLE, eye) ? project(SOUTH_POLE) : null);
+  let last: Parameters<GraticuleLayer['place']> | null = null;
+  const words = [...els.values()].map((el) => el.textContent ?? '');
+  const room = watchRoom(root, words, () => last && placeNow(...last));
+  const placeNow = placer({ labels, els, pole }, room.room);
+  const place: GraticuleLayer['place'] = (...frame) => {
+    last = frame;
+    placeNow(...frame);
   };
-  return { place, dispose: () => root.remove() };
+  const dispose = (): void => {
+    room.dispose();
+    root.remove();
+  };
+  return { place, dispose };
 }

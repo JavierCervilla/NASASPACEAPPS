@@ -134,6 +134,46 @@ async function shot(page: Page, name: string): Promise<void> {
   if (SHOTS) await page.screenshot({ path: `${SHOTS}/${name}.png` });
 }
 
+/** Sets the root text size to 200 % as the page starts, as a browser's text zoom does. */
+async function largeText(page: Page): Promise<void> {
+  await page.addInitScript(() => {
+    document.addEventListener('DOMContentLoaded', () => {
+      document.documentElement.style.fontSize = '200%';
+    });
+  });
+}
+
+/**
+ * The labels that touch what they must keep clear of, measured on the page: each marker's drawn dot (its ::after,
+ * not the 44 px button around it), the selected site's ring, and the globe's view, which clips what leaves it.
+ */
+const labelClashes = (page: Page): Promise<string[]> =>
+  page.evaluate(() => {
+    const box = (el: Element) => el.getBoundingClientRect();
+    const centre = (el: Element) => ({ x: box(el).x + box(el).width / 2, y: box(el).y + box(el).height / 2 });
+    const discs = [
+      ...[...document.querySelectorAll('.globe-marker:not([hidden])')].map((el) => ({
+        ...centre(el),
+        r: Number.parseFloat(getComputedStyle(el, '::after').width) / 2,
+        name: (el as HTMLElement).dataset['siteId'] ?? '',
+      })),
+      ...[...document.querySelectorAll('.globe-ring:not([hidden])')].map((el) => ({ ...centre(el), r: box(el).width / 2, name: 'ring' })),
+    ];
+    const view = box(document.querySelector('.globe-graticule')!.parentElement!);
+    const hits: string[] = [];
+    for (const label of document.querySelectorAll('.graticule-label:not([hidden])')) {
+      const b = box(label);
+      const text = label.textContent ?? '';
+      if (b.left < view.left || b.top < view.top || b.right > view.right || b.bottom > view.bottom) hits.push(`${text} clipped`);
+      for (const d of discs) {
+        const dx = Math.max(b.x - d.x, 0, d.x - (b.x + b.width));
+        const dy = Math.max(b.y - d.y, 0, d.y - (b.y + b.height));
+        if (Math.hypot(dx, dy) < d.r) hits.push(`${text} on ${d.name}`);
+      }
+    }
+    return hits;
+  });
+
 test.describe('desktop, 1440x900', () => {
   test.use({ viewport: { width: 1440, height: 900 } });
 
@@ -267,6 +307,37 @@ test.describe('desktop, 1440x900', () => {
     }
   });
 
+  test('at 200 % text the labels measure their box: none touches a marker\'s dot or the ring, none leaves the view (VENT-51)', async ({ page }) => {
+    await page.emulateMedia({ reducedMotion: 'reduce' });
+    await largeText(page);
+    await open(page, './');
+    await expect(page.locator('.graticule-label:not([hidden])').first()).toBeVisible({ timeout: GLOBE_START_MS });
+    const app = page.getByRole('application', { name: GLOBE_NAME });
+    for (const step of ['opening', '+', '+', 'ArrowRight', 'ArrowRight', 'ArrowRight']) {
+      if (step !== 'opening') {
+        await app.focus();
+        await page.keyboard.press(step);
+      }
+      await idle(page);
+      expect(await labelClashes(page), step).toEqual([]);
+    }
+    await shot(page, 'desktop-graticule-200-text');
+  });
+
+  test('zoomed in all the way, the Moon is wider than the view: every label stays whole inside it (VENT-51)', async ({ page }) => {
+    await page.emulateMedia({ reducedMotion: 'reduce' });
+    await open(page, './');
+    await expect(page.locator('.graticule-label:not([hidden])').first()).toBeVisible({ timeout: GLOBE_START_MS });
+    await page.getByRole('application', { name: GLOBE_NAME }).focus();
+    for (let press = 0; press < 9; press += 1) await page.keyboard.press('+');
+    await idle(page);
+    expect(await labelClashes(page)).toEqual([]);
+    expect((await labelTexts(page)).length).toBeGreaterThan(0);
+    // A zoom does not turn the Moon: the Earth is where it was, not behind it.
+    await expect(compassOf(page)).toHaveAttribute('data-far', 'false');
+    await shot(page, 'desktop-graticule-zoomed-in');
+  });
+
   test('the grid lets the globe be dragged and the markers be pressed through it', async ({ page }) => {
     await open(page, './');
     await expect(page.locator(IM2)).toHaveAttribute('style', /translate3d/, { timeout: GLOBE_START_MS });
@@ -302,6 +373,38 @@ test.describe('phone, 390x844', () => {
     await page.getByRole('button', { name: 'Dismiss the hint' }).click();
     await expect.poll(async () => Math.round((await compass.boundingBox())!.y)).toBe(Math.round(bar.y + bar.height + 8));
     await shot(page, 'phone-compass-and-graticule');
+  });
+
+  test('at 200 % text the compass stands only in the free band: out of the way while the sheet covers the globe, pressable above it at peek (VENT-51)', async ({ page }) => {
+    await page.emulateMedia({ reducedMotion: 'reduce' });
+    await largeText(page);
+    await open(page, './');
+    await expect(page.locator(IM2)).toHaveAttribute('style', /translate3d/, { timeout: GLOBE_START_MS });
+    const sheet = page.locator('.sheet');
+    const rests = async (): Promise<void> => {
+      await expect.poll(() => sheet.evaluate((el) => el.hasAttribute('data-moving')), { timeout: 30_000 }).toBe(false);
+    };
+    /** Whether the compass, where it stands, is the element a finger at its centre reaches, whole above the sheet. */
+    const reachable = (): Promise<boolean> =>
+      page.evaluate(() => {
+        const button = document.querySelector('button.compass')!;
+        const b = button.getBoundingClientRect();
+        const edge = document.querySelector('.sheet')!.getBoundingClientRect().top;
+        const hit = document.elementFromPoint(b.x + b.width / 2, b.y + b.height / 2);
+        return b.bottom <= edge && hit !== null && button.contains(hit);
+      });
+    await rests();
+    // The half sheet rises to the full detent at this text size (VENT-44): no band is left for the globe.
+    await expect(compassOf(page)).toBeHidden();
+    await shot(page, 'phone-200-text-half');
+    await page.getByRole('button', { name: /^Sheet half height/ }).press('Enter');
+    await page.getByRole('button', { name: /^Sheet full height/ }).press('Enter');
+    await rests();
+    await expect(compassOf(page)).toBeVisible();
+    expect(await reachable()).toBe(true);
+    await shot(page, 'phone-200-text-peek');
+    // Playwright taps only an element that receives the touch at its centre.
+    await compassOf(page).tap();
   });
 
   test('after a drag, a press on the compass frames the selected site in the free band above the sheet again', async ({ page }) => {

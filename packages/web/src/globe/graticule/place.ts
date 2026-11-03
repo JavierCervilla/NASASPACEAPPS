@@ -27,12 +27,14 @@
  * Which graticule labels show and where (VENT-50), each frame. A label
  * shows while its point faces the camera (hidden behind the limb like any
  * point of the globe, marker-layer.ts), moved in from the limb until its
- * box lies inside the Moon (disk.ts), and while it keeps a gap from every
- * site marker and ring and from the labels placed before it
- * (clearance.ts). A parallel can stand on any meridian: it takes the one
- * with the widest gap, the farthest from the markers and the selected
- * site's ring, and keeps it while it stays clear, so labels do not hop as
- * the globe turns. Pure.
+ * box lies inside the Moon (disk.ts), while that box is whole inside the
+ * globe's view, and while it keeps a gap from every site marker and ring
+ * and from the labels placed before it (clearance.ts). The box is the one
+ * the page measures (room.ts), so it grows with the text size. A
+ * parallel can stand on any meridian: it takes the one with the widest
+ * gap, the farthest from the markers and the selected site's ring, and
+ * keeps it while it stays clear, so labels do not hop as the globe turns.
+ * Pure.
  */
 import { isFacing, latLonToVector, type Vec3 } from '../geo';
 import type { Mark, ScreenPoint } from '../marker-cull';
@@ -43,14 +45,31 @@ import {
   obstaclesOf,
   type Obstacle,
 } from './clearance';
-import { insideDisk, moonDisk, type Disk } from './disk';
+import {
+  insideDisk,
+  insideView,
+  moonDisk,
+  type Box,
+  type Disk,
+} from './disk';
 import type { GraticuleLabel } from './labels';
 
 /** The gap a label keeps from a marker, a ring or another label, px. */
 export const CLEAR_PX = 3;
 
-/** What a frame shows of the Moon. */
-export interface LabelFrame {
+/** The room the labels have: their box and the view, px. */
+export interface LabelRoom {
+  /** The box a label takes: the widest label as the page draws it. */
+  readonly box: Box;
+  /** The globe's view, from the screen's origin; null: unbounded. */
+  readonly view: Box | null;
+}
+
+/** The room before the page has measured it. */
+const UNMEASURED: LabelRoom = { box: LABEL_BOX, view: null };
+
+/** What a frame shows of the Moon, and the room the labels have. */
+export interface LabelFrame extends LabelRoom {
   readonly project: (point: Vec3) => ScreenPoint;
   readonly eye: Vec3;
   readonly disk: Disk;
@@ -62,9 +81,11 @@ export function labelFrame(
   project: (point: Vec3) => ScreenPoint,
   eye: Vec3,
   marks: readonly Mark[],
+  room: LabelRoom = UNMEASURED,
 ): LabelFrame {
   const disk = moonDisk(project, eye);
-  return { project, eye, disk, obstacles: obstaclesOf(marks) };
+  const obstacles = obstaclesOf(marks);
+  return { project, eye, disk, obstacles, box: room.box, view: room.view };
 }
 
 /** A label that shows, the longitude it stands at, and its centre, px. */
@@ -91,11 +112,11 @@ function spotsOf(
   for (const lonEast of label.lonEasts) {
     const point = latLonToVector(label.lat, lonEast);
     if (!isFacing(point, frame.eye)) continue;
-    const at = insideDisk(frame.project(point), LABEL_BOX, frame.disk);
-    if (!at) continue;
+    const at = insideDisk(frame.project(point), frame.box, frame.disk);
+    if (!at || !insideView(at, frame.box, frame.view)) continue;
     const gaps = [
-      ...frame.obstacles.map((obstacle) => gapToObstacle(at, obstacle)),
-      ...placed.map((other) => gapToLabel(at, other.at)),
+      ...frame.obstacles.map((o) => gapToObstacle(at, o, frame.box)),
+      ...placed.map((other) => gapToLabel(at, other.at, frame.box)),
     ];
     spots.push({ lonEast, at, gap: Math.min(...gaps) });
   }

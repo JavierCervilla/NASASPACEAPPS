@@ -45,11 +45,15 @@ const DIRECTIONS: readonly TextKey[] = [
   'horizon.dirNW',
 ];
 
+/** The point of the compass of `azDeg`: 0 north, 1 north-east… to 7. */
+export function octantOf(azDeg: number): number {
+  const n = DIRECTIONS.length;
+  return Math.round((((azDeg % 360) + 360) % 360) / (360 / n)) % n;
+}
+
 /** «to the north-west»: the point of the compass of `azDeg`. */
 export function directionOf(i18n: I18n, azDeg: number): string {
-  const n = DIRECTIONS.length;
-  const index = Math.round((((azDeg % 360) + 360) % 360) / (360 / n)) % n;
-  return i18n.t(DIRECTIONS[index] ?? 'horizon.dirN');
+  return i18n.t(DIRECTIONS[octantOf(azDeg)] ?? 'horizon.dirN');
 }
 
 /** Each body's sentence, by whether it shows, over terrain or not. */

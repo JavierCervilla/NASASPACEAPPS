@@ -24,7 +24,8 @@
  */
 
 /**
- * One frame of the on-foot scene (VENT-34): fit the stage to its host and
+ * One frame of the on-foot scene (VENT-34): carry a coast or the way home
+ * on (VENT-63), fit the stage to its host and
  * band, aim the camera at the look, draw, place the labels, and mark on
  * the host where the Sun and the Earth fall and how many frames were
  * drawn (`data-frames`, which the tests read: an idle view draws none);
@@ -32,6 +33,7 @@
  */
 import type { FrameProbe } from '../frame-probe';
 import { stepCoast, type Coast } from '../look-coast';
+import { stepHoming, type Homing } from '../look-home';
 import type { Look } from '../view-camera';
 import { aimCamera, markBodies } from './camera-apply';
 import { labelLayer, type LabelLayer } from './labels';
@@ -47,6 +49,8 @@ export interface ViewState {
   home: Look;
   /** The swipe still carrying the look on (look-coast.ts), or none. */
   coast: Coast | null;
+  /** The springs turning it back to `home` (look-home.ts), or none. */
+  homing: Homing | null;
 }
 
 /** Carries the look on by `dt` seconds of the coast; true while it lasts. */
@@ -57,6 +61,16 @@ function coast(view: ViewState, dt: number, hooks: SceneHooks): boolean {
   view.coast = next.coast;
   hooks.onLook(next.look);
   return next.coast !== null;
+}
+
+/** Turns the look `dt` seconds on toward home; true while it moves. */
+function homeStep(view: ViewState, dt: number, hooks: SceneHooks): boolean {
+  if (!view.homing) return false;
+  const next = stepHoming(view.homing, dt);
+  view.look = next.look;
+  view.homing = next.homing;
+  hooks.onLook(next.look);
+  return next.homing !== null;
 }
 
 /** Marks on the host what the frame drew and how many were drawn. */
@@ -89,7 +103,7 @@ export function framer(
   const probe = stageProbe(renderer, world.setup.quality, hooks.onSlowFrame);
   let first = true;
   const frame = (dt: number): boolean => {
-    const coasting = coast(view, dt, hooks);
+    const moving = coast(view, dt, hooks) || homeStep(view, dt, hooks);
     fitStage(world.stage, host, hooks.band?.() ?? null);
     aimCamera(world, view.look);
     const drawMs = drawTimed(world, probe);
@@ -99,7 +113,7 @@ export function framer(
     reportFrame(world, drawMs);
     if (first) hooks.onDrawn?.();
     first = false;
-    return coasting;
+    return moving;
   };
   return { labels, frame };
 }

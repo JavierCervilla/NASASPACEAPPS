@@ -391,6 +391,8 @@
   "onFoot.reportNotCopied": "No se pudo copiar el informe",
   "onFoot.noWebgl": "La vista 3D no puede arrancar en este dispositivo",
   "onFoot.noPoint": "Este sitio no tiene coordenadas donde situarse",
+  "onFoot.compass.heading": "Rumbo de la vista {dir}.",
+  "onFoot.compass.press": "Pulsa para volver a la vista inicial.",
   "onFoot.help": "Arrastra o usa las flechas para mirar alrededor; Inicio vuelve a la vista inicial.",
   "onFoot.alt": "Primera persona, ojos a 2 m del suelo. Rumbo de la vista {deg}°, {dir}.",
   "onFoot.ridgeHidesSun": "Una cresta de {height} m, a {distance} km, oculta el Sol.",

@@ -52,19 +52,29 @@ function flingOf(host: HTMLElement, world: World, view: ViewState) {
   };
 }
 
+/** What the controls do with the look: turn it, or send it home. */
+export interface LookActions {
+  readonly set: (look: Look) => void;
+  readonly goHome: () => void;
+}
+
 /** Binds the controls and the host's size; returns the unbind. */
 export function bindHost(host: HTMLElement, world: World, view: ViewState,
-  set: (look: Look) => void): () => void {
+  { set, goHome }: LookActions): () => void {
   const { camera } = world.stage;
   const unbind = bindLook(host, {
     set: (look) => {
       world.setup.report.step('turn', 'turn');
+      view.homing = null;
       set(look);
     },
-    look: () => view.look, home: () => view.home,
+    look: () => view.look, goHome,
     scale: () => dragScale(host.clientWidth, host.clientHeight, camera.fov),
     fling: flingOf(host, world, view),
-    halt: () => void (view.coast = null) });
+    halt: () => {
+      view.coast = null;
+      view.homing = null;
+    } });
   const observer = new ResizeObserver(() => set(view.look));
   observer.observe(host);
   return () => {

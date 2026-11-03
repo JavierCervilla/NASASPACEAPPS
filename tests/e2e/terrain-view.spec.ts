@@ -248,6 +248,24 @@ async function pressable(page: Page, button: ReturnType<Page['locator']>): Promi
   });
 }
 
+/** The view's compass (VENT-63): the globe's round button, named by the heading, the Earth and the press. */
+const compass = (page: Page) => view(page).getByRole('button', { name: /^View heading / });
+
+/** The compass's turns as written for the frame: the rose's (north from the top) and the Earth's, degrees. */
+const turns = (page: Page) => compass(page).evaluate((el) => ({
+  rose: parseFloat((el as HTMLElement).style.getPropertyValue('--rose-angle')),
+  earth: parseFloat((el as HTMLElement).style.getPropertyValue('--earth-angle')),
+}));
+
+/** `deg` in (-180, 180]. */
+const signed = (deg: number): number => { const d = ((deg % 360) + 360) % 360; return d > 180 ? d - 360 : d; };
+
+/** Whether the compass's Earth is drawn filled (a background) or hollow (a ring only). */
+const earthFilled = (page: Page) => compass(page).locator('.compass__earth').evaluate((el) =>
+  getComputedStyle(el).backgroundColor !== 'rgba(0, 0, 0, 0)');
+
+const COMPASS_PRESS = 'Press to look back where the view opened.';
+
 test.describe('desktop, 1440x900', () => {
   test.use({ viewport: { width: 1440, height: 900 } });
 
@@ -288,6 +306,90 @@ test.describe('desktop, 1440x900', () => {
     await page.keyboard.press('ArrowLeft');
     await expect.poll(() => frames(page)).toBeGreaterThan(settledAt);
     await expect(host(page)).toHaveAccessibleDescription(/View heading 334°, to the north-west\. .*The Sun is to the north, above the terrain\./);
+  });
+
+  // VENT-63: the globe's compass in the view's corner. Opening toward the Sun at 339°, north stands 21° to the right of
+  // the top and the Earth (314°) 25° to the left, behind the 12° wall from 300° to 330° (hollow); the rose follows a turn,
+  // the press brings the opening heading back on a spring, and the compass never draws an idle frame.
+  test('the compass turns with the view, shows the Earth hollow behind the wall, and a press turns back on a spring', async ({ page }) => {
+    await open(page, { path: `./${POINT}&quality=low&onfoot=far#horizon` });
+    await settled(page);
+    const settledAt = await idle(page);
+    await expect(compass(page)).toBeVisible();
+    await expect(compass(page)).toHaveAccessibleName(
+      `View heading to the north. The Earth is to the north-west, hidden by the terrain. ${COMPASS_PRESS}`);
+    await expect(compass(page)).toHaveAttribute('data-earth', 'hidden');
+    expect(await earthFilled(page)).toBe(false);
+    const opening = await heading(page);
+    const start = await turns(page);
+    expect(Math.abs(signed(start.rose + opening))).toBeLessThanOrEqual(1);
+    expect(Math.abs(signed(start.earth - (314 - opening)))).toBeLessThanOrEqual(1);
+    await page.waitForTimeout(1500);
+    expect(await frames(page)).toBe(settledAt);
+    await host(page).focus();
+    for (let k = 0; k < 6; k++) await page.keyboard.press('Shift+ArrowRight');
+    await expect.poll(() => heading(page)).toBe((opening + 90) % 360);
+    const turned = await turns(page);
+    expect(signed(turned.rose - start.rose)).toBeCloseTo(-90, 6);
+    expect(signed(turned.earth - start.earth)).toBeCloseTo(-90, 6);
+    await expect(compass(page)).toHaveAccessibleName(/^View heading to the east\. The Earth is to the north-west, hidden by the terrain\. /);
+    await shot(page, 'desktop-compass-turned');
+    const beforePress = await idle(page);
+    await compass(page).click();
+    await expect.poll(() => heading(page), { intervals: [300], timeout: 15_000 }).toBe(opening);
+    await atRest(page);
+    expect(await frames(page) - beforePress).toBeGreaterThan(2);
+    const back = await turns(page);
+    expect(back.rose).toBeCloseTo(start.rose, 6);
+    expect(back.earth).toBeCloseTo(start.earth, 6);
+  });
+
+  test('the compass draws the Earth filled where the view sees it, and Home turns back as the press does', async ({ page }) => {
+    await open(page, { path: `./${POINT}&quality=low&onfoot=far#horizon`, wall: [330, 350] });
+    await settled(page);
+    await idle(page);
+    await expect(compass(page)).toHaveAccessibleName(
+      `View heading to the north. The Earth is to the north-west, above the terrain. ${COMPASS_PRESS}`);
+    await expect(compass(page)).toHaveAttribute('data-earth', 'shown');
+    expect(await earthFilled(page)).toBe(true);
+    await expect(host(page)).toHaveAccessibleDescription(/The Earth is to the north-west, above the terrain\./);
+    const opening = await heading(page);
+    await host(page).focus();
+    for (let k = 0; k < 3; k++) await page.keyboard.press('Shift+ArrowLeft');
+    await expect.poll(() => heading(page)).toBe((opening + 315) % 360);
+    await page.keyboard.press('Home');
+    await expect.poll(() => heading(page), { intervals: [300], timeout: 15_000 }).toBe(opening);
+    await atRest(page);
+  });
+
+  test('under reduced motion the press turns the view back at once', async ({ page }) => {
+    await page.emulateMedia({ reducedMotion: 'reduce' });
+    await open(page, { path: `./${POINT}&quality=low&onfoot=far#horizon` });
+    await settled(page);
+    await idle(page);
+    const opening = await heading(page);
+    await host(page).focus();
+    for (let k = 0; k < 8; k++) await page.keyboard.press('Shift+ArrowRight');
+    await expect.poll(() => heading(page)).toBe((opening + 120) % 360);
+    const beforePress = await idle(page);
+    await compass(page).click();
+    await expect.poll(() => heading(page)).toBe(opening);
+    await atRest(page);
+    expect(await frames(page) - beforePress).toBeLessThanOrEqual(2);
+  });
+
+  test('the compass stands in the corner clear of the caption', async ({ page }) => {
+    await open(page, { path: `./${POINT}#horizon` });
+    await settled(page);
+    await idle(page);
+    const stage = await view(page).locator('.on-foot__stage').boundingBox();
+    const button = await compass(page).boundingBox();
+    const caption = await view(page).locator('.on-foot__caption').boundingBox();
+    if (!stage || !button || !caption) throw new Error('the stage, the compass or the caption has no box');
+    expect(Math.round(stage.x + stage.width - (button.x + button.width))).toBe(20);
+    expect(Math.round(button.y - stage.y)).toBe(20);
+    expect(caption.x + caption.width).toBeLessThanOrEqual(button.x - 8);
+    await shot(page, 'desktop-compass-open');
   });
 
   // VENT-59 (qa of VENT-54): the coast had no e2e. A fast swipe carries the heading on past where the finger let go
@@ -595,6 +697,33 @@ test.describe('phone, 390x844', () => {
     await expect(page.locator('.globe')).toBeVisible();
     await expect(view(page)).toHaveCount(0);
     await expect.poll(() => lostContexts(page)).toBeGreaterThanOrEqual(1);
+  });
+
+  test('the compass stands under the top bar, clear of the caption, alone, and its press turns the view back', async ({ page }) => {
+    await open(page, { path: `./${POINT}&quality=low&onfoot=far` });
+    await page.getByRole('navigation', { name: 'Views' }).getByRole('button', { name: 'Horizon' }).click();
+    await settled(page);
+    const settledAt = await idle(page);
+    await expect(page.locator('.compass:visible')).toHaveCount(1);
+    await expect(compass(page)).toBeVisible();
+    const bar = await page.locator('.phone-bar').boundingBox();
+    const button = await compass(page).boundingBox();
+    const caption = await view(page).locator('.on-foot__caption').boundingBox();
+    if (!bar || !button || !caption) throw new Error('the bar, the compass or the caption has no box');
+    expect(Math.round(button.y - (bar.y + bar.height))).toBe(8);
+    expect(button.y + button.height).toBeLessThanOrEqual(caption.y);
+    expect(await pressable(page, compass(page))).toBe(true);
+    await page.waitForTimeout(1500);
+    expect(await frames(page)).toBe(settledAt);
+    await shot(page, 'phone-compass-open');
+    const opening = await heading(page);
+    await host(page).focus();
+    for (let k = 0; k < 6; k++) await page.keyboard.press('Shift+ArrowRight');
+    await expect.poll(() => heading(page)).toBe((opening + 90) % 360);
+    await shot(page, 'phone-compass-turned');
+    await compass(page).tap();
+    await expect.poll(() => heading(page), { intervals: [300], timeout: 15_000 }).toBe(opening);
+    await atRest(page);
   });
 
   test('IM-2 on its real LOLA relief, in first person, the sheet at peek', async ({ page }) => {

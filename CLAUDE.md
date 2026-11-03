@@ -93,6 +93,19 @@ Every visible change follows `.claude/skills/apple-design/SKILL.md` (vendored fr
   container; nothing under 11 px except the phone tab bar under 400 px (VENT-44). More contrast makes `--chrome`,
   `--glass-label` and `--phone-bar|sheet|tabs` opaque. Held by `tests/{style-surfaces,type-scale,focus-ring}.test.ts`
   and `tests/e2e/colour-focus-type.spec.ts`.
+- Press and motion (VENT-55): every control answers on pointer-down, the same under reduced motion (no `:active` rule
+  sits inside a `prefers-reduced-motion` query): buttons `scale(0.97)` over `--dur-press`, rows and segments a `--fill`
+  highlight laid over their own background, Moon dots `scale(0.9)` (`styles/press.css`). Popovers, the undo toast, the
+  first-time pin hint and the offline notice leave the way they came in, with opacity, scale 0.96 and a 6 px blur, on
+  `--spring` (critically damped `linear()`, in `tokens.css`) over `--dur-enter` (`styles/presence.css`: `@starting-style`
+  and `overlay`/`display` allow-discrete for popovers; `data-presence="in|out"`, kept mounted for `EXIT_MS` by
+  `usePresence` in `components/presence.ts`); a plain fade under reduced motion. The globe's pole tilt and zoom stretch
+  past their limits on the sheet's rubber band under a drag, a pinch or the wheel (`GIVE`: at most 3° of tilt, and 0.25
+  or 1.5 of camera distance near or far) and settle back on the orbit's springs on release, at the pinch's end, after 150 ms of wheel rest or on a
+  press that stops a flick (`src/globe/orbit-band.ts`); the keys and the framer still stop at the limit. Moving lines
+  (the strip's instant line, the phone calendar's line, the DSN playhead) ride `.rail--x|--y` translated by their share
+  (`styles/rail.css`), and the phone compass moves by `translate`. Held by `tests/press-motion-css.test.ts`,
+  `tests/globe-rubber.test.ts` and `tests/e2e/press-motion.spec.ts`.
 - It feels like an app, not a document (VENT-38): `body` sets `user-select: none`, `-webkit-touch-callout: none` and
   a transparent tap highlight (`src/styles/global.css`), so a long press selects no text (no Android search panel)
   and opens no iOS callout; images are not draggable. Selectable again: text fields (`input` other than range,

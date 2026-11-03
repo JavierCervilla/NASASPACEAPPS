@@ -29,8 +29,8 @@
  * previous one's) and uncaught errors, so a page that breaks on a laptop or a
  * phone says why instead of staying black. Buttons reload the page at another
  * quality tier, or with Spector.js (`#stats-spector`) to capture a frame's
- * WebGL calls. A tap on the readout folds it to its first line; on a phone it
- * starts folded (see boot.ts).
+ * WebGL calls. A tap on the readout folds it to one line; it starts folded
+ * (see boot.ts), so it covers none of the page's controls (VENT-51).
  *
  * In the dev server and a PUBLIC_PERF_HUD=1 build at once; in a production
  * build only on `?debug`, after the page has started, and without the
@@ -54,7 +54,7 @@ import {
   readoutButton,
 } from './hud-elements';
 import { PERF_TEXT } from './perf-text';
-import { readout, type RenderStats } from './readout';
+import { foldedLine, readout, type RenderStats } from './readout';
 
 /** Lines of this session's trail the readout shows live. */
 const LIVE_TRAIL_LINES = 6;
@@ -81,8 +81,8 @@ export interface PerfHudOptions {
   /** This session's trail, read at each refresh. */
   readonly current: () => readonly string[];
   /**
-   * Starts folded to the readout's first line, as on a phone, where the open
-   * panel would cover the page.
+   * Starts folded to one line (boot.ts always asks), where the open panel
+   * would cover the page's controls.
    */
   readonly folded?: boolean;
 }
@@ -91,6 +91,7 @@ export interface PerfHudOptions {
 export class PerfHud implements HudView {
   private readonly button: HTMLButtonElement;
   private readonly text: HTMLElement;
+  private readonly alert: HTMLElement;
   /** Everything but the readout's text and the errors: hidden while folded. */
   private readonly details = detailsRegion();
   private readonly errors = errorBox();
@@ -98,12 +99,16 @@ export class PerfHud implements HudView {
   private readonly options: PerfHudOptions;
   private folded = false;
   private lastText = '';
+  private lastLine = '';
+  private errorCount = 0;
 
   constructor(options: PerfHudOptions) {
     this.options = options;
-    const { button, text } = readoutButton(() => this.fold(!this.folded));
+    const { button, text, alert } = readoutButton(() =>
+      this.fold(!this.folded));
     this.button = button;
     this.text = text;
+    this.alert = alert;
     appendControls(this.details, options.tier, options.flags);
     appendPreviousTrail(this.details, options.previous);
     const panel = hudPanel();
@@ -127,23 +132,32 @@ export class PerfHud implements HudView {
     const live = current().slice(-LIVE_TRAIL_LINES).join('\n');
     const text = readout(reading, stats, { tierLabel, gpu });
     this.lastText = `${text}\n${PERF_TEXT.currentTrail}\n${live}`;
+    this.lastLine = foldedLine(reading);
     this.show();
   }
 
   error(message: string): void {
     const shown = `${this.errors.textContent ?? ''}\n${message}`.trim();
     this.errors.textContent = shown.slice(-ERROR_CHARS);
+    this.errorCount += 1;
+    this.show();
   }
 
   private fold(folded: boolean): void {
     this.folded = folded;
     this.details.hidden = folded;
+    this.errors.hidden = folded;
     this.button.setAttribute('aria-expanded', String(!folded));
     this.show();
   }
 
+  /**
+   * Folded, one short line and the count of the errors under the fold, so
+   * the panel stays one line high wherever it sits (VENT-51).
+   */
   private show(): void {
-    const firstLine = this.lastText.split('\n')[0] ?? '';
-    this.text.textContent = this.folded ? firstLine : this.lastText;
+    this.text.textContent = this.folded ? this.lastLine : this.lastText;
+    const count = this.folded ? this.errorCount : 0;
+    this.alert.textContent = count > 0 ? ` · ${PERF_TEXT.errors(count)}` : '';
   }
 }

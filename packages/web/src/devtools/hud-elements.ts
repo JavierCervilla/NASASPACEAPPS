@@ -51,6 +51,8 @@ const TEXT_ID = `${HUD_MARKER}-text`;
 export interface Readout {
   readonly button: HTMLButtonElement;
   readonly text: HTMLElement;
+  /** The folded readout's error count, empty while open or clean. */
+  readonly alert: HTMLElement;
 }
 
 /**
@@ -69,8 +71,10 @@ export function readoutButton(onClick: () => void): Readout {
   button.addEventListener('click', onClick);
   const text = document.createElement('span');
   text.id = TEXT_ID;
-  button.append(text);
-  return { button, text };
+  const alert = document.createElement('span');
+  alert.className = `${HUD_MARKER}__alert`;
+  button.append(text, alert);
+  return { button, text, alert };
 }
 
 /** The region the readout button folds: everything but its text and errors. */

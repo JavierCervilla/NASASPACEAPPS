@@ -78,22 +78,41 @@ function measureInto(parts: BandWatchParts, anchors: BandAnchors): void {
   });
 }
 
-/** Keeps the band measured; returns how to stop. */
+/** The anchors on the page that are not observed yet. */
+function unwatched(anchors: BandAnchors, watched: Set<Element>): Element[] {
+  return Object.values(anchors)
+    .filter((el): el is Element => el !== null && !watched.has(el));
+}
+
+/**
+ * Keeps the band measured; returns how to stop. An anchor found inside the
+ * observer's own callback is observed on the next frame, not there: the
+ * bars sit above the host in the tree, and an element observed during a
+ * delivery that shallow cannot be delivered in that loop, which the browser
+ * reports as «ResizeObserver loop completed with undelivered
+ * notifications» (VENT-51). It is measured at once all the same.
+ */
 export function watchBand(parts: BandWatchParts): () => void {
   const watched = new Set<Element>([parts.host]);
-  const measure = (): void => {
-    const anchors = parts.anchors();
-    for (const el of Object.values(anchors)) {
-      if (!el || watched.has(el)) continue;
+  let frame: number | null = null;
+  const adopt = (): void => {
+    frame = null;
+    for (const el of unwatched(parts.anchors(), watched)) {
       watched.add(el);
       observer.observe(el);
     }
-    measureInto(parts, anchors);
   };
-  const observer = new ResizeObserver(measure);
+  const measure = (): void => measureInto(parts, parts.anchors());
+  const resized = (): void => {
+    measure();
+    const fresh = unwatched(parts.anchors(), watched).length > 0;
+    if (fresh && frame === null) frame = requestAnimationFrame(adopt);
+  };
+  const observer = new ResizeObserver(resized);
   observer.observe(parts.host);
-  const unsubscribe = parts.changes(measure);
+  const unsubscribe = parts.changes(() => (adopt(), measure()));
   return () => {
+    if (frame !== null) cancelAnimationFrame(frame);
     observer.disconnect();
     unsubscribe();
   };

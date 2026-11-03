@@ -103,7 +103,7 @@ describe('perf hud on the page', () => {
     readoutButton().click();
     expect(details.hidden).toBe(true);
     expect(readoutButton().getAttribute('aria-expanded')).toBe('false');
-    expect(target('aria-describedby').textContent).toBe('2 fps · 500.0 ms · slowest 500 ms');
+    expect(target('aria-describedby').textContent).toBe('2 fps · slowest 500 ms');
   });
 
   it('starts folded when asked, as on a phone', () => {
@@ -111,6 +111,21 @@ describe('perf hud on the page', () => {
     expect(target('aria-controls').hidden).toBe(true);
     expect(readoutButton().getAttribute('aria-expanded')).toBe('false');
     expect(target('aria-describedby').textContent).not.toContain('\n');
+  });
+
+  it('folded, keeps the errors under the fold and counts them on its one line (VENT-51)', () => {
+    const view = hud({ folded: true });
+    view.sample(FULL_WINDOW, null);
+    view.error('WebGL context lost');
+    view.error('TypeError: x is undefined');
+    const errors = panel().all().find((element) => element.getAttribute('role') === 'status');
+    expect(errors?.hidden).toBe(true);
+    const alert = panel().all().find((element) => element.className === 'ventana-perf-hud__alert');
+    expect(`${target('aria-describedby').textContent}${alert?.textContent}`).toBe('2 fps · slowest 500 ms · 2 errors');
+    readoutButton().click();
+    expect(errors?.hidden).toBe(false);
+    expect(errors?.textContent).toBe('WebGL context lost\nTypeError: x is undefined');
+    expect(alert?.textContent).toBe('');
   });
 
   it('starts open by default', () => {

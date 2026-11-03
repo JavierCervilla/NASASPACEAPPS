@@ -78,6 +78,20 @@
     paren mientras comprueba un fichero, y la imagen rechaza `/data//` y `/data/./` como rutas de montaje.
 
 ### Añadido
+- Referencias de orientación en el globo (VENT-50). Una **brújula** de cristal de 48 px en la esquina superior derecha
+  del globo (en el móvil, bajo la barra superior y bajo la pista del primer uso mientras se ve): su aguja señala siempre
+  el norte, que el globo mantiene arriba, y una pequeña marca de la Tierra recorre su anillo hacia donde está la Tierra
+  desde el centro de la Luna en el instante elegido; si la Tierra queda detrás de la Luna, la marca es hueca. Al pulsarla,
+  el globo vuelve a su encuadre inicial para el sitio elegido (al instante con «reducir movimiento»), y su nombre
+  accesible dice dónde está la Tierra y qué hace la pulsación, en los cinco idiomas. Y una **retícula** discreta sobre la
+  Luna: los paralelos de 85° S, 80° S y 70° S y los meridianos de 0°, 45° y 90° al este y al oeste, con una cruz en el
+  polo sur, en gris neutro al 40 %, con sus etiquetas de 10 px («85° S», «90° E», en español «90° O») ocultas tras el
+  limbo y metidas 14 px dentro del disco de la Luna. Las etiquetas se apartan de los marcadores de los sitios y del
+  anillo del sitio elegido (un paralelo se nombra en el meridiano más libre y se queda en él mientras siga libre), así
+  que «85° S», que con los ocho sitios cercanos al polo no tiene sitio al abrir, aparece al acercar la Luna. No tiene
+  interruptor en las Capas y un globo quieto sigue sin dibujar fotogramas. Las etiquetas van en blanco sobre un fondo al 61 %
+  (el lienzo tenía texto gris sobre un fondo al 44 %): es lo mínimo que da 4,5:1 sobre el píxel más claro de los mapas
+  de la Luna, que es blanco puro.
 - «?debug» en la dirección abre el panel de rendimiento para diagnosticar (VENT-49): en la web publicada, añadir
   `?debug` muestra, cuando la página ya ha arrancado, el panel del estudio con fotogramas por segundo, tiempos de
   fotograma, llamadas de dibujo, triángulos y memoria de texturas, más el rastro de pasos que sobrevive a un fallo de la

@@ -26,23 +26,19 @@
 import { useEffect, useRef, useState } from 'react';
 import type { TimeStore } from '../calendar/time-store';
 import { startGlobe, type GlobeStatus } from '../globe/boot';
-import { pageAnchors } from '../globe/band-watch';
 import { describeSun } from '../globe/describe';
-import { markerLabel, type GlobeSite } from '../globe/markers';
-import { localName } from '../i18n/site-names';
 import type { LayerRegistry } from '../globe/layers/registry';
 import type { I18n } from '../i18n/translate';
 import type { WatchedValue } from '../lib/watched-value';
-import { prefersSaveData } from '../lib/viewport';
 import type { SiteStore } from '../phone/site-store';
 import type { NowState } from '../phone/widget-types';
 import { useTime } from './calendar/hooks';
-import { GlobePin } from './pin/GlobePin';
 import { GlobeSplash } from './GlobeSplash';
 import { useI18n } from './i18n-context';
+import { GlobeOverlays } from './GlobeOverlays';
+import { globeOptions } from './globe-options';
 import { useGlobeSignals } from './use-globe-signals';
 
-const REDUCED_MOTION = '(prefers-reduced-motion: reduce)';
 const HELP_ID = 'globe-help';
 
 interface Props {
@@ -62,8 +58,6 @@ interface Props {
   readonly layers: LayerRegistry;
 }
 
-const reducedMotion = (): boolean => matchMedia(REDUCED_MOTION).matches;
-
 /**
  * Starts the scene in the viewport after hydration (or waits for the
  * visitor under Save-Data); its status, and how to load it on request.
@@ -73,27 +67,20 @@ function useGlobe(props: Props, i18n: I18n) {
   const host = useRef<HTMLDivElement>(null);
   const loader = useRef<() => void>(() => undefined);
   const [status, setStatus] = useState<GlobeStatus | null>(null);
-  const { textured, view, signals } = useGlobeSignals();
+  const { textured, view, compass, signals } = useGlobeSignals();
   useEffect(() => {
     const el = host.current;
     if (!el) return undefined;
     // A restarted globe waits for its own first map behind the splash.
     signals.restart();
-    const warn = (message: string): void => console.warn(message);
-    const anchors = () => pageAnchors(el);
-    const options = { time, base, sitesUrl, store, sheetEdge, state, layers };
-    const saveData = prefersSaveData();
-    // The globe's sites come from the API, named in English.
-    const markerName = (site: GlobeSite): string =>
-      markerLabel(i18n, { ...site, name: localName(i18n, site.name) });
-    const deps = { ...options, saveData, reducedMotion, warn, anchors };
-    const all = { ...deps, markerName, ...signals };
-    const start = startGlobe(el, all, setStatus, saveData);
+    const stores = { time, base, sitesUrl, store, sheetEdge, state, layers };
+    const options = globeOptions(el, stores, i18n, signals);
+    const start = startGlobe(el, options, setStatus, options.saveData);
     loader.current = start.load;
     return start.dispose;
   }, [sitesUrl, base, store, sheetEdge, time, state, layers, i18n, signals]);
   const load = (): void => loader.current();
-  return { host, status, load, textured, view };
+  return { host, status, load, textured, view, compass };
 }
 
 /**
@@ -129,7 +116,7 @@ function LoadButton({ onLoad }: { readonly onLoad: () => void }) {
  */
 export default function Globe(props: Props) {
   const i18n = useI18n();
-  const { host, status, load, textured, view } = useGlobe(props, i18n);
+  const { host, status, load, textured, view, compass } = useGlobe(props, i18n);
   const atMs = useTime(props.time)?.atMs ?? null;
   // The scene owns the viewport's children (canvas, markers), so React
   // renders nothing inside it; the text alternative is its sibling.
@@ -150,7 +137,7 @@ export default function Globe(props: Props) {
       </p>
       {kind === 'deferred' ? <LoadButton onLoad={load} /> : null}
       <GlobeSplash {...props} textured={textured} status={kind} />
-      <GlobePin host={host} view={view} store={props.store} />
+      <GlobeOverlays {...{ host, view, compass }} {...props} />
     </>
   );
 }

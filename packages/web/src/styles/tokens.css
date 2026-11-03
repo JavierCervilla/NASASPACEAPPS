@@ -87,6 +87,24 @@
   --sky: radial-gradient(120% 90% at 50% 40%, #11131a 0%, #07080b 70%);
   --marker: #f2f2f4;
 
+  /*
+   * The globe's orientation references (VENT-50): a faint grid on the Moon,
+   * never a signal colour, and the same in both themes (the globe stays
+   * dark). The line is drawn in the scene (src/globe/graticule/scene.ts reads
+   * these two); the labels and the pole cross are HTML (styles/orientation.css).
+   * The label is white (the human's choice over grey text on a darker chip)
+   * on the canvas's rgba(28, 28, 30) chip, its opacity the least that keeps
+   * the label 4.5:1 over the brightest Moon the globe shows
+   * (tests/graticule-contrast.test.ts).
+   */
+  --graticule-line: #8e8e93;
+  --graticule-line-alpha: 0.4;
+  --graticule-label: #ffffff;
+  --graticule-label-chip: rgba(28, 28, 30, 0.61);
+  --graticule-pole: rgba(174, 174, 178, 0.75);
+  /* The compass over the globe: the round glass button's size. */
+  --compass-size: 48px;
+
   --signal-sun: #f5c542;
   --signal-earth: #4a9cff;
   --signal-window: #3ddc84;

@@ -39,6 +39,8 @@ export function linkView(
   const frames = createWatchedValue(0);
   onView?.(globeView(stage, { subscribe: frames.subscribe }));
   return {
+    /** Calls a listener after every drawn frame (the compass's, too). */
+    subscribe: frames.subscribe,
     /** A frame was drawn. */
     drawn: (): void => frames.set(frames.get() + 1),
     /** The globe is going: the page forgets its view. */

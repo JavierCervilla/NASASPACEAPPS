@@ -400,7 +400,8 @@
 @media (min-width: 768px) {
   .globe .pin-hint {
     left: calc(var(--layers-w) + 40px);
-    right: 20px;
+    /* Nor over the compass in the corner (VENT-50): its size, a gap and the margin. */
+    right: calc(20px + var(--compass-size) + 12px);
     width: fit-content;
     max-width: none;
     margin-inline: auto;

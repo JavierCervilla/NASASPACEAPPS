@@ -31,10 +31,16 @@
  * (`studio/engines/web/scaffold/packages/client/src/engine/dev-tools.ts`).
  */
 
-/** Spies on every canvas from now on and shows Spector.js's capture UI. */
+/**
+ * Spies on every canvas from now on and shows Spector.js's capture UI. Only
+ * the dev server and a PUBLIC_PERF_HUD=1 build carry it: in a production
+ * build the condition is a constant false and the bundler drops the import.
+ */
 export async function startSpector(): Promise<void> {
-  const { Spector } = await import('spectorjs');
-  const spector = new Spector();
-  spector.spyCanvases();
-  spector.displayUI();
+  if (import.meta.env.DEV || import.meta.env.PUBLIC_PERF_HUD === '1') {
+    const { Spector } = await import('spectorjs');
+    const spector = new Spector();
+    spector.spyCanvases();
+    spector.displayUI();
+  }
 }

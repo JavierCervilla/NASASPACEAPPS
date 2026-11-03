@@ -23,35 +23,32 @@
  *             :::.. .  .               SPDX-License-Identifier: MIT
  */
 
-// Proves the dev tools stay out of a production build: no file in dist/ may carry their markers (the panel's class,
-// the breadcrumbs key, Spector.js). A build made with PUBLIC_PERF_HUD=1 must carry them instead, which shows the
-// check can fail. Runs after every `astro build` (package.json).
+// Proves the dev tools stay out of what a visitor downloads without asking: a production build carries them only as a
+// chunk `?debug` loads after the page has started (VENT-49), so no page, no file a page loads at start and nothing the
+// service worker precaches may carry their markers, and Spector.js is in no file. A build made with PUBLIC_PERF_HUD=1
+// must carry them instead, which shows the check can fail. The decision is devtools-guard.mjs's; runs after every
+// `astro build` (package.json).
 import { readdirSync, readFileSync } from 'node:fs';
-import { join } from 'node:path';
+import { join, relative, sep } from 'node:path';
+import { devtoolsVerdict } from './devtools-guard.mjs';
+import { precacheOf } from './service-worker.mjs';
 
 const DIST = new URL('../dist/', import.meta.url).pathname;
-const MARKERS = ['ventana-perf-hud', 'ventana.devtools.breadcrumbs', 'spector'];
 const expectTools = process.env.PUBLIC_PERF_HUD === '1';
 
-function files(dir) {
+function filesUnder(dir) {
   return readdirSync(dir, { withFileTypes: true }).flatMap((entry) =>
-    entry.isDirectory() ? files(join(dir, entry.name)) : [join(dir, entry.name)],
+    entry.isDirectory() ? filesUnder(join(dir, entry.name)) : [join(dir, entry.name)],
   );
 }
 
-const found = new Map();
-for (const file of files(DIST)) {
-  // Spector.js's chunk is matched by its file name: its code names no package.
-  const text = `${file}\n${readFileSync(file, 'latin1')}`;
-  for (const marker of MARKERS) if (text.includes(marker)) found.set(marker, [...(found.get(marker) ?? []), file]);
-}
-
-if (expectTools && !found.has('ventana-perf-hud')) {
-  console.error('check-no-devtools: PUBLIC_PERF_HUD=1 but the build has no performance readout');
+const files = new Map(
+  filesUnder(DIST).map((file) => [relative(DIST, file).split(sep).join('/'), readFileSync(file, 'latin1')]),
+);
+const problems = devtoolsVerdict({ files, precache: precacheOf(DIST).precache, expectTools });
+if (problems.length > 0) {
+  for (const problem of problems) console.error(`check-no-devtools: ${problem}`);
   process.exit(1);
 }
-if (!expectTools && found.size > 0) {
-  for (const [marker, where] of found) console.error(`check-no-devtools: "${marker}" in ${where.join(', ')}`);
-  process.exit(1);
-}
-console.warn(`check-no-devtools: ok (${expectTools ? 'dev tools present, as asked' : 'no dev tools in the build'})`);
+const what = expectTools ? 'dev tools present, as asked' : 'no dev tools at start or in the precache, no Spector.js';
+console.warn(`check-no-devtools: ok (${what})`);

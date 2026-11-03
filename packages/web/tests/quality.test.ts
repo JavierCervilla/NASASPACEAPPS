@@ -24,7 +24,7 @@
  */
 
 import { describe, expect, it } from 'vitest';
-import { detectTier, gpuName, settingsFor, type DeviceHints } from '../src/lib/quality';
+import { detectTier, forcedTier, gpuName, settingsFor, type DeviceHints } from '../src/lib/quality';
 
 const LAPTOP: DeviceHints = { gpu: 'ANGLE (Intel, Mesa Intel(R) UHD Graphics 620)', coarsePointer: false, cores: 8 };
 
@@ -41,6 +41,13 @@ describe('quality tiers', () => {
     expect(detectTier(LAPTOP, '?quality=low')).toBe('low');
     expect(detectTier(LAPTOP, '', '#stats-medium-spector')).toBe('medium');
     expect(detectTier(LAPTOP, '?quality=ultra')).toBe('high');
+  });
+
+  it('says whether the address forced a tier, which the on-foot view never steps down from', () => {
+    expect(forcedTier('?quality=low')).toBe('low');
+    expect(forcedTier('', '#stats-medium-spector')).toBe('medium');
+    expect(forcedTier('?quality=ultra', '#low')).toBeNull();
+    expect(forcedTier()).toBeNull();
   });
 
   it('starts a desktop with fewer than 4 cores at medium', () => {

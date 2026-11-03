@@ -109,7 +109,7 @@ describe('dev tools', () => {
   });
 
   it('reads the hash flags at start', () => {
-    expect(tools(fakeView(), '#stats-low').flags).toEqual({ tier: 'low', spector: false });
+    expect(tools(fakeView(), '#stats-low').flags).toEqual({ tier: 'low', capture: false });
   });
 
   it('drives frames from the given scheduler', () => {

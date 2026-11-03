@@ -50,7 +50,7 @@ export const PERF_TEXT = {
   triangles: 'triangles',
   textures: 'textures',
   noRenderer: 'no renderer attached',
-  spector: 'Spector',
+  capture: 'Spector',
   previousTrail: 'Previous session:',
   currentTrail: 'This session:',
   contextLost: 'WebGL context lost',

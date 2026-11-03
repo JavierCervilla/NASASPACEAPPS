@@ -36,7 +36,7 @@ import {
   Scene,
   WebGLRenderer,
 } from 'three';
-import type { QualitySettings } from '../../lib/quality';
+import type { SceneSetup } from './scene-types';
 
 export interface Stage {
   readonly renderer: WebGLRenderer;
@@ -58,21 +58,22 @@ const FOV = { phone: 62, wide: 50 } as const;
 /** A stage in a new canvas in `host`; throws without WebGL. */
 export function createStage(
   host: HTMLElement,
-  quality: QualitySettings,
+  { quality, leave }: SceneSetup,
   phone: boolean,
 ): Stage {
   const renderer = new WebGLRenderer({
     antialias: quality.antialias,
     powerPreference: 'low-power',
     // The rings reach 190 km and the sky is farther: a linear depth buffer
-    // would z-fight at 100 km with a near plane of 0.2 m.
-    logarithmicDepthBuffer: true,
+    // would z-fight at 100 km with a near plane of 0.2 m. (`?onfoot=logdepth`
+    // turns it off to bisect a crash, accepting that.)
+    logarithmicDepthBuffer: !leave.has('logdepth'),
   });
   renderer.setPixelRatio(Math.min(devicePixelRatio, quality.maxPixelRatio));
   renderer.setClearColor(0x000000, 1);
   renderer.toneMapping = ACESFilmicToneMapping;
   renderer.toneMappingExposure = EXPOSURE;
-  renderer.shadowMap.enabled = true;
+  renderer.shadowMap.enabled = !leave.has('shadows');
   renderer.shadowMap.type = PCFShadowMap;
   renderer.shadowMap.autoUpdate = true;
   renderer.domElement.setAttribute('aria-hidden', 'true');

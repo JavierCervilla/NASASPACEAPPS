@@ -142,12 +142,17 @@ describe('the kept choice and the switch', () => {
     expect(localeHref('/', 'en', { search: '', hash: '' })).toBe('/');
   });
 
-  it('keeps the shown site, the pin\'s point and the glass, and drops any other parameter', () => {
-    const search = '?utm_source=x&site=shackleton-rim&lat=-85.87&lon=61.34&glass=frosted&q=1';
+  it('keeps the shown site, the pin\'s point, the glass and the on-foot diagnostics, and drops any other parameter', () => {
+    const search = '?utm_source=x&site=shackleton-rim&lat=-85.87&lon=61.34&glass=frosted&onfoot=far&q=1';
     expect(localeHref('/', 'es', { search, hash: '#globe' })).toBe(
-      '/es/?site=shackleton-rim&lat=-85.87&lon=61.34&glass=frosted#globe',
+      '/es/?site=shackleton-rim&lat=-85.87&lon=61.34&glass=frosted&onfoot=far#globe',
     );
     expect(localeHref('/base', 'de', { search: '?q=1', hash: '' })).toBe('/base/de/');
+  });
+
+  it('keeps ?debug, bare or with a value, so the dev tools stay on in the other language (VENT-49)', () => {
+    expect(localeHref('/', 'es', { search: '?debug', hash: '#horizon' })).toBe('/es/?debug=#horizon');
+    expect(localeHref('/', 'fr', { search: '?site=im-2&debug=1', hash: '' })).toBe('/fr/?site=im-2&debug=1');
   });
 });
 

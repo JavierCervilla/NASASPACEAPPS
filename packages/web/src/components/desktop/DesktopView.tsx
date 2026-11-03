@@ -53,6 +53,7 @@ export function DesktopView({ view, map, dsn, site, parts, hours }: Props) {
   if (view !== 'horizon') return null;
   return (
     <OnFootView layout="desktop" site={site} time={parts.time}
-      horizons={parts.horizons} tiles={parts.tiles} hours={hours} />
+      horizons={parts.horizons} tiles={parts.tiles}
+      viewTier={parts.viewTier} hours={hours} />
   );
 }

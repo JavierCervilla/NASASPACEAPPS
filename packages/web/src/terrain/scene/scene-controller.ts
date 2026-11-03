@@ -61,8 +61,7 @@ export const controller = (
       view.home = startLook(next.mode, view.look.yawDeg);
       set(view.home);
     }
-    applyInput(world, next);
-    loop.invalidate();
+    if (applyInput(world, next)) loop.invalidate();
   },
   invalidate: (): void => loop.invalidate(),
   dispose: teardown,

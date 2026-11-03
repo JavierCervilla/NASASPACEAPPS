@@ -79,7 +79,9 @@ export class FakeElement {
 /** Installs a fake `document` and `window`; returns the body the readout appends its panel to. */
 export function installFakeDom(): FakeElement {
   const body = new FakeElement('body');
-  vi.stubGlobal('document', { body, createElement: (tag: string) => new FakeElement(tag) });
+  // The head takes the readout's stylesheet link (perf-hud.ts links its CSS on mount, VENT-49).
+  const head = new FakeElement('head');
+  vi.stubGlobal('document', { head, body, createElement: (tag: string) => new FakeElement(tag) });
   vi.stubGlobal('window', { addEventListener: () => undefined });
   return body;
 }

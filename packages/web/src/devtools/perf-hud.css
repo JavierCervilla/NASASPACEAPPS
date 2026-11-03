@@ -25,14 +25,16 @@
 
 /*
  * The performance readout: a small translucent material floating over the page (apple-design §12), tabular numbers
- * so the digits do not jitter, and no signal colours (those carry fixed meaning: tokens.css). Dev builds only.
+ * so the digits do not jitter, and no signal colours (those carry fixed meaning: tokens.css). In the dev server, a
+ * PUBLIC_PERF_HUD=1 build, or a production build opened with `?debug` (VENT-49). It sits top left, over the title, which
+ * takes no clicks: at the top right it covered the view tabs and the language button, which a diagnosis needs.
  */
 .ventana-perf-hud {
   --hud-error: #ff8a7a;
 
   position: fixed;
   top: calc(var(--space-2) + env(safe-area-inset-top, 0px));
-  right: calc(var(--space-2) + env(safe-area-inset-right, 0px));
+  left: calc(var(--space-2) + env(safe-area-inset-left, 0px));
   z-index: 50;
   max-inline-size: min(92vw, 22rem);
   padding: var(--space-2) var(--space-3);
@@ -110,6 +112,8 @@
   .ventana-perf-hud {
     top: auto;
     bottom: calc(var(--space-2) + env(safe-area-inset-bottom, 0px));
+    left: auto;
+    right: calc(var(--space-2) + env(safe-area-inset-right, 0px));
   }
 
   .ventana-perf-hud__trail {

@@ -62,7 +62,7 @@ export class MissingChunkError extends Error {
 }
 
 /** Whether the browser says it is online (no navigator: assume it is). */
-const browserOnline = (): boolean =>
+export const browserOnline = (): boolean =>
   globalThis.navigator?.onLine !== false;
 
 /** Whether `error` is the browser's failure to fetch a module. */
@@ -76,7 +76,9 @@ export function isMissingChunk(error: unknown): boolean {
  * rejects with a MissingChunkError, any other error passes untouched.
  * Offline the same failure is the network's (an on-demand chunk is not
  * kept for offline use): it rejects marked `offline` and tells nobody, so
- * no «New version ready» shows for a version that is not new.
+ * no «New version ready» shows for a version that is not new. Offline the
+ * import is still tried: a precached chunk (the globe's) loads from the
+ * service worker.
  */
 export async function loadChunk<T>(
   load: () => Promise<T>,

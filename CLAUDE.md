@@ -460,7 +460,8 @@ Every visible change follows `.claude/skills/apple-design/SKILL.md` (vendored fr
   the night side from the Earth's real sub-solar point (`earthSubSolarPoint`, `subLunarPoint` in
   `packages/sim/src/earth-view.ts`), the active antenna white with a soft glow that breathes three times when it starts
   listening, then rests lit (an endless loop kept every page drawing frames; still under reduced motion; held while
-  the phone sheet moves, `data-moving`, so the move keeps its frames), labels in HTML over it (so they follow the text size),
+  the phone sheet moves, `data-moving`, so the move keeps its frames), a resting antenna in sight stands in a moat the land mask clears (`LandMask`, 2 units), so its
+  ring is not lost among the land dots (VENT-59), labels in HTML over it (so they follow the text size),
   each moved sideways to stay inside the picture (`src/dsn/label-shift.ts`, `components/dsn/use-label-fit.ts`, through
   a `--label-shift` property set in the CSSOM, so at 200 % text on a phone no label leaves the screen). Never the signal
   colours: `--dsn-*` tokens; the Earth and the DSN view's panel stay dark in both themes. The month's figures add «Hours with DSN» (hours with any complex
@@ -505,7 +506,8 @@ Every visible change follows `.claude/skills/apple-design/SKILL.md` (vendored fr
   true size and direction is the key light, with hard shadows near the point (shadow map), per vertex over the near ground and, level by level, over
   each ring from a grid of its own (16, 64 and 256 km at 62.5 m to 1 km, `scene/ring-shade.ts`, in slices, no cast shadow beyond a grid's edge; distant rings are shaded by their normals, no haze: the Moon has no
   atmosphere) (`sun-shade.ts`), darkening the whole view when terrain beyond the near ground hides it (`ridge.ts` `blockerOf`,
-  `scene/sun-mask.ts`); the Earth at its true size with its true phase, wearing NASA's Blue Marble turned to the face the Moon sees
+  `scene/sun-mask.ts`; whether a body is hidden is the horizon profile's answer, the card's, and the near ground only
+  names the ridge that does it: VENT-59, the human's decision, held by `tests/terrain-im2-verdict.test.ts`); the Earth at its true size with its true phase, wearing NASA's Blue Marble turned to the face the Moon sees
   (`earth-orientation.ts`, from the sub-lunar point and the ecliptic roll, about 2° accurate); faint seeded stars; the fill is
   the Earth's light by its lit share, the ground's bounce by the Sun's height and a dim sky floor (`sky-light.ts`), and
   when the Sun does not reach the point the exposure opens up instead of faking sunlight (`exposureFor`, `stage.ts`).
@@ -541,7 +543,8 @@ Every visible change follows `.claude/skills/apple-design/SKILL.md` (vendored fr
   has no room there (200 % text lifts the half sheet to full) the sheet drops to peek once for that loss, and the scrim
   clears, since `openness` measures from peek when half has risen to full (VENT-51). «Report copied» resets whenever
   the scene's state changes. On a phone the caption keeps under the band's top, which follows the top bar's size too
-  (`src/phone/band-moves.ts`: the sheet's edge and a ResizeObserver on the bar); the scale's labels never overlap (ridge
+  (`src/phone/band-moves.ts`: the sheet's edge and a ResizeObserver on the bar), and 10 px over the sheet's measured
+  edge (`--on-foot-band-*`), clipped where the band has no room (VENT-59); the scale's labels never overlap (ridge
   first, then 25, 100 and 500 m, a label over a placed one hidden for the frame, `scene/label-declutter.ts`); the host's
   focus ring is an outline at -4 px drawn over its canvas (VENT-52). A language switch is not a died run:
   `switchLocale` calls its injected `leaving` before `location.assign`, wired to `leftOnPurpose` (`view-tier-open.ts`),
@@ -570,7 +573,7 @@ Every visible change follows `.claude/skills/apple-design/SKILL.md` (vendored fr
   leaves parts out to bisect a crash from a phone's address bar (`src/terrain/leave-out.ts`, unknown words ignored,
   listed in `data-onfoot`, kept by the language switch like `?site=`). The API gzips its JSON
   (`compress()` in `packages/server/src/app.ts`; base64 floats shrink about 26 %). Held by `tests/terrain-view.test.ts`,
-  `tests/terrain-ring.test.ts`, `tests/view-tier.test.ts`, `tests/frame-probe.test.ts`, `tests/leave-out.test.ts`, `tests/relight.test.ts`, `tests/input-change.test.ts`, `tests/on-foot-report.test.ts`, `tests/on-foot-device.test.ts`, `tests/scene-guard.test.ts` and `tests/e2e/terrain-view.spec.ts` (the ring and tile routes answered by the simulator's own core over a synthetic polar grid, or by real LOLA tiles of IM-2 recorded from a local server, `fixtures/terrain-ring-im2/`: first person only, no camera switch, no `.glb` fetched, the caption naming no lander, no idle
+  `tests/terrain-ring.test.ts`, `tests/view-tier.test.ts`, `tests/frame-probe.test.ts`, `tests/leave-out.test.ts`, `tests/relight.test.ts`, `tests/input-change.test.ts`, `tests/on-foot-report.test.ts`, `tests/on-foot-device.test.ts`, `tests/scene-guard.test.ts` and `tests/e2e/terrain-view.spec.ts` (the ring and tile routes answered by the simulator's own core over a synthetic polar grid, or by real LOLA tiles of IM-2 recorded from the production API at the 20 m tier (VENT-59), `fixtures/terrain-ring-im2/`: first person only, no camera switch, no `.glb` fetched, the caption naming no lander, no idle
   frames, the Sun drawn hidden behind a far wall, none of the view's files in the first load).
 - **Five interface languages** (VENT-35): English (the default and the fallback), Spanish, French, German and Italian,
   each on its own static route (`/`, `/es/`, `/fr/`, `/de/`, `/it/`; `pages/[locale]/index.astro`) with `<html lang>`,
@@ -635,7 +638,10 @@ Every visible change follows `.claude/skills/apple-design/SKILL.md` (vendored fr
   A chunk loaded on demand that is gone after a deploy (`src/pwa/missing-chunk.ts`: only the dynamic import's own fetch
   failure counts; a module that throws while evaluating, or any render or mount error, is a real error; offline the same
   failure is the network's, marked `offline`, and the view says «Offline: this view needs a connection to load» with no
-  update row) dispatches `ventana:missing-chunk`, which shows the row even after a ✕; `ChunkBoundary.tsx` holds «Update the app to open this
+  update row; the on-foot panel and scene load through `loadOnDemandChunk` (`src/pwa/on-demand-chunk.ts`), which calls
+  no `import()` while the browser says it is offline, since a failed module fetch stays failed for the page's life, and
+  the view tries the panel again on `online` with a new `React.lazy`, VENT-59; the globe's chunk is precached, so its
+  `loadChunk` still imports offline) dispatches `ventana:missing-chunk`, which shows the row even after a ✕; `ChunkBoundary.tsx` holds «Update the app to open this
   view» in the view's place instead of unmounting the island, and the scene says `missing` (`terrain/scene/load-scene.ts`;
   VENT-52, `tests/e2e/missing-chunk.spec.ts`). Registered in
   production builds only; e2e specs block service workers except `tests/e2e/pwa.spec.ts`. Emergency kill switch

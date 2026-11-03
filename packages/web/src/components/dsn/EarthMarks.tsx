@@ -26,8 +26,8 @@
 /**
  * The marks on the DSN pictures' Earth: the antennas (the one listening
  * white with a soft glow, the others hollow), the point with the Moon
- * overhead, and the gradients and blur the sphere is drawn with. Colours
- * come from classes (styles/dsn.css), never inline.
+ * overhead, and the gradients, blur and land mask the sphere is drawn
+ * with. Colours come from classes (styles/dsn.css), never inline.
  */
 import type { PictureStation } from '../../dsn/earth-picture';
 
@@ -71,6 +71,35 @@ export interface EarthIds {
   readonly shade: string;
   readonly soft: string;
   readonly clip: string;
+  readonly moat: string;
+}
+
+/** How far around a resting antenna the land dots are cleared, in units. */
+const MOAT_UNITS = 2;
+
+interface MaskProps {
+  readonly id: string;
+  readonly r: number;
+  readonly stations: readonly PictureStation[];
+  readonly u: number;
+}
+
+/**
+ * The land's mask: a moat around each resting antenna in sight, so its
+ * hollow ring, the land dots' size, is not lost among them (VENT-59, V-20).
+ */
+export function LandMask({ id, r, stations, u }: MaskProps) {
+  const resting = stations.filter((s) => s.front && !s.active);
+  return (
+    <mask id={id} maskUnits="userSpaceOnUse" x={0} y={0} width={2 * r}
+      height={2 * r}>
+      <rect className="dsn-mask-keep" width={2 * r} height={2 * r} />
+      {resting.map((s) => (
+        <circle key={s.complex} className="dsn-mask-moat" cx={s.x} cy={s.y}
+          r={MOAT_UNITS * u} />
+      ))}
+    </mask>
+  );
 }
 
 export function Defs({ ids, r }: { ids: EarthIds; r: number }) {

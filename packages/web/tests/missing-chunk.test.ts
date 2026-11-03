@@ -33,6 +33,7 @@ import { createElement } from 'react';
 import { describe, expect, it, vi } from 'vitest';
 import { ChunkBoundary } from '../src/components/ChunkBoundary';
 import { isMissingChunk, loadChunk, MissingChunkError, MISSING_CHUNK_EVENT, onMissingChunk } from '../src/pwa/missing-chunk';
+import { loadOnDemandChunk } from '../src/pwa/on-demand-chunk';
 
 describe('isMissingChunk', () => {
   it.each([
@@ -88,6 +89,13 @@ describe('loadChunk', () => {
     expect(heard).not.toHaveBeenCalled();
   });
 
+  // The globe's chunk is precached, so offline its import is served by the service worker: it must be tried.
+  it('offline, still tries the import: a precached chunk loads without a network', async () => {
+    const load = vi.fn(async () => ({ v: 1 }));
+    await expect(loadChunk(load, new EventTarget(), () => false)).resolves.toEqual({ v: 1 });
+    expect(load).toHaveBeenCalledTimes(1);
+  });
+
   it('online, the same failure is a missing chunk of an older build', async () => {
     const gone = new TypeError('Failed to fetch dynamically imported module: /_astro/x.js');
     const loading = loadChunk(() => Promise.reject(gone), new EventTarget(), () => true);
@@ -100,6 +108,27 @@ describe('loadChunk', () => {
     onMissingChunk(target, heard)();
     target.dispatchEvent(new Event(MISSING_CHUNK_EVENT));
     expect(heard).not.toHaveBeenCalled();
+  });
+});
+
+describe('loadOnDemandChunk', () => {
+  // VENT-59: the browser keeps a module it failed to fetch failed, so an import tried offline never loads again.
+  it('offline, does not try the import at all, so the browser has no failure to keep', async () => {
+    const load = vi.fn(async () => ({ v: 1 }));
+    const loading = loadOnDemandChunk(load, new EventTarget(), () => false);
+    await expect(loading).rejects.toMatchObject({ name: 'MissingChunkError', offline: true });
+    expect(load).not.toHaveBeenCalled();
+  });
+
+  it('online, loads like loadChunk and tells the page of a chunk that is gone', async () => {
+    await expect(loadOnDemandChunk(async () => ({ v: 1 }), new EventTarget(), () => true)).resolves.toEqual({ v: 1 });
+    const target = new EventTarget();
+    const heard = vi.fn();
+    onMissingChunk(target, heard);
+    const gone = new TypeError('Failed to fetch dynamically imported module: /_astro/x.js');
+    const loading = loadOnDemandChunk(() => Promise.reject(gone), target, () => true);
+    await expect(loading).rejects.toMatchObject({ name: 'MissingChunkError', offline: false });
+    expect(heard).toHaveBeenCalledTimes(1);
   });
 });
 

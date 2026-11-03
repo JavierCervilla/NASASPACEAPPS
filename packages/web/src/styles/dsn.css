@@ -71,6 +71,20 @@
   stroke-dasharray: 4 4;
 }
 
+/*
+ * A resting antenna's ring is the land dots' size: the moat clears the
+ * dots around it, so its shape, not a colour, tells it from them (V-20).
+ */
+.dsn-earth__moat { fill: var(--dsn-earth-ocean); }
+
+/*
+ * The land's mask (EarthMarks.tsx): a resting antenna's ring is the land
+ * dots' size, so the dots around it are cleared and its shape, not a
+ * colour, tells it from them (VENT-59, V-20).
+ */
+.dsn-mask-keep { fill: #fff; }
+.dsn-mask-moat { fill: #000; }
+
 .dsn-earth__station {
   fill: rgba(7, 8, 11, 0.6);
   stroke: var(--dsn-station);

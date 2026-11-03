@@ -38,7 +38,7 @@ import { degText } from '../../dsn/clock-text';
 import type { EarthPicture } from '../../dsn/earth-picture';
 import { useI18n } from '../i18n-context';
 import { EarthLabels } from './EarthLabels';
-import { Defs, MoonMark, Station, type EarthIds } from './EarthMarks';
+import { Defs, LandMask, MoonMark, Station, type EarthIds } from './EarthMarks';
 
 interface Props {
   readonly picture: EarthPicture;
@@ -57,15 +57,19 @@ interface SphereProps {
   readonly picture: EarthPicture;
   readonly ids: EarthIds;
   readonly dot: number;
+  /** The marks' unit, which sizes the moats of the land mask. */
+  readonly u: number;
 }
 
-function Sphere({ picture, ids, dot }: SphereProps) {
+function Sphere({ picture, ids, dot, u }: SphereProps) {
   const { r } = picture;
   return (
     <>
       <circle className="dsn-earth__air" cx={r} cy={r} r={r * 1.015} />
       <circle className="dsn-earth__ocean" cx={r} cy={r} r={r} />
-      <path className="dsn-earth__land" d={picture.land} strokeWidth={dot} />
+      <LandMask id={ids.moat} r={r} stations={picture.stations} u={u} />
+      <path className="dsn-earth__land" d={picture.land} strokeWidth={dot}
+        mask={`url(#${ids.moat})`} />
       <path
         className="dsn-earth__night"
         d={picture.night}
@@ -79,7 +83,8 @@ function Sphere({ picture, ids, dot }: SphereProps) {
 
 function useIds(): EarthIds {
   const base = useId().replace(/:/g, '');
-  return { glow: `${base}g`, shade: `${base}s`, soft: `${base}n`, clip: `${base}c` };
+  return { glow: `${base}g`, shade: `${base}s`, soft: `${base}n`,
+    clip: `${base}c`, moat: `${base}m` };
 }
 
 interface DrawingProps {
@@ -97,7 +102,7 @@ function Drawing({ picture, wide, ids }: DrawingProps) {
   return (
     <svg viewBox={`0 0 ${side} ${side}`} overflow="visible" aria-hidden="true">
       <Defs ids={ids} r={r} />
-      <Sphere picture={picture} ids={ids} dot={dot} />
+      <Sphere picture={picture} ids={ids} dot={dot} u={u} />
       {wide ? <path className="dsn-earth__ring" d={picture.ring.d} /> : null}
       {wide && moon.front ? <MoonMark x={moon.x} y={moon.y} u={u} /> : null}
       {picture.stations.map((s) => (

@@ -25,14 +25,15 @@
 
 /**
  * The on-foot scene's chunk, loaded on demand (VENT-34): through
- * `loadChunk`, so a chunk gone after a deploy tells the page (VENT-52)
- * and the view says so instead of «cannot start on this device».
+ * `loadOnDemandChunk`, so a chunk gone after a deploy tells the page
+ * (VENT-52) and the view says so instead of «cannot start on this device».
  */
-import { loadChunk, MissingChunkError } from '../../pwa/missing-chunk';
+import { MissingChunkError } from '../../pwa/missing-chunk';
+import { loadOnDemandChunk } from '../../pwa/on-demand-chunk';
 
 /** Imports the scene's module; `target` hears of a missing chunk. */
 export const loadTerrainScene = (target: EventTarget) =>
-  loadChunk(() => import('./terrain-scene'), target);
+  loadOnDemandChunk(() => import('./terrain-scene'), target);
 
 /**
  * Why the scene did not start: its chunk is gone, it could not be fetched

@@ -25,7 +25,8 @@
 
 /**
  * Where the compass sits on a phone (VENT-50): one gap under the glass top
- * bar and, while the first-time pin hint shows, under that too. The hint
+ * bar and, while the first-time pin hint or «New version ready» shows
+ * (stacked: the row, then the hint, VENT-52), under them too. The hint
  * itself keeps one gap under the bar (components/pin/PinHint.tsx), so the
  * compass needs only the hint's height, not where it was drawn. It stands
  * only while the whole button is above the sheet's top edge: at 200 %
@@ -43,6 +44,18 @@ export const GAP_PX = 8;
 export function compassTop(barBottom: number, hintHeight: number | null) {
   const underBar = barBottom + GAP_PX;
   return hintHeight === null ? underBar : underBar + hintHeight + GAP_PX;
+}
+
+/**
+ * The height of what stacks under the top bar (the «New version ready»
+ * row, then the pin hint, VENT-52) from their heights, a gap between
+ * two; null when none shows (a height of 0 is a hidden row).
+ */
+export function stackHeight(heights: readonly number[]): number | null {
+  const shown = heights.filter((height) => height > 0);
+  if (shown.length === 0) return null;
+  const sum = shown.reduce((total, height) => total + height, 0);
+  return sum + GAP_PX * (shown.length - 1);
 }
 
 /**

@@ -24,10 +24,12 @@
  */
 
 /*
- * «New version ready» (VENT-52, components/UpdateNotice.tsx): a glass row
+ * «New version ready» (VENT-52, components/UpdateNotice.tsx; option D, the
+ * human's choice): the first-time pin hint's look (pin.css `.pin-hint`)
  * in the offline notice's slot (offline.css), under the header (desktop)
  * or the top bar (phones); `--top` is the lowest bar's bottom, measured.
- * Neutral, never a signal colour; both buttons 44 px. While hidden only
+ * The whole row but the ✕ is the update; the ✕ is the hint's own
+ * (`.pin-hint__close`). Neutral, never a signal colour. While hidden only
  * its empty live region stays, with no box and no taps.
  */
 .update-notice {
@@ -35,11 +37,11 @@
   top: var(--top, calc(env(safe-area-inset-top, 0px) + 84px));
   right: 0;
   left: 0;
-  /* Over the first-time pin hint (6), which shares the phone's slot. */
+  /* Over the first-time pin hint (6), which stacks under it. */
   z-index: 7;
   display: flex;
   align-items: center;
-  gap: 4px;
+  gap: 10px;
   box-sizing: border-box;
   /* Centred at its own width: a box from 50% would wrap at half the view. */
   width: fit-content;
@@ -48,85 +50,94 @@
   pointer-events: none;
 }
 
+/* The hint's material, radius and paddings (pin.css). */
 .update-notice[data-shown] {
-  padding: 4px 4px 4px 16px;
-  border-radius: 26px;
-  background: var(--chrome);
-  backdrop-filter: blur(20px) saturate(180%);
+  padding: 4px;
+  border-radius: 22px;
+  background: var(--surface);
+  backdrop-filter: blur(20px);
   box-shadow: inset 0 0 0 1px var(--surface-edge);
+  color: var(--text);
   pointer-events: auto;
 }
 
-.update-notice__text {
-  min-width: 0;
-  margin: 0;
-  font-size: 0.8125rem;
-  line-height: 1.35;
-  font-weight: 600;
-  color: var(--text);
-  display: -webkit-box;
-  -webkit-box-orient: vertical;
-  -webkit-line-clamp: 2;
-  line-clamp: 2;
+/* Said once to a screen reader; the row's button shows the words. */
+.update-notice__live {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
   overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
 }
 
-.update-notice__update,
-.update-notice__dismiss {
-  flex: none;
+.update-notice__update {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
   min-height: 44px;
+  padding: 0 6px 0 10px;
   border: 0;
+  border-radius: 18px;
+  background: none;
+  color: inherit;
   font: inherit;
+  text-align: start;
   cursor: pointer;
   -webkit-tap-highlight-color: transparent;
 }
 
-.update-notice__update {
-  margin-left: 8px;
-  padding: 0 16px;
-  border-radius: 22px;
-  background: var(--text);
-  color: var(--bg);
-  font-size: 0.8125rem;
+.update-notice__mark {
+  flex: none;
+}
+
+.update-notice__lines {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  line-height: 1.25;
+}
+
+.update-notice__title {
+  font-size: 0.9375rem;
   font-weight: 600;
 }
 
-.update-notice__dismiss {
-  display: grid;
-  place-items: center;
-  width: 44px;
-  padding: 0;
-  border-radius: 50%;
-  background: none;
+.update-notice__how {
+  font-size: 0.8125rem;
   color: var(--text-muted);
 }
 
-.update-notice__update:active,
-.update-notice__dismiss:active {
-  opacity: 0.7;
-}
-
-.update-notice__update:focus-visible,
-.update-notice__dismiss:focus-visible {
+.update-notice__update:focus-visible {
   outline: 2px solid var(--marker);
   outline-offset: 2px;
 }
 
-/* It arrives as a material: blur and a short drop together. */
+/* Response on the press (apple-design §1). */
+.update-notice__update:active {
+  transform: scale(0.97);
+  transition: transform var(--dur-press) ease-out;
+}
+
+/* It arrives as a material: blur, scale and opacity together. */
 @media (prefers-reduced-motion: no-preference) {
   .update-notice[data-shown] {
     transition:
       opacity 0.3s ease-out,
-      translate 0.3s ease-out;
+      scale 0.3s ease-out,
+      filter 0.3s ease-out;
 
     @starting-style {
       opacity: 0;
-      translate: 0 -8px;
+      scale: 0.96;
+      filter: blur(6px);
     }
   }
 }
 
-/* Reduced motion: a plain fade, no movement. */
+/* Reduced motion: a plain fade, and no press scale. */
 @media (prefers-reduced-motion: reduce) {
   .update-notice[data-shown] {
     transition: opacity 0.2s linear;
@@ -135,17 +146,22 @@
       opacity: 0;
     }
   }
+
+  .update-notice__update:active {
+    transform: none;
+  }
 }
 
+/* As the hint handles them (pin.css). */
 @media (prefers-reduced-transparency: reduce) {
   .update-notice[data-shown] {
     backdrop-filter: none;
-    background: var(--bg);
+    background: var(--surface-solid, #15161b);
   }
 }
 
 @media (prefers-contrast: more) {
   .update-notice[data-shown] {
-    box-shadow: inset 0 0 0 1px var(--text);
+    border: 1px solid var(--surface-edge);
   }
 }

@@ -31,7 +31,7 @@
 import type { PerspectiveCamera } from 'three';
 import { describe, expect, it, vi } from 'vitest';
 import { compassName } from '../src/components/compass/compass-name';
-import { compassCovered, compassTop } from '../src/components/compass/compass-top';
+import { compassCovered, compassTop, stackHeight } from '../src/components/compass/compass-top';
 import { earthMark, sectorOf } from '../src/globe/earth-mark';
 import { cameraPosition, SOUTH_POLE_VIEW, type OrbitPose } from '../src/globe/framing';
 import { AIM_MARGIN_PX, offsetForAngle, type AimView } from '../src/globe/site-aim';
@@ -215,5 +215,22 @@ describe('the framer\'s way home', () => {
     // The framer does not take its own landing for a move of the user's: a moved band re-frames.
     moveBand({ top: 81, bottom: 230 });
     expect(landsAt(SHIV_SHAKTI.lat, poseOf(orbit).latDeg)).toBeCloseTo(230 - AIM_MARGIN_PX, 6);
+  });
+});
+
+describe('stackHeight (VENT-52)', () => {
+  it('is null when nothing stacks under the bar (a hidden row is 0 px high)', () => {
+    expect(stackHeight([])).toBeNull();
+    expect(stackHeight([0])).toBeNull();
+  });
+
+  it('is one item’s height, or the row and the hint with a gap between', () => {
+    expect(stackHeight([0, 52])).toBe(52);
+    expect(stackHeight([52, 0])).toBe(52);
+    expect(stackHeight([52, 44])).toBe(52 + 8 + 44);
+  });
+
+  it('puts the compass under the stack', () => {
+    expect(compassTop(100, stackHeight([52, 44]))).toBe(100 + 8 + 104 + 8);
   });
 });

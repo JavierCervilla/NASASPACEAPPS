@@ -28,6 +28,7 @@
  * the browser asks to save data, nothing is downloaded until the visitor
  * asks for the globe (`load`).
  */
+import { loadChunk } from '../pwa/missing-chunk';
 import type { GlobeOptions } from './globe';
 
 /** How the start went: drawing, no WebGL, or waiting to be asked. */
@@ -56,7 +57,7 @@ async function mount(
   cancelled: () => boolean,
 ): Promise<Outcome> {
   try {
-    const { mountGlobe } = await import('./globe');
+    const { mountGlobe } = await loadChunk(() => import('./globe'), window);
     const dispose = cancelled() ? null : mountGlobe(host, options);
     return { dispose, status: { kind: 'ready' } };
   } catch (error) {

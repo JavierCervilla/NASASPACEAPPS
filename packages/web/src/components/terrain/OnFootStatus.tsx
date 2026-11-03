@@ -58,6 +58,7 @@ const TILE_WORDS: Readonly<Record<RingState['kind'], TextKey | null>> = {
 function wordsOf({ located, tile, scene }: Props): TextKey | null {
   if (!located) return 'onFoot.noPoint';
   if (scene === 'lost') return 'onFoot.unavailable';
+  if (scene === 'missing') return 'update.view';
   if (tile.kind !== 'ready') return TILE_WORDS[tile.kind];
   if (scene === 'failed') return 'onFoot.noWebgl';
   return scene === 'loading' ? 'onFoot.loading' : null;

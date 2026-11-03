@@ -3,6 +3,13 @@
 ## [Sin publicar]
 
 ### Cambiado
+- La vista 3D «Horizon» es solo en primera persona (VENT-54, decisión de Javier): abre con los ojos a 2 m del suelo,
+  mirando al Sol si está cerca del cielo y, si no, a la Tierra. Se quitan el astronauta, los dos módulos de aterrizaje
+  (el del Apolo y el genérico) y el selector «Third person | First person»; el pie ya solo dice «Fine detail
+  illustrative · relief LOLA» y «Earth: NASA Blue Marble». La vista no descarga ningún modelo (antes, 3,6 MB al abrirla),
+  el código de Three.js que el globo carga al arrancar pesa 11 kB menos comprimido y la escena 15,6 kB menos, y en el
+  móvil dibuja menos (de 49 a 32 llamadas y de 431 000 a 362 000 triángulos en IM-2). Los enlaces antiguos con
+  `?onfoot=astronaut` o `lander` siguen abriendo la vista.
 - El astronauta de la vista 3D «Horizon» es ahora una figura con esqueleto (VENT-34): un traje EVA generado con Meshy,
   de 1,91 m, sin banderas, logos ni insignias (se borraron del mapa de color las dos que el generador pintó por su
   cuenta), que sustituye al modelo de NASA 3D Resources y su textura. Se carga con `GLTFLoader` solo cuando se abre la
@@ -38,6 +45,22 @@
   renderizado por software, de 38 fotogramas a 6).
 
 ### Arreglado
+- Tras un despliegue, una página abierta que no puede cargar una vista bajo demanda (Horizon, su escena 3D, el globo o
+  el módulo de aterrizaje) ya no se queda en blanco (VENT-52): el hueco de la vista dice «Update the app to open this
+  view» y aparece el aviso de versión nueva. Sin conexión, la misma vista dice «Offline: this view needs a connection to
+  load» y no ofrece una versión nueva que no existe.
+- Vista 3D (VENT-52): cambiar de idioma con la vista abierta ya no cuenta como una página caída (no baja la calidad); al
+  llegar con el tabulador se ve un anillo de foco sobre la escena; en el móvil con el texto al 200 %, el selector «Third
+  person | First person» queda bajo la barra superior y cabe en la pantalla, y los rótulos de distancia y de cresta ya no
+  se pisan (el que no cabe se oculta).
+- En el móvil, la hoja en su posición baja (peek) sube lo que haga falta para que su cabecera (el nombre, «Save» en un
+  punto propio y las coordenadas) quede 12 px por encima de la barra de pestañas, con cualquier tamaño de texto e idioma
+  (VENT-52); antes, con un punto propio o al 200 %, la barra tapaba «Save» y la línea del punto.
+- Globo y pin (VENT-52): mantener pulsado el globo ya no levanta el pin bajo un dedo que lo estaba girando cuando la
+  página iba cargada; el globo oculto ya no sube texturas a la GPU; las etiquetas de la retícula se apartan también de
+  los pines de los sitios guardados; y las cinco etiquetas del mapa polar (0°, 90° E, 180°, 90° O, 85° S) vuelven a su
+  sitio alrededor del disco, legibles también en tema claro: desde VENT-50 se amontonaban en su esquina con el estilo
+  del globo.
 - Vista 3D en el móvil (VENT-51): si se pierde el contexto gráfico, el aviso «Terrain unavailable right now» con «Try
   again» y «Copy report» aparece en la franja libre entre la barra superior y la hoja, esté la hoja donde esté (antes
   quedaba debajo de la hoja a media altura); si no cabe (texto al 200 %), la hoja baja a su posición mínima una vez y el
@@ -98,6 +121,11 @@
     paren mientras comprueba un fichero, y la imagen rechaza `/data//` y `/data/./` como rutas de montaje.
 
 ### Añadido
+- Aviso de versión nueva (VENT-52): cuando la app instalada (o cualquier página con el service worker) recibe una
+  versión nueva, una fila con el aspecto de la pista del pin dice «New version ready» y debajo «Tap to update» (o «Click to
+  update» con ratón); tocarla recarga la misma dirección (sitio, punto y vista) y su ✕ la oculta hasta la próxima vez que
+  se abra la app. Se comprueba al abrir la app y cada vez que vuelve a primer plano; la pista del pin y la brújula se
+  colocan debajo de ella. Javier eligió este diseño entre cuatro maquetas, en lugar de la píldora blanca «Update».
 - Referencias de orientación en el globo (VENT-50). Una **brújula** de cristal de 48 px en la esquina superior derecha
   del globo (en el móvil, bajo la barra superior y bajo la pista del primer uso mientras se ve): su aguja señala siempre
   el norte, que el globo mantiene arriba, y una pequeña marca de la Tierra recorre su anillo hacia donde está la Tierra

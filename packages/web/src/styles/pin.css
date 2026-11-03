@@ -306,7 +306,8 @@
 /* The first-time hint: one line over the Moon, then gone for good. */
 .pin-hint {
   position: absolute;
-  top: 20px;
+  /* Under «New version ready» while it shows (update.css). */
+  top: calc(20px + var(--update-row-space, 0px));
   left: 50%;
   z-index: 6;
   display: flex;
@@ -425,7 +426,7 @@
 @media (max-width: 767px) {
   .pin-hint {
     position: fixed;
-    top: var(--top, 100px);
+    top: calc(var(--top, 100px) + var(--update-row-space, 0px));
     left: 12px;
     right: 12px;
     z-index: 4;

@@ -48,6 +48,8 @@
   position: relative;
   min-height: 40px;
   border-radius: 10px;
+  /* Off the mark a segment shows the track, not the browser's button face. */
+  background: transparent;
   color: var(--text);
   font-weight: 600;
 }

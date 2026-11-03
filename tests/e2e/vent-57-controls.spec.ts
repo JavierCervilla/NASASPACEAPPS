@@ -124,6 +124,13 @@ for (const scheme of ['dark', 'light'] as const) {
       const pressed = await style(regions.locator('button[aria-pressed="true"]'));
       expect(pressed.background).toBe(mark);
       expect(pressed.color).toBe(text);
+      // Only the chosen segment wears the mark: the others show the track, not the browser's button face.
+      const offMark = [
+        regions.locator('button[aria-pressed="false"]').first(),
+        source.locator('[aria-checked="false"]').first(),
+        tabs.locator(':not([aria-current="page"])').first(),
+      ];
+      for (const segment of offMark) expect((await style(segment)).background).toBe('rgba(0, 0, 0, 0)');
     });
 
     test('Play is a grey circle like the arrows, «Now» the secondary button, dimmed while live (V-07, C-17)', async ({ page }) => {

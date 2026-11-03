@@ -119,6 +119,10 @@ describe('C-16: one segmented control', () => {
     expect(declared(segment, 'font-weight')).toBe('600');
   });
 
+  it('a segment off the mark is transparent on the track, never the browser\'s button face', () => {
+    expect(declared(oneRule(SEGMENTS), 'background')).toBe('transparent');
+  });
+
   it('the mark: #636366 in dark, white with a shadow in light', () => {
     const mark = oneRule(MARKS);
     expect(declared(mark, 'background')).toBe('var(--segment-on)');

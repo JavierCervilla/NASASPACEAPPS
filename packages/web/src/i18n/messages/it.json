@@ -164,6 +164,7 @@
   "picker.selected": "Selezionato",
   "picker.empty": "Nessun sito corrisponde.",
   "picker.list": "Siti",
+  "settings.title": "Impostazioni",
   "site.change": "Cambia sito, ora {name}",
   "site.changeComputed": "Cambia sito, ora {name}, calcolato",
   "site.choose": "Scegli un sito",

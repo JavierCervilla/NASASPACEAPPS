@@ -160,6 +160,7 @@
   "picker.selected": "Ausgewählt",
   "picker.empty": "Keine passenden Landeplätze.",
   "picker.list": "Landeplätze",
+  "settings.title": "Einstellungen",
   "site.change": "Landeplatz wechseln, aktuell {name}",
   "site.changeComputed": "Landeplatz wechseln, aktuell {name}, berechnet",
   "site.choose": "Landeplatz wählen",

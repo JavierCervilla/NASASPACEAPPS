@@ -164,6 +164,7 @@
   "picker.selected": "Seleccionado",
   "picker.empty": "Ningún lugar coincide.",
   "picker.list": "Lugares",
+  "settings.title": "Ajustes",
   "site.change": "Cambiar de lugar; ahora {name}",
   "site.changeComputed": "Cambiar de lugar; ahora {name}, calculado",
   "site.choose": "Elige un lugar",

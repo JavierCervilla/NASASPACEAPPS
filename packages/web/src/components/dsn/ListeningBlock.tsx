@@ -24,10 +24,11 @@
  */
 
 /**
- * The desktop site card's «Listening on Earth» block (VENT-7, canvas
- * «DsnA»): the small Earth as the Moon sees it beside the complex that
- * listens, the Moon over it and how long it keeps it, and who comes next.
- * Without a link it says «No link» first, why, and who would listen.
+ * The desktop site card's «Listening on Earth» row (VENT-7, canvas
+ * «DsnA»; folded under the horizon strip by VENT-57, `CardSky.tsx`): the
+ * small Earth as the Moon sees it beside the complex that listens, the
+ * Moon over it and how long it keeps it, and who comes next. Without a
+ * link it says «No link» first, why, and who would listen.
  */
 import { formatInstant } from '../../calendar/instant-format';
 import { useI18n } from '../i18n-context';
@@ -61,7 +62,7 @@ function Lines({ dsn }: { readonly dsn: Dsn }) {
  * start-up (`useDsn`), so the card does not jump when it comes.
  */
 export function ListeningWaiting() {
-  return <div className="card-block dsn-block dsn-block--waiting" aria-hidden="true" />;
+  return <div className="dsn-block dsn-block--waiting" aria-hidden="true" />;
 }
 
 export function ListeningBlock({ dsn }: { readonly dsn: Dsn }) {
@@ -71,7 +72,7 @@ export function ListeningBlock({ dsn }: { readonly dsn: Dsn }) {
   const label = i18n.t('dsn.earthLabel', { when: formatInstant(i18n, model.atMs) });
   const showNext = text.next && text.kind !== 'noLink';
   return (
-    <section className="card-block dsn-block" data-kind={text.kind} aria-label={i18n.t('widgets.listening')}>
+    <section className="dsn-block" data-kind={text.kind} aria-label={i18n.t('widgets.listening')}>
       <p className="dsn-block__head">
         <span>{i18n.t('widgets.listening')}</span>
         <span className="dsn-block__tag">{i18n.t('view.dsn')}</span>

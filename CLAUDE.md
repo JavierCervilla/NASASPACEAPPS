@@ -658,8 +658,10 @@ Every visible change follows `.claude/skills/apple-design/SKILL.md` (vendored fr
   A chunk loaded on demand that is gone after a deploy (`src/pwa/missing-chunk.ts`: only the dynamic import's own fetch
   failure counts; a module that throws while evaluating, or any render or mount error, is a real error; offline the same
   failure is the network's, marked `offline`, and the view says «Offline: this view needs a connection to load» with no
-  update row; `loadChunk` calls no `import()` while the browser says it is offline, since a failed module fetch stays
-  failed for the page's life, and the view tries the panel again on `online` with a new `React.lazy`, VENT-59) dispatches `ventana:missing-chunk`, which shows the row even after a ✕; `ChunkBoundary.tsx` holds «Update the app to open this
+  update row; the on-foot panel and scene load through `loadOnDemandChunk` (`src/pwa/on-demand-chunk.ts`), which calls
+  no `import()` while the browser says it is offline, since a failed module fetch stays failed for the page's life, and
+  the view tries the panel again on `online` with a new `React.lazy`, VENT-59; the globe's chunk is precached, so its
+  `loadChunk` still imports offline) dispatches `ventana:missing-chunk`, which shows the row even after a ✕; `ChunkBoundary.tsx` holds «Update the app to open this
   view» in the view's place instead of unmounting the island, and the scene says `missing` (`terrain/scene/load-scene.ts`;
   VENT-52, `tests/e2e/missing-chunk.spec.ts`). Registered in
   production builds only; e2e specs block service workers except `tests/e2e/pwa.spec.ts`. Emergency kill switch

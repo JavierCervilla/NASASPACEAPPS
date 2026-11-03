@@ -575,6 +575,26 @@ Every visible change follows `.claude/skills/apple-design/SKILL.md` (vendored fr
   (`compress()` in `packages/server/src/app.ts`; base64 floats shrink about 26 %). Held by `tests/terrain-view.test.ts`,
   `tests/terrain-ring.test.ts`, `tests/view-tier.test.ts`, `tests/frame-probe.test.ts`, `tests/leave-out.test.ts`, `tests/relight.test.ts`, `tests/input-change.test.ts`, `tests/on-foot-report.test.ts`, `tests/on-foot-device.test.ts`, `tests/scene-guard.test.ts` and `tests/e2e/terrain-view.spec.ts` (the ring and tile routes answered by the simulator's own core over a synthetic polar grid, or by real LOLA tiles of IM-2 recorded from the production API at the 20 m tier (VENT-59), `fixtures/terrain-ring-im2/`: first person only, no camera switch, no `.glb` fetched, the caption naming no lander, no idle
   frames, the Sun drawn hidden behind a far wall, none of the view's files in the first load).
+  The loader (VENT-60, the human's verdict B→A on the canvas): from the tile list to the scene's first frame, in the
+  band the scene frames. `runRing` tells a progress store how the tiles come (`ring/ring-progress.ts`, immutable:
+  each wanted tile waiting, landed with its order of arrival and heights, or missed when its level settles;
+  `progress-store.ts`, `ring-wanted.ts`), and the panel's loader (`components/terrain/loader/`, styles in
+  `styles/on-foot-loader.css`, on demand) reads it: «Finding the terrain tiles», then the plan from above while the
+  18 near tiles (levels 0 and 1) land (`LoaderPlan.tsx`: a round scope, heading up, each tile placed by its own corners
+  through `sampleDirection` (`terrain/loader/plan-geometry.ts`) and shaded once from its own heights in a job of a
+  slicer (`hillshade.ts`, `use-tile-shader.ts`), dashed while waiting, a short flash when it lands, zoomed out once
+  the 8 km tiles start; north and the real Sun and Earth on the rim; «Terrain · n of 18 tiles» with a determinate
+  bar), then, with the near tiles in, the plan lies down toward the heading (a CSS tilt) and the site's skyline takes
+  over (`LoaderSkyline.tsx`: the horizon profile drawn with the scene's own camera, `skyline-camera.ts`, held to
+  three's PerspectiveCamera by `tests/vent-60-loader.test.ts`; `VIEW_FOV` in `terrain/view-fov.ts` is shared with
+  `stage.ts`; seeded stars, the dashed level, a compositor glint) with «Shaping the ground». The scene's first frame
+  (`SceneHooks.onDrawn`, `drawn` from `useTerrainScene`) hands over: the scene fades in under the skyline and the
+  line goes after it; the loader unmounts after `HANDOVER_MS` (1.2 s), then the caption shows and «Far relief · n of
+  18 tiles» (`FarChip.tsx`, not a live region) until «Far relief · 32 and 128 km in», and goes. Reduced motion: plain
+  fades. A failure keeps the skyline and the sky dimmed under the notice, its words centred in the ground when they
+  fit (`data-words`). The loader's picture is chosen in one place by the view's tier (`loader-picture.ts`: B→A on
+  every tier today). No WebGL and no new request; every move is a transform or an opacity. Held by
+  `tests/vent-60-loader.test.ts` and `tests/e2e/vent-60-loader.spec.ts`.
 - **Five interface languages** (VENT-35): English (the default and the fallback), Spanish, French, German and Italian,
   each on its own static route (`/`, `/es/`, `/fr/`, `/de/`, `/it/`; `pages/[locale]/index.astro`) with `<html lang>`,
   `hreflang` links and `x-default` → `/`. This replaces the Language rule below for the interface only: every word a
@@ -617,7 +637,7 @@ Every visible change follows `.claude/skills/apple-design/SKILL.md` (vendored fr
   `favicon.ico`, `favicon.svg` and the root `apple-touch-icon.png`), fetched past the HTTP cache (`cache: 'reload'`),
   and the build's digest over every file the worker may keep, which names the static cache (`ventana-static-<digest>`),
   so a deploy drops the old one. The install set has a hard budget of 5 MB (`PRECACHE_BUDGET`, human decision
-  2026-10-31): the build logs the precache total and fails over it (4.75 MB with VENT-55's press, presence, rail and scroll-fade sheets; 4.74 MB with VENT-54, no models; 4.78 MB with VENT-52's update row; 4.77 MB with VENT-50's compass and graticule; 4.75 MB with VENT-46's rings, landers and rigged astronaut, their files left out; 4.70 MB with VENT-34's on-foot view, its files left out; 4.68 MB with VENT-40's horizon strip; 4.63 MB with VENT-39's shadow notes; 4.57 MB with VENT-37's saved sites; 4.52 MB when it left the astronaut's sprites out, 4.60 MB with them). The 4K and 8K maps, and any build file not
+  2026-10-31): the build logs the precache total and fails over it (4.76 MB with VENT-60's loader, its styles on demand; 4.75 MB with VENT-55's press, presence, rail and scroll-fade sheets; 4.74 MB with VENT-54, no models; 4.78 MB with VENT-52's update row; 4.77 MB with VENT-50's compass and graticule; 4.75 MB with VENT-46's rings, landers and rigged astronaut, their files left out; 4.70 MB with VENT-34's on-foot view, its files left out; 4.68 MB with VENT-40's horizon strip; 4.63 MB with VENT-39's shadow notes; 4.57 MB with VENT-37's saved sites; 4.52 MB when it left the astronaut's sprites out, 4.60 MB with them). The 4K and 8K maps, and any build file not
   precached, are kept cache first the first time the page fetches them. Under Save-Data the worker is not registered
   at all. Pages and API GETs are network first,
   build files cache first; the network's answer always wins (a copy that cannot be kept, a full quota, is skipped), only

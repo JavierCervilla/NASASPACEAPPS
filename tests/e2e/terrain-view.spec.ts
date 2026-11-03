@@ -177,6 +177,47 @@ async function idle(page: Page, at = host(page)): Promise<number> {
   return last;
 }
 
+const heading = async (page: Page): Promise<number> =>
+  Number(/View heading (\d+)°/.exec((await host(page).getAttribute('aria-describedby').then((id) =>
+    page.locator(`[id="${id ?? ''}"]`).textContent())) ?? '')?.[1]);
+
+/**
+ * A swipe of 10 moves of `stepPx` to the right, `gapMs` apart, across the view's middle, then the release. The pointer
+ * events are dispatched with those times as their `timeStamp`: in software GL each move draws a frame of about 300 ms
+ * on the main thread, so a real mouse's moves arrive 300 ms apart and no swipe is ever fast. Returns how far the
+ * heading has gone past where the drag alone left it (a swipe across the whole width is 180°, look-input.ts), in
+ * degrees from -180 to 180, and the coast's predicted travel (look-coast.ts: speed over the decay rate, -ln 0.995 per
+ * ms), which it reaches within the 0.4° a coast leaves when it stops at 2°/s.
+ */
+async function swipe(page: Page, { stepPx, gapMs }: { stepPx: number; gapMs: number }) {
+  const before = await heading(page);
+  const width = await host(page).evaluate((el) => el.clientWidth);
+  await host(page).evaluate((el, { stepPx, gapMs }) => {
+    const box = el.getBoundingClientRect();
+    const [x0, y, t0] = [box.left + box.width / 2 - 5 * stepPx, box.top + box.height / 2, performance.now()];
+    const send = (type: string, i: number): void => {
+      const event = new PointerEvent(type, { pointerId: 1, pointerType: 'mouse', isPrimary: true, button: 0, buttons: 1,
+        clientX: x0 + i * stepPx, clientY: y, bubbles: true, cancelable: true });
+      Object.defineProperty(event, 'timeStamp', { value: t0 + i * gapMs });
+      el.dispatchEvent(event);
+    };
+    send('pointerdown', 0);
+    for (let i = 1; i <= 10; i++) send('pointermove', i);
+    send('pointerup', 10);
+  }, { stepPx, gapMs });
+  const dragged = before - (10 * stepPx * 180) / width;
+  const past = async () => ((((await heading(page)) - dragged + 180) % 360) + 360) % 360 - 180;
+  const predicted = -((stepPx / gapMs) * 1000 * (180 / width)) / (-Math.log(0.995) * 1000);
+  return { past, predicted };
+}
+
+/** Waits until the view draws no frame for 1.5 s (a coast in software GL draws about one a second). */
+async function atRest(page: Page): Promise<void> {
+  const still = await idle(page);
+  await page.waitForTimeout(1500);
+  expect(await frames(page)).toBe(still);
+}
+
 /** The brightest channel around «x,y» on the screen, 0 to 255. */
 async function brightness(page: Page, at: string): Promise<number> {
   const box = await host(page).boundingBox();
@@ -247,6 +288,37 @@ test.describe('desktop, 1440x900', () => {
     await page.keyboard.press('ArrowLeft');
     await expect.poll(() => frames(page)).toBeGreaterThan(settledAt);
     await expect(host(page)).toHaveAccessibleDescription(/View heading 334°, to the north-west\. .*The Sun is to the north, above the terrain\./);
+  });
+
+  // VENT-59 (qa of VENT-54): the coast had no e2e. A fast swipe carries the heading on past where the finger let go
+  // and the view draws until it stops; a slow drag and a swipe under reduced motion stop where the finger did.
+  // A coast steps at most 50 ms a frame (globe/loop.ts) and a frame costs about 300 ms in software GL: the swipes are
+  // just fast enough to coast (about 50°/s, 13 frames) and the far rings are left out, so the frames stay few and cheap.
+  // The tier is forced, so no frame probe steps it down and mounts the view again mid-coast.
+  test('a fast swipe coasts on as far as its speed carries and comes to rest; a slow drag does not', async ({ page }) => {
+    await open(page, { path: `./${POINT}&quality=low&onfoot=far#horizon` });
+    await settled(page);
+    await idle(page);
+    const fast = await swipe(page, { stepPx: 3, gapMs: 10 });
+    expect(fast.predicted).toBeLessThan(-3);
+    // As idle() waits: a frame can take longer than its 600 ms polls, so the coast is waited out by where it ends.
+    await expect.poll(async () => Math.abs((await fast.past()) - fast.predicted), { intervals: [600], timeout: 15_000 })
+      .toBeLessThanOrEqual(1.5);
+    await atRest(page);
+    expect(Math.abs((await fast.past()) - fast.predicted)).toBeLessThanOrEqual(1.5);
+    const slow = await swipe(page, { stepPx: 2, gapMs: 50 });
+    await atRest(page);
+    expect(Math.abs(await slow.past())).toBeLessThanOrEqual(1);
+  });
+
+  test('a fast swipe does not coast under reduced motion', async ({ page }) => {
+    await page.emulateMedia({ reducedMotion: 'reduce' });
+    await open(page, { path: `./${POINT}&quality=low&onfoot=far#horizon` });
+    await settled(page);
+    await idle(page);
+    const fast = await swipe(page, { stepPx: 3, gapMs: 10 });
+    await atRest(page);
+    expect(Math.abs(await fast.past())).toBeLessThanOrEqual(1);
   });
 
   // VENT-52: the host's ring was an inset box-shadow, painted under its own canvas, so focus showed nothing.
@@ -449,8 +521,10 @@ test.describe('desktop, 1440x900', () => {
     await open(page, { path: './?site=im2-athena&quality=high#horizon', real: RIDGE_AT });
     await settled(page);
     await idle(page);
-    await expect(view(page)).toContainText('Fine detail illustrative · relief LOLA 80 m');
-    await expect(host(page)).toHaveAccessibleDescription(/The Sun is to the .*, above the terrain\./);
+    await expect(view(page)).toContainText('Fine detail illustrative · relief LOLA 20 m');
+    // VENT-59: the Sun's own sentence; `.*` ran on into the Earth's and passed while a ridge hid the Sun.
+    await expect(host(page)).toHaveAccessibleDescription(/The Sun is to the [a-z-]+, above the terrain\./);
+    await expect(host(page)).not.toHaveAccessibleDescription(/hides the Sun/);
     await firstPersonOnly(page);
     await shot(page, 'desktop-first');
     await shotsAround(page, 'desktop-first-round');
@@ -551,6 +625,29 @@ test.describe('phone, 390x844', () => {
     const overlapping = pairs.filter(([a, b]) => a.left < b.right && b.left < a.right && a.top < b.bottom && b.top < a.bottom);
     expect(overlapping).toEqual([]);
     await shot(page, 'phone-200-first');
+  });
+
+  // VENT-59 (qa of VENT-52 and VENT-54): at 200 % text the peek sheet rises for its head (sheet-peek.ts), but the
+  // caption kept its place over the usual 156 px peek and the sheet cut it.
+  test('at 200 % text the caption stays whole between the top bar and the risen peek sheet, over the ground', async ({ page }) => {
+    await open(page, { path: './?site=im2-athena', real: RIDGE_AT });
+    await page.getByRole('navigation', { name: 'Views' }).getByRole('button', { name: 'Horizon' }).click();
+    await settled(page);
+    await page.evaluate(() => {
+      document.documentElement.style.fontSize = '200%';
+    });
+    const sheet = page.locator('.sheet');
+    await expect(sheet).toHaveAttribute('data-detent', 'peek');
+    await idle(page);
+    const box = (selector: string) => page.locator(selector).first().evaluate((el) => {
+      const { top, bottom } = el.getBoundingClientRect();
+      return { top, bottom };
+    });
+    const [bar, caption, edge] = [await box('.phone-bar'), await box('.on-foot__caption'), await box('.sheet')];
+    expect(edge.top).toBeLessThan(844 - 156);
+    expect(caption.bottom).toBeLessThanOrEqual(edge.top);
+    expect(caption.top).toBeGreaterThanOrEqual(bar.bottom);
+    await shot(page, 'phone-200-caption');
   });
 
   // VENT-51 A1: the phone stage fills the screen, so a notice centred on it sat under the sheet at half.

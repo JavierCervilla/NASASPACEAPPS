@@ -3,6 +3,14 @@
 ## [Sin publicar]
 
 ### Cambiado
+- Fix forward 9 (VENT-59):
+  - La vista 3D y la ficha dicen lo mismo sobre el Sol en IM-2: manda el perfil del horizonte, el mismo que usa la
+    ficha, y la cresta cercana solo dice qué lo tapa (decisión de Javier). El relieve de prueba de IM-2 se ha vuelto a
+    grabar desde producción con LOLA a 20 m.
+  - Al 200 % de texto en el móvil, el pie de la vista 3D ya no queda cortado por la hoja.
+  - La vista 3D abierta sin conexión carga sola cuando vuelve la red, sin recargar la página.
+  - En la vista DSN, una antena en reposo (como Goldstone en el limbo) queda en un hueco libre de puntos de tierra y ya
+    no se confunde con ellos.
 - Cambios de forma de la auditoría de diseño, las ocho variantes que Javier eligió en el lienzo (VENT-57):
   - Un solo material: la brújula, la lectura del pin al arrastrarlo, la leyenda de capas y los avisos comparten el
     esmerilado del aviso del pin (la leyenda deja el Liquid glass).

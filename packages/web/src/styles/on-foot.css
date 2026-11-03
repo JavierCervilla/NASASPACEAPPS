@@ -112,14 +112,22 @@
  * the sheet at peek (156 px, src/sheet/), low, just over the sheet's edge.
  * The bar grows with the text (200 %): the band keeps 12 px under its
  * measured bottom, the band's top (use-status-band.ts), and never rises
- * above its place at the default size (VENT-52).
+ * above its place at the default size (VENT-52). The sheet rises too (its
+ * head at peek, sheet-peek.ts): the band keeps 10 px over its measured
+ * edge, and what the sheet leaves no room for is clipped, not drawn under
+ * the glass (VENT-59).
  */
 .on-foot--phone .on-foot__top {
   top: max(
     calc(env(safe-area-inset-top) + 108px),
     calc(var(--on-foot-band-top, 0px) + 12px)
   );
-  bottom: 166px;
+  bottom: max(
+    166px,
+    calc(100% - var(--on-foot-band-top, 0px)
+      - var(--on-foot-band-height, 100%) + 10px)
+  );
+  overflow: hidden;
   flex-direction: column;
   flex-wrap: nowrap;
   align-items: stretch;

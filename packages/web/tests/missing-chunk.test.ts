@@ -88,6 +88,14 @@ describe('loadChunk', () => {
     expect(heard).not.toHaveBeenCalled();
   });
 
+  // VENT-59: the browser keeps a module it failed to fetch failed, so an import tried offline never loads again.
+  it('offline, does not try the import at all, so the browser has no failure to keep', async () => {
+    const load = vi.fn(async () => ({ v: 1 }));
+    const loading = loadChunk(load, new EventTarget(), () => false);
+    await expect(loading).rejects.toMatchObject({ name: 'MissingChunkError', offline: true });
+    expect(load).not.toHaveBeenCalled();
+  });
+
   it('online, the same failure is a missing chunk of an older build', async () => {
     const gone = new TypeError('Failed to fetch dynamically imported module: /_astro/x.js');
     const loading = loadChunk(() => Promise.reject(gone), new EventTarget(), () => true);

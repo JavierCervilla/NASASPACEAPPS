@@ -24,8 +24,9 @@
  */
 
 /**
- * The notices that share the slot under the top bars: «Offline · data
- * from …» and «New version ready» (VENT-52), which yields to it offline.
+ * The notices that share the slot under the top bars, both rows in one
+ * look: «Offline» (VENT-57) and «New version ready» (VENT-52), which
+ * yields to it offline.
  */
 import { OfflineNotice } from './OfflineNotice';
 import { UpdateNotice } from './UpdateNotice';

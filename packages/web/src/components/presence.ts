@@ -27,13 +27,27 @@
  * A surface that leaves along the path it came in (apple-design §7):
  * while `shown` it is mounted `in`; once hidden it stays mounted `out` for
  * the exit (styles/presence.css), then unmounts. The exit is the
- * stylesheet's `--dur-enter`, so the way out mirrors the way in.
+ * stylesheet's `--dur-enter`, so the way out mirrors the way in, and its
+ * `--dur-fade` under reduced motion, where the exit is a plain fade.
  */
 import { useEffect, useState } from 'react';
 import { BROWSER_TIMERS, type Timers } from '../lib/timers';
 
 /** How long the exit runs, ms: `--dur-enter` in styles/tokens.css. */
 export const EXIT_MS = 400;
+
+/** How long the reduced-motion fade runs, ms: `--dur-fade` (tokens.css). */
+export const FADE_MS = 200;
+
+const REDUCED_MOTION = '(prefers-reduced-motion: reduce)';
+
+/** How long a leaving surface stays mounted: the exit actually run. */
+export function exitMs(reducedMotion: boolean): number {
+  return reducedMotion ? FADE_MS : EXIT_MS;
+}
+
+const prefersReducedMotion = (): boolean =>
+  window.matchMedia(REDUCED_MOTION).matches;
 
 export type PresencePhase = 'in' | 'out';
 
@@ -44,10 +58,14 @@ export interface Presence {
   readonly phase: PresencePhase;
 }
 
-/** Keeps a hidden surface mounted through its exit. */
+/**
+ * Keeps a hidden surface mounted through its exit; `reducedMotion` is read
+ * as the exit starts, so it follows a change of the setting.
+ */
 export function usePresence(
   shown: boolean,
   timers: Timers = BROWSER_TIMERS,
+  reducedMotion: () => boolean = prefersReducedMotion,
 ): Presence {
   const [leaving, setLeaving] = useState(false);
   const [wasShown, setWasShown] = useState(shown);
@@ -57,8 +75,9 @@ export function usePresence(
   }
   useEffect(() => {
     if (!leaving) return undefined;
-    const handle = timers.setTimeout(() => setLeaving(false), EXIT_MS);
+    const ms = exitMs(reducedMotion());
+    const handle = timers.setTimeout(() => setLeaving(false), ms);
     return () => timers.clearTimeout(handle);
-  }, [leaving, timers]);
+  }, [leaving, timers, reducedMotion]);
   return { mounted: shown || leaving, phase: shown ? 'in' : 'out' };
 }

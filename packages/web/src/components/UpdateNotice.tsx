@@ -58,9 +58,13 @@ const STACK_GAP_PX = 8;
 
 /**
  * While the row shows, its height and a gap in `--update-row-space` on
- * the root, so the first-time pin hint stacks under it (pin.css).
+ * the root, so the first-time pin hint stacks under it (pin.css). The
+ * «Offline» row, which this one yields to, writes it the same way.
  */
-function useRowSpace(row: RefObject<HTMLElement | null>, shown: boolean) {
+export function useRowSpace(
+  row: RefObject<HTMLElement | null>,
+  shown: boolean,
+) {
   useEffect(() => {
     const el = row.current;
     const root = document.documentElement.style;

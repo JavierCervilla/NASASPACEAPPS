@@ -25,9 +25,11 @@
 
 /**
  * «Deleted Cabeus ridge · Undo» (VENT-37, validated canvas «DeleteUndo»):
- * after a saved site is deleted, a glass pill above the tab bar (over the
- * calendar strip on desktop) offers it back for five seconds, said by a
- * polite live region. The region is always there, empty, so the message
+ * after a saved site is deleted, a row in the «New version ready» look
+ * (VENT-57, V-11, variant B: a trash mark, the words and a bold «Undo»)
+ * above the tab bar, or above the calendar strip on desktop
+ * (undo-anchor.ts), offers it back for five seconds, said by a polite
+ * live region. The region is always there, empty, so the message
  * is announced when it comes. Deletes in a row join one offer, «Deleted 2
  * sites», and Undo puts every one back where it was. The time stops while
  * the focus or the pointer is on it. A delete made from the keyboard sends
@@ -39,8 +41,10 @@
 import { useEffect, useRef, type KeyboardEvent } from 'react';
 import type { UndoOffer } from '../../saved/undo';
 import { useI18n } from '../i18n-context';
+import { Icon } from '../phone/Icon';
 import { useWatched } from '../pin/context';
 import { useSavedKit, type SavedKit } from './context';
+import { useUndoAnchor } from './undo-anchor';
 import { focusSavedRow, keepPopoverOpen, undoMessage } from './undo-parts';
 
 /** The last delete on offer: where the focus goes back to. */
@@ -70,14 +74,17 @@ export function UndoToast() {
   const i18n = useI18n();
   const offer = useWatched(kit?.undo.current ?? null, null);
   const button = useRef<HTMLButtonElement>(null);
+  const row = useRef<HTMLDivElement>(null);
   const { undo, onKeyDown } = useUndoActions(kit, offer);
+  useUndoAnchor(row, offer !== null);
   useEffect(() => {
     if (offer?.fromKeyboard) button.current?.focus();
   }, [offer]);
   return (
-    <div className="undo-toast" role="status" data-open={offer !== null} onKeyDown={onKeyDown} onFocus={() => kit?.undo.hold()} onBlur={() => kit?.undo.release()} onPointerEnter={() => kit?.undo.hold()} onPointerLeave={() => kit?.undo.release()}>
+    <div ref={row} className="undo-toast" role="status" data-open={offer !== null} onKeyDown={onKeyDown} onFocus={() => kit?.undo.hold()} onBlur={() => kit?.undo.release()} onPointerEnter={() => kit?.undo.hold()} onPointerLeave={() => kit?.undo.release()}>
       {offer ? (
         <>
+          <Icon name="delete" className="notice-row__mark" />
           <span className="undo-toast__text">{undoMessage(i18n, offer)}</span>
           <button ref={button} type="button" className="undo-toast__undo" onPointerDown={(e) => keepPopoverOpen(e.currentTarget)} onClick={undo}>
             {i18n.t('saved.undo')}

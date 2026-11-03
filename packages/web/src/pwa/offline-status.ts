@@ -54,3 +54,19 @@ export function syncDate(tag: string, atMs: number): string {
   const options = { day: 'numeric', month: 'long', year: 'numeric' } as const;
   return new Intl.DateTimeFormat(tag, options).format(atMs);
 }
+
+export interface DismissalChange {
+  /** Whether the row was hidden with its ✕. */
+  readonly dismissed: boolean;
+  readonly wasOnline: boolean;
+  readonly online: boolean;
+}
+
+/**
+ * Whether the offline row stays hidden after the connection changes: a ✕
+ * holds until the app goes offline again (VENT-57, V-08).
+ */
+export function dismissalAfter(change: DismissalChange): boolean {
+  const wentOffline = change.wasOnline && !change.online;
+  return wentOffline ? false : change.dismissed;
+}

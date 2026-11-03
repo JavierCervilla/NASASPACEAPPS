@@ -25,10 +25,10 @@
 
 /**
  * Keeps the compass clear of the phone's bars (VENT-50): one gap under the
- * glass top bar and, while the first-time pin hint or «New version ready»
- * shows, under them, as both are measured under the bar
- * (components/pin/PinHint.tsx, UpdateNotice.tsx; the row is watched
- * always, 0 px high while hidden). The
+ * glass top bar and, while the first-time pin hint, «Offline» or «New
+ * version ready» shows, under them, as all are measured under the bar
+ * (components/pin/PinHint.tsx, OfflineNotice.tsx, UpdateNotice.tsx; the
+ * rows are watched always, 0 px high while hidden). The
  * sizes are watched, so large text or a rotated phone move it too. While
  * the sheet's top edge covers any of it, it is marked `data-covered` and
  * steps out of view and of the tab order (VENT-51): the sheet then covers
@@ -43,7 +43,7 @@ import { compassCovered, compassTop, stackHeight } from './compass-top';
 
 const PROPERTY = '--compass-top';
 
-/** What stacks under the bar: the update row (0 px hidden), the hint. */
+/** What stacks under the bar: the rows (0 px hidden), the hint. */
 type Stack = readonly (Element | null)[];
 
 /** Sets the button's top under `bar` and what shows of the `stack`. */
@@ -104,7 +104,8 @@ export function useCompassTop(
     const bar = document.querySelector('.phone-bar');
     if (!mounted || !el || !phone || !bar) return undefined;
     const hint = hintShown ? document.querySelector('.pin-hint') : null;
-    const row = document.querySelector('.update-notice');
-    return follow(el, [bar, [row, hint]], sheetEdge);
+    const rows = ['.offline-notice', '.update-notice'].map((row) =>
+      document.querySelector(row));
+    return follow(el, [bar, [...rows, hint]], sheetEdge);
   }, [button, mounted, phone, hintShown, sheetEdge]);
 }

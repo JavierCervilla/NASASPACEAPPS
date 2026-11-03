@@ -27,7 +27,8 @@
  * The phone shell's line icons, drawn from the validated canvas (the DSN
  * tab's dish, VENT-7, canvas «DsnC»; the pin,
  * VENT-37: a ring with its centre dot, canvas «Pin C»; the bookmark of
- * «Save» and the saved site's menu, canvases «Save A» and «Saved list»). They
+ * «Save» and the saved site's menu, canvases «Save A» and «Saved list»;
+ * the crossed-out cloud of «Offline», VENT-57). They
  * take the text colour (`currentColor`) and are hidden from assistive
  * technology: the control around them carries the name.
  */
@@ -48,7 +49,8 @@ export type IconName =
   | 'more'
   | 'rename'
   | 'copy'
-  | 'delete';
+  | 'delete'
+  | 'cloudOff';
 
 const STROKE = {
   fill: 'none',
@@ -74,13 +76,21 @@ const SHAPES: Readonly<Record<IconName, [number, ReactElement]>> = {
   rename: [18, <path {...STROKE} d="M11.5 3.5l3 3L6 15H3v-3z" />],
   copy: [18, <g {...STROKE}><rect x="6" y="6" width="9" height="9" rx="2" /><path d="M12 3.5H5A1.5 1.5 0 0 0 3.5 5v7" /></g>],
   delete: [18, <path {...STROKE} d="M3.5 5h11M7 5V3.5h4V5M5 5l.8 10h6.4L13 5" />],
+  cloudOff: [24, <g {...STROKE} strokeWidth="1.7"><path d="M8.5 18H17a4 4 0 0 0 1.6-7.67M15.3 7.1A6 6 0 0 0 6.1 9.6 4.2 4.2 0 0 0 6 18" /><path d="M3.5 3.5l17 17" /></g>],
 };
 
+export interface IconProps {
+  readonly name: IconName;
+  /** A class for where it stands (the notices' `notice-row__mark`). */
+  readonly className?: string;
+}
+
 /** The icon `name` at its canvas size. */
-export function Icon({ name }: { readonly name: IconName }) {
+export function Icon({ name, className }: IconProps) {
   const [size, shape] = SHAPES[name];
   return (
     <svg
+      className={className}
       width={size}
       height={size}
       viewBox={`0 0 ${size} ${size}`}

@@ -163,6 +163,8 @@
   --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
   --dur-press: 100ms;
   --dur-enter: 400ms;
+  /* The reduced-motion fade; components/presence.ts waits as long. */
+  --dur-fade: 200ms;
 
   /*
    * The focus ring (VENT-55): the text colour on the page's surfaces, so it

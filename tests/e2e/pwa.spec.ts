@@ -25,7 +25,7 @@
 
 /**
  * The installable app (VENT-28): every locale links its own manifest with the J2 icons; the service worker registers,
- * and the app opens without a network, with the last data and a translated «Offline · data from <date>» notice; the
+ * and the app opens without a network, with the last data and a translated «Offline» row over «Showing data from <date>»; the
  * live favicon follows the Moon's phase at the selected instant and the selected site's state; and the production CSP
  * lets all of it run with no violation on every locale.
  */
@@ -140,17 +140,19 @@ test.describe('manifests', () => {
 });
 
 test.describe('offline', () => {
-  for (const [path, lang, notice] of [
-    ['', 'en', /^Offline · data from \d{1,2} \w+ \d{4}$/],
-    ['es/', 'es', /^Sin conexión · datos del \d{1,2} de \w+ de \d{4}$/],
-    ['de/', 'de', /^Offline · Daten vom \d{1,2}\. \w+ \d{4}$/],
+  for (const [path, lang, title, since] of [
+    ['', 'en', 'Offline', /^Showing data from \d{1,2} \w+ \d{4}$/],
+    ['es/', 'es', 'Sin conexión', /^Mostrando datos del \d{1,2} de \w+ de \d{4}$/],
+    ['de/', 'de', 'Offline', /^Zeigt Daten vom \d{1,2}\. \w+ \d{4}$/],
   ] as const) {
     test(`/${path} opens without a network, with the last data and the ${lang} notice`, async ({ context, page }) => {
       const map = await offlineVisit(context, page, path);
       // The map the visit used comes from the worker's cache.
       expect(map.fromServiceWorker()).toBe(true);
       await expect(page.locator('html')).toHaveAttribute('lang', lang);
-      await expect(page.locator('.offline-notice')).toHaveText(notice);
+      const status = page.locator('.offline-notice').getByRole('status');
+      await expect(status.locator('.notice-row__title')).toHaveText(title);
+      await expect(status.locator('.notice-row__how')).toHaveText(since);
       await expect(page.locator('.globe-markers')).toHaveAttribute('data-state', 'window');
       await page.screenshot({ path: test.info().outputPath(`offline-${lang}.png`) });
       await context.setOffline(false);
@@ -210,16 +212,19 @@ test.describe('offline notice, 390x844 at 200 % text', () => {
       document.documentElement.style.fontSize = '200%';
     });
     const notice = page.locator('.offline-notice');
-    await expect(notice).toHaveText(/^Offline · data from/);
+    await expect(notice.locator('.notice-row__title')).toHaveText('Offline');
+    await expect(notice.locator('.notice-row__how')).toHaveText(/^Showing data from/);
     const box = async (selector: string) => (await page.locator(selector).boundingBox())!;
     await expect.poll(async () => (await box('.offline-notice')).y >= (await box('.phone-bar')).y + (await box('.phone-bar')).height).toBe(true);
     const pill = await box('.site-pill');
     const note = await box('.offline-notice');
     const apart = note.y >= pill.y + pill.height || note.x >= pill.x + pill.width || note.x + note.width <= pill.x;
     expect(apart).toBe(true);
-    // Two lines at most, so it covers little of the globe.
-    const lineHeight = await notice.evaluate((el) => parseFloat(getComputedStyle(el).lineHeight));
-    expect(note.height).toBeLessThanOrEqual(2 * lineHeight + 20);
+    // Two lines at most, so it covers little of the globe: «Offline» on one, the date cut on the other (VENT-57).
+    for (const line of [notice.locator('.notice-row__title'), notice.locator('.notice-row__how')]) {
+      const [height, lineHeight] = await line.evaluate((el) => [el.getBoundingClientRect().height, parseFloat(getComputedStyle(el).lineHeight)]);
+      expect(Math.round(height / lineHeight)).toBe(1);
+    }
     await page.screenshot({ path: test.info().outputPath('offline-200.png') });
   });
 });

@@ -28,3 +28,10 @@ the vault, the hooks and the Dashboard scripts.
   `CLAUDE.md` (lint, typecheck, unit, build, e2e) and its screenshots.
 - The other references in `technical-artist` (Unreal's best practices) belong to engines this project does not use.
 - Every GAMESTUDIO skill, hook, template and director gate: AgenticFramework provides the process here.
+- `.claude/docs/coding-standards.md` (cited by the web engine reference's `modules/input.md` and `modules/rendering.md`):
+  this repository's code rules are the Clean Code section of `CLAUDE.md`.
+- `.claude/rules/skill-authoring.md` (cited by `.claude/rules/test-standards.md`): no GAMESTUDIO skills are carried.
+- Paths and agents the specialists name that do not exist here and have no effect: `design/accessibility-requirements.md`
+  and `production/qa/accessibility/` (accessibility-specialist), `assets/ASSET_LICENSES.md` (threejs-specialist; this
+  repository keeps provenance in `ASSETS.md`), the `/perf-profile` skill (performance-analyst), and the studio agents
+  ux-designer, art-director, technical-director, lead-programmer, engine-programmer, gameplay-programmer and producer.

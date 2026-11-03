@@ -482,7 +482,13 @@ Every visible change follows `.claude/skills/apple-design/SKILL.md` (vendored fr
   (`webglcontextlost`, VENT-49) frees the scene, drops the tier to low and says «Terrain unavailable right now» with
   «Try again», which mounts it again at low and never happens by itself; the dead canvas and the labels leave the page
   in the browser's event, before the message shows (`guardLost` in `scene-guard.ts`), so no frozen frame or broken-WebGL
-  icon appears under it. A page that dies with the view open (no unmount: a GPU reset can take a phone's page down)
+  icon appears under it. On a phone the notice keeps to the free band between the top bar and the sheet's measured
+  edge at any detent (`use-status-band.ts` writes `--on-foot-band-top` and `--on-foot-band-height` through the CSSOM,
+  `src/terrain/status-band.ts`), the mode switch and caption stepping aside while it shows; when a lost context's notice
+  has no room there (200 % text lifts the half sheet to full) the sheet drops to peek once for that loss, and the scrim
+  clears, since `openness` measures from peek when half has risen to full (VENT-51). «Report copied» resets whenever
+  the scene's state changes, and with `?onfoot=lander` the caption names no lander (`captionNote`,
+  `onFoot.captionNoLander`). A page that dies with the view open (no unmount: a GPU reset can take a phone's page down)
   leaves `ventana.onFootOpen` set in `sessionStorage`; the next view starts one rung lower (kept, never below low, never
   under `?quality=`), once, and its report says «tier dropped to X: previous run ended without unmount»
   (`view-tier-open.ts`, `view-tier-state.ts`, VENT-51); leaving the view clears the mark, and a reload with the view

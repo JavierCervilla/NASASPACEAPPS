@@ -38,6 +38,11 @@
   renderizado por software, de 38 fotogramas a 6).
 
 ### Arreglado
+- Vista 3D en el móvil (VENT-51): si se pierde el contexto gráfico, el aviso «Terrain unavailable right now» con «Try
+  again» y «Copy report» aparece en la franja libre entre la barra superior y la hoja, esté la hoja donde esté (antes
+  quedaba debajo de la hoja a media altura); si no cabe (texto al 200 %), la hoja baja a su posición mínima una vez y el
+  velo oscuro se retira. «Report copied» ya no reaparece en una pérdida posterior, y con `?onfoot=lander` el pie de foto
+  ya no nombra un módulo que no se dibuja.
 - Mitigaciones del cierre de la vista 3D en un Pixel 10 (VENT-51; la causa en el dispositivo sigue sin confirmar). En el
   móvil, el globo que queda oculto bajo las vistas «Horizon» y «DSN» ya no dibuja nada ni se encoge a 0 × 0: antes se
   redibujaba en cada cambio de minuto del reloj mientras la vista 3D usaba la GPU. Al volver al globo se dibuja una vez,

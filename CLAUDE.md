@@ -154,7 +154,9 @@ Every visible change follows `.claude/skills/apple-design/SKILL.md` (vendored fr
   the globe waits for a «Load the 3D globe» button and never loads more than its start map. A hidden globe (the phone's
   Horizon and DSN views, any view but the globe on desktop) keeps its stage size and draws nothing: its host reads 0 x 0,
   frames asked meanwhile draw nothing, and showing it again refits the stage and draws once with the current Sun
-  (`src/globe/shown-frames.ts`, VENT-51).
+  (`src/globe/shown-frames.ts`, VENT-51). While hidden, a Moon map that finishes loading is not uploaded
+  (`initTexture` is skipped, `moon-textures.ts` reading `ShownFrames.shown()`); the first frame drawn once the globe
+  shows again uploads it (VENT-52).
 - Glass: the floating surfaces (phone top bar, sheet and tab bar; desktop header, site popover, Layers key,
   calendar strip and site card) wear Liquid glass or the frosted blur; the phone's site pill, inside the top
   bar's glass, takes only the Liquid rim. Liquid refracts through a
@@ -176,7 +178,9 @@ Every visible change follows `.claude/skills/apple-design/SKILL.md` (vendored fr
   (`src/pin/place-gesture.ts`, bound on each drop surface's element): a click on the globe or the polar disk drops it
   on the point under it (a mouse or a pen); a finger held still for 450 ms (`HOLD_MS`, `src/pin/place-press.ts`) lifts
   it under the finger, to drop in place or drag on, where it rides 64 px above the finger once the finger travels
-  (`heldOffset`, `src/pin/carry-geometry.ts`). A press that travels 4 px or more turns the globe and drops no pin (one
+  (`heldOffset`, `src/pin/carry-geometry.ts`). A hold timer that fires more than 250 ms late (`HOLD_LATE_MS`,
+  `src/pin/hold-timer.ts`, a busy main thread) waits the whole hold again, counting only the stillness the page saw, so
+  a drag the browser had queued ends the press instead of lifting a pin (VENT-52). A press that travels 4 px or more turns the globe and drops no pin (one
   constant and one comparison for both, `PRESS_SLOP_PX` and `pastSlop` in `src/lib/press-slop.ts`), and a short tap
   does nothing; a press on a globe still coasting from a flick stops it where it is, like Maps, and drops or lifts no
   pin (`src/globe/flick-coast.ts`: the globe marks that `pointerdown` handled); a press on a site marker or a button is theirs (the marker wins); a second finger is a pinch. Once a
@@ -239,7 +243,9 @@ Every visible change follows `.claude/skills/apple-design/SKILL.md` (vendored fr
   its own stacking context at z-index 0) and registers the two site layers on it (`site-layers.ts`: «Landing sites»
   and «Approximate zones» show or hide their kind on the one marker layer, which keeps its cull and nearest-dot
   clicks; the selected site's marker always shows). `pointLayer` (`point-layer.ts`) draws a layer's points as 44 px
-  buttons (`.globe-point`), hidden behind the limb, a click routed to the point nearest the pointer. The flags are
+  buttons (`.globe-point`), hidden behind the limb, a click routed to the point nearest the pointer. A renderer may report what it covers (`covers()`, `LayerCover`;
+  `pointLayer`'s `coverPx`): `bindLayers.place` returns the shown layers' covers and the graticule's labels keep clear of
+  them (`clearOf`, `graticule/place.ts`), so they avoid the saved sites' silver pins (`SAVED_PIN_RADIUS_PX` 7, VENT-52). The flags are
   kept in `localStorage` (`ventana.layers`, read defensively by `kept-flags.ts`; each write starts from what storage
   holds, and another tab's switch is taken in on the `storage` event, `applyFlags`) and the polar map follows them
   (`components/polar/use-polar-layers.ts`). The Layers key is switches (`components/saved/LayerToggles.tsx`: a
@@ -311,7 +317,9 @@ Every visible change follows `.claude/skills/apple-design/SKILL.md` (vendored fr
   the 85° S label has no room at the opening zoom and shows from about 3.5 radii. An idle globe still draws no
   frames. The label is white on a chip 0.61 opaque (the canvas had grey text on 0.44; the human chose white text over a
   0.84 chip for grey): the least that keeps the text 4.5:1 over the brightest texel the Moon maps hold, which is white (the 2K, 4K and 8K LROC maps reach 255, 255, 255 and the Sun lights a
-  texel at most 1.02 times, `tests/graticule-contrast.test.ts`). Held by
+  texel at most 1.02 times, `tests/graticule-contrast.test.ts`). The globe's label rules in `orientation.css` are scoped under `.globe-graticule`; the bare `.graticule-label` belongs
+  to the polar map (`polar.css`): unscoped, the globe's rules loaded later and piled the polar map's five labels in its
+  corner (VENT-52, `tests/graticule-label-css.test.ts`, `tests/e2e/polar-graticule.spec.ts`). Held by
   `tests/globe-compass.test.ts`, `tests/globe-graticule.test.ts` and `tests/e2e/globe-orientation.spec.ts`.
 - **Sites in permanent shadow** (VENT-39, canvas option B, the human's decision). NASA's illumination maps (PGDA
   product 69, LRO LOLA, Mazarico et al. 2011; sources, sha256 and the scales read from the PDS labels in `ASSETS.md`)
@@ -332,7 +340,9 @@ Every visible change follows `.claude/skills/apple-design/SKILL.md` (vendored fr
   one line (or stands alone with Horizons): «Sun from NASA's permanent-shadow map (LRO LOLA, Mazarico 2011)». The
   phone's half sheet rises (never under its 344 px) until the summary's lowest line
   (`data-sheet-fit`, measured from the content's bottom) clears the tab bar by 12 px, at any width, language and text
-  size (`src/sheet/sheet-lift.ts`); when even the full detent is too short (200 % text on a phone), it stops there and
+  size (`src/sheet/sheet-lift.ts`), and the peek detent rises the same way (never under its 156 px) until the summary's
+  head (`data-sheet-peek`: the name, «Save» for a custom point, the coordinates) clears the tab bar by 12 px, re-measured
+  while it rests there (`src/sheet/sheet-peek.ts`, VENT-52, `tests/e2e/sheet-peek-card.spec.ts`); when even the full detent is too short (200 % text on a phone), it stops there and
   the summary scrolls instead (`data-sheet-scroll`, `src/sheet/sheet-scroll.ts`), its last line 12 px over the tab bar;
   as on iOS, a finger pulling down on it at its top drags the sheet, any other move scrolls it, and below its top the
   sheet drags from it both ways (`src/sheet/sheet-pull.ts`). For the Mooner session,
@@ -488,7 +498,13 @@ Every visible change follows `.claude/skills/apple-design/SKILL.md` (vendored fr
   has no room there (200 % text lifts the half sheet to full) the sheet drops to peek once for that loss, and the scrim
   clears, since `openness` measures from peek when half has risen to full (VENT-51). «Report copied» resets whenever
   the scene's state changes, and with `?onfoot=lander` the caption names no lander (`captionNote`,
-  `onFoot.captionNoLander`). A page that dies with the view open (no unmount: a GPU reset can take a phone's page down)
+  `onFoot.captionNoLander`). On a phone the camera switch stands 12 px under the band's top (`max()` with its old
+  108 px), which follows the top bar's size too (`src/phone/band-moves.ts`: the sheet's edge and a ResizeObserver on the
+  bar), and its two buttons share the row (`min(7.5rem, 100%)`) at 200 % text; the scale's labels never overlap (ridge
+  first, then 25, 100 and 500 m, a label over a placed one hidden for the frame, `scene/label-declutter.ts`); the host's
+  focus ring is an outline at -4 px drawn over its canvas (VENT-52). A language switch is not a died run:
+  `switchLocale` calls its injected `leaving` before `location.assign`, wired to `leftOnPurpose` (`view-tier-open.ts`),
+  which clears `ventana.onFootOpen`; a reload by the person still counts. A page that dies with the view open (no unmount: a GPU reset can take a phone's page down)
   leaves `ventana.onFootOpen` set in `sessionStorage`; the next view starts one rung lower (kept, never below low, never
   under `?quality=`), once, and its report says «tier dropped to X: previous run ended without unmount»
   (`view-tier-open.ts`, `view-tier-state.ts`, VENT-51); leaving the view clears the mark, and a reload with the view
@@ -557,14 +573,26 @@ Every visible change follows `.claude/skills/apple-design/SKILL.md` (vendored fr
   `favicon.ico`, `favicon.svg` and the root `apple-touch-icon.png`), fetched past the HTTP cache (`cache: 'reload'`),
   and the build's digest over every file the worker may keep, which names the static cache (`ventana-static-<digest>`),
   so a deploy drops the old one. The install set has a hard budget of 5 MB (`PRECACHE_BUDGET`, human decision
-  2026-10-31): the build logs the precache total and fails over it (4.77 MB with VENT-50's compass and graticule; 4.75 MB with VENT-46's rings, landers and rigged astronaut, their files left out; 4.70 MB with VENT-34's on-foot view, its files left out; 4.68 MB with VENT-40's horizon strip; 4.63 MB with VENT-39's shadow notes; 4.57 MB with VENT-37's saved sites; 4.52 MB when it left the astronaut's sprites out, 4.60 MB with them). The 4K and 8K maps, and any build file not
+  2026-10-31): the build logs the precache total and fails over it (4.78 MB with VENT-52's update row; 4.77 MB with VENT-50's compass and graticule; 4.75 MB with VENT-46's rings, landers and rigged astronaut, their files left out; 4.70 MB with VENT-34's on-foot view, its files left out; 4.68 MB with VENT-40's horizon strip; 4.63 MB with VENT-39's shadow notes; 4.57 MB with VENT-37's saved sites; 4.52 MB when it left the astronaut's sprites out, 4.60 MB with them). The 4K and 8K maps, and any build file not
   precached, are kept cache first the first time the page fetches them. Under Save-Data the worker is not registered
   at all. Pages and API GETs are network first,
   build files cache first; the network's answer always wins (a copy that cannot be kept, a full quota, is skipped), only
   ok answers are kept, a page is kept under its URL without the query string and never as a redirected answer. The
   API's answers live in `ventana-api-v1`, stamped with when they came, the 24 latest only (`src/pwa/sw-api.ts`, like
   `hours-cache.ts`). Offline, the page shows «Offline · data from <date>» (`OfflineNotice.tsx`, under the lowest top
-  bar, measured, two lines at most), and when the network returns the hours are asked again quietly. Registered in
+  bar, measured, two lines at most), and when the network returns the hours are asked again quietly. When a new build's worker takes the page over
+  (`controllerchange` on a page that already had a controller, so never on the first install; checked with
+  `registration.update()` when the app opens and on each return to the foreground, `src/pwa/update-watch.ts`), a row in
+  the pin hint's look (option D among four mockups, the human's choice; `UpdateNotice.tsx`, `UpdateButtons.tsx`,
+  `TopNotices.tsx`) is the update: a reload icon, «New version ready» over «Tap to update» or «Click to update» by
+  `(pointer: coarse)`, the whole row reloads the same address, and the hint's own ✕ beside it hides it until the app
+  opens again; it yields to the offline notice while offline. While it shows it writes `--update-row-space` on the root,
+  so the first-time pin hint stacks under it and the phone's compass sits under both (`stackHeight`, `compass-top.ts`).
+  A chunk loaded on demand that is gone after a deploy (`src/pwa/missing-chunk.ts`: only the dynamic import's own fetch
+  failure counts; a module that throws while evaluating, or any render or mount error, is a real error) dispatches
+  `ventana:missing-chunk`, which shows the row even after a ✕; `ChunkBoundary.tsx` holds «Update the app to open this
+  view» in the view's place instead of unmounting the island, and the scene says `missing` (`terrain/scene/load-scene.ts`;
+  VENT-52, `tests/e2e/missing-chunk.spec.ts`). Registered in
   production builds only; e2e specs block service workers except `tests/e2e/pwa.spec.ts`. Emergency kill switch
   (unregister and delete the caches everywhere): `docs/service-worker.md`. nginx serves `sw.js` and the manifests with `no-cache`, the manifests as
   `application/manifest+json`. The CSP did not change: `default-src 'self'` already covers the worker, the manifest

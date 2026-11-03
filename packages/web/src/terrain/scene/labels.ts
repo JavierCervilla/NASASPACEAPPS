@@ -28,10 +28,12 @@
  * its own bearing off the look (scene-types.ts), and the ridge that hides
  * a body labelled with its height and distance. The labels are HTML over
  * the canvas, so they follow the text size; placed after every frame
- * through the CSSOM (no style attribute: CSP), hidden behind the ground.
+ * through the CSSOM (no style attribute: CSP), hidden behind the ground
+ * and where another label already stands (label-declutter.ts).
  */
 import { Vector3, type PerspectiveCamera } from 'three';
 import { direction } from '../view-camera';
+import { declutter } from './label-declutter';
 import {
   RING_BEARINGS_DEG,
   RING_DISTANCES_M,
@@ -121,6 +123,10 @@ export function labelLayer(
   const spots = { rings: RING_DISTANCES_M.map(() => make('ring')),
     ridge: make('ridge') };
   host.append(root);
-  return { root, draw: (words, yawDeg) =>
-    drawLabels(spots, { camera, ground: ground(), host }, { words, yawDeg }) };
+  // The ridge's label first: it says what hides a body; then the rings'.
+  const order = [spots.ridge, ...spots.rings];
+  return { root, draw: (words, yawDeg) => {
+    drawLabels(spots, { camera, ground: ground(), host }, { words, yawDeg });
+    declutter(order);
+  } };
 }

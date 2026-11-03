@@ -79,8 +79,14 @@
 
 .on-foot__host:active { cursor: grabbing; }
 
+/*
+ * An outline, as the globe's: it paints over the host's own canvas, where
+ * an inset shadow is painted under it and never shows (VENT-52).
+ */
 .on-foot__host:focus-visible {
-  box-shadow: inset 0 0 0 2px var(--on-foot-ink);
+  outline: 2px solid var(--on-foot-ink);
+  outline-offset: -4px;
+  border-radius: inherit;
 }
 
 .on-foot__host canvas {
@@ -105,10 +111,16 @@
 /*
  * On a phone the controls live in the free band between the top bar and
  * the sheet at peek (156 px, src/sheet/): the switch under the bar, the
- * caption low, just over the sheet's edge, so the two never crowd.
+ * caption low, just over the sheet's edge, so the two never crowd. The
+ * bar grows with the text (200 %): the switch keeps 12 px under its
+ * measured bottom, the band's top (use-status-band.ts), and never rises
+ * above its place at the default size (VENT-52).
  */
 .on-foot--phone .on-foot__top {
-  top: calc(env(safe-area-inset-top) + 108px);
+  top: max(
+    calc(env(safe-area-inset-top) + 108px),
+    calc(var(--on-foot-band-top, 0px) + 12px)
+  );
   bottom: 166px;
   flex-direction: column;
   flex-wrap: nowrap;
@@ -122,6 +134,7 @@
 
 .on-foot__switch {
   display: grid;
+  max-width: 100%;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   padding: 3px;
   border-radius: 14px;
@@ -131,8 +144,9 @@
   -webkit-backdrop-filter: blur(14px) saturate(160%);
 }
 
+/* At 200 % text two 7.5rem buttons are wider than a phone: they share it. */
 .on-foot__switch button {
-  min-width: 7.5rem;
+  min-width: min(7.5rem, 100%);
   min-height: 44px;
   padding: 0 14px;
   border: 0;

@@ -177,4 +177,17 @@ test.describe('desktop, 1440x900', () => {
     expect(third?.steps[0]?.text).toBe('mount at tier high');
     expect(third?.steps.some((step) => DIED.test(step.text))).toBe(false);
   });
+
+  test('switching the language with the view open is a navigation the app made, not a died run (VENT-52)', async ({ page }) => {
+    await hideGpuName(page);
+    await open(page, `./${POINT}#horizon`);
+    await expect.poll(async () => (await kept(page)).current?.steps[0]?.text, { timeout: START_MS }).toBe('mount at tier high');
+    const first = await kept(page);
+    await page.getByRole('button', { name: 'Language: English' }).click();
+    await page.getByRole('menuitemradio', { name: /^Español/ }).click();
+    await expect(page).toHaveURL(/\/es\/\?lat=-85\.50&lon=40\.00#horizon$/);
+    await expect.poll(async () => (await kept(page)).previous?.startedAt, { timeout: START_MS }).toBe(first.current?.startedAt);
+    const second = (await kept(page)).current;
+    expect(second?.steps.some((step) => DIED.test(step.text))).toBe(false);
+  });
 });

@@ -146,16 +146,16 @@ async function settled(page: Page): Promise<void> {
 const frames = async (page: Page): Promise<number> => Number(await host(page).getAttribute('data-frames'));
 
 /**
- * Waits until no frame has been drawn for 600 ms (a resize or the sheet settling) and the ring's slices are all run
+ * Waits until no frame has been drawn on `at` (the view's host) for 600 ms (a resize or the sheet settling) and the ring's slices are all run
  * (`data-working`, written by every frame: the slices ask for a frame every 1.5 s at most, so a quiet 600 ms is no
  * proof), and returns the count.
  */
-async function idle(page: Page): Promise<number> {
+async function idle(page: Page, at = host(page)): Promise<number> {
   let last = -1;
   await expect
     .poll(async () => {
-      const now = await frames(page);
-      const still = now === last && (await host(page).getAttribute('data-working')) !== 'true';
+      const now = Number(await at.getAttribute('data-frames'));
+      const still = now === last && (await at.getAttribute('data-working')) !== 'true';
       last = now;
       return still;
     }, { intervals: [600], timeout: 15_000 })
@@ -236,6 +236,18 @@ test.describe('desktop, 1440x900', () => {
     await page.keyboard.press('ArrowLeft');
     await expect.poll(() => frames(page)).toBeGreaterThan(settledAt);
     await expect(host(page)).toHaveAccessibleDescription(/View heading 334°, to the north-west\. .*The Sun is to the north, above the terrain\./);
+  });
+
+  // VENT-52: the host's ring was an inset box-shadow, painted under its own canvas, so focus showed nothing.
+  test('the view shows a focus ring over its canvas when the keyboard focuses it', async ({ page }) => {
+    await open(page, { path: `./${POINT}#horizon` });
+    await settled(page);
+    await idle(page);
+    const box = await host(page).boundingBox();
+    const edge = `${Math.round((box?.width ?? 0) / 2)},3`;
+    const before = await brightness(page, edge);
+    await host(page).focus();
+    await expect.poll(() => brightness(page, edge)).toBeGreaterThan(Math.max(before + 100, 200));
   });
 
   // VENT-49: a Pixel's GPU process restarted under the view; a lost context frees the scene and never remounts itself.
@@ -529,6 +541,36 @@ test.describe('phone, 390x844', () => {
     await shot(page, 'phone-first');
   });
 
+  // VENT-52 (qa of PR #32): at 200 % text the top bar grew over the camera switch, placed at a fixed 108 px; the switch
+  // grew wider than the screen; and the ridge's label and the 100 m ring's were drawn over each other.
+  test('at 200 % text nothing covers the camera switch, it fits the screen, and no two labels overlap', async ({ page }) => {
+    await open(page, { path: './?site=im2-athena', real: RIDGE_AT });
+    await page.getByRole('navigation', { name: 'Views' }).getByRole('button', { name: 'Horizon' }).click();
+    await settled(page);
+    await page.evaluate(() => {
+      document.documentElement.style.fontSize = '200%';
+    });
+    const modes = view(page).getByRole('radiogroup', { name: 'Camera' });
+    for (const name of ['Third person', 'First person']) {
+      await expect.poll(() => pressable(page, modes.getByRole('radio', { name })), { message: name }).toBe(true);
+    }
+    expect(await modes.evaluate((el) => el.scrollWidth <= el.clientWidth)).toBe(true);
+    const pill = page.locator('.site-pill');
+    expect(await pill.evaluate((el) => el.scrollWidth <= el.clientWidth)).toBe(true);
+    await idle(page);
+    const boxes = await view(page).locator('.on-foot__label:not([hidden])').evaluateAll((els) =>
+      els.map((el) => el.getBoundingClientRect()).map(({ left, top, right, bottom }) => ({ left, top, right, bottom })));
+    expect(boxes.length).toBeGreaterThan(0);
+    const pairs = boxes.flatMap((a, i) => boxes.slice(i + 1).map((b) => [a, b] as const));
+    const overlapping = pairs.filter(([a, b]) => a.left < b.right && b.left < a.right && a.top < b.bottom && b.top < a.bottom);
+    expect(overlapping).toEqual([]);
+    await shot(page, 'phone-200-third');
+    await modes.getByRole('radio', { name: 'First person' }).tap();
+    await expect(host(page)).toHaveAttribute('data-mode', 'first');
+    await idle(page);
+    await shot(page, 'phone-200-first');
+  });
+
   // VENT-51 A1: the phone stage fills the screen, so a notice centred on it sat under the sheet at half.
   test('a lost context at the sheet at half says so in the band over the sheet, both buttons pressable', async ({ page }) => {
     await open(page, { path: `./${POINT}&quality=medium#horizon` });
@@ -554,15 +596,26 @@ test.describe('phone, 390x844', () => {
   // VENT-51 A2: at 200 % text the top bar grows and the half sheet rises to full, leaving no band: the sheet drops to
   // peek so the notice shows.
   test('a lost context at 200 % text in Spanish drops the sheet to peek so the notice and its buttons show', async ({ page }) => {
+    // The sheet moves without its spring, so each of its moves costs one frame of the view, not a second's worth.
+    await page.emulateMedia({ reducedMotion: 'reduce' });
     await open(page, { path: `./es/${POINT}&quality=medium#horizon` });
     // The view's names are Spanish here, so it is found by its classes.
     const stage = page.locator('.on-foot__host');
     await expect(stage).toHaveAttribute('data-ready', 'true', { timeout: START_MS });
+    // A frame of the rings costs seconds in software GL: the sheet's rise is timed once they are built.
+    await idle(page, stage);
+    const sheet = page.locator('.sheet');
+    const sheetAt = () => sheet.evaluate((el) => ({ top: el.getBoundingClientRect().top, moving: el.hasAttribute('data-moving') }));
+    const before = (await sheetAt()).top;
     await page.evaluate(() => {
       document.documentElement.style.fontSize = '200%';
     });
-    await page.waitForTimeout(500);
-    await expect(page.locator('.sheet')).toHaveAttribute('data-detent', 'half');
+    // The half sheet rises for the grown summary: waits until it has risen and come to rest.
+    await expect.poll(async () => {
+      const now = await sheetAt();
+      return !now.moving && now.top < before;
+    }).toBe(true);
+    await expect(sheet).toHaveAttribute('data-detent', 'half');
     await stage.locator('canvas').evaluate((canvas) => {
       (canvas as HTMLCanvasElement).getContext('webgl2')?.getExtension('WEBGL_lose_context')?.loseContext();
     });

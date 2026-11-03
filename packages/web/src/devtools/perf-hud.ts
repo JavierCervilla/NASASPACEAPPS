@@ -24,7 +24,7 @@
  */
 
 /**
- * On-device performance readout for dev builds: the readout's text (see
+ * On-device performance readout: the readout's text (see
  * readout.ts), the breadcrumb trail (this session's and, after a crash, the
  * previous one's) and uncaught errors, so a page that breaks on a laptop or a
  * phone says why instead of staying black. Buttons reload the page at another
@@ -32,12 +32,16 @@
  * WebGL calls. A tap on the readout folds it to its first line; on a phone it
  * starts folded (see boot.ts).
  *
- * Never in a production build: Base.astro imports the dev tools only when
- * `import.meta.env.DEV` or `PUBLIC_PERF_HUD=1`.
+ * In the dev server and a PUBLIC_PERF_HUD=1 build at once; in a production
+ * build only on `?debug`, after the page has started, and without the
+ * Spector.js button (src/lib/dev-tools-loader.ts, VENT-49).
  * Ported from GAMESTUDIO's Web starter
  * (`studio/engines/web/scaffold/packages/client/src/engine/perf-hud.ts`).
  */
-import './perf-hud.css';
+// Linked when the panel mounts, never imported: Astro inlines a script's
+// imported CSS into every page, which would put the readout's styles in the
+// first load of a production build (VENT-49).
+import stylesUrl from './perf-hud.css?url';
 import type { Tier } from '../lib/quality';
 import type { DebugFlags } from './debug-flags';
 import { FrameMeter } from './frame-meter';
@@ -104,6 +108,9 @@ export class PerfHud implements HudView {
     appendPreviousTrail(this.details, options.previous);
     const panel = hudPanel();
     panel.append(button, this.details, this.errors);
+    const styles = Object.assign(document.createElement('link'),
+      { rel: 'stylesheet', href: stylesUrl });
+    document.head.append(styles);
     document.body.append(panel);
     this.fold(options.folded === true);
     window.addEventListener('error', (event) => this.error(event.message));

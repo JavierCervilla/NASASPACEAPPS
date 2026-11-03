@@ -24,11 +24,12 @@
  */
 
 /**
- * The dev-only test tooling, started together: breadcrumbs that survive a GPU
- * crash, the WebGL context watch, the performance readout and, on request
- * (`#stats-spector`), Spector.js. Base.astro imports it only in dev builds
- * (`import.meta.env.DEV` or `PUBLIC_PERF_HUD=1`), so none of it, Spector.js
- * included, reaches a production bundle.
+ * The test tooling, started together: breadcrumbs that survive a GPU crash,
+ * the WebGL context watch, the performance readout and, on request
+ * (`#stats-spector`), Spector.js. It loads at once in the dev server and a
+ * PUBLIC_PERF_HUD=1 build, and in a production build only on `?debug`, after
+ * the page has started (src/lib/dev-tools-loader.ts, VENT-49); Spector.js is
+ * never in a production build (spector.ts).
  *
  * It knows no renderer library: the page's renderer, once there is one, calls
  * `attach` with a `RendererAdapter`.
@@ -100,22 +101,33 @@ export class DevTools {
    */
   static async start(options: DevToolsOptions): Promise<DevTools> {
     const tools = new DevTools(options);
-    if (tools.flags.spector) {
+    if (tools.flags.capture) {
       await startSpector();
-      tools.crumbs.mark('spector on');
+      tools.crumbs.mark('Spector.js on');
     }
     return tools;
   }
 
-  /** Starts reading a renderer's frames and watches its canvas. */
-  attach(renderer: RendererAdapter): void {
-    this.sampler = new RendererSampler(renderer);
+  /**
+   * Starts reading a renderer's frames and watches its canvas. Returns what
+   * gives the readout back to the renderer it read before, for a view that
+   * leaves before the page does (the on-foot view).
+   */
+  attach(renderer: RendererAdapter): () => void {
+    const previous = this.sampler;
+    const sampler = new RendererSampler(renderer);
+    this.sampler = sampler;
     this.crumbs.mark('renderer attached');
     watchContext(renderer.canvas, this.crumbs, (event) =>
       this.hud.error(
         event === 'lost' ? PERF_TEXT.contextLost : PERF_TEXT.contextRestored,
       ),
     );
+    return () => {
+      if (this.sampler !== sampler) return;
+      this.sampler = previous;
+      this.crumbs.mark('renderer detached');
+    };
   }
 
   /** Called once per page frame with the frame's duration in seconds. */

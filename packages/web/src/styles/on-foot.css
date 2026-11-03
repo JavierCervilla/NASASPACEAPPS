@@ -210,7 +210,15 @@
 
 .on-foot__status p { margin: 0; }
 
-.on-foot__retry {
+.on-foot__actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 8px;
+}
+
+.on-foot__retry,
+.on-foot__copy {
   min-height: 44px;
   padding: 0 18px;
   border: 0;
@@ -221,6 +229,29 @@
   font-weight: 600;
   pointer-events: auto;
   cursor: pointer;
+  transition: background-color 100ms ease-out, transform 100ms ease-out;
+}
+
+/* The second action is quieter: «Try again» stays the one to press. */
+.on-foot__copy {
+  background: transparent;
+  color: var(--on-foot-muted);
+  box-shadow: inset 0 0 0 1px var(--on-foot-edge);
+}
+
+.on-foot__retry:active,
+.on-foot__copy:active { transform: scale(0.97); }
+
+.on-foot__retry:focus-visible,
+.on-foot__copy:focus-visible {
+  outline: 2px solid var(--on-foot-ink);
+  outline-offset: 2px;
+}
+
+.on-foot__copied {
+  min-height: 1.3em;
+  color: var(--on-foot-muted);
+  font-size: 0.8125rem;
 }
 
 .on-foot__labels {
@@ -262,8 +293,12 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .on-foot__switch button { transition: none; }
-  .on-foot__switch button:active { transform: none; }
+  .on-foot__switch button,
+  .on-foot__retry,
+  .on-foot__copy { transition: none; }
+  .on-foot__switch button:active,
+  .on-foot__retry:active,
+  .on-foot__copy:active { transform: none; }
 }
 
 @media (prefers-reduced-transparency: reduce) {
@@ -276,6 +311,10 @@
 
 @media (prefers-contrast: more) {
   .on-foot__switch,
-  .on-foot__caption { box-shadow: inset 0 0 0 1px var(--on-foot-ink); }
+  .on-foot__caption,
+  .on-foot__retry,
+  .on-foot__copy { box-shadow: inset 0 0 0 1px var(--on-foot-ink); }
+  .on-foot__copy,
+  .on-foot__copied { color: var(--on-foot-ink); }
   .on-foot__label { background: #000; color: #fff; }
 }

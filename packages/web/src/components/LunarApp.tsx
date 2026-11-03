@@ -60,6 +60,7 @@ import {
 import { createHorizonStore } from '../horizon/horizon-store';
 import { horizonFetch } from '../horizon/point-horizon';
 import { fetchRingSource } from '../terrain/ring/ring-fetch';
+import { pageViewTier } from '../terrain/view-tier-page';
 import { retryOnReturn } from '../horizon/retry-triggers';
 import { createSourceStore } from '../source/data-source';
 import { followClock } from '../calendar/follow-clock';
@@ -123,7 +124,8 @@ function createClock(sitesUrl: string, sites: readonly CardSite[]) {
   const raw = cachedComputed(pointsOf(sites));
   const source = createSourceStore(localStore());
   const shadowOf = shadowsOf(sites);
-  return { time, player, raw, source, shadowOf, horizons, tiles };
+  const viewTier = pageViewTier();
+  return { time, player, raw, source, shadowOf, horizons, tiles, viewTier };
 }
 
 /**

@@ -80,6 +80,14 @@ export function rebuild(s: LayerState, name: string): void {
   const geometry = ringGeometry(buffers, litOf(buffers.positions,
     litReader(s, level)));
   swap(s, entry, geometry, buffers.index.length > 0);
+  noteLevel(s, level);
+}
+
+/** Notes the first mesh a level builds, for the crash report. */
+function noteLevel(s: LayerState, level: number): void {
+  if (s.built.has(level)) return;
+  s.built.add(level);
+  s.note(`ring level ${level}: first mesh built`);
 }
 
 /** Puts `geometry` on the entry's mesh, making the mesh when it has none. */

@@ -24,14 +24,14 @@
  */
 
 /**
- * Starts the dev tools once per page. Base.astro imports this module only in
- * dev builds; a renderer added later reaches the same instance through the
- * same guarded dynamic import and calls `attach` on it:
+ * Starts the dev tools once per page. Nothing imports this module but
+ * src/lib/dev-tools-loader.ts, with a dynamic import: at once in the dev
+ * server and a PUBLIC_PERF_HUD=1 build, on `?debug` after the page has
+ * started in a production build (VENT-49). A renderer reaches the same
+ * instance through the loader and calls `attach` on it (globe/dev-hook.ts):
  *
- *   if (import.meta.env.DEV || import.meta.env.PUBLIC_PERF_HUD === '1') {
- *     const { devTools } = await import('../devtools/boot');
- *     (await devTools()).attach(threeAdapter(renderer));
- *   }
+ *   const { devTools, threeAdapter } = await devToolsModule();
+ *   (await devTools()).attach(threeAdapter(renderer));
  */
 import { DevTools } from './dev-tools';
 import { detectTier, deviceHints } from '../lib/quality';

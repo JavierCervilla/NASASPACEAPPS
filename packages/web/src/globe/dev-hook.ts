@@ -24,19 +24,28 @@
  */
 
 /**
- * Hands the renderer to the dev tools (performance readout, context watch),
- * as packages/web/src/devtools/boot.ts documents. In a production build the
- * condition is a constant false and the bundler drops the import, which
- * scripts/check-no-devtools.mjs proves after every build.
+ * Hands a renderer, the globe's or the on-foot view's, to the dev tools
+ * (performance readout, context watch) when the page has them: the dev
+ * server, a PUBLIC_PERF_HUD=1 build, or `?debug` once the page has started
+ * (src/lib/dev-tools-loader.ts, VENT-49). Without them nothing is requested.
  */
 import type { WebGLRenderer } from 'three';
+import { devToolsModule } from '../lib/dev-tools-loader';
 
-export async function attachDevTools(
+/** Attaches `renderer` when the tools come; returns what detaches it. */
+export function attachDevTools(
   renderer: WebGLRenderer,
-  textureBytes: () => number,
-): Promise<void> {
-  if (import.meta.env.DEV || import.meta.env.PUBLIC_PERF_HUD === '1') {
-    const { devTools, threeAdapter } = await import('../devtools/boot');
-    (await devTools()).attach(threeAdapter(renderer, { textureBytes }));
-  }
+  textureBytes?: () => number,
+): () => void {
+  let live = true;
+  let detach: (() => void) | undefined;
+  void devToolsModule()?.then(async ({ devTools, threeAdapter }) => {
+    const tools = await devTools();
+    const options = textureBytes ? { textureBytes } : {};
+    if (live) detach = tools.attach(threeAdapter(renderer, options));
+  });
+  return () => {
+    live = false;
+    detach?.();
+  };
 }

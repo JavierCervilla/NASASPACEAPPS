@@ -63,6 +63,8 @@ export interface RingRun {
   readonly signal: AbortSignal;
   /** Lets the page breathe between slices of work. */
   readonly breathe: () => Promise<void>;
+  /** Tells the crash report how the ring is coming (VENT-49). */
+  readonly note?: ((text: string) => void) | undefined;
 }
 
 /** What a final `error` leaves the view. */

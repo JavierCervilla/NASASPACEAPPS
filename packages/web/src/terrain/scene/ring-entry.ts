@@ -61,6 +61,9 @@ export interface LayerState {
   readonly slicer: Slicer;
   readonly entries: Map<string, Entry>;
   readonly lits: (LitGrid | null)[];
+  /** The levels that have drawn a mesh, and where the layer says so. */
+  readonly built: Set<number>;
+  readonly note: (text: string) => void;
 }
 
 /** The skirt of a level: most of the next level's node spacing, metres. */

@@ -38,6 +38,26 @@
   renderizado por software, de 38 fotogramas a 6).
 
 ### Arreglado
+- La vista 3D «Horizon» ya no se queda muerta cuando el navegador le quita la GPU (VENT-49). La vista se libera y dice
+  «Terrain unavailable right now» con «Try again», que la abre de nuevo en calidad baja (nunca se reabre sola), y esa
+  calidad se recuerda durante la sesión. Además, si un fotograma de la carga tarda demasiado para la GPU del móvil, la
+  vista baja sola un nivel de calidad. Para localizar un cuelgue desde el móvil,
+  `?onfoot=astronaut,lander,shadows,far,shade,logdepth` deja fuera partes de la vista.
+- La vista 3D «Horizon» ya no se vuelve a iluminar cada minuto (VENT-49). Con el reloj en vivo, cada minuto nuevo
+  recalculaba la sombra de todos los anillos y dibujaba tres fotogramas completos para un Sol que se mueve 0,008°, y
+  en el Pixel con ahorro de batería la GPU se reiniciaba poco después. Ahora solo se ilumina y se dibuja cuando el Sol o
+  la Tierra, vistos desde el punto, se han movido 0,1° o más desde la última vez; cambiar de hora a mano pasa siempre
+  ese umbral, y un cambio de punto, de calidad o de cámara también vuelve a dibujar. El atributo `lit` se sigue
+  actualizando en el sitio: three r186 solo libera el búfer de la GPU junto con su geometría, así que sustituir el
+  atributo lo dejaría colgado.
+- Cuando el navegador quita la GPU a la vista 3D, el lienzo muerto sale de la página en el mismo evento, antes de que
+  aparezca el mensaje, así que ya no se ve un fotograma congelado ni el icono de WebGL roto. El aviso «Terrain
+  unavailable right now» conserva «Try again» como acción principal y añade «Copy report» (con la misma apariencia de
+  la vista, sin parecer un fallo): copia un informe en texto plano de lo que hizo la vista desde que se abrió (como
+  mucho 40 pasos con sus segundos, los últimos 8 fotogramas, la memoria de la GPU, la GPU, el navegador, la pantalla,
+  los núcleos, la memoria y la batería), que se guarda en la sesión (`ventana.onFootReport`, la ejecución actual y la
+  anterior) para poder recuperarlo si la página se recarga. No se envía a ningún sitio: lo copia la persona. Hay
+  textos nuevos en los cinco idiomas, a revisar por una persona nativa en francés, alemán e italiano.
 - Un fallo pasajero ya no deja un punto sin relieve toda la sesión (VENT-45). Si la API del horizonte no responde, está
   ocupada, limita las peticiones o da un error 5xx, la web vuelve a preguntar a los 2, 6 y 18 s (o cuando el servidor
   diga en su `Retry-After`, como mucho 30 s) y la franja sigue en «Smooth horizon · real terrain loading» mientras
@@ -58,6 +78,11 @@
     paren mientras comprueba un fichero, y la imagen rechaza `/data//` y `/data/./` como rutas de montaje.
 
 ### Añadido
+- «?debug» en la dirección abre el panel de rendimiento para diagnosticar (VENT-49): en la web publicada, añadir
+  `?debug` muestra, cuando la página ya ha arrancado, el panel del estudio con fotogramas por segundo, tiempos de
+  fotograma, llamadas de dibujo, triángulos y memoria de texturas, más el rastro de pasos que sobrevive a un fallo de la
+  GPU (y que, con la vista «Horizon» abierta, anota también sus pasos). Sin `?debug` no se descarga nada de esto, no
+  entra en la caché sin conexión, y el cambio de idioma lo conserva. Spector.js sigue fuera de la web publicada.
 - Relieve alineado y por niveles de detalle para la vista 3D (VENT-46, solo servidor y simulador): la API sirve teselas
   de relieve de una cuadrícula global y determinista, en cuatro niveles (2, 8, 32 y 128 km de lado, de 129 x 129
   muestras), con el plano estereográfico polar de LOLA desde 60° hasta cada polo y una cuadrícula latitud-longitud entre

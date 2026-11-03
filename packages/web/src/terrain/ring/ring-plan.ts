@@ -50,6 +50,12 @@ const TIERS: Readonly<Record<Tier, RingTier>> = {
 /** The rings a tier draws. */
 export const ringTier = (tier: Tier): RingTier => TIERS[tier];
 
+/** The same rings stopped at level 1 (`?onfoot=far`, a diagnostic switch). */
+export const nearRings = (rings: RingTier): RingTier => ({
+  levels: Math.min(rings.levels, 2),
+  strides: rings.strides,
+});
+
 /** The backdrop's radius: past the rings' corners (181 km), or at 40 km. */
 export const backdropM = ({ levels }: RingTier): number =>
   levels >= 4 ? 190_000 : 40_000;

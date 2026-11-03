@@ -59,7 +59,8 @@ export function ViewStage(props: Props) {
   });
   return (
     <OnFootView layout="phone" site={site} time={parts.time}
-      horizons={parts.horizons} tiles={parts.tiles} band={band}
+      horizons={parts.horizons} tiles={parts.tiles}
+      viewTier={parts.viewTier} band={band}
       bandMoves={sheetEdge.subscribe} />
   );
 }

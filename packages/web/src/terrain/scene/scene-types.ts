@@ -31,7 +31,10 @@
  * the panel can name them without loading the scene.
  */
 import type { HorizonProfile } from '@ventana/sim';
+import type { QualitySettings } from '../../lib/quality';
 import type { LanderKind } from '../lander-kind';
+import type { LeaveOut } from '../leave-out';
+import type { ReportSink } from '../report/sink';
 import type { RingView } from '../ring/ring-session';
 import type { HeightTile } from '../tile';
 import type { CameraMode, Look } from '../view-camera';
@@ -76,9 +79,30 @@ export interface SceneInput {
   readonly words: SceneWords;
 }
 
+/**
+ * What a mount draws at (VENT-49): its tier, the parts left out, and where
+ * it tells the crash report what it does.
+ */
+export interface SceneSetup {
+  readonly quality: QualitySettings;
+  /** The `?onfoot=` diagnostic switches (leave-out.ts). */
+  readonly leave: ReadonlySet<LeaveOut>;
+  readonly report: ReportSink;
+}
+
 export interface SceneHooks {
   /** Hears the look after each turn, for the text alternative. */
   readonly onLook: (look: Look) => void;
+  /**
+   * The browser took the GPU context away: the panel frees the scene and
+   * says so; it never mounts again by itself.
+   */
+  readonly onLost: () => void;
+  /**
+   * A frame while loading cost more than the tier can afford (the frame
+   * probe, frame-probe.ts); absent when the tier may not step down.
+   */
+  readonly onSlowFrame?: (() => void) | undefined;
   /**
    * The band of the host the view is framed in (the phone's free band
    * between its top bar and sheet), px from the host's top; none: whole.

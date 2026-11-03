@@ -31,6 +31,7 @@
  * instant does.
  */
 import { Group, type Mesh, type MeshStandardMaterial } from 'three';
+import { drawsAgain } from '../input-change';
 import { EYE_M } from '../view-camera';
 import { backdropMesh } from './backdrop';
 import { groundMaterial } from './ground';
@@ -43,15 +44,17 @@ import { createSlicer, type Slicer } from './slicer';
 import { ringsMesh } from './rings';
 import { placeLander } from './lander-place';
 import { landerSpot, rocksMesh } from './props';
-import type { SceneInput } from './scene-types';
-import { placeSky, shadeSun } from './sky-place';
+import type { SceneInput, SceneSetup, SkyDirs } from './scene-types';
 import { createSky, type SkyParts } from './sky';
-import { exposureFor, type Stage } from './stage';
+import type { Stage } from './stage';
 import { createSunMask, type SunMask } from './sun-mask';
+import { relightWorld } from './world-light';
 import { groundOf, type Ground } from './world-ground';
 
 export interface World {
   readonly stage: Stage;
+  /** What this mount draws at and without (its tier, `?onfoot=`). */
+  readonly setup: SceneSetup;
   readonly mask: SunMask;
   readonly sky: SkyParts;
   readonly astronaut: Group;
@@ -64,6 +67,11 @@ export interface World {
   material: MeshStandardMaterial;
   backdrop: Mesh | null;
   input: SceneInput | null;
+  /**
+   * The sky the world is lit for: the last one that moved the Sun or the
+   * Earth enough to light again (world-light.ts); null before the first.
+   */
+  lit: SkyDirs | null;
   /** The relief rings now drawn, their far shading and the work slicer. */
   rings: RingLayer | null;
   farShade: FarShade | null;
@@ -73,13 +81,14 @@ export interface World {
 }
 
 /** An empty world on `stage`. */
-export function createWorld(stage: Stage, seed: number, shadowPx: number) {
+export function createWorld(stage: Stage, seed: number, setup: SceneSetup) {
   const mask = createSunMask();
   const slicer = createSlicer({ invalidate: () => world.invalidate() });
-  const world: World = { stage, mask, sky: createSky(seed, shadowPx),
+  const shadowPx = setup.quality.tier === 'high' ? 2048 : 1024;
+  const world: World = { stage, setup, mask, sky: createSky(seed, shadowPx),
     astronaut: new Group(), idle: null, lander: new Group(), near: new Group(),
     ground: () => 0,
-    material: groundMaterial(mask), backdrop: null, input: null,
+    material: groundMaterial(mask), backdrop: null, input: null, lit: null,
     rings: null, farShade: null, slicer, invalidate: () => undefined };
   stage.scene.add(world.sky.group, world.astronaut, world.lander,
     world.near);
@@ -102,6 +111,7 @@ function rebuildNear(world: World, input: SceneInput): void {
     { spot, kind: input.lander }, world.mask), ringsMesh(world.ground));
   world.stage.scene.add(world.near);
   placeLander(world.lander, world.ground, input);
+  world.setup.report.step('near ground placed');
 }
 
 /** The far horizon from `profile`, around the eye over the point. */
@@ -116,27 +126,23 @@ function applyProfile(world: World, input: SceneInput): void {
   world.stage.scene.add(world.backdrop);
 }
 
-/** Changes what `input` changes. */
-export function applyInput(world: World, input: SceneInput): void {
+/**
+ * Changes what `input` changes; true when the view has to draw again. A new
+ * instant lights the world and draws only when the Sun or the Earth moved
+ * enough to see (world-light.ts); a ground or a ring that is new lights it
+ * whatever the sky did.
+ */
+export function applyInput(world: World, input: SceneInput): boolean {
   const was = world.input;
   const tilesChanged = was?.tiles.length !== input.tiles.length ||
     input.tiles.some((t, i) => was.tiles[i] !== t);
+  const profileChanged = was?.profile !== input.profile;
   world.input = input;
   applyRings(world, input);
   if (tilesChanged) applyTiles(world, input);
-  if (tilesChanged || was?.profile !== input.profile) {
-    applyProfile(world, input);
-  }
-  if (!tilesChanged && was?.sky === input.sky &&
-    was.profile === input.profile) return;
-  placeSky(world.sky, input.sky, input.earthSpin);
-  const onLit = (lit: Float32Array): void => {
-    world.rings?.setLit(0, { lit, sizeM: input.tiles[0]?.tile.sizeM ?? 0 });
-  };
-  const sun = { azDeg: input.sky.sunAz, elDeg: input.sky.sunEl };
-  shadeSun({ tiles: input.tiles, onLit, profile: input.profile,
-    mask: world.mask }, input.sky);
-  world.farShade?.run(sun);
-  world.stage.renderer.toneMappingExposure =
-    exposureFor(world.mask.near.value > 0);
+  if (tilesChanged || profileChanged) applyProfile(world, input);
+  const forced = tilesChanged || profileChanged || was?.ring !== input.ring;
+  const lit = (forced || was?.sky !== input.sky) &&
+    relightWorld(world, input, forced);
+  return lit || drawsAgain(was, input);
 }

@@ -60,6 +60,7 @@ function feedFor(
     },
     tile: (tile) => live.store?.add(tile),
     settled: (level) => {
+      run.note?.(`ring level ${level} settled`);
       if (level === second) void stand(run, live, report);
     },
   };
@@ -83,6 +84,9 @@ export async function runRing(
     await stand(run, live, report);
     if (live.store) finish(live.store);
   } catch (error) {
-    if (!signal.aborted) report(settledState(error));
+    if (signal.aborted) return;
+    const state = settledState(error);
+    run.note?.(`ring failed: ${state.kind}`);
+    report(state);
   }
 }

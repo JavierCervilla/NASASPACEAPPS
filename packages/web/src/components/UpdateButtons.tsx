@@ -53,6 +53,23 @@ function ReloadMark() {
   );
 }
 
+/**
+ * The pin hint's ✕ beside a notice row's words: this row's and the
+ * «Offline» row's (OfflineRow.tsx, VENT-57).
+ */
+export function DismissButton(props: {
+  readonly label: string;
+  readonly onDismiss: () => void;
+}) {
+  return (
+    <button type="button" className="pin-hint__close" aria-label={props.label} onClick={props.onDismiss}>
+      <svg width="12" height="12" viewBox="0 0 12 12" aria-hidden="true" focusable="false">
+        <path d="M2 2l8 8M10 2l-8 8" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
+      </svg>
+    </button>
+  );
+}
+
 export function UpdateButtons({ onUpdate, onDismiss }: UpdateActions) {
   const { t } = useI18n();
   return (
@@ -65,11 +82,7 @@ export function UpdateButtons({ onUpdate, onDismiss }: UpdateActions) {
           <span className="update-notice__how pin-hint__coarse">{t('update.tap')}</span>
         </span>
       </button>
-      <button type="button" className="pin-hint__close" aria-label={t('update.dismiss')} onClick={onDismiss}>
-        <svg width="12" height="12" viewBox="0 0 12 12" aria-hidden="true" focusable="false">
-          <path d="M2 2l8 8M10 2l-8 8" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
-        </svg>
-      </button>
+      <DismissButton label={t('update.dismiss')} onDismiss={onDismiss} />
     </>
   );
 }

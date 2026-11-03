@@ -1,0 +1,107 @@
+/*
+ *   _   _       _                         _ _
+ *  | | | |_ __ (_)_   _____ _ __ ___  ___| | | ___
+ *  | | | | '_ \| \ \ / / _ \ '__/ __|/ _ \ | |/ _ \
+ *  | |_| | | | | |\ V /  __/ |  \__ \  __/ | |  __/
+ *   \___/|_| |_|_| \_/ \___|_|  |___/\___|_|_|\___|
+ *
+ *             =++==--::.
+ *         %%%%##**++=--:..  .
+ *      ##**#%@%%#***+=--::.   .
+ *    #**=+*#*#**#++++=-:::.. .  .
+ *   #++-====*@%+*++==--::...   .  .    Ventana Lunar
+ *  #+=-=--++==+===-+==--:..   .  .  .  Sun, Earth and landing
+ * #----====-------=-=---:..  .  .  .   windows at the lunar
+ * #+---+=====--=---==-::..     .  .  . south pole
+ * #*----==---==-=-=-:-....    .  .  .
+ * *#----===+*===--:-::...    .  .  .   Built for the NASA Space
+ *  *----=*-+*%*+=-:::....   .  .  .    Apps Challenge 2026,
+ *   *------=+*=--:::-:::.. .  .  .     Madrid. Not endorsed
+ *    %*===-=-==--==-:::.  .  .  .      by NASA.
+ *      *+:--+:--::::::.  .  .  .
+ *         -=:::...:..   .  .           (c) 2026 Universelle
+ *             :::.. .  .               SPDX-License-Identifier: MIT
+ */
+
+/*
+ * One segmented control and one secondary button (VENT-57, C-16 and C-17,
+ * the variants the human chose on the VENT-56 canvas). Every place that
+ * shows one is named here, so none paints its own; each place keeps its
+ * layout and its font size in its own sheet.
+ */
+
+/*
+ * The segmented control: the header's view tabs, the site picker's
+ * regions and «Computed | Horizons | Compare». A grey track 2 px around a
+ * 40 px mark, 44 px in all; the mark #636366 in dark, white with a
+ * shadow in light (tokens.css --segment-*). The phone tab bar is its own.
+ */
+.views,
+.segmented {
+  padding: 2px;
+  border-radius: 12px;
+  background: var(--fill);
+}
+
+.views > *,
+.segmented button {
+  position: relative;
+  min-height: 40px;
+  border-radius: 10px;
+  color: var(--text);
+  font-weight: 600;
+}
+
+/* The track's 2 px join the target: the whole 44 px control takes the tap. */
+.views > *::after,
+.segmented button::after {
+  content: '';
+  position: absolute;
+  inset: -2px 0;
+}
+
+/* While a search spans every region the picker's control does not filter. */
+.segmented button:disabled {
+  color: var(--text-muted);
+}
+
+.views [aria-current='page'],
+.segmented button[aria-pressed='true'],
+.segmented [role='radio'][aria-checked='true'] {
+  background: var(--segment-on);
+  box-shadow: var(--segment-shadow);
+}
+
+/*
+ * The secondary button: a grey pill fully rounded, 44 px tall, weight
+ * 600, never underlined; disabled, its text dims. «Undo» is not one: the
+ * undo row owns it.
+ */
+.card-retry,
+.strip-status button,
+.widgets-error button,
+.source-note__retry,
+.on-foot__retry,
+.now-button {
+  min-height: 44px;
+  padding: 0 16px;
+  border: 0;
+  border-radius: 999px;
+  background: var(--fill);
+  color: var(--text);
+  font: inherit;
+  font-size: var(--type-body-size);
+  font-weight: 600;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.card-retry:disabled,
+.strip-status button:disabled,
+.widgets-error button:disabled,
+.source-note__retry:disabled,
+.on-foot__retry:disabled,
+.now-button:disabled {
+  color: var(--text-muted);
+  cursor: default;
+}

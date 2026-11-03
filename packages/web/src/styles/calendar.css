@@ -164,28 +164,15 @@
   cursor: default;
 }
 
+/* Play: a grey circle like the month arrows (VENT-57, V-07). */
 .play-button {
-  background: var(--text);
-  color: var(--bg);
-}
-
-.now-button {
-  flex: none;
-  min-height: 44px;
-  padding: 0 12px;
-  border: 0;
-  border-radius: 12px;
   background: var(--fill);
   color: var(--text);
-  font: inherit;
-  font-size: 0.875rem;
-  font-weight: 600;
-  cursor: pointer;
 }
 
-.now-button:disabled {
-  color: var(--text-muted);
-  cursor: default;
+/* «Now» is the secondary button (controls.css), dimmed while live. */
+.now-button {
+  flex: none;
 }
 
 :is(.round-button, .play-button, .now-button, .site-button):focus-visible,
@@ -215,18 +202,6 @@
 
 .strip-status p {
   margin: 0;
-}
-
-.strip-status button {
-  min-height: 44px;
-  padding: 0 16px;
-  border: 0;
-  border-radius: 12px;
-  background: var(--fill);
-  color: var(--text);
-  font: inherit;
-  font-weight: 600;
-  cursor: pointer;
 }
 
 /* Loading is not «neither»: the card's skeleton grey, never a signal. */
@@ -499,7 +474,8 @@
   justify-content: space-between;
 }
 
-.calendar .round-button {
+.calendar .round-button,
+.calendar .play-button {
   background: var(--phone-field);
 }
 
@@ -667,10 +643,6 @@
 .calendar__state[data-tone='window'] { color: var(--signal-window-ink); }
 .calendar__state[data-tone='sun'] { color: var(--signal-sun-ink); }
 .calendar__state[data-tone='earth'] { color: var(--signal-earth-ink); }
-
-.calendar .now-button {
-  background: var(--phone-field);
-}
 
 /* Desktop only, and the phone's sheet only on phones. */
 @media (max-width: 767.98px) {

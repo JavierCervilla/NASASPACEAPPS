@@ -29,7 +29,8 @@
  * materialise, blur and scale with the opacity, as «New version ready»
  * does (update.css). They move on the critically damped --spring over
  * --dur-enter; components/presence.ts keeps a leaving surface mounted
- * for that long. Under reduced motion a plain fade (§14).
+ * for that long. Under reduced motion a plain fade (§14) over --dur-fade,
+ * which presence.ts waits instead.
  */
 
 /*
@@ -102,16 +103,16 @@
     scale: none;
     filter: none;
     transition:
-      opacity 200ms linear,
-      overlay 200ms allow-discrete,
-      display 200ms allow-discrete;
+      opacity var(--dur-fade) linear,
+      overlay var(--dur-fade) allow-discrete,
+      display var(--dur-fade) allow-discrete;
   }
 
   [data-presence],
   [data-presence='out'] {
     scale: none;
     filter: none;
-    transition: opacity 200ms linear;
+    transition: opacity var(--dur-fade) linear;
   }
 
   @starting-style {

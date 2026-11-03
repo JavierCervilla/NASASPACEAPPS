@@ -33,6 +33,7 @@ import type { WatchedValue } from '../lib/watched-value';
 import type { SiteStore } from '../phone/site-store';
 import type { NowState } from '../phone/widget-types';
 import { useTime } from './calendar/hooks';
+import { LoadButton } from './GlobeLoad';
 import { GlobeSplash } from './GlobeSplash';
 import { useI18n } from './i18n-context';
 import { GlobeOverlays } from './GlobeOverlays';
@@ -97,16 +98,6 @@ function helpText(
   const lit = status?.kind === 'ready' && atMs !== null;
   const howTo = [i18n.t('globe.howTo'), i18n.t('globe.markers')];
   return [...howTo, ...(lit ? [describeSun(i18n, atMs)] : [])].join(' ');
-}
-
-/** Under Save-Data, the button that downloads the globe on request. */
-function LoadButton({ onLoad }: { readonly onLoad: () => void }) {
-  const { t } = useI18n();
-  return (
-    <button type="button" className="globe-load" onClick={onLoad}>
-      {t('globe.load')}
-    </button>
-  );
 }
 
 /**

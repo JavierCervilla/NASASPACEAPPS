@@ -473,22 +473,26 @@ test.describe('phone, 390x844: layers and saved sites', () => {
     return sheet;
   };
 
+  // The layers sit on the Sites sheet's «Settings» page, behind the gear beside «Done» (VENT-57).
   test('the Sites sheet groups the layers as switches; with none saved, the row says how to save one', async ({ page }) => {
     await open(page);
     const sheet = await sitesSheet(page);
-    const group = sheet.getByRole('region', { name: 'Layers' });
+    await sheet.getByRole('button', { name: 'Settings' }).click();
+    const settings = page.locator('.settings-page');
+    const group = settings.getByRole('region', { name: 'Layers' });
     await expect(group.getByRole('switch')).toHaveCount(4);
     const saved = group.getByRole('switch', { name: 'Saved sites' });
     await expect(saved).toBeChecked();
     await expect(saved).toHaveAccessibleDescription('Drop a pin on the Moon and tap Save to keep a site here');
     await evidence(page, 'layers-phone');
+    await group.getByRole('switch', { name: 'Approximate zones' }).click();
+    await expect(group.getByRole('switch', { name: 'Approximate zones' })).not.toBeChecked();
+    expect(await page.evaluate(() => localStorage.getItem('ventana.layers'))).toContain('"approximate-zones":false');
+    await settings.getByRole('button', { name: 'Landing sites' }).click();
     await sheet.getByRole('button', { name: 'Saved, 0 sites' }).click();
     await expect(sheet).toContainText('No saved sites yet');
     await sheet.locator('.saved-empty').scrollIntoViewIfNeeded();
     await evidence(page, 'empty-phone');
-    await group.getByRole('switch', { name: 'Approximate zones' }).click();
-    await expect(group.getByRole('switch', { name: 'Approximate zones' })).not.toBeChecked();
-    expect(await page.evaluate(() => localStorage.getItem('ventana.layers'))).toContain('"approximate-zones":false');
   });
 
   test('«Save» in the sheet head keeps the custom point; the «Saved» segment lists it, checked', async ({ page }) => {

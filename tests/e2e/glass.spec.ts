@@ -106,7 +106,8 @@ async function reduceTransparency(page: Page): Promise<void> {
 test.describe('desktop, 1440x900', () => {
   test.use({ viewport: { width: 1440, height: 900 } });
 
-  const SURFACES = ['.bar', '.globe-layers', '.strip', '.card-block'];
+  // The Layers key wears the hint's frosted material since VENT-57 (C-02), never Liquid.
+  const SURFACES = ['.bar', '.strip', '.card-block'];
 
   test('?glass=liquid refracts every desktop surface, the site popover too', async ({ page }) => {
     await open(page, '?glass=liquid');
@@ -210,7 +211,7 @@ function builtPolicy(): string {
 }
 
 for (const [name, viewport, isMobile, surface] of [
-  ['desktop', { width: 1440, height: 900 }, false, '.globe-layers'],
+  ['desktop', { width: 1440, height: 900 }, false, '.strip'],
   ['phone', { width: 390, height: 844 }, true, '.phone-bar'],
 ] as const) {
   test.describe(`${name} under the production CSP`, () => {

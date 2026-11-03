@@ -28,7 +28,13 @@
  * writes how far the page is pushed in to its `--push`, which the
  * styles turn into the slide (or, under reduced motion, a cross-fade).
  */
-import { useEffect, useRef, useState, type RefObject } from 'react';
+import {
+  useEffect,
+  useRef,
+  useState,
+  type KeyboardEvent,
+  type RefObject,
+} from 'react';
 import { createPush, type PushMotion } from '../../lib/push-motion';
 
 /** Where the push rests: on the list, on the page, or between them. */
@@ -65,4 +71,28 @@ export function usePush(
   }, [el]);
   useEffect(() => motion.current?.to(pushed ? 1 : 0), [pushed]);
   return at;
+}
+
+/**
+ * Gives the focus back to `el` (the control that pushed the page) once
+ * the page is popped and the list under it is no longer inert.
+ */
+export function useFocusOnReturn(
+  el: RefObject<HTMLElement | null>,
+  pushed: boolean,
+): void {
+  const was = useRef(pushed);
+  useEffect(() => {
+    if (was.current && !pushed) el.current?.focus();
+    was.current = pushed;
+  }, [el, pushed]);
+}
+
+/** A key handler for a pushed page: Escape goes `back` one page. */
+export function escapeTo(back: () => void) {
+  return (event: KeyboardEvent): void => {
+    if (event.key !== 'Escape') return;
+    event.preventDefault();
+    back();
+  };
 }

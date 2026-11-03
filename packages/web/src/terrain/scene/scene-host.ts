@@ -56,7 +56,7 @@ function flingOf(host: HTMLElement, world: World, view: ViewState) {
 export function bindHost(host: HTMLElement, world: World, view: ViewState,
   set: (look: Look) => void): () => void {
   const { camera } = world.stage;
-  const unbind = bindLook(host, { mode: () => view.mode,
+  const unbind = bindLook(host, {
     set: (look) => {
       world.setup.report.step('turn', 'turn');
       set(look);

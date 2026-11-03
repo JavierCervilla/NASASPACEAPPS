@@ -25,11 +25,11 @@
 
 /**
  * What the on-foot scene hands the panel (VENT-34): turning the look,
- * taking a new input (a new instant, tiles, a mode, which opens the mode
- * on the same heading), drawing again and freeing it all.
+ * taking a new input (a new instant, tiles), drawing again and freeing it
+ * all.
  */
 import type { Loop } from '../../globe/loop';
-import { startLook, type Look } from '../view-camera';
+import type { Look } from '../view-camera';
 import type { ViewState } from './scene-frame';
 import type { SceneHooks, SceneInput, TerrainScene } from './scene-types';
 import { applyInput, type World } from './world';
@@ -44,23 +44,15 @@ export const turner = (view: ViewState, hooks: SceneHooks, loop: () => Loop) =>
 
 interface Parts {
   readonly world: World;
-  readonly view: ViewState;
-  readonly set: (look: Look) => void;
   readonly loop: Loop;
   readonly teardown: () => void;
 }
 
 /** What the panel holds: update, draw again, free. */
 export const controller = (
-  { world, view, set, loop, teardown }: Parts,
+  { world, loop, teardown }: Parts,
 ): TerrainScene => ({
   update: (next: SceneInput): void => {
-    if (next.mode !== view.mode) {
-      view.mode = next.mode;
-      view.coast = null;
-      view.home = startLook(next.mode, view.look.yawDeg);
-      set(view.home);
-    }
     if (applyInput(world, next)) loop.invalidate();
   },
   invalidate: (): void => loop.invalidate(),

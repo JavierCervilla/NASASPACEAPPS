@@ -31,7 +31,7 @@
  */
 import type { FrameProbe } from '../frame-probe';
 import { stepCoast, type Coast } from '../look-coast';
-import type { CameraMode, Look } from '../view-camera';
+import type { Look } from '../view-camera';
 import { aimCamera, markBodies } from './camera-apply';
 import { labelLayer, type LabelLayer } from './labels';
 import { stageProbe } from './scene-guard';
@@ -40,9 +40,8 @@ import type { SceneHooks } from './scene-types';
 import { fitStage } from './stage';
 import type { World } from './world';
 
-/** The camera's state, changed by the controls and the switch. */
+/** The camera's state, changed by the controls. */
 export interface ViewState {
-  mode: CameraMode;
   look: Look;
   home: Look;
   /** The swipe still carrying the look on (look-coast.ts), or none. */
@@ -52,7 +51,7 @@ export interface ViewState {
 /** Carries the look on by `dt` seconds of the coast; true while it lasts. */
 function coast(view: ViewState, dt: number, hooks: SceneHooks): boolean {
   if (!view.coast) return false;
-  const next = stepCoast(view.mode, view.look, view.coast, dt);
+  const next = stepCoast(view.look, view.coast, dt);
   view.look = next.look;
   view.coast = next.coast;
   hooks.onLook(next.look);
@@ -89,9 +88,8 @@ export function framer(
   const probe = stageProbe(renderer, world.setup.quality, hooks.onSlowFrame);
   const frame = (dt: number): boolean => {
     const coasting = coast(view, dt, hooks);
-    world.idle?.advance(dt);
     fitStage(world.stage, host, hooks.band?.() ?? null);
-    aimCamera(world, view.mode, view.look);
+    aimCamera(world, view.look);
     const drawMs = drawTimed(world, probe);
     if (world.input) labels.draw(world.input.words, view.look.yawDeg);
     markBodies(world, host);

@@ -31,7 +31,6 @@
 .on-foot {
   --on-foot-ink: #f2f2f4;
   --on-foot-muted: #a7adb8;
-  --on-foot-glass: rgba(28, 28, 32, 0.72);
   --on-foot-edge: rgba(255, 255, 255, 0.12);
   position: relative;
   display: flex;
@@ -103,16 +102,15 @@
   display: flex;
   flex-wrap: wrap;
   align-items: flex-start;
-  justify-content: space-between;
+  justify-content: flex-end;
   gap: 8px;
   pointer-events: none;
 }
 
 /*
- * On a phone the controls live in the free band between the top bar and
- * the sheet at peek (156 px, src/sheet/): the switch under the bar, the
- * caption low, just over the sheet's edge, so the two never crowd. The
- * bar grows with the text (200 %): the switch keeps 12 px under its
+ * On a phone the caption lives in the free band between the top bar and
+ * the sheet at peek (156 px, src/sheet/), low, just over the sheet's edge.
+ * The bar grows with the text (200 %): the band keeps 12 px under its
  * measured bottom, the band's top (use-status-band.ts), and never rises
  * above its place at the default size (VENT-52).
  */
@@ -125,53 +123,10 @@
   flex-direction: column;
   flex-wrap: nowrap;
   align-items: stretch;
-  justify-content: space-between;
+  justify-content: flex-end;
 }
-
-.on-foot--phone .on-foot__modes { align-self: center; }
 
 .on-foot__top > * { pointer-events: auto; }
-
-.on-foot__switch {
-  display: grid;
-  max-width: 100%;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  padding: 3px;
-  border-radius: 14px;
-  background: var(--on-foot-glass);
-  box-shadow: inset 0 0 0 1px var(--on-foot-edge);
-  backdrop-filter: blur(14px) saturate(160%);
-  -webkit-backdrop-filter: blur(14px) saturate(160%);
-}
-
-/* At 200 % text two 7.5rem buttons are wider than a phone: they share it. */
-.on-foot__switch button {
-  min-width: min(7.5rem, 100%);
-  min-height: 44px;
-  padding: 0 14px;
-  border: 0;
-  border-radius: 11px;
-  background: transparent;
-  color: var(--on-foot-muted);
-  font: inherit;
-  font-size: 0.875rem;
-  font-weight: 600;
-  letter-spacing: -0.006em;
-  cursor: pointer;
-  transition: background-color 100ms ease-out, transform 100ms ease-out;
-}
-
-.on-foot__switch button:active { transform: scale(0.97); }
-
-.on-foot__switch button[aria-checked='true'] {
-  background: rgba(255, 255, 255, 0.16);
-  color: var(--on-foot-ink);
-}
-
-.on-foot__switch button:focus-visible {
-  outline: 2px solid var(--on-foot-ink);
-  outline-offset: -2px;
-}
 
 .on-foot__caption {
   display: flex;
@@ -234,8 +189,8 @@
 }
 
 /*
- * The band is short, and with nothing drawn the switch and the caption
- * have nothing to act on or describe: they step aside for the notice.
+ * The band is short, and with nothing drawn the caption has nothing to
+ * describe: it steps aside for the notice.
  */
 .on-foot--phone .on-foot__stage:has(> .on-foot__status) .on-foot__top {
   visibility: hidden;
@@ -326,24 +281,13 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .on-foot__switch button,
   .on-foot__retry,
   .on-foot__copy { transition: none; }
-  .on-foot__switch button:active,
   .on-foot__retry:active,
   .on-foot__copy:active { transform: none; }
 }
 
-@media (prefers-reduced-transparency: reduce) {
-  .on-foot__switch {
-    background: #1c1c20;
-    backdrop-filter: none;
-    -webkit-backdrop-filter: none;
-  }
-}
-
 @media (prefers-contrast: more) {
-  .on-foot__switch,
   .on-foot__caption,
   .on-foot__retry,
   .on-foot__copy { box-shadow: inset 0 0 0 1px var(--on-foot-ink); }

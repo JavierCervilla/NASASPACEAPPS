@@ -25,8 +25,8 @@
 
 /**
  * The on-foot 3D view (VENT-34, the human's verdict on the canvas): the
- * selected site or point from the ground, opening in third person behind
- * the astronaut, with «Third person | First person»; the real relief from
+ * selected site or point from the ground, in first person, the eye 2 m
+ * over the point (VENT-54); the real relief from
  * our API, the far horizon from the point's profile, the Sun and the
  * Earth at the shared instant, illustrative fine detail said so in the
  * caption, the scale's rings, and on desktop the horizon strip under it.
@@ -71,10 +71,6 @@ function usePanel(props: PanelProps) {
     band, bandMoves, report };
   const scene = useTerrainScene(host, view.input, hooks, props.viewTier);
   useStatusBand({ host, status: scene.status, band, bandMoves, makeRoom });
-  const onMode = (mode: typeof view.mode): void => {
-    setYaw(null);
-    view.setMode(mode);
-  };
   const onRetry = (): void => {
     report.step('«Try again» pressed');
     scene.retry();
@@ -82,18 +78,17 @@ function usePanel(props: PanelProps) {
   };
   const onCopyReport = (): Promise<boolean> => copyReport(report);
   const yawDeg = yaw ?? view.startYawDeg;
-  return { view, host, status: scene.status, onMode, onRetry, onCopyReport,
-    yawDeg };
+  return { view, host, status: scene.status, onRetry, onCopyReport, yawDeg };
 }
 
 export default function TerrainPanel(props: PanelProps) {
   const i18n = useI18n();
-  const { view, host, status, onMode, onRetry, onCopyReport, yawDeg } =
+  const { view, host, status, onRetry, onCopyReport, yawDeg } =
     usePanel(props);
   const altId = useId();
   const alt = view.input
-    ? viewAlt(i18n, { mode: view.mode, yawDeg, bodies: view.bodies }) : '';
-  const area = { view, host, status, onMode, onRetry, onCopyReport, altId };
+    ? viewAlt(i18n, { yawDeg, bodies: view.bodies }) : '';
+  const area = { view, host, status, onRetry, onCopyReport, altId };
   const { layout, hours } = props;
   return (
     <section className={`on-foot on-foot--${layout}`} aria-label={i18n.t('onFoot.view')}>

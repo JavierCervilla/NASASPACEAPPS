@@ -33,8 +33,6 @@
 
 /** The parts the view can do without, in the order they are listed. */
 export const LEAVE_OUT_PARTS = [
-  'astronaut',
-  'lander',
   'shadows',
   'far',
   'shade',

@@ -25,7 +25,7 @@
 
 /**
  * The on-foot 3D view (VENT-34, the human's verdict): the «Horizon» tab opens the selected point from the ground in
- * third person, with «Third person | First person»; the relief comes from the stubbed `/api/v1/terrain/tile`, the far
+ * first person, the eye 2 m up, with no camera switch, astronaut or lander (VENT-54); the relief comes from the stubbed `/api/v1/terrain/tile`, the far
  * horizon from the point's profile, so the Sun is drawn hidden exactly where the profile hides it; the caption says
  * what is illustrative; an idle view draws no frames; and none of the view's files is in the first load.
  *
@@ -43,7 +43,9 @@ const RIDGE_AT = new Date('2026-11-30T20:00:00Z');
 const POINT = '?lat=-85.50&lon=40.00';
 const SHOTS = process.env.VENT34_SHOTS;
 /** The view's files, never in the first load (scripts/service-worker.mjs ON_DEMAND). */
-const VIEW_FILES = /\/_astro\/(TerrainPanel|terrain-scene|on-foot|astronaut)[.-]|\/api\/v1\/terrain\/tile/;
+const VIEW_FILES = /\/_astro\/(TerrainPanel|terrain-scene|on-foot)[.-]|\/api\/v1\/terrain\/tile/;
+/** A model the view no longer draws (VENT-54): no glb, no astronaut, no lander. */
+const MODEL_FILES = /\.glb(\?|$)|astronaut|lander|apollo-lm/;
 const START_MS = 30_000;
 /**
  * A string only the view's panel and only its scene carry (OnFootStageArea's host class, sun-mask.ts's uniform): a
@@ -137,10 +139,22 @@ async function shotsAround(page: Page, name: string): Promise<void> {
 const view = (page: Page) => page.getByRole('region', { name: 'On foot at the site' });
 const host = (page: Page) => view(page).getByRole('application', { name: 'On foot at the site' });
 
-/** Waits until the scene stands (the astronaut loaded) and has drawn. */
+/** Waits until the scene stands (its maps loaded) and has drawn. */
 async function settled(page: Page): Promise<void> {
   await expect(host(page)).toHaveAttribute('data-ready', 'true', { timeout: START_MS });
   await expect.poll(async () => Number(await host(page).getAttribute('data-frames')), { timeout: START_MS }).toBeGreaterThan(0);
+}
+
+/**
+ * The view is first person only (VENT-54): its text alternative says so, it offers no camera switch, and its caption
+ * credits no lander or astronaut.
+ */
+async function firstPersonOnly(page: Page): Promise<void> {
+  await expect(host(page)).toHaveAccessibleDescription(/^First person, eyes 2 m above the ground\. View heading /);
+  await expect(view(page).getByRole('radiogroup')).toHaveCount(0);
+  await expect(view(page).getByRole('radio')).toHaveCount(0);
+  await expect(view(page)).not.toContainText(/Third person/);
+  await expect(view(page).locator('.on-foot__caption')).not.toContainText(/lander|Apollo|astronaut/i);
 }
 
 const frames = async (page: Page): Promise<number> => Number(await host(page).getAttribute('data-frames'));
@@ -196,7 +210,7 @@ async function pressable(page: Page, button: ReturnType<Page['locator']>): Promi
 test.describe('desktop, 1440x900', () => {
   test.use({ viewport: { width: 1440, height: 900 } });
 
-  test('the Horizon tab opens in third person, toggles to first person, and says what is illustrative', async ({ page }) => {
+  test('the Horizon tab opens in first person, with no camera switch and no model fetched, and says what is illustrative', async ({ page }) => {
     const requests: string[] = [];
     const scripts = collectScripts(page);
     await open(page, { path: `./${POINT}`, requests });
@@ -213,16 +227,13 @@ test.describe('desktop, 1440x900', () => {
     const all = await scripts.done();
     expect(carrying(all, PANEL_MARK)).not.toEqual([]);
     expect(carrying(all, SCENE_MARK)).not.toEqual([]);
-    await expect(host(page)).toHaveAttribute('data-mode', 'third');
-    const modes = view(page).getByRole('radiogroup', { name: 'Camera' });
-    await expect(modes.getByRole('radio', { name: 'Third person' })).toHaveAttribute('aria-checked', 'true');
+    await firstPersonOnly(page);
     await expect(view(page)).toContainText('Fine detail illustrative · relief LOLA 20 m');
-    await expect(view(page)).toContainText('Generic lander (illustrative)');
+    await expect(view(page)).toContainText('Earth: NASA Blue Marble · shadows lifted for legibility');
     await expect(view(page).getByRole('region', { name: 'Horizon' })).toBeVisible();
     await expect(view(page).locator('.on-foot__label--ring').first()).toBeVisible();
-    await shot(page, 'synthetic-desktop-third');
-    await modes.getByRole('radio', { name: 'First person' }).click();
-    await expect(host(page)).toHaveAttribute('data-mode', 'first');
+    await idle(page);
+    expect(requests.filter((url) => MODEL_FILES.test(url))).toEqual([]);
     await shot(page, 'synthetic-desktop-first');
   });
 
@@ -400,26 +411,18 @@ test.describe('desktop, 1440x900', () => {
     expect(last?.text).toMatch(/Sun moved 0\.[45]\d\d deg/);
   });
 
-  // VENT-49: the diagnostic switch for bisecting a crash on a phone's address bar.
+  // VENT-49: the diagnostic switch for bisecting a crash on a phone's address bar. An old link that still names the
+  // astronaut or the lander (gone in VENT-54) opens the view all the same: those words are ignored.
   test('?onfoot= leaves parts out, says which on the host, and the view still settles with no idle frames', async ({ page }) => {
     const requests: string[] = [];
     await open(page, { path: `./${POINT}&onfoot=astronaut,lander,far#horizon`, requests });
     await settled(page);
-    await expect(host(page)).toHaveAttribute('data-onfoot', 'astronaut,lander,far');
+    await expect(host(page)).toHaveAttribute('data-onfoot', 'far');
     expect(requests.some((url) => /\/terrain\/tiles\?.*levels=2(&|$)/.test(url))).toBe(true);
     expect(requests.some((url) => /\/terrain\/tiles\?.*levels=[34]/.test(url))).toBe(false);
     const settledAt = await idle(page);
     await page.waitForTimeout(1500);
     expect(await frames(page)).toBe(settledAt);
-  });
-
-  // VENT-51 L1: with the lander left out the caption must not name a lander the view does not draw.
-  test('?onfoot=lander leaves the lander out of the caption too', async ({ page }) => {
-    await open(page, { path: `./${POINT}&onfoot=lander#horizon` });
-    const caption = view(page).locator('.on-foot__caption');
-    await expect(caption).toContainText('Fine detail illustrative');
-    await expect(caption).toContainText('Earth: NASA Blue Marble');
-    await expect(caption).not.toContainText(/lander|Apollo/i);
   });
 
   test('the Sun is drawn where the profile shows it', async ({ page }) => {
@@ -448,10 +451,7 @@ test.describe('desktop, 1440x900', () => {
     await idle(page);
     await expect(view(page)).toContainText('Fine detail illustrative · relief LOLA 80 m');
     await expect(host(page)).toHaveAccessibleDescription(/The Sun is to the .*, above the terrain\./);
-    await shot(page, 'desktop-third');
-    await shotsAround(page, 'desktop-third-round');
-    await view(page).getByRole('radio', { name: 'First person' }).click();
-    await expect(host(page)).toHaveAttribute('data-mode', 'first');
+    await firstPersonOnly(page);
     await shot(page, 'desktop-first');
     await shotsAround(page, 'desktop-first-round');
   });
@@ -497,7 +497,7 @@ test.describe('desktop, 1440x900', () => {
 test.describe('phone, 390x844', () => {
   test.use({ viewport: { width: 390, height: 844 }, hasTouch: true, isMobile: true });
 
-  test('the Horizon tab fills the screen with the ground, third person first, the sheet at peek', async ({ page }) => {
+  test('the Horizon tab fills the screen with the ground in first person, the sheet at peek', async ({ page }) => {
     const requests: string[] = [];
     const scripts = collectScripts(page);
     await open(page, { path: `./${POINT}`, requests });
@@ -509,15 +509,10 @@ test.describe('phone, 390x844', () => {
     await page.getByRole('navigation', { name: 'Views' }).getByRole('button', { name: 'Horizon' }).click();
     await expect(page).toHaveURL(/#horizon$/);
     await settled(page);
-    await expect(host(page)).toHaveAttribute('data-mode', 'third');
+    await firstPersonOnly(page);
     await expect(page.locator('.globe')).toBeHidden();
     await expect(view(page)).toContainText('Fine detail illustrative · relief LOLA 20 m');
-    const radio = view(page).getByRole('radio', { name: 'First person' });
-    const size = await radio.boundingBox();
-    expect(size?.height ?? 0).toBeGreaterThanOrEqual(44);
-    await shot(page, 'synthetic-phone-third');
-    await radio.tap();
-    await expect(host(page)).toHaveAttribute('data-mode', 'first');
+    expect(requests.filter((url) => MODEL_FILES.test(url))).toEqual([]);
     const still = await idle(page);
     await page.waitForTimeout(1500);
     expect(await frames(page)).toBe(still);
@@ -528,33 +523,24 @@ test.describe('phone, 390x844', () => {
     await expect.poll(() => lostContexts(page)).toBeGreaterThanOrEqual(1);
   });
 
-  test('IM-2 on its real LOLA relief, third person then first, the sheet at peek', async ({ page }) => {
+  test('IM-2 on its real LOLA relief, in first person, the sheet at peek', async ({ page }) => {
     await open(page, { path: './?site=im2-athena', real: RIDGE_AT });
     await page.getByRole('navigation', { name: 'Views' }).getByRole('button', { name: 'Horizon' }).click();
     await settled(page);
     await idle(page);
-    await expect(host(page)).toHaveAttribute('data-mode', 'third');
-    await shot(page, 'phone-third');
-    await view(page).getByRole('radio', { name: 'First person' }).tap();
-    await expect(host(page)).toHaveAttribute('data-mode', 'first');
-    await idle(page);
+    await firstPersonOnly(page);
     await shot(page, 'phone-first');
   });
 
-  // VENT-52 (qa of PR #32): at 200 % text the top bar grew over the camera switch, placed at a fixed 108 px; the switch
-  // grew wider than the screen; and the ridge's label and the 100 m ring's were drawn over each other.
-  test('at 200 % text nothing covers the camera switch, it fits the screen, and no two labels overlap', async ({ page }) => {
+  // VENT-52 (qa of PR #32): at 200 % text the site pill overflowed and the ridge's label and the 100 m ring's were
+  // drawn over each other. (The camera switch the top bar covered is gone since VENT-54.)
+  test('at 200 % text the pill fits and no two labels overlap', async ({ page }) => {
     await open(page, { path: './?site=im2-athena', real: RIDGE_AT });
     await page.getByRole('navigation', { name: 'Views' }).getByRole('button', { name: 'Horizon' }).click();
     await settled(page);
     await page.evaluate(() => {
       document.documentElement.style.fontSize = '200%';
     });
-    const modes = view(page).getByRole('radiogroup', { name: 'Camera' });
-    for (const name of ['Third person', 'First person']) {
-      await expect.poll(() => pressable(page, modes.getByRole('radio', { name })), { message: name }).toBe(true);
-    }
-    expect(await modes.evaluate((el) => el.scrollWidth <= el.clientWidth)).toBe(true);
     const pill = page.locator('.site-pill');
     expect(await pill.evaluate((el) => el.scrollWidth <= el.clientWidth)).toBe(true);
     await idle(page);
@@ -564,10 +550,6 @@ test.describe('phone, 390x844', () => {
     const pairs = boxes.flatMap((a, i) => boxes.slice(i + 1).map((b) => [a, b] as const));
     const overlapping = pairs.filter(([a, b]) => a.left < b.right && b.left < a.right && a.top < b.bottom && b.top < a.bottom);
     expect(overlapping).toEqual([]);
-    await shot(page, 'phone-200-third');
-    await modes.getByRole('radio', { name: 'First person' }).tap();
-    await expect(host(page)).toHaveAttribute('data-mode', 'first');
-    await idle(page);
     await shot(page, 'phone-200-first');
   });
 

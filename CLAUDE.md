@@ -222,9 +222,8 @@ Every visible change follows `.claude/skills/apple-design/SKILL.md` (vendored fr
   globe and in the polar panel's corner on desktop, under the top bar on phones (measured); on desktop it keeps to the room
   right of the Layers key's column (in rem, so it holds at 200 % text), centred over the globe and in the polar
   panel's top right corner, so it never covers the key; gone after the first drop
-  or its ✕, kept in `localStorage` (`ventana.pinHint`, refused storage only brings it back next visit). The
-  astronaut came back in VENT-34's on-foot view (below), which loads its own model (a rigged Meshy figure) only when
-  that view opens. NASA's «Astronaut» model (`packages/web/models/astronaut.glb` and its suit
+  or its ✕, kept in `localStorage` (`ventana.pinHint`, refused storage only brings it back next visit). VENT-34's
+  on-foot view brought an astronaut back until VENT-54 removed it. NASA's «Astronaut» model (`packages/web/models/astronaut.glb` and its suit
   texture `astronaut-suit.webp`, built by `packages/web/scripts/astronaut.mjs`: arms lowered, the NASA insignia and
   the mission patch covered with fabric, the US flags kept) now only feeds the offline bake, `scripts/astronaut-figures.mjs`
   (Playwright's Chromium pinned to SwiftShader, byte-stable; `--check` re-bakes and compares), into the lossless
@@ -410,9 +409,9 @@ Every visible change follows `.claude/skills/apple-design/SKILL.md` (vendored fr
   listening, `card/month-facts.ts`).
 - **3D terrain view** (VENT-34, the human's verdict on the canvas): the «Horizon» header tab (`#horizon`,
   `src/lib/view-tabs.ts`) and the phone's Horizon tab (sheet at peek, the ground framed in the band between the top bar
-  and the sheet's edge) show the selected site or point from the ground, opening in **third person** (camera behind and
-  above NASA's astronaut on the point, facing the Sun when it is near the sky, else the Earth), with «Third person |
-  First person» (`ModeSwitch.tsx`, a radiogroup, 44 px targets; first person: the eye 2 m up); drag (Pointer Events
+  and the sheet's edge) show the selected site or point from the ground, opening in **first person**, the eye 2 m over
+  the point, facing the Sun when it is near the sky, else the Earth (VENT-54, the human's decision: no astronaut, no
+  lander and no camera switch; `view-camera.ts` has one pose); drag (Pointer Events
   with capture) or the arrows and Home on the focused view turn it (`src/terrain/look-input.ts`, `view-camera.ts`).
   Turning it: a swipe across the whole width turns 180° (a full turn in two swipes, on a phone and a desktop alike;
   the pitch by the field of view over the height, held to its range, `dragScale`, `look-input.ts`), and on release the
@@ -438,7 +437,7 @@ Every visible change follows `.claude/skills/apple-design/SKILL.md` (vendored fr
   frame draws every ring built so far and in software GL costs a second; `data-working` says when the slices are all run), tile by tile, the finest level first, so the view
   stands as soon as level 0 and 1 land (`ring-session.ts`, `ring-near.ts`) and the coarser rings fill in; a tile that
   arrives rebuilds itself, its neighbours and its parent (`scene/ring-layer.ts`) and every mesh is freed when the view
-  leaves. The near ground (props, the astronaut's feet, the ridge, the Sun's shadow march) is a 257 x 257 grid over 4
+  leaves. The near ground (props, the eye, the ridge, the Sun's shadow march) is a 257 x 257 grid over 4
   km resampled from the rings (`ring-local.ts`, the `HeightTile` of `tile.ts`), not a second copy of the relief. The
   horizon profile's wall stays as the backdrop beyond the farthest ring (190 km, 40 km on the low tier,
   `far-horizon.ts`), so a ridge past 128 km is still the profile's. Failures are the horizon's (VENT-45: 404 «No
@@ -453,36 +452,20 @@ Every visible change follows `.claude/skills/apple-design/SKILL.md` (vendored fr
   the Earth's light by its lit share, the ground's bounce by the Sun's height and a dim sky floor (`sky-light.ts`), and
   when the Sun does not reach the point the exposure opens up instead of faking sunlight (`exposureFor`, `stage.ts`).
   Rendering: ACES filmic tone mapping, `MeshStandardMaterial` everywhere, the Sun a hard key with a 60 m PCF shadow, baked
-  contact occlusion on the stones (`contactAo`) and soft contact shadows under the astronaut and the lander's pads. Illustrative and said so in the caption («Fine detail illustrative · relief LOLA
-  20 m», «Generic lander (illustrative) · …» or «Apollo LM: NASA 3D Resources · Earth: NASA Blue Marble · shadows lifted for legibility»): rounded rocks under
+  contact occlusion on the stones (`contactAo`). Illustrative and said so in the caption («Fine detail illustrative · relief
+  LOLA 20 m» over «Earth: NASA Blue Marble · shadows lifted for legibility», `captionNote`, `onFoot.captionNote`): rounded rocks under
   1 m seeded from the point (`seeded.ts`, `rocks.ts`), the regolith a CC0 photographed material (Poly Haven «Moon 02»,
   albedo and normal, 1K WebP in `src/terrain/maps/`, ASSETS.md) tiled at 3.5 m and read twice, turned and at another
-  scale, with a slow brightness noise and a fade with distance so it never repeats (`scene/ground-shader.ts`), and the
-  lander, one of two models of ours, chosen by the site (`lander-kind.ts`: an Apollo site, `group: 'apollo'`, wears the
-  Apollo Lunar Module of NASA 3D Resources, `models/apollo-lm.glb`; every other site and every custom point a generic robotic lander built
-  from code, `models/lander.glb`, with its baked occlusion and blanket normals; both read by the glb reader and its map loaders,
-  `glb-maps.ts`, `scene/lander*.ts`, so no GLTFLoader joins the chunk), standing 22 m from the astronaut and 14° to the right of the opening heading
-  (`landerSpot`, `props.ts`), so it is in the first frame, on a phone too, its pads on the highest ground under them (`lander-place.ts`).
-  The metals and the gold foil are lit by the Sun and, in shadow, by an analytic earthshine: a sky-and-ground hemisphere injected into the
-  lander's shader as radiance (`scene/earthshine.ts`, zenith and horizon blues, a near-black ground, scaled by one intensity that is not the Sun's),
-  not a PMREM environment map, which cost about 9 s of software GL to bake. Rings at 25, 100 and 500 m with HTML labels, and the ridge that
+  scale, with a slow brightness noise and a fade with distance so it never repeats (`scene/ground-shader.ts`). Rings at 25, 100 and 500 m with HTML labels, and the ridge that
   hides a body labelled with its height and distance (`on-foot-model.ts`); a text alternative says the heading, where
-  each body is and what hides it (`view-alt.ts`); the desktop view keeps the horizon strip under it. The astronaut is
-  a rigged, generated figure (Meshy, `models/astronaut-meshy.glb` and its three WebP maps, ASSETS.md; no flags, logos or
-  insignia: the generator's two stray marks were painted out), 1.91 m, read by three's `GLTFLoader` (VENT-34), which
-  only the scene's chunk imports (`scene/astronaut.ts`: the glb's maps are named by URI and a `LoadingManager`
-  URL modifier maps each to the file the bundler shipped, `scene/astronaut-assets.ts`), so the globe's start chunk
-  never carries it. Its `idle` clip is pinned to a pose and moved on only by frames the view draws anyway (a turn, a
-  coast, the slicer: `scene/astronaut-idle.ts`, `world.idle.advance(dt)` in the frame), never under reduced motion, so
-  an idle view still draws no frames; its `walk` clip is loaded and unused until VENT-48. The landers keep the small
-  glb reader (`glb.ts`). The cost of this look lands in the Three.js chunk the globe loads at start: the standard
-  material, ACES and the Earth's shader added 1.9 kB, and the skinned astronaut 11.7 kB gzip more (130 to 142 kB):
-  `three.core` is one module, so the classes GLTFLoader and AnimationMixer need (Skeleton, SkinnedMesh,
-  AnimationMixer, PropertyBinding) join that chunk while GLTFLoader itself stays in the scene's; the human accepted
-  it (2026-11-02) over an astronaut without a rig. Performance: the panel
+  each body is and what hides it (`view-alt.ts`); the desktop view keeps the horizon strip under it. The view loads no model
+  (VENT-54 removed the astronaut, the two landers, their glb reader, GLTFLoader, earthshine, contact shadows and the
+  idle clip): the Three.js chunk the globe loads at start is back to about 131 kB gzip (the skinned astronaut had
+  taken it to 142 kB), the scene's chunk is 15.6 kB smaller, and at the medium tier the view draws 32 to 35 calls and
+  about 360 to 400 k triangles. Performance: the panel
   (`components/terrain/TerrainPanel.tsx`, `React.lazy` in `OnFootView.tsx`), its stylesheet (a React 19
   `<link precedence>`, so Astro does not inline it), the scene (`src/terrain/scene/terrain-scene.ts`, a dynamic import)
-  and the astronaut load only when the view opens, and the service worker leaves them out of the precache
+  load only when the view opens, and the service worker leaves them out of the precache
   (`ON_DEMAND` in `scripts/service-worker.mjs`); it draws only on change (`globe/loop.ts`, counted in `data-frames`),
   the pixel ratio capped by the quality tier, and frees the GPU context on leave. The view's tier is one store for the
   page session (`src/terrain/view-tier.ts`, kept in `sessionStorage` as `ventana.onFootTier`) that the scene and the
@@ -498,10 +481,8 @@ Every visible change follows `.claude/skills/apple-design/SKILL.md` (vendored fr
   `src/terrain/status-band.ts`), the mode switch and caption stepping aside while it shows; when a lost context's notice
   has no room there (200 % text lifts the half sheet to full) the sheet drops to peek once for that loss, and the scrim
   clears, since `openness` measures from peek when half has risen to full (VENT-51). «Report copied» resets whenever
-  the scene's state changes, and with `?onfoot=lander` the caption names no lander (`captionNote`,
-  `onFoot.captionNoLander`). On a phone the camera switch stands 12 px under the band's top (`max()` with its old
-  108 px), which follows the top bar's size too (`src/phone/band-moves.ts`: the sheet's edge and a ResizeObserver on the
-  bar), and its two buttons share the row (`min(7.5rem, 100%)`) at 200 % text; the scale's labels never overlap (ridge
+  the scene's state changes. On a phone the caption keeps under the band's top, which follows the top bar's size too
+  (`src/phone/band-moves.ts`: the sheet's edge and a ResizeObserver on the bar); the scale's labels never overlap (ridge
   first, then 25, 100 and 500 m, a label over a placed one hidden for the frame, `scene/label-declutter.ts`); the host's
   focus ring is an outline at -4 px drawn over its canvas (VENT-52). A language switch is not a died run:
   `switchLocale` calls its injected `leaving` before `location.assign`, wired to `leftOnPurpose` (`view-tier-open.ts`),
@@ -526,11 +507,11 @@ Every visible change follows `.claude/skills/apple-design/SKILL.md` (vendored fr
   so it covers no control; a press unfolds it (VENT-51, `tests/e2e/debug.spec.ts`).
   `scripts/check-no-devtools.mjs` (decision in `devtools-guard.mjs`) fails a build whose pages, start chunks or precache
   carry the tools' markers, or any file Spector.js.
-  `?onfoot=astronaut,lander,shadows,far,shade,logdepth`
+  `?onfoot=shadows,far,shade,logdepth` (`astronaut` and `lander` from before VENT-54 are ignored, so old links still open)
   leaves parts out to bisect a crash from a phone's address bar (`src/terrain/leave-out.ts`, unknown words ignored,
   listed in `data-onfoot`, kept by the language switch like `?site=`). The API gzips its JSON
   (`compress()` in `packages/server/src/app.ts`; base64 floats shrink about 26 %). Held by `tests/terrain-view.test.ts`,
-  `tests/terrain-ring.test.ts`, `tests/view-tier.test.ts`, `tests/frame-probe.test.ts`, `tests/leave-out.test.ts`, `tests/relight.test.ts`, `tests/input-change.test.ts`, `tests/on-foot-report.test.ts`, `tests/on-foot-device.test.ts`, `tests/scene-guard.test.ts` and `tests/e2e/terrain-view.spec.ts` (the ring and tile routes answered by the simulator's own core over a synthetic polar grid, or by real LOLA tiles of IM-2 recorded from a local server, `fixtures/terrain-ring-im2/`: third then first person, the caption, no idle
+  `tests/terrain-ring.test.ts`, `tests/view-tier.test.ts`, `tests/frame-probe.test.ts`, `tests/leave-out.test.ts`, `tests/relight.test.ts`, `tests/input-change.test.ts`, `tests/on-foot-report.test.ts`, `tests/on-foot-device.test.ts`, `tests/scene-guard.test.ts` and `tests/e2e/terrain-view.spec.ts` (the ring and tile routes answered by the simulator's own core over a synthetic polar grid, or by real LOLA tiles of IM-2 recorded from a local server, `fixtures/terrain-ring-im2/`: first person only, no camera switch, no `.glb` fetched, the caption naming no lander, no idle
   frames, the Sun drawn hidden behind a far wall, none of the view's files in the first load).
 - **Five interface languages** (VENT-35): English (the default and the fallback), Spanish, French, German and Italian,
   each on its own static route (`/`, `/es/`, `/fr/`, `/de/`, `/it/`; `pages/[locale]/index.astro`) with `<html lang>`,
@@ -574,7 +555,7 @@ Every visible change follows `.claude/skills/apple-design/SKILL.md` (vendored fr
   `favicon.ico`, `favicon.svg` and the root `apple-touch-icon.png`), fetched past the HTTP cache (`cache: 'reload'`),
   and the build's digest over every file the worker may keep, which names the static cache (`ventana-static-<digest>`),
   so a deploy drops the old one. The install set has a hard budget of 5 MB (`PRECACHE_BUDGET`, human decision
-  2026-10-31): the build logs the precache total and fails over it (4.78 MB with VENT-52's update row; 4.77 MB with VENT-50's compass and graticule; 4.75 MB with VENT-46's rings, landers and rigged astronaut, their files left out; 4.70 MB with VENT-34's on-foot view, its files left out; 4.68 MB with VENT-40's horizon strip; 4.63 MB with VENT-39's shadow notes; 4.57 MB with VENT-37's saved sites; 4.52 MB when it left the astronaut's sprites out, 4.60 MB with them). The 4K and 8K maps, and any build file not
+  2026-10-31): the build logs the precache total and fails over it (4.74 MB with VENT-54, no models; 4.78 MB with VENT-52's update row; 4.77 MB with VENT-50's compass and graticule; 4.75 MB with VENT-46's rings, landers and rigged astronaut, their files left out; 4.70 MB with VENT-34's on-foot view, its files left out; 4.68 MB with VENT-40's horizon strip; 4.63 MB with VENT-39's shadow notes; 4.57 MB with VENT-37's saved sites; 4.52 MB when it left the astronaut's sprites out, 4.60 MB with them). The 4K and 8K maps, and any build file not
   precached, are kept cache first the first time the page fetches them. Under Save-Data the worker is not registered
   at all. Pages and API GETs are network first,
   build files cache first; the network's answer always wins (a copy that cannot be kept, a full quota, is skipped), only

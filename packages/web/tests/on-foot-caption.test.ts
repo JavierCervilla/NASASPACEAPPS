@@ -24,20 +24,17 @@
  */
 
 /**
- * The on-foot caption's second line (VENT-51): it names the lander the
- * view draws, and none when `?onfoot=lander` leaves the lander out.
+ * The on-foot caption's second line (VENT-51, VENT-54): the Earth's map and
+ * the lifted shadows; the view draws no lander or astronaut, so it names
+ * none.
  */
 import { describe, expect, it } from 'vitest';
 import { captionNote } from '../src/terrain/view-text';
 import { EN } from './i18n-factories';
 
 describe('the caption note', () => {
-  it('names the lander drawn', () => {
-    expect(captionNote(EN, 'generic')).toMatch(/^Generic lander/);
-    expect(captionNote(EN, 'apollo')).toMatch(/^Apollo LM/);
-  });
-
-  it('names no lander when the lander is left out', () => {
-    expect(captionNote(EN, null)).toBe('Earth: NASA Blue Marble · shadows lifted for legibility');
+  it('credits the Earth and names no lander or astronaut', () => {
+    expect(captionNote(EN)).toBe('Earth: NASA Blue Marble · shadows lifted for legibility');
+    expect(captionNote(EN)).not.toMatch(/lander|Apollo|astronaut/i);
   });
 });

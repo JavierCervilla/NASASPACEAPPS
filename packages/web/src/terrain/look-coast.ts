@@ -32,7 +32,7 @@
  * under reduced motion or by a slow drag. The caller owns the clock, and
  * draws frames only while a coast lasts. Pure.
  */
-import { turnLook, type CameraMode, type Look } from './view-camera';
+import { turnLook, type Look } from './view-camera';
 import type { DragScale } from './look-input';
 
 /** Speed kept per millisecond, as the globe's flick (0.995). */
@@ -73,14 +73,13 @@ export const travelDeg = (speed: number): number => speed / DECAY;
  * exponentially and the distance is its integral.
  */
 export function stepCoast(
-  mode: CameraMode,
   look: Look,
   coast: Coast,
   dtS: number,
 ): { look: Look; coast: Coast | null } {
   const kept = Math.exp(-DECAY * dtS);
   const carried = (1 - kept) / DECAY;
-  const next = turnLook(mode, look, coast.yaw * carried, coast.pitch * carried);
+  const next = turnLook(look, coast.yaw * carried, coast.pitch * carried);
   const pitchHeld = next.pitchDeg === look.pitchDeg + coast.pitch * carried;
   const left = { yaw: coast.yaw * kept,
     pitch: pitchHeld ? coast.pitch * kept : 0 };

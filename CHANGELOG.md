@@ -3,6 +3,13 @@
 ## [Sin publicar]
 
 ### Cambiado
+- La vista 3D «Horizon» es solo en primera persona (VENT-54, decisión de Javier): abre con los ojos a 2 m del suelo,
+  mirando al Sol si está cerca del cielo y, si no, a la Tierra. Se quitan el astronauta, los dos módulos de aterrizaje
+  (el del Apolo y el genérico) y el selector «Third person | First person»; el pie ya solo dice «Fine detail
+  illustrative · relief LOLA» y «Earth: NASA Blue Marble». La vista no descarga ningún modelo (antes, 3,6 MB al abrirla),
+  el código de Three.js que el globo carga al arrancar pesa 11 kB menos comprimido y la escena 15,6 kB menos, y en el
+  móvil dibuja menos (de 49 a 32 llamadas y de 431 000 a 362 000 triángulos en IM-2). Los enlaces antiguos con
+  `?onfoot=astronaut` o `lander` siguen abriendo la vista.
 - El astronauta de la vista 3D «Horizon» es ahora una figura con esqueleto (VENT-34): un traje EVA generado con Meshy,
   de 1,91 m, sin banderas, logos ni insignias (se borraron del mapa de color las dos que el generador pintó por su
   cuenta), que sustituye al modelo de NASA 3D Resources y su textura. Se carga con `GLTFLoader` solo cuando se abre la

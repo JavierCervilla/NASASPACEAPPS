@@ -29,7 +29,7 @@
  * levels have come (or failed) resamples the near ground, 4 km at 15.6 m,
  * in slices, and tells the view it can stand; the coarser rings go on
  * arriving into the same store, which the scene watches. The near ground is
- * what the props, the astronaut and the Sun's shadows read. Failures end
+ * what the props, the eye and the Sun's shadows read. Failures end
  * as the horizon's states (VENT-45).
  */
 import { unitOf } from './ring-frame';

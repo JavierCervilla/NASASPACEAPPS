@@ -30,7 +30,8 @@
  * leaving the view frees it. It draws at the view's tier (view-tier.ts); a
  * lost GPU context frees the scene, drops the tier to low and says `lost`,
  * and the scene mounts again only when asked (`retry`): a loop of lost
- * contexts is worse than one tap.
+ * contexts is worse than one tap. A scene chunk that is gone (an old
+ * page after a deploy, VENT-52) says `missing`, not `failed`.
  */
 import {
   useEffect,
@@ -43,10 +44,12 @@ import { parseLeaveOut } from '../../terrain/leave-out';
 import type { Recorder } from '../../terrain/report/recorder';
 import type { SceneInput, SceneSetup, TerrainScene }
   from '../../terrain/scene/scene-types';
+import { loadTerrainScene, sceneFailure }
+  from '../../terrain/scene/load-scene';
 import type { ViewTier } from '../../terrain/view-tier';
 import { sceneHooks, type PanelHooks } from './scene-hooks';
 
-export type SceneStatus = 'loading' | 'ready' | 'failed' | 'lost';
+export type SceneStatus = 'loading' | 'ready' | 'failed' | 'lost' | 'missing';
 
 /** Subscribes to the moves of the view's band; returns the unsubscribe. */
 export type BandMoves = (listener: () => void) => () => void;
@@ -84,7 +87,7 @@ function mountScene(m: Mount): () => void {
   let live = true;
   let off: (() => void) | undefined;
   m.onStatus('loading');
-  void import('../../terrain/scene/terrain-scene').then((module) => {
+  void loadTerrainScene(window).then((module) => {
     const input = m.latest.current;
     if (!live || !input) return;
     const setup = setupOf(m);
@@ -96,7 +99,7 @@ function mountScene(m: Mount): () => void {
   }).catch((error: unknown) => {
     console.warn(`Ventana Lunar: the 3D view could not start (${String(error)}).`);
     m.hooks.current.report.step(`scene failed to start: ${String(error)}`);
-    if (live) m.onStatus('failed');
+    if (live) m.onStatus(sceneFailure(error));
   });
   return () => {
     live = false;

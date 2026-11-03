@@ -26,64 +26,86 @@
 /**
  * «New version ready» (VENT-52): a glass row in the offline notice's slot,
  * under whichever top bar shows, when a new build's service worker has
- * taken the page over (pwa/update-watch.ts). «Update» reloads the same
- * address (site, point and view travel in it); the ✕ hides the row until
- * the app opens again. The text is a polite live region, present from
- * the start so the change is announced.
+ * taken the page over (pwa/update-watch.ts). The row (UpdateButtons.tsx)
+ * reloads the same address (site, point and view travel in it); the ✕
+ * hides it until the app opens again. «New version ready» is also said
+ * in a polite live region, present from the start so the change is
+ * announced. A view whose chunk is gone (an
+ * old page after a deploy, pwa/missing-chunk.ts) brings it back too, even
+ * after a ✕: that view cannot open without the reload.
  */
-import { useEffect, useRef, useState } from 'react';
+import {
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
+  type RefObject,
+} from 'react';
 import { prefersSaveData } from '../lib/viewport';
+import { onMissingChunk } from '../pwa/missing-chunk';
 import { showsUpdate, watchForUpdate } from '../pwa/update-watch';
+import { UpdateButtons, type UpdateActions } from './UpdateButtons';
 import { useI18n } from './i18n-context';
 import { useOnline } from './use-online';
 import { useUnderBars } from './use-under-bars';
 
-export interface UpdateRowProps {
+export interface UpdateRowProps extends UpdateActions {
   readonly shown: boolean;
-  readonly onUpdate: () => void;
-  readonly onDismiss: () => void;
 }
 
-/** «Update» and the ✕, both 44 px targets. */
-function UpdateButtons({ onUpdate, onDismiss }: Omit<UpdateRowProps, 'shown'>) {
-  const { t } = useI18n();
-  return (
-    <>
-      <button type="button" className="update-notice__update" onClick={onUpdate}>
-        {t('update.action')}
-      </button>
-      <button
-        type="button"
-        className="update-notice__dismiss"
-        aria-label={t('update.dismiss')}
-        onClick={onDismiss}
-      >
-        <svg width="12" height="12" viewBox="0 0 12 12" aria-hidden="true" focusable="false">
-          <path d="M2 2l8 8M10 2l-8 8" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
-        </svg>
-      </button>
-    </>
-  );
+/** Room under the row for what stacks below it (the pin hint), px. */
+const STACK_GAP_PX = 8;
+
+/**
+ * While the row shows, its height and a gap in `--update-row-space` on
+ * the root, so the first-time pin hint stacks under it (pin.css).
+ */
+function useRowSpace(row: RefObject<HTMLElement | null>, shown: boolean) {
+  useEffect(() => {
+    const el = row.current;
+    const root = document.documentElement.style;
+    if (!shown || !el) return undefined;
+    const place = (): void => {
+      const space = el.getBoundingClientRect().height + STACK_GAP_PX;
+      root.setProperty('--update-row-space', `${space}px`);
+    };
+    const observer = new ResizeObserver(place);
+    observer.observe(el);
+    place();
+    return () => {
+      observer.disconnect();
+      root.removeProperty('--update-row-space');
+    };
+  }, [row, shown]);
 }
 
 /** The row: empty while hidden, its live region kept in place. */
-export function UpdateRow({ shown, ...buttons }: UpdateRowProps) {
+export function UpdateRow({ shown, ...actions }: UpdateRowProps) {
   const { t } = useI18n();
   const row = useRef<HTMLDivElement>(null);
   useUnderBars(row, shown);
+  useRowSpace(row, shown);
   return (
     <div ref={row} className="update-notice" data-shown={shown || undefined}>
-      <p className="update-notice__text" role="status">
+      <p className="update-notice__live" role="status">
         {shown ? t('update.ready') : null}
       </p>
-      {shown ? <UpdateButtons {...buttons} /> : null}
+      {shown ? <UpdateButtons {...actions} /> : null}
     </div>
   );
 }
 
-/** True once a new version controls the page. */
-function useUpdateReady(): boolean {
+/** True once a new version controls the page or a chunk is missing. */
+function useUpdateReady(onMissing: () => void): boolean {
   const [ready, setReady] = useState(false);
+  useEffect(
+    () =>
+      onMissingChunk(window, () => {
+        setReady(true);
+        onMissing();
+      }),
+    [onMissing],
+  );
   useEffect(
     () =>
       watchForUpdate({
@@ -98,9 +120,9 @@ function useUpdateReady(): boolean {
 }
 
 export function UpdateNotice() {
-  const ready = useUpdateReady();
-  const online = useOnline();
   const [dismissed, setDismissed] = useState(false);
+  const ready = useUpdateReady(useCallback(() => setDismissed(false), []));
+  const online = useOnline();
   return (
     <UpdateRow
       shown={showsUpdate({ ready, dismissed, online })}

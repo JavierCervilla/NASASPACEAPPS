@@ -170,10 +170,16 @@ describe('UpdateRow', () => {
     expect(html).not.toContain('<button');
   });
 
-  it('says «New version ready» with «Update» and a named ✕', () => {
+  it('makes the whole row the update, with both lines, and the ✕ a sibling', () => {
     const html = rowHtml(true);
     expect(html).toMatch(/role="status"[^>]*>New version ready</);
-    expect(html).toMatch(/<button[^>]*type="button"[^>]*>Update<\/button>/);
-    expect(html).toMatch(/<button[^>]*aria-label="Not now"/);
+    const update = /<button[^>]*class="update-notice__update"[^>]*>(.*?)<\/button>/.exec(html);
+    expect(update?.[0]).toContain('aria-label="New version ready: update now"');
+    expect(update?.[1]).toContain('>New version ready<');
+    expect(update?.[1]).toMatch(/class="[^"]*pin-hint__fine"[^>]*>Click to update</);
+    expect(update?.[1]).toMatch(/class="[^"]*pin-hint__coarse"[^>]*>Tap to update</);
+    // The ✕ is the hint's own, beside the row's button, never inside it.
+    expect(update?.[1]).not.toContain('<button');
+    expect(html).toMatch(/<\/button><button[^>]*class="pin-hint__close"[^>]*aria-label="Not now"/);
   });
 });

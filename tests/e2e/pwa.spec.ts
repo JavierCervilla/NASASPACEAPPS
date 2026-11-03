@@ -291,8 +291,8 @@ test.describe('the production CSP with the worker and the live favicon', () => {
 
 /** The update row's three parts. */
 const updateRow = (page: Page) => ({
-  text: page.locator('.update-notice__text'),
-  update: page.getByRole('button', { name: 'Update', exact: true }),
+  text: page.locator('.update-notice__live'),
+  update: page.getByRole('button', { name: 'New version ready: update now' }),
   dismiss: page.getByRole('button', { name: 'Not now' }),
 });
 
@@ -327,6 +327,10 @@ test.describe('a new version (VENT-52)', () => {
     await deployNewVersion(page);
     const row = updateRow(page);
     await expect(row.text).toHaveText('New version ready');
+    // The whole row is the update: the mark, «New version ready» and how to update (the mouse's line on this page).
+    await expect(row.update).toContainText('New version ready');
+    await expect(row.update.locator('.pin-hint__fine')).toHaveText('Click to update');
+    await expect(row.update.locator('.pin-hint__coarse')).toBeHidden();
     for (const button of [row.update, row.dismiss]) {
       const box = (await button.boundingBox())!;
       expect(Math.min(box.width, box.height)).toBeGreaterThanOrEqual(44);
@@ -357,4 +361,35 @@ test.describe('a new version (VENT-52)', () => {
       await expect(row.text).toBeEmpty();
     });
   }
+});
+
+/** Whether two boxes share any pixel. */
+const overlaps = (a: { x: number; y: number; width: number; height: number }, b: typeof a): boolean =>
+  a.x < b.x + b.width && b.x < a.x + a.width && a.y < b.y + b.height && b.y < a.y + a.height;
+
+test.describe('the update row on the phone’s globe (VENT-52)', () => {
+  test('390x844: the row, then the pin hint, then the compass, none over another', async ({ context, page }) => {
+    await page.setViewportSize({ width: 390, height: 844 });
+    await open(context, page, '?site=im2-athena');
+    await controlled(page);
+    const compass = page.locator('.compass');
+    await expect(page.locator('.pin-hint')).toBeVisible();
+    await deployNewVersion(page);
+    await expect(updateRow(page).update).toBeVisible();
+    const box = async (selector: string) => (await page.locator(selector).boundingBox())!;
+    await expect
+      .poll(async () => (await box('.compass')).y >= (await box('.pin-hint')).y + (await box('.pin-hint')).height)
+      .toBe(true);
+    const row = await box('.update-notice');
+    const hint = await box('.pin-hint');
+    expect(hint.y).toBeGreaterThanOrEqual(row.y + row.height);
+    expect(overlaps(row, await compass.boundingBox().then((b) => b!))).toBe(false);
+    expect(overlaps(hint, await compass.boundingBox().then((b) => b!))).toBe(false);
+    await page.screenshot({ path: test.info().outputPath('update-stack-390.png') });
+    // Without the hint the compass comes up under the row alone, still clear of it.
+    await page.locator('.pin-hint .pin-hint__close').click();
+    await expect(page.locator('.pin-hint')).toHaveCount(0);
+    await expect.poll(async () => overlaps(await box('.update-notice'), await box('.compass'))).toBe(false);
+    await expect.poll(async () => (await box('.compass')).y < hint.y + hint.height).toBe(true);
+  });
 });

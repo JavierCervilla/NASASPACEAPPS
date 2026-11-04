@@ -135,6 +135,12 @@ describe('precache', () => {
     expect(precached('_astro/LunarApp.Ab1.js')).toBe(true);
   });
 
+  it('leaves the fine real-relief tiles to the runtime cache (VENT-62)', () => {
+    for (const file of ['fine-tiles/mons-mouton/heights.png', 'fine-tiles/mons-mouton/mask.png', 'fine-tiles/malapert-a/tile.json']) {
+      expect(precached(file)).toBe(false);
+    }
+  });
+
   it('leaves the dev tools that ?debug loads to the runtime cache (VENT-49)', () => {
     for (const file of ['_astro/boot.Ab1.js', '_astro/perf-hud.Ab1.css', '_astro/spector.bundle.Ab1.js']) {
       expect(precached(file)).toBe(false);

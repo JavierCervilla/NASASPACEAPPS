@@ -3,6 +3,17 @@
 ## [Sin publicar]
 
 ### Cambiado
+- **Vista 3D: un suelo más real, contrastado con las fotos de Apolo (VENT-62).** El suelo se ve como el regolito lunar y no
+  como yeso: luz lunar-Lambert de McEwen (coeficientes comprobados contra ISIS) con un halo de oposición calibrado con
+  tres fotogramas Hasselblad (el suelo junto al punto antisolar es de ×1,34 a ×1,64 el de al lado), oscuro y mate hacia
+  el Sol (0,4 a 0,7 del de espaldas a él), sin brillo especular; exposición un 20 % más alta, dicho en el pie; gris
+  neutro; el grano se funde por lo que ocupa en pantalla y las manchas de brillo bajan a un 3 %. Se arregla además el
+  anti-mosaico de la normal, que en producción nunca se aplicaba. En IM-2, Malapert A, la cresta de Shackleton y Malapert
+  Massif el suelo cercano usa el relieve real de las cámaras NAC de LRO (el de PGDA en Malapert Massif, CC BY 4.0),
+  de 84 a 123 kB que solo se bajan en esos sitios y no entran en la caché de instalación; el pie dice «relief LROC NAC
+  DTM 4 m · LOLA 20 m beyond». Las piedras siguen una ley de tamaños medida (Golombek y Rapp), a medio enterrar y más
+  densas en pendientes y bordes, repartidas en trozos para no frenar la página. Pendiente de verificar: las constantes
+  de la ley de piedras y la amplitud del halo (ASSETS.md).
 - **Vista 3D: un cargador que ya enseña el sitio (VENT-60, variante B→A del lienzo).** Mientras llegan las 18 teselas
   cercanas (2 y 8 km) se ve el plano desde arriba, cada tesela sombreada con sus propias alturas en su orden real, con
   el punto, el campo de la vista y el Sol y la Tierra reales en el borde, y «Terrain · n of 18 tiles»; con las cercanas

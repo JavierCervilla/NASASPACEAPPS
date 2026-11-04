@@ -83,9 +83,16 @@ export function useRing(
     const abort = new AbortController();
     setState(LOADING);
     const run = { source, point: { lat, lonEast }, tier, breathe, note,
-      progress, signal: abort.signal };
+      progress, signal: abort.signal,
+      fine: { fetch: (url: string) => fetch(url), base: baseUrl(), breathe } };
     void runRing(run, setState);
     return () => abort.abort();
   }, [source, lat, lonEast, tier, attempt, note, progress]);
   return { state, progress, retry: () => setAttempt((n) => n + 1) };
+}
+
+/** The site's base path with its trailing slash. */
+function baseUrl(): string {
+  const base = import.meta.env.BASE_URL;
+  return base.endsWith('/') ? base : `${base}/`;
 }

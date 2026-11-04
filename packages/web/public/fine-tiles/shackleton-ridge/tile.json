@@ -1,0 +1,109 @@
+{
+  "about": "A fine real-terrain tile (MOON-20); see ASSETS.md and packages/web/scripts/fine_tiles.py",
+  "place": "shackleton-ridge",
+  "landing_cell": {
+    "q": -159,
+    "r": -379,
+    "cell_m": 20.0,
+    "centre_m": [
+      -2753.961,
+      -9170.0
+    ]
+  },
+  "georeference": {
+    "projection": "+proj=stere +lat_0=-90 +lat_ts=-90 +lon_0=0 +x_0=0 +y_0=0 +R=1737400 +units=m +no_defs=True",
+    "plane": "the sim's: x toward 90° E, y toward 0° E, metres; columns run +x, rows run -y",
+    "upper_left_m": [
+      -3520.0,
+      -8420.0
+    ],
+    "pixel_m": 5.0,
+    "width": 300,
+    "height": 300,
+    "pixel_is": "area",
+    "nests_in": {
+      "pixel_m": 20.0,
+      "col": 15024,
+      "row": 15621,
+      "width": 75,
+      "height": 75,
+      "fine_per_coarse": 4,
+      "grid": "LDEM_80S_20MPP_ADJ, upper-left corner at (-304000, 304000)"
+    }
+  },
+  "layers": {
+    "heights": {
+      "file": "heights.png",
+      "format": "PNG, 16-bit grey",
+      "metres": "offset_m + DN * step_m, above the 1737.4 km sphere",
+      "offset_m": 1397,
+      "step_m": 0.01,
+      "min_m": 1397.08,
+      "max_m": 1730.94,
+      "sha256": "ebea5be8a832c4bf155cbbfaa0b78ff3dded698704a016362c8c0db24383cb12"
+    },
+    "mask": {
+      "file": "mask.png",
+      "format": "PNG, 1-bit",
+      "value": "1 = the fine source's height; 0 = LOLA 20 m interpolated bilinearly (procedural detail here)",
+      "fine_share": 0.8726,
+      "sha256": "0843b26d7ff5b106ac1ad98a12fe1367de8bc760df23cd641281b6104f8a46fd"
+    },
+    "normals": {
+      "file": "normals.png",
+      "format": "PNG, RGB 8-bit",
+      "value": "unit normal (x toward 90° E, y toward 0° E, z up) = DN / 255 * 2 - 1, relief 1:1, central differences on the stored heights",
+      "sha256": "3838533fd6d610dca8044e62b702ad4b9a230f7c19248f97b16317ab9f0d5b1a"
+    },
+    "ldem20": {
+      "file": "ldem20.png",
+      "format": "PNG, 16-bit grey",
+      "metres": "offset_m + DN * step_m; the tile's 20 m pixels with one pixel of margin on every side",
+      "offset_m": 1390,
+      "step_m": 0.1,
+      "sha256": "71d81cfef5e6af78dd4fb4d709fb0eb22b74951f07171e49e32f9f9bbbddaa35"
+    }
+  },
+  "alignment": {
+    "against": "ldem20.png without its margin: 4 x 4 block mean of the fine heights minus the 20 m pixel, over the 20 m pixels wholly fine",
+    "pixels": 4752,
+    "mean_before_m": 0.467,
+    "std_m": 0.988,
+    "offset_removed_m": 0.47,
+    "mean_after_m": -0.003,
+    "abs_p95_after_m": 1.754
+  },
+  "sources": {
+    "fine": {
+      "product": "LROC NAC DTM ESALL_SR12 (P897S2037), 2 m",
+      "url": "https://pds.lroc.im-ldi.com/data/LRO-L-LROC-5-RDR-V1.0/LROLRC_2001/DATA/SDP/NAC_DTM/ESALL_SR12/NAC_DTM_ESALL_SR12_P897S2037.IMG",
+      "bytes": 25010000,
+      "last_modified": "Fri, 14 Aug 2026 18:27:13 GMT",
+      "window": {
+        "col": 810,
+        "row": 1780,
+        "width": 751,
+        "height": 720,
+        "dtype": "float32 little-endian",
+        "sha256": "ab4afdb658bdc7897bf73fc2156ca18c4bfd89294d5e4e2ef036e59ab8c1494a"
+      },
+      "resampling": "area average from 2 m",
+      "credit": "NASA/GSFC/Arizona State University",
+      "licence": "No licence text found on the product or the LROC site; used with the credit «NASA/GSFC/Arizona State University» by the human's decision (2026-11-01)"
+    },
+    "ldem": {
+      "url": "https://pgda.gsfc.nasa.gov/data/LOLA_20mpp/LDEM_80S_20MPP_ADJ.TIF",
+      "bytes": 2696082051,
+      "last_modified": "Fri, 07 Jul 2023 22:28:19 GMT",
+      "window": {
+        "col": 15023,
+        "row": 15620,
+        "width": 77,
+        "height": 77,
+        "dtype": "float32 little-endian",
+        "sha256": "b0d40059c7f89a49ded241afe55acb87c11fcca4933c92f7dcf2d4a7200cd9c4"
+      },
+      "credit": "NASA PGDA product 90, Barker et al. 2023, PSJ 4:183, doi:10.3847/PSJ/acf3e1"
+    }
+  }
+}

@@ -28,6 +28,7 @@
  * come (or failed) the near ground, 4 km at 15.6 m, is resampled from the
  * rings in slices, and the view is told it can stand.
  */
+import { viewOf, type FineRelief } from '../fine/fine-relief';
 import { frameAt, unitOf } from './ring-frame';
 import { LOCAL_N, fillRows, heightAtDir, localSize } from './ring-local';
 import { finest } from './ring-nodes';
@@ -44,6 +45,7 @@ export async function nearOf(
   run: RingRun,
   store: RingStore,
   windows: Window[],
+  fine: FineRelief | null = null,
 ) {
   const { point, tier } = run;
   const dir = unitOf(point.lat, point.lonEast);
@@ -61,7 +63,8 @@ export async function nearOf(
   const tile = { key: 'near', originEast: 0, originNorth: 0, n: LOCAL_N,
     sizeM: localSize(0), heights: ys, resolutionM: finest(store) };
   const near = { tile, ys };
-  return { store, frame, windows, tier, near, resolutionM: finest(store) };
+  return { store, frame, windows, tier, near, resolutionM: finest(store),
+    fine: fine ? viewOf(fine, frame) : null };
 }
 
 /** What a run holds while the tiles come. */
@@ -69,6 +72,7 @@ export interface Live {
   store: RingStore | null;
   windows: Window[];
   standing: boolean;
+  fine: FineRelief | null;
 }
 
 /** Stands the view on the near ground once, when it can. */
@@ -79,7 +83,8 @@ export async function stand(
 ): Promise<void> {
   if (live.standing || !live.store || run.signal.aborted) return;
   live.standing = true;
-  const view: RingView | null = await nearOf(run, live.store, live.windows);
+  const view: RingView | null = await nearOf(run, live.store, live.windows,
+    live.fine);
   if (run.signal.aborted) return;
   run.note?.(view ? 'near ground standing' : 'near ground has no height');
   report(view ? { kind: 'ready', ring: view } : { kind: 'unavailable' });

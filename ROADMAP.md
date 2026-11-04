@@ -75,6 +75,9 @@ completa está en el documento «Ventana Lunar · Especificación y roadmap».
   llegada, el Sol y la Tierra en el borde, y luego el horizonte del sitio que da paso al 3D sin salto (VENT-60)
 - [x] Brújula en la vista Horizonte: gira con el rumbo, la Tierra hueca si el relieve la tapa, y al pulsarla vuelve
   a la vista inicial con un muelle (VENT-63)
+- [x] Suelo lunar realista en la vista 3D: luz lunar-Lambert con oposición calibrada con fotos de Apolo, exposición +20 %,
+  relieve fino real NAC/PGDA en cuatro sitios y piedras con ley de tamaños medida (VENT-62)
+- [ ] Pequeños cráteres con relieve real y grano con volumen, contrastados con las fotos de Apolo (VENT-64)
 - [ ] Variante C del cargador, el descenso, en equipos potentes (VENT-61)
 - [ ] Comparador de sitios o exportar a .ics (VENT-8)
 - [ ] Página del proyecto, vídeo de 30 s y pitch; envío antes de las 20:00 (VENT-9)

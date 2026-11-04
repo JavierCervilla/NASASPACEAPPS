@@ -45,8 +45,13 @@ export interface Stage {
   readonly camera: PerspectiveCamera;
 }
 
-/** Filmic exposure, fixed: sunlit regolith mid grey, the suit near white. */
-const EXPOSURE = 1.35;
+/**
+ * The exposure raised for legibility (VENT-62): +20 % over the 1.35 the
+ * view had, said in the caption (`onFoot.captionNote`).
+ */
+export const EXPOSURE_GAIN = 1.2;
+/** Filmic exposure, fixed: sunlit regolith mid grey. */
+export const EXPOSURE = 1.35 * EXPOSURE_GAIN;
 /**
  * The eye's adaptation when the Sun does not reach the point: the view
  * opens up, as a camera set for the dark would, instead of lighting it.

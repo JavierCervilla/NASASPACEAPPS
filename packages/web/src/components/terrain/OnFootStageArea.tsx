@@ -71,7 +71,8 @@ export function OnFootStageArea(props: Props) {
       <div className="on-foot__top">
         {resolution === null
           ? null
-          : <OnFootCaption resolutionM={resolution} />}
+          : <OnFootCaption resolutionM={resolution}
+            fine={tile.kind === 'ready' ? tile.ring.fine?.site ?? null : null} />}
         <FarChip progress={view.tile.progress} drawn={props.drawn} />
       </div>
       {props.drawn && status === 'ready'

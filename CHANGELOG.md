@@ -3,6 +3,14 @@
 ## [Sin publicar]
 
 ### Cambiado
+- **Teselas del relieve sin esperas largas (VENT-78).** Una tesela llegó a tardar más de 15 s en el móvil. Ahora cada
+  petición se corta si pasan 4 s sin recibir nada (ni la respuesta ni más datos) y se pide otra vez enseguida, en lugar
+  de esperar a que el navegador se rinda; una red lenta que sigue enviando no se corta. Las teselas reintentan con
+  esperas propias de 0,5, 1, 2 y 4 s en vez de las del horizonte (2, 6 y 18 s), y si el servidor pide esperar más de
+  8 s la tesela se queda como hueco que tapa su nivel padre. En el servidor: con la cola llena pide volver en 2 s (antes
+  10), calcula 4 teselas a la vez (antes 2), cada dirección puede pedir 3000 teselas nuevas cada 10 minutos (antes 600,
+  unos 12 puntos: en la wifi de un evento varias personas comparten dirección) y el log apunta cada respuesta de más de
+  1 s, con el esquema y el nivel de la tesela pero sin su posición.
 - Dominio principal nuevo (VENT-76): la app vive en https://nasa.universelle.io. https://nasa.cervilla.es sigue
   funcionando con la misma app, pero los buscadores reciben como dirección canónica la de universelle.io. Los sitios
   guardados y las preferencias van por dominio: en el nuevo se empieza de cero, y una app instalada desde cervilla.es

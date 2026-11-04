@@ -49,7 +49,7 @@ const DEFAULTS = {
   blocksMb: 192,
   maxRunning: 2,
   maxWaiting: 16,
-  lodMaxRunning: 2,
+  lodMaxRunning: 4,
   lodMaxWaiting: 32,
   lodPerIp: 4,
   lodPerIpWaiting: 4,

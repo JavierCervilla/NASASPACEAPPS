@@ -35,7 +35,7 @@ import {
 } from '@ventana/sim';
 import { describe, expect, it } from 'vitest';
 import { NoTerrainHereError } from '../src/horizon/horizon-errors';
-import { HORIZON_RETRY } from '../src/horizon/horizon-retry';
+import { TILE_RETRY } from '../src/terrain/ring/ring-http';
 import { parseRing, parseTile } from '../src/terrain/ring/ring-answer';
 import { cellOf, tileOfCell } from '../src/terrain/ring/ring-cells';
 import { fetchRingSource, IN_FLIGHT } from '../src/terrain/ring/ring-fetch';
@@ -312,7 +312,7 @@ describe('fetching the ring', () => {
     await expect(source.load({ ...request, levels: 3 }, feedTo(log), new AbortController().signal)).resolves.toBeUndefined();
     const nearUrls = [...asked.keys()].filter((u) => /\/polar-south\/[01]\//.test(u));
     expect(nearUrls).toHaveLength(8);
-    for (const u of nearUrls) expect(asked.get(u)).toBe(HORIZON_RETRY.delaysMs.length + 1);
+    for (const u of nearUrls) expect(asked.get(u)).toBe(TILE_RETRY.delaysMs.length + 1);
     expect(log.filter((l) => l.startsWith('tile'))).toHaveLength(4);
     expect(log).toEqual(expect.arrayContaining(['settled0', 'settled1', 'settled2']));
     // The holes stay retryable: the same source asked again once the server is free feeds every near tile.

@@ -41,8 +41,9 @@ epic: `VENT-1` (Dashboard project «Ventana Lunar», prefix `VENT`).
   again, the browser comes back online or «Try again» is pressed, when the selected point is asked again at once and
   every other lapsed one (selected before, or saved) through the one-at-a-time background queue, which also waits
   while the browser is offline (VENT-45, `horizon-retry.ts`, `horizon-ask.ts`, `retry-triggers.ts`); offline the
-  service worker's API cache applies. The API logs each error answer of `/api/*` as one line (method, path, status, ms; never the query, the
-  client's address or the body: `packages/server/src/error-log.ts`).
+  service worker's API cache applies. The API logs each error answer of `/api/*` as one line, and each answer slower than 1 s as `api slow:` (VENT-78)
+  (method, path, status, ms; never the query, a levelled tile's x and y, written `{x}/{y}`, the client's address or the
+  body: `packages/server/src/error-log.ts`).
 - **Backend** (`packages/server`, Node + Hono; decided 2026-10-29): one service on Dokploy serves all site data, for the
   curated sites and for custom coordinates. It queries JPL Horizons and caches the responses on disk, because Horizons
   is slow and rate limited and the spec wants answers in under 3 s. The browser never calls Horizons directly. It
@@ -516,9 +517,13 @@ Every visible change follows `.claude/skills/apple-design/SKILL.md` (vendored fr
   leaves. The near ground (props, the eye, the ridge, the Sun's shadow march) is a 257 x 257 grid over 4
   km resampled from the rings (`ring-local.ts`, the `HeightTile` of `tile.ts`), not a second copy of the relief. The
   horizon profile's wall stays as the backdrop beyond the farthest ring (190 km, 40 km on the low tier,
-  `far-horizon.ts`), so a ridge past 128 km is still the profile's. Failures are the horizon's (VENT-45: 404 «No
-  terrain covers this point on the server», 503 not installed, passing failures retried at 2, 6, 18 s, then «Try
-  again»). A depth buffer that is logarithmic (the rings reach 190 km, the sky bodies are drawn at 450 to 900 km so
+  `far-horizon.ts`), so a ridge past 128 km is still the profile's. Failures are classified as the horizon's (VENT-45: 404 «No
+  terrain covers this point on the server», 503 not installed, then «Try again»), but every request of the ring is
+  watched for silence and tried on waits of its own (VENT-78, after a tile took over 15 s on a phone): nothing for 4 s,
+  no headers or no next bytes, aborts it as a passing failure (`STALL_MS`, `ring/ring-silence.ts`, `ring-watched.ts`), and
+  passing failures are tried again after 0.5, 1, 2 and 4 s, a Retry-After honoured up to 8 s (`TILE_RETRY`,
+  `ring-http.ts`), after which a tile is a hole its parent fills; the tile route's full queue asks for 2 s
+  (`TILE_BUSY_RETRY_SEC`). Held by `tests/terrain-ring-waits.test.ts`. A depth buffer that is logarithmic (the rings reach 190 km, the sky bodies are drawn at 450 to 900 km so
   terrain always hides them) keeps the 0.2 m near plane from z-fighting. The sky at the shared instant (`skyAt`): the Sun at its
   true size and direction is the key light, with hard shadows near the point (shadow map), per vertex over the near ground and, level by level, over
   each ring from a grid of its own (16, 64 and 256 km at 62.5 m to 1 km, `scene/ring-shade.ts`, in slices, no cast shadow beyond a grid's edge; distant rings are shaded by their normals, no haze: the Moon has no

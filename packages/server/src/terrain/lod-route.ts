@@ -47,6 +47,12 @@ const TILES_PATH = '/api/v1/terrain/tiles';
 const IMMUTABLE = 'public, max-age=31536000, immutable';
 /** The ring and a tile under a stale token: the tiers may have grown. */
 const SHORT = 'public, max-age=300';
+/**
+ * A full tile queue drains in tenths of a second, and the parent level
+ * stands in for a missing tile meanwhile, so the client may come back soon
+ * (VENT-78: the horizon's 10 s held a tile 10 to 15 s on a phone).
+ */
+export const TILE_BUSY_RETRY_SEC = 2;
 
 /** The `Cache-Control` of a tile asked under `asked`, served under `served`. */
 function cacheControlOf(asked: string | undefined, served: string): string {
@@ -87,7 +93,7 @@ export async function lodTileResponse(
     c.header('Cache-Control', cacheControlOf(asked, answer.version));
     return c.json(answer);
   } catch (error) {
-    return errorResponse(c, error);
+    return errorResponse(c, error, TILE_BUSY_RETRY_SEC);
   }
 }
 

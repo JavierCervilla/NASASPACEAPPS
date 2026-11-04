@@ -40,8 +40,11 @@ const KEY = 'ventana.onFootTier';
  * Whether the view is open (VENT-51): set when it opens, cleared when it
  * unmounts. Still set when a page starts, the page before it died with the
  * view open, as a GPU reset takes a phone's page down with no loss told.
+ * In the session's storage it says `true`; in `localStorage` (VENT-69: a
+ * browser restart, which a blocked WebGL needs, empties the session's) it
+ * holds the time it was set, and counts for a day (view-tier-local.ts).
  */
-const OPEN_KEY = 'ventana.onFootOpen';
+export const OPEN_KEY = 'ventana.onFootOpen';
 
 /** The session's storage, or null when the browser refuses it. */
 export function tierStorage(): TierStorage | null {

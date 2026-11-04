@@ -221,6 +221,56 @@ describe('a run that ended without unmount', () => {
   });
 });
 
+// VENT-69: Chrome blocks WebGL until it restarts, and a restart empties the session's storage.
+describe('the open mark in localStorage', () => {
+  const HOUR = 60 * 60 * 1000;
+  /** A page on a fresh session over `local`, at `clock.now`. */
+  function page(local: TierStorage | null, clock: { now: number }) {
+    const start = () => ({ tier: 'high' as Tier, forced: false });
+    return createViewTier({ start, storage: () => storage(), local: () => local, nowMs: () => clock.now });
+  }
+
+  it('survives a browser restart: the next session starts a rung lower, once', () => {
+    const local = storage();
+    const clock = { now: 1_000_000 };
+    page(local, clock).opened();
+    clock.now += 2 * HOUR;
+    const next = page(local, clock);
+    expect(next.get().tier).toBe('medium');
+    expect(next.opened()).toBe(DIED);
+  });
+
+  it('expires after 24 hours', () => {
+    const local = storage();
+    const clock = { now: 1_000_000 };
+    page(local, clock).opened();
+    clock.now += 24 * HOUR - 1;
+    expect(page(local, clock).get().tier).toBe('medium');
+    clock.now += 2;
+    expect(page(local, clock).get().tier).toBe('high');
+  });
+
+  it('is cleared when the view unmounts, and by leaving on purpose', () => {
+    const local = storage();
+    const clock = { now: 1_000_000 };
+    const first = page(local, clock);
+    first.opened();
+    first.closed();
+    expect(page(local, clock).get().tier).toBe('high');
+    page(local, clock).opened();
+    leftOnPurpose(storage(), local);
+    expect(page(local, clock).get().tier).toBe('high');
+  });
+
+  it('ignores a value that is no time, and a storage that throws', () => {
+    const clock = { now: 1_000_000 };
+    expect(page(storage(false, { 'ventana.onFootOpen': 'true' }), clock).get().tier).toBe('high');
+    expect(page(storage(false, { 'ventana.onFootOpen': '' }), clock).get().tier).toBe('high');
+    expect(page(storage(true), clock).get().tier).toBe('high');
+    expect(page(null, clock).get().tier).toBe('high');
+  });
+});
+
 describe('the session storage', () => {
   afterEach(() => {
     Reflect.deleteProperty(globalThis, 'sessionStorage');

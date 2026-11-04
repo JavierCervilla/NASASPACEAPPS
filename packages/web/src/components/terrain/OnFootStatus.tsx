@@ -68,6 +68,7 @@ export function wordsOf({ located, tile, scene }: StatusFacts): TextKey | null {
   if (scene === 'missing') return 'update.view';
   if (scene === 'offline') return 'update.offline';
   if (tile.kind !== 'ready') return TILE_WORDS[tile.kind];
+  if (scene === 'blocked') return 'gl.blocked';
   if (scene === 'failed') return 'onFoot.noWebgl';
   return scene === 'loading' ? 'onFoot.loading' : null;
 }

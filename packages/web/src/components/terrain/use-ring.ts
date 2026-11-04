@@ -40,15 +40,12 @@ import {
   type RingTier,
 } from '../../terrain/ring/ring-plan';
 import type { RingSource } from '../../terrain/ring/ring-source';
+import { breathe, fineDeps, useFineAllowed } from './ring-fine';
 import { createProgressStore } from '../../terrain/ring/progress-store';
 import { runRing, type RingState } from '../../terrain/ring/ring-session';
 import type { ViewTier } from '../../terrain/view-tier';
 
 const LOADING: RingState = { kind: 'loading' };
-/** Lets the page draw and answer input between two slices of work. */
-const breathe = (): Promise<void> =>
-  new Promise((done) => window.setTimeout(done, 0));
-
 /**
  * The rings the view draws: its tier's (view-tier.ts), so a change of tier
  * asks for them again; less the far levels under `?onfoot=far`.
@@ -76,6 +73,7 @@ export function useRing(
   const [attempt, setAttempt] = useState(0);
   const [progress] = useState(createProgressStore);
   const tier = useRingTier(view);
+  const fineAllowed = useFineAllowed(view);
   const lat = point?.lat;
   const lonEast = point?.lonEast;
   useEffect(() => {
@@ -83,16 +81,9 @@ export function useRing(
     const abort = new AbortController();
     setState(LOADING);
     const run = { source, point: { lat, lonEast }, tier, breathe, note,
-      progress, signal: abort.signal,
-      fine: { fetch: (url: string) => fetch(url), base: baseUrl(), breathe } };
+      progress, signal: abort.signal, fine: fineDeps(fineAllowed) };
     void runRing(run, setState);
     return () => abort.abort();
-  }, [source, lat, lonEast, tier, attempt, note, progress]);
+  }, [source, lat, lonEast, tier, fineAllowed, attempt, note, progress]);
   return { state, progress, retry: () => setAttempt((n) => n + 1) };
-}
-
-/** The site's base path with its trailing slash. */
-function baseUrl(): string {
-  const base = import.meta.env.BASE_URL;
-  return base.endsWith('/') ? base : `${base}/`;
 }

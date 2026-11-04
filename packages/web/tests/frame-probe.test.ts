@@ -29,7 +29,7 @@
  * steps the view down once; past the window no frame pays the wait.
  */
 import { describe, expect, it, vi } from 'vitest';
-import { budgetOf, createFrameProbe, probeVerdict, SETTLE_FRAMES } from '../src/terrain/frame-probe';
+import { COMPILED_FRAME_CEILING_MS, budgetOf, createFrameProbe, probeVerdict, SETTLE_FRAMES } from '../src/terrain/frame-probe';
 
 /** A probe on a fake clock: each `draw` costs what `cost` says, the sync waits `waitMs`. */
 function rig(options: { budgetMs?: number; waitMs?: number; armed?: boolean } = {}) {
@@ -96,11 +96,26 @@ describe('the probe\'s window', () => {
     expect(sync).toHaveBeenCalledTimes(2);
   });
 
-  it('does not judge a frame that compiled a shader', () => {
+  it('judges a frame that compiled a shader against the ceiling, not the budget', () => {
     const { frame, onSlow } = rig();
     frame(500, true, true);
     expect(onSlow).not.toHaveBeenCalled();
     frame(500, true);
+    expect(onSlow).toHaveBeenCalledTimes(1);
+  });
+
+  // VENT-69: the Pixel 10's first frame took 1637.8 ms and compiled eight programs.
+  it('calls slow a compiling frame past the ceiling', () => {
+    const { frame, onSlow } = rig();
+    frame(COMPILED_FRAME_CEILING_MS + 1, true, true);
+    expect(onSlow).toHaveBeenCalledTimes(1);
+  });
+
+  it('never judges a compiling frame by less than the budget of the tier', () => {
+    const { frame, onSlow } = rig({ budgetMs: 5000 });
+    frame(COMPILED_FRAME_CEILING_MS + 1, true, true);
+    expect(onSlow).not.toHaveBeenCalled();
+    frame(5001, true);
     expect(onSlow).toHaveBeenCalledTimes(1);
   });
 

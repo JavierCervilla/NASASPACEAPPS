@@ -113,7 +113,9 @@ export function detectTier(device: DeviceHints, search = '', hash = ''): Tier {
   if (/swiftshader|llvmpipe|software/.test(gpu)) return 'low';
   if (!device.coarsePointer) return device.cores >= 4 ? 'high' : 'medium';
   if (CAPABLE_PHONE_GPU.test(gpu)) return 'medium';
-  return device.cores >= 8 ? 'medium' : 'low';
+  // PowerVR and any GPU not measured on a phone: low (VENT-69; the core
+  // count says nothing of the GPU, and a Pixel 10's 8 cores sent it to medium).
+  return 'low';
 }
 
 /** The part of a WebGL context `gpuName` reads. */

@@ -51,7 +51,7 @@ function recording(): { slicer: Slicer; jobs: { key: string; run: () => void }[]
 describe('rocksMesh slicing', () => {
   it('queues one job per band and builds nothing while they wait', () => {
     const { slicer, jobs } = recording();
-    const mesh = rocksMesh(SEED, FLAT, createSunMask(), slicer);
+    const mesh = rocksMesh(SEED, FLAT, createSunMask(), { slicer, cap: 520 });
     const bands = measuredBands(SEED, FLAT).count;
     expect(bands).toBeGreaterThan(1);
     expect(jobs.map((j) => j.key)).toEqual(
@@ -62,7 +62,7 @@ describe('rocksMesh slicing', () => {
 
   it('keeps the mesh hidden until the last band has run, then shows the stones', () => {
     const { slicer, jobs } = recording();
-    const mesh = rocksMesh(SEED, FLAT, createSunMask(), slicer);
+    const mesh = rocksMesh(SEED, FLAT, createSunMask(), { slicer, cap: 520 });
     jobs.slice(0, -1).forEach((job) => {
       job.run();
       expect(mesh.visible).toBe(false);

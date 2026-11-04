@@ -28,6 +28,7 @@
  * `loadOnDemandChunk`, so a chunk gone after a deploy tells the page
  * (VENT-52) and the view says so instead of «cannot start on this device».
  */
+import { isGlBlocked } from '../../lib/gl-memory';
 import { MissingChunkError } from '../../pwa/missing-chunk';
 import { loadOnDemandChunk } from '../../pwa/on-demand-chunk';
 
@@ -37,11 +38,13 @@ export const loadTerrainScene = (target: EventTarget) =>
 
 /**
  * Why the scene did not start: its chunk is gone, it could not be fetched
- * offline, or the scene failed.
+ * offline, the browser blocked WebGL after a graphics fault (VENT-69), or
+ * the scene failed.
  */
 export function sceneFailure(
   error: unknown,
-): 'missing' | 'offline' | 'failed' {
+): 'missing' | 'offline' | 'blocked' | 'failed' {
+  if (isGlBlocked(error)) return 'blocked';
   if (!(error instanceof MissingChunkError)) return 'failed';
   return error.offline ? 'offline' : 'missing';
 }

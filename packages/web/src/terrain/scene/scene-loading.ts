@@ -29,9 +29,10 @@
  * `?onfoot=` switches (leave-out.ts) leave out and the tier it draws at
  * (`data-onfoot`, `data-tier`), for the tests and for a remote console.
  */
-import type { Loop } from '../../globe/loop';
 import { markReadyWhenStanding } from './ready-mark';
-import type { SceneSetup } from './scene-types';
+import { compileFirst } from './scene-compile';
+import { addWarmUp } from './scene-warm-up';
+import type { SceneHooks, SceneSetup } from './scene-types';
 import { loadSurfaces } from './surfaces';
 import type { World } from './world';
 
@@ -42,15 +43,35 @@ export function markSetup(host: HTMLElement, setup: SceneSetup): void {
   else delete host.dataset['onfoot'];
 }
 
-/** Loads the ground's maps, noting it in the crash report. */
-async function loadParts(world: World): Promise<void> {
+/**
+ * Loads the ground's maps, then compiles every program the scene will draw
+ * with (VENT-69), noting both in the crash report.
+ */
+async function loadParts(world: World, hooks: SceneHooks): Promise<void> {
   await loadSurfaces(world, console.warn);
   world.setup.report.step('all parts loaded');
+  const { renderer, scene, camera } = world.stage;
+  const removeWarmUp = addWarmUp(scene, world);
+  await compileFirst({
+    compile: () => renderer.compileAsync(scene, camera),
+    now: () => performance.now(),
+    wait: (ms) => new Promise((done) => window.setTimeout(done, ms)),
+    note: (text) => world.setup.report.step(text),
+    onSlow: hooks.onSlowFrame,
+  });
+  removeWarmUp();
 }
 
-/** Loads the maps; marks the host once they stand. */
-export function startLoading(host: HTMLElement, world: World,
-  loop: Loop): () => void {
-  return markReadyWhenStanding(host, loadParts(world),
-    () => loop.invalidate());
+/**
+ * Loads the maps and compiles; marks the host and opens the loop's gate
+ * once they stand, so the first frame draws with every program ready.
+ */
+export function startLoading(
+  host: HTMLElement,
+  world: World,
+  loop: { readonly open: () => void },
+  hooks: SceneHooks,
+): () => void {
+  return markReadyWhenStanding(host, loadParts(world, hooks),
+    () => loop.open());
 }

@@ -34,8 +34,9 @@ import {
   PCFShadowMap,
   PerspectiveCamera,
   Scene,
-  WebGLRenderer,
+  type WebGLRenderer,
 } from 'three';
+import { createGlRenderer, releaseRenderer } from '../../lib/gl-renderer';
 import { VIEW_FOV } from '../view-fov';
 import type { SceneSetup } from './scene-types';
 
@@ -64,7 +65,7 @@ export function createStage(
   { quality, leave }: SceneSetup,
   phone: boolean,
 ): Stage {
-  const renderer = new WebGLRenderer({
+  const renderer = createGlRenderer({
     antialias: quality.antialias,
     powerPreference: 'low-power',
     // The rings reach 190 km and the sky is farther: a linear depth buffer
@@ -114,8 +115,7 @@ export function disposeStage(stage: Stage): void {
     const materials = [mesh.material ?? []].flat();
     for (const material of materials) disposeMaterial(material);
   });
-  stage.renderer.dispose();
-  stage.renderer.forceContextLoss();
+  releaseRenderer(stage.renderer);
   stage.renderer.domElement.remove();
 }
 

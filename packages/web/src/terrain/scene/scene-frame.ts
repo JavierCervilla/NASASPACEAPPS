@@ -51,6 +51,8 @@ export interface ViewState {
   coast: Coast | null;
   /** The springs turning it back to `home` (look-home.ts), or none. */
   homing: Homing | null;
+  /** A finger or pen is down on the view, turning it (VENT-73). */
+  dragging: boolean;
   /** The panel was told this point's first frame (re-armed on a new point). */
   told: boolean;
 }
@@ -84,6 +86,7 @@ function homeStep(view: ViewState, dt: number, hooks: SceneHooks): boolean {
 function markFrame(world: World, host: HTMLElement, moving: boolean): void {
   const { calls, triangles } = world.stage.renderer.info.render;
   host.dataset['draws'] = `${calls},${triangles}`;
+  host.dataset['shadows'] = String(world.stage.shadow.renders());
   host.dataset['working'] = String(moving || world.slicer.busy()
     || world.mapsPending);
   const drawn = Number(host.dataset['frames'] ?? 0) + 1;
@@ -94,8 +97,10 @@ function markFrame(world: World, host: HTMLElement, moving: boolean): void {
 function drawTimed(world: World, probe: FrameProbe): number {
   const { stage } = world;
   const start = performance.now();
+  stage.shadow.beforeDraw();
   probe.frame(() => stage.renderer.render(stage.scene, stage.camera),
     () => world.slicer.busy());
+  stage.shadow.afterDraw();
   return performance.now() - start;
 }
 

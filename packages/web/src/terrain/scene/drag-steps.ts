@@ -32,7 +32,10 @@ import { VelocityTracker } from '../../globe/velocity';
 import { dragLook } from '../look-input';
 import type { LookTarget } from './controls';
 
-export function startTracker(e: PointerEvent): VelocityTracker {
+/** A press stops any coast, marks the drag and starts the tracker. */
+export function press(target: LookTarget, e: PointerEvent): VelocityTracker {
+  target.halt();
+  target.drag(true);
   const tracker = new VelocityTracker();
   tracker.add(e.clientX, e.clientY, e.timeStamp);
   return tracker;
@@ -44,6 +47,7 @@ export function release(
   tracker: VelocityTracker,
   e: PointerEvent,
 ): void {
+  target.drag(false);
   const v = tracker.velocity(e.timeStamp);
   if (e.type === 'pointerup') target.fling(v.x, v.y);
 }

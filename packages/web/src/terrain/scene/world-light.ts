@@ -70,6 +70,7 @@ export function relightWorld(
   world.setup.report.step(verdict.text, verdict.repeat);
   if (!verdict.relight) return false;
   world.lit = input.sky;
+  world.stage.shadow.mark();
   lightWorld(world, input);
   return true;
 }

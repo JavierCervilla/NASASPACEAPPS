@@ -37,13 +37,17 @@ import {
   type WebGLRenderer,
 } from 'three';
 import { createGlRenderer, releaseRenderer } from '../../lib/gl-renderer';
+import { terrainPixelRatio } from '../pixel-ratio';
 import { VIEW_FOV } from '../view-fov';
+import { createShadowGate, type ShadowGate } from './shadow-gate';
 import type { SceneSetup } from './scene-types';
 
 export interface Stage {
   readonly renderer: WebGLRenderer;
   readonly scene: Scene;
   readonly camera: PerspectiveCamera;
+  /** The Sun's shadow map renders only when marked (VENT-73). */
+  readonly shadow: ShadowGate;
 }
 
 /**
@@ -73,18 +77,19 @@ export function createStage(
     // turns it off to bisect a crash, accepting that.)
     logarithmicDepthBuffer: !leave.has('logdepth'),
   });
-  renderer.setPixelRatio(Math.min(devicePixelRatio, quality.maxPixelRatio));
+  renderer.setPixelRatio(terrainPixelRatio(quality, phone, devicePixelRatio));
   renderer.setClearColor(0x000000, 1);
   renderer.toneMapping = ACESFilmicToneMapping;
   renderer.toneMappingExposure = EXPOSURE;
   renderer.shadowMap.enabled = !leave.has('shadows');
   renderer.shadowMap.type = PCFShadowMap;
-  renderer.shadowMap.autoUpdate = true;
+  renderer.shadowMap.autoUpdate = false;
   renderer.domElement.setAttribute('aria-hidden', 'true');
   host.prepend(renderer.domElement);
   const fov = phone ? VIEW_FOV.phone : VIEW_FOV.wide;
   const camera = new PerspectiveCamera(fov, 1, 0.2, 1_200_000);
-  return { renderer, scene: new Scene(), camera };
+  const shadow = createShadowGate(renderer.shadowMap);
+  return { renderer, scene: new Scene(), camera, shadow };
 }
 
 /**

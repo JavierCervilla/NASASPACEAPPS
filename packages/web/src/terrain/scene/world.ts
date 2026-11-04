@@ -52,6 +52,7 @@ import { backdropM } from '../ring/ring-plan';
 import type { RingLayer } from './ring-layer';
 import type { FarShade } from './ring-shade';
 import { applyRings } from './world-rings';
+import { castsShadow } from './shadow-jobs';
 import { createSlicer, type Slicer } from './slicer';
 import { ringsMesh } from './rings';
 import { rocksMesh } from './props';
@@ -103,7 +104,10 @@ export interface World {
 /** An empty world on `stage`. */
 export function createWorld(stage: Stage, seed: number, setup: SceneSetup) {
   const mask = createSunMask();
-  const slicer = createSlicer({ invalidate: () => world.invalidate() });
+  const slicer = createSlicer({ invalidate: () => world.invalidate(),
+    onJob: (key) => {
+      if (castsShadow(key)) stage.shadow.mark();
+    } });
   const shadowPx = setup.quality.tier === 'high' ? 2048 : 1024;
   const fine = createFineUniforms();
   const policy = groundPolicy(setup.quality.tier, setup.leave);
@@ -180,6 +184,7 @@ export function applyInput(world: World, input: SceneInput): boolean {
   if (tilesChanged) applyTiles(world, input);
   else if (ringChanged) world.craters?.setGround();
   if (tilesChanged || profileChanged) applyProfile(world, input);
+  if (tilesChanged || profileChanged || ringChanged) world.stage.shadow.mark();
   const forced = tilesChanged || profileChanged || was?.ring !== input.ring;
   const lit = (forced || was?.sky !== input.sky) &&
     relightWorld(world, input, forced);

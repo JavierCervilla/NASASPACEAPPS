@@ -202,6 +202,11 @@
   top: var(--on-foot-band-top, 0px);
   bottom: auto;
   height: var(--on-foot-band-height, 100%);
+  box-sizing: border-box;
+  overflow-y: auto;
+  align-content: safe center;
+  background: rgb(0 0 0 / 0.78);
+  pointer-events: auto;
 }
 
 /*
@@ -315,4 +320,12 @@
   .on-foot__copy,
   .on-foot__copied { color: var(--on-foot-ink); }
   .on-foot__label { background: #000; color: #fff; }
+}
+
+/*
+ * The scene is parked while the next point's tiles load (VENT-69): it keeps
+ * its renderer, and shows nothing of the point it left.
+ */
+.on-foot__host[data-parked='true'] {
+  visibility: hidden;
 }

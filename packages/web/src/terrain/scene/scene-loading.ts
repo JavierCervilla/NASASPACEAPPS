@@ -30,7 +30,8 @@
  * (`data-onfoot`, `data-tier`), for the tests and for a remote console.
  */
 import { markReadyWhenStanding } from './ready-mark';
-import { compileFirst } from './scene-compile';
+import { watchHidden } from './page-hidden';
+import { compileFirst, MAPS_GIVE_UP_MS, waitAtMost } from './scene-compile';
 import { addWarmUp } from './scene-warm-up';
 import type { SceneHooks, SceneSetup } from './scene-types';
 import { loadSurfaces } from './surfaces';
@@ -48,17 +49,22 @@ export function markSetup(host: HTMLElement, setup: SceneSetup): void {
  * with (VENT-69), noting both in the crash report.
  */
 async function loadParts(world: World, hooks: SceneHooks): Promise<void> {
-  await loadSurfaces(world, console.warn);
-  world.setup.report.step('all parts loaded');
+  const { report } = world.setup;
+  const wait = (ms: number): Promise<void> =>
+    new Promise((done) => window.setTimeout(done, ms));
+  const watch = watchHidden(document);
+  const maps = await waitAtMost(loadSurfaces(world, console.warn),
+    MAPS_GIVE_UP_MS, wait);
+  report.step(maps === 'done' ? 'all parts loaded'
+    : 'surface maps late: drawing without them');
   const { renderer, scene, camera } = world.stage;
   const removeWarmUp = addWarmUp(scene, world);
   await compileFirst({
     compile: () => renderer.compileAsync(scene, camera),
-    now: () => performance.now(),
-    wait: (ms) => new Promise((done) => window.setTimeout(done, ms)),
-    note: (text) => world.setup.report.step(text),
-    onSlow: hooks.onSlowFrame,
+    now: () => performance.now(), wait, note: (text) => report.step(text),
+    hidden: watch.sawHidden, onSlow: hooks.onSlowFrame,
   });
+  watch.stop();
   removeWarmUp();
 }
 

@@ -117,6 +117,11 @@ export interface TerrainScene {
   readonly home: () => void;
   /** Draws once more (the band moved). */
   readonly invalidate: () => void;
+  /**
+   * The panel parked the scene while the next point's input loads: its next
+   * frame tells `onDrawn` again (VENT-69, one renderer for the view's life).
+   */
+  readonly rearm: () => void;
   readonly dispose: () => void;
 }
 

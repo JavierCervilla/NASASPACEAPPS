@@ -51,6 +51,8 @@ export interface ViewState {
   coast: Coast | null;
   /** The springs turning it back to `home` (look-home.ts), or none. */
   homing: Homing | null;
+  /** The panel was told this point's first frame (re-armed on a new point). */
+  told: boolean;
 }
 
 /** Carries the look on by `dt` seconds of the coast; true while it lasts. */
@@ -101,7 +103,6 @@ export function framer(
   const labels = labelLayer(host, world.stage.camera, () => world.ground);
   const { renderer } = world.stage;
   const probe = stageProbe(renderer, world.setup.quality, hooks.onSlowFrame);
-  let first = true;
   const frame = (dt: number): boolean => {
     const moving = coast(view, dt, hooks) || homeStep(view, dt, hooks);
     fitStage(world.stage, host, hooks.band?.() ?? null);
@@ -111,8 +112,8 @@ export function framer(
     markBodies(world, host);
     markFrame(world, host);
     reportFrame(world, drawMs);
-    if (first) hooks.onDrawn?.();
-    first = false;
+    if (!view.told) hooks.onDrawn?.();
+    view.told = true;
     return moving;
   };
   return { labels, frame };

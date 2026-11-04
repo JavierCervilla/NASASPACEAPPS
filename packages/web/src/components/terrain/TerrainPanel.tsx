@@ -60,7 +60,7 @@ export interface PanelProps extends OnFootParts {
   readonly band?: SceneHooks['band'];
   readonly bandMoves?: BandMoves;
   /** Asks the phone's sheet to make room for the notice of a lost view. */
-  readonly makeRoom?: () => void;
+  readonly makeRoom?: (to?: 'peek' | 'closed') => void;
   /** The phone sheet's top edge, for the compass (VENT-63); none: desktop. */
   readonly sheetEdge?: WatchedValue<number | null>;
 }

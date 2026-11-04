@@ -66,7 +66,7 @@ import { createSourceStore } from '../source/data-source';
 import { followClock } from '../calendar/follow-clock';
 import { createPlayer } from '../calendar/time-player';
 import { createTimeStore } from '../calendar/time-store';
-import { createWatchedValue } from '../lib/watched-value';
+import { sheetChannels } from './sheet-channels';
 import { browserHourClock } from '../phone/hour-clock';
 import type { CardSite } from '../card/site-facts';
 import { createSiteStore } from '../phone/site-store';
@@ -203,7 +203,7 @@ function GlobeSection({ globe, source, computed, view }: SectionProps) {
 
 function Island({ sitesUrl, base, selectedId, sites }: Props) {
   const [store] = useState(() => createSiteStore(selectedId));
-  const [sheetEdge] = useState(() => createWatchedValue<number | null>(null));
+  const [channels] = useState(sheetChannels);
   const parts = useCalendarParts(sitesUrl, sites);
   const view = useView(VIEW_NAV);
   const { feed: state, computed } = useStateFeed(store, parts);
@@ -213,14 +213,14 @@ function Island({ sitesUrl, base, selectedId, sites }: Props) {
   const kit = useCreatePinKit({ store, time, state, sites, horizons });
   const saved = useCreateSavedKit(kit, store);
   const layers = saved.layers;
-  const globe = { base, sitesUrl, store, sheetEdge, time, state, layers };
+  const globe = { base, sitesUrl, store, ...channels, time, state, layers };
   const section = { globe, source: parts.source, computed, view };
   return (
     <SavedContext value={saved}>
       <PinContext value={kit}>
         <GlobeSection {...section} />
         <DesktopShell {...{ sites, store, parts, base, view }} />
-        <PhoneShell {...{ sites, store, sheetEdge, parts, base, view }} />
+        <PhoneShell {...{ sites, store, ...channels, parts, base, view }} />
         <TopNotices base={base} />
         <PinLayers />
       </PinContext>

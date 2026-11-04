@@ -542,9 +542,23 @@ Every visible change follows `.claude/skills/apple-design/SKILL.md` (vendored fr
   of kind `blocked` (never decided by Chrome's message, which is only kept, with `webglcontextcreationerror`'s
   `statusMessage`, in the report); the globe (`data-status="blocked"`) and the view say `gl.blocked` («The browser blocked
   3D for this site after a graphics fault… Force stop, then reopen»), and without a mark keep «needs WebGL» and «cannot
-  start on this device». The view's open mark is also kept in `localStorage` for 24 h (`view-tier-local.ts`), so a
-  browser restart keeps it; the cost is that a second tab opened while another has the view open also starts one rung
-  lower. Held by `tests/ground-policy.test.ts`, `tests/scene-compile.test.ts`, `tests/gl-memory.test.ts`,
+  start on this device». The view's open mark is also kept in `localStorage` (`view-tier-local.ts`), per tab (`{ tabId: last beat }`, the tab id in
+  `sessionStorage`) and beating every 5 s while the view is open; `pagehide` (a normal close or navigation) takes the
+  tab's own mark away, and the next start goes a rung lower only for a mark that stopped beating more than 20 s ago and is
+  under 24 h old (`diedBefore`): a GPU-reset page death, a browser restart after one, or a tab the OS killed fires no
+  `pagehide`. Another tab that is still open, and its leaving, no longer matter; a tab hidden for minutes (timers
+  throttled) can read as stale to a tab opened later, the known cost.
+  **One renderer for the view's life** (`use-terrain-scene.ts`, `use-parked.ts`, `scene/scene-point.ts`): when the selected
+  point changes the view's input goes away until the new point's tiles land; the mounted scene is **parked** (`data-parked`
+  on the host hides its canvas, the loader covers, `rearm()` tells `onDrawn` again), not freed, and `update()` rebuilds the
+  world (rings, near ground, props, far horizon, sky, the look back to the new opening) on the same renderer, so no second WebGL
+  context is made and no program is compiled again (held by `tests/e2e/vent-69-one-renderer.spec.ts`: contexts made, ground
+  shader sources and linked programs counted across a point change). Only leaving the view, a tier change or a lost context frees
+  the renderer. The first frame waits for the surface maps at most 5 s (`MAPS_GIVE_UP_MS`, `waitAtMost`), and a compile
+  during which the page was hidden is not judged slow (`page-hidden.ts`). The «browser blocked 3D» message keeps to the phone's
+  free band on a backing (`use-help-band.ts` for the globe's, `--on-foot-band-*` for the view's), and asks the sheet to close
+  when even the free band is too short for it (200 % text; `roomAsk` in `sheet-channels.ts`, `makeRoom('closed')`)
+  (`tests/e2e/vent-69-blocked-band.spec.ts`). Held by `tests/ground-policy.test.ts`, `tests/scene-compile.test.ts`, `tests/gl-memory.test.ts`,
   `tests/view-tier.test.ts` and `tests/e2e/vent-69-safe-start.spec.ts`.
   Ground realism (VENT-62): the ground material alone takes lunar photometry for the Sun (`lunar-photometry.ts`, GLSL twin
   `scene/ground-photometry.ts`: McEwen's lunar-Lambert as ISIS, with a calibrated opposition surge, regolith specular off; the

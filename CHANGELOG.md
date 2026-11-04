@@ -16,6 +16,20 @@
   igual cuando nunca funcionó. (5) La marca de «la página murió con la vista abierta» también se guarda 24 h en
   `localStorage`, para que un reinicio de Chrome no la pierda. Nuevas palabras de `?onfoot=`: `photometry`, `antitile`,
   `footprint`, `fine` y `rocks`.
+  (6) Cambiar de punto con la vista abierta (soltar un pin o elegir otro sitio desde «Lugares») ya no destruye y vuelve
+  a crear el contexto WebGL: la vista conserva un solo renderizador (un canvas, un contexto) toda su vida, aparca la
+  escena mientras llegan las teselas del punto nuevo y reconstruye el mundo encima, con los programas ya compilados
+  (antes: contexto nuevo, 10 programas enlazados otra vez y un primer fotograma de 1,6 s en el Pixel 10, tras el cual se
+  perdía el contexto). Solo salir de la vista, cambiar de calidad o perder el contexto lo liberan. (7) Los mapas de la
+  superficie se esperan como mucho 5 s: si la descarga se atasca, la vista compila y dibuja sin ellos. (8) Una
+  compilación con la página oculta en algún momento no se juzga lenta (Chrome espacia los temporizadores y bajaba la
+  calidad sin motivo). (9) La marca de «murió con la vista abierta» de `localStorage` es por pestaña y late cada 5 s
+  mientras la vista está abierta: otra pestaña que abre la vista, o cerrar la app con normalidad (`pagehide`), ya no
+  bajan un escalón; solo cuenta una marca que dejó de latir hace más de 20 s y tiene menos de 24 h (un reinicio de Chrome
+  tras un fallo de GPU, o una página que no llegó a avisar al cerrarse, como un móvil que mata la pestaña). (10) El
+  mensaje «el navegador bloqueó el 3D» se queda en la franja libre entre la barra superior y la hoja (también al 200 %
+  de texto, donde la hoja se cierra para dejarle sitio), sobre un fondo que mantiene el contraste 4,5:1 y con scroll si
+  no cabe; ya no se pinta sobre las etiquetas del horizonte.
 - **Vista 3D: un suelo más real, contrastado con las fotos de Apolo (VENT-62).** El suelo se ve como el regolito lunar y no
   como yeso: luz lunar-Lambert de McEwen (coeficientes comprobados contra ISIS) con un halo de oposición calibrado con
   tres fotogramas Hasselblad (el suelo junto al punto antisolar es de ×1,34 a ×1,64 el de al lado), oscuro y mate hacia

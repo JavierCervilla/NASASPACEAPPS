@@ -124,6 +124,16 @@ test.describe('the ground per tier (IM-2 stands inside a fine tile)', () => {
   });
 });
 
+test.describe('the surface maps stall', () => {
+  // A download that never ends must not keep the view from drawing: the wait is capped (5 s) and the view draws without them.
+  test('the view draws after the cap, without the maps', async ({ page }) => {
+    await page.route(/on-foot-(regolith-albedo|regolith-normal|earth).*\.webp/, () => undefined);
+    await openView(page, 'quality=medium');
+    const host = page.getByRole('application', { name: 'On foot at the site' });
+    expect(Number(await host.getAttribute('data-frames'))).toBeGreaterThan(0);
+  });
+});
+
 test.describe('WebGL blocked after a fault', () => {
   const BLOCKED = /blocked 3D for this site after a graphics fault/;
 

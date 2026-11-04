@@ -34,8 +34,10 @@
  */
 import { MeshStandardMaterial, Vector2 } from 'three';
 import { groundKey, type GroundPolicy } from '../ground-policy';
+import { patchClods, type ClodUniforms } from './clod-glsl';
+import { patchCraters, type CraterUniforms } from './crater-glsl';
 import { patchFine, type FineUniforms } from './ground-fine';
-import { patchPhotometry } from './ground-photometry';
+import { patchPhotometry, type FillUniforms } from './ground-photometry';
 import { antiTile } from './ground-shader';
 import type { SurfaceMaps } from './surface-maps';
 import { maskSun, type SunMask } from './sun-mask';
@@ -44,14 +46,26 @@ import { maskSun, type SunMask } from './sun-mask';
 const ROUGHNESS = 0.96;
 const NORMAL_STRENGTH = 0.55;
 
+/** What the ground's materials share with the scene (one set for all). */
+export interface GroundShared {
+  readonly fine: FineUniforms;
+  readonly craters: CraterUniforms;
+  readonly fill: FillUniforms;
+  /** The clods' raster (VENT-67). */
+  readonly clods: ClodUniforms;
+}
+
 /**
  * The ground's material, its parts as `policy` allows (VENT-69); its maps
- * come with {@link attachGroundMaps}.
+ * come with {@link attachGroundMaps}. The crater patch (VENT-64) wears its
+ * own variant of it, `patch`: the same shading, the craters' slope added;
+ * the rings' variant cuts the patch out.
  */
 export function groundMaterial(
   mask: SunMask,
-  fine: FineUniforms,
+  shared: GroundShared,
   policy: GroundPolicy,
+  patch = false,
 ): MeshStandardMaterial {
   const material = new MeshStandardMaterial({ color: 0xcfcfcf,
     roughness: ROUGHNESS, metalness: 0 });
@@ -61,10 +75,15 @@ export function groundMaterial(
   material.onBeforeCompile = (shader, renderer) => {
     masked.call(material, shader, renderer);
     antiTile(shader, policy);
-    if (policy.fine) patchFine(shader, fine);
-    if (policy.photometry) patchPhotometry(shader);
+    if (policy.fine) patchFine(shader, shared.fine);
+    if (policy.craters) patchCraters(shader, shared.craters, patch);
+    if (policy.grain) {
+      patchClods(shader, shared.clods, { tier: 'high', patch });
+    }
+    if (policy.photometry) patchPhotometry(shader, shared.fill);
   };
-  material.customProgramCacheKey = () => groundKey(policy);
+  material.customProgramCacheKey = () =>
+    groundKey(policy) + (patch ? '-patch' : '');
   return material;
 }
 

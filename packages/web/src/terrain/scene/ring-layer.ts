@@ -32,7 +32,7 @@
  * it); a level's Sun mask arriving updates the vertices' `lit`.
  * Everything made here is freed when the layer goes.
  */
-import { Group, type MeshStandardMaterial } from 'three';
+import { Group, type Material, type MeshStandardMaterial } from 'three';
 import { nameOf as nameFor, tileAt } from '../ring/ring-cells';
 import type { RingView } from '../ring/ring-state';
 import type { RingTile } from '../ring/ring-store';
@@ -83,18 +83,23 @@ function setLit(s: LayerState, level: number, grid: LitGrid | null): void {
   }
 }
 
-/**
- * The layer for `view`, drawing with `material`; it adds nothing yet. It
- * tells `note` when a level builds its first mesh.
- */
+export interface RingOptions {
+  /** Hears when a level builds its first mesh, for the crash report. */
+  readonly note?: (text: string) => void;
+  /** The shadow depth of the nearest level (the crater patch's cut-out). */
+  readonly depth?: Material | null;
+}
+
+/** The layer for `view`, drawing with `material`; it adds nothing yet. */
 export function createRingLayer(
   view: RingView,
   material: MeshStandardMaterial,
   slicer: Slicer,
-  note: (text: string) => void = () => undefined,
+  options: RingOptions = {},
 ): RingLayer {
   const s: LayerState = { view, material, slicer, group: new Group(),
-    entries: new Map(), lits: [], built: new Set(), note };
+    entries: new Map(), lits: [], built: new Set(),
+    note: options.note ?? (() => undefined), depth: options.depth ?? null };
   s.group.name = 'ring';
   const known = [...view.store.tiles.values()];
   for (const tile of known.sort((a, b) => a.key.level - b.key.level)) {

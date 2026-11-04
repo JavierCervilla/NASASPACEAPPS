@@ -39,7 +39,13 @@ import { next, type Waiting } from './slicer-queue';
 
 export interface Slicer {
   /** Queues `job` under `key`; a waiting job of that key is replaced. */
-  readonly add: (key: string, priority: number, job: () => void) => void;
+  readonly add: (
+    key: string,
+    priority: number,
+    job: () => void,
+    /** A quiet job (a bake, a hidden build) never asks for a frame alone. */
+    quiet?: boolean,
+  ) => void;
   /** Forgets every waiting job. */
   readonly clear: () => void;
   /** Whether work waits or a turn is queued. */
@@ -79,15 +85,17 @@ function turn(core: Core): void {
   core.timer = null;
   const start = deps.now();
   let ran = false;
+  let loud = false;
   for (let found = next(queue); found; found = next(queue)) {
     queue.delete(found[0]);
     found[1].job();
     ran = true;
+    loud ||= !found[1].quiet;
     if (deps.now() - start >= deps.budgetMs) break;
   }
   if (queue.size > 0) core.timer = deps.schedule(() => turn(core));
   const due = start - core.askedAt >= deps.frameGapMs;
-  if (ran && (queue.size === 0 || due)) {
+  if (ran && (queue.size === 0 || (due && loud))) {
     core.askedAt = start;
     deps.invalidate();
   }
@@ -106,8 +114,8 @@ export function createSlicer(given: SlicerDeps): Slicer {
   const core: Core = { queue: new Map(), deps, timer: null,
     askedAt: Number.NEGATIVE_INFINITY };
   return {
-    add: (key, priority, job) => {
-      core.queue.set(key, { priority, job });
+    add: (key, priority, job, quiet = false) => {
+      core.queue.set(key, { priority, job, quiet });
       core.timer ??= deps.schedule(() => turn(core));
     },
     busy: () => core.queue.size > 0 || core.timer !== null,

@@ -79,7 +79,8 @@ completa está en el documento «Ventana Lunar · Especificación y roadmap».
   relieve fino real NAC/PGDA en cuatro sitios y piedras con ley de tamaños medida (VENT-62)
 - [x] Arranque seguro de la vista 3D en móviles: suelo al coste previo en calidad media y baja, programas compilados antes del
   primer fotograma, aviso claro cuando el navegador bloquea WebGL tras un fallo gráfico (VENT-69)
-- [ ] Pequeños cráteres con relieve real y grano con volumen, contrastados con las fotos de Apolo (VENT-64)
+- [x] Pequeños cráteres con relieve real, grano en terrones y luz de Hapke, contrastados con las fotos de Apolo, solo en
+  calidad alta (VENT-64, VENT-67, VENT-68)
 - [ ] Variante C del cargador, el descenso, en equipos potentes (VENT-61)
 - [ ] Comparador de sitios o exportar a .ics (VENT-8)
 - [ ] Página del proyecto, vídeo de 30 s y pitch; envío antes de las 20:00 (VENT-9)

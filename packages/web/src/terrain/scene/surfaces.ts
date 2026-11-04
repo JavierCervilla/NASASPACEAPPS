@@ -41,6 +41,7 @@ export async function loadSurfaces(
   try {
     const maps = await loadSurfaceMaps();
     attachGroundMaps(world.material, maps);
+    if (world.patchMaterial) attachGroundMaps(world.patchMaterial, maps);
     const uniform = world.sky.earth.material.uniforms['uMap'];
     if (uniform) uniform.value = maps.earth;
   } catch (error) {

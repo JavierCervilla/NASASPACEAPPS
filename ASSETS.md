@@ -355,22 +355,47 @@ All load on demand with the 3D view (file names `on-foot-*`, left out of the pre
 - **Regolith colour**: the «Moon 02» albedo above is made neutral grey in the shader (`REGOLITH_SATURATION = 0` in
   `scene/ground-shader.ts`: only the albedo's luminance stays), not by re-encoding the file, so its hash is unchanged.
   Apollo frames are near neutral grey; the film casts in the scans are not the Moon's.
-- **Lunar-Lambert** (`lunar-photometry.ts`): McEwen's `L(α) = 1 - 0.019α + 2.42e-4α² - 1.46e-6α³`, checked on 2026-11-03
-  against USGS ISIS `isis/src/base/objs/LunarLambertMcEwen/LunarLambertMcEwen.cpp` (public domain, CC0-1.0,
-  A. McEwen 1995; normalised at i = 30°, e = 0°, α = 30° as ISIS does). **Not from ISIS**: `L` is held to at least
-  `L_FLOOR = 0.3` past the cubic's fit (α ≤ 120°), calibrated so the drawn ground toward the Sun is 0.4 to 0.7 of the
-  ground away from it (the Apollo frames, whose lens veil adds light; measured in `tests/e2e/terrain-view.spec.ts`).
-- **Opposition surge** (`B0 = 0.4`, `h = 0.05`, Hapke's shadow-hiding form): **not verified** against a published lunar fit
-  (Sato et al. 2014, Hapke et al. 2012 were not read). Calibrated on the Apollo frames `AS12-46-6731` (×1.55),
-  `AS15-85-11446` (×1.64) and `AS17-136-20684` (×1.34): the ground by the antisolar point over the ground beside it,
-  held to 1.34-1.64 by `tests/lunar-photometry.test.ts` over Sun 8-21° and 10-16° beside. Frames: NASA, public domain
-  (Apollo Lunar Surface Journal captions); the measurements are in the VENT-62 trajectory's `apollo-ref/`.
+- **Photometry** (`hapke.ts`, `lunar-photometry.ts`, VENT-68): Hapke et al. 2012 (JGR 117, E00H15, doi:10.1029/2011JE003916,
+  open access on AGU, read from a PDF the human downloaded), eq. 12 with the lunar highlands' Table 1 at 604 nm (±10 %):
+  w 0.357, b 0.298 (one-lobe Henyey-Greenstein, c = 1), B_S0 0.358, B_C0 0.456, θ̄ = 0, g_H 4.68°; H of eq. 14; times
+  Lommel-Seeliger. **Derived by us, not published**: h_S ≈ 0.041 and h_C ≈ 0.113 from g_H with the paper's eqs. 9 and 10
+  (the paper does not publish them). **Ours, not the paper's**: the phase smoothing α' = √(α² + 1°²) (`PEAK_SMOOTH_DEG`:
+  the Sun's 0.53° disc and the 0.5° smoothing of the paper's data; with 0.5° the Apollo halo came out ×1.50 to ×1.71, over
+  the measured band at wide offsets, with 1° it is ×1.44 to ×1.64; r(0)/r(5°) is then about 1.26, the paper's +30 % being
+  unsmoothed), and the floor past 120° of phase (outside the model's validity): `FLOOR_GAIN` 1.15 × μ0 (0.7 + 0.6 /
+  (μ0 + μ)) blended in from 120° to 140°, a camera and veil calibration to the Apollo frames so the ground toward the Sun
+  is 0.4 to 0.7 of the ground away (the model alone gives 0.1 to 0.2; the lens veil adds light in the photographs). The
+  normalisation (i = 30°, e = 0°, α = 30° reads as cos i) keeps the albedo's meaning. Replaces McEwen's lunar-Lambert and
+  the hand-calibrated shadow-hiding surge of VENT-62 (`B0` 0.4, `h` 0.05). Not used: Sato et al. 2014 maps (PDS
+  WAC_HAPKEPARAMMAP, two-lobe, SHOE only, 70° S to 70° N) and McEwen 1996 F(α), read in VENT-68 as cross-checks. Calibration
+  frames `AS12-46-6731` (×1.55), `AS15-85-11446` (×1.64) and `AS17-136-20684` (×1.34): held to 1.34-1.64 by
+  `tests/lunar-photometry.test.ts` over Sun 8-21° and 10-16° beside. Frames: NASA, public domain (Apollo Lunar Surface
+  Journal captions); the measurements are in the VENT-62 trajectory's `apollo-ref/`.
 - **Exposure** 1.35 → 1.62 (+20 %, `EXPOSURE_GAIN` in `scene/stage.ts`), said in the caption.
-- **Rocks** (`rocks-measured.ts`, `rock-law.ts`): Golombek & Rapp (1997, JGR 102, 4117) cumulative fractional area
-  `F(D) = k e^(-q D)`, `q = 1.79 + 0.152 / k`, as Bandfield et al. (2011, JGR 116, E00H02) apply it to the Moon.
-  **Unverified**: the two constants of `q`, the plains' `k = 0.01`, the maximum `k = 0.05` on slopes and rims and the
-  rise with the near grid's slope (0.35) and convexity (0.02 / m) were written from memory of the papers and the
-  Apollo frames («a few decimetre rocks in each frame»), not read. DOIs: 10.1029/96JE03319 and 10.1029/2011JE003866.
+- **Rocks** (`rocks-measured.ts`, `rock-law.ts`, VENT-68): Golombek & Rapp (1997, JGR 102, 4117, doi:10.1029/96JE03319)
+  cumulative fractional area `F_k(D) = k e^(-q D)` (eq. 11) with `q = 1.79 + 0.152 / k` (eq. 12, p. 4126): **verified** in
+  the paper, which fitted it with two Viking points for k from 0.02 to 0.3; below 0.02 it is an **extrapolation**, so q is
+  held at q(0.02) = 9.39 (a lower k only lowers the cover). Bandfield et al. (2011, JGR 116, E00H02) apply it to the Moon.
+  The plains' `k = 0.004`: Diviner rock abundance (PDS, 60° S to 60° N) has a median of 0.003 (p90 0.006), Diviner sees
+  sub-metre rocks badly, so a little over. `kMax = 0.05` (0.1 % of Diviner's pixels exceed it) and the rise with the near
+  grid's slope (0.35) and convexity (0.02 / m) are calibrations, not from the papers.
+- **Small craters** (VENT-64: `crater-law.ts`, `crater-profile.ts`, `crater-relief.ts`): count Trask (1966, JPL TR 32-800,
+  NTRS 19660015757) N(>D) = 10^10.9 D^-2 per 10^6 km² = 0.0794 D^-2 per m²; the exponent is unreadable in the scan and the
+  figures bound it to 10.9 ± 0.4, so the count is **uncertain**; Minton et al. 2019 (arXiv:1902.07746) give 0.0336 D^-2 at
+  Apollo 15 as the low bound. Depth: Pike (1977, p. 492) fresh simple craters d/D 0.2 with a rim (verified); degradation
+  classes and shares from Basilevsky (1976, LPSC 7, Table 1 and p. 1006): A 0.5 % d/D 0.20-0.25, AB 2.5 % 0.143-0.20,
+  B 17 % 0.10-0.143, BC 30 % 0.083-0.10, C 50 % 0.03-0.083. **Ours**: the profile's shape (cosine bowl or parabola, rim
+  0.08 to 0.18 of the depth), the two scales of one raster (32 and 256 m, craters 0.19 to 12 m), the patch's radii and
+  cell sizes, the march's constants. Check against AS15-87-11748 and AS12-46-6731 in the VENT-64 sheets.
+- **Small shadows «mid-way»** (`DARK_SMALL_SHADOWS` 0.62 in `ground-photometry.ts`): our calibration, the human's verdict
+  (VENT-64 canvas): small shadows near 8 to 10 % of the lit ground, measured in the prototype (p2 over median 0.044 at
+  0.4, 0.074 at 0.55, 0.106 at 0.7). The Apollo frames give 2 to 3 % (calibration.md); the fill is still lifted for
+  legibility, as the caption says.
+- **Clods** (VENT-67: `clod-law.ts`, `clod-relief.ts`): **our calibration, no published law** (the Apollo grain-size
+  curves are for sieved soil, not for undisturbed clods). N(>d) ∝ d^-2.2 from 3 to 30 mm, heights 0.15 to 0.4 of the
+  diameter, cover 15 %, set so a Sun at 16.5° shades about 20 % of the ground seen from above where AS12-49-7284 has 12 to
+  27 % darker than 35/255. The density modulation (8 x 8 noise cells, dust share 12 %) imitates that photograph's smooth
+  dust patches. No public photogrammetric regolith DTM with a clear licence was found (K3, skipped).
 - **Fine real relief** (`terrain/fine/`, `public/fine-tiles/`): the four tiles Mooner prepared (MOON-20, its
   `packages/web/public/fine-tiles/`, origin/main), 300 x 300 pixels of 5 m on the polar plane with a 1-bit mask of where
   the fine source has a height; only `heights.png` (16-bit, `offset + DN * 0.01` m), `mask.png` and `tile.json` are

@@ -43,6 +43,9 @@ export const LEAVE_OUT_PARTS = [
   'footprint',
   'fine',
   'rocks',
+  // VENT-64 and VENT-67: the small craters' mesh and the clods' micro-relief.
+  'craters',
+  'grain',
 ] as const;
 
 export type LeaveOut = (typeof LEAVE_OUT_PARTS)[number];

@@ -38,10 +38,12 @@ export function applyRings(world: World, input: SceneInput): void {
   if (world.rings?.view === input.ring) return;
   world.rings?.dispose();
   world.slicer.clear();
+  world.craters?.setGround();
+  world.clods?.start();
   setFine(world.fine, input.ring.fine);
   const { report } = world.setup;
-  const rings = createRingLayer(input.ring, world.material, world.slicer,
-    (text) => report.step(text));
+  const rings = createRingLayer(input.ring, world.material, world.slicer, {
+    note: (text) => report.step(text), depth: world.ringDepth });
   world.stage.scene.add(rings.group);
   world.rings = rings;
   world.farShade = world.setup.leave.has('shade') ? null

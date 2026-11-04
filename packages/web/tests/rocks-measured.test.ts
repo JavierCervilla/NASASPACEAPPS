@@ -30,16 +30,32 @@
  * sliced.
  */
 import { describe, expect, it } from 'vitest';
-import { MEASURED, density, kAt, qOf } from '../src/terrain/rock-law';
+import { K_FITTED_MIN, MEASURED, density, kAt, qOf } from '../src/terrain/rock-law';
 import { measuredBands, measuredRocks } from '../src/terrain/rocks-measured';
 
 const FLAT = () => 0;
 const slope = (s: number) => (east: number) => s * east;
 
 describe('the law', () => {
-  it('has Golombek & Rapp\'s exponent q = 1.79 + 0.152 / k', () => {
-    expect(qOf(0.01)).toBeCloseTo(16.99, 6);
+  it('has Golombek & Rapp\'s exponent q = 1.79 + 0.152 / k (eq. 12, p. 4126)', () => {
+    expect(qOf(0.02)).toBeCloseTo(9.39, 6);
     expect(qOf(0.1)).toBeCloseTo(3.31, 6);
+    expect(qOf(0.3)).toBeCloseTo(1.79 + 0.152 / 0.3, 6);
+  });
+
+  it('holds q at q(0.02) below the fitted range, so a low k only lowers the cover', () => {
+    expect(qOf(0.004)).toBe(qOf(K_FITTED_MIN));
+    expect(qOf(0.001)).toBe(qOf(K_FITTED_MIN));
+    for (const d of [0.1, 0.3, 0.8]) {
+      expect(density(0.004, d)).toBeLessThan(density(0.02, d));
+      expect(density(0.004, d) / density(0.02, d)).toBeCloseTo(0.004 / 0.02, 9);
+    }
+  });
+
+  it('takes the plains\' k from Diviner\'s median of 0.003, a little over', () => {
+    expect(MEASURED.kFlat).toBeGreaterThanOrEqual(0.003);
+    expect(MEASURED.kFlat).toBeLessThanOrEqual(0.005);
+    expect(MEASURED.kMax).toBe(0.05);
   });
 
   it('puts fewer rocks the larger they are', () => {

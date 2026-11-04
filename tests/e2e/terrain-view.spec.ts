@@ -48,8 +48,11 @@ const RIDGE_AT = new Date('2026-11-30T20:00:00Z');
 const POINT = '?lat=-85.50&lon=40.00';
 /** IM-2 Athena's point (packages/server/data/sites.json), where the ground-photometry checks look. */
 const IM2 = { latDeg: -84.7906, lonEastDeg: 29.1957 };
-/** How far to either side of the antisolar point the halo check reads the ground it compares with, degrees. */
-const HALO_OFFSET_DEG = 20;
+/**
+ * How far to either side of the antisolar point the halo check reads the ground it compares with, degrees: the middle of the
+ * 10 to 16° the Apollo boxes were measured at (calibration.md; VENT-62 read 20°, past where Hapke's peak has fallen to its flank).
+ */
+const HALO_OFFSET_DEG = 13;
 /**
  * The least mean linear luminance the drawn ground may have: a third of the 0.14 it reads toward the Sun, and far over the
  * 0.001 of a ground whose shader failed and drew black, which the ratio below alone cannot tell.
@@ -380,7 +383,7 @@ test.describe('desktop, 1440x900', () => {
   });
 
   // VENT-62: looking down the Sun's line the ground around the antisolar point (the camera's shadow) is brighter than the
-  // same rows 20° to either side. The expectation is the pure twin's (lunar-photometry.ts through halo-twin.ts, the same
+  // same rows 13° to either side. The expectation is the pure twin's (lunar-photometry.ts through halo-twin.ts, the same
   // function the GLSL is built from) for this geometry on flat ground, which lands inside the Apollo band; the drawn
   // picture keeps at least half of that surplus (the fill light, the tone mapping and the relief eat the rest: measured,
   // two thirds) and never exceeds it.

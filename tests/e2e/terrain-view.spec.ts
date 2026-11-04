@@ -335,9 +335,11 @@ test.describe('desktop, 1440x900', () => {
 
   // VENT-62: the NAC DTM Mooner prepared for IM-2 (mons-mouton) shapes the near ground and the caption says so; a point
   // outside every tile asks for no tile (the test above), and no tile is in the first load (VIEW_FILES).
+  // VENT-64, VENT-67: the craters and the clod grain are high-tier work this test does not look at (the fine relief, its
+  // caption and the idle frames); `craters,grain` leaves them out so it asserts what it asserted before they existed.
   test('IM-2 loads its fine NAC relief on demand, says so, and then draws no idle frames', async ({ page }) => {
     const requests: string[] = [];
-    await open(page, { path: './?site=im2-athena&quality=high&onfoot=far', real: RIDGE_AT, requests });
+    await open(page, { path: './?site=im2-athena&quality=high&onfoot=far,craters,grain', real: RIDGE_AT, requests });
     await page.waitForLoadState('networkidle');
     expect(requests.filter((url) => FINE_FILES.test(url))).toEqual([]);
     await page.getByRole('navigation', { name: 'View' }).getByRole('link', { name: 'Horizon' }).click();
@@ -349,6 +351,8 @@ test.describe('desktop, 1440x900', () => {
     await atRest(page);
   });
 
+  // VENT-64, VENT-67: the two ground-luminance tests below read the photometry of the plain ground; the crater patch and
+  // the clod grain (high only) are left out (`craters,grain`) so they measure what they measured before those existed.
   // VENT-62: the Apollo frames put the ground toward the Sun at 0.4 to 0.7 of the ground away from it (calibration.md
   // of the trajectory); measured here on the drawn ground, fill and tone mapping included.
   // VENT-69: the lunar photometry is the high tier's, so these two read the ground at high. `onfoot=far` stops the
@@ -358,7 +362,7 @@ test.describe('desktop, 1440x900', () => {
   // run could not afford at 1440 x 900; the boxes below are read from the host's own size, so the ratios are the same.
   test('the ground toward the Sun is 0.4 to 0.7 of the ground away from it', async ({ page }) => {
     await page.setViewportSize({ width: 960, height: 600 });
-    await open(page, { path: './?site=im2-athena&quality=high&onfoot=far#horizon', real: AT });
+    await open(page, { path: './?site=im2-athena&quality=high&onfoot=far,craters,grain#horizon', real: AT });
     await settled(page);
     await idle(page);
     const towardSun = await groundLuminance(page);
@@ -379,7 +383,7 @@ test.describe('desktop, 1440x900', () => {
   // two thirds) and never exceeds it.
   test('the ground around the antisolar point is brighter than the ground beside it, as the twin says', async ({ page }) => {
     await page.setViewportSize({ width: 960, height: 600 });
-    await open(page, { path: './?site=im2-athena&quality=high&onfoot=far#horizon', real: AT });
+    await open(page, { path: './?site=im2-athena&quality=high&onfoot=far,craters,grain#horizon', real: AT });
     await settled(page);
     await idle(page);
     await host(page).focus();

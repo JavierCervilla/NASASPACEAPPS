@@ -46,6 +46,11 @@ export interface MeasuredScatter {
   readonly kFlat: number;
   readonly kMax: number;
   readonly cap: number;
+  /**
+   * Below this k the exponent q stops growing (see {@link qOf}); 0: it never
+   * does, as the first cut had it.
+   */
+  readonly kFitMin: number;
   /** Diameter step of the integration, and bands of this many steps. */
   readonly stepD: number;
   readonly bandSteps: number;
@@ -55,7 +60,14 @@ export interface MeasuredScatter {
 
 export const MEASURED: MeasuredScatter = { innerM: 2.5, outerM: 120,
   rangePerD: 260, minD: 0.05, maxD: 0.9, kFlat: 0.004, kMax: 0.05, cap: 520,
-  stepD: 0.01, bandSteps: 3, buried: [0.2, 0.5] };
+  kFitMin: 0.02, stepD: 0.01, bandSteps: 3, buried: [0.2, 0.5] };
+
+/**
+ * The law before VENT-68, the medium and low tiers': the plains' k 0.01 and
+ * a q that is never held. Their rocks stay as they were (ground-policy.ts).
+ */
+export const FIRST_CUT: MeasuredScatter = { ...MEASURED, kFlat: 0.01,
+  kFitMin: 0 };
 
 /** The smallest k Golombek & Rapp fitted (their range is 0.02 to 0.3). */
 export const K_FITTED_MIN = 0.02;
@@ -66,12 +78,19 @@ export const K_FITTED_MIN = 0.02;
  * exponent is held at q(0.02) = 9.39 so a lower k only lowers the cover
  * and does not shrink the rocks (the unclamped q is 39.8 at 0.004).
  */
-export const qOf = (k: number): number =>
-  1.79 + 0.152 / Math.max(k, K_FITTED_MIN);
+export const qOf = (k: number, kFitMin: number = K_FITTED_MIN): number =>
+  1.79 + 0.152 / Math.max(k, kFitMin);
 
-/** Rocks per m² per metre of diameter at `d` for `k`. */
-export function density(k: number, d: number): number {
-  const q = qOf(k);
+/**
+ * Rocks per m² per metre of diameter at `d` for `k`; `kFitMin` is the law's
+ * ({@link MeasuredScatter.kFitMin}).
+ */
+export function density(
+  k: number,
+  d: number,
+  kFitMin: number = K_FITTED_MIN,
+): number {
+  const q = qOf(k, kFitMin);
   return (k * q * Math.exp(-q * d)) / ((Math.PI * d * d) / 4);
 }
 

@@ -42,3 +42,25 @@ export function next(
   return best;
 }
 
+
+/** What the slicer knows about when it last asked for a frame. */
+export interface Pace {
+  /** When the last frame was asked for, or when its end was seen. */
+  askedAt: number;
+  /** When the last turn ended. */
+  endedAt: number;
+  /** A frame was asked for and its end not seen yet. */
+  framePending: boolean;
+}
+
+/**
+ * Counts a turn that starts late as the end of the frame asked for before
+ * it: the page runs the frame between two turns, so on a slow renderer the
+ * gap between frames starts when that frame is over.
+ */
+export function noteStall(pace: Pace, start: number, stallMs: number): void {
+  if (pace.framePending && start - pace.endedAt >= stallMs) {
+    pace.askedAt = start;
+    pace.framePending = false;
+  }
+}

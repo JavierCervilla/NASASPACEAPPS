@@ -42,17 +42,17 @@ import type { Slicer } from '../src/terrain/scene/slicer';
 
 type Shader = Parameters<typeof patchClods>[0];
 
-const shaderOf = (tier: 'high' | 'medium', patch: boolean): Shader => {
+const shaderOf = (patch: boolean): Shader => {
   const shader = { vertexShader: ShaderLib.physical.vertexShader,
     fragmentShader: ShaderLib.physical.fragmentShader,
     uniforms: {} } as unknown as Shader;
   antiTile(shader);
-  patchClods(shader, createClodUniforms(), { tier, patch });
+  patchClods(shader, createClodUniforms(), { patch });
   return shader;
 };
 
 describe('the clods in the shader', () => {
-  const high = shaderOf('high', false).fragmentShader;
+  const high = shaderOf(false).fragmentShader;
 
   it('tilts the normal and shades the Sun per pixel, before the normal\'s scale', () => {
     expect(high).toContain('mapN.xy -= kw * clodSlope(kp, kl) / normalScale;');
@@ -67,14 +67,12 @@ describe('the clods in the shader', () => {
     expect(FADE_LEVELS).toEqual([4, 6.5]);
   });
 
-  it('marches fewer steps on medium than on high', () => {
-    expect(MARCH.medium.steps).toBeLessThan(MARCH.high.steps);
-    expect(high).toContain(`i < ${MARCH.high.steps}`);
-    expect(shaderOf('medium', false).fragmentShader).toContain(`i < ${MARCH.medium.steps}`);
+  it('marches the steps the spec names', () => {
+    expect(high).toContain(`i < ${MARCH.steps}`);
   });
 
   it('adds the craters\' slope to the tilt only on the patch', () => {
-    expect(shaderOf('high', true).fragmentShader).toContain('+ dot(vCSlope, kd)');
+    expect(shaderOf(true).fragmentShader).toContain('+ dot(vCSlope, kd)');
     expect(high).not.toContain('vCSlope');
   });
 

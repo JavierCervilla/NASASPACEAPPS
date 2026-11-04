@@ -32,7 +32,7 @@
  * has merged.
  */
 import { BufferAttribute, BufferGeometry, Mesh, MeshStandardMaterial } from 'three';
-import { MEASURED } from '../rock-law';
+import type { MeasuredScatter } from '../rock-law';
 import { measuredBands } from '../rocks-measured';
 import { merge, type MeshBuffers } from '../shapes';
 import { contactAo, stonesBuffers, type GroundAt } from '../stones';
@@ -73,21 +73,21 @@ function finished(parts: readonly Part[]): BufferGeometry {
 
 /**
  * The scatter of stones of `seed` on `ground`: an empty hidden mesh now,
- * filled and shown when the slicer has run every band; `cap` is the most
- * rocks it holds (the tier's, ground-policy.ts).
+ * filled and shown when the slicer has run every band; `law` is the tier's
+ * size law and cap (ground-policy.ts).
  */
 export function rocksMesh(
   seed: number,
   ground: GroundAt,
   mask: SunMask,
-  { slicer, cap }: { readonly slicer: Slicer; readonly cap: number },
+  { slicer, law }: { readonly slicer: Slicer; readonly law: MeasuredScatter },
 ): Mesh {
   const material = masked(0xb4b1ab, mask);
   material.vertexColors = true;
   const mesh = new Mesh(new BufferGeometry(), material);
   mesh.castShadow = mesh.receiveShadow = true;
   mesh.visible = false;
-  const bands = measuredBands(seed, ground, { ...MEASURED, cap });
+  const bands = measuredBands(seed, ground, law);
   const parts: Part[] = [];
   for (let i = 0; i < bands.count; i++) {
     slicer.add(`rocks:${i}`, PRIORITY + i, () => {

@@ -36,7 +36,7 @@ import {
   groundPolicy,
 } from '../src/terrain/ground-policy';
 import { parseLeaveOut } from '../src/terrain/leave-out';
-import { MEASURED } from '../src/terrain/rock-law';
+import { FIRST_CUT, MEASURED } from '../src/terrain/rock-law';
 
 const none = new Set<never>();
 const at = (tier: 'low' | 'medium' | 'high', search = '') =>
@@ -46,20 +46,20 @@ describe('the ground at each tier', () => {
   it('draws everything at high', () => {
     expect(at('high')).toEqual({ photometry: true, antitile: true,
       footprint: true, fine: true, craters: true, grain: true,
-      rocksCap: MEASURED.cap });
+      rocksCap: MEASURED.cap, rockLaw: MEASURED });
   });
 
   it('goes back to the pre-VENT-62 cost at medium', () => {
     expect(at('medium')).toEqual({ photometry: false, antitile: false,
       footprint: false, fine: false, craters: false, grain: false,
-      rocksCap: 420 });
+      rocksCap: 420, rockLaw: FIRST_CUT });
     expect(MEDIUM_ROCKS).toBe(420);
   });
 
   it('does the same at low and draws no measured rocks', () => {
     expect(at('low')).toEqual({ photometry: false, antitile: false,
       footprint: false, fine: false, craters: false, grain: false,
-      rocksCap: 0 });
+      rocksCap: 0, rockLaw: FIRST_CUT });
   });
 
   it('never gives a lower tier a part the higher one lacks', () => {

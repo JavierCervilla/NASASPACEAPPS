@@ -575,8 +575,8 @@ Every visible change follows `.claude/skills/apple-design/SKILL.md` (vendored fr
   the shader's normal (`scene/ground-fine.ts`); the caption names it. Rocks follow Golombek & Rapp's size law, partly
   buried, denser on the real near grid's slopes and rims, built in diameter bands by the slicer (`rocks-measured.ts`,
   `scene/props.ts`; q(k) of Golombek & Rapp 1997 eq. 12, held at q(0.02) below their fitted range, plains k 0.004 from
-  Diviner). Sources and unverified constants: ASSETS.md.
-  **Small craters** (VENT-64, **high tier only** through `ground-policy.ts` `craters`, VENT-70 audit; `?onfoot=craters` leaves them out; a new point reseeds and frees the old patch, `CraterLayer.reseed`): craters of 0.19 to 12 m as real
+  Diviner: **high only** (`GroundPolicy.rockLaw`; medium keeps main's law, `FIRST_CUT` in `rock-law.ts`, k 0.01 and q never held, byte-identical rocks, held by `tests/rocks-measured.test.ts`). Sources and unverified constants: ASSETS.md.
+  **Small craters** (VENT-64, **high tier only** through `ground-policy.ts` `craters`, VENT-70 audit; `?onfoot=craters` leaves them out; a new point frees the old patch and bakes again for the new one, `CraterLayer.setGround(ground, seed)`, and the patch is built once per point; its jobs, like the clods', queue after ring levels 0 and 1 and before levels 2 and 3, so the patch does not wait for the far relief): craters of 0.19 to 12 m as real
   relief in a polar patch of mesh around the eye (`scene/crater-spec.ts` radius 48 m, cells following
   the screen; `crater-mesh.ts`), from one 1024-texel raster read at two scales (`crater-relief.ts`) with Trask's
   equilibrium count and Basilevsky's five degradation classes with their d/D (`crater-law.ts`, Pike's fresh 0.2 with a

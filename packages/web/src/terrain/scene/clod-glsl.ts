@@ -46,8 +46,6 @@ import { glslFloat as g } from './glsl-float';
 import { GRAIN_M } from './ring-geometry';
 import { replaceOnce } from './ground-shader';
 
-export type GrainTier = 'high' | 'medium';
-
 export interface ClodUniforms {
   readonly uClod: IUniform<Texture | null>;
   /** 1 once the raster is baked and uploaded. */
@@ -59,19 +57,16 @@ export const createClodUniforms = (): ClodUniforms => ({
   uClodOn: { value: 0 },
 });
 
-/** The march per tier: steps, first step (m) and growth of the step. */
-export const MARCH = {
-  high: { steps: 20, t0: 0.001, q: 1.38 },
-  medium: { steps: 13, t0: 0.0015, q: 1.6 },
-} as const;
+/** The march (high only): steps, first step (m) and growth of the step. */
+export const MARCH = { steps: 20, t0: 0.001, q: 1.38 } as const;
 /** Footprint, in mip levels over the texel, where the clods fade out. */
 export const FADE_LEVELS = [4, 6.5] as const;
 /** The Sun's disc and the march's floor, as in crater-shade.ts. */
 const DISC_TAN = 0.0093;
 const FLOOR_M = 0.0004;
 
-function marchGlsl(tier: GrainTier): string {
-  const m = MARCH[tier];
+function marchGlsl(): string {
+  const m = MARCH;
   return `
 float clodShadow(vec2 p, float lod, vec3 s, float tilt) {
   float hl = length(s.xz);
@@ -116,11 +111,11 @@ function usage(patch: boolean): string {
 export function patchClods(
   shader: WebGLProgramParametersWithUniforms,
   uniforms: ClodUniforms,
-  grain: { tier: GrainTier; patch: boolean },
+  grain: { patch: boolean },
 ): void {
   Object.assign(shader.uniforms, uniforms);
   const decl = replaceOnce(shader.fragmentShader, '#include <uv_pars_fragment>',
-    `#include <uv_pars_fragment>\n${readersGlsl()}${marchGlsl(grain.tier)}`);
+    `#include <uv_pars_fragment>\n${readersGlsl()}${marchGlsl()}`);
   const line = 'mapN.xy *= normalScale;';
   shader.fragmentShader = replaceOnce(decl, line,
     `${usage(grain.patch)}\n  ${line}`);

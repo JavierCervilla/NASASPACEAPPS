@@ -38,10 +38,15 @@ import { litJobs, type SunDir } from './crater-shade';
 import type { PatchSpec, Relief } from './crater-spec';
 import type { Slicer } from './slicer';
 
-/** Behind the ring's near tiles, before the rocks (slicer priorities). */
-const BAKE_PRIORITY = 10;
-const BUILD_PRIORITY = 20;
-const LIT_PRIORITY = 40;
+/**
+ * Right behind the near ground (ring levels 0 and 1, whose tiles have the
+ * priority of their level) and before the far levels 2 and 3, the far
+ * shading and the rocks: the patch stands at the eye, so it must not wait
+ * for the 32 and 128 km relief (slicer priorities, lowest first).
+ */
+const BAKE_PRIORITY = 1.2;
+const BUILD_PRIORITY = 1.3;
+const LIT_PRIORITY = 1.5;
 
 export interface CraterDeps {
   readonly seed: number;

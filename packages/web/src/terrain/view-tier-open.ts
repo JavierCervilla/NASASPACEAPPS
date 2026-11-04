@@ -57,8 +57,10 @@ export interface OpenMarks {
 function beatWhileOpen(now: () => ViewTierLive): () => void {
   const mark = (open: boolean): void => {
     const { storage, local, nowMs } = now();
-    keepOpenSince(local, { tabId: tabIdOf(storage), open }, nowMs());
+    const hidden = globalThis.document?.visibilityState === 'hidden';
+    keepOpenSince(local, { tabId: tabIdOf(storage), open, hidden }, nowMs());
   };
+  const seen = (): void => mark(true);
   const away = (): void => mark(false);
   const back = (event: Event): void => {
     if ((event as PageTransitionEvent).persisted) mark(true);
@@ -66,11 +68,13 @@ function beatWhileOpen(now: () => ViewTierLive): () => void {
   const timer = globalThis.setInterval(() => mark(true), BEAT_MS);
   addEventListener('pagehide', away);
   addEventListener('pageshow', back);
+  globalThis.document?.addEventListener('visibilitychange', seen);
   mark(true);
   return () => {
     clearInterval(timer);
     removeEventListener('pagehide', away);
     removeEventListener('pageshow', back);
+    globalThis.document?.removeEventListener('visibilitychange', seen);
     mark(false);
   };
 }

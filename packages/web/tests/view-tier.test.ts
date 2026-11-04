@@ -65,6 +65,13 @@ beforeEach(() => {
   vi.stubGlobal('addEventListener', (type: string, fn: (event: Event) => void) => {
     pageListeners.set(type, (pageListeners.get(type) ?? new Set()).add(fn));
   });
+  vi.stubGlobal('document', {
+    visibilityState: 'visible',
+    addEventListener: (type: string, fn: (event: Event) => void) => {
+      pageListeners.set(type, (pageListeners.get(type) ?? new Set()).add(fn));
+    },
+    removeEventListener: (type: string, fn: (event: Event) => void) => void pageListeners.get(type)?.delete(fn),
+  });
   vi.stubGlobal('removeEventListener', (type: string, fn: (event: Event) => void) => void pageListeners.get(type)?.delete(fn));
 });
 afterEach(() => {
@@ -265,6 +272,32 @@ describe('the open mark in localStorage', () => {
     const next = page(local);
     expect(next.get().tier).toBe('medium');
     expect(next.opened()).toBe(DIED);
+  });
+
+  it('counts one death once: the next start is lowered, the one after is not', () => {
+    const local = storage();
+    page(local).opened();
+    vi.clearAllTimers();
+    clock.now += HOUR;
+    expect(page(local).get().tier).toBe('medium');
+    expect(page(local).get().tier).toBe('high');
+  });
+
+  it('does not count a hidden tab, whose timers the browser slows, as dead', () => {
+    const local = storage();
+    page(local).opened();
+    (document as { visibilityState: string }).visibilityState = 'hidden';
+    pageListeners.get('visibilitychange')?.forEach((fn) => fn(new Event('visibilitychange')));
+    vi.clearAllTimers();
+    clock.now += HOUR;
+    expect(page(local).get().tier).toBe('high');
+  });
+
+  it('drops the marks older than 24 hours when it writes', () => {
+    const local = storage(false, { 'ventana.onFootOpen': '{"old":1}' });
+    clock.now = 25 * HOUR;
+    page(local).opened();
+    expect(JSON.parse(local!.getItem('ventana.onFootOpen')!)).not.toHaveProperty('old');
   });
 
   it('expires after 24 hours', () => {

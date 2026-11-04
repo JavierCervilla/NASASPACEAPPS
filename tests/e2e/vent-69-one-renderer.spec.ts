@@ -30,7 +30,7 @@
  */
 import { expect, test, type Page } from '@playwright/test';
 import { stubApi } from './api-stub';
-import { stubTile, stubWall } from './terrain-stub';
+import { stubTile, stubWall, type TileStub } from './terrain-stub';
 
 const AT = new Date('2026-11-30T20:00:00Z');
 const START_MS = 30_000;
@@ -88,7 +88,7 @@ async function settled(page: Page): Promise<void> {
   await expect(host).toHaveAttribute('data-working', 'false');
 }
 
-async function openView(page: Page): Promise<void> {
+async function openView(page: Page, tiles: TileStub = {}, query = 'quality=medium'): Promise<void> {
   await page.clock.setFixedTime(AT);
   await page.addInitScript(() => {
     localStorage.setItem('ventana.dataSource', 'computed');
@@ -96,9 +96,9 @@ async function openView(page: Page): Promise<void> {
   });
   await probe(page);
   await stubApi(page);
-  await stubTile(page);
+  await stubTile(page, tiles);
   await stubWall(page, 100, 140);
-  await page.goto('./?site=im2-athena&quality=medium');
+  await page.goto(`./?site=im2-athena&${query}`);
   await page.getByRole('navigation', { name: 'View' }).getByRole('link', { name: 'Horizon' }).click();
   const host = page.getByRole('application', { name: 'On foot at the site' });
   await expect(host).toHaveAttribute('data-ready', 'true', { timeout: START_MS });
@@ -106,7 +106,7 @@ async function openView(page: Page): Promise<void> {
 }
 
 test('a new point is built on the same renderer: no second context, no program compiled again', async ({ page }) => {
-  await openView(page);
+  await openView(page, {}, 'quality=low&onfoot=far');
   const host = page.getByRole('application', { name: 'On foot at the site' });
   const canvas = await host.locator('canvas').elementHandle();
   await settled(page);
@@ -127,8 +127,10 @@ test('a new point is built on the same renderer: no second context, no program c
   expect(await host.locator('canvas').elementHandle().then((h) => h!.evaluate((a, b) => a === b, canvas))).toBe(true);
 });
 
+// Low and the rings stopped at level 1 (`onfoot=far`): two rebuilds of the world are what this counts, and under four
+// workers the medium tier's four levels, twice over, outlast the test's 30 s. The counts asserted are the same.
 test('the point changes twice without a context or a program more', async ({ page }) => {
-  await openView(page);
+  await openView(page, {}, 'quality=low&onfoot=far');
   const host = page.getByRole('application', { name: 'On foot at the site' });
   await settled(page);
   const before = await read(page);
@@ -143,4 +145,25 @@ test('the point changes twice without a context or a program more', async ({ pag
   const after = await read(page);
   expect(after.made).toBe(before.made);
   expect(after.ground).toBe(before.ground);
+});
+
+test('while the next point\'s tiles load the parked view draws nothing and stays parked until its terrain draws', async ({ page }) => {
+  const tiles: TileStub = {};
+  await openView(page, tiles, 'quality=low&onfoot=far');
+  // Parked, the host is hidden from the accessibility tree, so a role query would not find it.
+  const host = page.locator('.on-foot__host');
+  await settled(page);
+  tiles.delayMs = 6000;
+  await page.locator('.site-button').click();
+  await page.locator('#site-popover').getByRole('button', { name: /Malapert/ }).first().click();
+  await expect(host).toHaveAttribute('data-parked', 'true', { timeout: START_MS });
+  const parkedAt = Number(await host.getAttribute('data-frames'));
+  for (let i = 0; i < 8; i++) {
+    await page.waitForTimeout(500);
+    await expect(host).toHaveAttribute('data-parked', 'true');
+  }
+  expect(Number(await host.getAttribute('data-frames')) - parkedAt, 'no frame of the old world under the loader').toBeLessThanOrEqual(1);
+  tiles.delayMs = 0;
+  await expect(host).not.toHaveAttribute('data-parked', 'true', { timeout: START_MS });
+  expect(Number(await host.getAttribute('data-frames'))).toBeGreaterThan(parkedAt);
 });

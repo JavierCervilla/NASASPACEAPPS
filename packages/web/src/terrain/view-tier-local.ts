@@ -32,8 +32,12 @@
  * another's. A page that is open beats every {@link BEAT_MS}; a mark of
  * another tab counts as a death when its beat is older than
  * {@link LIVE_GRACE_MS} (the page is gone, or frozen) and under
- * {@link OPEN_TTL_MS}. A normal close or navigation clears the tab's own
- * mark (`pagehide`, view-tier-open.ts); a GPU reset fires none.
+ * {@link OPEN_TTL_MS}, and is taken away once counted, so one death lowers
+ * one next start. A hidden tab's mark (its time stored negative) never counts:
+ * the browser slows a hidden page's timers, so its beat is no sign of life.
+ * Marks older than the TTL are dropped on every write. A normal close or
+ * navigation clears the tab's own mark (`pagehide`, view-tier-open.ts); a
+ * GPU reset fires none.
  */
 import { OPEN_KEY, type TierStorage } from './view-tier-memory';
 
@@ -53,7 +57,7 @@ function readMarks(local: TierStorage | null): Marks {
     if (typeof parsed !== 'object' || parsed === null) return {};
     if (Array.isArray(parsed)) return {};
     return Object.fromEntries(Object.entries(parsed)
-      .filter(([, since]) => Number.isFinite(since) && since > 0));
+      .filter(([, since]) => Number.isFinite(since) && since !== 0));
   } catch {
     return {};
   }
@@ -76,15 +80,27 @@ export function tabIdOf(session: TierStorage | null): string {
   }
 }
 
-/** Sets or clears `tabId`'s mark: its last beat is `nowMs`. */
+/** The marks not older than the TTL at `nowMs`. */
+const fresh = (marks: Marks, nowMs: number): Marks =>
+  Object.fromEntries(Object.entries(marks)
+    .filter(([, beat]) => nowMs - Math.abs(beat) < OPEN_TTL_MS));
+
+/**
+ * Sets or clears `tabId`'s mark: its last beat is `nowMs`, or, for a page
+ * that is `hidden`, minus it.
+ */
 export function keepOpenSince(
   local: TierStorage | null,
-  mark: { readonly tabId: string; readonly open: boolean },
+  mark: {
+    readonly tabId: string;
+    readonly open: boolean;
+    readonly hidden?: boolean;
+  },
   nowMs: number,
 ): void {
   try {
-    const next = { ...readMarks(local) };
-    if (mark.open) next[mark.tabId] = nowMs;
+    const next = fresh(readMarks(local), nowMs);
+    if (mark.open) next[mark.tabId] = mark.hidden ? -nowMs : nowMs;
     else delete next[mark.tabId];
     local?.setItem(OPEN_KEY, JSON.stringify(next));
   } catch {
@@ -94,12 +110,23 @@ export function keepOpenSince(
 
 /**
  * Whether `local` holds a mark that no longer beats: older than
- * {@link LIVE_GRACE_MS} and younger than {@link OPEN_TTL_MS} at `nowMs`. A
- * tab's own stale mark is a death as well (a hung page the person reloads).
+ * {@link LIVE_GRACE_MS} and younger than {@link OPEN_TTL_MS} at `nowMs`, of
+ * a page that was not hidden. A tab's own stale mark is a death as well (a
+ * hung page the person reloads). The dead marks are taken away, so the
+ * death is counted once.
  */
-export function diedBefore(local: TierStorage | null, nowMs: number): boolean {
-  return Object.values(readMarks(local)).some((beat) => {
+export function takeDeath(local: TierStorage | null, nowMs: number): boolean {
+  const marks = readMarks(local);
+  const dead = Object.entries(marks).filter(([, beat]) => {
     const age = nowMs - beat;
-    return age > LIVE_GRACE_MS && age < OPEN_TTL_MS;
+    return beat > 0 && age > LIVE_GRACE_MS && age < OPEN_TTL_MS;
   });
+  if (dead.length === 0) return false;
+  for (const [tab] of dead) delete marks[tab];
+  try {
+    local?.setItem(OPEN_KEY, JSON.stringify(fresh(marks, nowMs)));
+  } catch {
+    // Refused storage: the mark stays, and counts again.
+  }
+  return true;
 }

@@ -108,6 +108,8 @@ export interface TileStub {
   readonly tileStatus?: number;
   /** Collects the requests. */
   readonly seen?: string[];
+  /** Milliseconds every answer waits; the test may change it between requests. */
+  delayMs?: number;
 }
 
 const TILE_PATH = /\/api\/v1\/terrain\/tiles\/(polar-south|polar-north|latlon)\/(\d+)\/(-?\d+)\/(-?\d+)/;
@@ -118,6 +120,7 @@ export async function stubTile(page: Page, stub: TileStub = {}): Promise<void> {
     const url = new URL(route.request().url());
     stub.seen?.push(url.pathname + url.search);
     const { status = 200, error = 'down' } = stub;
+    if (stub.delayMs) await new Promise((done) => setTimeout(done, stub.delayMs));
     if (status !== 200) return route.fulfill({ status, json: { error } });
     const m = TILE_PATH.exec(url.pathname);
     if (!m) return route.fulfill({ json: ringBody(url) });

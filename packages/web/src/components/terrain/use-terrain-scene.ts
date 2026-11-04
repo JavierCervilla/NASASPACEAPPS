@@ -152,7 +152,8 @@ function useMountedScene(parts: MountParts): boolean {
       setMounted(false);
     };
   }, [host, wanted, lost, tier, latest, hooks, scene, onStatus]);
-  useParked({ ready, host, scene, onParked: () => setDrawn(false) });
+  const parked = useLatest(() => setDrawn(false));
+  useParked({ ready, host, scene, onParked: parked });
   return drawn;
 }
 

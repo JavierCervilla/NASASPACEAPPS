@@ -20,12 +20,13 @@
   a crear el contexto WebGL: la vista conserva un solo renderizador (un canvas, un contexto) toda su vida, aparca la
   escena mientras llegan las teselas del punto nuevo y reconstruye el mundo encima, con los programas ya compilados
   (antes: contexto nuevo, 10 programas enlazados otra vez y un primer fotograma de 1,6 s en el Pixel 10, tras el cual se
-  perdía el contexto). Solo salir de la vista, cambiar de calidad o perder el contexto lo liberan. (7) Los mapas de la
+  perdía el contexto). Solo salir de la vista, cambiar de calidad o perder el contexto lo liberan. Mientras llegan las teselas del punto nuevo la vista aparcada no dibuja ni un fotograma del mundo viejo (antes volvía a pedir uno en cada repintado del cargador: hasta 45 fotogramas en 6 s). (7) Los mapas de la
   superficie se esperan como mucho 5 s: si la descarga se atasca, la vista compila y dibuja sin ellos. (8) Una
   compilación con la página oculta en algún momento no se juzga lenta (Chrome espacia los temporizadores y bajaba la
   calidad sin motivo). (9) La marca de «murió con la vista abierta» de `localStorage` es por pestaña y late cada 5 s
   mientras la vista está abierta: otra pestaña que abre la vista, o cerrar la app con normalidad (`pagehide`), ya no
-  bajan un escalón; solo cuenta una marca que dejó de latir hace más de 20 s y tiene menos de 24 h (un reinicio de Chrome
+  bajan un escalón; solo cuenta una marca que dejó de latir hace más de 20 s y tiene menos de 24 h, la de una pestaña oculta
+  no cuenta (Chrome espacia sus temporizadores), cada muerte se cuenta una sola vez y las marcas de más de 24 h se borran al escribir (un reinicio de Chrome
   tras un fallo de GPU, o una página que no llegó a avisar al cerrarse, como un móvil que mata la pestaña). (10) El
   mensaje «el navegador bloqueó el 3D» se queda en la franja libre entre la barra superior y la hoja (también al 200 %
   de texto, donde la hoja se cierra para dejarle sitio), sobre un fondo que mantiene el contraste 4,5:1 y con scroll si

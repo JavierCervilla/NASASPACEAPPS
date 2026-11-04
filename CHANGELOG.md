@@ -14,6 +14,11 @@
   suelo calibrado con las fotos de Apolo más allá de 120° de fase; las piedras usan la ley de Golombek y Rapp con la `k`
   de llanura de Diviner (0,004), solo en calidad alta (las piedras de media siguen con la ley de antes). Al cambiar de punto con la vista abierta, el relieve de cráteres y el grano se vuelven a hornear para el punto nuevo y se liberan los viejos. Todo se hornea en trozos de menos de 20 ms, justo detrás del suelo cercano y antes del relieve lejano, y el parche se construye una vez por punto. Pendiente de verificar: la densidad exacta de
   Trask, la ley de terrones (calibración propia) y los valores derivados `h_S` y `h_C` (ASSETS.md).
+- Fix forward (VENT-72): si el regolito y el Blue Marble de la vista 3D llegan después de los 5 s que espera el primer
+  fotograma, ahora se pide un fotograma al engancharlos (el programa del suelo con mapa se compila antes, fuera del
+  fotograma) y el suelo y la Tierra ya no se quedan sin su foto hasta que otra cosa dibuje; mientras llegan, `data-working`
+  dice «trabajando». Y el reparto del trabajo en trozos ya no confunde un rato de reposo con el fin de un fotograma: el
+  primer fotograma intermedio de un lote nuevo (arrastrar el tiempo, cambiar de punto) se pide al momento y no 1,5 s después.
 - Fix forward (VENT-71): las etiquetas de la retícula del globo esperan a que lleguen los sitios, así que al abrir ya no
   aparecen todas y luego desaparece «85° S» (un parpadeo y una carrera de los tests); y la vista 3D dice que sigue
   moviéndose mientras el muelle de vuelta a la vista inicial gira, aunque el rumbo redondeado ya haya llegado.

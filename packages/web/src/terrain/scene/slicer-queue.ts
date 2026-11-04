@@ -51,14 +51,23 @@ export interface Pace {
   endedAt: number;
   /** A frame was asked for and its end not seen yet. */
   framePending: boolean;
+  /** The turn about to run was queued by the turn before it. */
+  continuing: boolean;
 }
 
 /**
  * Counts a turn that starts late as the end of the frame asked for before
  * it: the page runs the frame between two turns, so on a slow renderer the
- * gap between frames starts when that frame is over.
+ * gap between frames starts when that frame is over. A turn that no turn
+ * queued starts a new batch after rest: its frame ran long ago, so nothing
+ * is pending and the first frame of the batch is due at once.
  */
 export function noteStall(pace: Pace, start: number, stallMs: number): void {
+  if (!pace.continuing) {
+    pace.askedAt = Number.NEGATIVE_INFINITY;
+    pace.framePending = false;
+    return;
+  }
   if (pace.framePending && start - pace.endedAt >= stallMs) {
     pace.askedAt = start;
     pace.framePending = false;

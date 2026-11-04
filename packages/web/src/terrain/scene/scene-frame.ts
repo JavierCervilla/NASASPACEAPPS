@@ -77,13 +77,15 @@ function homeStep(view: ViewState, dt: number, hooks: SceneHooks): boolean {
 
 /**
  * Marks on the host what the frame drew and how many were drawn. `working`
- * says more frames are coming, from the slices or from a coast or a way
- * home still turning the look, so quiet between two slow frames is no rest.
+ * says more frames are coming, from the slices, from a coast or a way
+ * home still turning the look, or from surface maps still to land (VENT-72),
+ * so quiet between two slow frames is no rest.
  */
 function markFrame(world: World, host: HTMLElement, moving: boolean): void {
   const { calls, triangles } = world.stage.renderer.info.render;
   host.dataset['draws'] = `${calls},${triangles}`;
-  host.dataset['working'] = String(moving || world.slicer.busy());
+  host.dataset['working'] = String(moving || world.slicer.busy()
+    || world.mapsPending);
   const drawn = Number(host.dataset['frames'] ?? 0) + 1;
   host.dataset['frames'] = String(drawn);
 }

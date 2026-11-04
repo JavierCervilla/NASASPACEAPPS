@@ -506,7 +506,7 @@ Every visible change follows `.claude/skills/apple-design/SKILL.md` (vendored fr
   its ground height y = 0, the Moon's curvature in the positions: a node 2 km away is 1.15 m lower). The tier sets the
   rings (`ring-plan.ts`: high 4 levels at every node, about 520 k triangles; medium level 0 at every second node; low 3
   levels with levels 0 and 1 at every second node), and decoding, placing and meshing run in slices of a few
-  milliseconds (`scene/slicer.ts`, 12 ms a turn, a job under 20 ms, and a frame asked for at most every 1.5 s while work waits and once more when it is done, because a
+  milliseconds (`scene/slicer.ts`, 12 ms a turn, a job under 20 ms, and a frame asked for at most every 1.5 s while work waits, counted from the end of the frame that ran (a batch that starts after rest asks its first frame at once), and once more when it is done, because a
   frame draws every ring built so far and in software GL costs a second; `data-working` says when the slices are all run), tile by tile, the finest level first, so the view
   stands as soon as level 0 and 1 land (`ring-session.ts`, `ring-near.ts`) and the coarser rings fill in; a tile that
   arrives rebuilds itself, its neighbours and its parent (`scene/ring-layer.ts`) and every mesh is freed when the view
@@ -554,7 +554,7 @@ Every visible change follows `.claude/skills/apple-design/SKILL.md` (vendored fr
   world (rings, near ground, props, far horizon, sky, the look back to the new opening) on the same renderer, so no second WebGL
   context is made and no program is compiled again (held by `tests/e2e/vent-69-one-renderer.spec.ts`: contexts made, ground
   shader sources and linked programs counted across a point change). Only leaving the view, a tier change or a lost context frees
-  the renderer. The first frame waits for the surface maps at most 5 s (`MAPS_GIVE_UP_MS`, `waitAtMost`), and a compile
+  the renderer. The first frame waits for the surface maps at most 5 s (`MAPS_GIVE_UP_MS`, `waitAtMost`); maps that land later are attached, their program compiled off the frame and one more frame asked, and `data-working` stays true until then (VENT-72, `scene/late-maps.ts`, `tests/e2e/vent-72-late-maps.spec.ts`); and a compile
   during which the page was hidden is not judged slow (`page-hidden.ts`). The «browser blocked 3D» message keeps to the phone's
   free band on a backing (`use-help-band.ts` for the globe's, `--on-foot-band-*` for the view's), and asks the sheet to close
   when even the free band is too short for it (200 % text; `roomAsk` in `sheet-channels.ts`, `makeRoom('closed')`)

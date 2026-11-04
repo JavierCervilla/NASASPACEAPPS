@@ -1,0 +1,109 @@
+{
+  "about": "A fine real-terrain tile (MOON-20); see ASSETS.md and, in the Mooner repo (JavierCervilla/mooner), packages/web/scripts/fine_tiles.py",
+  "place": "malapert-a",
+  "landing_cell": {
+    "q": 435,
+    "r": 14779,
+    "cell_m": 20.0,
+    "centre_m": [
+      7534.421,
+      299930.0
+    ]
+  },
+  "georeference": {
+    "projection": "+proj=stere +lat_0=-90 +lat_ts=-90 +lon_0=0 +x_0=0 +y_0=0 +R=1737400 +units=m +no_defs=True",
+    "plane": "the sim's: x toward 90° E, y toward 0° E, metres; columns run +x, rows run -y",
+    "upper_left_m": [
+      6780.0,
+      300680.0
+    ],
+    "pixel_m": 5.0,
+    "width": 300,
+    "height": 300,
+    "pixel_is": "area",
+    "nests_in": {
+      "pixel_m": 20.0,
+      "col": 15539,
+      "row": 166,
+      "width": 75,
+      "height": 75,
+      "fine_per_coarse": 4,
+      "grid": "LDEM_80S_20MPP_ADJ, upper-left corner at (-304000, 304000)"
+    }
+  },
+  "layers": {
+    "heights": {
+      "file": "heights.png",
+      "format": "PNG, 16-bit grey",
+      "metres": "offset_m + DN * step_m, above the 1737.4 km sphere",
+      "offset_m": 2477,
+      "step_m": 0.01,
+      "min_m": 2477.82,
+      "max_m": 2751.04,
+      "sha256": "6343628da7f32c26d0122b4da3b84dc1c704b9f68b5f81f727b7149d9c2708c1"
+    },
+    "mask": {
+      "file": "mask.png",
+      "format": "PNG, 1-bit",
+      "value": "1 = the fine source's height; 0 = LOLA 20 m interpolated bilinearly (procedural detail here)",
+      "fine_share": 0.9039,
+      "sha256": "5ce6c1c4a4719950991f439b5d364370c54a7e7232e23af58b325fa8e8933f27"
+    },
+    "normals": {
+      "file": "normals.png",
+      "format": "PNG, RGB 8-bit",
+      "value": "unit normal (x toward 90° E, y toward 0° E, z up) = DN / 255 * 2 - 1, relief 1:1, central differences on the stored heights",
+      "sha256": "279be09f0a812c4f1ea65c2d809c34917ed96ff8df1bf4ab7d194430cdbf84da"
+    },
+    "ldem20": {
+      "file": "ldem20.png",
+      "format": "PNG, 16-bit grey",
+      "metres": "offset_m + DN * step_m; the tile's 20 m pixels with one pixel of margin on every side",
+      "offset_m": 2479,
+      "step_m": 0.1,
+      "sha256": "e9f4d2018d906a5154b5c640c00d2b54365aa00d3146e61bfdc33cda09a3b674"
+    }
+  },
+  "alignment": {
+    "against": "ldem20.png without its margin: 4 x 4 block mean of the fine heights minus the 20 m pixel, over the 20 m pixels wholly fine",
+    "pixels": 5043,
+    "mean_before_m": -1.351,
+    "std_m": 1.021,
+    "offset_removed_m": -1.35,
+    "mean_after_m": -0.001,
+    "abs_p95_after_m": 2.031
+  },
+  "sources": {
+    "fine": {
+      "product": "LROC NAC DTM MALAPERTA01 (P803S0015), 3 m",
+      "url": "https://pds.lroc.im-ldi.com/data/LRO-L-LROC-5-RDR-V1.0/LROLRC_2001/DATA/SDP/NAC_DTM/MALAPERTA01/NAC_DTM_MALAPERTA01_P803S0015.IMG",
+      "bytes": 325464000,
+      "last_modified": "Fri, 14 Aug 2026 18:27:44 GMT",
+      "window": {
+        "col": 3434,
+        "row": 3876,
+        "width": 501,
+        "height": 501,
+        "dtype": "float32 little-endian",
+        "sha256": "d88c4642e84bedce58293e2d2e1d7dad9382dd3cb6c720d1e684ada7eeeb65e7"
+      },
+      "resampling": "area average from 3 m",
+      "credit": "NASA/GSFC/Arizona State University",
+      "licence": "No licence text found on the product or the LROC site; used with the credit «NASA/GSFC/Arizona State University» by the human's decision (2026-11-01)"
+    },
+    "ldem": {
+      "url": "https://pgda.gsfc.nasa.gov/data/LOLA_20mpp/LDEM_80S_20MPP_ADJ.TIF",
+      "bytes": 2696082051,
+      "last_modified": "Fri, 07 Jul 2023 22:28:19 GMT",
+      "window": {
+        "col": 15538,
+        "row": 165,
+        "width": 77,
+        "height": 77,
+        "dtype": "float32 little-endian",
+        "sha256": "009e01d4bf016b77abca849726bb4f093ce40067cc33ebe91fcb50c942e39705"
+      },
+      "credit": "NASA PGDA product 90, Barker et al. 2023, PSJ 4:183, doi:10.3847/PSJ/acf3e1"
+    }
+  }
+}

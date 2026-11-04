@@ -34,6 +34,7 @@ import { Group, type Mesh, type MeshStandardMaterial } from 'three';
 import { drawsAgain } from '../input-change';
 import { EYE_M } from '../view-camera';
 import { backdropMesh } from './backdrop';
+import { createFineUniforms, type FineUniforms } from './ground-fine';
 import { groundMaterial } from './ground';
 import { backdropM } from '../ring/ring-plan';
 import type { RingLayer } from './ring-layer';
@@ -58,6 +59,8 @@ export interface World {
   near: Group;
   ground: Ground;
   material: MeshStandardMaterial;
+  /** The fine real relief's uniforms (VENT-62), shared with the material. */
+  readonly fine: FineUniforms;
   backdrop: Mesh | null;
   input: SceneInput | null;
   /**
@@ -78,10 +81,12 @@ export function createWorld(stage: Stage, seed: number, setup: SceneSetup) {
   const mask = createSunMask();
   const slicer = createSlicer({ invalidate: () => world.invalidate() });
   const shadowPx = setup.quality.tier === 'high' ? 2048 : 1024;
+  const fine = createFineUniforms();
   const world: World = { stage, setup, mask, sky: createSky(seed, shadowPx),
-    near: new Group(), ground: () => 0,
-    material: groundMaterial(mask), backdrop: null, input: null, lit: null,
-    rings: null, farShade: null, slicer, invalidate: () => undefined };
+    near: new Group(), ground: () => 0, fine,
+    material: groundMaterial(mask, fine), backdrop: null, input: null,
+    lit: null, rings: null, farShade: null, slicer,
+    invalidate: () => undefined };
   stage.scene.add(world.sky.group, world.near);
   return world;
 }
@@ -97,7 +102,7 @@ function rebuildNear(world: World, input: SceneInput): void {
   world.stage.scene.remove(world.near);
   world.near.traverse((o) => (o as Partial<Mesh>).geometry?.dispose());
   world.near = new Group();
-  world.near.add(rocksMesh(input.seed, world.ground, world.mask),
+  world.near.add(rocksMesh(input.seed, world.ground, world.mask, world.slicer),
     ringsMesh(world.ground));
   world.stage.scene.add(world.near);
   world.setup.report.step('near ground placed');

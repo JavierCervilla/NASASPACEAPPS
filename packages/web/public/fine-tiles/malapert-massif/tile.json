@@ -1,0 +1,117 @@
+{
+  "about": "A fine real-terrain tile (MOON-20); see ASSETS.md and, in the Mooner repo (JavierCervilla/mooner), packages/web/scripts/fine_tiles.py",
+  "place": "malapert-massif",
+  "landing_cell": {
+    "q": -205,
+    "r": 6197,
+    "cell_m": 20.0,
+    "centre_m": [
+      -3550.704,
+      121890.0
+    ]
+  },
+  "georeference": {
+    "projection": "+proj=stere +lat_0=-90 +lat_ts=-90 +lon_0=0 +x_0=0 +y_0=0 +R=1737400 +units=m +no_defs=True",
+    "plane": "the sim's: x toward 90° E, y toward 0° E, metres; columns run +x, rows run -y",
+    "upper_left_m": [
+      -4320.0,
+      122640.0
+    ],
+    "pixel_m": 5.0,
+    "width": 300,
+    "height": 300,
+    "pixel_is": "area",
+    "nests_in": {
+      "pixel_m": 20.0,
+      "col": 14984,
+      "row": 9068,
+      "width": 75,
+      "height": 75,
+      "fine_per_coarse": 4,
+      "grid": "LDEM_80S_20MPP_ADJ, upper-left corner at (-304000, 304000)"
+    }
+  },
+  "layers": {
+    "heights": {
+      "file": "heights.png",
+      "format": "PNG, 16-bit grey",
+      "metres": "offset_m + DN * step_m, above the 1737.4 km sphere",
+      "offset_m": 4748,
+      "step_m": 0.01,
+      "min_m": 4748.97,
+      "max_m": 4971.47,
+      "sha256": "5cf84011739655609bafdd98c768ebf5063d3fcb15ca2cc9db505b4d2adfecf2"
+    },
+    "mask": {
+      "file": "mask.png",
+      "format": "PNG, 1-bit",
+      "value": "1 = the fine source's height; 0 = LOLA 20 m interpolated bilinearly (procedural detail here)",
+      "fine_share": 0.983,
+      "sha256": "b13f261cd30d6365e13c434c0b7591d2223c8481383a5cb4089eccd7287885a3"
+    },
+    "normals": {
+      "file": "normals.png",
+      "format": "PNG, RGB 8-bit",
+      "value": "unit normal (x toward 90° E, y toward 0° E, z up) = DN / 255 * 2 - 1, relief 1:1, central differences on the stored heights",
+      "sha256": "b24c11dad73afd02d329c50782c2105e7afe6a7ad03266426b33c1d395cf45e4"
+    },
+    "ldem20": {
+      "file": "ldem20.png",
+      "format": "PNG, 16-bit grey",
+      "metres": "offset_m + DN * step_m; the tile's 20 m pixels with one pixel of margin on every side",
+      "offset_m": 4745,
+      "step_m": 0.1,
+      "sha256": "2ab4d65b8f621c1461af1252e5fd95e8540e8699b9a3fd292b778841ba34acfa"
+    }
+  },
+  "alignment": {
+    "against": "ldem20.png without its margin: 4 x 4 block mean of the fine heights minus the 20 m pixel, over the 20 m pixels wholly fine",
+    "pixels": 5419,
+    "mean_before_m": -0.156,
+    "std_m": 0.625,
+    "offset_removed_m": -0.16,
+    "mean_after_m": 0.004,
+    "abs_p95_after_m": 1.305
+  },
+  "sources": {
+    "fine": {
+      "product": "PGDA product 104, A3CLR22-#11 Malapert Massif SfS, 5 m",
+      "zip_url": "https://zenodo.org/api/records/17954508/files/A3CLR22_11_Malapert_Massif.zip/content",
+      "zip_bytes": 2213137537,
+      "zip_md5": "772a578b8f2ebdb078c5a04a3c07182a",
+      "members": {
+        "elev": {
+          "member": "A311_GLDELEV_005.tif",
+          "sha256": "e71f946674a6dc4dcd910f37cee9c0ff42c0f5493900be81259e0acb8dea68d4"
+        },
+        "mask": {
+          "member": "A311_GLDMASK_005.tif",
+          "sha256": "194385c6bbc327e4fd472bf8a4b3f4bc15117ad84b57a56eddb556a8b9d08a7b"
+        }
+      },
+      "window": {
+        "col": 1336,
+        "row": 1872,
+        "width": 300,
+        "height": 300
+      },
+      "resampling": "none: the source's own 5 m grid",
+      "credit": "Bertone, S., Barker, M., Mazarico, E., McKenna, T., and Petro, N., 2025, Zenodo, doi:10.5281/zenodo.17954508; Bertone et al., The Planetary Science Journal, doi:10.3847/PSJ/ae5b70",
+      "licence": "CC BY 4.0"
+    },
+    "ldem": {
+      "url": "https://pgda.gsfc.nasa.gov/data/LOLA_20mpp/LDEM_80S_20MPP_ADJ.TIF",
+      "bytes": 2696082051,
+      "last_modified": "Fri, 07 Jul 2023 22:28:19 GMT",
+      "window": {
+        "col": 14983,
+        "row": 9067,
+        "width": 77,
+        "height": 77,
+        "dtype": "float32 little-endian",
+        "sha256": "72d2cbb3de74243a9652001b53389bf2bb2c67ab9daacf672d36487a176d9fbb"
+      },
+      "credit": "NASA PGDA product 90, Barker et al. 2023, PSJ 4:183, doi:10.3847/PSJ/acf3e1"
+    }
+  }
+}

@@ -34,6 +34,11 @@
  */
 import { expect, test, type Page } from '@playwright/test';
 import sharp from 'sharp';
+import { skyAt } from '@ventana/sim';
+import { APOLLO_HALO } from '../../packages/web/src/terrain/lunar-photometry';
+import { START_PITCH } from '../../packages/web/src/terrain/view-camera';
+import { VIEW_FOV } from '../../packages/web/src/terrain/view-fov';
+import { twinMean, type PixelBox } from './halo-twin';
 import { stubApi } from './api-stub';
 import { stubRealRelief, stubTile, stubWall } from './terrain-stub';
 
@@ -41,9 +46,23 @@ const AT = new Date('2026-11-22T20:00:00Z');
 /** IM-2 with the Sun just over its ridge (horizon.spec.ts), on the recorded LOLA relief (terrain-stub.ts). */
 const RIDGE_AT = new Date('2026-11-30T20:00:00Z');
 const POINT = '?lat=-85.50&lon=40.00';
+/** IM-2 Athena's point (packages/server/data/sites.json), where the ground-photometry checks look. */
+const IM2 = { latDeg: -84.7906, lonEastDeg: 29.1957 };
+/** How far to either side of the antisolar point the halo check reads the ground it compares with, degrees. */
+const HALO_OFFSET_DEG = 20;
+/**
+ * The least mean linear luminance the drawn ground may have: a third of the 0.14 it reads toward the Sun, and far over the
+ * 0.001 of a ground whose shader failed and drew black, which the ratio below alone cannot tell.
+ */
+const MIN_GROUND_LUMINANCE = 0.05;
+/** What three.js logs when a shader does not compile or a program does not link. */
+const SHADER_ERROR = /Shader Error|Shader couldn't compile|WebGLProgram|WebGLShader/;
+const shaderErrors = new WeakMap<Page, string[]>();
 const SHOTS = process.env.VENT34_SHOTS;
 /** The view's files, never in the first load (scripts/service-worker.mjs ON_DEMAND). */
-const VIEW_FILES = /\/_astro\/(TerrainPanel|terrain-scene|on-foot)[.-]|\/api\/v1\/terrain\/tile/;
+const VIEW_FILES = /\/_astro\/(TerrainPanel|terrain-scene|on-foot)[.-]|\/api\/v1\/terrain\/tile|\/fine-tiles\//;
+/** The fine real-relief tiles (VENT-62): asked only by a view of a point inside one. */
+const FINE_FILES = /\/fine-tiles\//;
 /** A model the view no longer draws (VENT-54): no glb, no astronaut, no lander. */
 const MODEL_FILES = /\.glb(\?|$)|astronaut|lander|apollo-lm/;
 const START_MS = 30_000;
@@ -113,6 +132,11 @@ async function open(page: Page, { path, wall = [300, 330], requests, real, live 
     localStorage.setItem('ventana.pinHint', 'seen');
   });
   await countLostContexts(page);
+  const errors: string[] = [];
+  shaderErrors.set(page, errors);
+  page.on('console', (message) => {
+    if (['error', 'warning'].includes(message.type()) && SHADER_ERROR.test(message.text())) errors.push(message.text().slice(0, 400));
+  });
   if (requests) page.on('request', (request) => requests.push(request.url()));
   await stubApi(page);
   if (real) await stubRealRelief(page);
@@ -227,6 +251,21 @@ async function brightness(page: Page, at: string): Promise<number> {
   return Math.max(...raw);
 }
 
+/** The mean linear luminance (0 to 1) of the screen `clip`, from its screenshot (VENT-62). */
+async function lumOf(page: Page, clip: { x: number; y: number; width: number; height: number }): Promise<number> {
+  const raw = await sharp(await page.screenshot({ clip })).removeAlpha().raw().toBuffer();
+  const linear = (v: number): number => { const c = v / 255; return c <= 0.04045 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4; };
+  let sum = 0;
+  for (let i = 0; i < raw.length; i += 3) sum += 0.2126 * linear(raw[i]!) + 0.7152 * linear(raw[i + 1]!) + 0.0722 * linear(raw[i + 2]!);
+  return sum / (raw.length / 3);
+}
+
+/** The mean linear luminance of the ground rows of the view (VENT-62). */
+async function groundLuminance(page: Page): Promise<number> {
+  const box = (await host(page).boundingBox())!;
+  return lumOf(page, { x: box.x + box.width * 0.1, y: box.y + box.height * 0.78, width: box.width * 0.8, height: box.height * 0.17 });
+}
+
 async function shot(page: Page, name: string): Promise<void> {
   if (!SHOTS) return;
   await page.waitForTimeout(300);
@@ -266,6 +305,10 @@ const earthFilled = (page: Page) => compass(page).locator('.compass__earth').eva
 
 const COMPASS_PRESS = 'Press to look back where the view opened.';
 
+test.afterEach(({ page }) => {
+  expect(shaderErrors.get(page) ?? [], 'a shader failed to compile').toEqual([]);
+});
+
 test.describe('desktop, 1440x900', () => {
   test.use({ viewport: { width: 1440, height: 900 } });
 
@@ -288,12 +331,78 @@ test.describe('desktop, 1440x900', () => {
     expect(carrying(all, SCENE_MARK)).not.toEqual([]);
     await firstPersonOnly(page);
     await expect(view(page)).toContainText('Fine detail illustrative · relief LOLA 20 m');
-    await expect(view(page)).toContainText('Earth: NASA Blue Marble · shadows lifted for legibility');
+    expect(requests.filter((url) => FINE_FILES.test(url))).toEqual([]);
+    await expect(view(page)).toContainText('Earth: NASA Blue Marble · shadows lifted and exposure raised 20 % for legibility');
     await expect(view(page).getByRole('region', { name: 'Horizon' })).toBeVisible();
     await expect(view(page).locator('.on-foot__label--ring').first()).toBeVisible();
     await idle(page);
     expect(requests.filter((url) => MODEL_FILES.test(url))).toEqual([]);
     await shot(page, 'synthetic-desktop-first');
+  });
+
+  // VENT-62: the NAC DTM Mooner prepared for IM-2 (mons-mouton) shapes the near ground and the caption says so; a point
+  // outside every tile asks for no tile (the test above), and no tile is in the first load (VIEW_FILES).
+  test('IM-2 loads its fine NAC relief on demand, says so, and then draws no idle frames', async ({ page }) => {
+    const requests: string[] = [];
+    await open(page, { path: './?site=im2-athena', real: RIDGE_AT, requests });
+    await page.waitForLoadState('networkidle');
+    expect(requests.filter((url) => FINE_FILES.test(url))).toEqual([]);
+    await page.getByRole('navigation', { name: 'View' }).getByRole('link', { name: 'Horizon' }).click();
+    await settled(page);
+    await expect(view(page)).toContainText('Fine detail illustrative · relief LROC NAC DTM 4 m · LOLA 20 m beyond');
+    expect(requests.filter((url) => FINE_FILES.test(url)).map((url) => url.split('/fine-tiles/')[1]).sort())
+      .toEqual(['mons-mouton/heights.png', 'mons-mouton/mask.png']);
+    await shot(page, 'fine-im2-desktop');
+    await atRest(page);
+  });
+
+  // VENT-62: the Apollo frames put the ground toward the Sun at 0.4 to 0.7 of the ground away from it (calibration.md
+  // of the trajectory); measured here on the drawn ground, fill and tone mapping included.
+  test('the ground toward the Sun is 0.4 to 0.7 of the ground away from it', async ({ page }) => {
+    await open(page, { path: './?site=im2-athena&quality=low#horizon', real: AT });
+    await settled(page);
+    await idle(page);
+    const towardSun = await groundLuminance(page);
+    await host(page).focus();
+    for (let i = 0; i < 12; i++) await page.keyboard.press('Shift+ArrowRight');
+    await idle(page);
+    const awaySun = await groundLuminance(page);
+    expect(towardSun).toBeGreaterThan(MIN_GROUND_LUMINANCE);
+    expect(awaySun).toBeGreaterThan(MIN_GROUND_LUMINANCE);
+    expect(towardSun / awaySun).toBeGreaterThan(0.4);
+    expect(towardSun / awaySun).toBeLessThan(0.7);
+  });
+
+  // VENT-62: looking down the Sun's line the ground around the antisolar point (the camera's shadow) is brighter than the
+  // same rows 20° to either side. The expectation is the pure twin's (lunar-photometry.ts through halo-twin.ts, the same
+  // function the GLSL is built from) for this geometry on flat ground, which lands inside the Apollo band; the drawn
+  // picture keeps at least half of that surplus (the fill light, the tone mapping and the relief eat the rest: measured,
+  // two thirds) and never exceeds it.
+  test('the ground around the antisolar point is brighter than the ground beside it, as the twin says', async ({ page }) => {
+    await open(page, { path: './?site=im2-athena&quality=low#horizon', real: AT });
+    await settled(page);
+    await idle(page);
+    await host(page).focus();
+    for (let i = 0; i < 12; i++) await page.keyboard.press('Shift+ArrowRight');
+    await idle(page);
+    const box = (await host(page).boundingBox())!;
+    const { sunEl } = skyAt(IM2, AT.getTime());
+    const view = { width: box.width, height: box.height, fovDeg: VIEW_FOV.wide, pitchDeg: START_PITCH, sunElDeg: sunEl };
+    const tanV = Math.tan((VIEW_FOV.wide * Math.PI) / 360);
+    const tanH = (tanV * box.width) / box.height;
+    const yAntisolar = (box.height / 2) * (1 - Math.tan(((-sunEl - START_PITCH) * Math.PI) / 180) / tanV);
+    const columnAt = (azDeg: number): number => box.width / 2 + (box.width / 2) * Math.tan((azDeg * Math.PI) / 180) / tanH;
+    const around = (x: number) => ({ x0: x - box.width * 0.02, x1: x + box.width * 0.02, y0: yAntisolar - box.height * 0.03, y1: yAntisolar + box.height * 0.03 });
+    const [centre, left, right] = [box.width / 2, columnAt(-HALO_OFFSET_DEG), columnAt(HALO_OFFSET_DEG)].map(around) as [PixelBox, PixelBox, PixelBox];
+    const drawn = async (b: PixelBox): Promise<number> =>
+      lumOf(page, { x: box.x + b.x0, y: box.y + b.y0, width: b.x1 - b.x0, height: b.y1 - b.y0 });
+    const beside = ((await drawn(left)) + (await drawn(right))) / 2;
+    const ratio = (await drawn(centre)) / beside;
+    const twin = twinMean(view, centre) / ((twinMean(view, left) + twinMean(view, right)) / 2);
+    expect(twin).toBeGreaterThan(APOLLO_HALO.min);
+    expect(twin).toBeLessThan(APOLLO_HALO.max);
+    expect(ratio).toBeGreaterThan(1 + (twin - 1) / 2);
+    expect(ratio).toBeLessThan(twin);
   });
 
   test('an idle view draws no frames; a key turns it and draws again', async ({ page }) => {
@@ -623,7 +732,7 @@ test.describe('desktop, 1440x900', () => {
     await open(page, { path: './?site=im2-athena&quality=high#horizon', real: RIDGE_AT });
     await settled(page);
     await idle(page);
-    await expect(view(page)).toContainText('Fine detail illustrative · relief LOLA 20 m');
+    await expect(view(page)).toContainText('Fine detail illustrative · relief LROC NAC DTM 4 m · LOLA 20 m beyond');
     // VENT-59: the Sun's own sentence; `.*` ran on into the Earth's and passed while a ridge hid the Sun.
     await expect(host(page)).toHaveAccessibleDescription(/The Sun is to the [a-z-]+, above the terrain\./);
     await expect(host(page)).not.toHaveAccessibleDescription(/hides the Sun/);

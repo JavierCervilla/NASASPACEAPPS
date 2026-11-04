@@ -27,18 +27,22 @@
  * The on-foot view's caption (VENT-34): what is measured and what is not.
  * «Fine detail illustrative · relief LOLA 20 m», then the Earth's map.
  */
+import type { FineSite } from '../../terrain/fine/fine-catalog';
+import { fineCaption } from '../../terrain/fine/fine-caption';
 import { captionNote, detailCaption } from '../../terrain/view-text';
 import { useI18n } from '../i18n-context';
 
 interface Props {
   readonly resolutionM: number;
+  /** The fine real relief under the point, when it has one (VENT-62). */
+  readonly fine: FineSite | null;
 }
 
-export function OnFootCaption({ resolutionM }: Props) {
+export function OnFootCaption({ resolutionM, fine }: Props) {
   const i18n = useI18n();
   return (
     <p className="on-foot__caption">
-      <span className="on-foot__caption-main">{detailCaption(i18n, resolutionM)}</span>
+      <span className="on-foot__caption-main">{fine ? fineCaption(i18n, fine, resolutionM) : detailCaption(i18n, resolutionM)}</span>
       <span className="on-foot__caption-note">{captionNote(i18n)}</span>
     </p>
   );

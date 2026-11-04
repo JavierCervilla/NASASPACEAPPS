@@ -33,6 +33,8 @@
  * the caption says; the relief it lies on is LOLA's.
  */
 import { MeshStandardMaterial, Vector2 } from 'three';
+import { patchFine, type FineUniforms } from './ground-fine';
+import { patchPhotometry } from './ground-photometry';
 import { antiTile } from './ground-shader';
 import type { SurfaceMaps } from './surface-maps';
 import { maskSun, type SunMask } from './sun-mask';
@@ -42,7 +44,10 @@ const ROUGHNESS = 0.96;
 const NORMAL_STRENGTH = 0.55;
 
 /** The ground's material; its maps come with {@link attachGroundMaps}. */
-export function groundMaterial(mask: SunMask): MeshStandardMaterial {
+export function groundMaterial(
+  mask: SunMask,
+  fine: FineUniforms,
+): MeshStandardMaterial {
   const material = new MeshStandardMaterial({ color: 0xcfcfcf,
     roughness: ROUGHNESS, metalness: 0 });
   material.normalScale = new Vector2(NORMAL_STRENGTH, NORMAL_STRENGTH);
@@ -51,8 +56,10 @@ export function groundMaterial(mask: SunMask): MeshStandardMaterial {
   material.onBeforeCompile = (shader, renderer) => {
     masked.call(material, shader, renderer);
     antiTile(shader);
+    patchFine(shader, fine);
+    patchPhotometry(shader);
   };
-  material.customProgramCacheKey = () => 'sun-tile-regolith';
+  material.customProgramCacheKey = () => 'sun-tile-regolith-lunar';
   return material;
 }
 

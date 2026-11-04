@@ -31,6 +31,7 @@ import { NoTerrainHereError, TerrainNotInstalledError } from
   '../../horizon/horizon-errors';
 import type { LatLon } from '../../lib/polar-projection';
 import type { PlacedTile } from '../scene/scene-types';
+import type { FineDeps, FineView } from '../fine/fine-relief';
 import type { Frame } from './ring-frame';
 import type { RingTier } from './ring-plan';
 import type { RingSource } from './ring-source';
@@ -55,6 +56,8 @@ export interface RingView {
   readonly near: PlacedTile;
   /** The finest LOLA grid that served any node, metres. */
   readonly resolutionM: number;
+  /** The fine real relief under the point (VENT-62), when it has one. */
+  readonly fine: FineView | null;
 }
 
 export interface RingRun {
@@ -64,6 +67,8 @@ export interface RingRun {
   readonly signal: AbortSignal;
   /** Lets the page breathe between slices of work. */
   readonly breathe: () => Promise<void>;
+  /** Where the fine relief tiles are asked; none: LOLA only (VENT-62). */
+  readonly fine?: FineDeps | undefined;
   /** Tells the crash report how the ring is coming (VENT-49). */
   readonly note?: ((text: string) => void) | undefined;
   /** Hears how the tiles come, for the loader (VENT-60). */

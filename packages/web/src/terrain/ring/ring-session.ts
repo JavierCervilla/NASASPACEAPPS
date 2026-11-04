@@ -32,6 +32,8 @@
  * what the props, the eye and the Sun's shadows read. Failures end
  * as the horizon's states (VENT-45).
  */
+import { applyFine } from '../fine/fine-apply';
+import { prepareFine } from '../fine/fine-relief';
 import { unitOf } from './ring-frame';
 import { stand, type Live } from './ring-near';
 import { finish } from './ring-nodes';
@@ -60,7 +62,8 @@ function feedFor(
       live.windows = windowsFor(scheme, dir, run.tier.levels);
     },
     tile: (tile) => {
-      live.store?.add(tile);
+      live.store?.add(live.fine
+        ? applyFine(tile, live.fine.grid, live.fine.offset) : tile);
       tell(run, (p) => land(p, tile));
     },
     settled: (level) => {
@@ -77,7 +80,9 @@ export async function runRing(
   report: (state: RingState) => void,
 ): Promise<void> {
   const { point, tier, signal } = run;
-  const live: Live = { store: null, windows: [], standing: false };
+  const live: Live = { store: null, windows: [], standing: false, fine: null };
+  live.fine = run.fine ? await prepareFine(point, run.fine) : null;
+  if (signal.aborted) return;
   const wanted = wantedBy(run, live);
   tell(run, () => NOT_LISTED);
   try {

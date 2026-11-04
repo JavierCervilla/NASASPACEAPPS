@@ -535,8 +535,8 @@ Every visible change follows `.claude/skills/apple-design/SKILL.md` (vendored fr
   `scene-warm-up.ts` stand in for the ring meshes, `renderer.compileAsync`, the loop shut by `loop-gate.ts` meanwhile),
   so the ground compiles once, with its maps; the wait is timed and noted in the report, and past 1 s
   (`COMPILE_BUDGET_MS`) the view steps down a tier like a slow frame; the frame probe now judges a frame that compiled
-  against a 1 s ceiling instead of skipping it (`COMPILED_FRAME_CEILING_MS`). A phone with PowerVR or any GPU not on the
-  capable list starts at low whatever its cores (`lib/quality.ts`). Blocked WebGL: every renderer is made by
+  against a 1 s ceiling instead of skipping it (`COMPILED_FRAME_CEILING_MS`). A phone with an older PowerVR or any GPU not on the
+  capable list starts at low whatever its cores; PowerVR D-Series (the Pixel 10, the human's demo phone) is on it, at medium (`lib/quality.ts`). Blocked WebGL: every renderer is made by
   `lib/gl-renderer.ts`, which records `ventana.glWorked` and `ventana.glLostAt` in `localStorage` (`lib/gl-marks.ts`) and,
   when no context can be made on a browser that has the WebGL constructors and a mark exists, throws a `GlUnavailableError`
   of kind `blocked` (never decided by Chrome's message, which is only kept, with `webglcontextcreationerror`'s

@@ -81,7 +81,8 @@ export interface DeviceHints {
 
 /**
  * Phone GPUs that hold the medium tier: Apple, Adreno 7xx and 8xx, Mali-G71
- * and later, Immortalis and Xclipse.
+ * and later, Immortalis, Xclipse and PowerVR D-Series (the Pixel 10, the
+ * human's demo phone, at medium with the safe start of VENT-69).
  */
 const CAPABLE_PHONE_GPU = new RegExp(
   [
@@ -91,6 +92,7 @@ const CAPABLE_PHONE_GPU = new RegExp(
     String.raw`mali-g[89]\d`,
     'immortalis',
     'xclipse',
+    'powervr d-series',
   ].join('|'),
 );
 
@@ -113,8 +115,8 @@ export function detectTier(device: DeviceHints, search = '', hash = ''): Tier {
   if (/swiftshader|llvmpipe|software/.test(gpu)) return 'low';
   if (!device.coarsePointer) return device.cores >= 4 ? 'high' : 'medium';
   if (CAPABLE_PHONE_GPU.test(gpu)) return 'medium';
-  // PowerVR and any GPU not measured on a phone: low (VENT-69; the core
-  // count says nothing of the GPU, and a Pixel 10's 8 cores sent it to medium).
+  // Older PowerVR and any GPU not measured on a phone: low (VENT-69; the
+  // core count says nothing of the GPU).
   return 'low';
 }
 

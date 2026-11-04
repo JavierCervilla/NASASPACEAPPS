@@ -67,11 +67,17 @@ describe('quality tiers', () => {
     expect(detectTier({ ...weak, cores: 8 })).toBe('low');
   });
 
-  // VENT-69: the Pixel 10 (8 cores) reset its GPU in the on-foot view at medium.
-  it('starts PowerVR and any GPU not measured on a phone at low', () => {
+  // VENT-69: the Pixel 10 is the human's demo phone; it keeps medium, whose
+  // ground is the safe pre-VENT-62 one.
+  it('starts a PowerVR D-Series (Pixel 10) at medium', () => {
     const phone = { coarsePointer: true, cores: 8 };
     const pixel = 'ANGLE (Imagination Technologies, PowerVR D-Series DXT-48-1536, OpenGL ES 3.2)';
-    expect(detectTier({ ...phone, gpu: pixel })).toBe('low');
+    expect(detectTier({ ...phone, gpu: pixel })).toBe('medium');
+  });
+
+  it('starts an older PowerVR and any GPU not measured on a phone at low', () => {
+    const phone = { coarsePointer: true, cores: 8 };
+    expect(detectTier({ ...phone, gpu: 'PowerVR Rogue GE8320' })).toBe('low');
     expect(detectTier({ ...phone, gpu: 'Some New GPU 9000' })).toBe('low');
     expect(detectTier({ ...phone, gpu: '' })).toBe('low');
   });

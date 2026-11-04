@@ -25,17 +25,13 @@
 
 /**
  * Which cells of a ring tile are drawn (VENT-46): those with data at the
- * level's mesh stride that the layout draws (ring-layout.ts). Windows, holes
- * and tiles are all aligned to blocks of 4 cells, so the layout is asked
- * once a block. Pure.
+ * level's mesh stride that the layout draws (ring-layout.ts). Pure.
  */
 import { TILE_CELLS } from '@ventana/sim';
+import { BLOCK, askBlock } from './ring-block';
 import { cellOf } from './ring-cells';
 import { drawn, type Layout } from './ring-layout';
 import type { RingTile } from './ring-store';
-
-/** The cells a window, a hole and a tile are all aligned to. */
-const BLOCK = 4;
 
 export interface MeshSpec {
   readonly tile: RingTile;
@@ -62,27 +58,25 @@ function hasData(s: MeshSpec, row: number, col: number): boolean {
   return true;
 }
 
-/**
- * Per strided cell of the tile, 1 when it is drawn. Windows, holes and tiles
- * are all aligned to blocks of 4 cells, so the layout is asked once a block.
- */
+/** Marks the cells of the block at `br`, `bc` that are drawn and have data. */
+function markBlock(s: MeshSpec, mask: Uint8Array, br: number, bc: number) {
+  const ask = askBlock((r, c) => drawnOutside(s, r, c), s.stride, br, bc);
+  for (let r = 0; r < BLOCK; r += s.stride) {
+    for (let c = 0; c < BLOCK; c += s.stride) {
+      if (ask(r, c) && hasData(s, br + r, bc + c)) {
+        mask[(br + r) * TILE_CELLS + bc + c] = 1;
+      }
+    }
+  }
+}
+
+/** Per strided cell of the tile, 1 when it is drawn. */
 export function drawnMask(s: MeshSpec): Uint8Array {
   const mask = new Uint8Array(TILE_CELLS * TILE_CELLS);
   for (let br = 0; br < TILE_CELLS; br += BLOCK) {
-    for (let bc = 0; bc < TILE_CELLS; bc += BLOCK) {
-      if (drawnOutside(s, br, bc)) markBlock(s, mask, br, bc);
-    }
+    for (let bc = 0; bc < TILE_CELLS; bc += BLOCK) markBlock(s, mask, br, bc);
   }
   return mask;
-}
-
-/** Marks the cells of the block at `br`, `bc` that have data. */
-function markBlock(s: MeshSpec, mask: Uint8Array, br: number, bc: number) {
-  for (let row = br; row < br + BLOCK; row += s.stride) {
-    for (let col = bc; col < bc + BLOCK; col += s.stride) {
-      if (hasData(s, row, col)) mask[row * TILE_CELLS + col] = 1;
-    }
-  }
 }
 
 /** The drawn strided cells of the tile: `[row, col]` of each. */

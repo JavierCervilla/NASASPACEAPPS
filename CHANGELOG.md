@@ -3,6 +3,12 @@
 ## [Sin publicar]
 
 ### Cambiado
+- Fix forward (VENT-66): en la vista 3D, en puntos de la rejilla lat-lon (p. ej. 8,07° N 38,41° O, cerca del Oceanus
+  Procellarum) ya no aparece un «corte»: una franja recta y oscura con una tira blanca en diagonal sobre la ladera. La
+  ventana de cada nivel se centra en el sitio y su borde, y el hueco que deja en el nivel de arriba, cae en cualquier
+  celda; la máscara de celdas dibujadas preguntaba por bloques de 4 y dejaba sin dibujar hasta 3 celdas (178 m de
+  suelo) en un lado del hueco y dibujaba otras 2 dos veces en el opuesto. Ahora el borde se resuelve celda a celda. El
+  relieve de ese punto se ha grabado de producción como prueba (`tests/e2e/fixtures/terrain-ring-oceanus/`).
 - **Vista 3D: un cargador que ya enseña el sitio (VENT-60, variante B→A del lienzo).** Mientras llegan las 18 teselas
   cercanas (2 y 8 km) se ve el plano desde arriba, cada tesela sombreada con sus propias alturas en su orden real, con
   el punto, el campo de la vista y el Sol y la Tierra reales en el borde, y «Terrain · n of 18 tiles»; con las cercanas

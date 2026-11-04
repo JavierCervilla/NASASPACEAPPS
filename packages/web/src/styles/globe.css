@@ -80,7 +80,8 @@
   white-space: nowrap;
 }
 
-.globe-help[data-status='unavailable'] {
+.globe-help[data-status='unavailable'],
+.globe-help[data-status='blocked'] {
   inset: 0;
   width: auto;
   height: auto;

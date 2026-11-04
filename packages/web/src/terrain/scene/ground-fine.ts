@@ -46,7 +46,7 @@ import {
 } from 'three';
 import type { FineView } from '../fine/fine-relief';
 import { GRAIN_M } from './ring-geometry';
-import { replaceOnce } from './ground-shader';
+import { NORMAL_READ, TILED_READ, replaceOnce } from './ground-shader';
 
 /** The uniforms the ground's shader shares with the scene. */
 export interface FineUniforms {
@@ -93,13 +93,14 @@ const USE = `
     } }
   #endif`;
 
-/** Adds the fine slope to `shader`, after antiTile's normal read. */
+/** Adds the fine slope to `shader`, after the normal map's read. */
 export function patchFine(
   shader: WebGLProgramParametersWithUniforms,
   uniforms: FineUniforms,
 ): void {
   Object.assign(shader.uniforms, uniforms);
-  const read = 'vec3 mapN = tiledNormal(normalMap, vNormalMapUv);';
+  const read = shader.fragmentShader.includes(TILED_READ)
+    ? TILED_READ : NORMAL_READ;
   let source = replaceOnce(shader.fragmentShader, '#include <uv_pars_fragment>',
     `#include <uv_pars_fragment>\n${MAP}`);
   source = replaceOnce(source, read, `${read}${USE}`);

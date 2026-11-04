@@ -344,7 +344,7 @@ test.describe('desktop, 1440x900', () => {
   // outside every tile asks for no tile (the test above), and no tile is in the first load (VIEW_FILES).
   test('IM-2 loads its fine NAC relief on demand, says so, and then draws no idle frames', async ({ page }) => {
     const requests: string[] = [];
-    await open(page, { path: './?site=im2-athena', real: RIDGE_AT, requests });
+    await open(page, { path: './?site=im2-athena&quality=high', real: RIDGE_AT, requests });
     await page.waitForLoadState('networkidle');
     expect(requests.filter((url) => FINE_FILES.test(url))).toEqual([]);
     await page.getByRole('navigation', { name: 'View' }).getByRole('link', { name: 'Horizon' }).click();
@@ -358,8 +358,9 @@ test.describe('desktop, 1440x900', () => {
 
   // VENT-62: the Apollo frames put the ground toward the Sun at 0.4 to 0.7 of the ground away from it (calibration.md
   // of the trajectory); measured here on the drawn ground, fill and tone mapping included.
+  // VENT-69: the lunar photometry is the high tier's, so these two read the ground at high.
   test('the ground toward the Sun is 0.4 to 0.7 of the ground away from it', async ({ page }) => {
-    await open(page, { path: './?site=im2-athena&quality=low#horizon', real: AT });
+    await open(page, { path: './?site=im2-athena&quality=high#horizon', real: AT });
     await settled(page);
     await idle(page);
     const towardSun = await groundLuminance(page);
@@ -379,7 +380,7 @@ test.describe('desktop, 1440x900', () => {
   // picture keeps at least half of that surplus (the fill light, the tone mapping and the relief eat the rest: measured,
   // two thirds) and never exceeds it.
   test('the ground around the antisolar point is brighter than the ground beside it, as the twin says', async ({ page }) => {
-    await open(page, { path: './?site=im2-athena&quality=low#horizon', real: AT });
+    await open(page, { path: './?site=im2-athena&quality=high#horizon', real: AT });
     await settled(page);
     await idle(page);
     await host(page).focus();

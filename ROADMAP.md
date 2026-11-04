@@ -77,6 +77,8 @@ completa está en el documento «Ventana Lunar · Especificación y roadmap».
   a la vista inicial con un muelle (VENT-63)
 - [x] Suelo lunar realista en la vista 3D: luz lunar-Lambert con oposición calibrada con fotos de Apolo, exposición +20 %,
   relieve fino real NAC/PGDA en cuatro sitios y piedras con ley de tamaños medida (VENT-62)
+- [x] Arranque seguro de la vista 3D en móviles: suelo al coste previo en calidad media y baja, programas compilados antes del
+  primer fotograma, aviso claro cuando el navegador bloquea WebGL tras un fallo gráfico (VENT-69)
 - [ ] Pequeños cráteres con relieve real y grano con volumen, contrastados con las fotos de Apolo (VENT-64)
 - [ ] Variante C del cargador, el descenso, en equipos potentes (VENT-61)
 - [ ] Comparador de sitios o exportar a .ics (VENT-8)

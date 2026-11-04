@@ -19,6 +19,7 @@
   "globe.howTo": "Ziehen oder die Pfeiltasten verwenden, um den Mond zu drehen; Plus und Minus zoomen.",
   "globe.markers": "Landeplätze sind Schaltflächen: Ein ausgefüllter Punkt ist ein exakter Aufsetzpunkt, ein gestrichelter Ring ein ungefähres Gebiet.",
   "globe.noWebgl": "Der 3D-Globus braucht WebGL, das dieser Browser nicht unterstützt.",
+  "gl.blocked": "Der Browser hat 3D für diese Website nach einem Grafikfehler blockiert. Schließe den Browser vollständig und öffne ihn erneut. Unter Android: Einstellungen › Apps › Chrome › Beenden erzwingen, dann neu öffnen.",
   "globe.deferred": "Dein Browser möchte Daten sparen, deshalb wartet der 3D-Globus.",
   "globe.load": "3D-Globus laden",
   "globe.dataSaver": "Datensparmodus ist an",

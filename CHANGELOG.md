@@ -3,6 +3,19 @@
 ## [Sin publicar]
 
 ### Cambiado
+- **Fix forward: arranque seguro de la vista 3D en móviles (VENT-69).** En un Pixel 10 el primer fotograma de la vista
+  3D tardó 1,6 s tras VENT-62, la GPU se reinició y Chrome bloqueó WebGL en todo el sitio, así que el globo tampoco
+  arrancaba. Ahora: (1) en calidad media y baja el suelo vuelve al coste de antes de VENT-62 (sin luz lunar, sin segunda
+  lectura de la normal, sin la huella por `fwidth` y sin relieve fino, que ni se descarga); solo la alta los lleva, y las
+  piedras quedan en 420 en media y ninguna en baja; la exposición +20 % sigue en todas. (2) Los programas del suelo se
+  compilan antes del primer fotograma, una sola vez y ya con sus mapas; si la compilación pasa de 1 s la vista baja de
+  calidad, y la sonda de fotogramas ya no deja pasar un primer fotograma lento por haber compilado; el informe de la
+  vista anota el tiempo. (3) Un PowerVR o una GPU de móvil no reconocida arranca en calidad baja aunque tenga 8 núcleos.
+  (4) Si el navegador bloquea WebGL tras un fallo gráfico, el globo y la vista lo dicen y explican cómo recuperarlo
+  (cerrar el navegador del todo; en Android, Ajustes › Aplicaciones › Chrome › Forzar detención); «no hay WebGL» sigue
+  igual cuando nunca funcionó. (5) La marca de «la página murió con la vista abierta» también se guarda 24 h en
+  `localStorage`, para que un reinicio de Chrome no la pierda. Nuevas palabras de `?onfoot=`: `photometry`, `antitile`,
+  `footprint`, `fine` y `rocks`.
 - **Vista 3D: un suelo más real, contrastado con las fotos de Apolo (VENT-62).** El suelo se ve como el regolito lunar y no
   como yeso: luz lunar-Lambert de McEwen (coeficientes comprobados contra ISIS) con un halo de oposición calibrado con
   tres fotogramas Hasselblad (el suelo junto al punto antisolar es de ×1,34 a ×1,64 el de al lado), oscuro y mate hacia

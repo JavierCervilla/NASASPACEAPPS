@@ -44,6 +44,10 @@ describe('?onfoot=', () => {
     expect(parts('?onfoot=shadows,far,shade,logdepth')).toEqual([
       'shadows', 'far', 'shade', 'logdepth',
     ]);
+    // VENT-69: the ground's costs that only the high tier pays.
+    expect(parts('?onfoot=photometry,antitile,footprint,fine,rocks')).toEqual([
+      'photometry', 'antitile', 'footprint', 'fine', 'rocks',
+    ]);
   });
 
   it('lists them in one order whatever the address says, each once', () => {

@@ -32,6 +32,8 @@
  * the view open counts as a death too: a page hung on its GPU is ended by
  * the person's reload, and telling the two apart is not possible from here.
  */
+import { glStorage } from '../lib/gl-marks';
+import { keepOpenSince } from './view-tier-local';
 import { keepOpen, tierStorage } from './view-tier-memory';
 import type { ViewTierLive } from './view-tier-state';
 
@@ -50,13 +52,18 @@ export function openMarks(now: () => ViewTierLive): OpenMarks {
   let told = false;
   return {
     opened: () => {
-      const { storage, note } = now();
+      const { storage, local, nowMs, note } = now();
       keepOpen(storage, true);
+      keepOpenSince(local, true, nowMs());
       const first = !told;
       told = true;
       return first ? note : null;
     },
-    closed: () => keepOpen(now().storage, false),
+    closed: () => {
+      const { storage, local, nowMs } = now();
+      keepOpen(storage, false);
+      keepOpenSince(local, false, nowMs());
+    },
   };
 }
 
@@ -65,6 +72,10 @@ export function openMarks(now: () => ViewTierLive): OpenMarks {
  * switch, VENT-52): not a death, so the next page's tier keeps its rung. If
  * the next page opens the view again, it marks it open again.
  */
-export function leftOnPurpose(storage = tierStorage()): void {
+export function leftOnPurpose(
+  storage = tierStorage(),
+  local = glStorage(),
+): void {
   keepOpen(storage, false);
+  keepOpenSince(local, false, Date.now());
 }

@@ -37,6 +37,12 @@ export const LEAVE_OUT_PARTS = [
   'far',
   'shade',
   'logdepth',
+  // VENT-69: the ground's costs only the high tier pays (ground-policy.ts).
+  'photometry',
+  'antitile',
+  'footprint',
+  'fine',
+  'rocks',
 ] as const;
 
 export type LeaveOut = (typeof LEAVE_OUT_PARTS)[number];

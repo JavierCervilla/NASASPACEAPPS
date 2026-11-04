@@ -19,6 +19,7 @@
   "globe.howTo": "Trascina o usa i tasti freccia per ruotare la Luna; più e meno per lo zoom.",
   "globe.markers": "I siti di atterraggio sono pulsanti: un punto pieno indica un punto di contatto esatto, un anello tratteggiato una zona approssimativa.",
   "globe.noWebgl": "Il globo 3D richiede WebGL, che questo browser non supporta.",
+  "gl.blocked": "Il browser ha bloccato il 3D di questo sito dopo un errore grafico. Chiudi completamente il browser e riaprilo. Su Android: Impostazioni › App › Chrome › Forza arresto, poi riapri.",
   "globe.deferred": "Il tuo browser chiede di risparmiare dati, quindi il globo 3D resta in attesa.",
   "globe.load": "Carica il globo 3D",
   "globe.dataSaver": "Risparmio dati attivo",

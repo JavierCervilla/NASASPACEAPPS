@@ -31,6 +31,7 @@
  * instant does.
  */
 import { Group, type Mesh, type MeshStandardMaterial } from 'three';
+import { groundPolicy, type GroundPolicy } from '../ground-policy';
 import { drawsAgain } from '../input-change';
 import { EYE_M } from '../view-camera';
 import { backdropMesh } from './backdrop';
@@ -54,6 +55,8 @@ export interface World {
   readonly stage: Stage;
   /** What this mount draws at and without (its tier, `?onfoot=`). */
   readonly setup: SceneSetup;
+  /** What the ground costs at this tier (ground-policy.ts, VENT-69). */
+  readonly policy: GroundPolicy;
   readonly mask: SunMask;
   readonly sky: SkyParts;
   near: Group;
@@ -82,9 +85,11 @@ export function createWorld(stage: Stage, seed: number, setup: SceneSetup) {
   const slicer = createSlicer({ invalidate: () => world.invalidate() });
   const shadowPx = setup.quality.tier === 'high' ? 2048 : 1024;
   const fine = createFineUniforms();
-  const world: World = { stage, setup, mask, sky: createSky(seed, shadowPx),
+  const policy = groundPolicy(setup.quality.tier, setup.leave);
+  const world: World = { stage, setup, policy, mask,
+    sky: createSky(seed, shadowPx),
     near: new Group(), ground: () => 0, fine,
-    material: groundMaterial(mask, fine), backdrop: null, input: null,
+    material: groundMaterial(mask, fine, policy), backdrop: null, input: null,
     lit: null, rings: null, farShade: null, slicer,
     invalidate: () => undefined };
   stage.scene.add(world.sky.group, world.near);
@@ -102,8 +107,11 @@ function rebuildNear(world: World, input: SceneInput): void {
   world.stage.scene.remove(world.near);
   world.near.traverse((o) => (o as Partial<Mesh>).geometry?.dispose());
   world.near = new Group();
-  world.near.add(rocksMesh(input.seed, world.ground, world.mask, world.slicer),
-    ringsMesh(world.ground));
+  world.near.add(ringsMesh(world.ground));
+  if (world.policy.rocksCap > 0) {
+    world.near.add(rocksMesh(input.seed, world.ground, world.mask,
+      { slicer: world.slicer, cap: world.policy.rocksCap }));
+  }
   world.stage.scene.add(world.near);
   world.setup.report.step('near ground placed');
 }

@@ -94,6 +94,7 @@ function helpText(
   atMs: number | null,
 ): string {
   if (status?.kind === 'unavailable') return i18n.t('globe.noWebgl');
+  if (status?.kind === 'blocked') return i18n.t('gl.blocked');
   if (status?.kind === 'deferred') return i18n.t('globe.deferred');
   const lit = status?.kind === 'ready' && atMs !== null;
   const howTo = [i18n.t('globe.howTo'), i18n.t('globe.markers')];

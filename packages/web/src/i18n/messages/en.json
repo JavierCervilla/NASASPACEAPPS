@@ -19,6 +19,7 @@
   "globe.howTo": "Drag or use the arrow keys to turn the Moon; plus and minus zoom.",
   "globe.markers": "Landing sites are buttons: a solid dot is an exact touchdown, a dashed ring an approximate zone.",
   "globe.noWebgl": "The 3D globe needs WebGL, which this browser does not offer.",
+  "gl.blocked": "The browser blocked 3D for this site after a graphics fault. Close the browser completely and open it again. On Android: Settings › Apps › Chrome › Force stop, then reopen.",
   "globe.deferred": "Your browser asks to save data, so the 3D globe waits.",
   "globe.load": "Load the 3D globe",
   "globe.dataSaver": "Data saver is on",

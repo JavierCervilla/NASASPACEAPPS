@@ -48,6 +48,7 @@ import type {
   TerrainScene,
 } from './scene-types';
 import { setFine } from './ground-fine';
+import { gateLoop } from './loop-gate';
 import { createStage, disposeStage } from './stage';
 import { applyInput, createWorld, type World } from './world';
 
@@ -65,7 +66,7 @@ function openScene(host: HTMLElement, input: SceneInput, hooks: SceneHooks,
   const home = startLook(input.startYawDeg);
   const view: ViewState = { look: home, home, coast: null, homing: null };
   const { labels, frame } = framer(world, host, hooks, view);
-  const loop = createLoop(frame);
+  const loop = gateLoop(createLoop(frame));
   world.invalidate = () => loop.invalidate();
   return { world, view, labels, loop };
 }
@@ -96,7 +97,7 @@ export function mountTerrainScene(
   applyInput(world, input);
   const unbind = bindHost(host, world, view, { set, goHome });
   markSetup(host, setup);
-  const unmark = startLoading(host, world, loop);
+  const unmark = startLoading(host, world, loop, hooks);
   const unwatch = guardLost({ canvas: world.stage.renderer.domElement,
     labels, loop, report: setup.report, onLost: hooks.onLost });
   const tools = attachDevTools(world.stage.renderer);

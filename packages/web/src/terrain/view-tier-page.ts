@@ -32,6 +32,7 @@
 import { pickQuality } from '../globe/quality-pick';
 import { forcedTier } from '../lib/quality';
 import { isPhoneViewport } from '../lib/viewport';
+import { glStorage } from '../lib/gl-marks';
 import { createViewTier, type ViewTier } from './view-tier';
 import { tierStorage } from './view-tier-memory';
 
@@ -43,5 +44,6 @@ export function pageViewTier(): ViewTier {
       forced: forcedTier(location.search, location.hash) !== null,
     }),
     storage: tierStorage,
+    local: glStorage,
   });
 }

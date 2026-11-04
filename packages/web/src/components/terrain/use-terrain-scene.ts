@@ -53,7 +53,7 @@ import { useLatest } from '../use-latest';
 import { sceneHooks, type PanelHooks } from './scene-hooks';
 
 export type SceneStatus =
-  'loading' | 'ready' | 'failed' | 'lost' | 'missing' | 'offline';
+  'loading' | 'ready' | 'failed' | 'blocked' | 'lost' | 'missing' | 'offline';
 
 /** Subscribes to the moves of the view's band; returns the unsubscribe. */
 export type BandMoves = (listener: () => void) => () => void;

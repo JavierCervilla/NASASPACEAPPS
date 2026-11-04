@@ -28,7 +28,7 @@
  * a tile (its placed nodes, normals and mesh), the Sun's shadow grid of a
  * level and the reader that gives a vertex its mask.
  */
-import type { Group, Mesh, MeshStandardMaterial } from 'three';
+import type { Group, Material, Mesh, MeshStandardMaterial } from 'three';
 import { validCells } from '../ring/ring-grid';
 import type { RingView } from '../ring/ring-state';
 import type { RingTile } from '../ring/ring-store';
@@ -64,6 +64,8 @@ export interface LayerState {
   /** The levels that have drawn a mesh, and where the layer says so. */
   readonly built: Set<number>;
   readonly note: (text: string) => void;
+  /** The shadow depth of level 0 (the crater patch's cut-out), or none. */
+  readonly depth: Material | null;
 }
 
 /** The skirt of a level: most of the next level's node spacing, metres. */

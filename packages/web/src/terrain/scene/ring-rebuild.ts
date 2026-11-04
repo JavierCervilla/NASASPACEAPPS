@@ -101,6 +101,7 @@ function swap(
     const mesh = new Mesh(geometry, s.material);
     const near = entry.tile.key.level === 0;
     mesh.castShadow = mesh.receiveShadow = near;
+    if (near && s.depth) mesh.customDepthMaterial = s.depth;
     mesh.name = nameOf(entry.tile.key);
     entry.mesh = mesh;
     s.group.add(mesh);

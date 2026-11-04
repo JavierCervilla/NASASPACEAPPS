@@ -386,6 +386,17 @@ describe('the work slicer', () => {
     expect(frames.n).toBe(5);
   });
 
+  it('lets quiet jobs ask no frame while work waits, only when the queue runs out', () => {
+    const { slicer, turns, order, job, frames } = rig(10, 10, 30);
+    for (let i = 0; i < 12; i++) slicer.add(`q${i}`, 0, job(`q${i}`), true);
+    for (let turn = 0; turn < 11; turn++) turns.shift()?.();
+    expect(order).toHaveLength(11);
+    expect(frames.n).toBe(0);
+    turns.shift()?.();
+    expect(order).toHaveLength(12);
+    expect(frames.n).toBe(1);
+  });
+
   it('forgets everything on clear', () => {
     const { slicer, turns, order, job } = rig(1);
     slicer.add('a', 0, job('a'));

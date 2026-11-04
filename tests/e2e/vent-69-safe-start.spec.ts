@@ -45,14 +45,22 @@ async function recordShaders(page: Page): Promise<void> {
   await page.addInitScript(() => {
     const w = window as unknown as { __fragments: string[] };
     w.__fragments = [];
+    (window as unknown as { __vertices: string[] }).__vertices = [];
     const proto = WebGL2RenderingContext.prototype;
     const original = proto.shaderSource;
     proto.shaderSource = function (this: WebGL2RenderingContext, shader: WebGLShader, source: string) {
       if (source.includes('gl_FragColor') || source.includes('pc_fragColor')) w.__fragments.push(source);
+      else (window as unknown as { __vertices: string[] }).__vertices.push(source);
       return original.call(this, shader, source);
     };
   });
 }
+
+/** What only the small craters' and the clods' code carry (VENT-64, VENT-67; high only). */
+const SMALL_GROUND = ['uHoleR2', 'uClodOn', 'clodShadow', 'cslope'];
+
+/** The crash report's steps the craters and the clods write when they are built. */
+const reportText = (page: Page): Promise<string> => page.evaluate(() => sessionStorage.getItem('ventana.onFootReport') ?? '');
 
 const groundShaders = (page: Page): Promise<string[]> =>
   page.evaluate((mark) => (window as unknown as { __fragments: string[] }).__fragments.filter((s) => s.includes(mark)), GROUND);
@@ -86,9 +94,19 @@ test.describe('the ground per tier (IM-2 stands inside a fine tile)', () => {
         expect(source).not.toContain('tiledNormal');
         expect(source).not.toContain('footMpp');
         expect(source).not.toContain('uFineTex');
+        for (const part of SMALL_GROUND) expect(source, part).not.toContain(part);
       }
       expect(requests.filter((url) => FINE_FILES.test(url))).toEqual([]);
       await expect(page.locator('.on-foot__caption')).not.toContainText('LROC NAC DTM');
+    });
+
+    test(`at ${tier} no crater patch or clod raster is built`, async ({ page }) => {
+      await openView(page, `quality=${tier}`);
+      const host = page.getByRole('application', { name: 'On foot at the site' });
+      await expect(host).toHaveAttribute('data-working', 'false', { timeout: START_MS });
+      await page.waitForTimeout(1000);
+      expect(await reportText(page)).not.toMatch(/crater (relief|patch)|clod relief/);
+      expect((await page.evaluate(() => (window as unknown as { __vertices: string[] }).__vertices)).filter((v) => v.includes('cslope'))).toEqual([]);
     });
   }
 
@@ -102,6 +120,27 @@ test.describe('the ground per tier (IM-2 stands inside a fine tile)', () => {
     }
     expect(requests.filter((url) => FINE_FILES.test(url)).length).toBeGreaterThan(0);
     await expect(page.locator('.on-foot__caption')).toContainText('LROC NAC DTM');
+  });
+
+  test('at high the craters and the clods are built and their code is in the ground shader', async ({ page }) => {
+    await openView(page, 'quality=high');
+    const host = page.getByRole('application', { name: 'On foot at the site' });
+    await expect(host).toHaveAttribute('data-working', 'false', { timeout: START_MS });
+    const sources = await groundShaders(page);
+    for (const part of ['uHoleR2', 'uClodOn']) expect(sources.some((s) => s.includes(part)), part).toBe(true);
+    expect((await page.evaluate(() => (window as unknown as { __vertices: string[] }).__vertices)).some((v) => v.includes('cslope'))).toBe(true);
+    const report = await reportText(page);
+    for (const step of ['crater relief baked', 'crater patch built', 'clod relief baked']) expect(report).toContain(step);
+  });
+
+  test('?onfoot=craters,grain turns them off at high', async ({ page }) => {
+    await openView(page, 'quality=high&onfoot=craters,grain');
+    const host = page.getByRole('application', { name: 'On foot at the site' });
+    await expect(host).toHaveAttribute('data-working', 'false', { timeout: START_MS });
+    for (const source of await groundShaders(page)) {
+      for (const part of SMALL_GROUND) expect(source, part).not.toContain(part);
+    }
+    expect(await reportText(page)).not.toMatch(/crater (relief|patch)|clod relief/);
   });
 
   test('?onfoot= leaves a part out of the high tier by its word', async ({ page }) => {

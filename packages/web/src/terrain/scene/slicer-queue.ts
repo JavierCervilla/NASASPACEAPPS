@@ -27,6 +27,8 @@
 export interface Waiting {
   readonly priority: number;
   readonly job: () => void;
+  /** Changes nothing drawn until the queue is run out. */
+  readonly quiet: boolean;
 }
 
 /** The lowest priority waiting, as `[key, job]`. */

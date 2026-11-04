@@ -45,23 +45,27 @@ const at = (tier: 'low' | 'medium' | 'high', search = '') =>
 describe('the ground at each tier', () => {
   it('draws everything at high', () => {
     expect(at('high')).toEqual({ photometry: true, antitile: true,
-      footprint: true, fine: true, rocksCap: MEASURED.cap });
+      footprint: true, fine: true, craters: true, grain: true,
+      rocksCap: MEASURED.cap });
   });
 
   it('goes back to the pre-VENT-62 cost at medium', () => {
     expect(at('medium')).toEqual({ photometry: false, antitile: false,
-      footprint: false, fine: false, rocksCap: 420 });
+      footprint: false, fine: false, craters: false, grain: false,
+      rocksCap: 420 });
     expect(MEDIUM_ROCKS).toBe(420);
   });
 
   it('does the same at low and draws no measured rocks', () => {
     expect(at('low')).toEqual({ photometry: false, antitile: false,
-      footprint: false, fine: false, rocksCap: 0 });
+      footprint: false, fine: false, craters: false, grain: false,
+      rocksCap: 0 });
   });
 
   it('never gives a lower tier a part the higher one lacks', () => {
     const rank = (p: ReturnType<typeof at>): number =>
-      [p.photometry, p.antitile, p.footprint, p.fine].filter(Boolean).length;
+      [p.photometry, p.antitile, p.footprint, p.fine, p.craters, p.grain]
+        .filter(Boolean).length;
     expect(rank(at('low'))).toBeLessThanOrEqual(rank(at('medium')));
     expect(rank(at('medium'))).toBeLessThanOrEqual(rank(at('high')));
     expect(at('low').rocksCap).toBeLessThanOrEqual(at('medium').rocksCap);
@@ -70,9 +74,11 @@ describe('the ground at each tier', () => {
 });
 
 describe('?onfoot= on the ground', () => {
-  it('knows the five words, in the list\'s order', () => {
-    expect([...parseLeaveOut('?onfoot=rocks,fine,footprint,antitile,photometry')])
-      .toEqual(['photometry', 'antitile', 'footprint', 'fine', 'rocks']);
+  it('knows the seven words, in the list\'s order', () => {
+    expect([...parseLeaveOut(
+      '?onfoot=grain,craters,rocks,fine,footprint,antitile,photometry')])
+      .toEqual(['photometry', 'antitile', 'footprint', 'fine', 'rocks',
+        'craters', 'grain']);
   });
 
   it('leaves each part out of the high tier by itself', () => {
@@ -83,11 +89,17 @@ describe('?onfoot= on the ground', () => {
     expect(at('high', '?onfoot=fine').fine).toBe(false);
     expect(at('high', '?onfoot=rocks').rocksCap).toBe(0);
     expect(at('high', '?onfoot=rocks').fine).toBe(true);
+    expect(at('high', '?onfoot=craters').craters).toBe(false);
+    expect(at('high', '?onfoot=craters').grain).toBe(true);
+    expect(at('high', '?onfoot=grain').grain).toBe(false);
+    expect(at('high', '?onfoot=grain').craters).toBe(true);
   });
 
   it('never adds a part to a tier that lacks it', () => {
     expect(groundPolicy('medium', none).photometry).toBe(false);
     expect(at('medium', '?onfoot=shadows').fine).toBe(false);
+    expect(at('medium', '?onfoot=shadows').craters).toBe(false);
+    expect(at('medium', '?onfoot=shadows').grain).toBe(false);
   });
 });
 
@@ -100,12 +112,16 @@ describe('the material\'s program key', () => {
       groundKey(at('high', '?onfoot=antitile')),
       groundKey(at('high', '?onfoot=footprint')),
       groundKey(at('high', '?onfoot=fine')),
+      groundKey(at('high', '?onfoot=craters')),
+      groundKey(at('high', '?onfoot=grain')),
     ]);
-    expect(keys.size).toBe(6);
+    expect(keys.size).toBe(8);
   });
 
   it('is shared by tiers that make the same shader', () => {
     expect(groundKey(at('low'))).toBe(groundKey(at('medium')));
+    // Medium and low compile the program they compiled before this part.
+    expect(groundKey(at('medium'))).toBe('sun-tile-regolith-----');
     expect(groundKey(at('high', '?onfoot=rocks'))).toBe(groundKey(at('high')));
   });
 });

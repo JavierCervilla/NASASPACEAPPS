@@ -24,11 +24,13 @@
  */
 
 /**
- * The law of the rocks (VENT-62), after Golombek & Rapp (1997, JGR 102,
- * 4117) and Bandfield et al. (2011, JGR 116, E00H02): see
- * rocks-measured.ts, whose constants these are. UNVERIFIED: q's two
- * constants, the background k and the rise with slope were written from
- * memory of those papers, not read. Pure.
+ * The law of the rocks (VENT-62, VENT-68), after Golombek & Rapp (1997, JGR
+ * 102, 4117), eq. 11 and 12 on p. 4126: the cumulative fractional area
+ * F_k(D) = k exp(-q(k) D) with q(k) = 1.79 + 0.152 / k, read in the paper
+ * and verified. Bandfield et al. (2011, JGR 116, E00H02) apply it to the
+ * Moon; see rocks-measured.ts, whose constants these are. The plains' k
+ * (0.004) is ours from Diviner's median of 0.003 (ASSETS.md), the rise with
+ * slope and the 0.05 maximum are calibrations. Pure.
  */
 
 export interface MeasuredScatter {
@@ -52,11 +54,20 @@ export interface MeasuredScatter {
 }
 
 export const MEASURED: MeasuredScatter = { innerM: 2.5, outerM: 120,
-  rangePerD: 260, minD: 0.05, maxD: 0.9, kFlat: 0.01, kMax: 0.05, cap: 520,
+  rangePerD: 260, minD: 0.05, maxD: 0.9, kFlat: 0.004, kMax: 0.05, cap: 520,
   stepD: 0.01, bandSteps: 3, buried: [0.2, 0.5] };
 
-/** Golombek & Rapp's exponent for k. */
-export const qOf = (k: number): number => 1.79 + 0.152 / k;
+/** The smallest k Golombek & Rapp fitted (their range is 0.02 to 0.3). */
+export const K_FITTED_MIN = 0.02;
+
+/**
+ * Golombek & Rapp's exponent for k (eq. 12). Fitted to two Viking sites for
+ * k from 0.02 to 0.3: below it the law is an EXTRAPOLATION, and the
+ * exponent is held at q(0.02) = 9.39 so a lower k only lowers the cover
+ * and does not shrink the rocks (the unclamped q is 39.8 at 0.004).
+ */
+export const qOf = (k: number): number =>
+  1.79 + 0.152 / Math.max(k, K_FITTED_MIN);
 
 /** Rocks per m² per metre of diameter at `d` for `k`. */
 export function density(k: number, d: number): number {

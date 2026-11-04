@@ -3,6 +3,17 @@
 ## [Sin publicar]
 
 ### Cambiado
+- **Vista 3D: cráteres pequeños, grano en terrones y luz de Hapke (VENT-64, VENT-67, VENT-68).** El suelo cercano
+  tiene cráteres de 0,2 a 12 m con relieve real (malla fina alrededor de los ojos, solo en calidad alta), con densidad de Trask y degradación de Basilevsky (cinco clases con su profundidad), media luna de sombra en el
+  lado del Sol y borde iluminado enfrente; el relieve se funde sin cortes hacia el borde del parche y las piedras se
+  apoyan en los cráteres. Las sombras pequeñas quedan «a medio camino»: cerca del 9 % del suelo iluminado en lugar del
+  20 %, dicho en el pie. El suelo a los pies gana grano en terrones de 3 a 30 mm, con normal y sombra propia por píxel
+  (sin malla desplazada), que se funde a unos 13 m y alterna parches de polvo liso con racimos de terrones; solo en calidad alta (en media y baja el suelo
+  sigue como antes, sin cráteres ni grano: auditoría VENT-70, y `?onfoot=craters` y `?onfoot=grain` los apagan también en alta). La luz del
+  suelo pasa a la de Hapke et al. 2012 (Tabla 1 a 604 nm) por Lommel-Seeliger, con el pico de oposición estrecho y un
+  suelo calibrado con las fotos de Apolo más allá de 120° de fase; las piedras usan la ley de Golombek y Rapp con la `k`
+  de llanura de Diviner (0,004), donde haya piedras. Al cambiar de punto con la vista abierta, el relieve de cráteres y el grano se vuelven a hornear para el punto nuevo y se liberan los viejos. Todo se hornea en trozos de menos de 20 ms. Pendiente de verificar: la densidad exacta de
+  Trask, la ley de terrones (calibración propia) y los valores derivados `h_S` y `h_C` (ASSETS.md).
 - Fix forward (VENT-71): las etiquetas de la retícula del globo esperan a que lleguen los sitios, así que al abrir ya no
   aparecen todas y luego desaparece «85° S» (un parpadeo y una carrera de los tests); y la vista 3D dice que sigue
   moviéndose mientras el muelle de vuelta a la vista inicial gira, aunque el rumbo redondeado ya haya llegado.

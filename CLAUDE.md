@@ -521,8 +521,8 @@ Every visible change follows `.claude/skills/apple-design/SKILL.md` (vendored fr
   terrain covers this point on the server», 503 not installed, then «Try again»), but every request of the ring is
   watched for silence and tried on waits of its own (VENT-78, after a tile took over 15 s on a phone): nothing for 4 s,
   no headers or no next bytes, aborts it as a passing failure (`STALL_MS`, `ring/ring-silence.ts`, `ring-watched.ts`), and
-  passing failures are tried again after 0.5, 1, 2 and 4 s, a Retry-After honoured up to 8 s (`TILE_RETRY`,
-  `ring-http.ts`), after which a tile is a hole its parent fills; the tile route's full queue asks for 2 s
+  passing failures are tried again after 0.5, 1, 2 and 4 s, a longer Retry-After waited only up to 8 s (`TILE_RETRY`,
+  `ring-http.ts`); once the tries run out a tile is a hole its parent fills; the tile route's full queue asks for 2 s
   (`TILE_BUSY_RETRY_SEC`). Held by `tests/terrain-ring-waits.test.ts`. A depth buffer that is logarithmic (the rings reach 190 km, the sky bodies are drawn at 450 to 900 km so
   terrain always hides them) keeps the 0.2 m near plane from z-fighting. The sky at the shared instant (`skyAt`): the Sun at its
   true size and direction is the key light, with hard shadows near the point (shadow map), per vertex over the near ground and, level by level, over

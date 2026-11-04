@@ -38,7 +38,7 @@
  * default 512), TERRAIN_LOD_CACHE_MB (the same for the levelled tiles,
  * default 512), TERRAIN_MAX_RUNNING (horizons and tiles computed at once,
  * default 2) and, for the levelled tiles, TERRAIN_LOD_MAX_RUNNING (computed
- * at once, default 2), TERRAIN_LOD_MAX_WAITING (default 32),
+ * at once, default 4), TERRAIN_LOD_MAX_WAITING (default 32),
  * TERRAIN_LOD_PER_IP (in flight per client address, default 4) and
  * TERRAIN_LOD_PER_IP_WAITING (more that may wait per address, default 4).
  * TERRAIN_FETCH_TIERS (VENT-43: `all` or tier ids separated by commas) has

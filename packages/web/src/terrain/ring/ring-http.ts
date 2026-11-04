@@ -46,8 +46,8 @@ export interface Waits {
 /**
  * A tile's tries (VENT-78): the horizon's 2, 6 and 18 s held a tile 10 to
  * 15 s on a phone, while the parent level stands in for it meanwhile; so
- * short waits, and a long Retry-After (the address over its limit) capped
- * at 8 s, after which the tile stays a hole.
+ * short waits, a long Retry-After (the address over its limit) waited
+ * only up to 8 s, and once the tries run out the tile stays a hole.
  */
 export const TILE_RETRY: RetryPolicy = {
   delaysMs: [500, 1000, 2000, 4000],

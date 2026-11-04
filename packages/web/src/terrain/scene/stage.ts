@@ -37,7 +37,9 @@ import {
   type WebGLRenderer,
 } from 'three';
 import { createGlRenderer, releaseRenderer } from '../../lib/gl-renderer';
+import { gpuName } from '../../lib/quality';
 import { terrainPixelRatio } from '../pixel-ratio';
+import { shadowMapUnsafe } from '../shadow-safety';
 import { VIEW_FOV } from '../view-fov';
 import { createShadowGate, type ShadowGate } from './shadow-gate';
 import type { SceneSetup } from './scene-types';
@@ -81,7 +83,8 @@ export function createStage(
   renderer.setClearColor(0x000000, 1);
   renderer.toneMapping = ACESFilmicToneMapping;
   renderer.toneMappingExposure = EXPOSURE;
-  renderer.shadowMap.enabled = !leave.has('shadows');
+  renderer.shadowMap.enabled = !leave.has('shadows') &&
+    !shadowMapUnsafe(gpuName(renderer.getContext()));
   renderer.shadowMap.type = PCFShadowMap;
   renderer.shadowMap.autoUpdate = false;
   renderer.domElement.setAttribute('aria-hidden', 'true');

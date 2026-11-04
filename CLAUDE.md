@@ -555,7 +555,10 @@ Every visible change follows `.claude/skills/apple-design/SKILL.md` (vendored fr
   shows geometry (`shadow-jobs.ts` `castsShadow`: not the rings' `lit:` and `far` shading, nor the clod and crater bakes)),
   so turning the camera renders no shadow pass (`data-shadows` on the host counts the passes done, held by
   `tests/shadow-gate.test.ts` and `tests/e2e/vent-73-shadow-pass.spec.ts`); a path that adds a shadow caster outside the
-  slicer must call `stage.shadow.mark()`. The view's pixel ratio is `terrainPixelRatio` (`src/terrain/pixel-ratio.ts`: a phone
+  slicer must call `stage.shadow.mark()`. A PowerVR GPU draws the view with no shadow map at every tier (VENT-75,
+  `src/terrain/shadow-safety.ts`, read from `gpuName` in `stage.ts`): the human's bisect on the Pixel 10 kept the context
+  with the shadows or the logarithmic depth left out and lost it with both on, even at low; held by
+  `tests/shadow-safety.test.ts` and `tests/e2e/vent-75-powervr-shadows.spec.ts` (the GPU's name spoofed). The view's pixel ratio is `terrainPixelRatio` (`src/terrain/pixel-ratio.ts`: a phone
   at medium draws at 1.25 at most, the globe and the desktop keep the tier's cap, `tests/pixel-ratio.test.ts`). While a
   finger drags the view or its swipe coasts on a phone, frames are spaced to about 30 a second
   (`scene/turn-pace.ts`, a scheduler under the loop, `TURN_GAP_MS` 30; a held frame draws as soon as the turn ends so the

@@ -94,8 +94,15 @@ function tooMany(c: Context, error: MissLimitError | SlotLimitError) {
   return c.json({ error: message }, 429);
 }
 
-/** The HTTP answer for an error of the route; rethrows the rest. */
-export function errorResponse(c: Context, error: unknown): Response {
+/**
+ * The HTTP answer for an error of the route; rethrows the rest. A full
+ * queue asks the client to come back after `busyRetrySec`.
+ */
+export function errorResponse(
+  c: Context,
+  error: unknown,
+  busyRetrySec = BUSY_RETRY_AFTER_SEC,
+): Response {
   if (error instanceof ParamError) {
     return c.json({ error: error.message }, 400);
   }
@@ -109,7 +116,7 @@ export function errorResponse(c: Context, error: unknown): Response {
     return c.json({ error: NOT_INSTALLED }, 503);
   }
   if (error instanceof TerrainBusyError) {
-    c.header('Retry-After', String(BUSY_RETRY_AFTER_SEC));
+    c.header('Retry-After', String(busyRetrySec));
     return c.json({ error: 'the service is busy; try again later' }, 503);
   }
   throw error;

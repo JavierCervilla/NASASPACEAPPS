@@ -118,8 +118,8 @@ LDEM_128 to a median 9 m at 84.5° to 85.5° N; the flipped orientation differs 
 | `TERRAIN_BLOCKS_MB` | 192 | grid blocks kept in memory between requests |
 | `TERRAIN_TILE_CACHE_MB` | 512 | byte cap of the height tiles on disk (`<TERRAIN_CACHE_DIR>/tiles`), least recently used out first |
 | `TERRAIN_LOD_CACHE_MB` | 512 | byte cap of the levelled tiles on disk (`<TERRAIN_CACHE_DIR>/lod`), least recently used out first |
-| `TERRAIN_LOD_MAX_RUNNING` | 2 | levelled tiles computed at once, on their own gate apart from the horizons' |
-| `TERRAIN_LOD_MAX_WAITING` | 32 | levelled tiles waiting for that gate; past it 503 with `Retry-After: 10` |
+| `TERRAIN_LOD_MAX_RUNNING` | 4 | levelled tiles computed at once, on their own gate apart from the horizons' |
+| `TERRAIN_LOD_MAX_WAITING` | 32 | levelled tiles waiting for that gate; past it 503 with `Retry-After: 2` |
 | `TERRAIN_LOD_PER_IP` | 4 | levelled-tile computations one address may run at once |
 | `TERRAIN_LOD_PER_IP_WAITING` | 4 | further computations one address may queue in order; past it 429 with `Retry-After: 1` |
 | `TERRAIN_MAX_RUNNING` | 2 | horizons and tiles computed at once; 16 more may wait, then 503 |
@@ -409,15 +409,17 @@ current it is `max-age=300` (the answer is the current tiles, and says its `vers
 
 **Errors and limits.** 400 (bad scheme, level, `x`, `y` or `v`, or a key outside the grid of its scheme and level), 404
 (no tier on this server covers a single node of the tile), 503 (`terrain data is not installed`, or the queue is full,
-with `Retry-After: 10`), 429. Every `/api/*` error answer is logged as one line (VENT-45). The disk cache holds tiles
+with `Retry-After: 2`: the queue drains in tenths of a second, VENT-78), 429. Every `/api/*` error answer is logged as
+one line (VENT-45), and every answer slower than 1 s as `api slow:` (VENT-78); a tile's path is written with `{x}/{y}`
+in place of its place. The disk cache holds tiles
 under `<TERRAIN_CACHE_DIR>/lod`, key = scheme, level, `x`, `y` and the version, so a new tier gives new tiles.
 
-**Limits for streaming.** A computation counts against its own per-address limit (**600 per 10 minutes**, the
-horizon's is 30; a ring of three levels is about 27 tiles), and two more guards keep a tile flood from starving the
+**Limits for streaming.** A computation counts against its own per-address limit (**3000 per 10 minutes**, about
+50 new points at 36 to 64 tiles each; 600 until VENT-78; the horizon's is 30), and two more guards keep a tile flood from starving the
 rest (Seguridad's finding on VENT-46):
 
 - **Its own gate.** Levelled tiles run on a gate apart from the horizons' and the height tiles' (`TERRAIN_LOD_MAX_RUNNING`
-  at once, `TERRAIN_LOD_MAX_WAITING` waiting, then 503 with `Retry-After: 10`), so a flood fills only that queue and
+  at once, `TERRAIN_LOD_MAX_WAITING` waiting, then 503 with `Retry-After: 2`), so a flood fills only that queue and
   `/horizon` keeps answering. They still share the block LRU (`TERRAIN_BLOCKS_MB`), and up to the two gates' sum of
   computations can read blocks at once.
 - **Slots per address.** One address holds at most `TERRAIN_LOD_PER_IP` (4) computations at once. A fifth waits its turn
@@ -429,10 +431,11 @@ rest (Seguridad's finding on VENT-46):
   to wait for a slot looks again once it has one: if the tile was stored meanwhile it is read from the disk, and if
   another request started computing it, it joins that, so a waiter spends neither a computation nor a miss on a tile
   somebody else produced. The slot is held until the tile is computed (or failed) and stored. The table of slots forgets an address when its last slot is given back, so it is never larger
-  than the requests in flight. Several people behind one address (a venue's Wi-Fi) share its 4 slots and 600 misses.
+  than the requests in flight. Several people behind one address (a venue's Wi-Fi) share its 4 slots and 3000 misses.
 
 A client should keep at most **6 requests in flight** and fetch the ring in the order the route lists it (nearest
-first); a retry waits `Retry-After`. Tiles read from the disk cache cost nothing.
+first); a retry waits `Retry-After`. The web gives up on a request after 4 s of silence and tries a tile again after 0.5,
+1, 2 and 4 s, honouring a Retry-After up to 8 s (VENT-78). Tiles read from the disk cache cost nothing.
 
 **Budget.** The answer is 44.7 kB of JSON (33 282 bytes of `q`, 44 376 characters of base64, plus about 400 of fields):
 a seventh of the 4 km tile's 352 kB. On a synthetic rough surface (a 400 m swell, a 25 m ripple and 0.8 m of noise,

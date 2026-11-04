@@ -36,7 +36,8 @@ import { createLoop, type Loop } from '../../globe/loop';
 import { isPhoneViewport } from '../../lib/viewport';
 import { startLook } from '../view-camera';
 import { markSetup, startLoading } from './scene-loading';
-import { bindHost } from './scene-host';
+import { bindHost, reducedMotion } from './scene-host';
+import { pacedSchedule } from './turn-pace';
 import { framer, type ViewState } from './scene-frame';
 import { controller, homer, turner } from './scene-controller';
 import { guardLost } from './scene-guard';
@@ -66,9 +67,13 @@ function openScene(host: HTMLElement, input: SceneInput, hooks: SceneHooks,
   reportStage(world);
   const home = startLook(input.startYawDeg);
   const view: ViewState = { look: home, home, coast: null, homing: null,
-    told: false };
+    dragging: false, told: false };
   const { labels, frame } = framer(world, host, hooks, view);
-  const loop = gateLoop(createLoop(frame));
+  const pace = pacedSchedule({ raf: requestAnimationFrame,
+    cancel: cancelAnimationFrame,
+    turning: () => isPhoneViewport() && !reducedMotion() &&
+      (view.dragging || view.coast !== null) });
+  const loop = gateLoop(createLoop(frame, pace.schedule, pace.cancel));
   world.invalidate = () => loop.invalidate();
   return { world, view, labels, loop };
 }

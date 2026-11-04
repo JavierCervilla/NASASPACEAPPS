@@ -14,6 +14,15 @@
   suelo calibrado con las fotos de Apolo más allá de 120° de fase; las piedras usan la ley de Golombek y Rapp con la `k`
   de llanura de Diviner (0,004), solo en calidad alta (las piedras de media siguen con la ley de antes). Al cambiar de punto con la vista abierta, el relieve de cráteres y el grano se vuelven a hornear para el punto nuevo y se liberan los viejos. Todo se hornea en trozos de menos de 20 ms, justo detrás del suelo cercano y antes del relieve lejano, y el parche se construye una vez por punto. Pendiente de verificar: la densidad exacta de
   Trask, la ley de terrones (calibración propia) y los valores derivados `h_S` y `h_C` (ASSETS.md).
+- Fix forward (VENT-73): el Pixel 10 perdía el contexto WebGL tras unos 3 s girando seguido la vista 3D en calidad
+  media (unos 340 mil triángulos por fotograma, lienzo de 719 × 1417 y el mapa de sombras del Sol recalculado en cada
+  fotograma). Se aligera media en móvil: (1) el mapa de sombras se dibuja bajo demanda en todas las calidades, solo
+  cuando cambia lo que proyecta o recibe la sombra (el primer fotograma, un Sol que se movió, suelo, anillos, piedras o
+  parche de cráteres nuevos) y girar la cámara ya no lo repite (`data-shadows` cuenta los pases); (2) la densidad de
+  píxeles de la vista 3D en media en móvil baja a 1,25 como máximo (antes hasta 1,75, casi el doble de píxeles); el
+  escritorio y el globo no cambian; (3) mientras se gira la vista con el dedo o se desliza, en móvil se dibuja a 30
+  fotogramas por segundo como mucho, y el último fotograma se dibuja siempre, así que la vista acaba exacta; con
+  movimiento reducido no cambia y en reposo sigue sin dibujar nada.
 - Fix forward (VENT-72): si el regolito y el Blue Marble de la vista 3D llegan después de los 5 s que espera el primer
   fotograma, ahora se pide un fotograma al engancharlos (el programa del suelo con mapa se compila antes, fuera del
   fotograma) y el suelo y la Tierra ya no se quedan sin su foto hasta que otra cosa dibuje; mientras llegan, `data-working`

@@ -39,6 +39,7 @@
  * than the gap (a software renderer, a heavy ground) would otherwise be asked
  * for after every turn.
  */
+import { DEFAULTS } from './slicer-defaults';
 import { next, noteStall, type Pace, type Waiting } from './slicer-queue';
 
 
@@ -59,6 +60,8 @@ export interface Slicer {
 
 export interface SlicerDeps {
   readonly invalidate: () => void;
+  /** Called with the key of each job after it ran (VENT-73). */
+  readonly onJob?: (key: string) => void;
   readonly now?: () => number;
   /** Runs `fn` soon, off this turn; returns what `cancel` takes. */
   readonly schedule?: (fn: () => void) => number;
@@ -68,14 +71,6 @@ export interface SlicerDeps {
   readonly frameGapMs?: number;
 }
 
-/** The turn's budget: a frame at 60 Hz is 16 ms. */
-const BUDGET_MS = 12;
-/**
- * A frame draws every ring tile built so far: on a slow renderer one costs
- * far more than the slice that asked for it, so work in flight asks for at
- * most one frame in this long, and the last slice always asks.
- */
-const FRAME_GAP_MS = 1500;
 /** A turn that starts this long after the last one ended followed a frame. */
 const STALL_MS = 50;
 
@@ -96,6 +91,7 @@ function turn(core: Core): void {
   for (let found = next(queue); found; found = next(queue)) {
     queue.delete(found[0]);
     found[1].job();
+    deps.onJob(found[0]);
     ran = true;
     loud ||= !found[1].quiet;
     if (deps.now() - start >= deps.budgetMs) break;
@@ -113,14 +109,7 @@ function turn(core: Core): void {
 
 /** A slicer that runs its jobs a budget at a time. */
 export function createSlicer(given: SlicerDeps): Slicer {
-  const deps: Required<SlicerDeps> = {
-    now: () => performance.now(),
-    schedule: (fn) => window.setTimeout(fn, 0),
-    cancel: (id) => window.clearTimeout(id),
-    budgetMs: BUDGET_MS,
-    frameGapMs: FRAME_GAP_MS,
-    ...given,
-  };
+  const deps: Required<SlicerDeps> = { ...DEFAULTS, ...given };
   const core: Core = { queue: new Map(), deps, timer: null,
     askedAt: Number.NEGATIVE_INFINITY, endedAt: 0, framePending: false,
     continuing: false };

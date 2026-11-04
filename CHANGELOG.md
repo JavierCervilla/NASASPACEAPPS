@@ -3,6 +3,9 @@
 ## [Sin publicar]
 
 ### Cambiado
+- Fix forward (VENT-71): las etiquetas de la retícula del globo esperan a que lleguen los sitios, así que al abrir ya no
+  aparecen todas y luego desaparece «85° S» (un parpadeo y una carrera de los tests); y la vista 3D dice que sigue
+  moviéndose mientras el muelle de vuelta a la vista inicial gira, aunque el rumbo redondeado ya haya llegado.
 - **Fix forward: arranque seguro de la vista 3D en móviles (VENT-69).** En un Pixel 10 el primer fotograma de la vista
   3D tardó 1,6 s tras VENT-62, la GPU se reinició y Chrome bloqueó WebGL en todo el sitio, así que el globo tampoco
   arrancaba. Ahora: (1) en calidad media y baja el suelo vuelve al coste de antes de VENT-62 (sin luz lunar, sin segunda

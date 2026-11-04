@@ -478,6 +478,32 @@ test.describe('desktop, 1440x900', () => {
     await atRest(page);
   });
 
+  // VENT-69: the way home draws about 20 frames (a step is at most 50 ms), and on a loaded runner one frame can take
+  // longer than idle()'s 600 ms. A frame that leaves more frames to come says so in `data-working`, so that quiet is
+  // never mistaken for rest while the spring is still turning.
+  test('every frame of the way home says more are coming, and the last one says it is done', async ({ page }) => {
+    await open(page, { path: `./${POINT}&quality=low&onfoot=far#horizon`, wall: [330, 350] });
+    await settled(page);
+    await idle(page);
+    const opening = await heading(page);
+    await host(page).focus();
+    for (let k = 0; k < 3; k++) await page.keyboard.press('Shift+ArrowLeft');
+    await expect.poll(() => heading(page)).toBe((opening + 315) % 360);
+    await idle(page);
+    await host(page).evaluate((el) => {
+      const seen: string[] = [];
+      Reflect.set(window, '__working', seen);
+      new MutationObserver(() => seen.push(el.getAttribute('data-working') ?? '')).observe(el, { attributeFilter: ['data-frames'] });
+    });
+    await page.keyboard.press('Home');
+    await expect.poll(() => heading(page), { intervals: [300], timeout: 15_000 }).toBe(opening);
+    await idle(page);
+    const seen = await page.evaluate(() => Reflect.get(window, '__working') as string[]);
+    expect(seen.length).toBeGreaterThan(3);
+    expect(seen.slice(0, -1).every((working) => working === 'true')).toBe(true);
+    expect(seen.at(-1)).toBe('false');
+  });
+
   test('under reduced motion the press turns the view back at once', async ({ page }) => {
     await page.emulateMedia({ reducedMotion: 'reduce' });
     await open(page, { path: `./${POINT}&quality=low&onfoot=far#horizon` });

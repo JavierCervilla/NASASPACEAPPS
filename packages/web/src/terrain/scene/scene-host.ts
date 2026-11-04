@@ -71,6 +71,7 @@ export function bindHost(host: HTMLElement, world: World, view: ViewState,
     look: () => view.look, goHome,
     scale: () => dragScale(host.clientWidth, host.clientHeight, camera.fov),
     fling: flingOf(host, world, view),
+    drag: (down) => void (view.dragging = down),
     halt: () => {
       view.coast = null;
       view.homing = null;

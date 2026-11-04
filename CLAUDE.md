@@ -548,6 +548,18 @@ Every visible change follows `.claude/skills/apple-design/SKILL.md` (vendored fr
   under 24 h old (`diedBefore`): a GPU-reset page death, a browser restart after one, or a tab the OS killed fires no
   `pagehide`. Another tab that is still open, and its leaving, no longer matter; a tab hidden for minutes (timers
   throttled) can read as stale to a tab opened later, the known cost.
+  Lighter medium on phones (VENT-73, after a Pixel 10 lost its GPU context after about 3 s of turning at medium, 340 k
+  triangles a frame, 719 x 1417 at a pixel ratio of 1.75): the Sun's shadow map is on demand at every tier
+  (`renderer.shadowMap.autoUpdate = false`; `scene/shadow-gate.ts` asks `needsUpdate` for the next draw only after a mark: the
+  first frame, a relight in `world-light.ts`, a new tile, profile or ring in `applyInput`, and every slicer job that builds or
+  shows geometry (`shadow-jobs.ts` `castsShadow`: not the rings' `lit:` and `far` shading, nor the clod and crater bakes)),
+  so turning the camera renders no shadow pass (`data-shadows` on the host counts the passes done, held by
+  `tests/shadow-gate.test.ts` and `tests/e2e/vent-73-shadow-pass.spec.ts`); a path that adds a shadow caster outside the
+  slicer must call `stage.shadow.mark()`. The view's pixel ratio is `terrainPixelRatio` (`src/terrain/pixel-ratio.ts`: a phone
+  at medium draws at 1.25 at most, the globe and the desktop keep the tier's cap, `tests/pixel-ratio.test.ts`). While a
+  finger drags the view or its swipe coasts on a phone, frames are spaced to about 30 a second
+  (`scene/turn-pace.ts`, a scheduler under the loop, `TURN_GAP_MS` 30; a held frame draws as soon as the turn ends so the
+  view ends exact; not under reduced motion; idle draws nothing; `tests/turn-pace.test.ts`).
   **One renderer for the view's life** (`use-terrain-scene.ts`, `use-parked.ts`, `scene/scene-point.ts`): when the selected
   point changes the view's input goes away until the new point's tiles land; the mounted scene is **parked** (`data-parked`
   on the host hides its canvas, the loader covers, `rearm()` tells `onDrawn` again), not freed, and `update()` rebuilds the

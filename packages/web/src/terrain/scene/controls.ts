@@ -33,7 +33,7 @@
  */
 import { VelocityTracker } from '../../globe/velocity';
 import { keyLook, type DragScale } from '../look-input';
-import { release, startTracker, turn } from './drag-steps';
+import { press, release, turn } from './drag-steps';
 import type { Look } from '../view-camera';
 
 export interface LookTarget {
@@ -47,6 +47,8 @@ export interface LookTarget {
   readonly fling: (vx: number, vy: number) => void;
   /** A press: any coast stops where it is. */
   readonly halt: () => void;
+  /** The pointer went down (true) or up or was cancelled (false). */
+  readonly drag: (down: boolean) => void;
 }
 
 type Handlers = readonly (readonly [string, EventListener])[];
@@ -59,10 +61,9 @@ function dragHandlers(el: HTMLElement, target: LookTarget): Handlers {
   let tracker = new VelocityTracker();
   const down = (e: PointerEvent): void => {
     if (e.button !== 0) return;
-    target.halt();
     el.setPointerCapture(e.pointerId);
     last = { x: e.clientX, y: e.clientY, id: e.pointerId };
-    tracker = startTracker(e);
+    tracker = press(target, e);
   };
   const move = (e: PointerEvent): void => {
     if (!last || e.pointerId !== last.id) return;

@@ -55,7 +55,10 @@ interface Pacing {
 
 /** Asks the display for frame `id`, holding it back while turning too soon. */
 function ask(p: Pacing, id: number, fn: (now: number) => void): void {
-  p.handles.set(id, p.deps.raf((now) => {
+  // Called bare: the browser's raf throws «Illegal invocation» on any other
+  // receiver than the window (VENT-74).
+  const { raf } = p.deps;
+  p.handles.set(id, raf((now) => {
     const gap = p.deps.minGapMs ?? TURN_GAP_MS;
     if (p.deps.turning() && now - p.lastDraw < gap) {
       ask(p, id, fn);
@@ -78,7 +81,8 @@ export function pacedSchedule(deps: PaceDeps): Pace {
       return ids;
     },
     cancel: (id) => {
-      deps.cancel(p.handles.get(id) ?? -1);
+      const { cancel } = deps;
+      cancel(p.handles.get(id) ?? -1);
       p.handles.delete(id);
     },
   };

@@ -82,6 +82,10 @@ completa está en el documento «Ventana Lunar · Especificación y roadmap».
   primer fotograma, aviso claro cuando el navegador bloquea WebGL tras un fallo gráfico (VENT-69)
 - [x] Pequeños cráteres con relieve real, grano en terrones y luz de Hapke, contrastados con las fotos de Apolo, solo en
   calidad alta (VENT-64, VENT-67, VENT-68)
+- [x] Teselas sin esperas largas: cada petición se corta tras 4 s sin recibir nada y se pide otra vez, reintentos cortos
+  propios (0,5 a 4 s), el servidor calcula 4 teselas a la vez y deja en el log las respuestas de más de 1 s (VENT-78)
+- [ ] Probar la vista 3D en móviles reales en la nube (PowerVR, Adreno, Mali) y recuperar las sombras en PowerVR con
+  reverse-Z (VENT-77, aparcado)
 - [ ] Variante C del cargador, el descenso, en equipos potentes (VENT-61)
 - [ ] Comparador de sitios o exportar a .ics (VENT-8)
 - [ ] Página del proyecto, vídeo de 30 s y pitch; envío antes de las 20:00 (VENT-9)

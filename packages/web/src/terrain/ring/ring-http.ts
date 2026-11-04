@@ -25,20 +25,45 @@
 
 /**
  * The requests of the ring (VENT-46): one GET as JSON with the horizon's
- * classification of failures and tries (VENT-45, horizon-errors.ts and
- * horizon-retry.ts), and a queue that runs the jobs a few at a time.
+ * classification of failures (VENT-45, horizon-errors.ts), watched for
+ * silence (ring-watched.ts) and tried again on the tiles' own short waits
+ * (VENT-78), and a queue that runs the jobs a few at a time.
  */
 import { TransientHorizonError, failureOf }
   from '../../horizon/horizon-errors';
-import { HORIZON_RETRY, retryDelayMs, type Random, type Sleep }
-  from '../../horizon/horizon-retry';
+import {
+  retryDelayMs, type Random, type RetryPolicy, type Sleep,
+} from '../../horizon/horizon-retry';
+import { fetchWatched, type Timer } from './ring-watched';
 
 export interface Waits {
   readonly sleep: Sleep;
   readonly random: Random;
+  /** The silence watch's timer; the real one when unset. */
+  readonly timer?: Timer;
 }
 
-/** GET `url` as JSON, its failures classified; `tries` as the horizon's. */
+/**
+ * A tile's tries (VENT-78): the horizon's 2, 6 and 18 s held a tile 10 to
+ * 15 s on a phone, while the parent level stands in for it meanwhile; so
+ * short waits, a long Retry-After (the address over its limit) waited
+ * only up to 8 s, and once the tries run out the tile stays a hole.
+ */
+export const TILE_RETRY: RetryPolicy = {
+  delaysMs: [500, 1000, 2000, 4000],
+  maxWaitMs: 8000,
+};
+
+/** The body of an ok answer as JSON. */
+function parsed(text: string | null): unknown {
+  try {
+    return JSON.parse(text ?? '');
+  } catch {
+    throw new TransientHorizonError(null, 'ring: not JSON');
+  }
+}
+
+/** GET `url` as JSON, its failures classified, on {@link TILE_RETRY}. */
 export async function getJson(
   fetcher: typeof fetch,
   url: string,
@@ -47,16 +72,16 @@ export async function getJson(
 ): Promise<unknown> {
   for (let failures = 0; ; failures++) {
     try {
-      const response = await fetcher(url, { signal }).catch((e: unknown) => {
-        if (signal.aborted) throw e;
+      const { response, text } = await fetchWatched(
+        fetcher, url, signal, waits.timer,
+      ).catch((e: unknown) => {
+        if (signal.aborted || e instanceof TransientHorizonError) throw e;
         throw new TransientHorizonError(null, `ring: ${String(e)}`);
       });
       if (!response.ok) throw await failureOf(response);
-      return await response.json().catch(() => {
-        throw new TransientHorizonError(null, 'ring: not JSON');
-      });
+      return parsed(text);
     } catch (error) {
-      const wait = retryDelayMs(error, failures, HORIZON_RETRY, waits.random);
+      const wait = retryDelayMs(error, failures, TILE_RETRY, waits.random);
       if (wait === null || signal.aborted) throw error;
       await waits.sleep(wait);
     }

@@ -49,6 +49,7 @@ import { tiersForLevel, type LodAnswer } from '../src/terrain/lod-answer.ts';
 import { cachedLod, lodKey, lodVersion, type LodSource } from '../src/terrain/lod-cache.ts';
 import { lodTileIn } from '../src/terrain/lod-rounds.ts';
 import { parseIndexParams, parseTileKey } from '../src/terrain/lod-params.ts';
+import { TILE_BUSY_RETRY_SEC } from '../src/terrain/lod-route.ts';
 import { CATALOGUE, CRATER, GLOBE, SOUTH, terrainDir } from './terrain-fixture.ts';
 
 let dir: string;
@@ -403,10 +404,12 @@ describe('GET /api/v1/terrain/tiles', () => {
       const lines: string[] = [];
       const none = await api(failing(new TerrainUncoveredError('x')), { lines }).request(TILE);
       expect(none.status).toBe(404);
-      expect(lines).toEqual([`api error: GET ${TILE} 404 0 ms`]);
+      expect(lines).toEqual([`api error: GET /api/v1/terrain/tiles/polar-south/0/{x}/{y} 404 0 ms`]);
       const busy = await api(failing(new TerrainBusyError())).request(TILE);
       expect(busy.status).toBe(503);
-      expect(busy.headers.get('retry-after')).toBe('10');
+      // VENT-78: a tile's queue drains fast, so it asks for 2 s, not the horizon's 10.
+      expect(busy.headers.get('retry-after')).toBe(String(TILE_BUSY_RETRY_SEC));
+      expect(TILE_BUSY_RETRY_SEC).toBe(2);
       const bare = await api(failing(new TerrainNotInstalledError())).request(TILE);
       expect(await bare.json()).toEqual({ error: 'terrain data is not installed' });
     });

@@ -101,4 +101,48 @@ describe('the API error log', () => {
     expect(res.status).toBe(404);
     expect(lines).toEqual(['api error: GET /api/v1/sites/nowhere 404 0 ms']);
   });
+
+  // VENT-78: a tile that took 15 s on a phone left no trace, since only errors were logged.
+  describe('slow answers', () => {
+    /** An app whose clock moves `stepMs` per read, so every answer takes `stepMs`. */
+    function slow(stepMs: number) {
+      const lines: string[] = [];
+      let ms = 0;
+      const app = new Hono();
+      app.use('/api/*', errorLog({ log: (line) => lines.push(line), now: () => (ms += stepMs), slowMs: 1000 }));
+      app.get('/api/v1/terrain/tiles/:scheme/:level/:x/:y', (c) => c.json({ ok: true }));
+      app.get('/api/v1/horizon', (c) => c.json({ ok: true }));
+      return { app, lines };
+    }
+
+    it('logs a success that took longer than the bound, with the tile scheme and level but not its place', async () => {
+      const { app, lines } = slow(1500);
+      await app.request('/api/v1/terrain/tiles/latlon/0/5049/-540?v=57129b75', fromClient);
+      await app.request('/api/v1/horizon?lat=-33.71&lon=-44.37', fromClient);
+      expect(lines).toEqual([
+        'api slow: GET /api/v1/terrain/tiles/latlon/0/{x}/{y} 200 1500 ms',
+        'api slow: GET /api/v1/horizon 200 1500 ms',
+      ]);
+      for (const line of lines) {
+        expect(line).not.toContain('5049');
+        expect(line).not.toContain('-540');
+        expect(line).not.toContain('33.71');
+      }
+    });
+
+    it('keeps quiet on a success within the bound', async () => {
+      const { app, lines } = slow(999);
+      await app.request('/api/v1/terrain/tiles/latlon/0/5049/-540?v=1', fromClient);
+      expect(lines).toEqual([]);
+    });
+
+    it('hides the place of a tile in an error line too', async () => {
+      const lines: string[] = [];
+      const app = new Hono();
+      app.use('/api/*', errorLog({ log: (line) => lines.push(line), now: () => 0 }));
+      app.get('/api/v1/terrain/tiles/:scheme/:level/:x/:y', (c) => c.json({ error: 'busy' }, 503));
+      await app.request('/api/v1/terrain/tiles/polar-south/2/31/-7?v=1', fromClient);
+      expect(lines).toEqual(['api error: GET /api/v1/terrain/tiles/polar-south/2/{x}/{y} 503 0 ms']);
+    });
+  });
 });

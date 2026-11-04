@@ -35,10 +35,13 @@ import { FixedWindowLimiter } from './fixed-window-limiter.ts';
 export const DEFAULT_MISSES_PER_WINDOW = 30;
 /**
  * Computations of levelled terrain tiles (VENT-46) one client IP may cause
- * per window: a view streams a few dozen tiles at once, and each costs one
- * block read like any other, so they have a limit of their own.
+ * per window: a view streams 36 to 64 tiles a point, and each costs one
+ * block read like any other, so they have a limit of their own. About 50
+ * new points: a venue's Wi-Fi puts several visitors behind one address,
+ * and the gate, the slots per address and the cache's byte cap already
+ * bound what runs and what is kept (VENT-78; it was 600, about 12 points).
  */
-export const DEFAULT_LOD_MISSES_PER_WINDOW = 600;
+export const DEFAULT_LOD_MISSES_PER_WINDOW = 3000;
 /** Length of the miss-limit window when the caller sets none: 10 minutes. */
 export const DEFAULT_MISS_WINDOW_MS = 10 * 60 * 1000;
 // Keys the limiter keeps at most; past it the oldest key is dropped, so the map

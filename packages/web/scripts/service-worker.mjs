@@ -56,7 +56,9 @@ const ROOT_FILES = new Set(['favicon.ico', 'favicon.svg', 'apple-touch-icon.png'
  */
 // The dev tools' chunk and styles (boot, perf-hud) are only asked for by `?debug` (VENT-49), and Spector.js, in a
 // PUBLIC_PERF_HUD=1 build, only by `#stats-spector`.
-const ON_DEMAND = /^_astro\/(TerrainPanel|terrain-scene|on-foot|boot|perf-hud|spector)[.-][^/]+$/;
+// The fine real-relief tiles (VENT-62, public/fine-tiles/) are on demand too: only a view of a point inside one asks for
+// its two files (about 84 to 123 kB), and the worker keeps them cache first from then on.
+const ON_DEMAND = /^(_astro\/(TerrainPanel|terrain-scene|on-foot|boot|perf-hud|spector)[.-][^/]+|fine-tiles\/.+)$/;
 /** The pseudo-locale's folder (src/i18n/locales.ts): never offered, never cached. */
 const PSEUDO = 'en-xa/';
 

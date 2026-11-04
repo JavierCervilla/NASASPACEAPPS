@@ -350,6 +350,48 @@ All load on demand with the 3D view (file names `on-foot-*`, left out of the pre
   NASA media usage guidelines; sha256 of the source `a9f0088972dee0254610af851c4d6838ca3f2cf79176987e0a5713e2c15ec042`.
   Cloud-free, so it shows land and ocean, not the weather of the day.
 
+## On-foot ground: lunar photometry, fine real relief and rocks (VENT-62)
+
+- **Regolith colour**: the «Moon 02» albedo above is made neutral grey in the shader (`REGOLITH_SATURATION = 0` in
+  `scene/ground-shader.ts`: only the albedo's luminance stays), not by re-encoding the file, so its hash is unchanged.
+  Apollo frames are near neutral grey; the film casts in the scans are not the Moon's.
+- **Lunar-Lambert** (`lunar-photometry.ts`): McEwen's `L(α) = 1 - 0.019α + 2.42e-4α² - 1.46e-6α³`, checked on 2026-11-03
+  against USGS ISIS `isis/src/base/objs/LunarLambertMcEwen/LunarLambertMcEwen.cpp` (public domain, CC0-1.0,
+  A. McEwen 1995; normalised at i = 30°, e = 0°, α = 30° as ISIS does). **Not from ISIS**: `L` is held to at least
+  `L_FLOOR = 0.3` past the cubic's fit (α ≤ 120°), calibrated so the drawn ground toward the Sun is 0.4 to 0.7 of the
+  ground away from it (the Apollo frames, whose lens veil adds light; measured in `tests/e2e/terrain-view.spec.ts`).
+- **Opposition surge** (`B0 = 0.4`, `h = 0.05`, Hapke's shadow-hiding form): **not verified** against a published lunar fit
+  (Sato et al. 2014, Hapke et al. 2012 were not read). Calibrated on the Apollo frames `AS12-46-6731` (×1.55),
+  `AS15-85-11446` (×1.64) and `AS17-136-20684` (×1.34): the ground by the antisolar point over the ground beside it,
+  held to 1.34-1.64 by `tests/lunar-photometry.test.ts` over Sun 8-21° and 10-16° beside. Frames: NASA, public domain
+  (Apollo Lunar Surface Journal captions); the measurements are in the VENT-62 trajectory's `apollo-ref/`.
+- **Exposure** 1.35 → 1.62 (+20 %, `EXPOSURE_GAIN` in `scene/stage.ts`), said in the caption.
+- **Rocks** (`rocks-measured.ts`, `rock-law.ts`): Golombek & Rapp (1997, JGR 102, 4117) cumulative fractional area
+  `F(D) = k e^(-q D)`, `q = 1.79 + 0.152 / k`, as Bandfield et al. (2011, JGR 116, E00H02) apply it to the Moon.
+  **Unverified**: the two constants of `q`, the plains' `k = 0.01`, the maximum `k = 0.05` on slopes and rims and the
+  rise with the near grid's slope (0.35) and convexity (0.02 / m) were written from memory of the papers and the
+  Apollo frames («a few decimetre rocks in each frame»), not read. DOIs: 10.1029/96JE03319 and 10.1029/2011JE003866.
+- **Fine real relief** (`terrain/fine/`, `public/fine-tiles/`): the four tiles Mooner prepared (MOON-20, its
+  `packages/web/public/fine-tiles/`, origin/main), 300 x 300 pixels of 5 m on the polar plane with a 1-bit mask of where
+  the fine source has a height; only `heights.png` (16-bit, `offset + DN * 0.01` m), `mask.png` and `tile.json` are
+  shipped (the normals and the 20 m crop are not used). They are on demand and out of the precache (`ON_DEMAND`): a view
+  of a point inside a tile asks for its two PNGs (84 to 123 kB with the json), nobody else.
+
+| Tile | Source | Pixels | sha256 of `heights.png` |
+|---|---|---|---|
+| `mons-mouton` (IM-2) | LROC NAC DTM NOBILE03 (P847S0291), 4 m, area-averaged to 5 m | 300 x 300 | `0d80071611afc365c3e0968185aeca98c432b2e721a0e5be3b6bc9f7099e46fa` |
+| `malapert-a` | LROC NAC DTM MALAPERTA01 (P803S0015), 3 m | 300 x 300 | `6343628da7f32c26d0122b4da3b84dc1c704b9f68b5f81f727b7149d9c2708c1` |
+| `shackleton-ridge` | LROC NAC DTM ESALL_SR12 (P897S2037), 2 m | 300 x 300 | `ebea5be8a832c4bf155cbbfaa0b78ff3dded698704a016362c8c0db24383cb12` |
+| `malapert-massif` | PGDA product 104, A3CLR22-#11 Malapert Massif SfS, 5 m | 300 x 300 | `5cf84011739655609bafdd98c768ebf5063d3fcb15ca2cc9db505b4d2adfecf2` |
+
+  The `mask.png` and `tile.json` hashes are in each `tile.json`'s `layers` and in Mooner's `SHA256SUMS`; the catalogue
+  (`terrain/fine/fine-catalog.ts`) is held to the `tile.json` files by `tests/fine-catalog.test.ts`.
+  Credit: the NAC DTMs, **NASA/GSFC/Arizona State University**; Malapert Massif, **PGDA product 104, CC BY 4.0**,
+  Bertone, S., Barker, M., Mazarico, E., McKenna, T. and Petro, N., 2025, Zenodo, doi:10.5281/zenodo.17954508; Bertone
+  et al., The Planetary Science Journal, doi:10.3847/PSJ/ae5b70. **Licence of the NAC DTMs**: no licence text was found
+  on the products or the LROC site; **the human accepted using them with that credit** (2026-11-01 for Mooner, 2026-11-03
+  for VENT-62). The caption says «relief LROC NAC DTM 4 m · LOLA 20 m beyond» (or «PGDA 5 m»).
+
 ## On-foot view models removed (VENT-54)
 
 VENT-54 removed the on-foot astronaut and landers, the human's decision (first person only): `astronaut-meshy*`,

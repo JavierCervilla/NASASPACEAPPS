@@ -525,6 +525,19 @@ Every visible change follows `.claude/skills/apple-design/SKILL.md` (vendored fr
   (`earth-orientation.ts`, from the sub-lunar point and the ecliptic roll, about 2° accurate); faint seeded stars; the fill is
   the Earth's light by its lit share, the ground's bounce by the Sun's height and a dim sky floor (`sky-light.ts`), and
   when the Sun does not reach the point the exposure opens up instead of faking sunlight (`exposureFor`, `stage.ts`).
+  Ground realism (VENT-62): the ground material alone takes lunar photometry for the Sun (`lunar-photometry.ts`, GLSL twin
+  `scene/ground-photometry.ts`: McEwen's lunar-Lambert as ISIS, with a calibrated opposition surge, regolith specular off; the
+  ground by the antisolar point is 1.34 to 1.64 times the ground beside it, and the ground toward the Sun 0.4 to 0.7 of
+  the ground away, held to the Apollo frames by `tests/lunar-photometry.test.ts` and the e2e), exposure +20 % (`EXPOSURE_GAIN`,
+  said in the caption), the albedo neutral grey, the grain fading by the pixel footprint (`fwidth`) and the brightness
+  blotches at 3 %; the normal-map patch now really applies (it looked for a line before three expands `#include`).
+  **Fine real relief** (`src/terrain/fine/`): inside one of Mooner's four tiles (IM-2, Malapert A, Shackleton ridge, Malapert
+  Massif) the view asks for `fine-tiles/<site>/heights.png` and `mask.png` (on demand, out of the precache) before the
+  ring's tiles, decodes them in stages (`png-grey.ts`, `fine-feather.ts`), puts the NAC heights on ring level 0's nodes by
+  the feather's weight with the vertical offset against LOLA (`fine-apply.ts`) and, between nodes, the tile's 5 m slope on
+  the shader's normal (`scene/ground-fine.ts`); the caption names it. Rocks follow Golombek & Rapp's size law, partly
+  buried, denser on the real near grid's slopes and rims, built in diameter bands by the slicer (`rocks-measured.ts`,
+  `scene/props.ts`). Sources and unverified constants: ASSETS.md.
   Rendering: ACES filmic tone mapping, `MeshStandardMaterial` everywhere, the Sun a hard key with a 60 m PCF shadow, baked
   contact occlusion on the stones (`contactAo`). Illustrative and said so in the caption («Fine detail illustrative · relief
   LOLA 20 m» over «Earth: NASA Blue Marble · shadows lifted for legibility», `captionNote`, `onFoot.captionNote`): rounded rocks under

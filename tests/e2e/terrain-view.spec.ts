@@ -43,7 +43,9 @@ const RIDGE_AT = new Date('2026-11-30T20:00:00Z');
 const POINT = '?lat=-85.50&lon=40.00';
 const SHOTS = process.env.VENT34_SHOTS;
 /** The view's files, never in the first load (scripts/service-worker.mjs ON_DEMAND). */
-const VIEW_FILES = /\/_astro\/(TerrainPanel|terrain-scene|on-foot)[.-]|\/api\/v1\/terrain\/tile/;
+const VIEW_FILES = /\/_astro\/(TerrainPanel|terrain-scene|on-foot)[.-]|\/api\/v1\/terrain\/tile|\/fine-tiles\//;
+/** The fine real-relief tiles (VENT-62): asked only by a view of a point inside one. */
+const FINE_FILES = /\/fine-tiles\//;
 /** A model the view no longer draws (VENT-54): no glb, no astronaut, no lander. */
 const MODEL_FILES = /\.glb(\?|$)|astronaut|lander|apollo-lm/;
 const START_MS = 30_000;
@@ -227,6 +229,17 @@ async function brightness(page: Page, at: string): Promise<number> {
   return Math.max(...raw);
 }
 
+/** The mean linear luminance (0 to 1) of the ground rows of the view, from its screenshot (VENT-62). */
+async function groundLuminance(page: Page): Promise<number> {
+  const box = (await host(page).boundingBox())!;
+  const clip = { x: box.x + box.width * 0.1, y: box.y + box.height * 0.78, width: box.width * 0.8, height: box.height * 0.17 };
+  const raw = await sharp(await page.screenshot({ clip })).removeAlpha().raw().toBuffer();
+  const linear = (v: number): number => { const c = v / 255; return c <= 0.04045 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4; };
+  let sum = 0;
+  for (let i = 0; i < raw.length; i += 3) sum += 0.2126 * linear(raw[i]!) + 0.7152 * linear(raw[i + 1]!) + 0.0722 * linear(raw[i + 2]!);
+  return sum / (raw.length / 3);
+}
+
 async function shot(page: Page, name: string): Promise<void> {
   if (!SHOTS) return;
   await page.waitForTimeout(300);
@@ -288,12 +301,44 @@ test.describe('desktop, 1440x900', () => {
     expect(carrying(all, SCENE_MARK)).not.toEqual([]);
     await firstPersonOnly(page);
     await expect(view(page)).toContainText('Fine detail illustrative · relief LOLA 20 m');
-    await expect(view(page)).toContainText('Earth: NASA Blue Marble · shadows lifted for legibility');
+    expect(requests.filter((url) => FINE_FILES.test(url))).toEqual([]);
+    await expect(view(page)).toContainText('Earth: NASA Blue Marble · shadows lifted and exposure raised 20 % for legibility');
     await expect(view(page).getByRole('region', { name: 'Horizon' })).toBeVisible();
     await expect(view(page).locator('.on-foot__label--ring').first()).toBeVisible();
     await idle(page);
     expect(requests.filter((url) => MODEL_FILES.test(url))).toEqual([]);
     await shot(page, 'synthetic-desktop-first');
+  });
+
+  // VENT-62: the NAC DTM Mooner prepared for IM-2 (mons-mouton) shapes the near ground and the caption says so; a point
+  // outside every tile asks for no tile (the test above), and no tile is in the first load (VIEW_FILES).
+  test('IM-2 loads its fine NAC relief on demand, says so, and then draws no idle frames', async ({ page }) => {
+    const requests: string[] = [];
+    await open(page, { path: './?site=im2-athena', real: RIDGE_AT, requests });
+    await page.waitForLoadState('networkidle');
+    expect(requests.filter((url) => FINE_FILES.test(url))).toEqual([]);
+    await page.getByRole('navigation', { name: 'View' }).getByRole('link', { name: 'Horizon' }).click();
+    await settled(page);
+    await expect(view(page)).toContainText('Fine detail illustrative · relief LROC NAC DTM 4 m · LOLA 20 m beyond');
+    expect(requests.filter((url) => FINE_FILES.test(url)).map((url) => url.split('/fine-tiles/')[1]).sort())
+      .toEqual(['mons-mouton/heights.png', 'mons-mouton/mask.png']);
+    await shot(page, 'fine-im2-desktop');
+    await atRest(page);
+  });
+
+  // VENT-62: the Apollo frames put the ground toward the Sun at 0.4 to 0.7 of the ground away from it (calibration.md
+  // of the trajectory); measured here on the drawn ground, fill and tone mapping included.
+  test('the ground toward the Sun is 0.4 to 0.7 of the ground away from it', async ({ page }) => {
+    await open(page, { path: './?site=im2-athena&quality=low#horizon', real: AT });
+    await settled(page);
+    await idle(page);
+    const towardSun = await groundLuminance(page);
+    await host(page).focus();
+    for (let i = 0; i < 12; i++) await page.keyboard.press('Shift+ArrowRight');
+    await idle(page);
+    const awaySun = await groundLuminance(page);
+    expect(towardSun / awaySun).toBeGreaterThan(0.4);
+    expect(towardSun / awaySun).toBeLessThan(0.7);
   });
 
   test('an idle view draws no frames; a key turns it and draws again', async ({ page }) => {
@@ -623,7 +668,7 @@ test.describe('desktop, 1440x900', () => {
     await open(page, { path: './?site=im2-athena&quality=high#horizon', real: RIDGE_AT });
     await settled(page);
     await idle(page);
-    await expect(view(page)).toContainText('Fine detail illustrative · relief LOLA 20 m');
+    await expect(view(page)).toContainText('Fine detail illustrative · relief LROC NAC DTM 4 m · LOLA 20 m beyond');
     // VENT-59: the Sun's own sentence; `.*` ran on into the Earth's and passed while a ridge hid the Sun.
     await expect(host(page)).toHaveAccessibleDescription(/The Sun is to the [a-z-]+, above the terrain\./);
     await expect(host(page)).not.toHaveAccessibleDescription(/hides the Sun/);

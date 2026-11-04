@@ -47,7 +47,8 @@ import { earthPole, earthToBody } from '../src/terrain/earth-orientation';
 import { earthPhase, fillLight } from '../src/terrain/sky-light';
 import { contactAo } from '../src/terrain/stones';
 import { blockerOf, ridgeAlong } from '../src/terrain/ridge';
-import { MAX_ROCK_M, scatterRocks } from '../src/terrain/rocks';
+import { MEASURED } from '../src/terrain/rock-law';
+import { measuredRocks } from '../src/terrain/rocks-measured';
 import { seedOf } from '../src/terrain/seeded';
 import { sunLit } from '../src/terrain/sun-shade';
 import type { HeightTile } from '../src/terrain/tile';
@@ -228,24 +229,22 @@ describe('the drag handlers', () => {
 });
 
 describe('the illustrative detail', () => {
-  const scatter = { count: 300, innerM: 3, outerM: 90 };
-
   it('seeds by the point on the 0.01° grid', () => {
     expect(seedOf({ lat: -84.79, lonEast: 29.2 })).toBe(seedOf({ lat: -84.7901, lonEast: 29.2002 }));
     expect(seedOf({ lat: -84.79, lonEast: 29.2 })).not.toBe(seedOf({ lat: -84.79, lonEast: 29.21 }));
   });
 
   it('scatters the same rocks for the same seed, all under 1 m, none inside the inner ring', () => {
-    const a = scatterRocks(7, scatter);
-    expect(a).toEqual(scatterRocks(7, scatter));
-    expect(a).not.toEqual(scatterRocks(8, scatter));
-    expect(a).toHaveLength(300);
+    const flat = () => 0;
+    const a = measuredRocks(7, flat);
+    expect(a).toEqual(measuredRocks(7, flat));
+    expect(a).not.toEqual(measuredRocks(8, flat));
+    expect(a.length).toBeGreaterThan(0);
     for (const rock of a) {
-      expect(rock.radius * 2).toBeLessThanOrEqual(MAX_ROCK_M);
-      expect(Math.hypot(rock.east, rock.north)).toBeGreaterThanOrEqual(3);
+      expect(rock.radius * 2).toBeLessThan(1);
+      expect(Math.hypot(rock.east, rock.north)).toBeGreaterThanOrEqual(MEASURED.innerM);
     }
   });
-
 });
 
 /** A profile with a 12° wall from 300° to 330° and 0.5° elsewhere. */

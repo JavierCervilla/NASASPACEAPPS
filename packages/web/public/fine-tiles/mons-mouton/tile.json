@@ -1,0 +1,109 @@
+{
+  "about": "A fine real-terrain tile (MOON-20); see ASSETS.md and packages/web/scripts/fine_tiles.py",
+  "place": "mons-mouton",
+  "landing_cell": {
+    "q": 4452,
+    "r": 4674,
+    "cell_m": 20.0,
+    "centre_m": [
+      77110.902,
+      138000.0
+    ]
+  },
+  "georeference": {
+    "projection": "+proj=stere +lat_0=-90 +lat_ts=-90 +lon_0=0 +x_0=0 +y_0=0 +R=1737400 +units=m +no_defs=True",
+    "plane": "the sim's: x toward 90° E, y toward 0° E, metres; columns run +x, rows run -y",
+    "upper_left_m": [
+      76360.0,
+      138760.0
+    ],
+    "pixel_m": 5.0,
+    "width": 300,
+    "height": 300,
+    "pixel_is": "area",
+    "nests_in": {
+      "pixel_m": 20.0,
+      "col": 19018,
+      "row": 8262,
+      "width": 75,
+      "height": 75,
+      "fine_per_coarse": 4,
+      "grid": "LDEM_80S_20MPP_ADJ, upper-left corner at (-304000, 304000)"
+    }
+  },
+  "layers": {
+    "heights": {
+      "file": "heights.png",
+      "format": "PNG, 16-bit grey",
+      "metres": "offset_m + DN * step_m, above the 1737.4 km sphere",
+      "offset_m": 5275,
+      "step_m": 0.01,
+      "min_m": 5275.17,
+      "max_m": 5358.38,
+      "sha256": "0d80071611afc365c3e0968185aeca98c432b2e721a0e5be3b6bc9f7099e46fa"
+    },
+    "mask": {
+      "file": "mask.png",
+      "format": "PNG, 1-bit",
+      "value": "1 = the fine source's height; 0 = LOLA 20 m interpolated bilinearly (procedural detail here)",
+      "fine_share": 0.9781,
+      "sha256": "a0f8972eccfd618bd41afdf97681e175d950e1f4814810b61fce91c70d2451a7"
+    },
+    "normals": {
+      "file": "normals.png",
+      "format": "PNG, RGB 8-bit",
+      "value": "unit normal (x toward 90° E, y toward 0° E, z up) = DN / 255 * 2 - 1, relief 1:1, central differences on the stored heights",
+      "sha256": "e448feb9eba6d487020991abef7be09f68c48b355387b29628b056e2f24ceabf"
+    },
+    "ldem20": {
+      "file": "ldem20.png",
+      "format": "PNG, 16-bit grey",
+      "metres": "offset_m + DN * step_m; the tile's 20 m pixels with one pixel of margin on every side",
+      "offset_m": 5272,
+      "step_m": 0.1,
+      "sha256": "2b70466952746e5018ce1865d149e2602db94c016c3ac68c248e7d3c7676358e"
+    }
+  },
+  "alignment": {
+    "against": "ldem20.png without its margin: 4 x 4 block mean of the fine heights minus the 20 m pixel, over the 20 m pixels wholly fine",
+    "pixels": 5439,
+    "mean_before_m": -0.244,
+    "std_m": 0.387,
+    "offset_removed_m": -0.24,
+    "mean_after_m": -0.004,
+    "abs_p95_after_m": 0.748
+  },
+  "sources": {
+    "fine": {
+      "product": "LROC NAC DTM NOBILE03 (P847S0291), 4 m",
+      "url": "https://pds.lroc.im-ldi.com/data/LRO-L-LROC-5-RDR-V1.0/LROLRC_2001/DATA/SDP/NAC_DTM/NOBILE03/NAC_DTM_NOBILE03_P847S0291.IMG",
+      "bytes": 6910112,
+      "last_modified": "Mon, 03 Aug 2026 16:45:53 GMT",
+      "window": {
+        "col": 199,
+        "row": 988,
+        "width": 376,
+        "height": 376,
+        "dtype": "float32 little-endian",
+        "sha256": "0083a720d635c8bcd56dacd9e5756cc93c7ab1fc8e5282fe022dcd9c14a8de93"
+      },
+      "resampling": "area average from 4 m",
+      "credit": "NASA/GSFC/Arizona State University",
+      "licence": "No licence text found on the product or the LROC site; used with the credit «NASA/GSFC/Arizona State University» by the human's decision (2026-11-01)"
+    },
+    "ldem": {
+      "url": "https://pgda.gsfc.nasa.gov/data/LOLA_20mpp/LDEM_80S_20MPP_ADJ.TIF",
+      "bytes": 2696082051,
+      "last_modified": "Fri, 07 Jul 2023 22:28:19 GMT",
+      "window": {
+        "col": 19017,
+        "row": 8261,
+        "width": 77,
+        "height": 77,
+        "dtype": "float32 little-endian",
+        "sha256": "a4915320e64ad5d9e9770356e838e37c517c742045b2ca0fa2de842d0eb00149"
+      },
+      "credit": "NASA PGDA product 90, Barker et al. 2023, PSJ 4:183, doi:10.3847/PSJ/acf3e1"
+    }
+  }
+}

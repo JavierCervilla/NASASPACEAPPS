@@ -47,6 +47,7 @@ import type {
   SceneSetup,
   TerrainScene,
 } from './scene-types';
+import { setFine } from './ground-fine';
 import { createStage, disposeStage } from './stage';
 import { applyInput, createWorld, type World } from './world';
 
@@ -78,6 +79,7 @@ function freeScene(parts: { world: World; labels: { root: ChildNode };
     parts.labels.root.remove();
     parts.world.slicer.clear();
     parts.world.rings?.dispose();
+    setFine(parts.world.fine, null);
     disposeStage(parts.world.stage);
   };
 }

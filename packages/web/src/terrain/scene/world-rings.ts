@@ -27,6 +27,7 @@
  * The relief rings in the world (VENT-46): a new ring replaces the one
  * drawn, whose meshes, queued jobs and shading go with it.
  */
+import { setFine } from './ground-fine';
 import { createRingLayer } from './ring-layer';
 import { createFarShade } from './ring-shade';
 import type { SceneInput } from './scene-types';
@@ -37,6 +38,7 @@ export function applyRings(world: World, input: SceneInput): void {
   if (world.rings?.view === input.ring) return;
   world.rings?.dispose();
   world.slicer.clear();
+  setFine(world.fine, input.ring.fine);
   const { report } = world.setup;
   const rings = createRingLayer(input.ring, world.material, world.slicer,
     (text) => report.step(text));

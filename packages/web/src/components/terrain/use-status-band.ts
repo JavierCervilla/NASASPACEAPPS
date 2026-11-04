@@ -37,6 +37,7 @@ import type { SceneHooks } from '../../terrain/scene/scene-types';
 import {
   bandInStage,
   noticeFits,
+  roomFor,
   type StageBand,
 } from '../../terrain/status-band';
 import type { BandMoves, SceneStatus } from './use-terrain-scene';
@@ -47,8 +48,8 @@ export interface StatusBandParts {
   /** The free band in viewport px; none on a desktop. */
   readonly band?: SceneHooks['band'] | undefined;
   readonly bandMoves?: BandMoves | undefined;
-  /** Asks the sheet to make room for the notice. */
-  readonly makeRoom?: (() => void) | undefined;
+  /** Asks the sheet to make room for the notice: to peek, or closed. */
+  readonly makeRoom?: ((to?: 'peek' | 'closed') => void) | undefined;
 }
 
 /** Writes the band into `stage`'s custom properties; returns it. */
@@ -93,18 +94,19 @@ function useBandFollow(latest: Latest, host: Host, phone: boolean): void {
   }, [latest, host, phone]);
 }
 
-/** On a loss with no room for the notice, asks the sheet once for some. */
+/** With no room for the notice, asks the sheet once for some. */
 function useRoomOnLoss(latest: Latest, phone: boolean, status: SceneStatus) {
   const asked = useRef(false);
   useLayoutEffect(() => {
     const stage = latest.current.host.current?.parentElement;
     if (!phone || !stage) return;
     const band = placeBand(stage, latest.current);
-    if (status !== 'lost') asked.current = false;
-    if (status !== 'lost' || asked.current) return;
+    const to = roomFor(status);
+    if (to === null) asked.current = false;
+    if (to === null || asked.current) return;
     if (noticeFits(noticeHeight(stage), band)) return;
     asked.current = true;
-    latest.current.makeRoom?.();
+    latest.current.makeRoom?.(to);
   }, [latest, phone, status]);
 }
 

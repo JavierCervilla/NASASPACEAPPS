@@ -220,7 +220,12 @@ for (const [layout, use] of [
       // It faded through the hand-over, not out of existence.
       expect(await page.evaluate(() => (window as unknown as { __phases: string[] }).__phases)).toEqual(['handover']);
       await expect(view(page).getByRole('status')).toHaveCount(0);
-      await expect(view(page)).toContainText('Fine detail illustrative · relief LROC NAC DTM 4 m · LOLA 20 m beyond');
+      // VENT-69: a phone never opens at high (phoneTier), and only high draws the fine relief, so its caption names LOLA alone.
+      if (layout === 'desktop') await expect(view(page)).toContainText('Fine detail illustrative · relief LROC NAC DTM 4 m · LOLA 20 m beyond');
+      else {
+        await expect(view(page)).toContainText('Fine detail illustrative · relief LOLA 20 m');
+        await expect(view(page)).not.toContainText('LROC NAC DTM');
+      }
     });
 
     test('after the hand-over the far relief keeps landing under a discreet chip, which goes; then the view draws no idle frames', async ({ page }) => {

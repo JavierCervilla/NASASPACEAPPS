@@ -27,7 +27,8 @@
  * The Three.js stage: renderer, scene and camera, sized to its host. The
  * canvas is transparent, so the section's dark sky shows through.
  */
-import { PerspectiveCamera, Scene, WebGLRenderer } from 'three';
+import { PerspectiveCamera, Scene, type WebGLRenderer } from 'three';
+import { createGlRenderer, releaseRenderer } from '../lib/gl-renderer';
 import type { QualitySettings } from '../lib/quality';
 import { cameraPosition, FOV_DEG, type OrbitPose } from './framing';
 
@@ -45,7 +46,7 @@ export function createStage(
   host: HTMLElement,
   quality: QualitySettings,
 ): Stage {
-  const renderer = new WebGLRenderer({
+  const renderer = createGlRenderer({
     antialias: quality.antialias,
     alpha: true,
     powerPreference: 'low-power',
@@ -99,7 +100,6 @@ export function aimCamera(camera: PerspectiveCamera, pose: OrbitPose) {
 
 /** Frees the GPU context and takes the canvas off the page. */
 export function disposeStage(stage: Stage): void {
-  stage.renderer.dispose();
-  stage.renderer.forceContextLoss();
+  releaseRenderer(stage.renderer);
   stage.renderer.domElement.remove();
 }

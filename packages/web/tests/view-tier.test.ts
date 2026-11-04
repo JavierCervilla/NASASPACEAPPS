@@ -29,7 +29,7 @@
  * context even when the address forced a tier, is remembered in the
  * session's storage, and loses only that memory when the storage is broken.
  */
-import { afterEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { Tier } from '../src/lib/quality';
 import { createViewTier } from '../src/terrain/view-tier';
 import { keptTier, tierStorage, type TierStorage } from '../src/terrain/view-tier-memory';
@@ -55,6 +55,29 @@ function store(tier: Tier, options: { forced?: boolean; kept?: TierStorage | nul
   const kept = options.kept === undefined ? storage() : options.kept;
   return { start, view: createViewTier({ start, storage: () => kept }) };
 }
+
+const pageListeners = new Map<string, Set<(event: Event) => void>>();
+
+// The view's marks listen to the page (`pagehide`) and beat on a timer.
+beforeEach(() => {
+  vi.useFakeTimers();
+  pageListeners.clear();
+  vi.stubGlobal('addEventListener', (type: string, fn: (event: Event) => void) => {
+    pageListeners.set(type, (pageListeners.get(type) ?? new Set()).add(fn));
+  });
+  vi.stubGlobal('document', {
+    visibilityState: 'visible',
+    addEventListener: (type: string, fn: (event: Event) => void) => {
+      pageListeners.set(type, (pageListeners.get(type) ?? new Set()).add(fn));
+    },
+    removeEventListener: (type: string, fn: (event: Event) => void) => void pageListeners.get(type)?.delete(fn),
+  });
+  vi.stubGlobal('removeEventListener', (type: string, fn: (event: Event) => void) => void pageListeners.get(type)?.delete(fn));
+});
+afterEach(() => {
+  vi.useRealTimers();
+  vi.unstubAllGlobals();
+});
 
 describe('the view tier', () => {
   it('starts at the device\'s tier, read once and only when first asked', () => {
@@ -218,6 +241,126 @@ describe('a run that ended without unmount', () => {
       expect(run(view, true)).toBeNull();
       expect(store('high', { kept }).view.get().tier).toBe('high');
     }
+  });
+});
+
+// VENT-69: Chrome blocks WebGL until it restarts, and a restart empties the session's storage. The mark is per tab,
+// beats while the view is open, and a close or a navigation (`pagehide`) takes it away: only a page that died counts.
+describe('the open mark in localStorage', () => {
+  const HOUR = 60 * 60 * 1000;
+  const clock = { now: 1_000_000 };
+
+  beforeEach(() => {
+    clock.now = 1_000_000;
+  });
+
+  /** A page: its own session storage (its tab), the shared `local`, the shared clock. */
+  function page(local: TierStorage | null, session: TierStorage = storage()) {
+    const start = () => ({ tier: 'high' as Tier, forced: false });
+    return createViewTier({ start, storage: () => session, local: () => local, nowMs: () => clock.now });
+  }
+  const pass = (ms: number): void => {
+    clock.now += ms;
+    vi.advanceTimersByTime(ms);
+  };
+  const pagehide = (): void => pageListeners.get('pagehide')?.forEach((fn) => fn(new Event('pagehide')));
+
+  it('survives a browser restart after a page that died: the next session starts a rung lower, once', () => {
+    const local = storage();
+    page(local).opened();
+    clock.now += 2 * HOUR;
+    const next = page(local);
+    expect(next.get().tier).toBe('medium');
+    expect(next.opened()).toBe(DIED);
+  });
+
+  it('counts one death once: the next start is lowered, the one after is not', () => {
+    const local = storage();
+    page(local).opened();
+    vi.clearAllTimers();
+    clock.now += HOUR;
+    expect(page(local).get().tier).toBe('medium');
+    expect(page(local).get().tier).toBe('high');
+  });
+
+  it('does not count a hidden tab, whose timers the browser slows, as dead', () => {
+    const local = storage();
+    page(local).opened();
+    (document as { visibilityState: string }).visibilityState = 'hidden';
+    pageListeners.get('visibilitychange')?.forEach((fn) => fn(new Event('visibilitychange')));
+    vi.clearAllTimers();
+    clock.now += HOUR;
+    expect(page(local).get().tier).toBe('high');
+  });
+
+  it('drops the marks older than 24 hours when it writes', () => {
+    const local = storage(false, { 'ventana.onFootOpen': '{"old":1}' });
+    clock.now = 25 * HOUR;
+    page(local).opened();
+    expect(JSON.parse(local!.getItem('ventana.onFootOpen')!)).not.toHaveProperty('old');
+  });
+
+  it('expires after 24 hours', () => {
+    const local = storage();
+    page(local).opened();
+    clock.now += 24 * HOUR - 1;
+    expect(page(local).get().tier).toBe('medium');
+    clock.now += 2;
+    expect(page(local).get().tier).toBe('high');
+  });
+
+  it('is cleared when the view unmounts, and by leaving on purpose', () => {
+    const local = storage();
+    const session = storage();
+    const first = page(local, session);
+    first.opened();
+    first.closed();
+    clock.now += HOUR;
+    expect(page(local).get().tier).toBe('high');
+    page(local, session).opened();
+    leftOnPurpose(session, local);
+    clock.now += HOUR;
+    expect(page(local).get().tier).toBe('high');
+  });
+
+  it('is not a death when the page closes or navigates away (pagehide), a browser restart or not', () => {
+    const local = storage();
+    page(local).opened();
+    pagehide();
+    clock.now += HOUR;
+    expect(page(local).get().tier).toBe('high');
+  });
+
+  it('does not count a tab that is still open: its beat keeps the mark fresh', () => {
+    const local = storage();
+    page(local).opened();
+    pass(60_000);
+    const second = page(local);
+    expect(second.get().tier).toBe('high');
+    expect(second.opened()).toBeNull();
+  });
+
+  it('keeps every tab\'s mark: one tab leaving does not clear another\'s, which then dies', () => {
+    const local = storage();
+    const a = page(local);
+    a.opened();
+    const b = page(local);
+    b.opened();
+    b.closed();
+    pagehide();
+    a.opened();
+    vi.clearAllTimers();
+    clock.now += HOUR;
+    expect(page(local).get().tier).toBe('medium');
+  });
+
+  it('ignores a value that is no map of times, and a storage that throws', () => {
+    clock.now = 1_000_000;
+    for (const value of ['true', '', 'null', '[1]', '{"t1":"x"}', '{"t1":-5}']) {
+      expect(page(storage(false, { 'ventana.onFootOpen': value })).get().tier).toBe('high');
+    }
+    expect(page(storage(true)).get().tier).toBe('high');
+    expect(page(null).get().tier).toBe('high');
   });
 });
 

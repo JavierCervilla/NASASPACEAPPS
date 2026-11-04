@@ -19,6 +19,7 @@
   "globe.howTo": "Faites glisser la Lune ou utilisez les flèches du clavier pour la tourner ; plus et moins pour zoomer.",
   "globe.markers": "Les sites d’atterrissage sont des boutons : un point plein indique un point de contact exact, un anneau en pointillés une zone approximative.",
   "globe.noWebgl": "Le globe 3D nécessite WebGL, que ce navigateur ne prend pas en charge.",
+  "gl.blocked": "Le navigateur a bloqué la 3D de ce site après une panne graphique. Fermez complètement le navigateur, puis rouvrez-le. Sur Android : Paramètres › Applications › Chrome › Forcer l’arrêt, puis rouvrez.",
   "globe.deferred": "Votre navigateur demande d’économiser les données : le globe 3D attend donc.",
   "globe.load": "Charger le globe 3D",
   "globe.dataSaver": "Économiseur de données activé",

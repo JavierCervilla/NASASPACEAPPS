@@ -66,6 +66,8 @@ interface Props {
   readonly store: SiteStore;
   /** Where the sheet's top edge is, for the globe's label; null: none. */
   readonly sheetEdge: WatchedValue<number | null>;
+  /** Counts the globe's asks to close the sheet for its message. */
+  readonly roomAsk: WatchedValue<number>;
   /** The shared instant, its player and the hours loader. */
   readonly parts: CalendarParts;
   /** The site's base path, for the site's thumbnail. */
@@ -114,13 +116,16 @@ const SHEET_LABELS = { sites: 'site.choose', calendar: 'sheet.calendar' } as con
  */
 function useSheetWiring(
   phone: PhoneState,
-  { sheetEdge, view }: Pick<Props, 'sheetEdge' | 'view'>,
+  { sheetEdge, view, roomAsk }: Pick<Props, 'sheetEdge' | 'view' | 'roomAsk'>,
   dim: (value: number) => void,
 ) {
   const tabs = useRef<HTMLElement>(null);
   const bar = useRef<HTMLElement>(null);
   const { t } = useI18n();
   useEffect(() => () => sheetEdge.set(null), [sheetEdge]);
+  const { setDetent } = phone;
+  useEffect(() => roomAsk.subscribe(() => setDetent('closed')),
+    [roomAsk, setDetent]);
   const atFull = phone.detent === 'full';
   const sheet = {
     label: t(atFull ? SHEET_LABELS[phone.view] : 'sheet.summary'),
@@ -176,7 +181,7 @@ function PhoneUi(props: Props) {
     <div className="phone">
       <div ref={scrim} className="phone-scrim" aria-hidden="true" />
       <ViewStage {...props} dsn={phone.dsn} site={site} bar={bar}
-        makeRoom={() => phone.setDetent('peek')} />
+        makeRoom={(to = 'peek') => phone.setDetent(to)} />
       <PhoneBar ref={bar} {...pill} />
       <Sheet {...sheet}>
         <SheetBody phone={phone} {...props} />

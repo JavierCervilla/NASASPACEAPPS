@@ -28,13 +28,18 @@
  * the browser asks to save data, nothing is downloaded until the visitor
  * asks for the globe (`load`).
  */
+import { isGlBlocked } from '../lib/gl-memory';
 import { loadChunk } from '../pwa/missing-chunk';
 import type { GlobeOptions } from './globe';
 
-/** How the start went: drawing, no WebGL, or waiting to be asked. */
+/**
+ * How the start went: drawing, no WebGL, a browser that blocked it after a
+ * graphics fault (VENT-69), or waiting to be asked.
+ */
 export type GlobeStatus =
   | { readonly kind: 'ready' }
   | { readonly kind: 'unavailable' }
+  | { readonly kind: 'blocked' }
   | { readonly kind: 'deferred' };
 
 /** A started (or waiting) globe. */
@@ -62,7 +67,8 @@ async function mount(
     return { dispose, status: { kind: 'ready' } };
   } catch (error) {
     options.warn(`Ventana Lunar: the 3D globe could not start (${String(error)}).`);
-    return { dispose: null, status: { kind: 'unavailable' } };
+    const kind = isGlBlocked(error) ? 'blocked' : 'unavailable';
+    return { dispose: null, status: { kind } };
   }
 }
 

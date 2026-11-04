@@ -30,18 +30,20 @@
  * never matched in production (VENT-62 found it).
  */
 import { ShaderLib } from 'three';
+import { groundPolicy } from '../src/terrain/ground-policy';
 import { describe, expect, it } from 'vitest';
 import {
   MACRO_BASE,
   MACRO_SPAN,
+  NORMAL_READ,
   REGOLITH_SATURATION,
   antiTile,
 } from '../src/terrain/scene/ground-shader';
 
-const patched = (): string => {
+const patched = (policy = groundPolicy('high', new Set())): string => {
   const shader = { fragmentShader: ShaderLib.physical.fragmentShader,
     uniforms: {} } as unknown as Parameters<typeof antiTile>[0];
-  antiTile(shader);
+  antiTile(shader, policy);
   return shader.fragmentShader;
 };
 
@@ -67,6 +69,38 @@ describe('antiTile on the physical material\'s fragment shader', () => {
     const source = patched();
     expect(source).toContain('dFdx(vMapUv)');
     expect(source).not.toContain('length(vViewPosition)');
+  });
+});
+
+describe('antiTile at the lower tiers (VENT-69)', () => {
+  const medium = (): string => patched(groundPolicy('medium', new Set()));
+
+  it('reads the normal map once, as before VENT-62', () => {
+    const source = medium();
+    expect(source).toContain(NORMAL_READ);
+    expect(source).not.toContain('tiledNormal');
+  });
+
+  it('fades the grain by distance, with no derivatives of its own', () => {
+    const source = medium();
+    expect(source).toContain('length(vViewPosition)');
+    expect(source).not.toContain('footMpp');
+    expect(source).not.toContain('dFdx(vMapUv)');
+  });
+
+  it('still blends the albedo and keeps the neutral grey', () => {
+    const source = medium();
+    expect(source).toContain('otherUv(vMapUv)');
+    expect(source).toContain('regolithLuma');
+  });
+
+  it('takes each high-tier part out on its own word', () => {
+    const high = (word: string): string =>
+      patched(groundPolicy('high', new Set([word as 'fine'])));
+    expect(high('antitile')).not.toContain('tiledNormal');
+    expect(high('antitile')).toContain('dFdx(vMapUv)');
+    expect(high('footprint')).toContain('tiledNormal(normalMap');
+    expect(high('footprint')).not.toContain('dFdx(vMapUv)');
   });
 });
 

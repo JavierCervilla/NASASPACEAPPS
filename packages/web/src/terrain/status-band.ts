@@ -51,3 +51,13 @@ export function bandInStage(band: ScreenBand, stageTop: number): StageBand {
 /** Whether a notice `noticePx` tall, padding included, fits in `band`. */
 export const noticeFits = (noticePx: number, band: StageBand): boolean =>
   noticePx <= band.height;
+
+/**
+ * What a status that needs room asks the sheet for: a lost context, peek;
+ * a browser that blocked 3D, closed (at 200 % text the peek leaves no band,
+ * and the message is the whole view).
+ */
+export function roomFor(status: string): 'peek' | 'closed' | null {
+  if (status === 'lost') return 'peek';
+  return status === 'blocked' ? 'closed' : null;
+}

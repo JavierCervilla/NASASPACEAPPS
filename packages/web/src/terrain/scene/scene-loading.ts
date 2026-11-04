@@ -29,9 +29,11 @@
  * `?onfoot=` switches (leave-out.ts) leave out and the tier it draws at
  * (`data-onfoot`, `data-tier`), for the tests and for a remote console.
  */
-import type { Loop } from '../../globe/loop';
 import { markReadyWhenStanding } from './ready-mark';
-import type { SceneSetup } from './scene-types';
+import { watchHidden } from './page-hidden';
+import { compileFirst, MAPS_GIVE_UP_MS, waitAtMost } from './scene-compile';
+import { addWarmUp } from './scene-warm-up';
+import type { SceneHooks, SceneSetup } from './scene-types';
 import { loadSurfaces } from './surfaces';
 import type { World } from './world';
 
@@ -42,15 +44,40 @@ export function markSetup(host: HTMLElement, setup: SceneSetup): void {
   else delete host.dataset['onfoot'];
 }
 
-/** Loads the ground's maps, noting it in the crash report. */
-async function loadParts(world: World): Promise<void> {
-  await loadSurfaces(world, console.warn);
-  world.setup.report.step('all parts loaded');
+/**
+ * Loads the ground's maps, then compiles every program the scene will draw
+ * with (VENT-69), noting both in the crash report.
+ */
+async function loadParts(world: World, hooks: SceneHooks): Promise<void> {
+  const { report } = world.setup;
+  const wait = (ms: number): Promise<void> =>
+    new Promise((done) => window.setTimeout(done, ms));
+  const watch = watchHidden(document);
+  const maps = await waitAtMost(loadSurfaces(world, console.warn),
+    MAPS_GIVE_UP_MS, wait);
+  report.step(maps === 'done' ? 'all parts loaded'
+    : 'surface maps late: drawing without them');
+  const { renderer, scene, camera } = world.stage;
+  const removeWarmUp = addWarmUp(scene, world);
+  await compileFirst({
+    compile: () => renderer.compileAsync(scene, camera),
+    now: () => performance.now(), wait, note: (text) => report.step(text),
+    hidden: watch.sawHidden, onSlow: hooks.onSlowFrame,
+  });
+  watch.stop();
+  removeWarmUp();
 }
 
-/** Loads the maps; marks the host once they stand. */
-export function startLoading(host: HTMLElement, world: World,
-  loop: Loop): () => void {
-  return markReadyWhenStanding(host, loadParts(world),
-    () => loop.invalidate());
+/**
+ * Loads the maps and compiles; marks the host and opens the loop's gate
+ * once they stand, so the first frame draws with every program ready.
+ */
+export function startLoading(
+  host: HTMLElement,
+  world: World,
+  loop: { readonly open: () => void },
+  hooks: SceneHooks,
+): () => void {
+  return markReadyWhenStanding(host, loadParts(world, hooks),
+    () => loop.open());
 }

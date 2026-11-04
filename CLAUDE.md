@@ -525,6 +525,41 @@ Every visible change follows `.claude/skills/apple-design/SKILL.md` (vendored fr
   (`earth-orientation.ts`, from the sub-lunar point and the ecliptic roll, about 2° accurate); faint seeded stars; the fill is
   the Earth's light by its lit share, the ground's bounce by the Sun's height and a dim sky floor (`sky-light.ts`), and
   when the Sun does not reach the point the exposure opens up instead of faking sunlight (`exposureFor`, `stage.ts`).
+  Safe start (VENT-69, after a Pixel 10's first frame took 1.6 s and its GPU reset): the ground's cost is set per tier in
+  one place (`src/terrain/ground-policy.ts`, `groundPolicy(tier, leave)`): lunar photometry (`RE_Direct_Ground`), the
+  second normal read (`antitile`), the `fwidth` footprint fade and the fine relief (no `fine-tiles/` request, no shader
+  block, so the caption names it only when drawn) are the **high** tier's; medium and low draw the pre-VENT-62 ground
+  (`ground-shader.ts` takes the policy), the rocks are capped at 420 at medium and none at low (`rocksCap`), the exposure
+  +20 % stays everywhere, and each part is in the material's program cache key (`groundKey`). The scene's programs
+  compile before its first frame (`scene/scene-compile.ts`: the maps load first, two hidden triangles in
+  `scene-warm-up.ts` stand in for the ring meshes, `renderer.compileAsync`, the loop shut by `loop-gate.ts` meanwhile),
+  so the ground compiles once, with its maps; the wait is timed and noted in the report, and past 1 s
+  (`COMPILE_BUDGET_MS`) the view steps down a tier like a slow frame; the frame probe now judges a frame that compiled
+  against a 1 s ceiling instead of skipping it (`COMPILED_FRAME_CEILING_MS`). A phone with an older PowerVR or any GPU not on the
+  capable list starts at low whatever its cores; PowerVR D-Series (the Pixel 10, the human's demo phone) is on it, at medium (`lib/quality.ts`). Blocked WebGL: every renderer is made by
+  `lib/gl-renderer.ts`, which records `ventana.glWorked` and `ventana.glLostAt` in `localStorage` (`lib/gl-marks.ts`) and,
+  when no context can be made on a browser that has the WebGL constructors and a mark exists, throws a `GlUnavailableError`
+  of kind `blocked` (never decided by Chrome's message, which is only kept, with `webglcontextcreationerror`'s
+  `statusMessage`, in the report); the globe (`data-status="blocked"`) and the view say `gl.blocked` («The browser blocked
+  3D for this site after a graphics fault… Force stop, then reopen»), and without a mark keep «needs WebGL» and «cannot
+  start on this device». The view's open mark is also kept in `localStorage` (`view-tier-local.ts`), per tab (`{ tabId: last beat }`, the tab id in
+  `sessionStorage`) and beating every 5 s while the view is open; `pagehide` (a normal close or navigation) takes the
+  tab's own mark away, and the next start goes a rung lower only for a mark that stopped beating more than 20 s ago and is
+  under 24 h old (`diedBefore`): a GPU-reset page death, a browser restart after one, or a tab the OS killed fires no
+  `pagehide`. Another tab that is still open, and its leaving, no longer matter; a tab hidden for minutes (timers
+  throttled) can read as stale to a tab opened later, the known cost.
+  **One renderer for the view's life** (`use-terrain-scene.ts`, `use-parked.ts`, `scene/scene-point.ts`): when the selected
+  point changes the view's input goes away until the new point's tiles land; the mounted scene is **parked** (`data-parked`
+  on the host hides its canvas, the loader covers, `rearm()` tells `onDrawn` again), not freed, and `update()` rebuilds the
+  world (rings, near ground, props, far horizon, sky, the look back to the new opening) on the same renderer, so no second WebGL
+  context is made and no program is compiled again (held by `tests/e2e/vent-69-one-renderer.spec.ts`: contexts made, ground
+  shader sources and linked programs counted across a point change). Only leaving the view, a tier change or a lost context frees
+  the renderer. The first frame waits for the surface maps at most 5 s (`MAPS_GIVE_UP_MS`, `waitAtMost`), and a compile
+  during which the page was hidden is not judged slow (`page-hidden.ts`). The «browser blocked 3D» message keeps to the phone's
+  free band on a backing (`use-help-band.ts` for the globe's, `--on-foot-band-*` for the view's), and asks the sheet to close
+  when even the free band is too short for it (200 % text; `roomAsk` in `sheet-channels.ts`, `makeRoom('closed')`)
+  (`tests/e2e/vent-69-blocked-band.spec.ts`). Held by `tests/ground-policy.test.ts`, `tests/scene-compile.test.ts`, `tests/gl-memory.test.ts`,
+  `tests/view-tier.test.ts` and `tests/e2e/vent-69-safe-start.spec.ts`.
   Ground realism (VENT-62): the ground material alone takes lunar photometry for the Sun (`lunar-photometry.ts`, GLSL twin
   `scene/ground-photometry.ts`: McEwen's lunar-Lambert as ISIS, with a calibrated opposition surge, regolith specular off; the
   ground by the antisolar point is 1.34 to 1.64 times the ground beside it, and the ground toward the Sun 0.4 to 0.7 of
@@ -596,7 +631,7 @@ Every visible change follows `.claude/skills/apple-design/SKILL.md` (vendored fr
   so it covers no control; a press unfolds it (VENT-51, `tests/e2e/debug.spec.ts`).
   `scripts/check-no-devtools.mjs` (decision in `devtools-guard.mjs`) fails a build whose pages, start chunks or precache
   carry the tools' markers, or any file Spector.js.
-  `?onfoot=shadows,far,shade,logdepth` (`astronaut` and `lander` from before VENT-54 are ignored, so old links still open)
+  `?onfoot=shadows,far,shade,logdepth,photometry,antitile,footprint,fine,rocks` (`astronaut` and `lander` from before VENT-54 are ignored, so old links still open)
   leaves parts out to bisect a crash from a phone's address bar (`src/terrain/leave-out.ts`, unknown words ignored,
   listed in `data-onfoot`, kept by the language switch like `?site=`). The API gzips its JSON
   (`compress()` in `packages/server/src/app.ts`; base64 floats shrink about 26 %). Held by `tests/terrain-view.test.ts`,

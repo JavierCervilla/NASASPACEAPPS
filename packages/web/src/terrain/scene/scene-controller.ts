@@ -67,7 +67,7 @@ interface Parts {
 /** What the panel holds: update, go home, draw again, free. */
 export const controller = (
   { world, loop, home, teardown }: Parts,
-): TerrainScene => ({
+): Omit<TerrainScene, 'rearm'> => ({
   home,
   update: (next: SceneInput): void => {
     if (applyInput(world, next)) loop.invalidate();

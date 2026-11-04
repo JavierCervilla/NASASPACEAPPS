@@ -19,6 +19,7 @@
   "globe.howTo": "Arrastra o usa las flechas del teclado para girar la Luna; más y menos acercan y alejan.",
   "globe.markers": "Los lugares de aterrizaje son botones: un punto sólido marca un aterrizaje exacto, y un anillo discontinuo, una zona aproximada.",
   "globe.noWebgl": "El globo 3D necesita WebGL, y este navegador no lo ofrece.",
+  "gl.blocked": "El navegador ha bloqueado el 3D de este sitio tras un fallo gráfico. Cierra el navegador por completo y vuelve a abrirlo. En Android: Ajustes › Aplicaciones › Chrome › Forzar detención y vuelve a abrir.",
   "globe.deferred": "Tu navegador pide ahorrar datos, así que el globo 3D espera.",
   "globe.load": "Cargar el globo 3D",
   "globe.dataSaver": "Ahorro de datos activado",

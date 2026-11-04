@@ -32,6 +32,8 @@
  * the view open counts as a death too: a page hung on its GPU is ended by
  * the person's reload, and telling the two apart is not possible from here.
  */
+import { glStorage } from '../lib/gl-marks';
+import { BEAT_MS, keepOpenSince, tabIdOf } from './view-tier-local';
 import { keepOpen, tierStorage } from './view-tier-memory';
 import type { ViewTierLive } from './view-tier-state';
 
@@ -45,18 +47,56 @@ export interface OpenMarks {
   readonly closed: () => void;
 }
 
+/**
+ * Keeps this tab's mark in `localStorage` beating while the view is open
+ * (view-tier-local.ts), and takes it away when the page is put away
+ * (`pagehide`: a close or a navigation is no death; a GPU reset fires none)
+ * and again when a page restored from the back-forward cache shows.
+ * Returns what stops it.
+ */
+function beatWhileOpen(now: () => ViewTierLive): () => void {
+  const mark = (open: boolean): void => {
+    const { storage, local, nowMs } = now();
+    const hidden = globalThis.document?.visibilityState === 'hidden';
+    keepOpenSince(local, { tabId: tabIdOf(storage), open, hidden }, nowMs());
+  };
+  const seen = (): void => mark(true);
+  const away = (): void => mark(false);
+  const back = (event: Event): void => {
+    if ((event as PageTransitionEvent).persisted) mark(true);
+  };
+  const timer = globalThis.setInterval(() => mark(true), BEAT_MS);
+  addEventListener('pagehide', away);
+  addEventListener('pageshow', back);
+  globalThis.document?.addEventListener('visibilitychange', seen);
+  mark(true);
+  return () => {
+    clearInterval(timer);
+    removeEventListener('pagehide', away);
+    removeEventListener('pageshow', back);
+    globalThis.document?.removeEventListener('visibilitychange', seen);
+    mark(false);
+  };
+}
+
 /** The marks over the store's facts, read through `now`. */
 export function openMarks(now: () => ViewTierLive): OpenMarks {
   let told = false;
+  let stop: (() => void) | null = null;
   return {
     opened: () => {
-      const { storage, note } = now();
-      keepOpen(storage, true);
+      keepOpen(now().storage, true);
+      stop?.();
+      stop = beatWhileOpen(now);
       const first = !told;
       told = true;
-      return first ? note : null;
+      return first ? now().note : null;
     },
-    closed: () => keepOpen(now().storage, false),
+    closed: () => {
+      stop?.();
+      stop = null;
+      keepOpen(now().storage, false);
+    },
   };
 }
 
@@ -65,6 +105,10 @@ export function openMarks(now: () => ViewTierLive): OpenMarks {
  * switch, VENT-52): not a death, so the next page's tier keeps its rung. If
  * the next page opens the view again, it marks it open again.
  */
-export function leftOnPurpose(storage = tierStorage()): void {
+export function leftOnPurpose(
+  storage = tierStorage(),
+  local = glStorage(),
+): void {
   keepOpen(storage, false);
+  keepOpenSince(local, { tabId: tabIdOf(storage), open: false }, Date.now());
 }

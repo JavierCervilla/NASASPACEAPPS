@@ -1,0 +1,70 @@
+/*
+ *   _   _       _                         _ _
+ *  | | | |_ __ (_)_   _____ _ __ ___  ___| | | ___
+ *  | | | | '_ \| \ \ / / _ \ '__/ __|/ _ \ | |/ _ \
+ *  | |_| | | | | |\ V /  __/ |  \__ \  __/ | |  __/
+ *   \___/|_| |_|_| \_/ \___|_|  |___/\___|_|_|\___|
+ *
+ *             =++==--::.
+ *         %%%%##**++=--:..  .
+ *      ##**#%@%%#***+=--::.   .
+ *    #**=+*#*#**#++++=-:::.. .  .
+ *   #++-====*@%+*++==--::...   .  .    Ventana Lunar
+ *  #+=-=--++==+===-+==--:..   .  .  .  Sun, Earth and landing
+ * #----====-------=-=---:..  .  .  .   windows at the lunar
+ * #+---+=====--=---==-::..     .  .  . south pole
+ * #*----==---==-=-=-:-....    .  .  .
+ * *#----===+*===--:-::...    .  .  .   Built for the NASA Space
+ *  *----=*-+*%*+=-:::....   .  .  .    Apps Challenge 2026,
+ *   *------=+*=--:::-:::.. .  .  .     Madrid. Not endorsed
+ *    %*===-=-==--==-:::.  .  .  .      by NASA.
+ *      *+:--+:--::::::.  .  .  .
+ *         -=:::...:..   .  .           (c) 2026 Universelle
+ *             :::.. .  .               SPDX-License-Identifier: MIT
+ */
+
+/**
+ * A PowerVR draws the on-foot view without its shadow map (VENT-75): on the human's Pixel 10 a frame that sampled
+ * the shadow map and wrote a logarithmic depth lost the GPU context after seconds of turning. The GPU's name is
+ * spoofed through WEBGL_debug_renderer_info; any other GPU keeps its shadows.
+ */
+import { expect, test, type Page } from '@playwright/test';
+import { stubApi } from './api-stub';
+import { stubTile, stubWall } from './terrain-stub';
+
+const START_MS = 30_000;
+const PIXEL = 'ANGLE (Imagination Technologies, PowerVR D-Series DXT-48-1536, OpenGL ES 3.2)';
+
+const host = (page: Page) => page.getByRole('application', { name: 'On foot at the site' });
+
+async function open(page: Page, gpu: string | null): Promise<number> {
+  await page.clock.setFixedTime(new Date('2026-11-30T20:00:00Z'));
+  await page.addInitScript((name) => {
+    localStorage.setItem('ventana.dataSource', 'computed');
+    localStorage.setItem('ventana.pinHint', 'seen');
+    if (!name) return;
+    for (const proto of [WebGL2RenderingContext.prototype, WebGLRenderingContext.prototype]) {
+      const real = proto.getParameter;
+      proto.getParameter = function (this: WebGLRenderingContext, p: number) {
+        return p === 0x9246 ? name : real.call(this, p);
+      };
+    }
+  }, gpu);
+  await stubApi(page);
+  await stubTile(page);
+  await stubWall(page, 100, 140);
+  await page.goto('./?site=im2-athena&quality=low&onfoot=far#horizon');
+  await expect(host(page)).toHaveAttribute('data-ready', 'true', { timeout: START_MS });
+  await expect.poll(async () => Number(await host(page).getAttribute('data-frames')), { timeout: START_MS })
+    .toBeGreaterThan(0);
+  await expect(host(page)).toHaveAttribute('data-working', 'false', { timeout: START_MS });
+  return Number(await host(page).getAttribute('data-shadows'));
+}
+
+test('a PowerVR renders the shadow map none of the times', async ({ page }) => {
+  expect(await open(page, PIXEL)).toBe(0);
+});
+
+test('another GPU still renders it', async ({ page }) => {
+  expect(await open(page, null)).toBeGreaterThan(0);
+});

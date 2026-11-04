@@ -96,6 +96,8 @@ export interface World {
   readonly slicer: Slicer;
   /** Asks for a frame: bound to the scene's loop once it exists. */
   invalidate: () => void;
+  /** The surface maps gave up on the first frame and are still coming. */
+  mapsPending: boolean;
 }
 
 /** An empty world on `stage`. */
@@ -116,7 +118,7 @@ export function createWorld(stage: Stage, seed: number, setup: SceneSetup) {
     material: groundMaterial(mask, shared, policy), backdrop: null,
     input: null,
     lit: null, rings: null, farShade: null, slicer,
-    invalidate: () => undefined };
+    invalidate: () => undefined, mapsPending: false };
   stage.scene.add(world.sky.group, world.near);
   if (world.craters) stage.scene.add(world.craters.group);
   return world;

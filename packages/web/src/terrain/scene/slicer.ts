@@ -33,9 +33,11 @@
  * priority runs first (the finest level, nearest the viewer). Finished work
  * asks for a frame, since it changed what is drawn, but at most one per
  * {@link FRAME_GAP_MS} while more waits, counted from the end of the last
- * frame: a turn that starts late, because the frame ran in between, is the
- * proof that it ended, and a frame that costs more than the gap (a software
- * renderer, a heavy ground) would otherwise be asked for after every turn.
+ * frame that ran: a turn that starts late, because the frame ran in between,
+ * is the proof that it ended (a batch that starts after rest has no frame
+ * pending, so its first frame is asked at once), and a frame that costs more
+ * than the gap (a software renderer, a heavy ground) would otherwise be asked
+ * for after every turn.
  */
 import { next, noteStall, type Pace, type Waiting } from './slicer-queue';
 
@@ -98,7 +100,8 @@ function turn(core: Core): void {
     loud ||= !found[1].quiet;
     if (deps.now() - start >= deps.budgetMs) break;
   }
-  if (queue.size > 0) core.timer = deps.schedule(() => turn(core));
+  core.continuing = queue.size > 0;
+  if (core.continuing) core.timer = deps.schedule(() => turn(core));
   core.endedAt = deps.now();
   const due = start - core.askedAt >= deps.frameGapMs;
   if (ran && (queue.size === 0 || (due && loud))) {
@@ -119,7 +122,8 @@ export function createSlicer(given: SlicerDeps): Slicer {
     ...given,
   };
   const core: Core = { queue: new Map(), deps, timer: null,
-    askedAt: Number.NEGATIVE_INFINITY, endedAt: 0, framePending: false };
+    askedAt: Number.NEGATIVE_INFINITY, endedAt: 0, framePending: false,
+    continuing: false };
   return {
     add: (key, priority, job, quiet = false) => {
       core.queue.set(key, { priority, job, quiet });

@@ -67,6 +67,12 @@ export class MarkerLayer {
    * shows regardless (its layer's switch, layers/site-layers.ts).
    */
   readonly kinds = new Set<MarkerKind>(['exact', 'zone']);
+  /**
+   * Whether the sites were answered, an empty list included: until then
+   * the grid's labels wait, since placed clear of no markers they would
+   * stand where the markers then push them out (VENT-69).
+   */
+  loaded = false;
   /** The markers shown at the last frame, where a click is routed. */
   private placed: PlacedMarker[] = [];
   /**
@@ -109,6 +115,7 @@ export class MarkerLayer {
     sites: readonly GlobeSite[],
     nameOf: (site: GlobeSite) => string,
   ): void {
+    this.loaded = true;
     for (const marker of this.markers) marker.el.remove();
     this.markers = mergeColocated(sites).map((site) => ({
       site,

@@ -90,7 +90,7 @@ export function drawFrame(parts: FrameParts, dt: number): boolean {
   const eye = cameraPosition(pose);
   const marks = markers.place(project, eye);
   const covers = parts.layers?.place(project, eye) ?? [];
-  parts.graticule?.place(project, eye, marks, covers);
+  if (markers.loaded) parts.graticule?.place(project, eye, marks, covers);
   parts.drawn?.();
   return moving;
 }

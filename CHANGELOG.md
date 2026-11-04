@@ -3,6 +3,10 @@
 ## [Sin publicar]
 
 ### Cambiado
+- Dominio principal nuevo (VENT-76): la app vive en https://nasa.universelle.io. https://nasa.cervilla.es sigue
+  funcionando con la misma app, pero los buscadores reciben como dirección canónica la de universelle.io. Los sitios
+  guardados y las preferencias van por dominio: en el nuevo se empieza de cero, y una app instalada desde cervilla.es
+  conviene reinstalarla desde el dominio nuevo.
 - **Vista 3D: cráteres pequeños, grano en terrones y luz de Hapke (VENT-64, VENT-67, VENT-68).** El suelo cercano
   tiene cráteres de 0,2 a 12 m con relieve real (malla fina alrededor de los ojos, solo en calidad alta), con densidad de Trask y degradación de Basilevsky (cinco clases con su profundidad), media luna de sombra en el
   lado del Sol y borde iluminado enfrente; el relieve se funde sin cortes hacia el borde del parche y las piedras se

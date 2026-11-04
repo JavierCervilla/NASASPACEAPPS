@@ -33,7 +33,7 @@ import { describe, expect, it, vi } from 'vitest';
 import { CHOICE_KEY, readChoice, saveChoice } from '../src/i18n/choice';
 import { firstVisit, firstVisitScript, type FirstVisitWindow } from '../src/i18n/first-visit';
 import { isLocale, LOCALES } from '../src/i18n/locales';
-import { alternates, localePath } from '../src/i18n/routes';
+import { alternates, canonicalHref, localePath } from '../src/i18n/routes';
 import { localeHref, switchLocale } from '../src/i18n/switch';
 import { menuIndex } from '../src/lib/menu-keys';
 import { createPush } from '../src/lib/push-motion';
@@ -77,6 +77,13 @@ describe('routes', () => {
     expect(alternates('/', new URL('https://ventana.example')).find((a) => a.hreflang === 'de')?.href).toBe(
       'https://ventana.example/de/',
     );
+  });
+
+  it('names the canonical page on the primary domain, none without one (VENT-76)', () => {
+    const site = new URL('https://nasa.universelle.io');
+    expect(canonicalHref('/', 'en', site)).toBe('https://nasa.universelle.io/');
+    expect(canonicalHref('/', 'es', site)).toBe('https://nasa.universelle.io/es/');
+    expect(canonicalHref('/', 'es')).toBeNull();
   });
 
   it('knows the offered locales only', () => {

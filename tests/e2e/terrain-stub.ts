@@ -163,7 +163,7 @@ async function record(path: string, name: string): Promise<string> {
 
 /**
  * REAL LOLA relief for IM-2 (84.79° S 29.20° E), recorded on 2026-11-03 from the levelled tile routes (docs/terrain-api.md,
- * `VENT46_RECORD=<server url>` records again) of the production API (https://nasa.cervilla.es), with every tier installed:
+ * `VENT46_RECORD=<server url>` records again) of the production API (https://nasa.universelle.io), with every tier installed:
  * levels 0 and 1 read NASA's LDEM_80S_20M, level 2 LDEM_80S_80M and level 3 LDEM_75S_240M, as production does (VENT-59;
  * the earlier recording came from a local server without the 20 m tier). Whatever point is asked, the answers are these.
  * The horizon is the recorded one of IM-2 (`fixtures/horizon-im2.json`).

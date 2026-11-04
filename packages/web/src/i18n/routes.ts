@@ -63,3 +63,16 @@ export function alternates(base: string, site?: URL): Alternate[] {
   }));
   return [...each, { hreflang: 'x-default', href: href(DEFAULT_LOCALE) }];
 }
+
+/**
+ * The address search engines should index `locale`'s page under: the
+ * primary domain (`site`, nasa.universelle.io in the image), so a copy
+ * served from another host points back to it. None when `site` is unknown.
+ */
+export function canonicalHref(
+  base: string,
+  locale: UiLocale,
+  site?: URL,
+): string | null {
+  return site ? new URL(localePath(base, locale), site).href : null;
+}

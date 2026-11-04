@@ -84,3 +84,10 @@ describe('the installable app (VENT-28)', () => {
     expect(block).toContain('include /etc/nginx/snippets/security-headers.conf;');
   });
 });
+
+describe('the web image', () => {
+  it('builds for the primary domain, nasa.universelle.io (VENT-76)', () => {
+    expect(DOCKERFILE).toMatch(/^ARG SITE_URL=https:\/\/nasa\.universelle\.io$/m);
+    expect(DOCKERFILE).toMatch(/SITE_URL="\$SITE_URL" PSEUDO_LOCALE=0 npm run build -w @ventana\/web/);
+  });
+});

@@ -33,7 +33,7 @@
  * the person's reload, and telling the two apart is not possible from here.
  */
 import { glStorage } from '../lib/gl-marks';
-import { keepOpenSince } from './view-tier-local';
+import { BEAT_MS, keepOpenSince, tabIdOf } from './view-tier-local';
 import { keepOpen, tierStorage } from './view-tier-memory';
 import type { ViewTierLive } from './view-tier-state';
 
@@ -47,22 +47,51 @@ export interface OpenMarks {
   readonly closed: () => void;
 }
 
+/**
+ * Keeps this tab's mark in `localStorage` beating while the view is open
+ * (view-tier-local.ts), and takes it away when the page is put away
+ * (`pagehide`: a close or a navigation is no death; a GPU reset fires none)
+ * and again when a page restored from the back-forward cache shows.
+ * Returns what stops it.
+ */
+function beatWhileOpen(now: () => ViewTierLive): () => void {
+  const mark = (open: boolean): void => {
+    const { storage, local, nowMs } = now();
+    keepOpenSince(local, { tabId: tabIdOf(storage), open }, nowMs());
+  };
+  const away = (): void => mark(false);
+  const back = (event: Event): void => {
+    if ((event as PageTransitionEvent).persisted) mark(true);
+  };
+  const timer = globalThis.setInterval(() => mark(true), BEAT_MS);
+  addEventListener('pagehide', away);
+  addEventListener('pageshow', back);
+  mark(true);
+  return () => {
+    clearInterval(timer);
+    removeEventListener('pagehide', away);
+    removeEventListener('pageshow', back);
+    mark(false);
+  };
+}
+
 /** The marks over the store's facts, read through `now`. */
 export function openMarks(now: () => ViewTierLive): OpenMarks {
   let told = false;
+  let stop: (() => void) | null = null;
   return {
     opened: () => {
-      const { storage, local, nowMs, note } = now();
-      keepOpen(storage, true);
-      keepOpenSince(local, true, nowMs());
+      keepOpen(now().storage, true);
+      stop?.();
+      stop = beatWhileOpen(now);
       const first = !told;
       told = true;
-      return first ? note : null;
+      return first ? now().note : null;
     },
     closed: () => {
-      const { storage, local, nowMs } = now();
-      keepOpen(storage, false);
-      keepOpenSince(local, false, nowMs());
+      stop?.();
+      stop = null;
+      keepOpen(now().storage, false);
     },
   };
 }
@@ -77,5 +106,5 @@ export function leftOnPurpose(
   local = glStorage(),
 ): void {
   keepOpen(storage, false);
-  keepOpenSince(local, false, Date.now());
+  keepOpenSince(local, { tabId: tabIdOf(storage), open: false }, Date.now());
 }

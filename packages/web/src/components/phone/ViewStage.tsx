@@ -50,7 +50,7 @@ interface Props {
   /** The sheet's top edge, the band's bottom; null: no sheet. */
   readonly sheetEdge: WatchedValue<number | null>;
   /** Lowers the sheet, for a notice the band has no room for. */
-  readonly makeRoom: () => void;
+  readonly makeRoom: (to?: 'peek' | 'closed') => void;
 }
 
 export function ViewStage(props: Props) {
@@ -59,7 +59,9 @@ export function ViewStage(props: Props) {
   if (view !== 'horizon') return null;
   const band = () => ({
     top: bar.current?.getBoundingClientRect().bottom ?? 0,
-    bottom: sheetEdge.get() ?? window.innerHeight,
+    bottom: Math.min(sheetEdge.get() ?? window.innerHeight,
+      document.querySelector('.tab-bar')?.getBoundingClientRect().top
+        ?? window.innerHeight),
   });
   return (
     <OnFootView layout="phone" site={site} time={parts.time}

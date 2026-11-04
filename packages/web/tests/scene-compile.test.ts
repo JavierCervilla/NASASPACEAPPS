@@ -34,6 +34,8 @@ import {
   COMPILE_GIVE_UP_MS,
   compileFirst,
   compileVerdict,
+  MAPS_GIVE_UP_MS,
+  waitAtMost,
 } from '../src/terrain/scene/scene-compile';
 import { gateLoop } from '../src/terrain/scene/loop-gate';
 
@@ -51,6 +53,7 @@ function rig(ms: number, fails = false) {
     wait: () => new Promise<void>(() => undefined),
     note: (text: string) => void notes.push(text),
     onSlow,
+    hidden: () => false,
   };
   return { deps, notes, onSlow };
 }
@@ -107,6 +110,32 @@ describe('compileFirst', () => {
     expect(waited).toEqual([COMPILE_GIVE_UP_MS]);
     expect(ms).toBe(COMPILE_GIVE_UP_MS);
     expect(onSlow).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe('a compile the page was hidden for', () => {
+  it('is not judged: a hidden page spaces its timers, the time says nothing of the GPU', async () => {
+    const { deps, notes, onSlow } = rig(1700);
+    await compileFirst({ ...deps, hidden: () => true });
+    expect(onSlow).not.toHaveBeenCalled();
+    expect(notes[0]).toBe('programs compiled in 1700 ms, page was hidden: not judged');
+  });
+});
+
+describe('waitAtMost (the surface maps\' wait)', () => {
+  it('resolves when the work does, before the cap', async () => {
+    const wait = vi.fn(() => new Promise<void>(() => undefined));
+    await expect(waitAtMost(Promise.resolve(), MAPS_GIVE_UP_MS, wait)).resolves.toBe('done');
+    expect(wait).toHaveBeenCalledWith(MAPS_GIVE_UP_MS);
+  });
+
+  it('gives up on work that stalls and says so', async () => {
+    const stalled = new Promise<void>(() => undefined);
+    await expect(waitAtMost(stalled, MAPS_GIVE_UP_MS, () => Promise.resolve())).resolves.toBe('timeout');
+  });
+
+  it('caps the wait at 5 s', () => {
+    expect(MAPS_GIVE_UP_MS).toBe(5000);
   });
 });
 

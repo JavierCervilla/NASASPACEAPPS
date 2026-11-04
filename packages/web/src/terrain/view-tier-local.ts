@@ -27,39 +27,79 @@
  * The on-foot view's open mark in `localStorage` (VENT-69): a browser that
  * blocks WebGL after a GPU reset needs a restart, which empties the
  * session's storage and with it view-tier-memory's mark, so the page that
- * died is forgotten. This one holds the time it was set and counts for
- * {@link OPEN_TTL_MS}.
+ * died is forgotten. This one outlives the restart, and is kept per tab:
+ * `{ [tabId]: time of its last beat }`, so one tab's leaving never clears
+ * another's. A page that is open beats every {@link BEAT_MS}; a mark of
+ * another tab counts as a death when its beat is older than
+ * {@link LIVE_GRACE_MS} (the page is gone, or frozen) and under
+ * {@link OPEN_TTL_MS}. A normal close or navigation clears the tab's own
+ * mark (`pagehide`, view-tier-open.ts); a GPU reset fires none.
  */
 import { OPEN_KEY, type TierStorage } from './view-tier-memory';
 
 /** How long a mark left in `localStorage` says the page died: 24 hours. */
 export const OPEN_TTL_MS = 24 * 60 * 60 * 1000;
+/** How often an open view says it is alive. */
+export const BEAT_MS = 5000;
+/** A beat older than this is of a page that is gone: four beats. */
+export const LIVE_GRACE_MS = 4 * BEAT_MS;
 
-/** Marks the view open since `nowMs` in `localStorage`, or closed. */
+type Marks = Record<string, number>;
+
+/** The marks `local` holds; a value that is no map of times is none. */
+function readMarks(local: TierStorage | null): Marks {
+  try {
+    const parsed: unknown = JSON.parse(local?.getItem(OPEN_KEY) || '{}');
+    if (typeof parsed !== 'object' || parsed === null) return {};
+    if (Array.isArray(parsed)) return {};
+    return Object.fromEntries(Object.entries(parsed)
+      .filter(([, since]) => Number.isFinite(since) && since > 0));
+  } catch {
+    return {};
+  }
+}
+
+const TAB_KEY = 'ventana.tabId';
+/** A tab id for a session whose storage is refused. */
+const fallbackTab = `t${Math.random().toString(36).slice(2)}`;
+
+/** This tab's id: made once and kept in its session's storage. */
+export function tabIdOf(session: TierStorage | null): string {
+  try {
+    const kept = session?.getItem(TAB_KEY);
+    if (kept) return kept;
+    const made = `t${Math.random().toString(36).slice(2)}`;
+    session?.setItem(TAB_KEY, made);
+    return session ? made : fallbackTab;
+  } catch {
+    return fallbackTab;
+  }
+}
+
+/** Sets or clears `tabId`'s mark: its last beat is `nowMs`. */
 export function keepOpenSince(
   local: TierStorage | null,
-  open: boolean,
+  mark: { readonly tabId: string; readonly open: boolean },
   nowMs: number,
 ): void {
   try {
-    local?.setItem(OPEN_KEY, open ? String(nowMs) : '');
+    const next = { ...readMarks(local) };
+    if (mark.open) next[mark.tabId] = nowMs;
+    else delete next[mark.tabId];
+    local?.setItem(OPEN_KEY, JSON.stringify(next));
   } catch {
     // Refused storage: only the session's mark tells the next page.
   }
 }
 
 /**
- * Whether `localStorage` holds a mark set less than {@link OPEN_TTL_MS}
- * before `nowMs`; a value that is no time, or an empty one, is none.
+ * Whether `local` holds a mark that no longer beats: older than
+ * {@link LIVE_GRACE_MS} and younger than {@link OPEN_TTL_MS} at `nowMs`. A
+ * tab's own stale mark is a death as well (a hung page the person reloads).
  */
-export function wasOpenWithin(
-  local: TierStorage | null,
-  nowMs: number,
-): boolean {
-  try {
-    const since = Number(local?.getItem(OPEN_KEY));
-    return Number.isFinite(since) && since > 0 && nowMs - since < OPEN_TTL_MS;
-  } catch {
-    return false;
-  }
+export function diedBefore(local: TierStorage | null, nowMs: number): boolean {
+  return Object.values(readMarks(local)).some((beat) => {
+    const age = nowMs - beat;
+    return age > LIVE_GRACE_MS && age < OPEN_TTL_MS;
+  });
 }

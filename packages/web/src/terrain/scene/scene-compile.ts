@@ -46,6 +46,23 @@ export const COMPILE_BUDGET_MS = COMPILED_FRAME_CEILING_MS;
 /** Past this the wait is given up and the first frame draws regardless. */
 export const COMPILE_GIVE_UP_MS = 5000;
 
+/**
+ * Past this the surface maps (regolith, Blue Marble) are no longer waited
+ * for: the view compiles and draws without them, as before VENT-69, and they
+ * go on when they land.
+ */
+export const MAPS_GIVE_UP_MS = 5000;
+
+/** Waits for `work`, at most `ms`; which of the two came first. */
+export async function waitAtMost(
+  work: Promise<unknown>,
+  ms: number,
+  wait: (ms: number) => Promise<void>,
+): Promise<'done' | 'timeout'> {
+  return Promise.race([work.then(() => 'done' as const),
+    wait(ms).then(() => 'timeout' as const)]);
+}
+
 /** The verdict on a compile that took `ms`. */
 export const compileVerdict = (ms: number): 'ok' | 'slow' =>
   ms > COMPILE_BUDGET_MS ? 'slow' : 'ok';
@@ -57,6 +74,8 @@ export interface CompileDeps {
   readonly wait: (ms: number) => Promise<void>;
   /** Tells the crash report. */
   readonly note: (text: string) => void;
+  /** The page was hidden at some point of the compile (not a GPU's time). */
+  readonly hidden: () => boolean;
   /** The tier steps down; absent when it may not. */
   readonly onSlow: (() => void) | undefined;
 }
@@ -74,9 +93,11 @@ export async function compileFirst(deps: CompileDeps): Promise<number> {
     deps.note(`program compile failed: ${String(error)}`);
   }
   const ms = deps.now() - start;
-  const slow = compileVerdict(ms) === 'slow';
-  deps.note(`programs compiled in ${Math.round(ms)} ms${
-    slow ? ', over the budget' : ''}`);
+  const unjudged = deps.hidden();
+  const slow = !unjudged && compileVerdict(ms) === 'slow';
+  const verdict = unjudged ? ', page was hidden: not judged'
+    : slow ? ', over the budget' : '';
+  deps.note(`programs compiled in ${Math.round(ms)} ms${verdict}`);
   if (slow) deps.onSlow?.();
   return ms;
 }

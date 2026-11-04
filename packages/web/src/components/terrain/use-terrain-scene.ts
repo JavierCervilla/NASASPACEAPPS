@@ -51,6 +51,7 @@ import { loadTerrainScene, sceneFailure }
 import type { ViewTier } from '../../terrain/view-tier';
 import { useLatest } from '../use-latest';
 import { sceneHooks, type PanelHooks } from './scene-hooks';
+import { useParked } from './use-parked';
 
 export type SceneStatus =
   'loading' | 'ready' | 'failed' | 'blocked' | 'lost' | 'missing' | 'offline';
@@ -74,7 +75,7 @@ interface Mount {
   readonly scene: RefObject<TerrainScene | null>;
   readonly tier: ViewTier;
   readonly onStatus: (status: SceneStatus) => void;
-  /** The mounted scene has drawn its first frame. */
+  /** The mounted scene has drawn its first frame (of a point). */
   readonly onDrawn: () => void;
 }
 
@@ -122,20 +123,36 @@ interface MountParts extends Omit<Mount, 'el' | 'onDrawn'> {
   readonly lost: boolean;
 }
 
-/** Mounts the scene while there is input and no loss; whether it drew. */
+/**
+ * Mounts the scene while there is input and no loss; whether it drew. The
+ * scene keeps its one renderer (one canvas, one GPU context) for the view's
+ * whole life (VENT-69): when the selected point changes and its input goes
+ * away until the next point's tiles land, the mounted scene is parked (its
+ * canvas hidden, `data-parked`), not freed, so the new point is built on the
+ * same renderer with the programs already compiled. Only leaving the view, a
+ * tier change or a lost context frees it.
+ */
 function useMountedScene(parts: MountParts): boolean {
   const { host, ready, lost, latest, hooks, scene, tier, onStatus } = parts;
   const [drawn, setDrawn] = useState(false);
+  const [mounted, setMounted] = useState(false);
+  const wanted = ready || mounted;
   useEffect(() => {
     const el = host.current;
-    if (!ready || !el || lost) return undefined;
-    const unmount = mountScene({ el, latest, hooks, scene, tier, onStatus,
-      onDrawn: () => setDrawn(true) });
+    if (!wanted || !el || lost) return undefined;
+    const unmount = mountScene({ el, latest, hooks, scene, tier,
+      onStatus: (status) => {
+        onStatus(status);
+        if (status === 'ready') setMounted(true);
+      },
+      onDrawn: () => (el.removeAttribute('data-parked'), setDrawn(true)) });
     return () => {
       unmount();
       setDrawn(false);
+      setMounted(false);
     };
-  }, [host, ready, lost, tier, latest, hooks, scene, onStatus]);
+  }, [host, wanted, lost, tier, latest, hooks, scene, onStatus]);
+  useParked({ ready, host, scene, onParked: () => setDrawn(false) });
   return drawn;
 }
 

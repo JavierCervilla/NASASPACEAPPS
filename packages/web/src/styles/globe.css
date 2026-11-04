@@ -92,7 +92,26 @@
   clip-path: none;
   white-space: normal;
   text-align: center;
-  color: #9a9ca6;
+  color: #c7c8ce;
+}
+
+/*
+ * On a phone the words keep to the free band between the top bar and the
+ * sheet, as use-help-band.ts writes it, on a backing that holds 4.5:1, and
+ * scroll when the band is short (VENT-69).
+ */
+@media (max-width: 767.98px) {
+  .globe-help[data-status='unavailable'],
+  .globe-help[data-status='blocked'] {
+    inset: auto 0 auto 0;
+    top: var(--help-band-top, 0px);
+    height: var(--help-band-height, 100%);
+    box-sizing: border-box;
+    overflow-y: auto;
+    align-content: safe center;
+    background: rgb(0 0 0 / 0.78);
+    color: #c7c8ce;
+  }
 }
 
 /*

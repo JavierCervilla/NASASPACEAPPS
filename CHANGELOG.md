@@ -16,6 +16,20 @@
   igual cuando nunca funcionó. (5) La marca de «la página murió con la vista abierta» también se guarda 24 h en
   `localStorage`, para que un reinicio de Chrome no la pierda. Nuevas palabras de `?onfoot=`: `photometry`, `antitile`,
   `footprint`, `fine` y `rocks`.
+  (6) Cambiar de punto con la vista abierta (soltar un pin o elegir otro sitio desde «Lugares») ya no destruye y vuelve
+  a crear el contexto WebGL: la vista conserva un solo renderizador (un canvas, un contexto) toda su vida, aparca la
+  escena mientras llegan las teselas del punto nuevo y reconstruye el mundo encima, con los programas ya compilados
+  (antes: contexto nuevo, 10 programas enlazados otra vez y un primer fotograma de 1,6 s en el Pixel 10, tras el cual se
+  perdía el contexto). Solo salir de la vista, cambiar de calidad o perder el contexto lo liberan. (7) Los mapas de la
+  superficie se esperan como mucho 5 s: si la descarga se atasca, la vista compila y dibuja sin ellos. (8) Una
+  compilación con la página oculta en algún momento no se juzga lenta (Chrome espacia los temporizadores y bajaba la
+  calidad sin motivo). (9) La marca de «murió con la vista abierta» de `localStorage` es por pestaña y late cada 5 s
+  mientras la vista está abierta: otra pestaña que abre la vista, o cerrar la app con normalidad (`pagehide`), ya no
+  bajan un escalón; solo cuenta una marca que dejó de latir hace más de 20 s y tiene menos de 24 h (un reinicio de Chrome
+  tras un fallo de GPU, o una página que no llegó a avisar al cerrarse, como un móvil que mata la pestaña). (10) El
+  mensaje «el navegador bloqueó el 3D» se queda en la franja libre entre la barra superior y la hoja (también al 200 %
+  de texto, donde la hoja se cierra para dejarle sitio), sobre un fondo que mantiene el contraste 4,5:1 y con scroll si
+  no cabe; ya no se pinta sobre las etiquetas del horizonte.
 - Fix forward (VENT-66): en la vista 3D, en puntos de la rejilla lat-lon (p. ej. 8,07° N 38,41° O, cerca del Oceanus
   Procellarum) ya no aparece un «corte»: una franja recta y oscura con una tira blanca en diagonal sobre la ladera. La
   ventana de cada nivel se centra en el sitio y su borde, y el hueco que deja en el nivel de arriba, cae en cualquier

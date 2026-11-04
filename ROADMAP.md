@@ -11,6 +11,7 @@ completa está en el documento «Ventana Lunar · Especificación y roadmap».
 - [x] CI: lint, tipos, tests unitarios, build, smoke e2e, gate de idioma y escalera de seguridad (VENT-2)
 - [x] Despliegue en Dokploy preparado: Dockerfile con nginx (VENT-2)
 - [x] App en Dokploy con dominio y el «hola mundo» publicado en https://nasa.cervilla.es
+- [x] Dominio principal https://nasa.universelle.io; nasa.cervilla.es sigue sirviendo la misma app (VENT-76)
 - [ ] CI en el pool de runners: PAT del pool con el repo y redespliegue del compose `github-runner`
 - [ ] Registrar al equipo en spaceappschallenge.org (Madrid, reto Lunar Landing Site Navigator)
 - [x] Leer el enunciado oficial (29 oct): el reto es «Lunar Landing Site Navigator»

@@ -10,8 +10,11 @@ COPY packages/web/package.json packages/web/
 COPY packages/server/package.json packages/server/
 RUN npm ci
 COPY . .
+# The primary domain: the hreflang and canonical links are absolute to it, so the page served from another host
+# (nasa.cervilla.es is kept as a second domain) points search engines here.
+ARG SITE_URL=https://nasa.universelle.io
 # PSEUDO_LOCALE=0: the pseudo-locale page (/en-xa/) is for the e2e overflow tests, never for visitors.
-RUN PSEUDO_LOCALE=0 npm run build -w @ventana/web \
+RUN SITE_URL="$SITE_URL" PSEUDO_LOCALE=0 npm run build -w @ventana/web \
   && node packages/web/scripts/csp-header.mjs packages/web/dist > /app/csp.conf \
   && grep -q 'Content-Security-Policy' /app/csp.conf
 

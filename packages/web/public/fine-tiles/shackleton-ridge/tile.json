@@ -1,5 +1,5 @@
 {
-  "about": "A fine real-terrain tile (MOON-20); see ASSETS.md and packages/web/scripts/fine_tiles.py",
+  "about": "A fine real-terrain tile (MOON-20); see ASSETS.md and, in the Mooner repo (JavierCervilla/mooner), packages/web/scripts/fine_tiles.py",
   "place": "shackleton-ridge",
   "landing_cell": {
     "q": -159,

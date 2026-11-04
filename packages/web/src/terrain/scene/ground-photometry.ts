@@ -37,6 +37,7 @@ import {
   NORMAL_PHASE_DEG,
   SHOE,
 } from '../lunar-photometry';
+import { glslFloat as g } from './glsl-float';
 import { replaceOnce } from './ground-shader';
 
 const [M1, M2, M3] = MCEWEN;
@@ -51,10 +52,10 @@ void RE_Direct_Ground(const in IncidentLight directLight, const in vec3 geometry
     float mu = saturate(dot(geometryNormal, geometryViewDir));
     float c = clamp(dot(directLight.direction, geometryViewDir), -0.9995, 1.0);
     float a = degrees(acos(c));
-    float L = clamp(1.0 + a * (${M1} + a * (${M2} + ${M3} * a)), ${L_FLOOR}, 1.0);
+    float L = clamp(1.0 + a * (${g(M1)} + a * (${g(M2)} + ${g(M3)} * a)), ${g(L_FLOOR)}, 1.0);
     float r = mu0 > 0.0 ? 2.0 * L * mu0 / (mu0 + mu + 1e-3) + (1.0 - L) * mu0 : 0.0;
-    float B = 1.0 + ${SHOE.b0} / (1.0 + sqrt((1.0 - c) / (1.0 + c)) / ${SHOE.h});
-    reflectedLight.directDiffuse += directLight.color * (r * ${LUNAR_NORM} * B / ${SHOE_AT_NORMAL}) * BRDF_Lambert(material.diffuseContribution);
+    float B = 1.0 + ${g(SHOE.b0)} / (1.0 + sqrt((1.0 - c) / (1.0 + c)) / ${g(SHOE.h)});
+    reflectedLight.directDiffuse += directLight.color * (r * ${g(LUNAR_NORM)} * B / ${g(SHOE_AT_NORMAL)}) * BRDF_Lambert(material.diffuseContribution);
     return;
   }
 #endif

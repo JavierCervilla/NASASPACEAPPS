@@ -386,6 +386,9 @@ All load on demand with the 3D view (file names `on-foot-*`, left out of the pre
 
   The `mask.png` and `tile.json` hashes are in each `tile.json`'s `layers` and in Mooner's `SHA256SUMS`; the catalogue
   (`terrain/fine/fine-catalog.ts`) is held to the `tile.json` files by `tests/fine-catalog.test.ts`.
+  The one line of each `tile.json` that differs from Mooner's copy is `about`: it names the script that made the tile,
+  `packages/web/scripts/fine_tiles.py`, which lives in the Mooner repo (`JavierCervilla/mooner`), not here, so the file's
+  own sha256 is not the one in Mooner's `SHA256SUMS`; its `layers` hashes are.
   Credit: the NAC DTMs, **NASA/GSFC/Arizona State University**; Malapert Massif, **PGDA product 104, CC BY 4.0**,
   Bertone, S., Barker, M., Mazarico, E., McKenna, T. and Petro, N., 2025, Zenodo, doi:10.5281/zenodo.17954508; Bertone
   et al., The Planetary Science Journal, doi:10.3847/PSJ/ae5b70. **Licence of the NAC DTMs**: no licence text was found

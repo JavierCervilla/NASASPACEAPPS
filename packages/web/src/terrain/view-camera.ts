@@ -44,7 +44,7 @@ export const EYE_M = 2;
 
 const RAD = Math.PI / 180;
 const PITCH_RANGE = [-60, 80] as const;
-const START_PITCH = 2;
+export const START_PITCH = 2;
 
 /** The unit vector toward azimuth `azDeg` and elevation `elDeg`. */
 export function direction(azDeg: number, elDeg: number): Vec3 {

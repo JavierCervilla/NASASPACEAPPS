@@ -30,6 +30,7 @@
 import { ShaderLib } from 'three';
 import { describe, expect, it } from 'vitest';
 import { LUNAR_NORM, L_FLOOR, MCEWEN, SHOE } from '../src/terrain/lunar-photometry';
+import { glslFloat } from '../src/terrain/scene/glsl-float';
 import { patchPhotometry } from '../src/terrain/scene/ground-photometry';
 
 const patched = (): string => {
@@ -52,7 +53,15 @@ describe('patchPhotometry', () => {
   it('carries the twin\'s constants', () => {
     const source = patched();
     for (const v of [...MCEWEN, SHOE.b0, SHOE.h, LUNAR_NORM, L_FLOOR]) {
-      expect(source).toContain(String(v));
+      expect(source).toContain(glslFloat(v));
     }
+  });
+
+  it('writes no int literal GLSL ES would refuse where a float goes', () => {
+    const source = patched();
+    const ground = source.slice(source.indexOf('void RE_Direct_Ground'),
+      source.indexOf('#undef RE_Direct'));
+    const code = ground.replace(/\[0\]|1e-3/g, '').replace(/^#if .*$/gm, '');
+    expect(code.match(/(?<![\w.])\d+(?![\w.])/g)).toBeNull();
   });
 });

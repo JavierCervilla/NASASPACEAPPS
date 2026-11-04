@@ -34,7 +34,7 @@
  *   ORIENTATION_SHOTS=/tmp/shots npm run e2e -- globe-orientation.spec.ts
  */
 import { expect, test, type Locator, type Page } from '@playwright/test';
-import { stubApi } from './api-stub';
+import { SITES, stubApi } from './api-stub';
 
 // Under CI's parallel software-rendered pages the globe can take longer than the default 5 s to place its first
 // markers; this wait is a start-up precondition, not an assertion (same bound as globe.spec.ts).
@@ -267,6 +267,28 @@ test.describe('desktop, 1440x900', () => {
     await expect.poll(async () => (await labelTexts(page)).length).toBeGreaterThan(3);
   });
 
+  test('holds the labels until the sites are in, so no 85° S shows and then goes', async ({ page }) => {
+    await page.emulateMedia({ reducedMotion: 'reduce' });
+    let release = (): void => undefined;
+    const gate = new Promise<void>((resolve) => {
+      release = resolve;
+    });
+    await open(page, './');
+    // Registered after the stub, so it answers the site list first: a slow answer, as on a busy runner.
+    await page.route('**/api/v1/sites', async (route) => {
+      await gate;
+      await route.fulfill({ json: { sites: SITES } });
+    });
+    await page.reload();
+    await expect(page.locator('.globe-viewport canvas')).toBeVisible({ timeout: GLOBE_START_MS });
+    await idle(page);
+    // The globe has drawn its frames with no site yet: the grid's lines are up, no label stands among no markers.
+    expect(await labelTexts(page)).toEqual([]);
+    release();
+    await expect(page.locator('.graticule-label:not([hidden])').first()).toBeVisible({ timeout: GLOBE_START_MS });
+    expect(await labelTexts(page)).not.toContain('85° S');
+  });
+
   test('writes the western meridians with the Spanish O', async ({ page }) => {
     await open(page, './es/');
     await expect(page.locator('.graticule-label:not([hidden])').first()).toBeVisible({ timeout: GLOBE_START_MS });
@@ -353,7 +375,7 @@ test.describe('desktop, 1440x900', () => {
     await page.emulateMedia({ reducedMotion: 'reduce' });
     await largeText(page);
     await open(page, './');
-    await expect(page.locator('.graticule-label:not([hidden])').first()).toBeVisible({ timeout: GLOBE_START_MS });
+    await expect(page.locator(IM2)).toHaveAttribute('style', /translate3d/, { timeout: GLOBE_START_MS });
     const app = page.getByRole('application', { name: GLOBE_NAME });
     for (const step of ['opening', '+', '+', 'ArrowRight', 'ArrowRight', 'ArrowRight']) {
       if (step !== 'opening') {
@@ -363,6 +385,9 @@ test.describe('desktop, 1440x900', () => {
       await idle(page);
       expect(await labelClashes(page), step).toEqual([]);
     }
+    // Zoomed in, labels are placed and measured at 200 % (at the opening
+    // zoom none fits once the sites are in).
+    expect((await labelTexts(page)).length).toBeGreaterThan(0);
     await shot(page, 'desktop-graticule-200-text');
   });
 

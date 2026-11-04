@@ -34,6 +34,7 @@
 import { readFileSync } from 'node:fs';
 import { expect, test, type Page, type Route } from '@playwright/test';
 import { stubApi } from './api-stub';
+import { idleCount } from './view-idle';
 
 const AT = new Date('2026-11-22T20:00:00Z');
 const START_MS = 30_000;
@@ -118,16 +119,7 @@ const loader = (page: Page) => page.locator('.on-foot-loader');
 const frames = async (page: Page): Promise<number> => Number(await host(page).getAttribute('data-frames'));
 
 /** Waits until the view has drawn no frame for 600 ms and its slices are all run, and returns the count. */
-async function idle(page: Page): Promise<number> {
-  let last = -1;
-  await expect.poll(async () => {
-    const now = await frames(page);
-    const still = now === last && (await host(page).getAttribute('data-working')) !== 'true';
-    last = now;
-    return still;
-  }, { intervals: [600], timeout: 15_000 }).toBe(true);
-  return last;
-}
+const idle = (page: Page): Promise<number> => idleCount(host(page));
 
 /** Releases the near tiles a few at a time, as the API would, waiting for each to be asked. */
 async function releaseNear(page: Page, gate: Gate, count: number): Promise<void> {

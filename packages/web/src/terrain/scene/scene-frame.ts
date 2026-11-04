@@ -75,11 +75,15 @@ function homeStep(view: ViewState, dt: number, hooks: SceneHooks): boolean {
   return next.homing !== null;
 }
 
-/** Marks on the host what the frame drew and how many were drawn. */
-function markFrame(world: World, host: HTMLElement): void {
+/**
+ * Marks on the host what the frame drew and how many were drawn. `working`
+ * says more frames are coming, from the slices or from a coast or a way
+ * home still turning the look, so quiet between two slow frames is no rest.
+ */
+function markFrame(world: World, host: HTMLElement, moving: boolean): void {
   const { calls, triangles } = world.stage.renderer.info.render;
   host.dataset['draws'] = `${calls},${triangles}`;
-  host.dataset['working'] = String(world.slicer.busy());
+  host.dataset['working'] = String(moving || world.slicer.busy());
   const drawn = Number(host.dataset['frames'] ?? 0) + 1;
   host.dataset['frames'] = String(drawn);
 }
@@ -110,7 +114,7 @@ export function framer(
     const drawMs = drawTimed(world, probe);
     if (world.input) labels.draw(world.input.words, view.look.yawDeg);
     markBodies(world, host);
-    markFrame(world, host);
+    markFrame(world, host, moving);
     reportFrame(world, drawMs);
     if (!view.told) hooks.onDrawn?.();
     view.told = true;

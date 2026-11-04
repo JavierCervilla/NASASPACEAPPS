@@ -10,7 +10,7 @@
   piedras quedan en 420 en media y ninguna en baja; la exposición +20 % sigue en todas. (2) Los programas del suelo se
   compilan antes del primer fotograma, una sola vez y ya con sus mapas; si la compilación pasa de 1 s la vista baja de
   calidad, y la sonda de fotogramas ya no deja pasar un primer fotograma lento por haber compilado; el informe de la
-  vista anota el tiempo. (3) Un PowerVR o una GPU de móvil no reconocida arranca en calidad baja aunque tenga 8 núcleos.
+  vista anota el tiempo. (3) Un PowerVR antiguo o una GPU de móvil no reconocida arranca en calidad baja aunque tenga 8 núcleos; el PowerVR D-Series del Pixel 10 se queda en media, con el suelo seguro.
   (4) Si el navegador bloquea WebGL tras un fallo gráfico, el globo y la vista lo dicen y explican cómo recuperarlo
   (cerrar el navegador del todo; en Android, Ajustes › Aplicaciones › Chrome › Forzar detención); «no hay WebGL» sigue
   igual cuando nunca funcionó. (5) La marca de «la página murió con la vista abierta» también se guarda 24 h en

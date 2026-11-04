@@ -72,7 +72,10 @@ epic: `VENT-1` (Dashboard project «Ventana Lunar», prefix `VENT`).
   server yet». The image's entrypoint gives the mounted volumes' top directories to `node` and drops to it with
   `su-exec`, so a root-owned volume works.
 - **Deploy**: Dokploy builds the `Dockerfile` (static build served by nginx, `nginx.conf`) from `main`, at the domain
-  root (`SITE_BASE` sets a sub-path if ever needed). The API has its own `packages/server/Dockerfile` (built from the
+  root (`SITE_BASE` sets a sub-path if ever needed). The primary domain is **https://nasa.universelle.io** (VENT-76);
+  https://nasa.cervilla.es serves the same app as a second domain. The image builds with `SITE_URL` set to the primary
+  domain (`ARG` in the `Dockerfile`), so every page's `rel="canonical"` and `hreflang` links are absolute to it
+  (`canonicalHref`, `alternates` in `src/i18n/routes.ts`); the API answers on both hosts under `/api`. The API has its own `packages/server/Dockerfile` (built from the
   repo root, port 3000). Operate it with the framework's `dokploy` skill.
 
 ## Design: follow the `apple-design` skill

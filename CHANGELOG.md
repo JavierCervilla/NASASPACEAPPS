@@ -14,6 +14,10 @@
   suelo calibrado con las fotos de Apolo más allá de 120° de fase; las piedras usan la ley de Golombek y Rapp con la `k`
   de llanura de Diviner (0,004), solo en calidad alta (las piedras de media siguen con la ley de antes). Al cambiar de punto con la vista abierta, el relieve de cráteres y el grano se vuelven a hornear para el punto nuevo y se liberan los viejos. Todo se hornea en trozos de menos de 20 ms, justo detrás del suelo cercano y antes del relieve lejano, y el parche se construye una vez por punto. Pendiente de verificar: la densidad exacta de
   Trask, la ley de terrones (calibración propia) y los valores derivados `h_S` y `h_C` (ASSETS.md).
+- Fix forward (VENT-75): en GPU PowerVR (el Pixel 10) la vista 3D se dibuja sin el mapa de sombras del Sol, en todas las
+  calidades. La bisección en el Pixel lo aisló: sin sombras o sin la profundidad logarítmica la vista aguanta, y con las
+  dos juntas pierde el contexto WebGL al girar, incluso en calidad baja. El resto de GPUs conserva las sombras; el
+  sombreado del relieve por rayos hacia el Sol sigue igual en todas.
 - Fix forward (VENT-73): el Pixel 10 perdía el contexto WebGL tras unos 3 s girando seguido la vista 3D en calidad
   media (unos 340 mil triángulos por fotograma, lienzo de 719 × 1417 y el mapa de sombras del Sol recalculado en cada
   fotograma). Se aligera media en móvil: (1) el mapa de sombras se dibuja bajo demanda en todas las calidades, solo

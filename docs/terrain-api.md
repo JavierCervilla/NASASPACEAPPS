@@ -435,7 +435,7 @@ rest (Seguridad's finding on VENT-46):
 
 A client should keep at most **6 requests in flight** and fetch the ring in the order the route lists it (nearest
 first); a retry waits `Retry-After`. The web gives up on a request after 4 s of silence and tries a tile again after 0.5,
-1, 2 and 4 s, honouring a Retry-After up to 8 s (VENT-78). Tiles read from the disk cache cost nothing.
+1, 2 and 4 s, waiting a longer Retry-After only up to 8 s, and leaves the tile a hole the parent fills once the tries run out (VENT-78). Tiles read from the disk cache cost nothing.
 
 **Budget.** The answer is 44.7 kB of JSON (33 282 bytes of `q`, 44 376 characters of base64, plus about 400 of fields):
 a seventh of the 4 km tile's 352 kB. On a synthetic rough surface (a 400 m swell, a 25 m ripple and 0.8 m of noise,

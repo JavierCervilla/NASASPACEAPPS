@@ -27,7 +27,7 @@
  * How long one terrain tile may hold the view (VENT-78): a tile once took over 15 s on a phone. A request that
  * hangs, or whose body stops coming, is asked again after a short silence instead of waiting for the browser to
  * give up, and a tile retries on waits of its own, shorter than the horizon's 2, 6 and 18 s, with a long
- * Retry-After capped: the parent level stands in for a missing tile meanwhile.
+ * Retry-After capped at 8 s and the tile asked again; once the tries run out it is a hole the parent level fills.
  */
 import { describe, expect, it } from 'vitest';
 import { fetchRingSource } from '../src/terrain/ring/ring-fetch';
@@ -75,7 +75,40 @@ async function load(fetcher: typeof fetch, waits: ReturnType<typeof fastWaits>['
   return tiles.sort();
 }
 
+/** A 200 whose body comes in 40 pieces 2 ms apart, about 80 ms in all: slow, but never silent for a 50 ms watch. */
+function tricklingBody(): Response {
+  const bytes = new TextEncoder().encode(tileBody);
+  const step = Math.ceil(bytes.length / 40);
+  const body = new ReadableStream<Uint8Array>({
+    async start(c) {
+      for (let at = 0; at < bytes.length; at += step) {
+        await new Promise((done) => setTimeout(done, 2));
+        c.enqueue(bytes.slice(at, at + step));
+      }
+      c.close();
+    },
+  });
+  return new Response(body, { status: 200 });
+}
+
 describe('terrain tile waits', () => {
+  // Verificador round 1 on PR #55: the silence, not the whole time, is bounded.
+  it('never cuts a slow network that keeps sending, even past the silence bound in all', async () => {
+    const asked = new Map<string, number>();
+    const fetcher = (async (url: string) => {
+      if (!url.includes('/tiles/polar')) return new Response(JSON.stringify(ring));
+      asked.set(url, (asked.get(url) ?? 0) + 1);
+      return url.includes('/0/1/') ? tricklingBody() : new Response(tileBody);
+    }) as unknown as typeof fetch;
+    const { waits: fast } = fastWaits();
+    const waits = { ...fast, timer: (fn: () => void) => {
+      const id = setTimeout(fn, 50);
+      return () => clearTimeout(id);
+    } };
+    expect(await load(fetcher, waits)).toEqual([0, 1, 2]);
+    expect(asked.get('https://x.test/api/v1/terrain/tiles/polar-south/0/1/0?v=1')).toBe(1);
+  });
+
   it('asks a tile again when its request hangs, instead of waiting for the browser', async () => {
     const asked = new Map<string, number>();
     const fetcher = (async (url: string, init?: RequestInit) => {

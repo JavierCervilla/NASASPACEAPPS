@@ -122,8 +122,10 @@ test.describe('the ground per tier (IM-2 stands inside a fine tile)', () => {
     await expect(page.locator('.on-foot__caption')).toContainText('LROC NAC DTM');
   });
 
+  // Far rings, rocks, shade and shadows are not what this reads; four workers of software GL could not draw them all
+  // inside START_MS next to the crater patch (700 k triangles a frame).
   test('at high the craters and the clods are built and their code is in the ground shader', async ({ page }) => {
-    await openView(page, 'quality=high');
+    await openView(page, 'quality=high&onfoot=far,rocks,shade,shadows');
     const host = page.getByRole('application', { name: 'On foot at the site' });
     await expect(host).toHaveAttribute('data-working', 'false', { timeout: START_MS });
     const sources = await groundShaders(page);

@@ -45,10 +45,10 @@ export interface PatchSpec {
   readonly k: number;
 }
 
-/** Per quality tier: halved from the first cut, +14 % of a frame on high. */
+/** Per quality tier, high only (ground-policy.ts): +14 % of a frame. */
 export const PATCH_SPECS: Record<Tier, PatchSpec | null> = {
   high: { n: 512, r: 48, minStep: 0.03, k: 0.003 },
-  medium: { n: 320, r: 34, minStep: 0.045, k: 0.005 },
+  medium: null,
   low: null,
 };
 

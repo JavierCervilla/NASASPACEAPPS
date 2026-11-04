@@ -43,8 +43,8 @@ import { bakeClods } from '../clod-relief';
 import type { ClodUniforms } from './clod-glsl';
 import type { Slicer } from './slicer';
 
-/** After the craters' bake (10) and patch (20), before the rocks (100). */
-const PRIORITY = 30;
+/** After the craters' bake and patch, before the far levels. */
+const PRIORITY = 1.4;
 
 export interface ClodDeps {
   readonly seed: number;

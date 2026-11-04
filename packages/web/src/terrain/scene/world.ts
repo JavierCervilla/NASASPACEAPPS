@@ -138,7 +138,8 @@ function rebuildNear(world: World, input: SceneInput): void {
   if (world.policy.rocksCap > 0) {
     const stand = world.craters?.groundFor(world.ground) ?? world.ground;
     world.near.add(rocksMesh(input.seed, stand, world.mask,
-      { slicer: world.slicer, cap: world.policy.rocksCap }));
+      { slicer: world.slicer,
+        law: { ...world.policy.rockLaw, cap: world.policy.rocksCap } }));
   }
   world.stage.scene.add(world.near);
   world.setup.report.step('near ground placed');
@@ -169,11 +170,13 @@ export function applyInput(world: World, input: SceneInput): boolean {
   const profileChanged = was?.profile !== input.profile;
   world.input = input;
   if (was && was.seed !== input.seed) {
-    world.craters?.setGround(undefined, input.seed);
+    // The old point's ground is not this one's: no patch builds on it.
+    world.craters?.setGround(null, input.seed);
     world.clods?.reseed(input.seed);
   }
-  applyRings(world, input);
+  const ringChanged = applyRings(world, input);
   if (tilesChanged) applyTiles(world, input);
+  else if (ringChanged) world.craters?.setGround();
   if (tilesChanged || profileChanged) applyProfile(world, input);
   const forced = tilesChanged || profileChanged || was?.ring !== input.ring;
   const lit = (forced || was?.sky !== input.sky) &&

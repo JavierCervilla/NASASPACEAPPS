@@ -187,14 +187,18 @@ test('while the next point\'s tiles load the parked view draws nothing and stays
 
 // VENT-64 and VENT-67 at high: the crater patch and the clod raster are built for each point and the old ones freed,
 // so what the GPU holds does not grow across point changes, and the one context stays. One change: in software GL each
-// rebuild takes several seconds and two outlast the test's 30 s under load. Rocks, shade and shadows are left out
-// (`?onfoot=`) for the same reason; the layers under test are not.
+// rebuild takes several seconds and two outlast the test's 30 s under load. Rocks, shade, shadows and the fine NAC
+// relief (its PNGs are decoded and applied to level 0 for each point) are left out (`?onfoot=`) for the same reason;
+// the layers under test are not.
+// The lunar photometry, the second normal read and the footprint fade are left out too: measured under SwiftShader they
+// take a frame from about 1.3 s to 0.4 s, and this test reads resources, not the ground's look.
 test('at high the crater and clod layers rebuild for each point and free the old ones', async ({ page }) => {
-  await openView(page, {}, 'quality=high&onfoot=far,rocks,shade,shadows');
+  await openView(page, {}, 'quality=high&onfoot=far,rocks,shade,shadows,fine,photometry,antitile,footprint');
   const host = page.getByRole('application', { name: 'On foot at the site' });
   const steps = (): Promise<string> => page.evaluate(() => sessionStorage.getItem('ventana.onFootReport') ?? '');
   const count = async (step: string): Promise<number> => (await steps()).split(step).length - 1;
   await expect.poll(() => count('clod relief baked'), { timeout: START_MS }).toBe(1);
+  await expect.poll(() => count('crater relief baked'), { timeout: START_MS }).toBe(1);
   expect(await count('crater patch built')).toBe(1);
   await expect(host).toHaveAttribute('data-working', 'false', { timeout: START_MS });
   const before = await read(page);
@@ -206,13 +210,15 @@ test('at high the crater and clod layers rebuild for each point and free the old
     await expect.poll(async () => Number(await host.getAttribute('data-frames')), { timeout: START_MS }).toBeGreaterThan(frames);
     await expect(host).not.toHaveAttribute('data-parked', 'true', { timeout: START_MS });
     await expect.poll(() => count('clod relief baked'), { timeout: START_MS }).toBe(i + 2);
-    await expect.poll(() => count('crater patch built'), { timeout: START_MS }).toBeGreaterThanOrEqual(i + 2);
+    await expect.poll(() => count('crater relief baked'), { timeout: START_MS }).toBe(i + 2);
+    await expect.poll(() => count('crater patch built'), { timeout: START_MS }).toBe(i + 2);
     await expect(host).toHaveAttribute('data-working', 'false', { timeout: START_MS });
     const now = await read(page);
     held.push({ textures: now.textures, buffers: now.buffers });
   }
   const after = await read(page);
-  expect(await count('crater patch built'), 'a patch for each point').toBeGreaterThanOrEqual(2);
+  expect(await count('crater patch built'), 'one patch for each point, never one on the old ground').toBe(2);
+  expect(await count('crater relief baked'), 'a crater raster for each point').toBe(2);
   expect(await count('clod relief baked'), 'a clod raster for each point').toBe(2);
   expect(after.made, 'no second context').toBe(before.made);
   expect(after.ground, 'no ground program compiled again').toBe(before.ground);

@@ -33,12 +33,15 @@ import { createFarShade } from './ring-shade';
 import type { SceneInput } from './scene-types';
 import type { World } from './world';
 
-/** Draws the relief rings of `input`, replacing those of another ring. */
-export function applyRings(world: World, input: SceneInput): void {
-  if (world.rings?.view === input.ring) return;
+/**
+ * Draws the relief rings of `input`, replacing those of another ring; true
+ * when it did. The slicer's queue goes with the old ring, so the caller
+ * queues the craters again (once, with the ground it ends on).
+ */
+export function applyRings(world: World, input: SceneInput): boolean {
+  if (world.rings?.view === input.ring) return false;
   world.rings?.dispose();
   world.slicer.clear();
-  world.craters?.setGround();
   world.clods?.start();
   setFine(world.fine, input.ring.fine);
   const { report } = world.setup;
@@ -49,5 +52,6 @@ export function applyRings(world: World, input: SceneInput): void {
   world.farShade = world.setup.leave.has('shade') ? null
     : createFarShade(input.ring, world.slicer,
       (level, grid) => world.rings?.setLit(level, grid));
+  return true;
 }
 

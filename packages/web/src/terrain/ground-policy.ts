@@ -29,7 +29,8 @@
  * relief and 520 rocks; on a Pixel 10 (PowerVR, medium) the first frame took
  * 1.6 s and the GPU reset. Medium and low go back to what the ground cost
  * before VENT-62, and the four parts that grew it come only at high; the
- * rocks keep 420 at medium and none at low. The small craters and the
+ * rocks keep 420 at medium and none at low, by the law they had before
+ * VENT-68 (only high takes the new one). The small craters and the
  * clods (VENT-64, VENT-67) are high only too (the VENT-70 audit). The
  * exposure gain (+20 %) costs nothing and stays everywhere. `?onfoot=`
  * words leave a part out at any tier, to bisect a phone from its address
@@ -37,7 +38,7 @@
  */
 import type { Tier } from '../lib/quality';
 import type { LeaveOut } from './leave-out';
-import { MEASURED } from './rock-law';
+import { FIRST_CUT, MEASURED, type MeasuredScatter } from './rock-law';
 
 /** The rocks a medium tier draws: the first cut's count, before VENT-62. */
 export const MEDIUM_ROCKS = 420;
@@ -57,6 +58,8 @@ export interface GroundPolicy {
   readonly grain: boolean;
   /** The most rocks drawn; 0: no rock mesh at all. */
   readonly rocksCap: number;
+  /** The size law of the rocks: VENT-68's at high, the first cut's below. */
+  readonly rockLaw: MeasuredScatter;
 }
 
 const ROCKS: Readonly<Record<Tier, number>> = {
@@ -79,6 +82,7 @@ export function groundPolicy(
     craters: high && !leave.has('craters'),
     grain: high && !leave.has('grain'),
     rocksCap: leave.has('rocks') ? 0 : ROCKS[tier],
+    rockLaw: high ? MEASURED : FIRST_CUT,
   };
 }
 

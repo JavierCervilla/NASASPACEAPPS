@@ -56,19 +56,16 @@ const FLAT = (): number => 0;
 
 describe('where the craters are drawn', () => {
   const high = PATCH_SPECS.high!;
-  const medium = PATCH_SPECS.medium!;
 
-  it('has specs for high and medium, none for low (the policy gates them)', () => {
+  it('has a spec for high only, none for medium and low (the policy gates them)', () => {
     expect(high).not.toBeNull();
-    expect(medium).not.toBeNull();
+    expect(PATCH_SPECS.medium).toBeNull();
     expect(PATCH_SPECS.low).toBeNull();
   });
 
   it('keeps the triangles to a fifth of the view\'s half million on high', () => {
     const tris = (s: PatchSpec): number => (patchRadii(s).length + 1) * s.n * 2;
     expect(tris(high)).toBeLessThan(260_000);
-    expect(tris(medium)).toBeLessThan(120_000);
-    expect(tris(medium)).toBeLessThan(tris(high));
   });
 
   it('has rings that grow from the eye to the radius', () => {
@@ -95,7 +92,7 @@ describe('where the craters are drawn', () => {
   });
 
   it('fades smoothly to nothing at the radius, so the rings meet it level', () => {
-    for (const spec of [high, medium]) {
+    for (const spec of [high]) {
       expect(scaleWeights(spec, spec.r)).toEqual([0, 0]);
       let last = 2;
       for (let r = 0; r <= spec.r; r += 0.25) {
@@ -208,10 +205,15 @@ describe('the craters\' shadows', () => {
 });
 
 /** A slicer that waits to be drained, lowest priority first. */
-function fakeSlicer(): Slicer & { drain: () => number } {
+function fakeSlicer(): Slicer & { drain: () => number; priorities: Set<number> } {
   const queue = new Map<string, { priority: number; job: () => void }>();
+  const priorities = new Set<number>();
   return {
-    add: (key, priority, job) => void queue.set(key, { priority, job }),
+    priorities,
+    add: (key, priority, job) => {
+      priorities.add(priority);
+      queue.set(key, { priority, job });
+    },
     clear: () => queue.clear(),
     busy: () => queue.size > 0,
     drain: () => {
@@ -250,6 +252,34 @@ describe('the crater layer', () => {
     expect(patch.visible).toBe(true);
     expect(uniforms.uHoleR2.value).toBe(SMALL.r * SMALL.r);
     expect(notes).toEqual(['crater relief baked', 'crater patch built']);
+  });
+
+  // The ring's tiles have the priority of their level: the patch stands at the eye, so it waits for levels 0 and 1 and
+  // not for the 32 and 128 km relief of levels 2 and 3 (which delayed it to 33 s on a software renderer).
+  it('queues behind the near ground (ring levels 0 and 1) and ahead of the far levels', () => {
+    const { slicer, layer } = make();
+    layer.setGround(FLAT);
+    layer.relight(sky, null);
+    slicer.drain();
+    expect(slicer.priorities.size).toBeGreaterThan(0);
+    for (const priority of slicer.priorities) {
+      expect(priority).toBeGreaterThan(1);
+      expect(priority).toBeLessThan(2);
+    }
+  });
+
+  it('builds no patch on the old point\'s ground, only on the new one\'s, once', () => {
+    const { slicer, layer, notes } = make();
+    layer.setGround(FLAT);
+    layer.relight(sky, null);
+    slicer.drain();
+    layer.setGround(null, 4);
+    slicer.drain();
+    expect(notes.filter((t) => t === 'crater patch built')).toHaveLength(1);
+    layer.setGround(() => 5);
+    slicer.drain();
+    expect(notes.filter((t) => t === 'crater patch built')).toHaveLength(2);
+    expect(notes.filter((t) => t === 'crater relief baked')).toHaveLength(2);
   });
 
   it('keeps the patch hidden and the rings whole until the Sun is known', () => {

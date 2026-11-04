@@ -78,7 +78,7 @@ export function groundMaterial(
     if (policy.fine) patchFine(shader, shared.fine);
     if (policy.craters) patchCraters(shader, shared.craters, patch);
     if (policy.grain) {
-      patchClods(shader, shared.clods, { tier: 'high', patch });
+      patchClods(shader, shared.clods, { patch });
     }
     if (policy.photometry) patchPhotometry(shader, shared.fill);
   };

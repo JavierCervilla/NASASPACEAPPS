@@ -350,7 +350,8 @@ describe('the work slicer', () => {
       schedule: (fn) => turns.push(fn), cancel: () => turns.splice(0) });
     const order: string[] = [];
     const job = (name: string) => () => { now += cost; order.push(name); };
-    return { slicer, turns, order, job, frames };
+    const pass = (ms: number) => void (now += ms);
+    return { slicer, turns, order, job, frames, pass };
   }
 
   it('runs the lowest priority first, a turn at a time within its budget, never in the caller’s turn', () => {
@@ -384,6 +385,23 @@ describe('the work slicer', () => {
     while (turns.length > 0) turns.shift()?.();
     expect(order).toHaveLength(12);
     expect(frames.n).toBe(5);
+  });
+
+  it('counts the gap from the end of a frame that outlasts it, not one frame per turn', () => {
+    const { slicer, turns, order, job, frames, pass } = rig(10, 10, 30);
+    for (let i = 0; i < 12; i++) slicer.add(`s${i}`, 0, job(`s${i}`));
+    turns.shift()?.();
+    expect(frames.n).toBe(1);
+    // The frame costs 200 ms before the next turn runs: the next turn must not ask again at once.
+    pass(200);
+    turns.shift()?.();
+    expect(frames.n).toBe(1);
+    turns.shift()?.();
+    turns.shift()?.();
+    turns.shift()?.();
+    expect(frames.n).toBe(2);
+    while (turns.length > 0) turns.shift()?.();
+    expect(order).toHaveLength(12);
   });
 
   it('lets quiet jobs ask no frame while work waits, only when the queue runs out', () => {

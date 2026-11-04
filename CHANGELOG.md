@@ -12,7 +12,7 @@
   sigue como antes, sin cráteres ni grano: auditoría VENT-70, y `?onfoot=craters` y `?onfoot=grain` los apagan también en alta). La luz del
   suelo pasa a la de Hapke et al. 2012 (Tabla 1 a 604 nm) por Lommel-Seeliger, con el pico de oposición estrecho y un
   suelo calibrado con las fotos de Apolo más allá de 120° de fase; las piedras usan la ley de Golombek y Rapp con la `k`
-  de llanura de Diviner (0,004), donde haya piedras. Al cambiar de punto con la vista abierta, el relieve de cráteres y el grano se vuelven a hornear para el punto nuevo y se liberan los viejos. Todo se hornea en trozos de menos de 20 ms. Pendiente de verificar: la densidad exacta de
+  de llanura de Diviner (0,004), solo en calidad alta (las piedras de media siguen con la ley de antes). Al cambiar de punto con la vista abierta, el relieve de cráteres y el grano se vuelven a hornear para el punto nuevo y se liberan los viejos. Todo se hornea en trozos de menos de 20 ms, justo detrás del suelo cercano y antes del relieve lejano, y el parche se construye una vez por punto. Pendiente de verificar: la densidad exacta de
   Trask, la ley de terrones (calibración propia) y los valores derivados `h_S` y `h_C` (ASSETS.md).
 - **Fix forward: arranque seguro de la vista 3D en móviles (VENT-69).** En un Pixel 10 el primer fotograma de la vista
   3D tardó 1,6 s tras VENT-62, la GPU se reinició y Chrome bloqueó WebGL en todo el sitio, así que el globo tampoco

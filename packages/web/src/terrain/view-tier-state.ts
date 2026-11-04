@@ -29,7 +29,7 @@
  * one. See view-tier.ts for the store they serve.
  */
 import { TIERS, type Tier } from '../lib/quality';
-import { diedBefore } from './view-tier-local';
+import { takeDeath } from './view-tier-local';
 import {
   keepTier,
   keptTier,
@@ -90,7 +90,7 @@ const diedOpen = (
   local: TierStorage | null,
   nowMs: number,
 ): boolean =>
-  wasOpen(storage) || diedBefore(local, nowMs);
+  wasOpen(storage) || takeDeath(local, nowMs);
 
 /**
  * Reads the device and the session's memory: the device's tier, or the

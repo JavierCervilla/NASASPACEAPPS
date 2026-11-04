@@ -41,31 +41,50 @@ interface Parts {
   readonly seed: number;
 }
 
+/** The look a point opens at: the view goes home, any coast stops. */
+const openAt = (parts: Parts, input: SceneInput): void => {
+  const { view } = parts;
+  view.home = startLook(input.startYawDeg);
+  view.coast = null;
+  view.homing = null;
+  parts.set(view.home);
+};
+
+/** The first frame of the next input after a park: told to the panel. */
+const drawFirst = ({ view, loop }: Parts): void => {
+  view.told = false;
+  loop.invalidate();
+};
+
 /**
  * `scene` that opens a new point (another seed) at its opening look, and
- * tells `onDrawn` again after `rearm`.
+ * tells `onDrawn` again after `rearm`, on the first frame of the next input
+ * and not before.
  */
 export function withNewPoints(
   scene: Omit<TerrainScene, 'rearm'>,
   parts: Parts,
 ): TerrainScene {
-  const { view, loop, set } = parts;
+  const { view } = parts;
   let current = parts.seed;
+  let parked = false;
   return {
     ...scene,
     rearm: (): void => {
-      view.told = false;
-      loop.invalidate();
+      // No frame: the old world would be drawn under the loader, and a frame
+      // it draws anyway must not tell the panel the new point is up.
+      parked = true;
+      view.told = true;
     },
     update: (input: SceneInput): void => {
       if (input.seed !== current) {
         current = input.seed;
-        view.home = startLook(input.startYawDeg);
-        view.coast = null;
-        view.homing = null;
-        set(view.home);
+        openAt(parts, input);
       }
       scene.update(input);
+      if (!parked) return;
+      parked = false;
+      drawFirst(parts);
     },
   };
 }

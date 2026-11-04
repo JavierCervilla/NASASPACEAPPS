@@ -38,7 +38,8 @@ interface Parts {
   readonly host: RefObject<HTMLDivElement | null>;
   readonly scene: RefObject<TerrainScene | null>;
   /** The scene was parked. */
-  readonly onParked: () => void;
+  /** Holds the latest callback: parking happens once per `ready` change. */
+  readonly onParked: RefObject<() => void>;
 }
 
 export function useParked({ ready, host, scene, onParked }: Parts): void {
@@ -46,6 +47,6 @@ export function useParked({ ready, host, scene, onParked }: Parts): void {
     if (ready || !scene.current) return;
     host.current?.setAttribute('data-parked', 'true');
     scene.current.rearm();
-    onParked();
+    onParked.current();
   }, [ready, host, scene, onParked]);
 }

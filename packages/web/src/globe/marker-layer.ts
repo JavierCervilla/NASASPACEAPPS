@@ -70,7 +70,7 @@ export class MarkerLayer {
   /**
    * Whether the sites were answered, an empty list included: until then
    * the grid's labels wait, since placed clear of no markers they would
-   * stand where the markers then push them out (VENT-69).
+   * stand where the markers then push them out (VENT-71).
    */
   loaded = false;
   /** The markers shown at the last frame, where a click is routed. */

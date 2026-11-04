@@ -385,6 +385,9 @@ test.describe('desktop, 1440x900', () => {
       await idle(page);
       expect(await labelClashes(page), step).toEqual([]);
     }
+    // Zoomed in, labels are placed and measured at 200 % (at the opening
+    // zoom none fits once the sites are in).
+    expect((await labelTexts(page)).length).toBeGreaterThan(0);
     await shot(page, 'desktop-graticule-200-text');
   });
 

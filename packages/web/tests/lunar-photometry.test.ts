@@ -24,63 +24,93 @@
  */
 
 /**
- * The ground's lunar photometry (VENT-62): lunar-Lambert with a shadow-hiding
- * opposition surge, calibrated on the Apollo Hasselblad frames of
- * `calibration.md` (VENT-62's artifacts): the ground by the antisolar point
- * is 1.34 to 1.64 times the ground beside it, and the ground toward the
- * Sun 0.4 to 0.7 of the ground away from it.
+ * The ground's lunar photometry (VENT-62, VENT-68): Hapke et al. (2012)
+ * eq. 12 with its Table 1 at 604 nm, held to the published narrow peak
+ * and to the Apollo Hasselblad frames of `calibration.md`: the ground by the
+ * antisolar point is 1.34 to 1.64 times the ground beside it, and the ground
+ * toward the Sun 0.4 to 0.7 of the ground away from it.
  */
 import { describe, expect, it } from 'vitest';
 import {
+  FLOOR_FROM_DEG,
   APOLLO_HALO,
-  L_FLOOR,
   LUNAR_NORM,
+  floorWeight,
   groundReflectance,
-  lunarL,
-  opposition,
+  smoothedPhase,
 } from '../src/terrain/lunar-photometry';
+import {
+  HAPKE,
+  hFunction,
+  hapkeFactor,
+  oppositionTerms,
+  phaseFunction,
+} from '../src/terrain/hapke';
 import { phaseAngleDeg, sunUpGeometry } from '../src/terrain/lunar-geometry';
 
 const RAD = Math.PI / 180;
 
-describe('lunar-Lambert (McEwen 1991, as USGS ISIS LunarLambertMcEwen)', () => {
-  it('is 1 at zero phase and follows the cubic of ISIS', () => {
-    expect(lunarL(0)).toBe(1);
-    expect(lunarL(30)).toBeCloseTo(1 - 0.019 * 30 + 0.000242 * 900
-      - 0.00000146 * 27000, 12);
+describe('Hapke et al. (2012), eq. 12 and Table 1 at 604 nm', () => {
+  it('carries the published values', () => {
+    expect(HAPKE).toMatchObject({ w: 0.357, b: 0.298, bS0: 0.358, bC0: 0.456 });
+    // The widths are derived from g_H = 4.68° and say so: ~tan(g_H / 2).
+    expect(HAPKE.hS).toBeCloseTo(Math.tan(4.68 * RAD / 2), 2);
   });
 
-  it('is held between its floor and 1 past the fit (ISIS fits to 120°)', () => {
-    for (const a of [0, 30, 90, 120, 150, 180]) {
-      expect(lunarL(a)).toBeGreaterThanOrEqual(L_FLOOR);
-      expect(lunarL(a)).toBeLessThanOrEqual(1);
+  it('has a backscattering lobe, normalised over the sphere', () => {
+    expect(phaseFunction(0)).toBeGreaterThan(phaseFunction(90));
+    expect(phaseFunction(90)).toBeGreaterThan(phaseFunction(180));
+    let sum = 0;
+    const n = 20000;
+    for (let i = 0; i < n; i++) {
+      const g = ((i + 0.5) / n) * Math.PI;
+      sum += phaseFunction(g / RAD) * Math.sin(g) * (Math.PI / n);
     }
+    expect(sum / 2).toBeCloseTo(1, 3);
   });
 
-  it('equals Lambert (cos i) at i = 30°, e = 0°, phase 30°', () => {
-    const r = groundReflectance(Math.cos(30 * RAD), 1, 30);
-    // The opposition is 1 at its normalising phase of 30°.
-    expect(r).toBeCloseTo(Math.cos(30 * RAD), 9);
-    expect(LUNAR_NORM).toBeGreaterThan(0);
+  it('has H(x) rising from 1 and growing with x', () => {
+    expect(hFunction(1)).toBeGreaterThan(1);
+    expect(hFunction(1)).toBeGreaterThan(hFunction(0.2));
+    expect(hFunction(0.01)).toBeGreaterThan(1);
+    expect(hFunction(0)).toBeCloseTo(hFunction(1e-4), 12);
+  });
+
+  it('has both oppositions at their amplitudes at g = 0, falling with it', () => {
+    const [zero, five, far] = [0, 5, 60].map(oppositionTerms);
+    expect(zero!.bs).toBeCloseTo(HAPKE.bS0, 12);
+    expect(zero!.bc).toBeCloseTo(HAPKE.bC0, 12);
+    expect(five!.bs).toBeLessThan(zero!.bs);
+    expect(far!.bc).toBeLessThan(five!.bc);
   });
 
   it('is zero when the Sun is under the surface', () => {
+    expect(hapkeFactor(0, 0.5, 60)).toBe(0);
     expect(groundReflectance(0, 0.5, 60)).toBe(0);
   });
 });
 
-describe('the opposition surge', () => {
-  it('is largest at zero phase and falls monotonically', () => {
+describe('the narrow peak', () => {
+  const at = (alphaDeg: number): number =>
+    groundReflectance(Math.cos(30 * RAD), 1, alphaDeg);
+
+  it('rises about 30 % from 5° to 0° (Hapke 2012, §13), the Sun\'s disc in', () => {
+    expect(at(0) / at(5)).toBeGreaterThan(1.2);
+    expect(at(0) / at(5)).toBeLessThan(1.4);
+  });
+
+  it('falls monotonically with phase up to the floor', () => {
     let last = Infinity;
-    for (const a of [0, 1, 3, 10, 30, 90, 179]) {
-      const b = opposition(a);
-      expect(b).toBeLessThanOrEqual(last);
-      last = b;
+    for (const a of [0, 1, 3, 10, 30, 60, 90, 110]) {
+      expect(at(a)).toBeLessThan(last);
+      last = at(a);
     }
   });
 
-  it('is 1 when the phase is 30° (the normalisation)', () => {
-    expect(opposition(30)).toBeCloseTo(1, 12);
+  it('equals Lambert (cos i) at i = 30°, e = 0°, phase 30°, smoothing aside', () => {
+    expect(LUNAR_NORM).toBeGreaterThan(0);
+    expect(at(30)).toBeCloseTo(Math.cos(30 * RAD), 9);
+    expect(smoothedPhase(0)).toBeGreaterThan(0);
   });
 });
 
@@ -114,6 +144,7 @@ describe('against the Apollo frames', () => {
       for (const view of [4.6, 9.1, sun]) {
         const ratio = flat(sun, view, 180) / flat(sun, view, 0);
         expect(ratio).toBeLessThan(0.7);
+        expect(ratio).toBeGreaterThan(0.15);
       }
     }
   });
@@ -121,5 +152,24 @@ describe('against the Apollo frames', () => {
   it('reads the phase angle between the Sun and the eye', () => {
     expect(phaseAngleDeg(8, 8, 0)).toBeCloseTo(0, 6);
     expect(phaseAngleDeg(8, 8, 180)).toBeCloseTo(164, 6);
+  });
+});
+
+describe('the floor past the model\'s validity', () => {
+  it('leaves the model alone up to 120° and takes over by 140°', () => {
+    expect(floorWeight(FLOOR_FROM_DEG)).toBe(0);
+    expect(floorWeight(90)).toBe(0);
+    expect(floorWeight(140)).toBe(1);
+    expect(floorWeight(130)).toBeGreaterThan(0);
+    expect(floorWeight(130)).toBeLessThan(1);
+  });
+
+  it('is continuous across the ramp: no step in the picture', () => {
+    let last = groundReflectance(0.3, 0.3, 100);
+    for (let a = 101; a <= 179; a++) {
+      const now = groundReflectance(0.3, 0.3, a);
+      expect(Math.abs(now - last)).toBeLessThan(0.03);
+      last = now;
+    }
   });
 });

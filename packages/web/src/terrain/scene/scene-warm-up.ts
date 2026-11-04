@@ -28,13 +28,27 @@
  * slicer builds the real ones as tiles land, long after, so two hidden
  * triangles wearing the ground material, one that receives shadows and one
  * that does not, make the programs of the near and the far rings, which
- * differ by that, with the attributes the ring meshes have.
+ * differ by that, with the attributes the ring meshes have; and one for the
+ * crater patch's variant where the tier has craters.
  */
-import { BufferAttribute, BufferGeometry, Mesh, type Scene } from 'three';
+import {
+  BufferAttribute,
+  BufferGeometry,
+  Mesh,
+  type MeshStandardMaterial,
+  type Scene,
+} from 'three';
 import type { World } from './world';
 
-/** One hidden triangle of the ring meshes' attributes. */
-function triangle(world: World, receiveShadow: boolean): Mesh {
+/**
+ * One hidden triangle of the ring meshes' attributes, or of the crater
+ * patch's (its `cslope` too) when `material` is the patch's.
+ */
+function triangle(
+  material: MeshStandardMaterial,
+  receiveShadow: boolean,
+  patch = false,
+): Mesh {
   const geometry = new BufferGeometry();
   const attribute = (size: number): BufferAttribute =>
     new BufferAttribute(new Float32Array(3 * size), size);
@@ -42,7 +56,8 @@ function triangle(world: World, receiveShadow: boolean): Mesh {
   geometry.setAttribute('normal', attribute(3));
   geometry.setAttribute('uv', attribute(2));
   geometry.setAttribute('lit', attribute(1));
-  const mesh = new Mesh(geometry, world.material);
+  if (patch) geometry.setAttribute('cslope', attribute(2));
+  const mesh = new Mesh(geometry, material);
   mesh.receiveShadow = receiveShadow;
   mesh.visible = false;
   return mesh;
@@ -50,7 +65,12 @@ function triangle(world: World, receiveShadow: boolean): Mesh {
 
 /** Adds the stand-ins to `scene`; returns what removes and frees them. */
 export function addWarmUp(scene: Scene, world: World): () => void {
-  const meshes = [triangle(world, true), triangle(world, false)];
+  const meshes = [triangle(world.material, true),
+    triangle(world.material, false)];
+  // The crater patch's program is its own variant (VENT-64, high only).
+  if (world.patchMaterial) {
+    meshes.push(triangle(world.patchMaterial, true, true));
+  }
   scene.add(...meshes);
   return () => {
     for (const mesh of meshes) {

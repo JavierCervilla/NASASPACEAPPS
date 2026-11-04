@@ -528,7 +528,7 @@ Every visible change follows `.claude/skills/apple-design/SKILL.md` (vendored fr
   Safe start (VENT-69, after a Pixel 10's first frame took 1.6 s and its GPU reset): the ground's cost is set per tier in
   one place (`src/terrain/ground-policy.ts`, `groundPolicy(tier, leave)`): lunar photometry (`RE_Direct_Ground`), the
   second normal read (`antitile`), the `fwidth` footprint fade and the fine relief (no `fine-tiles/` request, no shader
-  block, so the caption names it only when drawn) are the **high** tier's; medium and low draw the pre-VENT-62 ground
+  block, so the caption names it only when drawn), the small craters' mesh (`craters`, VENT-64) and the clods' grain (`grain`, VENT-67; the VENT-70 audit) are the **high** tier's; medium and low draw the pre-VENT-62 ground
   (`ground-shader.ts` takes the policy), the rocks are capped at 420 at medium and none at low (`rocksCap`), the exposure
   +20 % stays everywhere, and each part is in the material's program cache key (`groundKey`). The scene's programs
   compile before its first frame (`scene/scene-compile.ts`: the maps load first, two hidden triangles in
@@ -561,7 +561,9 @@ Every visible change follows `.claude/skills/apple-design/SKILL.md` (vendored fr
   (`tests/e2e/vent-69-blocked-band.spec.ts`). Held by `tests/ground-policy.test.ts`, `tests/scene-compile.test.ts`, `tests/gl-memory.test.ts`,
   `tests/view-tier.test.ts` and `tests/e2e/vent-69-safe-start.spec.ts`.
   Ground realism (VENT-62): the ground material alone takes lunar photometry for the Sun (`lunar-photometry.ts`, GLSL twin
-  `scene/ground-photometry.ts`: McEwen's lunar-Lambert as ISIS, with a calibrated opposition surge, regolith specular off; the
+  `scene/ground-photometry.ts`: since VENT-68 Hapke et al. 2012 eq. 12 with its Table 1 at 604 nm (`hapke.ts`; w, b, B_S0, B_C0
+  published, h_S and h_C derived from g_H) times Lommel-Seeliger, the Sun's disc smoothing the peak (r(0)/r(5°) about 1.26),
+  and a calibrated floor past 120° of phase where the model is out of validity, regolith specular off; the
   ground by the antisolar point is 1.34 to 1.64 times the ground beside it, and the ground toward the Sun 0.4 to 0.7 of
   the ground away, held to the Apollo frames by `tests/lunar-photometry.test.ts` and the e2e), exposure +20 % (`EXPOSURE_GAIN`,
   said in the caption), the albedo neutral grey, the grain fading by the pixel footprint (`fwidth`) and the brightness
@@ -572,7 +574,25 @@ Every visible change follows `.claude/skills/apple-design/SKILL.md` (vendored fr
   the feather's weight with the vertical offset against LOLA (`fine-apply.ts`) and, between nodes, the tile's 5 m slope on
   the shader's normal (`scene/ground-fine.ts`); the caption names it. Rocks follow Golombek & Rapp's size law, partly
   buried, denser on the real near grid's slopes and rims, built in diameter bands by the slicer (`rocks-measured.ts`,
-  `scene/props.ts`). Sources and unverified constants: ASSETS.md.
+  `scene/props.ts`; q(k) of Golombek & Rapp 1997 eq. 12, held at q(0.02) below their fitted range, plains k 0.004 from
+  Diviner: **high only** (`GroundPolicy.rockLaw`; medium keeps main's law, `FIRST_CUT` in `rock-law.ts`, k 0.01 and q never held, byte-identical rocks, held by `tests/rocks-measured.test.ts`). Sources and unverified constants: ASSETS.md.
+  **Small craters** (VENT-64, **high tier only** through `ground-policy.ts` `craters`, VENT-70 audit; `?onfoot=craters` leaves them out; a new point frees the old patch and bakes again for the new one, `CraterLayer.setGround(ground, seed)`, and the patch is built once per point; its jobs, like the clods', queue after ring levels 0 and 1 and before levels 2 and 3, so the patch does not wait for the far relief): craters of 0.19 to 12 m as real
+  relief in a polar patch of mesh around the eye (`scene/crater-spec.ts` radius 48 m, cells following
+  the screen; `crater-mesh.ts`), from one 1024-texel raster read at two scales (`crater-relief.ts`) with Trask's
+  equilibrium count and Basilevsky's five degradation classes with their d/D (`crater-law.ts`, Pike's fresh 0.2 with a
+  rim, `crater-profile.ts`). Each scale is drawn only while a typical crater spans a few cells, and all fade to nothing at
+  the patch's edge, where the rings' ground takes over at the same height (beyond it there are no craters: the mesh cannot
+  resolve them). The craters' shadows are a march per vertex toward the Sun (`crater-shade.ts`, no shadow-map acne at 1 to
+  7°), times the near ground's mask; the patch receives the sun map, the rings' ground is cut out inside it in colour and
+  in the shadow depth (`crater-glsl.ts`, `crater-depth.ts`), and the rocks stand on the craters. Everything is built in
+  slicer jobs under 20 ms (`crater-work.ts`, `crater-layer.ts`).
+  **Small shadows «mid-way»** (VENT-64, the human's verdict): wherever something small hides the Sun from a point the Sun
+  reaches, the fill is scaled by 0.62 (`DARK_SMALL_SHADOWS`, `ground-photometry.ts`), so small shadows land near 8 to 10 %
+  of the lit ground instead of 19 to 23 % (Apollo's: 2 to 3 %); the caption still says the shadows are lifted.
+  **Clods** (VENT-67, **high tier only**, policy `grain`; `?onfoot=grain` leaves them out; reseeded and freed with a new point): a height field of clods of 3 to 30 mm baked in
+  the browser (`clod-law.ts`, `clod-relief.ts`; our calibration, no published law), read at two scales by the ground's
+  shader, which gives each pixel a normal and a shadow of its own by a march toward the Sun (`scene/clod-glsl.ts`), no
+  displaced mesh, fading by the pixel's footprint (about 13 m); slow noise alternates smooth dust and clusters.
   Rendering: ACES filmic tone mapping, `MeshStandardMaterial` everywhere, the Sun a hard key with a 60 m PCF shadow, baked
   contact occlusion on the stones (`contactAo`). Illustrative and said so in the caption («Fine detail illustrative · relief
   LOLA 20 m» over «Earth: NASA Blue Marble · shadows lifted for legibility», `captionNote`, `onFoot.captionNote`): rounded rocks under

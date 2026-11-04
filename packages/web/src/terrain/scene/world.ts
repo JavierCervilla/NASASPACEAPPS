@@ -30,13 +30,24 @@
  * the profile does, and the sky, its shadows and the Sun's mask when the
  * instant does.
  */
-import { Group, type Mesh, type MeshStandardMaterial } from 'three';
+import {
+  Group,
+  type Mesh,
+  type MeshDepthMaterial,
+  type MeshStandardMaterial,
+} from 'three';
 import { groundPolicy, type GroundPolicy } from '../ground-policy';
 import { drawsAgain } from '../input-change';
 import { EYE_M } from '../view-camera';
 import { backdropMesh } from './backdrop';
+import { createClodUniforms } from './clod-glsl';
+import type { ClodLayer } from './clod-layer';
+import { createCraterUniforms } from './crater-depth';
+import type { CraterLayer } from './crater-layer';
 import { createFineUniforms, type FineUniforms } from './ground-fine';
-import { groundMaterial } from './ground';
+import { createFillUniforms } from './ground-photometry';
+import { groundMaterial, type GroundShared } from './ground';
+import { clodLayer, craterParts } from './world-craters';
 import { backdropM } from '../ring/ring-plan';
 import type { RingLayer } from './ring-layer';
 import type { FarShade } from './ring-shade';
@@ -64,6 +75,14 @@ export interface World {
   material: MeshStandardMaterial;
   /** The fine real relief's uniforms (VENT-62), shared with the material. */
   readonly fine: FineUniforms;
+  /** What the ground's materials share, and the crater patch (VENT-64). */
+  readonly shared: GroundShared;
+  readonly craters: CraterLayer | null;
+  /** The clods' bake (VENT-67), none on low or with `?onfoot=grain`. */
+  readonly clods: ClodLayer | null;
+  readonly patchMaterial: MeshStandardMaterial | null;
+  /** The rings' shadow depth without the patch's disc, with the patch. */
+  readonly ringDepth: MeshDepthMaterial | null;
   backdrop: Mesh | null;
   input: SceneInput | null;
   /**
@@ -86,19 +105,27 @@ export function createWorld(stage: Stage, seed: number, setup: SceneSetup) {
   const shadowPx = setup.quality.tier === 'high' ? 2048 : 1024;
   const fine = createFineUniforms();
   const policy = groundPolicy(setup.quality.tier, setup.leave);
+  const shared = { fine, craters: createCraterUniforms(),
+    fill: createFillUniforms(), clods: createClodUniforms() };
+  const parts = { mask, shared, slicer, policy };
   const world: World = { stage, setup, policy, mask,
     sky: createSky(seed, shadowPx),
-    near: new Group(), ground: () => 0, fine,
-    material: groundMaterial(mask, fine, policy), backdrop: null, input: null,
+    near: new Group(), ground: () => 0, fine, shared,
+    ...craterParts(seed, setup, parts),
+    clods: clodLayer(seed, setup, parts),
+    material: groundMaterial(mask, shared, policy), backdrop: null,
+    input: null,
     lit: null, rings: null, farShade: null, slicer,
     invalidate: () => undefined };
   stage.scene.add(world.sky.group, world.near);
+  if (world.craters) stage.scene.add(world.craters.group);
   return world;
 }
 
 /** The near ground changed: the props stand on the new ground. */
 function applyTiles(world: World, input: SceneInput): void {
   world.ground = groundOf(input.tiles);
+  world.craters?.setGround(world.ground);
   rebuildNear(world, input);
 }
 
@@ -109,8 +136,10 @@ function rebuildNear(world: World, input: SceneInput): void {
   world.near = new Group();
   world.near.add(ringsMesh(world.ground));
   if (world.policy.rocksCap > 0) {
-    world.near.add(rocksMesh(input.seed, world.ground, world.mask,
-      { slicer: world.slicer, cap: world.policy.rocksCap }));
+    const stand = world.craters?.groundFor(world.ground) ?? world.ground;
+    world.near.add(rocksMesh(input.seed, stand, world.mask,
+      { slicer: world.slicer,
+        law: { ...world.policy.rockLaw, cap: world.policy.rocksCap } }));
   }
   world.stage.scene.add(world.near);
   world.setup.report.step('near ground placed');
@@ -140,8 +169,14 @@ export function applyInput(world: World, input: SceneInput): boolean {
     input.tiles.some((t, i) => was.tiles[i] !== t);
   const profileChanged = was?.profile !== input.profile;
   world.input = input;
-  applyRings(world, input);
+  if (was && was.seed !== input.seed) {
+    // The old point's ground is not this one's: no patch builds on it.
+    world.craters?.setGround(null, input.seed);
+    world.clods?.reseed(input.seed);
+  }
+  const ringChanged = applyRings(world, input);
   if (tilesChanged) applyTiles(world, input);
+  else if (ringChanged) world.craters?.setGround();
   if (tilesChanged || profileChanged) applyProfile(world, input);
   const forced = tilesChanged || profileChanged || was?.ring !== input.ring;
   const lit = (forced || was?.sky !== input.sky) &&

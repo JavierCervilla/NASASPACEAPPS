@@ -28,6 +28,7 @@
  * job per diameter band, the mesh hidden until the last band has merged.
  * Built all at once in `rocksMesh` they took about 50 ms of one frame.
  */
+import { MEASURED } from '../src/terrain/rock-law';
 import { describe, expect, it } from 'vitest';
 import { measuredBands } from '../src/terrain/rocks-measured';
 import { rocksMesh } from '../src/terrain/scene/props';
@@ -51,7 +52,7 @@ function recording(): { slicer: Slicer; jobs: { key: string; run: () => void }[]
 describe('rocksMesh slicing', () => {
   it('queues one job per band and builds nothing while they wait', () => {
     const { slicer, jobs } = recording();
-    const mesh = rocksMesh(SEED, FLAT, createSunMask(), { slicer, cap: 520 });
+    const mesh = rocksMesh(SEED, FLAT, createSunMask(), { slicer, law: MEASURED });
     const bands = measuredBands(SEED, FLAT).count;
     expect(bands).toBeGreaterThan(1);
     expect(jobs.map((j) => j.key)).toEqual(
@@ -62,7 +63,7 @@ describe('rocksMesh slicing', () => {
 
   it('keeps the mesh hidden until the last band has run, then shows the stones', () => {
     const { slicer, jobs } = recording();
-    const mesh = rocksMesh(SEED, FLAT, createSunMask(), { slicer, cap: 520 });
+    const mesh = rocksMesh(SEED, FLAT, createSunMask(), { slicer, law: MEASURED });
     jobs.slice(0, -1).forEach((job) => {
       job.run();
       expect(mesh.visible).toBe(false);

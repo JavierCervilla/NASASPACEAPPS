@@ -29,14 +29,26 @@
  */
 import { ShaderLib } from 'three';
 import { describe, expect, it } from 'vitest';
-import { LUNAR_NORM, L_FLOOR, MCEWEN, SHOE } from '../src/terrain/lunar-photometry';
+import { DIFFUSE_R0, HAPKE } from '../src/terrain/hapke';
+import {
+  FLOOR_FROM_DEG,
+  FLOOR_GAIN,
+  FLOOR_LAMBERT,
+  FLOOR_LS,
+  LUNAR_NORM,
+  PEAK_SMOOTH_DEG,
+} from '../src/terrain/lunar-photometry';
 import { glslFloat } from '../src/terrain/scene/glsl-float';
-import { patchPhotometry } from '../src/terrain/scene/ground-photometry';
+import {
+  DARK_SMALL_SHADOWS,
+  createFillUniforms,
+  patchPhotometry,
+} from '../src/terrain/scene/ground-photometry';
 
 const patched = (): string => {
   const shader = { fragmentShader: ShaderLib.physical.fragmentShader,
     uniforms: {} } as unknown as Parameters<typeof patchPhotometry>[0];
-  patchPhotometry(shader);
+  patchPhotometry(shader, createFillUniforms());
   return shader.fragmentShader;
 };
 
@@ -50,18 +62,46 @@ describe('patchPhotometry', () => {
     expect(ground).not.toContain('directSpecular');
   });
 
+  it('scales the fill, not the Sun, in a small shadow (VENT-64)', () => {
+    const source = patched();
+    expect(createFillUniforms().uDark.value).toBe(DARK_SMALL_SHADOWS);
+    expect(DARK_SMALL_SHADOWS).toBeGreaterThan(0.5);
+    expect(DARK_SMALL_SHADOWS).toBeLessThan(0.7);
+    expect(source).toContain('fill.color *= groundDark();');
+    expect(source).toContain('reflectedLight.indirectDiffuse *= groundDark();');
+    expect(source).toContain('float gSunShade = 1.0;');
+    const sun = source.slice(source.indexOf('if (dot(directLight.direction'),
+      source.indexOf('IncidentLight fill'));
+    expect(sun).not.toContain('groundDark');
+  });
+
+  it('names nothing with a word GLSL reserves (`coherent` once broke every ground)', () => {
+    const source = patched();
+    const ours = source.slice(source.indexOf('float gSunShade'),
+      source.indexOf('#undef RE_Direct'));
+    const reserved = ['coherent', 'volatile', 'restrict', 'readonly',
+      'writeonly', 'shared', 'buffer', 'sample', 'filter', 'input', 'output',
+      'common', 'partition', 'active', 'namespace', 'half', 'fixed', 'long',
+      'short', 'double', 'unsigned', 'superp'];
+    for (const word of reserved) {
+      expect(ours, word).not.toMatch(new RegExp(`\\b${word}\\b`));
+    }
+  });
+
   it('carries the twin\'s constants', () => {
     const source = patched();
-    for (const v of [...MCEWEN, SHOE.b0, SHOE.h, LUNAR_NORM, L_FLOOR]) {
+    for (const v of [...Object.values(HAPKE), DIFFUSE_R0, LUNAR_NORM,
+      PEAK_SMOOTH_DEG ** 2, FLOOR_FROM_DEG, FLOOR_GAIN, FLOOR_LS,
+      FLOOR_LAMBERT]) {
       expect(source).toContain(glslFloat(v));
     }
   });
 
   it('writes no int literal GLSL ES would refuse where a float goes', () => {
     const source = patched();
-    const ground = source.slice(source.indexOf('void RE_Direct_Ground'),
+    const ground = source.slice(source.indexOf('float gSunShade'),
       source.indexOf('#undef RE_Direct'));
-    const code = ground.replace(/\[0\]|1e-3/g, '').replace(/^#if .*$/gm, '');
+    const code = ground.replace(/\[0\]|1e-\d/g, '').replace(/^#if .*$/gm, '');
     expect(code.match(/(?<![\w.])\d+(?![\w.])/g)).toBeNull();
   });
 });

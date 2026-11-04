@@ -41,8 +41,8 @@ describe('?onfoot=', () => {
   });
 
   it('names each part the view can do without', () => {
-    expect(parts('?onfoot=shadows,far,shade,logdepth')).toEqual([
-      'shadows', 'far', 'shade', 'logdepth',
+    expect(parts('?onfoot=shadows,far,shade,logdepth,craters,grain')).toEqual([
+      'shadows', 'far', 'shade', 'logdepth', 'craters', 'grain',
     ]);
     // VENT-69: the ground's costs that only the high tier pays.
     expect(parts('?onfoot=photometry,antitile,footprint,fine,rocks')).toEqual([

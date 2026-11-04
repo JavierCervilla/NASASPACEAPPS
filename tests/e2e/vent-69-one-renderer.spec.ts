@@ -43,12 +43,15 @@ interface Probe {
   peak: number;
   ground: number;
   links: number;
+  /** GPU textures and buffers made and not deleted yet. */
+  textures: number;
+  buffers: number;
 }
 
 /** Counts the WebGL contexts the page makes (and how many live at once) and the ground programs it compiles. */
 async function probe(page: Page): Promise<void> {
   await page.addInitScript((mark) => {
-    const probe: Probe = { made: [], peak: 0, ground: 0, links: 0 };
+    const probe: Probe = { made: [], peak: 0, ground: 0, links: 0, textures: 0, buffers: 0 };
     (window as unknown as { __probe: Probe }).__probe = probe;
     const seen = new WeakSet<object>();
     const getContext = HTMLCanvasElement.prototype.getContext;
@@ -67,6 +70,20 @@ async function probe(page: Page): Promise<void> {
       if (text.includes(mark) && text.includes('pc_fragColor')) probe.ground += 1;
       return source.call(this, shader, text);
     };
+    const counted = (make: 'createTexture' | 'createBuffer', drop: 'deleteTexture' | 'deleteBuffer', key: 'textures' | 'buffers') => {
+      const made = proto[make];
+      proto[make] = function (this: WebGL2RenderingContext) {
+        probe[key] += 1;
+        return made.call(this);
+      } as never;
+      const dropped = proto[drop] as (this: WebGL2RenderingContext, thing: unknown) => void;
+      proto[drop] = function (this: WebGL2RenderingContext, thing: unknown) {
+        if (thing) probe[key] -= 1;
+        return dropped.call(this, thing);
+      } as never;
+    };
+    counted('createTexture', 'deleteTexture', 'textures');
+    counted('createBuffer', 'deleteBuffer', 'buffers');
     const link = proto.linkProgram;
     proto.linkProgram = function (this: WebGL2RenderingContext, program: WebGLProgram) {
       probe.links += 1;
@@ -77,7 +94,7 @@ async function probe(page: Page): Promise<void> {
 
 const read = (page: Page) => page.evaluate(() => {
   const p = (window as unknown as { __probe: Probe }).__probe;
-  return { made: p.made.length, alive: p.made.filter((c) => !c.lost()).length, peak: p.peak, ground: p.ground, links: p.links, list: p.made.map((c) => `${c.id}:${c.size}:${c.parent}:${c.lost() ? 'lost' : 'live'}`) };
+  return { made: p.made.length, alive: p.made.filter((c) => !c.lost()).length, peak: p.peak, ground: p.ground, links: p.links, textures: p.textures, buffers: p.buffers, list: p.made.map((c) => `${c.id}:${c.size}:${c.parent}:${c.lost() ? 'lost' : 'live'}`) };
 });
 
 /** The slices are all run: the shading of the rings and the rocks no longer add programs. */
@@ -166,4 +183,47 @@ test('while the next point\'s tiles load the parked view draws nothing and stays
   tiles.delayMs = 0;
   await expect(host).not.toHaveAttribute('data-parked', 'true', { timeout: START_MS });
   expect(Number(await host.getAttribute('data-frames'))).toBeGreaterThan(parkedAt);
+});
+
+// VENT-64 and VENT-67 at high: the crater patch and the clod raster are built for each point and the old ones freed,
+// so what the GPU holds does not grow across point changes, and the one context stays. One change: in software GL each
+// rebuild takes several seconds and two outlast the test's 30 s under load. Rocks, shade, shadows and the fine NAC
+// relief (its PNGs are decoded and applied to level 0 for each point) are left out (`?onfoot=`) for the same reason;
+// the layers under test are not.
+// The lunar photometry, the second normal read and the footprint fade are left out too: measured under SwiftShader they
+// take a frame from about 1.3 s to 0.4 s, and this test reads resources, not the ground's look.
+test('at high the crater and clod layers rebuild for each point and free the old ones', async ({ page }) => {
+  await openView(page, {}, 'quality=high&onfoot=far,rocks,shade,shadows,fine,photometry,antitile,footprint');
+  const host = page.getByRole('application', { name: 'On foot at the site' });
+  const steps = (): Promise<string> => page.evaluate(() => sessionStorage.getItem('ventana.onFootReport') ?? '');
+  const count = async (step: string): Promise<number> => (await steps()).split(step).length - 1;
+  await expect.poll(() => count('clod relief baked'), { timeout: START_MS }).toBe(1);
+  await expect.poll(() => count('crater relief baked'), { timeout: START_MS }).toBe(1);
+  expect(await count('crater patch built')).toBe(1);
+  await expect(host).toHaveAttribute('data-working', 'false', { timeout: START_MS });
+  const before = await read(page);
+  const held: { textures: number; buffers: number }[] = [];
+  for (const [i, name] of [/Malapert/].entries()) {
+    const frames = Number(await host.getAttribute('data-frames'));
+    await page.locator('.site-button').click();
+    await page.locator('#site-popover').getByRole('button', { name }).first().click();
+    await expect.poll(async () => Number(await host.getAttribute('data-frames')), { timeout: START_MS }).toBeGreaterThan(frames);
+    await expect(host).not.toHaveAttribute('data-parked', 'true', { timeout: START_MS });
+    await expect.poll(() => count('clod relief baked'), { timeout: START_MS }).toBe(i + 2);
+    await expect.poll(() => count('crater relief baked'), { timeout: START_MS }).toBe(i + 2);
+    await expect.poll(() => count('crater patch built'), { timeout: START_MS }).toBe(i + 2);
+    await expect(host).toHaveAttribute('data-working', 'false', { timeout: START_MS });
+    const now = await read(page);
+    held.push({ textures: now.textures, buffers: now.buffers });
+  }
+  const after = await read(page);
+  expect(await count('crater patch built'), 'one patch for each point, never one on the old ground').toBe(2);
+  expect(await count('crater relief baked'), 'a crater raster for each point').toBe(2);
+  expect(await count('clod relief baked'), 'a clod raster for each point').toBe(2);
+  expect(after.made, 'no second context').toBe(before.made);
+  expect(after.ground, 'no ground program compiled again').toBe(before.ground);
+  // The clod raster of the old point was freed before the new one was made: no texture more than at the start.
+  expect(held[0]!.textures, 'the old textures are freed').toBeLessThanOrEqual(before.textures);
+  // The other point's own meshes make a buffer count that is not comparable with the start's; that the old crater
+  // patch's geometry is disposed is held by tests/crater-patch.test.ts.
 });

@@ -30,16 +30,33 @@
  * sliced.
  */
 import { describe, expect, it } from 'vitest';
-import { MEASURED, density, kAt, qOf } from '../src/terrain/rock-law';
+import { K_FITTED_MIN, MEASURED, density, kAt, qOf } from '../src/terrain/rock-law';
+import { groundPolicy } from '../src/terrain/ground-policy';
 import { measuredBands, measuredRocks } from '../src/terrain/rocks-measured';
 
 const FLAT = () => 0;
 const slope = (s: number) => (east: number) => s * east;
 
 describe('the law', () => {
-  it('has Golombek & Rapp\'s exponent q = 1.79 + 0.152 / k', () => {
-    expect(qOf(0.01)).toBeCloseTo(16.99, 6);
+  it('has Golombek & Rapp\'s exponent q = 1.79 + 0.152 / k (eq. 12, p. 4126)', () => {
+    expect(qOf(0.02)).toBeCloseTo(9.39, 6);
     expect(qOf(0.1)).toBeCloseTo(3.31, 6);
+    expect(qOf(0.3)).toBeCloseTo(1.79 + 0.152 / 0.3, 6);
+  });
+
+  it('holds q at q(0.02) below the fitted range, so a low k only lowers the cover', () => {
+    expect(qOf(0.004)).toBe(qOf(K_FITTED_MIN));
+    expect(qOf(0.001)).toBe(qOf(K_FITTED_MIN));
+    for (const d of [0.1, 0.3, 0.8]) {
+      expect(density(0.004, d)).toBeLessThan(density(0.02, d));
+      expect(density(0.004, d) / density(0.02, d)).toBeCloseTo(0.004 / 0.02, 9);
+    }
+  });
+
+  it('takes the plains\' k from Diviner\'s median of 0.003, a little over', () => {
+    expect(MEASURED.kFlat).toBeGreaterThanOrEqual(0.003);
+    expect(MEASURED.kFlat).toBeLessThanOrEqual(0.005);
+    expect(MEASURED.kMax).toBe(0.05);
   });
 
   it('puts fewer rocks the larger they are', () => {
@@ -123,5 +140,41 @@ describe('measuredBands', () => {
     for (let i = 0; i < bands.count; i++) {
       expect(bands.band(i).length).toBeLessThanOrEqual(MEASURED.cap / 2);
     }
+  });
+});
+
+/**
+ * VENT-68 changed the rock law at high only: medium keeps the law main had
+ * (kFlat 0.01, q never held). These are the rocks that law gave, measured on
+ * main (4a14e48) at cap 420: a count, a checksum over every field and the
+ * first rock, for two grounds and three seeds.
+ */
+describe('the rocks of medium and low', () => {
+  const sloped = (e: number, n: number): number => 0.3 * e + 0.2 * Math.sin(n / 5);
+  const checksum = (rocks: ReturnType<typeof measuredRocks>): number =>
+    rocks.reduce((a, k) => a + k.east * 1.1 + k.north * 1.3 + k.radius * 7 + k.squash * 3 + k.yawRad + (k.lift ?? 0) * 5, 0);
+  const MAIN = [
+    ['flat', 7, 2607.86507646837, -92.6089984624675, 0.20148716159746982],
+    ['flat', 8, 4540.1354061815, 89.58723420762959, 0.20516311726300046],
+    ['flat', 1234, 2728.95545202793, -32.592584171346935, 0.24902444928186013],
+    ['slope', 7, 5364.63236534558, -33.837411558793384, 0.4452024862228427],
+    ['slope', 8, 5855.34565525921, -77.40125675352935, 0.4471556027652696],
+    ['slope', 1234, 3936.91993637158, 35.09920481981781, 0.44503398531698624],
+  ] as const;
+
+  for (const tier of ['medium', 'low'] as const) {
+    it.each(MAIN)(`at ${tier} the %s ground, seed %i, gives main's rocks`, (ground, seed, sum, east, radius) => {
+      const law = { ...groundPolicy(tier, new Set()).rockLaw, cap: 420 };
+      const rocks = measuredRocks(seed, ground === 'flat' ? FLAT : sloped, law);
+      expect(rocks).toHaveLength(420);
+      expect(checksum(rocks)).toBeCloseTo(sum, 9);
+      expect(rocks[0]?.east).toBeCloseTo(east, 9);
+      expect(rocks[0]?.radius).toBeCloseTo(radius, 12);
+    });
+  }
+
+  it('is not what high draws', () => {
+    const high = groundPolicy('high', new Set()).rockLaw;
+    expect(checksum(measuredRocks(7, FLAT, { ...high, cap: 420 }))).not.toBeCloseTo(2607.86507646837, 3);
   });
 });

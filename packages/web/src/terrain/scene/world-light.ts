@@ -39,16 +39,21 @@ import type { World } from './world';
 
 /** Lights the world for `input`'s sky. */
 function lightWorld(world: World, input: SceneInput): void {
+  let ringGrid: { lit: Float32Array; sizeM: number } | null = null;
   placeSky(world.sky, input.sky, input.earthSpin);
   const onLit = (lit: Float32Array): void => {
-    world.rings?.setLit(0, { lit, sizeM: input.tiles[0]?.tile.sizeM ?? 0 });
+    const grid = { lit, sizeM: input.tiles[0]?.tile.sizeM ?? 0 };
+    world.rings?.setLit(0, grid);
+    ringGrid = grid;
   };
   const sun = { azDeg: input.sky.sunAz, elDeg: input.sky.sunEl };
   shadeSun({ tiles: input.tiles, onLit, profile: input.profile,
     mask: world.mask }, input.sky);
   world.farShade?.run(sun);
-  world.stage.renderer.toneMappingExposure =
-    exposureFor(world.mask.near.value > 0);
+  world.craters?.relight(input.sky, ringGrid);
+  const reached = world.mask.near.value > 0;
+  world.shared.fill.uSunHere.value = reached ? 1 : 0;
+  world.stage.renderer.toneMappingExposure = exposureFor(reached);
 }
 
 /**

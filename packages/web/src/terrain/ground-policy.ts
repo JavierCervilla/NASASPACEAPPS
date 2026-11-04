@@ -29,13 +29,16 @@
  * relief and 520 rocks; on a Pixel 10 (PowerVR, medium) the first frame took
  * 1.6 s and the GPU reset. Medium and low go back to what the ground cost
  * before VENT-62, and the four parts that grew it come only at high; the
- * rocks keep 420 at medium and none at low. The exposure gain (+20 %) costs
- * nothing and stays everywhere. `?onfoot=` words leave a part out at any
- * tier, to bisect a phone from its address bar. Pure.
+ * rocks keep 420 at medium and none at low, by the law they had before
+ * VENT-68 (only high takes the new one). The small craters and the
+ * clods (VENT-64, VENT-67) are high only too (the VENT-70 audit). The
+ * exposure gain (+20 %) costs nothing and stays everywhere. `?onfoot=`
+ * words leave a part out at any tier, to bisect a phone from its address
+ * bar. Pure.
  */
 import type { Tier } from '../lib/quality';
 import type { LeaveOut } from './leave-out';
-import { MEASURED } from './rock-law';
+import { FIRST_CUT, MEASURED, type MeasuredScatter } from './rock-law';
 
 /** The rocks a medium tier draws: the first cut's count, before VENT-62. */
 export const MEDIUM_ROCKS = 420;
@@ -49,8 +52,14 @@ export interface GroundPolicy {
   readonly footprint: boolean;
   /** The fine real relief: its tile is fetched and its shader block built. */
   readonly fine: boolean;
+  /** The small craters (VENT-64): a mesh patch, its bake and shadows. */
+  readonly craters: boolean;
+  /** The clods' micro-relief in the shader (VENT-67) and its bake. */
+  readonly grain: boolean;
   /** The most rocks drawn; 0: no rock mesh at all. */
   readonly rocksCap: number;
+  /** The size law of the rocks: VENT-68's at high, the first cut's below. */
+  readonly rockLaw: MeasuredScatter;
 }
 
 const ROCKS: Readonly<Record<Tier, number>> = {
@@ -70,7 +79,10 @@ export function groundPolicy(
     antitile: high && !leave.has('antitile'),
     footprint: high && !leave.has('footprint'),
     fine: high && !leave.has('fine'),
+    craters: high && !leave.has('craters'),
+    grain: high && !leave.has('grain'),
     rocksCap: leave.has('rocks') ? 0 : ROCKS[tier],
+    rockLaw: high ? MEASURED : FIRST_CUT,
   };
 }
 
@@ -85,5 +97,6 @@ export function groundKey(policy: GroundPolicy): string {
   const on = (flag: boolean, letter: string): string => (flag ? letter : '-');
   return `sun-tile-regolith-${on(policy.photometry, 'p')}${
     on(policy.antitile, 'a')}${on(policy.footprint, 'f')}${
-    on(policy.fine, 'r')}`;
+    on(policy.fine, 'r')}${policy.craters ? '-craters' : ''}${
+    policy.grain ? '-grain' : ''}`;
 }

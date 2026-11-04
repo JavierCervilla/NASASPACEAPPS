@@ -40,6 +40,7 @@ import { START_PITCH } from '../../packages/web/src/terrain/view-camera';
 import { VIEW_FOV } from '../../packages/web/src/terrain/view-fov';
 import { twinMean, type PixelBox } from './halo-twin';
 import { stubApi } from './api-stub';
+import { idleCount } from './view-idle';
 import { stubRealRelief, stubTile, stubWall } from './terrain-stub';
 
 const AT = new Date('2026-11-22T20:00:00Z');
@@ -188,18 +189,7 @@ const frames = async (page: Page): Promise<number> => Number(await host(page).ge
  * (`data-working`, written by every frame: the slices ask for a frame every 1.5 s at most, so a quiet 600 ms is no
  * proof), and returns the count.
  */
-async function idle(page: Page, at = host(page)): Promise<number> {
-  let last = -1;
-  await expect
-    .poll(async () => {
-      const now = Number(await at.getAttribute('data-frames'));
-      const still = now === last && (await at.getAttribute('data-working')) !== 'true';
-      last = now;
-      return still;
-    }, { intervals: [600], timeout: 15_000 })
-    .toBe(true);
-  return last;
-}
+const idle = (page: Page, at = host(page)): Promise<number> => idleCount(at);
 
 const heading = async (page: Page): Promise<number> =>
   Number(/View heading (\d+)°/.exec((await host(page).getAttribute('aria-describedby').then((id) =>

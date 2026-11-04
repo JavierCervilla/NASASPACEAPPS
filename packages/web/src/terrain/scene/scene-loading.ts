@@ -30,6 +30,7 @@
  * (`data-onfoot`, `data-tier`), for the tests and for a remote console.
  */
 import { markReadyWhenStanding } from './ready-mark';
+import { drawWhenLate } from './late-maps';
 import { watchHidden } from './page-hidden';
 import { compileFirst, MAPS_GIVE_UP_MS, waitAtMost } from './scene-compile';
 import { addWarmUp } from './scene-warm-up';
@@ -48,13 +49,19 @@ export function markSetup(host: HTMLElement, setup: SceneSetup): void {
  * Loads the ground's maps, then compiles every program the scene will draw
  * with (VENT-69), noting both in the crash report.
  */
-async function loadParts(world: World, hooks: SceneHooks): Promise<void> {
+async function loadParts(
+  world: World,
+  host: HTMLElement,
+  hooks: SceneHooks,
+  live: () => boolean,
+): Promise<void> {
   const { report } = world.setup;
   const wait = (ms: number): Promise<void> =>
     new Promise((done) => window.setTimeout(done, ms));
   const watch = watchHidden(document);
-  const maps = await waitAtMost(loadSurfaces(world, console.warn),
-    MAPS_GIVE_UP_MS, wait);
+  const surfaces = loadSurfaces(world, console.warn);
+  const maps = await waitAtMost(surfaces, MAPS_GIVE_UP_MS, wait);
+  if (maps === 'timeout') drawWhenLate(world, host, surfaces, live);
   report.step(maps === 'done' ? 'all parts loaded'
     : 'surface maps late: drawing without them');
   const { renderer, scene, camera } = world.stage;
@@ -78,6 +85,11 @@ export function startLoading(
   loop: { readonly open: () => void },
   hooks: SceneHooks,
 ): () => void {
-  return markReadyWhenStanding(host, loadParts(world, hooks),
-    () => loop.open());
+  let live = true;
+  const unmark = markReadyWhenStanding(host,
+    loadParts(world, host, hooks, () => live), () => loop.open());
+  return () => {
+    live = false;
+    unmark();
+  };
 }

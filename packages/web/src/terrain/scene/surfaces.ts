@@ -33,18 +33,20 @@ import { attachGroundMaps } from './ground';
 import { loadSurfaceMaps } from './surface-maps';
 import type { World } from './world';
 
-/** Loads the maps into `world`; resolves when they are on, or failed. */
+/** Loads the maps into `world`; true when they are on, false if failed. */
 export async function loadSurfaces(
   world: World,
   warn: (message: string) => void,
-): Promise<void> {
+): Promise<boolean> {
   try {
     const maps = await loadSurfaceMaps();
     attachGroundMaps(world.material, maps);
     if (world.patchMaterial) attachGroundMaps(world.patchMaterial, maps);
     const uniform = world.sky.earth.material.uniforms['uMap'];
     if (uniform) uniform.value = maps.earth;
+    return true;
   } catch (error) {
     warn(`Ventana Lunar: the surface maps did not load (${String(error)}).`);
+    return false;
   }
 }

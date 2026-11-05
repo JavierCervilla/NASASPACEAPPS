@@ -24,9 +24,10 @@
  */
 
 /**
- * A phone whose GPU the browser hides draws the on-foot view without its shadow map (VENT-84): Brave hides
- * WEBGL_debug_renderer_info, so the Pixel 10's PowerVR was not recognised, the VENT-75 guard did not apply and the
- * benchmark lost both contexts. A desktop with its GPU hidden keeps its shadows.
+ * A phone whose GPU the browser hides draws the on-foot view without its shadow map (VENT-84): the Pixel 10's
+ * PowerVR was not recognised, the VENT-75 guard did not apply and the benchmark lost both contexts. A browser may hide
+ * it two ways: no WEBGL_debug_renderer_info, or a name that is no GPU's, as Brave's «Brave» (VENT-92: the view lost its
+ * context after 9.8 s of turning at tier low). A desktop with its GPU hidden keeps its shadows.
  */
 import { expect, test, type Page } from '@playwright/test';
 import { stubApi } from './api-stub';
@@ -36,19 +37,28 @@ const START_MS = 30_000;
 
 const host = (page: Page) => page.getByRole('application', { name: 'On foot at the site' });
 
-/** Opens the view with WEBGL_debug_renderer_info hidden, as Brave does; returns the shadow passes drawn. */
-async function openHidden(page: Page): Promise<number> {
+/** How the browser hides the GPU: no WEBGL_debug_renderer_info, or a renderer name that is no GPU's. */
+type Hiding = { readonly kind: 'absent' } | { readonly kind: 'named'; readonly name: string };
+
+/** Opens the view with the GPU hidden as `hiding` says; returns the shadow passes drawn. */
+async function openHidden(page: Page, hiding: Hiding = { kind: 'absent' }): Promise<number> {
   await page.clock.setFixedTime(new Date('2026-11-30T20:00:00Z'));
-  await page.addInitScript(() => {
+  await page.addInitScript((how: Hiding) => {
     localStorage.setItem('ventana.dataSource', 'computed');
     localStorage.setItem('ventana.pinHint', 'seen');
+    const UNMASKED_RENDERER = 0x9246;
     for (const proto of [WebGL2RenderingContext.prototype, WebGLRenderingContext.prototype]) {
       const real = proto.getExtension as (this: WebGLRenderingContext, name: string) => unknown;
       proto.getExtension = function (this: WebGLRenderingContext, name: string) {
-        return name === 'WEBGL_debug_renderer_info' ? null : real.call(this, name);
+        return how.kind === 'absent' && name === 'WEBGL_debug_renderer_info' ? null : real.call(this, name);
       } as typeof proto.getExtension;
+      if (how.kind !== 'named') continue;
+      const param = proto.getParameter as (this: WebGLRenderingContext, p: number) => unknown;
+      proto.getParameter = function (this: WebGLRenderingContext, p: number) {
+        return p === UNMASKED_RENDERER ? how.name : param.call(this, p);
+      } as typeof proto.getParameter;
     }
-  });
+  }, hiding);
   await stubApi(page);
   await stubTile(page);
   await stubWall(page, 100, 140);
@@ -65,6 +75,10 @@ test.describe('on a phone, 390x844', () => {
 
   test('with its GPU hidden it renders the shadow map none of the times', async ({ page }) => {
     expect(await openHidden(page)).toBe(0);
+  });
+
+  test('with its GPU named «Brave» it renders the shadow map none of the times (VENT-92)', async ({ page }) => {
+    expect(await openHidden(page, { kind: 'named', name: 'Brave' })).toBe(0);
   });
 });
 

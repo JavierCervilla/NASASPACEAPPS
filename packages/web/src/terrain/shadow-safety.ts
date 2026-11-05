@@ -34,12 +34,24 @@
 const SHADOW_UNSAFE_GPU = /powervr/i;
 
 /**
+ * A name that is some GPU's: the phone families and what desktops and
+ * headless runs report. Anything else is a browser's mask, such as Brave's
+ * «Brave» (VENT-92), and tells nothing about the GPU.
+ */
+const KNOWN_GPU = new RegExp(['adreno', 'mali', 'immortalis', 'powervr',
+  'xclipse', 'maleoon', 'apple', 'nvidia', 'geforce', 'tegra', 'radeon',
+  'intel', 'swiftshader', 'llvmpipe'].join('|'), 'i');
+
+/**
  * Whether the view must draw without its shadow map on GPU `name`, null
  * when the browser hides it (no WEBGL_debug_renderer_info). A phone whose
  * GPU is hidden may be that PowerVR: Brave hid the Pixel 10's, the guard
- * above did not apply and the bench lost both contexts (VENT-84). A
+ * above did not apply and the bench lost both contexts (VENT-84). A name
+ * that is no GPU's hides it too: Brave answers «Brave», and the view lost
+ * its context after ten seconds of turning at the low tier (VENT-92). A
  * desktop keeps its shadows.
  */
 export function shadowMapUnsafe(name: string | null, phone: boolean) {
-  return name === null ? phone : SHADOW_UNSAFE_GPU.test(name);
+  if (name !== null && SHADOW_UNSAFE_GPU.test(name)) return true;
+  return phone && (name === null || !KNOWN_GPU.test(name));
 }

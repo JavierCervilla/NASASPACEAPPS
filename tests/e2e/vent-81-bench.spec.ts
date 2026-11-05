@@ -136,6 +136,14 @@ async function stripLeavesTheView(page: Page): Promise<void> {
   await expect(running.getByRole('listitem')).toHaveCount(0);
   const box = await running.boundingBox();
   expect(box && box.y + box.height).toBeLessThanOrEqual(844 / 4);
+  // Under the measured bar, and clear of the compass beside it (VENT-88).
+  const bar = await page.locator('.phone-bar').boundingBox();
+  expect(box && bar && box.y).toBeGreaterThanOrEqual((bar?.y ?? 0) + (bar?.height ?? 0));
+  for (const compass of await page.locator('.compass:visible').all()) {
+    const c = await compass.boundingBox();
+    const apart = !box || !c || box.x + box.width <= c.x || c.y + c.height <= box.y || box.y + box.height <= c.y;
+    expect(apart).toBe(true);
+  }
 }
 
 /** At 200 % text the results keep inside the screen over the tab bar, the table scrolls sideways, the actions in reach. */

@@ -142,6 +142,11 @@
  * benchmark measures stays in sight.
  */
 .ventana-bench-panel[data-phase='running'] {
+  /* Under the bar as measured (--top, use-under-bars.ts, VENT-88): the
+     strip must not hide the bar it shares the screen with; the other
+     states take the room they need over it. */
+  --bench-top: var(--top, calc(8px + 3rem + env(safe-area-inset-top, 0px)));
+
   gap: 8px;
   padding: 10px 10px 10px 14px;
   border-radius: 16px;
@@ -174,10 +179,15 @@
 }
 
 .bench__strip-step {
-  overflow: hidden;
   color: var(--text-secondary);
-  text-overflow: ellipsis;
-  white-space: nowrap;
+}
+
+/* On a phone the compass stands under the bar's right end: the strip keeps
+   clear of it (VENT-88). */
+@media (max-width: 767px) {
+  .ventana-bench-panel[data-phase='running'] {
+    right: calc(12px + var(--compass-size) + 8px);
+  }
 }
 
 .bench__strip .bench__button {

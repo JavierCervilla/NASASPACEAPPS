@@ -699,7 +699,8 @@ Every visible change follows `.claude/skills/apple-design/SKILL.md` (vendored fr
   (`release.ts`; that loss is not counted and the `ventana.glLostAt` mark is put back). Each run is a clean page load
   (`location.replace` with `&benchRun=k`), order A1 B1 A2 B2 A3 B3, and while a run plays the panel is one strip under
   the top bar (VENT-85, canvas «VENT-85 · Banco compacto», option A: the variant, run and step, the step's name, «Stop»
-  and the progress; `BenchRunning.tsx`), so the measured view stays in sight, state in `sessionStorage` `ventana.bench`
+  and the progress; `BenchRunning.tsx`; under the bar as measured by `use-under-bars.ts` and, on a phone, clear of the
+  compass, VENT-88), so the measured view stays in sight, state in `sessionStorage` `ventana.bench`
   (`run-state.ts`, `navigate.ts`); «Stop» forgets it, «Close» leaves `?bench`. Every one of those reloads leaves on
   purpose (`leave.ts`): it forgets the session's kept tier (`ventana.onFootTier`, `TIER_KEY`) so every run starts from
   the device's tier, and clears the open mark with `leftOnPurpose` as the language switch does, so no run counts as a

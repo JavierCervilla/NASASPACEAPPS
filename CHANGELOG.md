@@ -3,6 +3,9 @@
 ## [Sin publicar]
 
 ### Cambiado
+- **La tira del banco ya no tapa la barra ni la brújula (VENT-88).** Mientras corre se coloca justo debajo de la barra
+  superior, medida, también con el texto grande; en el móvil deja sitio a la brújula, y el nombre del paso se parte en
+  dos líneas en vez de cortarse.
 - **El banco deja ver lo que mide (VENT-85).** Mientras corre, el panel es una tira bajo la barra superior: la pasada
   (A o B, número de pasada y paso), el nombre del paso, «Stop» y la barra de progreso. La lista de pasos desaparece
   mientras corre, así que la vista 3D y el globo se ven casi enteros. El aviso de no tocar la pantalla pasa a la

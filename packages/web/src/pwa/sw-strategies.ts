@@ -27,8 +27,12 @@
  * The service worker's two ways to answer (sw-routes.ts says which):
  * network first with the cache as fallback, and cache first; the API's
  * variant is in sw-api.ts. The network's answer always wins: a copy that
- * cannot be kept (a full quota) is skipped, never the answer. The cache
- * storage and `fetch` come in, so they run in tests without a worker.
+ * cannot be kept (a full quota) is skipped, never the answer. The answer
+ * goes to the page at once and its copy is kept in the background
+ * (VENT-90): waiting for the store held the page's first byte until the
+ * whole file was down and written. The cache storage, `fetch` and the
+ * `defer` that keeps the worker alive come in, so they run in tests
+ * without a worker.
  */
 
 export interface SwNet {
@@ -36,6 +40,8 @@ export interface SwNet {
   readonly fetch: (request: Request) => Promise<Response>;
   /** The clock, Unix ms. */
   readonly now: () => number;
+  /** Keeps the worker alive until `work` settles (`waitUntil`). */
+  readonly defer: (work: Promise<unknown>) => void;
 }
 
 export interface Keep {
@@ -44,18 +50,23 @@ export interface Keep {
   readonly ignoreSearch?: boolean;
 }
 
-/** Turns the copy into what is kept (the API stamps it). */
-type Stamp = (response: Response) => Promise<Response>;
+/** Turns the copy of `request`'s answer into what is kept (stamped). */
+export type Stamp = (
+  response: Response,
+  request: Request,
+) => Promise<Response>;
+
+/** How a copy is kept: where, and stamped how. */
+type KeepHow = Keep & { readonly stamp?: Stamp | undefined };
 
 /**
- * A copy of `response` that never says it was redirected: a browser
- * refuses a redirected answer to a navigation.
+ * `response` (a copy) as one that never says it was redirected: a
+ * browser refuses a redirected answer to a navigation.
  */
 async function unredirected(response: Response): Promise<Response> {
-  const copy = response.clone();
-  if (!response.redirected) return copy;
-  const { status, statusText, headers } = copy;
-  return new Response(await copy.blob(), { status, statusText, headers });
+  if (!response.redirected) return response;
+  const { status, statusText, headers } = response;
+  return new Response(await response.blob(), { status, statusText, headers });
 }
 
 /** Keeps `response` for `request`, a page's under its query-free URL. */
@@ -63,7 +74,7 @@ async function keepCopy(
   cache: Cache,
   request: Request,
   response: Response,
-  how: Keep & { readonly stamp?: Stamp | undefined },
+  how: KeepHow,
 ): Promise<void> {
   const url = new URL(request.url);
   url.search = '';
@@ -72,7 +83,20 @@ async function keepCopy(
     ? new Request(url.href, { headers: request.headers })
     : request;
   const copy = await unredirected(response);
-  await cache.put(key, how.stamp ? await how.stamp(copy) : copy);
+  await cache.put(key, how.stamp ? await how.stamp(copy, request) : copy);
+}
+
+/** Keeps a copy of a good `response` in the background, never failing. */
+function keepLater(
+  net: SwNet,
+  cache: Cache,
+  request: Request,
+  how: KeepHow & { readonly response: Response },
+): void {
+  if (!how.response.ok) return;
+  // Cloned now, before the page starts reading the answer.
+  const copy = how.response.clone();
+  net.defer(keepCopy(cache, request, copy, how).catch(() => undefined));
 }
 
 /** The network's answer, kept when good; the kept one when it fails. */
@@ -92,11 +116,7 @@ export async function networkFirst(
     if (kept) return kept;
     throw error;
   }
-  if (response.ok) {
-    await keepCopy(cache, request, response, { ...keep, stamp }).catch(
-      () => undefined,
-    );
-  }
+  keepLater(net, cache, request, { ...keep, response, stamp });
   return response;
 }
 
@@ -105,15 +125,12 @@ export async function cacheFirst(
   net: SwNet,
   request: Request,
   cacheName: string,
+  stamp?: Stamp,
 ): Promise<Response> {
   const cache = await net.caches.open(cacheName);
   const kept = await cache.match(request);
   if (kept) return kept;
   const response = await net.fetch(request);
-  if (response.ok) {
-    await keepCopy(cache, request, response, {
-      cache: cacheName,
-    }).catch(() => undefined);
-  }
+  keepLater(net, cache, request, { cache: cacheName, response, stamp });
   return response;
 }

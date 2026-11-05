@@ -211,7 +211,10 @@ describe('precache', () => {
   });
 });
 
-/** An in-memory cache storage and a scripted network; after `fillQuota` every write fails as a full quota does. */
+/**
+ * An in-memory cache storage and a scripted network; after `fillQuota` every write fails as a full quota does. The copies
+ * are kept after the answer (VENT-90): `settled` waits for them.
+ */
 function fakeNet(answer: () => Promise<Response>) {
   let failPut = false;
   const stores = new Map<string, Map<string, Response>>();
@@ -236,11 +239,16 @@ function fakeNet(answer: () => Promise<Response>) {
     };
   };
   const caches = { open } as unknown as CacheStorage;
-  const net: SwNet = { caches, fetch: () => answer(), now: () => 1_793_000_000_000 };
+  const pending: Promise<unknown>[] = [];
+  const defer = (work: Promise<unknown>) => {
+    pending.push(work);
+  };
+  const net: SwNet = { caches, fetch: () => answer(), now: () => 1_793_000_000_000, defer };
   const fillQuota = () => {
     failPut = true;
   };
-  return { net, stores, fillQuota };
+  const settled = () => Promise.all(pending);
+  return { net, stores, fillQuota, settled };
 }
 
 const ok = (body: string) => () => Promise.resolve(new Response(body));
@@ -263,6 +271,7 @@ describe('strategies', () => {
     const online = fakeNet(ok('page'));
     const keep = { cache: 'c', ignoreSearch: true };
     await networkFirst(online.net, new Request('https://ventana.test/es/'), keep);
+    await online.settled();
     const offline = { ...online.net, fetch: down };
     const res = await networkFirst(offline, new Request('https://ventana.test/es/?site=apollo11'), keep);
     expect(await res.text()).toBe('page');
@@ -274,37 +283,42 @@ describe('strategies', () => {
   });
 
   it('network first answers with the network even when keeping the copy fails (a full quota)', async () => {
-    const { net, stores, fillQuota } = fakeNet(ok('stale'));
+    const { net, stores, fillQuota, settled } = fakeNet(ok('stale'));
     const keep = { cache: 'c' };
     const request = () => new Request('https://ventana.test/fr/');
     await networkFirst(net, request(), keep);
+    await settled();
     fillQuota();
     const res = await networkFirst({ ...net, fetch: ok('fresh') }, request(), keep);
     expect(await res.text()).toBe('fresh');
+    await settled();
     expect(stores.get('c')?.size).toBe(1);
   });
 
   it('network first never keeps an answer that is not ok', async () => {
-    const { net, stores } = fakeNet(failing(500));
+    const { net, stores, settled } = fakeNet(failing(500));
     const res = await networkFirst(net, new Request('https://ventana.test/fr/'), { cache: 'c' });
     expect(res.status).toBe(500);
+    await settled();
     expect(stores.get('c')?.size ?? 0).toBe(0);
   });
 
   it('keeps one copy of a page whatever its query string', async () => {
-    const { net, stores } = fakeNet(ok('page'));
+    const { net, stores, settled } = fakeNet(ok('page'));
     const keep = { cache: 'c', ignoreSearch: true };
     for (const q of ['?x=1', '?x=2', '?site=apollo11']) {
       await networkFirst(net, new Request(`https://ventana.test/es/${q}`), keep);
     }
+    await settled();
     expect([...(stores.get('c')?.keys() ?? [])]).toEqual(['https://ventana.test/es/']);
   });
 
   it('never keeps a page as a redirected answer, so offline it can be served to a navigation', async () => {
-    const { net, stores } = fakeNet(() => Promise.resolve(redirected('final page')));
+    const { net, stores, settled } = fakeNet(() => Promise.resolve(redirected('final page')));
     const keep = { cache: 'c', ignoreSearch: true };
     const res = await networkFirst(net, new Request('https://ventana.test/es'), keep);
     expect(await res.text()).toBe('final page');
+    await settled();
     const kept = stores.get('c')?.get('https://ventana.test/es');
     expect(kept?.redirected).toBe(false);
     expect(await kept?.text()).toBe('final page');
@@ -312,32 +326,35 @@ describe('strategies', () => {
 
   it('cache first never keeps an answer that is not ok, and asks again next time', async () => {
     let asked = 0;
-    const { net, stores } = fakeNet(() => {
+    const { net, stores, settled } = fakeNet(() => {
       asked += 1;
       return failing(404)();
     });
     const request = () => new Request('https://ventana.test/textures/moon-lroc-4k.jpg');
     expect((await cacheFirst(net, request(), 'c')).status).toBe(404);
+    await settled();
     await cacheFirst(net, request(), 'c');
     expect(asked).toBe(2);
     expect(stores.get('c')?.size ?? 0).toBe(0);
   });
 
   it('cache first answers with the network even when keeping the copy fails', async () => {
-    const { net, fillQuota } = fakeNet(ok('map'));
+    const { net, fillQuota, settled } = fakeNet(ok('map'));
     fillQuota();
     const res = await cacheFirst(net, new Request('https://ventana.test/textures/moon-lroc-4k.jpg'), 'c');
     expect(await res.text()).toBe('map');
+    await expect(settled()).resolves.toBeDefined();
   });
 
   it('cache first answers from the cache without asking the network again', async () => {
     let asked = 0;
-    const { net } = fakeNet(() => {
+    const { net, settled } = fakeNet(() => {
       asked += 1;
       return Promise.resolve(new Response('map'));
     });
     const request = () => new Request('https://ventana.test/textures/moon-lroc-4k.jpg');
     await cacheFirst(net, request(), 'c');
+    await settled();
     expect(await (await cacheFirst(net, request(), 'c')).text()).toBe('map');
     expect(asked).toBe(1);
   });
@@ -347,6 +364,7 @@ describe('strategies', () => {
     const keep = { cache: API_CACHE, syncUrl: 'https://ventana.test/__ventana-synced-at' };
     const url = 'https://ventana.test/api/v1/sites/apollo11?from=a&to=b';
     await apiFirst(online.net, new Request(url), keep);
+    await online.settled();
     const kept = await apiFirst({ ...online.net, fetch: down }, new Request(url), keep);
     expect(kept.headers.get(FETCHED_AT_HEADER)).toBe('1793000000000');
     expect(await kept.text()).toBe('{"hours":[]}');
@@ -358,11 +376,14 @@ describe('strategies', () => {
 describe('the API cache', () => {
   it(`keeps at most ${API_ENTRIES} answers, dropping the oldest by when they came`, async () => {
     let clock = 1_793_000_000_000;
-    const { net, stores } = fakeNet(ok('{"hours":[]}'));
+    const { net, stores, settled } = fakeNet(ok('{"hours":[]}'));
     const ticking: SwNet = { ...net, now: () => (clock += 1000) };
     const keep = { cache: API_CACHE, syncUrl: 'https://ventana.test/__ventana-synced-at' };
     const url = (i: number) => `https://ventana.test/api/v1/sites/s${i}?from=a&to=b`;
-    for (let i = 0; i < API_ENTRIES + 6; i += 1) await apiFirst(ticking, new Request(url(i)), keep);
+    for (let i = 0; i < API_ENTRIES + 6; i += 1) {
+      await apiFirst(ticking, new Request(url(i)), keep);
+      await settled();
+    }
     const store = stores.get(API_CACHE)!;
     expect(store.size).toBe(API_ENTRIES + 1);
     expect(store.has(keep.syncUrl)).toBe(true);

@@ -216,7 +216,7 @@ export function mountGlobe(host: HTMLElement, options: GlobeOptions) {
   const orbit = createOrbit(SOUTH_POLE_VIEW);
   const invalidate = (): void => loop.invalidate();
   // The frames are made first: the Moon asks them whether the globe shows.
-  const frames = shownFrames((dt) => drawFrame(parts, dt));
+  const frames = shownFrames((dt) => drawFrame(parts, dt), () => moon.rest());
   const contents = addContents(host, options, stage, { ...frames, invalidate });
   const { markers, moon, layers, graticule } = contents;
   const link = linkView(stage, options.onView);

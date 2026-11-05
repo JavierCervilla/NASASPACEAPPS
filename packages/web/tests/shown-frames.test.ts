@@ -90,4 +90,17 @@ describe('the globe\'s frames while its host is hidden', () => {
     expect(flat.resize).not.toHaveBeenCalled();
     expect(frames.frame(0)).toBe(false);
   });
+
+  it('tells once when the host goes from shown to hidden (VENT-86)', () => {
+    const hid = vi.fn();
+    const frames = shownFrames(vi.fn(() => false), hid);
+    frames.fit(host(390, 844).parts);
+    expect(hid).not.toHaveBeenCalled();
+    frames.fit(host(0, 0).parts);
+    frames.fit(host(0, 0).parts);
+    expect(hid).toHaveBeenCalledTimes(1);
+    frames.fit(host(390, 844).parts);
+    frames.fit(host(0, 0).parts);
+    expect(hid).toHaveBeenCalledTimes(2);
+  });
 });

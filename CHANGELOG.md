@@ -3,6 +3,11 @@
 ## [Sin publicar]
 
 ### Cambiado
+- **El globo suelta sus mapas grandes mientras no se ve (VENT-86).** Al abrir la vista 3D o la DSN en el móvil (o
+  cualquier otra vista en el escritorio), el globo vuelve a su mapa de arranque y libera los de 4K u 8K, que en el
+  Pixel 10 ocupaban 89 MB de memoria gráfica mientras otra vista la necesitaba. El globo sigue vivo con su contexto:
+  al volver se ve al instante con el mapa pequeño y, si el zoom lo pide, el grande vuelve en cuanto se descarga (de la
+  caché).
 - **Movimiento más coherente y más ligero (VENT-82, auditoría de movimiento).** Las filas de la lista de sitios (y las
   de los sitios guardados) se iluminan al pulsarlas, como el resto de filas, en lugar de encogerse; la brújula del globo
   encoge lo mismo que los demás botones (0,97) y, como ellos y los botones de la vista 3D, solo anima al pulsar. El

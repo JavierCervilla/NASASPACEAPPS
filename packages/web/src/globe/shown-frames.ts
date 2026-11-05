@@ -31,7 +31,8 @@
  * nothing and stops the loop, so the GPU is the visible view's. Shown again,
  * the host's size comes back: the stage is fitted and one frame is asked,
  * which draws whatever changed meanwhile (the Sun is aimed on each change,
- * drawn or not).
+ * drawn or not). Going hidden is told once (`onHide`), so the Moon can
+ * free its big maps for the view that shows (VENT-86).
  */
 import type { FrameFn } from './loop';
 
@@ -52,13 +53,18 @@ export interface ShownFrames {
 }
 
 /** Gates `draw` on whether the host shows, as its last fit read it. */
-export function shownFrames(draw: FrameFn): ShownFrames {
+export function shownFrames(
+  draw: FrameFn,
+  onHide: () => void = () => undefined,
+): ShownFrames {
   let shown = true;
   return {
     frame: (dt) => shown && draw(dt),
     fit: ({ size, resize, invalidate }) => {
       const { width, height } = size();
+      const was = shown;
       shown = width > 0 && height > 0;
+      if (!shown && was) onHide();
       if (!shown) return;
       resize(width, height);
       invalidate();

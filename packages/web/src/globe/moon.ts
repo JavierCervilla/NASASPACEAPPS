@@ -58,6 +58,11 @@ export interface Moon {
   textureBytes(): number;
   /** The camera's distance (Moon radii) is now `distance`. */
   track(distance: number): void;
+  /**
+   * Back to the start map, freeing the bigger ones (the globe is hidden:
+   * VENT-86); the next frame drawn climbs again as the zoom asks.
+   */
+  rest(): void;
   dispose(): void;
 }
 
@@ -93,6 +98,7 @@ export function addMoon(stage: Stage, options: MoonOptions): Moon {
   return {
     textureBytes: () => textureBytes(material.map, material.normalMap),
     track: (d) => swap.want(wantedLevel(d, { ...options, maxTextureSize })),
+    rest: () => swap.lower(startLevel(options.tier)),
     dispose: () => {
       swap.dispose();
       geometry.dispose();

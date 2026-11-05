@@ -53,4 +53,11 @@ describe('waitSettled', () => {
     const page = pageWith({ status: 'loading', ready: 'false' });
     await expect(waitSettled(page, { timeoutMs: 30, park: false }, sleep)).resolves.toBe(true);
   });
+
+  it('stops at once when the view fails while a point change parks it', async () => {
+    const page = pageWith({ status: 'lost', ready: 'false', working: 'false' });
+    const started = performance.now();
+    await expect(waitSettled(page, { timeoutMs: 2000, park: true }, sleep)).rejects.toThrow(/3D view failed: lost/);
+    expect(performance.now() - started).toBeLessThan(500);
+  });
 });

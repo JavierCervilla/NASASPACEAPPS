@@ -29,13 +29,14 @@
  * each frame drawn the renderer's own counts, the drawing buffer and what
  * the draw call cost. Read from the renderer; written to the report's sink.
  */
-import { gpuName } from '../report/environment';
+import { unmaskedGpuName } from '../report/environment';
 import type { World } from './world';
 
 /** Notes that the stage stands, and the GPU's name when the driver gives it. */
 export function reportStage(world: World): void {
   const { report } = world.setup;
-  report.environment({ gpu: gpuName(world.stage.renderer.getContext()) });
+  const gl = world.stage.renderer.getContext();
+  report.environment({ gpu: unmaskedGpuName(gl) });
   report.step('stage created');
 }
 

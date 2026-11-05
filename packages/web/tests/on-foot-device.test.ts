@@ -31,7 +31,7 @@
  */
 import { describe, expect, it, vi } from 'vitest';
 import { copyText, type CopyDeps } from '../src/terrain/report/copy-text';
-import { gpuName, readEnvironment, watchBattery, type EnvSource } from '../src/terrain/report/environment';
+import { unmaskedGpuName, readEnvironment, watchBattery, type EnvSource } from '../src/terrain/report/environment';
 
 const SOURCE: EnvSource = {
   navigator: { userAgent: 'UA', hardwareConcurrency: 8, deviceMemory: 4 },
@@ -73,15 +73,15 @@ describe('the GPU name', () => {
   });
 
   it('is what the driver says when it exposes it', () => {
-    expect(gpuName(gl('PowerVR D-Series DXT-48-1536') as never)).toBe('PowerVR D-Series DXT-48-1536');
+    expect(unmaskedGpuName(gl('PowerVR D-Series DXT-48-1536') as never)).toBe('PowerVR D-Series DXT-48-1536');
   });
 
   it('is null when the extension is hidden, the answer is empty or not text, or the context throws', () => {
-    expect(gpuName(gl('x', false) as never)).toBeNull();
-    expect(gpuName(gl('') as never)).toBeNull();
-    expect(gpuName(gl(7) as never)).toBeNull();
+    expect(unmaskedGpuName(gl('x', false) as never)).toBeNull();
+    expect(unmaskedGpuName(gl('') as never)).toBeNull();
+    expect(unmaskedGpuName(gl(7) as never)).toBeNull();
     const lost = { getExtension: () => { throw new Error('lost'); }, getParameter: () => null };
-    expect(gpuName(lost as never)).toBeNull();
+    expect(unmaskedGpuName(lost as never)).toBeNull();
   });
 });
 

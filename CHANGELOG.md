@@ -2,6 +2,12 @@
 
 ## [Sin publicar]
 
+### Arreglado
+- **La vista 3D ya no se cae en Brave en el móvil (VENT-92).** Brave da «Brave» como nombre de la GPU, así que la app no
+  la reconocía como escondida y mantenía el mapa de sombras junto a la profundidad logarítmica, la combinación que hace
+  perder el contexto en el Pixel 10. Ahora, en el móvil, un nombre que no es de ninguna GPU conocida se trata como una
+  GPU escondida y la vista se dibuja sin mapa de sombras.
+
 ### Cambiado
 - **La tira del banco ya no tapa la barra ni la brújula en el móvil (VENT-88).** Mientras corre se coloca justo debajo
   de la barra superior, medida, también con el texto grande, y deja sitio a la brújula; el nombre del paso se parte en

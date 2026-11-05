@@ -47,4 +47,23 @@ describe('shadow safety', () => {
   it('keeps it on a desktop whose GPU the browser hides', () => {
     expect(shadowMapUnsafe(null, false)).toBe(false);
   });
+
+  // VENT-92: Brave answers WEBGL_debug_renderer_info with «Brave»; the Pixel 10 lost its context at tier low.
+  it('drops it on a phone whose browser names no real GPU', () => {
+    for (const name of ['Brave', 'WebKit WebGL', 'Mozilla', 'Generic Renderer']) {
+      expect(shadowMapUnsafe(name, true)).toBe(true);
+    }
+  });
+
+  it('keeps it on a desktop whose browser names no real GPU', () => {
+    expect(shadowMapUnsafe('Brave', false)).toBe(false);
+  });
+
+  it('keeps it on the phone GPUs it knows that are not PowerVR', () => {
+    for (const name of ['Mali-G715', 'Immortalis-G720', 'Samsung Xclipse 940', 'Apple GPU',
+      'ANGLE (Qualcomm, Adreno (TM) 740, OpenGL ES 3.2)', 'Maleoon 910',
+      'ANGLE (Google, Vulkan 1.3.0 (SwiftShader Device (Subzero) (0x0000C0DE)), SwiftShader driver)']) {
+      expect(shadowMapUnsafe(name, true)).toBe(false);
+    }
+  });
 });

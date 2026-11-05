@@ -32,7 +32,7 @@
  * at 350° and the Earth 10.2° up at 325°; the view opens toward the Sun.
  */
 import { readFileSync } from 'node:fs';
-import { expect, test, type Page, type Route } from '@playwright/test';
+import { expect, test, type Page, type Request, type Route } from '@playwright/test';
 import { stubApi } from './api-stub';
 import { idleCount } from './view-idle';
 
@@ -49,8 +49,8 @@ interface Gate {
   readonly release: (matches: RegExp, count?: number) => Promise<number>;
   /** From now on lets every request whose URL `matches` through at once. */
   readonly open: (matches: RegExp) => Promise<number>;
-  /** How many times each URL was asked. */
-  readonly asked: Map<string, number>;
+  /** How many times each URL was answered; a request the page aborted and asked again is answered once. */
+  readonly answered: Map<string, number>;
 }
 
 const NEAR = /\/tiles\/polar-south\/[01]\//;
@@ -59,9 +59,13 @@ const LIST = /\/terrain\/tiles\?/;
 
 /** Holds the ring list, its tiles and the scene's chunk until released; `tileStatus` answers every tile with an error. */
 async function holdRelief(page: Page, tileStatus?: number): Promise<Gate> {
-  const held: { url: string; go: () => Promise<void> }[] = [];
+  const held: { url: string; request: Request; go: () => Promise<void> }[] = [];
   const opened: RegExp[] = [];
-  const asked = new Map<string, number>();
+  const answered = new Map<string, number>();
+  // A request held past the ring's silence watch (VENT-78: 4 s) is aborted by the page, which asks again: only the
+  // live one may be released, or a release answers a request nobody waits for and nothing lands.
+  const failed = new Set<Request>();
+  page.on('requestfailed', (request) => failed.add(request));
   const answer = (route: Route, url: URL): Promise<void> => {
     const m = TILE.exec(url.pathname);
     if (m && tileStatus) return route.fulfill({ status: tileStatus, json: { error: 'busy' } });
@@ -74,20 +78,21 @@ async function holdRelief(page: Page, tileStatus?: number): Promise<Gate> {
   };
   const hold = (route: Route, go: () => Promise<void>): Promise<void> | undefined => {
     const url = route.request().url();
-    asked.set(url, (asked.get(url) ?? 0) + 1);
-    if (opened.some((re) => re.test(url))) return go();
-    held.push({ url, go });
+    const answer = (): Promise<void> => (answered.set(url, (answered.get(url) ?? 0) + 1), go());
+    if (opened.some((re) => re.test(url))) return answer();
+    held.push({ url, request: route.request(), go: answer });
     return undefined;
   };
   await page.route(/\/api\/v1\/terrain\/tiles/, (route) => hold(route, () => answer(route, new URL(route.request().url()))));
   await page.route(SCENE_CHUNK, (route) => hold(route, () => route.continue()));
   const release = async (matches: RegExp, count = Number.POSITIVE_INFINITY): Promise<number> => {
+    for (const h of held.filter((h) => failed.has(h.request))) held.splice(held.indexOf(h), 1);
     const now = held.filter((h) => matches.test(h.url)).slice(0, count);
     for (const h of now) held.splice(held.indexOf(h), 1);
     await Promise.all(now.map((h) => h.go()));
     return now.length;
   };
-  return { release, asked, open: async (matches) => (opened.push(matches), release(matches)) };
+  return { release, answered, open: async (matches) => (opened.push(matches), release(matches)) };
 }
 
 async function open(page: Page, path: string, tileStatus?: number): Promise<Gate> {
@@ -175,7 +180,7 @@ for (const [layout, use] of [
       await expect(loader(page).locator('.loader-plan__label')).toHaveText('8 km tiles · 62.5 m');
       await page.waitForTimeout(900);
       await shot(page, `${layout}-3-zoomed`);
-      for (const [url, n] of gate.asked) expect(n, url).toBe(1);
+      for (const [url, n] of gate.answered) expect(n, url).toBe(1);
     });
 
     test('with the near tiles in the plan lies down, the skyline shapes, and the scene takes over under it', async ({ page }) => {
@@ -250,7 +255,7 @@ for (const [layout, use] of [
       await page.waitForTimeout(1500);
       expect(await frames(page)).toBe(still);
       await shot(page, `${layout}-7-loaded`);
-      for (const [url, n] of gate.asked) expect(n, url).toBe(1);
+      for (const [url, n] of gate.answered) expect(n, url).toBe(1);
     });
 
     test('under reduced motion the plan fades without zoom, tilt or glint', async ({ page }) => {

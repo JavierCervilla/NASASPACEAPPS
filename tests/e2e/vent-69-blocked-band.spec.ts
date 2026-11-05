@@ -51,19 +51,25 @@ async function openBlocked(page: Page, hash: string): Promise<void> {
   await page.goto(`./?site=im2-athena&quality=low${hash}`);
 }
 
-/** The words' box must sit inside the free band and touch no chrome. */
-async function expectInFreeBand(page: Page, message: Locator): Promise<void> {
-  await expect(message).toBeVisible({ timeout: START_MS });
-  await page.waitForTimeout(500);
+/** Where the words' box sits against the chrome: its top under the bar, its bottom over the sheet and the tab bar. */
+async function placement(page: Page, message: Locator): Promise<{ underBar: boolean; overFloor: boolean }> {
   const box = await message.boundingBox();
   const chrome = await page.evaluate(() => {
     const bottom = (s: string): number => document.querySelector(s)?.getBoundingClientRect().bottom ?? 0;
     const top = (s: string): number => document.querySelector(s)?.getBoundingClientRect().top ?? Infinity;
     return { barBottom: bottom('.phone-bar'), floor: Math.min(top('.sheet'), top('.tab-bar')) };
   });
-  expect(box).not.toBeNull();
-  expect(box!.y).toBeGreaterThanOrEqual(chrome.barBottom - 0.5);
-  expect(box!.y + box!.height).toBeLessThanOrEqual(chrome.floor + 0.5);
+  if (!box) return { underBar: false, overFloor: false };
+  return { underBar: box.y >= chrome.barBottom - 0.5, overFloor: box.y + box.height <= chrome.floor + 0.5 };
+}
+
+/**
+ * The words' box must sit inside the free band and touch no chrome. Polled, not read once after a fixed wait: at 200 %
+ * text the sheet first has to close to make room (roomAsk), and on a loaded runner that move outlasted 500 ms.
+ */
+async function expectInFreeBand(page: Page, message: Locator): Promise<void> {
+  await expect(message).toBeVisible({ timeout: START_MS });
+  await expect.poll(() => placement(page, message)).toEqual({ underBar: true, overFloor: true });
   const backing = await message.evaluate((el) => getComputedStyle(el).backgroundColor);
   expect(backing).not.toBe('rgba(0, 0, 0, 0)');
 }

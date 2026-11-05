@@ -98,10 +98,13 @@ Every visible change follows `.claude/skills/apple-design/SKILL.md` (vendored fr
   `--glass-label` and `--phone-bar|sheet|tabs` opaque. Held by `tests/{style-surfaces,type-scale,focus-ring}.test.ts`
   and `tests/e2e/colour-focus-type.spec.ts`.
 - Press and motion (VENT-55): every control answers on pointer-down, the same under reduced motion (no `:active` rule
-  sits inside a `prefers-reduced-motion` query): buttons `scale(0.97)` over `--dur-press`, rows and segments a `--fill`
-  highlight laid over their own background, Moon dots `scale(0.9)` (`styles/press.css`). Popovers, the undo toast, the
-  first-time pin hint and the offline notice leave the way they came in, with opacity, scale 0.96 and a 6 px blur, on
-  `--spring` (critically damped `linear()`, in `tokens.css`) over `--dur-enter` (`styles/presence.css`: `@starting-style`
+  sits inside a `prefers-reduced-motion` query): buttons `scale(0.97)` over `--dur-press`, on the press only (the
+  globe's compass and the 3D view's buttons too, VENT-82), rows (the site lists' `.site-row` too, VENT-82) and segments
+  a `--fill` highlight laid over their own background, Moon dots `scale(0.9)` (`styles/press.css`). Durations are the
+  `--dur-*` tokens, never written by hand. Popovers, the undo toast, the first-time pin hint, the offline notice and
+  «New version ready» (VENT-82) leave the way they came in, with opacity, scale 0.96 and a 6 px blur, on
+  `--spring` (critically damped `linear()`, in `tokens.css`; its response is 0.666 of the duration it runs over, 0.27 s
+  at `--dur-enter`) over `--dur-enter` (`styles/presence.css`: `@starting-style`
   and `overlay`/`display` allow-discrete for popovers; `data-presence="in|out"`, kept mounted by
   `usePresence` in `components/presence.ts` for `exitMs(reducedMotion)`: `EXIT_MS`, 400 ms, or `FADE_MS` (`--dur-fade`,
   200 ms) under reduced motion, VENT-57); a plain fade under reduced motion. The globe's pole tilt and zoom stretch
@@ -734,7 +737,8 @@ Every visible change follows `.claude/skills/apple-design/SKILL.md` (vendored fr
   the frame or the state changes, at most every 250 ms. The phase is `simPhase` (`src/pwa/moon-phase.ts`, behind
   `PhaseSource`): the simulator's sub-solar point against its sub-Earth point (VENT-36), within a quarter of an hour of
   the true phases. The globe's loading state (`GlobeSplash.tsx`) shows J2 with the same phase until the Moon's first
-  map is on the running scene (`onTextured`), or 6 s at most. A phase frame that fails to load leaves the ring alone and
+  map is on the running scene (`onTextured`), or 6 s at most, then fades out (over `--dur-fade` under reduced motion,
+  VENT-82). A phase frame that fails to load leaves the ring alone and
   is asked again on the next update.
 - **Offline**: `scripts/service-worker.mjs` (an Astro integration) bundles `src/pwa/sw-worker.ts` into `dist/sw.js`
   after every build, with the files it caches at install, the whole offline set (every locale's page except `/en-xa/`,
@@ -758,7 +762,8 @@ Every visible change follows `.claude/skills/apple-design/SKILL.md` (vendored fr
   the pin hint's look (option D among four mockups, the human's choice; `UpdateNotice.tsx`, `UpdateButtons.tsx`,
   `TopNotices.tsx`) is the update: a reload icon, «New version ready» over «Tap to update» or «Click to update» by
   `(pointer: coarse)`, the whole row reloads the same address, and the hint's own ✕ beside it hides it until the app
-  opens again; it yields to the offline notice while offline. While it shows it writes `--update-row-space` on the root,
+  opens again, the row leaving as it came through `usePresence` and keeping its room until it has gone (VENT-82); it
+  yields to the offline notice while offline. While it shows it writes `--update-row-space` on the root,
   so the first-time pin hint stacks under it and the phone's compass sits under both (`stackHeight`, `compass-top.ts`).
   A chunk loaded on demand that is gone after a deploy (`src/pwa/missing-chunk.ts`: only the dynamic import's own fetch
   failure counts; a module that throws while evaluating, or any render or mount error, is a real error; offline the same

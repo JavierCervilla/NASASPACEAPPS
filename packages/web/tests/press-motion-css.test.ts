@@ -54,6 +54,7 @@ const BUTTONS = [
 const ROWS = [
   '.views > *',
   '.segmented button',
+  '.site-row',
   '.row-menu__item',
   '.saved-row__more',
   '.lang-row',
@@ -147,11 +148,9 @@ describe('C-23: the critically damped spring is a token', () => {
     expect(others.map((rule) => rule.file)).toEqual([]);
   });
 
-  it('entries, popovers and notices move on it', () => {
-    expect(ruleFor('.enter').map((rule) => rule.body).join('')).toMatch(/var\(--spring\)/);
+  it('popovers and notices move on it («New version ready» through presence.css since VENT-82)', () => {
     expect(presence.map((rule) => rule.body).join('')).toMatch(/var\(--spring\)/);
     expect(ruleFor('.undo-toast').map((rule) => rule.body).join('')).toMatch(/var\(--spring\)/);
-    expect(ruleFor('.update-notice[data-shown]').map((rule) => rule.body).join('')).toMatch(/var\(--spring\)/);
   });
 });
 

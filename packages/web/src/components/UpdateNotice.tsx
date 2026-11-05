@@ -46,6 +46,7 @@ import { onMissingChunk } from '../pwa/missing-chunk';
 import { showsUpdate, watchForUpdate } from '../pwa/update-watch';
 import { UpdateButtons, type UpdateActions } from './UpdateButtons';
 import { useI18n } from './i18n-context';
+import { usePresence } from './presence';
 import { useOnline } from './use-online';
 import { useUnderBars } from './use-under-bars';
 
@@ -83,18 +84,25 @@ export function useRowSpace(
   }, [row, shown]);
 }
 
-/** The row: empty while hidden, its live region kept in place. */
+/**
+ * The row: empty while hidden, its live region kept in place. Hidden, it
+ * keeps its buttons and its room through the exit (presence.ts), so it
+ * leaves as it came, as «Offline» does, and what stacks under it does
+ * not jump up before it has gone.
+ */
 export function UpdateRow({ shown, ...actions }: UpdateRowProps) {
   const { t } = useI18n();
   const row = useRef<HTMLDivElement>(null);
-  useUnderBars(row, shown);
-  useRowSpace(row, shown);
+  const { mounted, phase } = usePresence(shown);
+  useUnderBars(row, mounted);
+  useRowSpace(row, mounted);
   return (
-    <div ref={row} className="update-notice" data-shown={shown || undefined}>
+    <div ref={row} className="update-notice" data-presence={phase}
+      data-shown={mounted || undefined}>
       <p className="update-notice__live" role="status">
         {shown ? t('update.ready') : null}
       </p>
-      {shown ? <UpdateButtons {...actions} /> : null}
+      {mounted ? <UpdateButtons {...actions} /> : null}
     </div>
   );
 }

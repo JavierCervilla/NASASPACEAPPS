@@ -66,6 +66,8 @@ import { createSourceStore } from '../source/data-source';
 import { followClock } from '../calendar/follow-clock';
 import { createPlayer } from '../calendar/time-player';
 import { createTimeStore } from '../calendar/time-store';
+import { benchClock } from '../lib/bench-param';
+import { BenchSlot } from './bench/BenchSlot';
 import { sheetChannels } from './sheet-channels';
 import { browserHourClock } from '../phone/hour-clock';
 import type { CardSite } from '../card/site-facts';
@@ -107,7 +109,9 @@ const VIEW_NAV = 'nav.views';
 
 /** The page's shared stores, made once. */
 function createClock(sitesUrl: string, sites: readonly CardSite[]) {
-  const time = createTimeStore(() => Date.now());
+  // Under `?bench` the instant stands still, the same every run (VENT-81).
+  const search = globalThis.location?.search ?? '';
+  const time = createTimeStore(benchClock(search) ?? (() => Date.now()));
   const player = createPlayer(time, {
     setTimer: (fn, ms) => window.setTimeout(fn, ms),
     clearTimer: (id) => window.clearTimeout(id),
@@ -214,15 +218,15 @@ function Island({ sitesUrl, base, selectedId, sites }: Props) {
   const saved = useCreateSavedKit(kit, store);
   const layers = saved.layers;
   const globe = { base, sitesUrl, store, ...channels, time, state, layers };
-  const section = { globe, source: parts.source, computed, view };
   return (
     <SavedContext value={saved}>
       <PinContext value={kit}>
-        <GlobeSection {...section} />
+        <GlobeSection {...{ globe, computed, view }} source={parts.source} />
         <DesktopShell {...{ sites, store, parts, base, view }} />
         <PhoneShell {...{ sites, store, ...channels, parts, base, view }} />
         <TopNotices base={base} />
         <PinLayers />
+        <BenchSlot store={store} />
       </PinContext>
     </SavedContext>
   );

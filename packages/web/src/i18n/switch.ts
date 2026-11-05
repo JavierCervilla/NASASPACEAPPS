@@ -28,7 +28,8 @@
  * to `/`, and the browser goes to that locale's page with the same view
  * (the hash: `#globe`, `#polar-map`) and the same place: the address's own
  * parameters (`?site=`, the pin's `?lat&lon`, `?glass=`, the on-foot
- * view's diagnostic `?onfoot=`, the dev tools' `?debug`) go along, any
+ * view's diagnostic `?onfoot=`, the dev tools' `?debug`, the benchmark's
+ * `?bench`) go along, any
  * other is left behind.
  */
 import { saveChoice, type ChoiceStorage } from './choice';
@@ -37,7 +38,7 @@ import { localePath } from './routes';
 
 /** The query parameters that say what the page shows. */
 const KEPT_PARAMS =
-  ['site', 'lat', 'lon', 'glass', 'onfoot', 'debug'] as const;
+  ['site', 'lat', 'lon', 'glass', 'onfoot', 'debug', 'bench'] as const;
 
 /** `search`'s kept parameters, as a query string; empty when none is. */
 function keptQuery(search: string): string {

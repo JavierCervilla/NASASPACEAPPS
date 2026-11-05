@@ -34,6 +34,7 @@
 import { readFileSync } from 'node:fs';
 import { expect, test, type Page, type Request, type Route } from '@playwright/test';
 import { stubApi } from './api-stub';
+import { startTrickle } from './trickle';
 import { idleCount } from './view-idle';
 
 const AT = new Date('2026-11-22T20:00:00Z');
@@ -57,31 +58,50 @@ const NEAR = /\/tiles\/polar-south\/[01]\//;
 const FAR = /\/tiles\/polar-south\/[23]\//;
 const LIST = /\/terrain\/tiles\?/;
 
-/** Holds the ring list, its tiles and the scene's chunk until released; `tileStatus` answers every tile with an error. */
+/** The fixture's body for a ring URL, or null where the API would answer 404. */
+function fixtureBody(url: URL): string | null {
+  const m = TILE.exec(url.pathname);
+  const name = m ? `tile-polar-south-${m[1]}-${m[2]}-${m[3]}.json` : 'ring.json';
+  try {
+    return readFileSync(new URL(name, FIXTURES), 'utf8');
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Holds the ring list, its tiles and the scene's chunk until released; `tileStatus` answers every tile with an error.
+ * A held ring request with a body to give is answered by a trickle (trickle.ts): headers at once and a space a second,
+ * so the ring's silence watch (VENT-78: 4 s) never cuts it however long the test holds it, as a slow but live network.
+ * One held with no bytes is cut and asked again; only the live one may be released.
+ */
 async function holdRelief(page: Page, tileStatus?: number): Promise<Gate> {
   const held: { url: string; request: Request; go: () => Promise<void> }[] = [];
   const opened: RegExp[] = [];
   const answered = new Map<string, number>();
-  // A request held past the ring's silence watch (VENT-78: 4 s) is aborted by the page, which asks again: only the
-  // live one may be released, or a release answers a request nobody waits for and nothing lands.
   const failed = new Set<Request>();
   page.on('requestfailed', (request) => failed.add(request));
+  const trickle = await startTrickle();
+  page.on('close', () => void trickle.close());
+  let keys = 0;
   const answer = (route: Route, url: URL): Promise<void> => {
-    const m = TILE.exec(url.pathname);
-    if (m && tileStatus) return route.fulfill({ status: tileStatus, json: { error: 'busy' } });
-    const name = m ? `tile-polar-south-${m[1]}-${m[2]}-${m[3]}.json` : 'ring.json';
-    try {
-      return route.fulfill({ body: readFileSync(new URL(name, FIXTURES), 'utf8'), contentType: 'application/json' });
-    } catch {
-      return route.fulfill({ status: 404, json: { error: 'no terrain data covers this point' } });
-    }
+    if (TILE.test(url.pathname) && tileStatus) return route.fulfill({ status: tileStatus, json: { error: 'busy' } });
+    const body = fixtureBody(url);
+    if (body === null) return route.fulfill({ status: 404, json: { error: 'no terrain data covers this point' } });
+    return route.fulfill({ body, contentType: 'application/json' });
   };
-  const hold = (route: Route, go: () => Promise<void>): Promise<void> | undefined => {
+  const hold = async (route: Route, go: () => Promise<void>): Promise<void> => {
     const url = route.request().url();
-    const answer = (): Promise<void> => (answered.set(url, (answered.get(url) ?? 0) + 1), go());
-    if (opened.some((re) => re.test(url))) return answer();
-    held.push({ url, request: route.request(), go: answer });
-    return undefined;
+    const count = (): void => void answered.set(url, (answered.get(url) ?? 0) + 1);
+    if (opened.some((re) => re.test(url))) return (count(), go());
+    const body = SCENE_CHUNK.test(url) || tileStatus ? null : fixtureBody(new URL(url));
+    if (body === null) {
+      held.push({ url, request: route.request(), go: () => (count(), go()) });
+      return;
+    }
+    const key = String(keys++);
+    held.push({ url, request: route.request(), go: async () => (count(), trickle.release(key, body)) });
+    await trickle.hold(route, key);
   };
   await page.route(/\/api\/v1\/terrain\/tiles/, (route) => hold(route, () => answer(route, new URL(route.request().url()))));
   await page.route(SCENE_CHUNK, (route) => hold(route, () => route.continue()));

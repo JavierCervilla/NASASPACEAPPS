@@ -238,7 +238,7 @@
 .on-foot__retry,
 .on-foot__copy {
   pointer-events: auto;
-  transition: background-color 100ms ease-out, transform 100ms ease-out;
+  transition: background-color var(--dur-press) ease-out;
 }
 
 /* The second action is quieter: «Try again» stays the one to press. */
@@ -256,7 +256,10 @@
 }
 
 .on-foot__retry:active,
-.on-foot__copy:active { transform: scale(0.97); }
+.on-foot__copy:active {
+  transform: scale(0.97);
+  transition: transform var(--dur-press) ease-out;
+}
 
 .on-foot__retry:focus-visible,
 .on-foot__copy:focus-visible {

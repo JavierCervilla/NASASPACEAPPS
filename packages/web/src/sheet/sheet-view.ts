@@ -30,6 +30,7 @@
 import type { TextKey } from '../i18n/catalogue';
 import type { I18n } from '../i18n/translate';
 import type { DetentName, Detents } from './sheet-physics';
+import { writeChanged, writeReveal } from './sheet-reveal';
 
 /**
  * The order the grabber button cycles through. Closed is not in it: a
@@ -96,11 +97,12 @@ export function reveal(detents: Detents, y: number): number {
 
 /**
  * Puts the sheet's top edge `y` px below the top of the viewport, and
- * tells its CSS how much to reveal (`--sheet-reveal`) and where its top
- * edge sits at full (`--sheet-full-top`, for its height).
+ * tells its summary how much to reveal (`--sheet-reveal`, sheet-reveal.ts)
+ * and its CSS where its top edge sits at full (`--sheet-full-top`, for
+ * its height), each only when it changes.
  */
 export function placeSheet(el: HTMLElement, y: number, detents: Detents) {
   el.style.transform = `translate3d(0, ${y}px, 0)`;
-  el.style.setProperty('--sheet-reveal', String(reveal(detents, y)));
-  el.style.setProperty('--sheet-full-top', `${detents.full}px`);
+  writeReveal(el, reveal(detents, y));
+  writeChanged(el, '--sheet-full-top', `${detents.full}px`);
 }

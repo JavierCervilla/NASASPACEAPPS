@@ -361,8 +361,26 @@ test.describe('a new version (VENT-52)', () => {
       const row = updateRow(page);
       await expect(row.update).toBeVisible();
       await page.screenshot({ path: test.info().outputPath(`update-${size.width}-${scheme}.png`) });
-      await row.dismiss.click();
+      // It leaves as it came (VENT-82): two frames after the ✕ the row is still there, `out` and fading, its room kept.
+      const leaving = await page.evaluate(async () => {
+        const notice = document.querySelector<HTMLElement>('.update-notice')!;
+        notice.querySelector<HTMLElement>('.pin-hint__close')!.click();
+        await new Promise((done) => requestAnimationFrame(() => requestAnimationFrame(done)));
+        return {
+          presence: notice.dataset.presence,
+          buttons: notice.querySelectorAll('button').length,
+          fading: notice.getAnimations().some((run) => (run as CSSTransition).transitionProperty === 'opacity'),
+          room: document.documentElement.style.getPropertyValue('--update-row-space'),
+        };
+      });
+      expect(leaving.presence).toBe('out');
+      expect(leaving.buttons).toBe(2);
+      expect(leaving.fading).toBe(true);
+      expect(leaving.room).not.toBe('');
       await expect(row.update).toHaveCount(0);
+      await expect(page.locator('.update-notice')).toHaveAttribute('data-presence', 'out');
+      await expect.poll(() => page.evaluate(() => document.documentElement.style.getPropertyValue('--update-row-space')))
+        .toBe('');
       await expect(row.text).toBeEmpty();
     });
   }

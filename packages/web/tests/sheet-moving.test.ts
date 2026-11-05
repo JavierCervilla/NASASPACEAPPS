@@ -40,13 +40,14 @@ const DETENTS = detentsFor(HEIGHT);
 /** The sheet's element as the loop touches it: its attributes and its style. */
 function fakeSheet() {
   const attributes = new Set<string>();
-  const style = { transform: '', setProperty: vi.fn() };
+  const style = { transform: '', setProperty: vi.fn(), getPropertyValue: () => '' };
   const toggleAttribute = (name: string, force: boolean): boolean => {
     if (force) attributes.add(name);
     else attributes.delete(name);
     return force;
   };
-  return { attributes, el: { style, toggleAttribute } as unknown as HTMLElement };
+  const querySelector = (): null => null;
+  return { attributes, el: { style, toggleAttribute, querySelector } as unknown as HTMLElement };
 }
 
 /** A sheet resting on peek, its frames held until `frames` runs them. */

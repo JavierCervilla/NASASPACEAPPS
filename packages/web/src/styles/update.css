@@ -134,32 +134,12 @@
   transition: transform var(--dur-press) ease-out;
 }
 
-/* It arrives as a material: blur, scale and opacity together. */
-@media (prefers-reduced-motion: no-preference) {
-  .update-notice[data-shown] {
-    transition:
-      opacity 0.3s var(--spring),
-      scale 0.3s var(--spring),
-      filter 0.3s var(--spring);
-
-    @starting-style {
-      opacity: 0;
-      scale: 0.96;
-      filter: blur(6px);
-    }
-  }
-}
-
-/* Reduced motion: a plain fade; the press keeps its scale (§14). */
-@media (prefers-reduced-motion: reduce) {
-  .update-notice[data-shown] {
-    transition: opacity 0.2s linear;
-
-    @starting-style {
-      opacity: 0;
-    }
-  }
-}
+/*
+ * It arrives and leaves as a material, blur, scale and opacity together,
+ * through presence.css (`data-presence`, components/presence.ts), as
+ * «Offline» does: a plain fade under reduced motion; the press keeps its
+ * scale (§14).
+ */
 
 /* As the hint handles them (pin.css). */
 @media (prefers-reduced-transparency: reduce) {

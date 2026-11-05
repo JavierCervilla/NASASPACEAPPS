@@ -534,8 +534,11 @@
   width: calc(min(36cqw, 200px) * 600 / 1024);
 }
 
+/* Reduced motion: the same fade as the other surfaces, over --dur-fade. */
 @media (prefers-reduced-motion: reduce) {
   .globe-splash {
-    transition: none;
+    transition:
+      opacity var(--dur-fade) linear,
+      visibility 0s linear var(--dur-fade);
   }
 }

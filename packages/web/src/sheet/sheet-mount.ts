@@ -50,6 +50,7 @@ import {
   stepSheet,
   type SheetState,
 } from './sheet-state';
+import { followBody } from './sheet-reveal';
 import { openness, placeSheet } from './sheet-view';
 
 export interface SheetMountOptions {
@@ -209,9 +210,10 @@ export function mountSheet(
   const unbind = bindDrags(el, { state, motion, options: own });
   const unwatch = watchLayout(frame, state, motion);
   const unwatchPeek = watchPeek(el, frame.tabs, state, motion);
-  placeSheet(el, state.axis.value, state.detents);
+  const place = (): void => placeSheet(el, state.axis.value, state.detents);
   invalidate();
-  const stops = [() => loop.stop(), unbind, unwatch, unwatchPeek, own.dispose];
+  const stops = [() => loop.stop(), unbind, unwatch, unwatchPeek,
+    own.dispose, followBody(el, place)];
   const dispose = (): void => stops.forEach((stop) => stop());
   return { motion, dispose };
 }

@@ -245,7 +245,6 @@
 /* Phone: the push between the picker and the language list */
 
 .push {
-  --push: 0;
   display: grid;
   flex: 1;
   min-height: 0;
@@ -261,13 +260,13 @@
   min-height: 0;
 }
 
-/* iOS: the list slides a third of the way out as the page covers it. */
-.push__root {
-  transform: translateX(calc(var(--push) * -30%));
-}
-
+/*
+ * iOS: the list slides a third of the way out as the page covers it;
+ * each frame of the push writes both transforms (phone/use-push.ts).
+ * At rest on the list, the page waits off to the side.
+ */
 .push__page {
-  transform: translateX(calc((1 - var(--push)) * 105%));
+  transform: translateX(105%);
 }
 
 /*
@@ -301,16 +300,14 @@
   }
 }
 
-/* Reduced motion: a cross-fade in place of the slide (apple-design §14). */
+/*
+ * Reduced motion: a cross-fade in place of the slide (apple-design §14),
+ * its opacities written each frame (phone/use-push.ts).
+ */
 @media (prefers-reduced-motion: reduce) {
-  .push__root {
-    transform: none;
-    opacity: calc(1 - var(--push));
-  }
-
   .push__page {
     transform: none;
-    opacity: var(--push);
+    opacity: 0;
   }
 }
 

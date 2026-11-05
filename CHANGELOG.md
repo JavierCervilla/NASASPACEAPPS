@@ -3,6 +3,16 @@
 ## [Sin publicar]
 
 ### Cambiado
+- **Movimiento más coherente y más ligero (VENT-82, auditoría de movimiento).** Las filas de la lista de sitios (y las
+  de los sitios guardados) se iluminan al pulsarlas, como el resto de filas, en lugar de encogerse; la brújula del globo
+  encoge lo mismo que los demás botones (0,97) y, como ellos y los botones de la vista 3D, solo anima al pulsar. El
+  punto de estado pasa de hueco a lleno en un solo movimiento (el anillo ya no se apaga antes de tiempo). «Nueva versión
+  lista» se va como llegó al cerrarla con ✕, igual que el aviso sin conexión, y lo que tiene debajo no salta hasta que
+  se ha ido. Con movimiento reducido, el arranque del globo se funde en vez de desaparecer de golpe y el interruptor de
+  capas mantiene el cambio de color. El arrastre de la hoja del móvil y el paso a Ajustes o Idioma recalculan muchos
+  menos estilos por fotograma (medido en Chromium: de 77 a 6 elementos por fotograma en la hoja y de 137 a 2 en el
+  paso), y el brillo de carga de los widgets se mueve sin repintar. Las duraciones salen de los tokens y se ha quitado
+  una animación de entrada que nada usaba.
 - **Teselas del relieve sin esperas largas (VENT-78).** Una tesela llegó a tardar más de 15 s en el móvil. Ahora cada
   petición se corta si pasan 4 s sin recibir nada (ni la respuesta ni más datos) y se pide otra vez enseguida, en lugar
   de esperar a que el navegador se rinda; una red lenta que sigue enviando no se corta. Las teselas reintentan con

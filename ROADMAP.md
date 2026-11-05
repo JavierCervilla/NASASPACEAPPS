@@ -86,6 +86,8 @@ completa está en el documento «Ventana Lunar · Especificación y roadmap».
   propios (0,5 a 4 s), el servidor calcula 4 teselas a la vez y deja en el log las respuestas de más de 1 s (VENT-78)
 - [x] Banco de pruebas `?bench`: el mismo guion en cada pasada, A (globo conservado) contra B (contexto WebGL del
   globo liberado con la vista 3D abierta) y un informe para copiar (VENT-81)
+- [x] Auditoría de movimiento aplicada: filas que se iluminan al pulsar, avisos que salen como entran, fundidos con
+  movimiento reducido y menos recálculo de estilos al arrastrar la hoja (VENT-82)
 - [ ] Probar la vista 3D en móviles reales en la nube (PowerVR, Adreno, Mali) y recuperar las sombras en PowerVR con
   reverse-Z (VENT-77, aparcado)
 - [ ] Variante C del cargador, el descenso, en equipos potentes (VENT-61)

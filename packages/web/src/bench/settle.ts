@@ -31,7 +31,9 @@
  * every frame, scene-frame.ts), with no far tile still coming (the far
  * relief's chip, loader/FarChip.tsx) and no frame drawn for {@link QUIET_MS}:
  * a tile that lands rebuilds its rings, which the next frame says. The
- * wait polls those marks.
+ * wait polls those marks, and ends at once with an error when the host's
+ * `data-status` says the view failed (VENT-83): a lost context or blocked
+ * WebGL never settles, and waiting it out looked like a hang on a phone.
  */
 
 /** The on-foot view's host (components/terrain/OnFootStageArea.tsx). */
@@ -40,6 +42,8 @@ const POLL_MS = 100;
 /** How long the marks must hold, with no new frame, ms. */
 export const QUIET_MS = 1000;
 const FAR_PENDING = '.on-foot__far[data-done="false"]';
+/** The view's statuses that never settle (use-terrain-scene.ts). */
+const FAILED = new Set(['failed', 'blocked', 'lost', 'missing', 'offline']);
 /** How long a point change may take to park the scene. */
 const PARK_MS = 5000;
 
@@ -51,6 +55,8 @@ export interface HostMarks {
   readonly parked: boolean;
   /** The far relief's tiles are still landing. */
   readonly farPending: boolean;
+  /** The scene's status (`data-status`), when the host says it. */
+  readonly status?: string | undefined;
 }
 
 export type Sleep = (ms: number) => Promise<void>;
@@ -64,8 +70,9 @@ export const isSettled = (marks: HostMarks, since: number): boolean =>
 export function hostMarks(doc: Document): HostMarks | null {
   const host = doc.querySelector<HTMLElement>(ON_FOOT_HOST);
   if (!host) return null;
-  const { ready, working, frames } = host.dataset;
-  return { ready, working, frames, parked: host.hasAttribute('data-parked'),
+  const { ready, working, frames, status } = host.dataset;
+  return { ready, working, frames, status,
+    parked: host.hasAttribute('data-parked'),
     farPending: doc.querySelector(FAR_PENDING) !== null };
 }
 
@@ -88,6 +95,9 @@ function quietly(doc: Document, since: number): () => boolean {
   let held: { frames: string | undefined; at: number } | null = null;
   return () => {
     const marks = hostMarks(doc);
+    if (FAILED.has(marks?.status ?? '')) {
+      throw new Error(`3D view failed: ${marks?.status}`);
+    }
     if (!marks || !isSettled(marks, since)) held = null;
     else if (held?.frames !== marks.frames) {
       held = { frames: marks.frames, at: performance.now() };

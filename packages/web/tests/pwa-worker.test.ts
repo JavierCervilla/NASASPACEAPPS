@@ -27,17 +27,19 @@
  * The service worker (VENT-28): which requests it answers and how, its caches' names (the static one changes with the
  * build), what it caches at install, and where the offline notice reads the date of the data.
  */
-import { mkdirSync, mkdtempSync, writeFileSync } from 'node:fs';
+import { mkdirSync, mkdtempSync, readFileSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { describe, expect, it, vi } from 'vitest';
 import {
   assertPrecacheBudget,
+  DEVICE_EXTRAS,
   PRECACHE_BUDGET,
   precached,
   precacheOf,
   requestPath,
 } from '../scripts/service-worker.mjs';
+import { levelUrls } from '../src/globe/texture-lod';
 import { syncDate, syncedAt, syncUrl } from '../src/pwa/offline-status';
 import { registerServiceWorker, workerAt } from '../src/pwa/register-sw';
 import { API_ENTRIES, apiFirst } from '../src/pwa/sw-api';
@@ -121,6 +123,7 @@ const BUILD = {
   'thumbs/im2-athena-320.webp': 'th',
   'textures/moon-lroc-1k.jpg': '1k',
   'textures/moon-lroc-2k.jpg': '2k',
+  'textures/moon-lola-normal-2k.jpg': 'n2k',
   'textures/moon-south-polar-2k.jpg': 'polar',
   'textures/moon-lroc-4k.jpg': '4k',
   'textures/moon-lroc-8k.jpg': '8k',
@@ -148,7 +151,7 @@ describe('precache', () => {
     expect(precached('_astro/dev-tools-loader.Ab1.js')).toBe(true);
   });
 
-  it('caches the offline set at install: pages, build files, manifests, icons, phase frames, thumbnails, start maps', () => {
+  it('caches the common offline set at install: pages, build files, manifests, icons, phase frames, thumbnails, 1K maps', () => {
     expect(precacheOf(dist(BUILD)).precache.toSorted()).toEqual([
       '',
       '_astro/app.1.js',
@@ -160,8 +163,6 @@ describe('precache', () => {
       'icons/icon-192.png',
       'icons/phase/moon-00.webp',
       'textures/moon-lroc-1k.jpg',
-      'textures/moon-lroc-2k.jpg',
-      'textures/moon-south-polar-2k.jpg',
       'thumbs/im2-athena-320.webp',
     ]);
     for (const file of ['en-xa/index.html', 'textures/moon-lroc-4k.jpg', 'textures/moon-lroc-8k.jpg', 'sw.js']) {
@@ -171,9 +172,42 @@ describe('precache', () => {
   });
 
   it('counts the bytes of the install set only', () => {
-    const precachedBodies = ['en', 'es', '{}', 'js', 'i', 't', 'w', 't', 'f', 'th', '1k', '2k', 'polar'];
+    const precachedBodies = ['en', 'es', '{}', 'js', 'i', 't', 'w', 't', 'f', 'th', '1k'];
     const expected = precachedBodies.join('').length;
     expect(precacheOf(dist(BUILD)).bytes).toBe(expected);
+  });
+
+  it('leaves the 2K start maps and the polar map out of the install: a phone never uses them (VENT-95)', () => {
+    for (const file of ['textures/moon-lroc-2k.jpg', 'textures/moon-lola-normal-2k.jpg', 'textures/moon-south-polar-2k.jpg']) {
+      expect(precached(file)).toBe(false);
+    }
+    expect(precached('textures/moon-lroc-1k.jpg')).toBe(true);
+    expect(precached('textures/moon-lola-normal-1k.jpg')).toBe(true);
+  });
+
+  it('names the desktop extras in one place: the 2K start maps the globe asks for and the polar map (VENT-95)', () => {
+    const { colour, normal } = levelUrls(2, '/');
+    expect(DEVICE_EXTRAS).toEqual({
+      desktop: [colour.slice(1), normal.slice(1), 'textures/moon-south-polar-2k.jpg'],
+    });
+    const polar = readFileSync(new URL('../src/components/polar/PolarMap.tsx', import.meta.url), 'utf8');
+    expect(polar).toContain(`'${DEVICE_EXTRAS.desktop[2]}'`);
+  });
+
+  it('hands the worker the desktop extras with their hashes, and counts their bytes apart (VENT-95)', () => {
+    const built = precacheOf(dist(BUILD));
+    expect(built.extras).toEqual(DEVICE_EXTRAS);
+    expect(built.extraBytes).toEqual({ desktop: ['2k', 'n2k', 'polar'].join('').length });
+    for (const path of DEVICE_EXTRAS.desktop) expect(built.hashes[path]).toMatch(/^[0-9a-f]{16}$/);
+  });
+
+  it('holds the budget to the largest first install: the common set plus the desktop extras (VENT-95)', () => {
+    const half = 'x'.repeat(PRECACHE_BUDGET / 2);
+    const fits = precacheOf(dist({ ...BUILD, 'thumbs/big-640.webp': half }));
+    expect(() => assertPrecacheBudget(fits.bytes, fits.extraBytes)).not.toThrow();
+    const over = precacheOf(dist({ ...BUILD, 'thumbs/big-640.webp': half, 'textures/moon-south-polar-2k.jpg': half }));
+    expect(over.bytes).toBeLessThan(PRECACHE_BUDGET);
+    expect(() => assertPrecacheBudget(over.bytes, over.extraBytes)).toThrow(/desktop/);
   });
 
   it('changes the digest, and so the cache name, when any file the worker may keep changes', () => {

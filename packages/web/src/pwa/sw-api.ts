@@ -68,7 +68,7 @@ export async function pruneAnswers(
 /**
  * The API's answer, network first; each kept answer is stamped, the
  * sync entry (`syncUrl`) records the latest, and only the API_ENTRIES
- * latest answers stay.
+ * latest answers stay, once the copy is kept (after the answer goes).
  */
 export async function apiFirst(
   net: SwNet,
@@ -76,11 +76,16 @@ export async function apiFirst(
   keep: Keep & { readonly syncUrl: string },
 ): Promise<Response> {
   const cache = await net.caches.open(keep.cache);
-  const response = await networkFirst(net, request, keep, async (copy) => {
+  // The prune follows the copy, which is kept after the answer goes.
+  const defer = (kept: Promise<unknown>): void => {
+    const pruned = kept.then(() =>
+      pruneAnswers(cache, keep.syncUrl, API_ENTRIES),
+    );
+    net.defer(pruned.catch(() => undefined));
+  };
+  return networkFirst({ ...net, defer }, request, keep, async (copy) => {
     const atMs = net.now();
     await cache.put(keep.syncUrl, new Response(String(atMs)));
     return stamped(copy, atMs);
   });
-  await pruneAnswers(cache, keep.syncUrl, API_ENTRIES).catch(() => undefined);
-  return response;
 }

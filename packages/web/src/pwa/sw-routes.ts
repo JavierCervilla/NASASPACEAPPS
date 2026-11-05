@@ -50,7 +50,7 @@ export const FETCHED_AT_HEADER = 'x-ventana-fetched-at';
 const NEVER_CACHED = ['en-xa/', 'sw.js'];
 
 /** The path of `url` under `scope`, or null outside it. */
-function underScope(url: URL, scope: URL): string | null {
+export function underScope(url: URL, scope: URL): string | null {
   if (url.origin !== scope.origin) return null;
   if (!url.pathname.startsWith(scope.pathname)) return null;
   return url.pathname.slice(scope.pathname.length);

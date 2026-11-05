@@ -9,6 +9,10 @@
   GPU escondida y la vista se dibuja sin mapa de sombras.
 
 ### Cambiado
+- **Un despliegue ya no vuelve a bajar la app entera (VENT-90).** Cada vez que se publicaba una versión nueva, la app
+  instalada volvía a descargar unos 5 MB al abrirse, aunque casi nada hubiera cambiado, y esa descarga competía con los
+  mapas del globo en alta. Ahora solo baja los ficheros que cambiaron, los mapas 4K y 8K ya guardados pasan a la versión
+  nueva, y el service worker entrega cada respuesta a la página antes de guardar su copia.
 - **La tira del banco ya no tapa la barra ni la brújula en el móvil (VENT-88).** Mientras corre se coloca justo debajo
   de la barra superior, medida, también con el texto grande, y deja sitio a la brújula; el nombre del paso se parte en
   dos líneas en vez de cortarse.

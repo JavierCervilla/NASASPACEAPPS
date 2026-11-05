@@ -416,3 +416,45 @@ test.describe('the update row on the phone’s globe (VENT-52)', () => {
     await expect.poll(async () => (await box('.compass')).y < hint.y + hint.height).toBe(true);
   });
 });
+
+/**
+ * A deploy that changed one file (VENT-90): the new worker's install copies every unchanged file from the older build's
+ * cache and asks the server only for the changed one, and its activation carries over the 4K map the old one kept on
+ * use. The new `sw.js` is the built one with another digest (a new static cache) and another hash for the 1K map, served
+ * under another URL (see deployNewVersion).
+ */
+test.describe('a deploy downloads only what changed (VENT-90)', () => {
+  test('the update asks the server for the one changed file, and the new cache holds the whole offline set', async ({
+    context,
+    page,
+  }) => {
+    await page.setViewportSize({ width: 390, height: 844 });
+    await open(context, page, '');
+    await controlled(page);
+    // The zoom's map, kept on use by the old worker: the activation carries it over, unchanged, without a download.
+    await page.evaluate(async (root) => (await fetch(`${root}textures/moon-lroc-4k.jpg`)).arrayBuffer(), base);
+    await expect.poll(async () => (await keptFiles(page)).includes('textures/moon-lroc-4k.jpg')).toBe(true);
+    const before = (await keptFiles(page)).toSorted();
+    await context.route(/\/sw\.js\?build=vent90$/, async (route) => {
+      const response = await route.fetch();
+      const body = (await response.text())
+        .replace(/digest:`[0-9a-f]{12}/, 'digest:`0123456789ab')
+        .replace(/("textures\/moon-lroc-1k\.jpg":`)[0-9a-f]{16}/, '$1ffffffffffffffff');
+      await route.fulfill({ response, body });
+    });
+    const asked: string[] = [];
+    context.on('request', (request) => {
+      if (request.serviceWorker()) asked.push(new URL(request.url()).pathname.slice(base.length));
+    });
+    await page.evaluate(async (root) => {
+      await navigator.serviceWorker.register(`${root}sw.js?build=vent90`, { scope: root });
+    }, base);
+    await expect
+      .poll(() => page.evaluate(async () => (await caches.keys()).filter((n) => n.startsWith('ventana-static-'))))
+      .toEqual(['ventana-static-0123456789ab']);
+    // The worker's own script and the API's answers are not the install's.
+    const installed = asked.filter((path) => path !== 'sw.js' && !path.startsWith('api/'));
+    expect(installed).toEqual(['textures/moon-lroc-1k.jpg']);
+    expect((await keptFiles(page)).toSorted()).toEqual(before);
+  });
+});

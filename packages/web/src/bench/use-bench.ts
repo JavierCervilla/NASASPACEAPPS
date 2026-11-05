@@ -43,16 +43,9 @@ import type { BenchState } from './types';
 const sleep = (ms: number): Promise<void> =>
   new Promise((done) => window.setTimeout(done, ms));
 
-/** What tells the panel each step that begins, with the times so far. */
-function stepTimer(state: BenchState, setPhase: (next: Phase) => void) {
-  const times: number[] = [];
-  let last = performance.now();
-  return (step: number): void => {
-    const now = performance.now();
-    if (step > 0) times.push(now - last);
-    last = now;
-    setPhase({ kind: 'running', state, step, times: [...times] });
-  };
+/** What tells the panel each step that begins. */
+function stepShower(state: BenchState, setPhase: (next: Phase) => void) {
+  return (step: number): void => setPhase({ kind: 'running', state, step });
 }
 
 /** The failed phase of a run that threw `error`, kept for the report. */
@@ -77,7 +70,7 @@ function useRun(
     const variant = state.order[state.next] ?? 'A';
     void runScript(variant, state.fast, {
       doc: document, place: location, store, sleep, registry: pageRegistry,
-      local: window.localStorage, onStep: stepTimer(state, setPhase),
+      local: window.localStorage, onStep: stepShower(state, setPhase),
     }).then(({ steps, header }) => nextLoad(state, steps, header))
       .catch((error: unknown) => setPhase(failedRun(state, error)));
   }, [first, setPhase, store]);

@@ -24,48 +24,41 @@
  */
 
 /**
- * The running panel (VENT-81, the canvas «1 · Running»): which variant
- * this run is, the script's six steps with their marks and times, the
- * progress over every run, the hint not to touch, and «Stop». It changes
- * only when a step does, so it costs no frames while the app is measured,
- * and it leaves the focus where it is.
+ * The running panel, a strip under the top bar (VENT-85, the canvas
+ * «VENT-85 · Banco compacto», option A): the variant, the run and the
+ * step over the step's name, «Stop», and the progress over every run, so
+ * the view being measured stays in sight. It changes only when a step
+ * does, so it costs no frames while the app is measured, and it leaves the
+ * focus where it is.
  */
-import { SCRIPT_VERSION, benchScript } from '../../bench/script';
+import { benchScript } from '../../bench/script';
 import type { Phase } from '../../bench/phase';
 import { endBench } from '../../bench/navigate';
 import { useI18n } from '../i18n-context';
-import { BenchFrame } from './BenchFrame';
-import { BenchSteps } from './BenchSteps';
 
 type Running = Extract<Phase, { kind: 'running' }>;
 
-/** The two variants, the current one marked. */
-function RunIndicator({ state }: Pick<Running, 'state'>) {
-  const { t } = useI18n();
-  const variant = state.order[state.next];
-  const run = Math.floor(state.next / 2) + 1;
-  const mark = (v: string) => (variant === v ? 'step' : undefined);
-  return (
-    <ol className="bench__runs" aria-label={t('bench.runLabel', { n: run, total: state.runs })}>
-      <li className="bench__run" aria-current={mark('A')}>{t('bench.runA')}</li>
-      <li className="bench__run" aria-current={mark('B')}>{t('bench.runB')}</li>
-    </ol>
-  );
-}
-
-export function BenchRunning({ state, step, times }: Running) {
+export function BenchRunning({ state, step }: Running) {
   const { t } = useI18n();
   const ids = benchScript(state.fast).map((s) => s.id);
   const total = state.order.length * ids.length;
-  const tier = state.header?.tier ?? '…';
-  const meta = <p className="bench__meta bench__meta--small">{t('bench.meta', { version: SCRIPT_VERSION, tier })}</p>;
-  const stop = <button type="button" className="bench__button" onClick={() => endBench(false)}>{t('bench.stop')}</button>;
+  const variant = state.order[state.next] === 'B' ? 'bench.runB' : 'bench.runA';
+  const run = Math.floor(state.next / 2) + 1;
+  const now = ids[Math.min(step, ids.length - 1)];
   return (
-    <BenchFrame title={t('bench.title')} meta={meta} actions={stop} focus={false}>
-      <RunIndicator state={state} />
-      <BenchSteps ids={ids} step={step} times={times} />
+    <>
+      <div className="bench__strip">
+        <div className="bench__strip-text">
+          <p className="bench__strip-run">
+            <span>{t(variant)}</span>
+            {' · '}{t('bench.runLabel', { n: run, total: state.runs })}
+            {' · '}{t('bench.stepOf', { n: Math.min(step + 1, ids.length), total: ids.length })}
+          </p>
+          <p className="bench__strip-step">{now && t(`bench.step.${now}`)}</p>
+        </div>
+        <button type="button" className="bench__button" onClick={() => endBench(false)}>{t('bench.stop')}</button>
+      </div>
       <progress className="bench__progress" max={total} value={state.next * ids.length + step} aria-label={t('bench.progress')} />
-      <p className="bench__note">{t('bench.hint')}</p>
-    </BenchFrame>
+    </>
   );
 }

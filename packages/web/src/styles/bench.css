@@ -131,97 +131,57 @@
   letter-spacing: var(--type-footnote-tracking);
 }
 
-.bench__meta--small {
-  font-size: var(--type-caption-size);
-  line-height: var(--type-caption-leading);
-  letter-spacing: var(--type-caption-tracking);
-}
-
-/* The run's indicator: the segmented control's look, never pressed. */
-.bench__runs {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 2px;
-  margin: 0;
-  padding: 2px;
-  list-style: none;
-  border-radius: 12px;
-  background: var(--fill);
-}
-
-.bench__run {
-  padding: 8px 10px;
-  border-radius: 10px;
-  color: var(--text-secondary);
-  font-size: var(--type-subhead-size);
-  line-height: var(--type-subhead-leading);
-  letter-spacing: var(--type-subhead-tracking);
-}
-
-.bench__run[aria-current='step'] {
-  background: var(--segment-on);
-  box-shadow: var(--segment-shadow);
-  color: var(--text);
-  font-weight: 600;
-}
-
-.bench__steps {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  margin: 0;
-  padding: 0;
-  list-style: none;
-}
-
-.bench__step {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  min-height: 24px;
-  color: var(--text-secondary);
-  font-size: var(--type-subhead-size);
-  line-height: var(--type-subhead-leading);
-  letter-spacing: var(--type-subhead-tracking);
-}
-
-.bench__step[data-mark='done'],
-.bench__step[data-mark='now'] {
-  color: var(--text);
-}
-
-.bench__mark {
-  flex: none;
-  box-sizing: border-box;
-  width: 16px;
-  height: 16px;
-  border: 1px solid var(--text-muted);
-  border-radius: 50%;
-}
-
-.bench__step[data-mark='done'] .bench__mark {
-  border: 0;
-  background: var(--text);
-}
-
-.bench__step[data-mark='now'] .bench__mark {
-  border: 2px solid var(--text);
-}
-
-.bench__step-name {
-  flex: 1;
-}
-
-.bench__time,
 .bench__table {
   font-variant-numeric: tabular-nums;
 }
 
-.bench__time {
-  color: var(--text-secondary);
+/*
+ * While it runs, the panel is one strip under the top bar (VENT-85, the
+ * canvas «VENT-85 · Banco compacto», option A): the run and step over the
+ * step's name, «Stop» beside them and the progress under, so the view the
+ * benchmark measures stays in sight.
+ */
+.ventana-bench-panel[data-phase='running'] {
+  gap: 8px;
+  padding: 10px 10px 10px 14px;
+  border-radius: 16px;
+}
+
+.bench__strip {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.bench__strip-text {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.bench__strip-run,
+.bench__strip-step {
+  margin: 0;
   font-size: var(--type-footnote-size);
   line-height: var(--type-footnote-leading);
   letter-spacing: var(--type-footnote-tracking);
+}
+
+.bench__strip-run {
+  font-weight: 600;
+}
+
+.bench__strip-step {
+  overflow: hidden;
+  color: var(--text-secondary);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.bench__strip .bench__button {
+  flex: none;
 }
 
 .bench__progress {

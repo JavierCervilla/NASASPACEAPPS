@@ -3,6 +3,10 @@
 ## [Sin publicar]
 
 ### Cambiado
+- **El banco deja ver lo que mide (VENT-85).** Mientras corre, el panel es una tira bajo la barra superior: la pasada
+  (A o B, número de pasada y paso), el nombre del paso, «Stop» y la barra de progreso. La lista de pasos desaparece
+  mientras corre, así que la vista 3D y el globo se ven casi enteros. El aviso de no tocar la pantalla pasa a la
+  pantalla de inicio del banco.
 - **El globo suelta sus mapas grandes mientras no se ve (VENT-86).** Al abrir la vista 3D o la DSN en el móvil (o
   cualquier otra vista en el escritorio), el globo vuelve a su mapa de arranque y libera los de 4K u 8K, que en el
   Pixel 10 ocupaban 89 MB de memoria gráfica mientras otra vista la necesitaba. El globo sigue vivo con su contexto:

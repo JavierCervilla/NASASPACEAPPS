@@ -100,6 +100,7 @@ test.describe('on a phone, 390x844', () => {
     await open(page, './?bench&benchRuns=1&benchFast', []);
     await panel(page).getByRole('button', { name: 'Start' }).click();
     await expect(panel(page).getByText('Run A · globe kept')).toBeVisible({ timeout: START_MS });
+    await stripLeavesTheView(page);
     await expect(page.locator('.ventana-bench-panel[data-phase="results"]')).toBeVisible({ timeout: RUNS_MS });
     await expect(panel(page).getByRole('heading', { name: 'Benchmark done' })).toBeVisible();
     await expect(panel(page).getByRole('button', { name: 'Copy report' })).toBeFocused();
@@ -122,6 +123,20 @@ test.describe('on a phone, 390x844', () => {
     }
   });
 });
+
+/**
+ * While it runs the panel is one strip under the top bar (VENT-85, the canvas «VENT-85 · Banco compacto», option A):
+ * the run, the step and «Stop» over a progress bar, the steps' list gone, so the view it measures stays in sight.
+ */
+async function stripLeavesTheView(page: Page): Promise<void> {
+  const running = page.locator('.ventana-bench-panel[data-phase="running"]');
+  await expect(running).toContainText(/step \d of 6/);
+  await expect(running.getByRole('button', { name: 'Stop' })).toBeInViewport({ ratio: 1 });
+  await expect(running.getByRole('progressbar', { name: 'Benchmark progress' })).toBeVisible();
+  await expect(running.getByRole('listitem')).toHaveCount(0);
+  const box = await running.boundingBox();
+  expect(box && box.y + box.height).toBeLessThanOrEqual(844 / 4);
+}
 
 /** At 200 % text the results keep inside the screen over the tab bar, the table scrolls sideways, the actions in reach. */
 async function fitsAt200(page: Page): Promise<void> {

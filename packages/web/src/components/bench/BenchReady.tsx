@@ -70,6 +70,7 @@ export function BenchReady({ runs: preset }: { runs: RunCount }) {
   return (
     <BenchFrame title={t('bench.title')} actions={actions} focus>
       <p className="bench__note">{t('bench.readyHint')}</p>
+      <p className="bench__note">{t('bench.hint')}</p>
       <RunsChoice runs={runs} onRuns={setRuns} />
     </BenchFrame>
   );

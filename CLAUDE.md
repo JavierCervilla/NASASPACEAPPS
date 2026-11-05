@@ -697,7 +697,9 @@ Every visible change follows `.claude/skills/apple-design/SKILL.md` (vendored fr
   parks and settles, and turned again; `#globe`, 3 s. No synthetic pointer drags (they cannot take capture). Variant A
   is the app; variant B releases the globe's context with `WEBGL_lose_context` as step c starts and keeps it lost
   (`release.ts`; that loss is not counted and the `ventana.glLostAt` mark is put back). Each run is a clean page load
-  (`location.replace` with `&benchRun=k`), order A1 B1 A2 B2 A3 B3, state in `sessionStorage` `ventana.bench`
+  (`location.replace` with `&benchRun=k`), order A1 B1 A2 B2 A3 B3, and while a run plays the panel is one strip under
+  the top bar (VENT-85, canvas «VENT-85 · Banco compacto», option A: the variant, run and step, the step's name, «Stop»
+  and the progress; `BenchRunning.tsx`), so the measured view stays in sight, state in `sessionStorage` `ventana.bench`
   (`run-state.ts`, `navigate.ts`); «Stop» forgets it, «Close» leaves `?bench`. Every one of those reloads leaves on
   purpose (`leave.ts`): it forgets the session's kept tier (`ventana.onFootTier`, `TIER_KEY`) so every run starts from
   the device's tier, and clears the open mark with `leftOnPurpose` as the language switch does, so no run counts as a

@@ -202,6 +202,7 @@
   renderizado por software, de 38 fotogramas a 6).
 
 ### Arreglado
+- Banco de pruebas `?bench`: si la vista 3D falla durante una pasada (pierde el contexto de la GPU o el navegador bloquea el 3D), el banco se para enseguida con «Benchmark stopped» y el motivo, también en el informe, en vez de esperar 60 s en cada paso y parecer colgado (VENT-83).
 - En el móvil con el texto al 200 %, cuando el navegador ha bloqueado el 3D, la hoja inferior a veces no se cerraba para dejar sitio al aviso y este quedaba tapado (más o menos 1 de cada 7 cargas en las pruebas). Ahora se cierra siempre (VENT-81).
 - Tras un despliegue, una página abierta que no puede cargar una vista bajo demanda (Horizon, su escena 3D, el globo o
   el módulo de aterrizaje) ya no se queda en blanco (VENT-52): el hueco de la vista dice «Update the app to open this

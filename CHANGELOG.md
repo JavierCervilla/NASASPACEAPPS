@@ -3,6 +3,10 @@
 ## [Sin publicar]
 
 ### Cambiado
+- **La app instalada pesa menos en el móvil (VENT-95).** Al instalarse, el móvil ya no descarga los mapas 2K del
+  globo ni el mapa polar, que nunca usa (abre en 1K, salta a 4K al acercarse y no tiene vista polar): su primera visita
+  baja 1,7 MB menos. El escritorio los guarda después de arrancar, así que todo lo que funcionaba sin conexión sigue
+  funcionando.
 - **Un despliegue ya no vuelve a bajar la app entera (VENT-90).** Cada vez que se publicaba una versión nueva, la app
   instalada volvía a descargar unos 5 MB al abrirse, aunque casi nada hubiera cambiado, y esa descarga competía con los
   mapas del globo en alta. Ahora solo baja los ficheros que cambiaron, los mapas 4K y 8K ya guardados pasan a la versión

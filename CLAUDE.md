@@ -221,7 +221,12 @@ Every visible change follows `.claude/skills/apple-design/SKILL.md` (vendored fr
   frames asked meanwhile draw nothing, and showing it again refits the stage and draws once with the current Sun
   (`src/globe/shown-frames.ts`, VENT-51). While hidden, a Moon map that finishes loading is not uploaded
   (`initTexture` is skipped, `moon-textures.ts` reading `ShownFrames.shown()`); the first frame drawn once the globe
-  shows again uploads it (VENT-52).
+  shows again uploads it (VENT-52). Going hidden lowers the Moon to its start map (VENT-86, the human's decision after the
+  `?bench` run: the context stays, only the big maps go): `shownFrames(draw, onHide)` tells the shown-to-hidden edge,
+  `Moon.rest()` calls `TextureSwap.lower(startLevel)`, which fetches and shows the start map before it frees the 4K or
+  8K one (a bigger level still in flight is freed when it lands, `texture-climb.ts`), and the next frame drawn climbs
+  back with `track`. Held by `tests/globe-lod.test.ts`, `tests/shown-frames.test.ts` and
+  `tests/e2e/vent-86-globe-rest.spec.ts`.
 - Glass: the floating surfaces (phone top bar, sheet and tab bar; desktop header, site popover,
   calendar strip and site card) wear Liquid glass or the frosted blur; the phone's site pill, inside the top
   bar's glass, takes only the Liquid rim. Liquid refracts through a

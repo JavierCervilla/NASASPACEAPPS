@@ -237,3 +237,72 @@ describe('texture swap', () => {
     expect(log.some((line) => line.startsWith('apply lroc-2k'))).toBe(false);
   });
 });
+
+describe('texture swap lowered while the globe hides (VENT-86)', () => {
+  it('fetches the lower level, shows it, and only then frees the big maps', async () => {
+    const { swap, log, answer } = setUp();
+    swap.want(4);
+    await answer();
+    log.length = 0;
+    swap.lower(1);
+    await answer();
+    expect(log).toEqual([
+      'load lola-normal-1k',
+      'load lroc-1k',
+      'upload lroc-1k',
+      'upload lola-normal-1k',
+      'apply lroc-1k + lola-normal-1k',
+      'dispose lroc-4k',
+      'dispose lola-normal-4k',
+    ]);
+    expect(swap.shown()).toBe(1);
+  });
+
+  it('climbs again when a bigger map is asked for after it', async () => {
+    const { swap, log, answer } = setUp();
+    swap.want(4);
+    await answer();
+    swap.lower(1);
+    await answer();
+    log.length = 0;
+    swap.want(4);
+    await answer();
+    expect(log).toContain('apply lroc-4k + lola-normal-4k');
+    expect(swap.shown()).toBe(4);
+  });
+
+  it('does nothing when the level shown is already at or under it', async () => {
+    const { swap, log, answer } = setUp();
+    swap.want(1);
+    await answer();
+    log.length = 0;
+    swap.lower(1);
+    swap.lower(2);
+    await answer();
+    expect(log).toEqual([]);
+    expect(swap.shown()).toBe(1);
+  });
+
+  it('frees a bigger map that arrives after it, never showing it', async () => {
+    const { swap, log, answer } = setUp();
+    swap.want(1);
+    await answer();
+    swap.want(4);
+    swap.lower(1);
+    await answer();
+    expect(log).toContain('dispose lroc-4k');
+    expect(log.some((line) => line.startsWith('apply lroc-4k'))).toBe(false);
+    expect(swap.shown()).toBe(1);
+  });
+
+  it('keeps the shown maps when the lower level fails to load', async () => {
+    const { swap, log, answer } = setUp(['lroc-1k']);
+    swap.want(4);
+    await answer();
+    log.length = 0;
+    swap.lower(1);
+    await answer();
+    expect(log.some((line) => line.startsWith('dispose lroc-4k'))).toBe(false);
+    expect(swap.shown()).toBe(4);
+  });
+});

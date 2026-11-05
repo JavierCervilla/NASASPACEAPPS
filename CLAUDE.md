@@ -706,9 +706,9 @@ Every visible change follows `.claude/skills/apple-design/SKILL.md` (vendored fr
   (`BenchFrame.tsx`, `BenchTable.tsx`); the first state and the results take the focus to their first button. Params: `benchRuns=1|3` presets the runs (3), `benchFast` scales the
   waits by 0.2 and the turn to 90° for software GL (the e2e). Its chunk and `bench.css` are out of the precache
   (`ON_DEMAND`) and `devtools-guard.mjs` keeps its markers out of the first load. Held by `tests/bench-*.test.ts` and
-  `tests/e2e/vent-81-bench.spec.ts`, which runs in its own Playwright project (`bench`) after the rest of the suite
-  (`playwright.config.ts`: its full runs would slow other specs' bounded waits); alone: `npx playwright test
-  tests/e2e/vent-81-bench.spec.ts --no-deps`.
+  `tests/e2e/vent-81-bench.spec.ts`, which is its own Playwright project (`bench`): `npm run e2e` runs the `app`
+  project, then `bench` alone (`playwright.config.ts`: its full runs would slow other specs' bounded waits); alone:
+  `npx playwright test --project=bench`.
   `?onfoot=shadows,far,shade,logdepth,photometry,antitile,footprint,fine,rocks` (`astronaut` and `lander` from before VENT-54 are ignored, so old links still open)
   leaves parts out to bisect a crash from a phone's address bar (`src/terrain/leave-out.ts`, unknown words ignored,
   listed in `data-onfoot`, kept by the language switch like `?site=`). The API gzips its JSON

@@ -76,7 +76,13 @@ epic: `VENT-1` (Dashboard project «Ventana Lunar», prefix `VENT`).
   root (`SITE_BASE` sets a sub-path if ever needed). The primary domain is **https://nasa.universelle.io** (VENT-76);
   https://nasa.cervilla.es serves the same app as a second domain. The image builds with `SITE_URL` set to the primary
   domain (`ARG` in the `Dockerfile`), so every page's `rel="canonical"` and `hreflang` links are absolute to it
-  (`canonicalHref`, `alternates` in `src/i18n/routes.ts`); the API answers on both hosts under `/api`. The API has its own `packages/server/Dockerfile` (built from the
+  (`canonicalHref`, `alternates` in `src/i18n/routes.ts`); the API answers on both hosts under `/api`. nginx's cache
+  policy (`nginx.conf`, held by `packages/web/tests/nginx-conf.test.ts`): `/_astro/` is fingerprinted, a year and
+  `immutable`; `/textures/`, `/thumbs/` and `/icons/` (the phase frames too) are not, so a day (`max-age=86400`) and then
+  revalidate, never `immutable` (VENT-96); `sw.js` and the manifests `no-cache`; every location re-includes the security
+  headers, since an `add_header` in a location drops the ones above it. The API's `GET /api/v1/sites` is
+  `public, max-age=300` with an ETag of the list's content and a 304 on a match (`src/sites-route.ts`, VENT-96): the
+  list changes only with a deploy. The API has its own `packages/server/Dockerfile` (built from the
   repo root, port 3000). Operate it with the framework's `dokploy` skill.
 
 ## Design: follow the `apple-design` skill

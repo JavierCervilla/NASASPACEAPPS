@@ -29,6 +29,7 @@ import { Hono, type Context } from 'hono';
 import { compress } from 'hono/compress';
 import { apiHeaders } from './api-headers.ts';
 import { errorLog } from './error-log.ts';
+import { sitesHandler } from './sites-route.ts';
 import { clientIp } from './client-ip.ts';
 import type { IpSlots } from './ip-slots.ts';
 import { computeEphemeris, type EphemerisRequest } from './ephemeris.ts';
@@ -205,7 +206,7 @@ function createV1(deps: RouteDeps): Hono {
 
   mountTerrain(v1, deps);
 
-  v1.get('/sites', (c) => c.json({ sites: deps.sites }));
+  v1.get('/sites', sitesHandler(deps.sites));
 
   // One site; with from and to it also carries the site's ephemeris for that
   // range.

@@ -192,6 +192,7 @@
   renderizado por software, de 38 fotogramas a 6).
 
 ### Arreglado
+- En el móvil con el texto al 200 %, cuando el navegador ha bloqueado el 3D, la hoja inferior a veces no se cerraba para dejar sitio al aviso y este quedaba tapado (más o menos 1 de cada 7 cargas en las pruebas). Ahora se cierra siempre (VENT-81).
 - Tras un despliegue, una página abierta que no puede cargar una vista bajo demanda (Horizon, su escena 3D, el globo o
   el módulo de aterrizaje) ya no se queda en blanco (VENT-52): el hueco de la vista dice «Update the app to open this
   view» y aparece el aviso de versión nueva. Sin conexión, la misma vista dice «Offline: this view needs a connection to

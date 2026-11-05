@@ -28,7 +28,7 @@
  * and kept for the session on every change (phone/sheet-memory.ts), and
  * what fills it at full.
  */
-import { useState } from 'react';
+import { useCallback, useState } from 'react';
 import type { SheetView } from '../../phone/sheet-actions';
 import {
   readSheetDetent,
@@ -39,10 +39,10 @@ import type { DetentName } from '../../sheet/sheet-physics';
 
 export function useSheetDetent(): [DetentName, (d: DetentName) => void] {
   const [detent, setDetent] = useState(() => readSheetDetent(sessionStore()));
-  const choose = (next: DetentName): void => {
+  const choose = useCallback((next: DetentName): void => {
     saveSheetDetent(sessionStore(), next);
     setDetent(next);
-  };
+  }, []);
   return [detent, choose];
 }
 
@@ -54,9 +54,12 @@ export function useSheetDetent(): [DetentName, (d: DetentName) => void] {
 export function useSheetPanel() {
   const [detent, setDetent] = useSheetDetent();
   const [view, setView] = useState<SheetView>('sites');
-  const settle = (next: DetentName): void => {
+  // Stable, so a listener keyed on it is never torn down by a render: React
+  // runs a commit's cleanups before its setups, and the globe's ask for room
+  // (roomAsk, VENT-69) landing in that gap was lost and never asked again.
+  const settle = useCallback((next: DetentName): void => {
     if (next !== 'full') setView('sites');
     setDetent(next);
-  };
+  }, [setDetent]);
   return { detent, view, setDetent: settle, setView };
 }

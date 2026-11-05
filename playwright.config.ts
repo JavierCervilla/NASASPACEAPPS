@@ -43,6 +43,14 @@ export default defineConfig({
     // The cloud container ships its own Chromium; CI installs Playwright's.
     launchOptions: process.env.PW_CHROMIUM_PATH ? { executablePath: process.env.PW_CHROMIUM_PATH } : {},
   },
+  // The benchmark's spec drives whole scripted runs on software GL, about a
+  // minute of full CPU: run alongside the suite it slowed other specs'
+  // bounded waits (VENT-81: vent-60-loader's far chip missed its 5 s in two
+  // CI runs while it ran). `npm run e2e` runs `app`, then `bench` alone.
+  projects: [
+    { name: 'app', testIgnore: /vent-81-bench\.spec\.ts$/ },
+    { name: 'bench', testMatch: /vent-81-bench\.spec\.ts$/ },
+  ],
   webServer: {
     command: `npm run preview -w @ventana/web -- --port ${port} --ignore-lock`,
     url: `http://localhost:${port}${base}/`,

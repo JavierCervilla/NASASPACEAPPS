@@ -35,7 +35,8 @@ import { TIERS, type Tier } from '../lib/quality';
 /** The part of `Storage` the memory uses. */
 export type TierStorage = Pick<Storage, 'getItem' | 'setItem'>;
 
-const KEY = 'ventana.onFootTier';
+/** The kept tier; the benchmark forgets it before each run (VENT-81). */
+export const TIER_KEY = 'ventana.onFootTier';
 /**
  * Whether the view is open (VENT-51): set when it opens, cleared when it
  * unmounts. Still set when a page starts, the page before it died with the
@@ -58,7 +59,7 @@ export function tierStorage(): TierStorage | null {
 /** The tier kept for this session, or null. */
 export function keptTier(storage: TierStorage | null): Tier | null {
   try {
-    const kept = storage?.getItem(KEY);
+    const kept = storage?.getItem(TIER_KEY);
     return TIERS.find((tier) => tier === kept) ?? null;
   } catch {
     return null;
@@ -68,7 +69,7 @@ export function keptTier(storage: TierStorage | null): Tier | null {
 /** Keeps `tier` for the rest of the session. */
 export function keepTier(storage: TierStorage | null, tier: Tier): void {
   try {
-    storage?.setItem(KEY, tier);
+    storage?.setItem(TIER_KEY, tier);
   } catch {
     // Full or refused storage: the next load starts at the device's tier.
   }

@@ -192,6 +192,7 @@
   renderizado por software, de 38 fotogramas a 6).
 
 ### Arreglado
+- En el móvil con el texto al 200 %, cuando el navegador ha bloqueado el 3D, la hoja inferior a veces no se cerraba para dejar sitio al aviso y este quedaba tapado (más o menos 1 de cada 7 cargas en las pruebas). Ahora se cierra siempre (VENT-81).
 - Tras un despliegue, una página abierta que no puede cargar una vista bajo demanda (Horizon, su escena 3D, el globo o
   el módulo de aterrizaje) ya no se queda en blanco (VENT-52): el hueco de la vista dice «Update the app to open this
   view» y aparece el aviso de versión nueva. Sin conexión, la misma vista dice «Offline: this view needs a connection to
@@ -268,6 +269,16 @@
     paren mientras comprueba un fichero, y la imagen rechaza `/data//` y `/data/./` como rutas de montaje.
 
 ### Añadido
+- **Banco de pruebas `?bench` (VENT-81).** Una herramienta de depuración para medir siempre la misma prueba en el
+  móvil y comparar. Con `?bench` en la dirección aparece, cuando la página ya ha arrancado, un panel «Benchmark» con
+  «Start» y el número de pasadas (1 o 3 por variante). Cada pasada recarga la página y repite el mismo guion v1 en el
+  mismo instante fijo (19 de marzo de 1967 a mediodía UTC, fuera de la ventana de Horizons, así que no se pide
+  efeméride): el globo quieto 5 s, giro y zoom hasta el mapa 4K, la vista 3D en IM-2 hasta que se asienta, una vuelta
+  de 360°, cambio de punto a Malapert sin recargar y otra vuelta, y vuelta al globo. Todo con teclas simuladas, sin
+  tocar la pantalla. La variante A es la app tal cual; la B libera el contexto WebGL del globo oculto mientras la vista
+  3D está abierta (solo en el banco). El resultado compara A y B en la vuelta 3D (fotogramas por segundo, p95, peor
+  fotograma, tareas largas, contextos WebGL vivos, memoria de texturas, montículo JS, contexto perdido) y «Copy report»
+  copia un informe de texto con cada paso, cada métrica y cada pasada. Sin `?bench` no se descarga nada del banco.
 - **Brújula en la vista Horizonte (VENT-63, variante A del lienzo con la pulsación de B).** El mismo botón redondo de
   cristal que en el globo, en la misma esquina (en el móvil, bajo la barra superior): la rosa gira con el rumbo para que
   la N apunte al norte real, y en el anillo solo está la Tierra, rellena si se ve y hueca si la tapan el relieve o el

@@ -110,7 +110,7 @@ export function mountTerrainScene(
   const unmark = startLoading(host, world, loop, hooks);
   const unwatch = guardLost({ canvas: world.stage.renderer.domElement,
     labels, loop, report: setup.report, onLost: hooks.onLost });
-  const tools = attachDevTools(world.stage.renderer);
+  const tools = attachDevTools(world.stage.renderer, 'onFoot');
   const teardown = freeScene({ world, labels, loop,
     steps: [tools, unwatch, unmark, unbind] });
   const scene = controller({ world, loop, home: goHome, teardown });

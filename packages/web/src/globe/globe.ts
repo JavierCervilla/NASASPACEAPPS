@@ -230,7 +230,7 @@ export function mountGlobe(host: HTMLElement, options: GlobeOptions) {
   const compass = linkCompass({ stage, frames: link, home, onCompass });
   const sun = bindSun(stage.scene, options.time, invalidate);
   const watch = watchHost(host, stage, loop, frames);
-  const devTools = attachDevTools(stage.renderer, moon.textureBytes);
+  const devTools = attachDevTools(stage.renderer, 'globe', moon.textureBytes);
   const unbind = [() => loop.stop(), link.unlink, compass, watch, ...input];
   const end = [sun, layers.dispose, graticule.dispose,
     () => markers.dispose()];

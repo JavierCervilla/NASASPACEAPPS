@@ -292,7 +292,6 @@
 
 .site-pill:active,
 .tab:active,
-.site-row:active,
 .picker__done:active {
   transform: scale(0.97);
   transition: transform var(--dur-press) ease-out;
@@ -337,9 +336,12 @@
   --dot-ring: var(--signal-earth);
 }
 
+/* The ring fades with the fill, so a dot never goes dark in between. */
 @media (prefers-reduced-motion: no-preference) {
   .signal-dot {
-    transition: background-color var(--dur-enter) var(--ease-out);
+    transition:
+      background-color var(--dur-enter) var(--ease-out),
+      box-shadow var(--dur-enter) var(--ease-out);
   }
 }
 
@@ -435,10 +437,22 @@
   touch-action: none;
 }
 
-/* Below the head, the summary fades out towards peek, where only the
-   head clears the tab bar (--sheet-reveal: src/sheet/sheet-view.ts). */
+/*
+ * Below the head, the summary fades out towards peek, where only the
+ * head clears the tab bar (--sheet-reveal: src/sheet/sheet-reveal.ts).
+ * Written on the summary each frame of a drag; registered non-inheriting
+ * and taken only by its direct children, so a frame recalculates the
+ * summary and those few, not every element inside them (VENT-82).
+ */
+@property --sheet-reveal {
+  syntax: '<number>';
+  inherits: false;
+  initial-value: 1;
+}
+
 .summary > :not(.summary__head) {
-  opacity: var(--sheet-reveal, 1);
+  --sheet-reveal: inherit;
+  opacity: var(--sheet-reveal);
 }
 
 /*
@@ -573,26 +587,38 @@
   color: var(--text-muted);
 }
 
+/* The shine sweeps across on a transform: composited, no repaint. */
 .widget-skeleton {
+  position: relative;
+  overflow: hidden;
+}
+
+.widget-skeleton::after {
+  content: '';
+  position: absolute;
+  inset: 0;
   background: linear-gradient(
-      100deg,
-      transparent 30%,
-      var(--fill) 50%,
-      transparent 70%
-    )
-    0 0 / 200% 100%,
-    var(--phone-card);
+    100deg,
+    transparent 30%,
+    var(--fill) 50%,
+    transparent 70%
+  );
+  transform: translateX(-100%);
 }
 
 @media (prefers-reduced-motion: no-preference) {
-  .widget-skeleton {
+  .widget-skeleton::after {
     animation: skeleton 1.4s linear infinite;
   }
 }
 
 @keyframes skeleton {
+  from {
+    transform: translateX(-100%);
+  }
+
   to {
-    background-position: -200% 0, 0 0;
+    transform: translateX(100%);
   }
 }
 

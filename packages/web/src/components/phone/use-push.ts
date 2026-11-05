@@ -25,8 +25,10 @@
 
 /**
  * The push spring (lib/push-motion.ts) bound to an element: each frame
- * writes how far the page is pushed in to its `--push`, which the
- * styles turn into the slide (or, under reduced motion, a cross-fade).
+ * moves its list and its page, the slide (or, under reduced motion, a
+ * cross-fade), written on the two of them (VENT-82): a custom property
+ * on the stack would be inherited by every row under it, recalculating
+ * the whole list's style each frame.
  */
 import {
   useEffect,
@@ -39,6 +41,23 @@ import { createPush, type PushMotion } from '../../lib/push-motion';
 
 /** Where the push rests: on the list, on the page, or between them. */
 export type PushAt = 'root' | 'page' | 'moving';
+
+const REDUCED_MOTION = '(prefers-reduced-motion: reduce)';
+
+/**
+ * Moves the list and the page of the push `node` to `value` (0 the list,
+ * 1 the page): iOS slides the list a third of the way out as the page
+ * covers it; under reduced motion they cross-fade in place.
+ */
+export function placePush(node: HTMLElement, value: number, reduced: boolean) {
+  const root = node.querySelector<HTMLElement>(':scope > .push__root');
+  const page = node.querySelector<HTMLElement>(':scope > .push__page');
+  if (!root || !page) return;
+  root.style.transform = reduced ? '' : `translateX(${value * -30}%)`;
+  page.style.transform = reduced ? '' : `translateX(${(1 - value) * 105}%)`;
+  root.style.opacity = reduced ? String(1 - value) : '';
+  page.style.opacity = reduced ? String(value) : '';
+}
 
 const restOf = (value: number): PushAt => {
   if (value === 0) return 'root';
@@ -62,7 +81,7 @@ export function usePush(
       frame: (callback) => requestAnimationFrame(callback),
       cancel: (id) => cancelAnimationFrame(id),
       onValue: (value) => {
-        node.style.setProperty('--push', String(value));
+        placePush(node, value, matchMedia(REDUCED_MOTION).matches);
         setAt(restOf(value));
       },
     });

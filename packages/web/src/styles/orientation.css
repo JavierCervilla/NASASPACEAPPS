@@ -54,12 +54,12 @@
   color: var(--glass-label-text);
   cursor: pointer;
   -webkit-tap-highlight-color: transparent;
-  transition: scale var(--dur-press) ease-out;
 }
 
-/* Response on the press (apple-design §1). */
+/* Response on the press (apple-design §1), as the other buttons. */
 .compass:active {
-  scale: 0.94;
+  scale: 0.97;
+  transition: scale var(--dur-press) ease-out;
 }
 
 .compass:focus-visible {
@@ -172,7 +172,6 @@
 @media (prefers-reduced-motion: no-preference) {
   .compass {
     transition:
-      scale var(--dur-press) ease-out,
       translate var(--dur-enter) var(--spring),
       opacity var(--dur-press) ease-out,
       visibility var(--dur-press);

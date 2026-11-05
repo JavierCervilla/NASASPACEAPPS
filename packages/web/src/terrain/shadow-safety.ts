@@ -33,7 +33,13 @@
  */
 const SHADOW_UNSAFE_GPU = /powervr/i;
 
-/** Whether the view must draw without its shadow map on GPU `name`. */
-export function shadowMapUnsafe(name: string): boolean {
-  return SHADOW_UNSAFE_GPU.test(name);
+/**
+ * Whether the view must draw without its shadow map on GPU `name`, null
+ * when the browser hides it (no WEBGL_debug_renderer_info). A phone whose
+ * GPU is hidden may be that PowerVR: Brave hid the Pixel 10's, the guard
+ * above did not apply and the bench lost both contexts (VENT-84). A
+ * desktop keeps its shadows.
+ */
+export function shadowMapUnsafe(name: string | null, phone: boolean) {
+  return name === null ? phone : SHADOW_UNSAFE_GPU.test(name);
 }

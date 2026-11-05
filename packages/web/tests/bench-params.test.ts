@@ -97,6 +97,17 @@ describe('the run addresses', () => {
       .toBe('/?site=im2-athena');
     expect(plainHref({ pathname: '/fr/', search: '?bench' })).toBe('/fr/');
   });
+
+  // Seguridad round 1 on PR #56: a path starting with «//» made a protocol-relative URL, an open redirect.
+  it('never leaves the site, whatever the path starts with', () => {
+    for (const pathname of ['//evil.com/x', '///evil.com/x', '/\\evil.com/x', '\\/evil.com/x']) {
+      const where = { pathname, search: '?bench' };
+      expect(new URL(runHref(where, 0), 'https://x.test').origin).toBe('https://x.test');
+      expect(new URL(runHref(where, null), 'https://x.test').origin).toBe('https://x.test');
+      expect(new URL(plainHref(where), 'https://x.test').origin).toBe('https://x.test');
+      expect(new URL(plainHref(where), 'https://x.test').pathname).toBe('/evil.com/x');
+    }
+  });
 });
 
 /** A host whose idle callbacks run only when the test says the page has started. */

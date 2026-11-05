@@ -58,6 +58,15 @@ export function benchOptions(search: string): BenchOptions {
   };
 }
 
+// Leading slashes or backslashes would make a protocol-relative URL, which
+// leaves the site (seguridad round 1 on PR #56): the path keeps one «/».
+const LEADING_SLASHES = /^[/\\]+/;
+
+/** `pathname` that can only name a path on this site. */
+function sitePath(pathname: string): string {
+  return pathname.replace(LEADING_SLASHES, '/');
+}
+
 /** The address of the page load that does run `k`; null: the results. */
 export function runHref(
   where: Pick<Location, 'pathname' | 'search'>,
@@ -68,7 +77,7 @@ export function runHref(
   params.set('site', START_SITE);
   if (k === null) params.delete(RUN);
   else params.set(RUN, String(k));
-  return `${where.pathname}?${params.toString()}`;
+  return `${sitePath(where.pathname)}?${params.toString()}`;
 }
 
 /** The address without the benchmark: what «Close» opens. */
@@ -78,5 +87,5 @@ export function plainHref(
   const params = new URLSearchParams(where.search);
   for (const name of [BENCH_PARAM, RUNS, FAST, RUN]) params.delete(name);
   const query = params.toString();
-  return `${where.pathname}${query ? `?${query}` : ''}`;
+  return `${sitePath(where.pathname)}${query ? `?${query}` : ''}`;
 }

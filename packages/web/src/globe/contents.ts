@@ -33,7 +33,7 @@ import { mountGraticule } from './graticule/mount';
 import { mountGlobeLayers } from './layers/globe-layers';
 import { MarkerLayer } from './marker-layer';
 import { addMoon } from './moon';
-import { globeQuality } from './quality-pick';
+import { globeQuality } from './globe-quality';
 import type { Stage } from './stage';
 
 /**

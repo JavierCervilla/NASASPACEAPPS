@@ -54,7 +54,7 @@ import {
   pinchEnd,
   pointerControls,
 } from './pointer-controls';
-import { globeQuality } from './quality-pick';
+import { globeQuality } from './globe-quality';
 import { bindSheetEdge, frameInset } from './sheet-edge';
 import { loadSelection, type SelectionParts } from './selection';
 import { createSiteFramer, type SiteFramerParts } from './site-framer';

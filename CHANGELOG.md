@@ -13,6 +13,11 @@
   conoce la calidad del equipo, antes de descargar el código del globo, y se reutilizan sin volver a pedirse; los
   programas de la GPU se compilan sin bloquear donde el navegador lo permite, y la comprobación de shaders solo se hace
   con `?debug`. En un móvil simulado, el globo aparece unos 0,6 s antes.
+- **El arranque gasta menos en el cristal y en la GPU (VENT-91).** Los mapas de lente del cristal Liquid se dibujan en
+  un canvas en memoria, así que su PNG ya no se lee de vuelta desde la GPU en el hilo principal (en un móvil simulado
+  pasa de ~220 ms a ~30 ms al cargar, idéntico píxel a píxel), y la página prueba la GPU una sola vez en lugar de crear
+  y tirar un contexto WebGL en cada consulta del nivel de calidad (de 4 contextos a 2 al cargar, de 6 a 3 con la vista
+  3D).
 - **La tira del banco ya no tapa la barra ni la brújula en el móvil (VENT-88).** Mientras corre se coloca justo debajo
   de la barra superior, medida, también con el texto grande, y deja sitio a la brújula; el nombre del paso se parte en
   dos líneas en vez de cortarse.

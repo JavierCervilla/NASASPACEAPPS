@@ -34,7 +34,7 @@
  * module is in the page's start chunk.
  */
 import type { QualitySettings } from '../lib/quality';
-import { globeQuality } from './quality-pick';
+import { globeQuality } from './globe-quality';
 import { levelUrls, startLevel } from './texture-lod';
 
 /** Fetches and decodes an image; rejects when it does not load. */

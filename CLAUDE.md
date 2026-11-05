@@ -674,6 +674,32 @@ Every visible change follows `.claude/skills/apple-design/SKILL.md` (vendored fr
   so it covers no control; a press unfolds it (VENT-51, `tests/e2e/debug.spec.ts`).
   `scripts/check-no-devtools.mjs` (decision in `devtools-guard.mjs`) fails a build whose pages, start chunks or precache
   carry the tools' markers, or any file Spector.js.
+  `?bench` (VENT-81, the human's canvas «Benchmark») is a scripted benchmark for comparing runs on a phone, loaded
+  like `?debug` only after the page has started (`src/lib/bench-loader.ts`, the one place that imports
+  `src/bench/bench-boot.ts`; mounted by the island's `components/bench/BenchSlot.tsx`), and `?bench` alone loads no
+  dev tools. The page's instant stands still at `BENCH_INSTANT_ISO`, 1967-03-19T12:00:00Z (`benchClock`,
+  `src/lib/bench-param.ts`): outside the Horizons window, so the views say «Outside the data window» and ask no
+  ephemeris, and the on-foot view's sky is the simulator's. Script v1 (`src/bench/script.ts`, `SCRIPT_VERSION`,
+  declarative): the globe idle 5 s; turned by synthetic arrow keys and zoomed by four «+» (to 2.2 radii, past the 4K
+  map's 3.5), then 3 s; `#horizon` at IM-2 until the on-foot host settles (`data-ready`, `data-working="false"`, not
+  `data-parked`, no far tile pending, no frame for 1 s; 60 s at most, `settle.ts`); 72 ArrowRight keys 16 ms apart (a
+  full turn at 5° a key); the point changed to Malapert Massif through the site store, as the site list does, until it
+  parks and settles, and turned again; `#globe`, 3 s. No synthetic pointer drags (they cannot take capture). Variant A
+  is the app; variant B releases the globe's context with `WEBGL_lose_context` as step c starts and keeps it lost
+  (`release.ts`; that loss is not counted and the `ventana.glLostAt` mark is put back). Each run is a clean page load
+  (`location.replace` with `&benchRun=k`), order A1 B1 A2 B2 A3 B3, state in `sessionStorage` `ventana.bench`
+  (`run-state.ts`, `navigate.ts`); «Stop» forgets it, «Close» leaves `?bench`. The renderers come through
+  `globe/dev-hook.ts` (`attachDevTools(renderer, kind, textureBytes?)` hands them to the dev tools and the
+  benchmark), whose `render` is wrapped (`renderer-watch.ts`, `registry.ts`): per step (`meter.ts`) the animation-frame
+  intervals of frames the app drew (median fps, p95, worst), long tasks, WebGL contexts alive, the globe's map bytes
+  while its context lives and the on-foot texture count, the JS heap, triangles and calls per frame, Resource Timing
+  bytes and requests, and context losses; the header has the GPU, browser, screen, view tier, script version, build
+  (the precache's digest, else the first script's name) and the instant. The results (`results.ts`,
+  `BenchResults.tsx`) show the full turn's medians for A and B with B's change, and «Copy report» copies every step,
+  metric and run as plain English (`report.ts`). Params: `benchRuns=1|3` presets the runs (3), `benchFast` scales the
+  waits by 0.2 and the turn to 90° for software GL (the e2e). Its chunk and `bench.css` are out of the precache
+  (`ON_DEMAND`) and `devtools-guard.mjs` keeps its markers out of the first load. Held by `tests/bench-*.test.ts` and
+  `tests/e2e/vent-81-bench.spec.ts`.
   `?onfoot=shadows,far,shade,logdepth,photometry,antitile,footprint,fine,rocks` (`astronaut` and `lander` from before VENT-54 are ignored, so old links still open)
   leaves parts out to bisect a crash from a phone's address bar (`src/terrain/leave-out.ts`, unknown words ignored,
   listed in `data-onfoot`, kept by the language switch like `?site=`). The API gzips its JSON

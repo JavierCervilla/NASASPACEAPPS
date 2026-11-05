@@ -1,0 +1,269 @@
+/*
+ *   _   _       _                         _ _
+ *  | | | |_ __ (_)_   _____ _ __ ___  ___| | | ___
+ *  | | | | '_ \| \ \ / / _ \ '__/ __|/ _ \ | |/ _ \
+ *  | |_| | | | | |\ V /  __/ |  \__ \  __/ | |  __/
+ *   \___/|_| |_|_| \_/ \___|_|  |___/\___|_|_|\___|
+ *
+ *             =++==--::.
+ *         %%%%##**++=--:..  .
+ *      ##**#%@%%#***+=--::.   .
+ *    #**=+*#*#**#++++=-:::.. .  .
+ *   #++-====*@%+*++==--::...   .  .    Ventana Lunar
+ *  #+=-=--++==+===-+==--:..   .  .  .  Sun, Earth and landing
+ * #----====-------=-=---:..  .  .  .   windows at the lunar
+ * #+---+=====--=---==-::..     .  .  . south pole
+ * #*----==---==-=-=-:-....    .  .  .
+ * *#----===+*===--:-::...    .  .  .   Built for the NASA Space
+ *  *----=*-+*%*+=-:::....   .  .  .    Apps Challenge 2026,
+ *   *------=+*=--:::-:::.. .  .  .     Madrid. Not endorsed
+ *    %*===-=-==--==-:::.  .  .  .      by NASA.
+ *      *+:--+:--::::::.  .  .  .
+ *         -=:::...:..   .  .           (c) 2026 Universelle
+ *             :::.. .  .               SPDX-License-Identifier: MIT
+ */
+
+/*
+ * The benchmark's panel (VENT-81, the canvas «Benchmark»), loaded only
+ * with `?bench`: a frosted panel near the top that floats over the app,
+ * in the recipe of every floating surface (tokens.css --float-*), with
+ * the app's segmented control and secondary buttons (controls.css).
+ */
+.ventana-bench-panel {
+  position: fixed;
+  z-index: 10;
+  top: calc(56px + env(safe-area-inset-top, 0px));
+  right: 12px;
+  left: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  box-sizing: border-box;
+  max-width: 26rem;
+  max-height: calc(100dvh - 80px);
+  margin-inline: auto;
+  padding: 16px;
+  overflow: auto;
+  border-radius: 20px;
+  background: var(--float-fill);
+  box-shadow: var(--float-rim);
+  color: var(--text);
+  -webkit-backdrop-filter: var(--float-blur);
+  backdrop-filter: var(--float-blur);
+}
+
+.bench__head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 4px 12px;
+}
+
+.bench__title {
+  margin: 0;
+  font-size: var(--type-headline-size);
+  font-weight: 600;
+  line-height: var(--type-headline-leading);
+  letter-spacing: var(--type-headline-tracking);
+}
+
+.bench__meta,
+.bench__note {
+  margin: 0;
+  color: var(--text-secondary);
+  font-size: var(--type-footnote-size);
+  line-height: var(--type-footnote-leading);
+  letter-spacing: var(--type-footnote-tracking);
+}
+
+.bench__meta--small {
+  font-size: var(--type-caption-size);
+  line-height: var(--type-caption-leading);
+  letter-spacing: var(--type-caption-tracking);
+}
+
+/* The run's indicator: the segmented control's look, never pressed. */
+.bench__runs {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 2px;
+  margin: 0;
+  padding: 2px;
+  list-style: none;
+  border-radius: 12px;
+  background: var(--fill);
+}
+
+.bench__run {
+  padding: 8px 10px;
+  border-radius: 10px;
+  color: var(--text-secondary);
+  font-size: var(--type-subhead-size);
+  line-height: var(--type-subhead-leading);
+  letter-spacing: var(--type-subhead-tracking);
+}
+
+.bench__run[aria-current='step'] {
+  background: var(--segment-on);
+  box-shadow: var(--segment-shadow);
+  color: var(--text);
+  font-weight: 600;
+}
+
+.bench__steps {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.bench__step {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 24px;
+  color: var(--text-secondary);
+  font-size: var(--type-subhead-size);
+  line-height: var(--type-subhead-leading);
+  letter-spacing: var(--type-subhead-tracking);
+}
+
+.bench__step[data-mark='done'],
+.bench__step[data-mark='now'] {
+  color: var(--text);
+}
+
+.bench__mark {
+  flex: none;
+  box-sizing: border-box;
+  width: 16px;
+  height: 16px;
+  border: 1px solid var(--text-muted);
+  border-radius: 50%;
+}
+
+.bench__step[data-mark='done'] .bench__mark {
+  border: 0;
+  background: var(--text);
+}
+
+.bench__step[data-mark='now'] .bench__mark {
+  border: 2px solid var(--text);
+}
+
+.bench__step-name {
+  flex: 1;
+}
+
+.bench__time,
+.bench__table {
+  font-variant-numeric: tabular-nums;
+}
+
+.bench__time {
+  color: var(--text-secondary);
+  font-size: var(--type-footnote-size);
+  line-height: var(--type-footnote-leading);
+  letter-spacing: var(--type-footnote-tracking);
+}
+
+.bench__progress {
+  display: block;
+  width: 100%;
+  height: 4px;
+  overflow: hidden;
+  border: 0;
+  border-radius: 2px;
+  background: var(--fill);
+  color: var(--text);
+  appearance: none;
+}
+
+.bench__progress::-webkit-progress-bar {
+  background: var(--fill);
+}
+
+.bench__progress::-webkit-progress-value {
+  background: var(--text);
+}
+
+.bench__progress::-moz-progress-bar {
+  background: var(--text);
+}
+
+.bench__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.bench__options {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.bench__options .segmented {
+  display: grid;
+  flex: 1;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.bench__label {
+  font-size: var(--type-subhead-size);
+  line-height: var(--type-subhead-leading);
+  letter-spacing: var(--type-subhead-tracking);
+}
+
+/*
+ * «Start» and «Copy report»: the panel's one filled action, as the canvas
+ * has it; two classes, so it wins over the secondary button whatever order
+ * the sheets load in.
+ */
+.bench__button.bench__primary {
+  background: var(--text);
+  color: var(--bg);
+}
+
+.bench__button.bench__plain {
+  background: transparent;
+  color: var(--text-secondary);
+}
+
+.bench__table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: var(--type-footnote-size);
+  line-height: var(--type-footnote-leading);
+  letter-spacing: var(--type-footnote-tracking);
+}
+
+.bench__table th {
+  padding: 0 0 6px;
+  color: var(--text-secondary);
+  font-weight: 400;
+  text-align: right;
+}
+
+.bench__table td {
+  padding: 7px 0;
+  border-top: 1px solid var(--surface-edge);
+  text-align: right;
+}
+
+.bench__table th:first-child,
+.bench__table td:first-child {
+  text-align: left;
+}
+
+.bench__table td + td,
+.bench__table th + th {
+  padding-left: 8px;
+}
+
+.bench__table tr[data-strong='true'] td:last-child {
+  font-weight: 600;
+}

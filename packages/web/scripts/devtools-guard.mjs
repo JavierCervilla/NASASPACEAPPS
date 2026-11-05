@@ -30,8 +30,11 @@
 // build made with PUBLIC_PERF_HUD=1 must carry the performance readout instead, which shows the check can fail.
 import { posix } from 'node:path';
 
-/** The dev tools' markers: the readout's class and the breadcrumbs' storage key. */
-export const MARKERS = ['ventana-perf-hud', 'ventana.devtools.breadcrumbs'];
+/**
+ * The dev tools' markers: the readout's class and the breadcrumbs' storage key; and the benchmark's (VENT-81, only
+ * `?bench` asks for it): its panel's class and its storage key.
+ */
+export const MARKERS = ['ventana-perf-hud', 'ventana.devtools.breadcrumbs', 'ventana-bench-panel', 'ventana.bench'];
 /** Spector.js, matched in a file's name or text: it may never ship, asked for or not. */
 export const SPECTOR = 'spector';
 

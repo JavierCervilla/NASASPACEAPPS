@@ -268,6 +268,16 @@
     paren mientras comprueba un fichero, y la imagen rechaza `/data//` y `/data/./` como rutas de montaje.
 
 ### Añadido
+- **Banco de pruebas `?bench` (VENT-81).** Una herramienta de depuración para medir siempre la misma prueba en el
+  móvil y comparar. Con `?bench` en la dirección aparece, cuando la página ya ha arrancado, un panel «Benchmark» con
+  «Start» y el número de pasadas (1 o 3 por variante). Cada pasada recarga la página y repite el mismo guion v1 en el
+  mismo instante fijo (19 de marzo de 1967 a mediodía UTC, fuera de la ventana de Horizons, así que no se pide
+  efeméride): el globo quieto 5 s, giro y zoom hasta el mapa 4K, la vista 3D en IM-2 hasta que se asienta, una vuelta
+  de 360°, cambio de punto a Malapert sin recargar y otra vuelta, y vuelta al globo. Todo con teclas simuladas, sin
+  tocar la pantalla. La variante A es la app tal cual; la B libera el contexto WebGL del globo oculto mientras la vista
+  3D está abierta (solo en el banco). El resultado compara A y B en la vuelta 3D (fotogramas por segundo, p95, peor
+  fotograma, tareas largas, contextos WebGL vivos, memoria de texturas, montículo JS, contexto perdido) y «Copy report»
+  copia un informe de texto con cada paso, cada métrica y cada pasada. Sin `?bench` no se descarga nada del banco.
 - **Brújula en la vista Horizonte (VENT-63, variante A del lienzo con la pulsación de B).** El mismo botón redondo de
   cristal que en el globo, en la misma esquina (en el móvil, bajo la barra superior): la rosa gira con el rumbo para que
   la N apunte al norte real, y en el anillo solo está la Tierra, rellena si se ve y hueca si la tapan el relieve o el

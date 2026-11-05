@@ -84,7 +84,8 @@
 .widgets-error button,
 .source-note__retry,
 .on-foot__retry,
-.now-button {
+.now-button,
+.bench__button {
   min-height: 44px;
   padding: 0 16px;
   border: 0;
@@ -103,7 +104,8 @@
 .widgets-error button:disabled,
 .source-note__retry:disabled,
 .on-foot__retry:disabled,
-.now-button:disabled {
+.now-button:disabled,
+.bench__button:disabled {
   color: var(--text-muted);
   cursor: default;
 }

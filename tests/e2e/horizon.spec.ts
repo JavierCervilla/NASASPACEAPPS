@@ -220,7 +220,7 @@ test.describe('desktop, 1440x900, the saved sites over their terrain (VENT-44)',
   });
 
   test('a saved row whose terrain the server cannot give keeps the smooth sphere', async ({ page }) => {
-    // Waited for from the start: the background queue may answer before the Saved list is even open.
+    // Waited for before anything opens: the queue asks -84.20 once Saved opens and can answer before a wait set after.
     const queued = page.waitForResponse(/\/api\/v1\/horizon\?lat=-84\.20/);
     await open(page, { at: CANVAS, path: './?site=im2-athena', horizon: NO_TERRAIN, saved: SAVED });
     await page.locator('.site-button').click();

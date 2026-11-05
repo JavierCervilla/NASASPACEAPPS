@@ -26,7 +26,8 @@
 /**
  * The report's header (VENT-81): the GPU (lib/quality.ts `gpuName`, read
  * from an attached renderer's context, so no context is made for it), the
- * browser, the screen, the on-foot view's tier (its host's `data-tier`),
+ * browser, the viewport and the device's screen, the on-foot view's tier
+ * (its host's `data-tier`),
  * the script's version, the fixed instant, and the build: the service
  * worker's cache digest (scripts/service-worker.mjs), else the name of the
  * page's first module script.
@@ -61,7 +62,8 @@ export async function readHeader(
   return {
     gpu: gl ? gpuName(gl) : 'unknown',
     userAgent: navigator.userAgent,
-    screen: `${width} × ${height} @ ${window.devicePixelRatio}`,
+    viewport: `${innerWidth} × ${innerHeight} @ ${devicePixelRatio}`,
+    screen: `${width} × ${height}`,
     tier: host?.dataset['tier'] ?? 'unknown',
     script: SCRIPT_VERSION,
     build: await buildId(doc),

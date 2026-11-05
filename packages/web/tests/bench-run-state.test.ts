@@ -101,6 +101,11 @@ describe('the phase of a page load', () => {
     expect(initialPhase(state, options).kind).toBe('ready');
   });
 
+  it('is the failed state once a run stopped on an error, whatever the address', () => {
+    const state = { ...startState(3, false), error: 'run 1 (A): boom' };
+    expect(initialPhase(state, { ...options, run: 0 })).toEqual({ kind: 'failed', state });
+  });
+
   it('is the results once every run is kept', () => {
     let state = startState(1, false);
     state = recordRun(recordRun(state, [], HEADER), [], HEADER);

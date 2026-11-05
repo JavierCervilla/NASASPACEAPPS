@@ -30,9 +30,13 @@
  * the app's segmented control and secondary buttons (controls.css).
  */
 .ventana-bench-panel {
+  /* Under the top bar, and over the phone's tab bar: both grow with text. */
+  --bench-top: calc(8px + 3rem + env(safe-area-inset-top, 0px));
+  --bench-bottom: 24px;
+
   position: fixed;
   z-index: 10;
-  top: calc(56px + env(safe-area-inset-top, 0px));
+  top: var(--bench-top);
   right: 12px;
   left: 12px;
   display: flex;
@@ -40,16 +44,57 @@
   gap: 14px;
   box-sizing: border-box;
   max-width: 26rem;
-  max-height: calc(100dvh - 80px);
+  max-height: calc(100dvh - var(--bench-top) - var(--bench-bottom));
   margin-inline: auto;
   padding: 16px;
-  overflow: auto;
+  overflow: hidden;
   border-radius: 20px;
   background: var(--float-fill);
   box-shadow: var(--float-rim);
   color: var(--text);
   -webkit-backdrop-filter: var(--float-blur);
   backdrop-filter: var(--float-blur);
+}
+
+@media (max-width: 767px) {
+  .ventana-bench-panel {
+    --bench-bottom: calc(34px + 4rem + env(safe-area-inset-bottom, 0px));
+  }
+}
+
+/* The heading and the actions stay; what is between scrolls. */
+.bench__head,
+.bench__actions {
+  flex: none;
+}
+
+.bench__body {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  gap: 14px;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+.bench__table-box {
+  flex: none;
+  overflow-x: auto;
+  border-radius: 4px;
+}
+
+.bench__warning {
+  color: var(--text);
+  font-weight: 600;
+}
+
+.bench__status {
+  flex-basis: 100%;
+}
+
+.bench__status:empty {
+  display: none;
 }
 
 .bench__head {
@@ -71,6 +116,7 @@
 .bench__meta,
 .bench__note {
   margin: 0;
+  overflow-wrap: anywhere;
   color: var(--text-secondary);
   font-size: var(--type-footnote-size);
   line-height: var(--type-footnote-leading);
@@ -250,12 +296,15 @@
 
 .bench__table td {
   padding: 7px 0;
+  white-space: nowrap;
   border-top: 1px solid var(--surface-edge);
   text-align: right;
 }
 
 .bench__table th:first-child,
 .bench__table td:first-child {
+  min-width: 7em;
+  white-space: normal;
   text-align: left;
 }
 

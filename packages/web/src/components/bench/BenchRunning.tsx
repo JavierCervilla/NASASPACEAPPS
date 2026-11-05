@@ -27,12 +27,14 @@
  * The running panel (VENT-81, the canvas «1 · Running»): which variant
  * this run is, the script's six steps with their marks and times, the
  * progress over every run, the hint not to touch, and «Stop». It changes
- * only when a step does, so it costs no frames while the app is measured.
+ * only when a step does, so it costs no frames while the app is measured,
+ * and it leaves the focus where it is.
  */
 import { SCRIPT_VERSION, benchScript } from '../../bench/script';
 import type { Phase } from '../../bench/phase';
 import { endBench } from '../../bench/navigate';
 import { useI18n } from '../i18n-context';
+import { BenchFrame } from './BenchFrame';
 import { BenchSteps } from './BenchSteps';
 
 type Running = Extract<Phase, { kind: 'running' }>;
@@ -56,19 +58,14 @@ export function BenchRunning({ state, step, times }: Running) {
   const ids = benchScript(state.fast).map((s) => s.id);
   const total = state.order.length * ids.length;
   const tier = state.header?.tier ?? '…';
+  const meta = <p className="bench__meta bench__meta--small">{t('bench.meta', { version: SCRIPT_VERSION, tier })}</p>;
+  const stop = <button type="button" className="bench__button" onClick={() => endBench(false)}>{t('bench.stop')}</button>;
   return (
-    <>
-      <div className="bench__head">
-        <h2 className="bench__title">{t('bench.title')}</h2>
-        <p className="bench__meta bench__meta--small">{t('bench.meta', { version: SCRIPT_VERSION, tier })}</p>
-      </div>
+    <BenchFrame title={t('bench.title')} meta={meta} actions={stop} focus={false}>
       <RunIndicator state={state} />
       <BenchSteps ids={ids} step={step} times={times} />
       <progress className="bench__progress" max={total} value={state.next * ids.length + step} aria-label={t('bench.progress')} />
       <p className="bench__note">{t('bench.hint')}</p>
-      <div className="bench__actions">
-        <button type="button" className="bench__button" onClick={() => endBench(false)}>{t('bench.stop')}</button>
-      </div>
-    </>
+    </BenchFrame>
   );
 }

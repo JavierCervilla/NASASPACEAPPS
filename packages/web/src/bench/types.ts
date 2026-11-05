@@ -73,14 +73,19 @@ export interface RunResult {
   readonly variant: Variant;
   /** 1-based, per variant. */
   readonly run: number;
+  /** The on-foot view's tier this run ran at (its host's `data-tier`). */
+  readonly tier: string;
   readonly steps: readonly StepMetrics[];
 }
 
 export interface BenchHeader {
   readonly gpu: string;
   readonly userAgent: string;
-  /** CSS pixels and device pixel ratio, «719 × 1417 @ 1.75». */
+  /** The page's CSS pixels and pixel ratio, «412 × 839 @ 2.625». */
+  readonly viewport: string;
+  /** The device's screen, CSS pixels, «412 × 915». */
   readonly screen: string;
+  /** The tier of the run that read the header; each run keeps its own. */
   readonly tier: string;
   readonly script: number;
   readonly build: string;
@@ -96,6 +101,8 @@ export interface BenchState {
   readonly next: number;
   readonly results: readonly RunResult[];
   readonly header: BenchHeader | null;
+  /** Why a run stopped short, when one did. */
+  readonly error?: string;
 }
 
 export type RunCount = 1 | 3;

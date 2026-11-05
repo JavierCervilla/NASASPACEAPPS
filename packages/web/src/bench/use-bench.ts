@@ -23,6 +23,12 @@
  *             :::.. .  .               SPDX-License-Identifier: MIT
  */
 
+/**
+ * The benchmark panel's controller (VENT-81): its phase on this page load
+ * (phase.ts) and the run this load does, which ends in the next page load
+ * (navigate.ts), or in the failed phase when it throws. The phase changes
+ * only when a step does.
+ */
 import { useEffect, useState } from 'react';
 import type { SiteStore } from '../phone/site-store';
 import { nextLoad } from './navigate';
@@ -31,7 +37,7 @@ import { pageRegistry } from './page-registry';
 import { initialPhase, type Phase } from './phase';
 import { readState } from './run-state';
 import { runScript } from './run';
-import { sessionStore } from './state-store';
+import { sessionStore, writeState } from './state-store';
 import type { BenchState } from './types';
 
 const sleep = (ms: number): Promise<void> =>
@@ -49,6 +55,16 @@ function stepTimer(state: BenchState, setPhase: (next: Phase) => void) {
   };
 }
 
+/** The failed phase of a run that threw `error`, kept for the report. */
+function failedRun(state: BenchState, error: unknown): Phase {
+  const message = error instanceof Error ? error.message : String(error);
+  const variant = state.order[state.next] ?? 'A';
+  const failed = { ...state, error: `run ${state.next + 1} (${variant}):`
+    + ` ${message}` };
+  writeState(sessionStore(), failed);
+  return { kind: 'failed', state: failed };
+}
+
 /** Plays the run the load's `first` phase names, then the next load. */
 function useRun(
   first: Phase,
@@ -62,7 +78,8 @@ function useRun(
     void runScript(variant, state.fast, {
       doc: document, place: location, store, sleep, registry: pageRegistry,
       local: window.localStorage, onStep: stepTimer(state, setPhase),
-    }).then(({ steps, header }) => nextLoad(state, steps, header));
+    }).then(({ steps, header }) => nextLoad(state, steps, header))
+      .catch((error: unknown) => setPhase(failedRun(state, error)));
   }, [first, setPhase, store]);
 }
 

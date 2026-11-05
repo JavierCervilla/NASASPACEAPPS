@@ -31,7 +31,7 @@ const IDS: readonly StepId[] = ['globeIdle', 'globeMoves', 'openView', 'turn', '
 
 export const HEADER: BenchHeader = {
   gpu: 'PowerVR D-Series DXT-48-1536', userAgent: 'Mozilla/5.0 (Linux; Android 16) Chrome/142.0.0.0 Mobile Safari/537.36',
-  screen: '412 × 915 @ 1.75', tier: 'medium', script: 1, build: 'ab12cd34ef56', instant: '1967-03-19T12:00:00Z',
+  viewport: '412 × 839 @ 2.625', screen: '412 × 915', tier: 'medium', script: 1, build: 'ab12cd34ef56', instant: '1967-03-19T12:00:00Z',
 };
 
 /** A step whose numbers all come from `base`. */
@@ -44,8 +44,23 @@ export function step(id: StepId, base: number, over: Partial<StepMetrics> = {}):
 }
 
 /** A run whose every step is `step(id, base, over)`. */
-export function run(variant: Variant, n: number, base: number, over: Partial<StepMetrics> = {}): RunResult {
-  return { variant, run: n, steps: IDS.map((id) => step(id, base, over)) };
+export function run(variant: Variant, n: number, base: number, over: Partial<StepMetrics> = {}, tier = 'medium'): RunResult {
+  return { variant, run: n, tier, steps: IDS.map((id) => step(id, base, over)) };
+}
+
+/** A storage in memory, as the browser's `sessionStorage` and `localStorage` behave. */
+export function memoryStorage(entries: Record<string, string> = {}): Storage {
+  const kept = new Map(Object.entries(entries));
+  return {
+    get length() {
+      return kept.size;
+    },
+    key: (i: number) => [...kept.keys()][i] ?? null,
+    getItem: (key: string) => kept.get(key) ?? null,
+    setItem: (key: string, value: string) => void kept.set(key, String(value)),
+    removeItem: (key: string) => void kept.delete(key),
+    clear: () => kept.clear(),
+  };
 }
 
 /** A finished one-run-each state. */

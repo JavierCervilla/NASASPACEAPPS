@@ -58,7 +58,7 @@ export function recordRun(
   const run = state.order.slice(0, state.next + 1)
     .filter((v) => v === variant).length;
   return { ...state, next: state.next + 1, header,
-    results: [...state.results, { variant, run, steps }] };
+    results: [...state.results, { variant, run, tier: header.tier, steps }] };
 }
 
 /** Whether every run of `state` is done. */

@@ -29,6 +29,7 @@
  * run. Plain English for whoever reads it next to the code, never
  * translated. Pure.
  */
+import { noteLines } from './report-notes';
 import { variantMedian } from './results';
 import type { BenchState, RunResult, StepMetrics } from './types';
 
@@ -44,7 +45,7 @@ const METRICS: readonly (readonly [string, Read])[] = [
   ['longTasks', (s) => s.longTasks],
   ['longTaskMs', (s) => s.longTaskMs],
   ['contexts', (s) => s.contexts],
-  ['textureBytes', (s) => s.textureBytes],
+  ['globeMapBytes', (s) => s.textureBytes],
   ['onFootTextures', (s) => s.textures],
   ['heapBytes', (s) => s.heapBytes],
   ['triangles', (s) => s.triangles],
@@ -67,8 +68,8 @@ function headerLines(state: BenchState): string[] {
     'Ventana Lunar benchmark report',
     `Script v${h?.script ?? '?'} · instant ${h?.instant ?? '?'}`,
     `GPU: ${h?.gpu ?? '?'}`, `Browser: ${h?.userAgent ?? '?'}`,
-    `Screen: ${h?.screen ?? '?'}`, `View tier: ${h?.tier ?? '?'}`,
-    `Build: ${h?.build ?? '?'}`,
+    `Viewport: ${h?.viewport ?? '?'}`, `Screen: ${h?.screen ?? '?'}`,
+    `Build: ${h?.build ?? '?'}`, ...noteLines(state),
     `Runs: ${state.runs} per variant, order ${order}${state.fast
       ? ' (fast script)' : ''}`,
     'A: globe kept. B: globe WebGL context released while the 3D view is'

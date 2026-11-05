@@ -34,7 +34,7 @@ import { median } from './stats';
 import type { RunResult, StepMetrics, Variant } from './types';
 
 export type MetricId =
-  | 'fps' | 'p95' | 'worst' | 'longTasks' | 'contexts' | 'texture' | 'heap'
+  | 'fps' | 'p95' | 'worst' | 'longTasks' | 'contexts' | 'globeMap' | 'heap'
   | 'lost';
 
 export type Change =
@@ -67,7 +67,7 @@ const METRICS: readonly (readonly [MetricId, Reader, 'percent' | 'diff' | null,
   ['worst', (s) => s.frames.worstMs, 'percent', false],
   ['longTasks', (s) => s.longTaskMs / 1000, 'percent', false],
   ['contexts', (s) => s.contexts, 'diff', true],
-  ['texture', (s) => s.textureBytes / MB, 'percent', true],
+  ['globeMap', (s) => s.textureBytes / MB, 'percent', true],
   ['heap', (s) => (s.heapBytes === null ? null : s.heapBytes / MB),
     'percent', false],
   ['lost', (s) => s.lost, null, true],
@@ -107,4 +107,16 @@ export function resultRows(results: readonly RunResult[]): ResultRow[] {
     const [a, b] = [of('A'), of('B')];
     return { id, a, b, change: changeOf(a, b, kind), strong };
   });
+}
+
+/**
+ * Each run's tier, «A1 medium · B1 low», and whether they differ: runs at
+ * different tiers draw different scenes, so their figures do not compare.
+ */
+export function tierSummary(
+  results: readonly RunResult[],
+): { list: string; mixed: boolean } {
+  const list = results.map((r) => `${r.variant}${r.run} ${r.tier}`);
+  const mixed = new Set(results.map((r) => r.tier)).size > 1;
+  return { list: list.join(' · '), mixed };
 }

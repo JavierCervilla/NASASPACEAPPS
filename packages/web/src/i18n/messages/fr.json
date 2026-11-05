@@ -443,7 +443,7 @@
   "bench.start": "Démarrer",
   "bench.stop": "Arrêter",
   "bench.done": "Banc d’essai terminé",
-  "bench.header": "{gpu} · {browser} · {screen} · niveau {tier} · script v{version} · build {build}",
+  "bench.header": "{gpu} · {browser} · {viewport} · script v{version} · build {build}",
   "bench.col.metric": "Vue 3D, en rotation",
   "bench.col.a": "A conservé",
   "bench.col.b": "B libéré",
@@ -453,7 +453,7 @@
   "bench.metric.worst": "Pire image",
   "bench.metric.longTasks": "Tâches longues",
   "bench.metric.contexts": "Contextes WebGL actifs",
-  "bench.metric.texture": "Mémoire des textures",
+  "bench.metric.globeMap": "Mémoire de la carte du globe",
   "bench.metric.heap": "Tas JS",
   "bench.metric.lost": "Contexte perdu",
   "bench.unit.fps": "{n} i/s",
@@ -472,5 +472,9 @@
     "one": "Médiane de {n} passage chacun. Les autres étapes (chargement, globe, changement de point) sont dans le rapport copié.",
     "many": "Médiane de {n} passages chacun. Les autres étapes (chargement, globe, changement de point) sont dans le rapport copié.",
     "other": "Médiane de {n} passages chacun. Les autres étapes (chargement, globe, changement de point) sont dans le rapport copié."
-  }
+  },
+  "bench.tiers": "Niveau de la vue par passage : {list}",
+  "bench.tiersMixed": "Les passages ont tourné à des niveaux de vue différents : leurs chiffres ne se comparent pas.",
+  "bench.failed": "Banc d’essai interrompu",
+  "bench.failedHint": "Un passage s’est arrêté sur une erreur : {error}"
 }

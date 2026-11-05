@@ -9,6 +9,10 @@
   GPU escondida y la vista se dibuja sin mapa de sombras.
 
 ### Cambiado
+- **El globo arranca antes (VENT-93).** Los mapas de arranque (1K, o 2K en equipos potentes) se piden en cuanto se
+  conoce la calidad del equipo, antes de descargar el código del globo, y se reutilizan sin volver a pedirse; los
+  programas de la GPU se compilan sin bloquear donde el navegador lo permite, y la comprobación de shaders solo se hace
+  con `?debug`. En un móvil simulado, el globo aparece unos 0,6 s antes.
 - **La tira del banco ya no tapa la barra ni la brújula en el móvil (VENT-88).** Mientras corre se coloca justo debajo
   de la barra superior, medida, también con el texto grande, y deja sitio a la brújula; el nombre del paso se parte en
   dos líneas en vez de cortarse.

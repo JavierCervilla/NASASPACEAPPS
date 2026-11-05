@@ -226,7 +226,20 @@ Every visible change follows `.claude/skills/apple-design/SKILL.md` (vendored fr
   `Moon.rest()` calls `TextureSwap.lower(startLevel)`, which fetches and shows the start map before it frees the 4K or
   8K one (a bigger level still in flight is freed when it lands, `texture-climb.ts`), and the next frame drawn climbs
   back with `track`. Held by `tests/globe-lod.test.ts`, `tests/shown-frames.test.ts` and
-  `tests/e2e/vent-86-globe-rest.spec.ts`.
+  `tests/e2e/vent-86-globe-rest.spec.ts`. The globe starts sooner (VENT-93, VENT-80 findings 5 and 6): the boot reads
+  the tier and asks the start maps of `startLevel(tier)` (colour and relief, through `levelUrls`) before it imports the
+  globe's chunk (`src/globe/start-maps.ts` `earlyStart`, plain `<img>` loads as three's ImageLoader makes them; under
+  Save-Data only once «Load the 3D globe» is pressed), hands the tier and the images to `mountGlobe` (`GlobeOptions.early`,
+  so the mount makes no second tier probe), and the swapper takes each image once and makes the texture a TextureLoader
+  would (`early-texture.ts`): each map is requested once, and no other level's. Where the browser has
+  KHR_parallel_shader_compile the scene's programs are compiled with `renderer.compileAsync` before the first frame and
+  again before a map goes onto the Moon, the frames held meanwhile (`src/globe/compile-gate.ts`, given up after 5 s); the
+  splash's `onTextured` comes after that compile. Without the extension the gate does nothing, so the first frame is as
+  early as before. `renderer.debug.checkShaderErrors` is on only where the dev tools run (a dev build, or `?debug`;
+  `devToolsWanted` in `lib/dev-tools-loader.ts`, set by `lib/gl-renderer.ts` for the globe and the on-foot view alike):
+  reading the info logs after each link made the driver finish the compile on the spot. Held by
+  `tests/globe-start-maps.test.ts`, `tests/globe-compile-gate.test.ts`, `tests/gl-renderer-shader-checks.test.ts` and
+  `tests/e2e/vent-93-globe-start.spec.ts`.
 - Glass: the floating surfaces (phone top bar, sheet and tab bar; desktop header, site popover,
   calendar strip and site card) wear Liquid glass or the frosted blur; the phone's site pill, inside the top
   bar's glass, takes only the Liquid rim. Liquid refracts through a

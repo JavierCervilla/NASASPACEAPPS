@@ -34,6 +34,7 @@ import {
   type QualitySettings,
   type Tier,
 } from '../lib/quality';
+import { isPhoneViewport } from '../lib/viewport';
 
 /**
  * A phone never runs the high tier: it opens on the 1K map, stops at the
@@ -55,3 +56,11 @@ export function pickQuality(phone: boolean): QualitySettings {
   const { search, hash } = window.location;
   return settingsFor(phoneTier(detectTier(device, search, hash), phone));
 }
+
+/**
+ * The globe's settings: the ones the boot read before the chunk loaded
+ * (start-maps.ts), else read now.
+ */
+export const globeQuality = (
+  early?: { readonly quality: QualitySettings } | undefined,
+): QualitySettings => early?.quality ?? pickQuality(isPhoneViewport());

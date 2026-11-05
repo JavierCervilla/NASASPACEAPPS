@@ -692,7 +692,7 @@ Every visible change follows `.claude/skills/apple-design/SKILL.md` (vendored fr
   ephemeris, and the on-foot view's sky is the simulator's. Script v1 (`src/bench/script.ts`, `SCRIPT_VERSION`,
   declarative): the globe idle 5 s; turned by synthetic arrow keys and zoomed by four «+» (to 2.2 radii, past the 4K
   map's 3.5), then 3 s; `#horizon` at IM-2 until the on-foot host settles (`data-ready`, `data-working="false"`, not
-  `data-parked`, no far tile pending, no frame for 1 s; 60 s at most, `settle.ts`; a failed view, `data-status` lost, blocked, failed, missing or offline, stops the run at once with that reason instead, VENT-83); 72 ArrowRight keys 16 ms apart (a
+  `data-parked`, no far tile pending, no frame for 1 s; 60 s at most, `settle.ts`; a failed view, `data-status` lost, blocked, failed, missing or offline, stops the run at once with that reason instead, VENT-83, also while it waits for a point change to park, VENT-87); 72 ArrowRight keys 16 ms apart (a
   full turn at 5° a key); the point changed to Malapert Massif through the site store, as the site list does, until it
   parks and settles, and turned again; `#globe`, 3 s. No synthetic pointer drags (they cannot take capture). Variant A
   is the app; variant B releases the globe's context with `WEBGL_lose_context` as step c starts and keeps it lost

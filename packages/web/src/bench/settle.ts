@@ -33,12 +33,15 @@
  * a tile that lands rebuilds its rings, which the next frame says. The
  * wait polls those marks, and ends at once with an error when the host's
  * `data-status` says the view failed (VENT-83): a lost context or blocked
- * WebGL never settles, and waiting it out looked like a hang on a phone.
+ * WebGL never settles, and waiting it out looked like a hang on a phone;
+ * so does the wait for a point change to park it.
  */
+import { until, type Sleep } from './poll';
+
+export type { Sleep } from './poll';
 
 /** The on-foot view's host (components/terrain/OnFootStageArea.tsx). */
 export const ON_FOOT_HOST = '.on-foot__host';
-const POLL_MS = 100;
 /** How long the marks must hold, with no new frame, ms. */
 export const QUIET_MS = 1000;
 const FAR_PENDING = '.on-foot__far[data-done="false"]';
@@ -59,8 +62,6 @@ export interface HostMarks {
   readonly status?: string | undefined;
 }
 
-export type Sleep = (ms: number) => Promise<void>;
-
 /** Whether `marks` say the view settled after `since` frames. */
 export const isSettled = (marks: HostMarks, since: number): boolean =>
   marks.ready === 'true' && marks.working === 'false' && !marks.parked
@@ -76,28 +77,20 @@ export function hostMarks(doc: Document): HostMarks | null {
     farPending: doc.querySelector(FAR_PENDING) !== null };
 }
 
-/** Polls `test` until true or `timeoutMs`; false on the timeout. */
-async function until(
-  test: () => boolean,
-  timeoutMs: number,
-  sleep: Sleep,
-): Promise<boolean> {
-  const end = performance.now() + timeoutMs;
-  while (!test()) {
-    if (performance.now() >= end) return false;
-    await sleep(POLL_MS);
+/** The host's marks now; throws when the view failed, which never ends. */
+function aliveMarks(doc: Document): HostMarks | null {
+  const marks = hostMarks(doc);
+  if (FAILED.has(marks?.status ?? '')) {
+    throw new Error(`3D view failed: ${marks?.status}`);
   }
-  return true;
+  return marks;
 }
 
 /** A test true once the view has been settled, drawing nothing, a while. */
 function quietly(doc: Document, since: number): () => boolean {
   let held: { frames: string | undefined; at: number } | null = null;
   return () => {
-    const marks = hostMarks(doc);
-    if (FAILED.has(marks?.status ?? '')) {
-      throw new Error(`3D view failed: ${marks?.status}`);
-    }
+    const marks = aliveMarks(doc);
     if (!marks || !isSettled(marks, since)) held = null;
     else if (held?.frames !== marks.frames) {
       held = { frames: marks.frames, at: performance.now() };
@@ -116,6 +109,6 @@ export async function waitSettled(
   sleep: Sleep,
 ): Promise<boolean> {
   const since = Number(hostMarks(doc)?.frames ?? 0);
-  if (park) await until(() => hostMarks(doc)?.parked === true, PARK_MS, sleep);
+  if (park) await until(() => aliveMarks(doc)?.parked === true, PARK_MS, sleep);
   return !(await until(quietly(doc, since), timeoutMs, sleep));
 }

@@ -432,7 +432,7 @@
   "bench.start": "Starten",
   "bench.stop": "Stoppen",
   "bench.done": "Benchmark fertig",
-  "bench.header": "{gpu} · {browser} · {screen} · Stufe {tier} · Skript v{version} · Build {build}",
+  "bench.header": "{gpu} · {browser} · {viewport} · Skript v{version} · Build {build}",
   "bench.col.metric": "3D-Ansicht, drehend",
   "bench.col.a": "A behalten",
   "bench.col.b": "B freigegeben",
@@ -442,7 +442,7 @@
   "bench.metric.worst": "Langsamstes Bild",
   "bench.metric.longTasks": "Lange Tasks",
   "bench.metric.contexts": "Aktive WebGL-Kontexte",
-  "bench.metric.texture": "Texturspeicher",
+  "bench.metric.globeMap": "Speicher der Globuskarte",
   "bench.metric.heap": "JS-Heap",
   "bench.metric.lost": "Kontext verloren",
   "bench.unit.fps": "{n} fps",
@@ -460,5 +460,9 @@
   "bench.note": {
     "one": "Median aus je {n} Durchlauf. Die übrigen Schritte (Laden, Globus, Punktwechsel) stehen im kopierten Bericht.",
     "other": "Median aus je {n} Durchläufen. Die übrigen Schritte (Laden, Globus, Punktwechsel) stehen im kopierten Bericht."
-  }
+  },
+  "bench.tiers": "Ansichtsstufe je Durchlauf: {list}",
+  "bench.tiersMixed": "Die Durchläufe liefen mit unterschiedlichen Ansichtsstufen, ihre Zahlen sind daher nicht vergleichbar.",
+  "bench.failed": "Benchmark abgebrochen",
+  "bench.failedHint": "Ein Durchlauf brach mit einem Fehler ab: {error}"
 }

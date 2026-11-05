@@ -32,6 +32,7 @@ import { useState } from 'react';
 import { endBench, startBench } from '../../bench/navigate';
 import type { RunCount } from '../../bench/types';
 import { useI18n } from '../i18n-context';
+import { BenchFrame } from './BenchFrame';
 
 const COUNTS: readonly RunCount[] = [1, 3];
 
@@ -60,17 +61,16 @@ function RunsChoice({ runs, onRuns }: Choice) {
 export function BenchReady({ runs: preset }: { runs: RunCount }) {
   const { t } = useI18n();
   const [runs, setRuns] = useState(preset);
-  return (
+  const actions = (
     <>
-      <div className="bench__head">
-        <h2 className="bench__title">{t('bench.title')}</h2>
-      </div>
+      <button type="button" className="bench__button bench__primary" onClick={() => startBench(runs)}>{t('bench.start')}</button>
+      <button type="button" className="bench__button bench__plain" onClick={() => endBench(true)}>{t('bench.close')}</button>
+    </>
+  );
+  return (
+    <BenchFrame title={t('bench.title')} actions={actions} focus>
       <p className="bench__note">{t('bench.readyHint')}</p>
       <RunsChoice runs={runs} onRuns={setRuns} />
-      <div className="bench__actions">
-        <button type="button" className="bench__button bench__primary" onClick={() => startBench(runs)}>{t('bench.start')}</button>
-        <button type="button" className="bench__button bench__plain" onClick={() => endBench(true)}>{t('bench.close')}</button>
-      </div>
-    </>
+    </BenchFrame>
   );
 }

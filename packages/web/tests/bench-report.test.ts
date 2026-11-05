@@ -41,14 +41,14 @@ describe('resultRows', () => {
   const row = (id: string) => rows.find((r) => r.id === id);
 
   it('has the canvas\'s eight rows in its order', () => {
-    expect(rows.map((r) => r.id)).toEqual(['fps', 'p95', 'worst', 'longTasks', 'contexts', 'texture', 'heap', 'lost']);
-    expect(rows.filter((r) => r.strong).map((r) => r.id)).toEqual(['fps', 'p95', 'contexts', 'texture', 'lost']);
+    expect(rows.map((r) => r.id)).toEqual(['fps', 'p95', 'worst', 'longTasks', 'contexts', 'globeMap', 'heap', 'lost']);
+    expect(rows.filter((r) => r.strong).map((r) => r.id)).toEqual(['fps', 'p95', 'contexts', 'globeMap', 'lost']);
   });
 
   it('takes the median over each variant\'s runs of the turning step, and B\'s change against A', () => {
     expect(row('fps')).toMatchObject({ a: 40, b: 50, change: { kind: 'percent', value: 25 } });
     expect(row('contexts')).toMatchObject({ a: 2, b: 1, change: { kind: 'diff', value: -1 } });
-    expect(row('texture')).toMatchObject({ a: 40, b: 50 });
+    expect(row('globeMap')).toMatchObject({ a: 40, b: 50 });
     expect(row('longTasks')).toMatchObject({ a: 0.4, b: 0.5 });
   });
 
@@ -87,12 +87,13 @@ describe('the table\'s text', () => {
 describe('reportText', () => {
   const text = reportText(doneState([run('A', 1, 30), run('B', 1, 40, { contexts: 1 })]));
 
-  it('opens with the header: script, instant, GPU, browser, screen, tier, build and the runs', () => {
+  it('opens with the header: script, instant, GPU, browser, viewport, screen, build, each run\'s tier and the runs', () => {
     expect(text).toContain('Script v1 · instant 1967-03-19T12:00:00Z');
     expect(text).toContain('GPU: PowerVR D-Series DXT-48-1536');
     expect(text).toContain('Browser: Mozilla/5.0');
-    expect(text).toContain('Screen: 412 × 915 @ 1.75');
-    expect(text).toContain('View tier: medium');
+    expect(text).toContain('Viewport: 412 × 839 @ 2.625');
+    expect(text).toContain('Screen: 412 × 915');
+    expect(text).toContain('View tier per run: A1 medium · B1 medium');
     expect(text).toContain('Build: ab12cd34ef56');
     expect(text).toContain('Runs: 1 per variant, order A B');
   });

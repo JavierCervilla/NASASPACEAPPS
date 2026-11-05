@@ -24,9 +24,10 @@
  */
 
 /**
- * What the panel shows on a page load (VENT-81): the results once every
- * run is kept, the running panel on the load the kept state names for its
- * next run (`benchRun=k`), and otherwise the first state with «Start».
+ * What the panel shows on a page load (VENT-81): the error a run stopped
+ * on, the results once every run is kept, the running panel on the load
+ * the kept state names for its next run (`benchRun=k`), and otherwise the
+ * first state with «Start».
  * Pure.
  */
 import type { BenchOptions } from './params';
@@ -40,13 +41,15 @@ export type Phase =
       readonly step: number;
       /** How long each step before it took, ms. */
       readonly times: readonly number[] }
-  | { readonly kind: 'results'; readonly state: BenchState };
+  | { readonly kind: 'results'; readonly state: BenchState }
+  | { readonly kind: 'failed'; readonly state: BenchState };
 
 /** The panel's phase for the kept `state` and the address's `options`. */
 export function initialPhase(
   state: BenchState | null,
   options: BenchOptions,
 ): Phase {
+  if (state?.error) return { kind: 'failed', state };
   if (state && finished(state)) return { kind: 'results', state };
   if (state && options.run !== null && state.next === options.run) {
     return { kind: 'running', state, step: 0, times: [] };

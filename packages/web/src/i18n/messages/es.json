@@ -443,7 +443,7 @@
   "bench.start": "Empezar",
   "bench.stop": "Detener",
   "bench.done": "Banco de pruebas terminado",
-  "bench.header": "{gpu} · {browser} · {screen} · nivel {tier} · guion v{version} · build {build}",
+  "bench.header": "{gpu} · {browser} · {viewport} · guion v{version} · build {build}",
   "bench.col.metric": "Vista 3D, girando",
   "bench.col.a": "A conservado",
   "bench.col.b": "B liberado",
@@ -453,7 +453,7 @@
   "bench.metric.worst": "Peor fotograma",
   "bench.metric.longTasks": "Tareas largas",
   "bench.metric.contexts": "Contextos WebGL vivos",
-  "bench.metric.texture": "Memoria de texturas",
+  "bench.metric.globeMap": "Memoria del mapa del globo",
   "bench.metric.heap": "Montículo JS",
   "bench.metric.lost": "Contexto perdido",
   "bench.unit.fps": "{n} fps",
@@ -472,5 +472,9 @@
     "one": "Mediana de {n} pasada por variante. Los demás pasos (carga, globo, cambio de punto) están en el informe copiado.",
     "many": "Mediana de {n} pasadas por variante. Los demás pasos (carga, globo, cambio de punto) están en el informe copiado.",
     "other": "Mediana de {n} pasadas por variante. Los demás pasos (carga, globo, cambio de punto) están en el informe copiado."
-  }
+  },
+  "bench.tiers": "Nivel de la vista por pasada: {list}",
+  "bench.tiersMixed": "Las pasadas usaron niveles de vista distintos, así que sus cifras no se pueden comparar.",
+  "bench.failed": "Banco de pruebas detenido",
+  "bench.failedHint": "Una pasada se detuvo por un error: {error}"
 }

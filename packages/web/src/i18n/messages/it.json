@@ -443,7 +443,7 @@
   "bench.start": "Avvia",
   "bench.stop": "Ferma",
   "bench.done": "Benchmark completato",
-  "bench.header": "{gpu} · {browser} · {screen} · livello {tier} · script v{version} · build {build}",
+  "bench.header": "{gpu} · {browser} · {viewport} · script v{version} · build {build}",
   "bench.col.metric": "Vista 3D, in rotazione",
   "bench.col.a": "A mantenuto",
   "bench.col.b": "B rilasciato",
@@ -453,7 +453,7 @@
   "bench.metric.worst": "Frame peggiore",
   "bench.metric.longTasks": "Attività lunghe",
   "bench.metric.contexts": "Contesti WebGL attivi",
-  "bench.metric.texture": "Memoria delle texture",
+  "bench.metric.globeMap": "Memoria della mappa del globo",
   "bench.metric.heap": "Heap JS",
   "bench.metric.lost": "Contesto perso",
   "bench.unit.fps": "{n} fps",
@@ -472,5 +472,9 @@
     "one": "Mediana di {n} esecuzione ciascuna. Gli altri passi (caricamento, globo, cambio di punto) sono nel rapporto copiato.",
     "many": "Mediana di {n} esecuzioni ciascuna. Gli altri passi (caricamento, globo, cambio di punto) sono nel rapporto copiato.",
     "other": "Mediana di {n} esecuzioni ciascuna. Gli altri passi (caricamento, globo, cambio di punto) sono nel rapporto copiato."
-  }
+  },
+  "bench.tiers": "Livello della vista per esecuzione: {list}",
+  "bench.tiersMixed": "Le esecuzioni hanno usato livelli di vista diversi, quindi le cifre non sono confrontabili.",
+  "bench.failed": "Benchmark interrotto",
+  "bench.failedHint": "Un’esecuzione si è fermata per un errore: {error}"
 }

@@ -41,7 +41,7 @@ const UNITS: Readonly<Record<Exclude<MetricId, 'lost'>,
   worst: ['bench.unit.ms', 0],
   longTasks: ['bench.unit.s', 1],
   contexts: [null, 0],
-  texture: ['bench.unit.mb', 1],
+  globeMap: ['bench.unit.mb', 1],
   heap: ['bench.unit.mb', 0],
 };
 

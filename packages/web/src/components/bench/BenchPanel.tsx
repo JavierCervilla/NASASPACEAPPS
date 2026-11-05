@@ -52,7 +52,8 @@ export function BenchPanel({ store }: BenchPanelProps) {
       <link rel="stylesheet" href={stylesUrl} precedence="bench" />
       {phase.kind === 'ready' && <BenchReady runs={phase.runs} />}
       {phase.kind === 'running' && <BenchRunning {...phase} />}
-      {phase.kind === 'results' && <BenchResults {...phase} />}
+      {(phase.kind === 'results' || phase.kind === 'failed')
+        && <BenchResults {...phase} />}
     </section>,
     document.body,
   );

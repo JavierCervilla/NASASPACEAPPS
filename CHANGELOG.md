@@ -9,6 +9,9 @@
   GPU escondida y la vista se dibuja sin mapa de sombras.
 
 ### Cambiado
+- **La vista 3D descarga menos al abrirse (VENT-94).** El mapa de relieve fino del regolito pasa de 469 kB a 193 kB
+  (WebP q50, sin diferencia visible en el suelo iluminado) y el móvil usa una Tierra de 512 px, que en su pantalla
+  ocupa unos 28 px: en el móvil la vista baja unos 335 kB menos.
 - **La tira del banco ya no tapa la barra ni la brújula en el móvil (VENT-88).** Mientras corre se coloca justo debajo
   de la barra superior, medida, también con el texto grande, y deja sitio a la brújula; el nombre del paso se parte en
   dos líneas en vez de cortarse.

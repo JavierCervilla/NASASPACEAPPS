@@ -38,9 +38,7 @@ export type Phase =
   | { readonly kind: 'ready'; readonly runs: RunCount }
   | { readonly kind: 'running'; readonly state: BenchState;
       /** The step under way, 0-based; the script's length when done. */
-      readonly step: number;
-      /** How long each step before it took, ms. */
-      readonly times: readonly number[] }
+      readonly step: number }
   | { readonly kind: 'results'; readonly state: BenchState }
   | { readonly kind: 'failed'; readonly state: BenchState };
 
@@ -52,7 +50,7 @@ export function initialPhase(
   if (state?.error) return { kind: 'failed', state };
   if (state && finished(state)) return { kind: 'results', state };
   if (state && options.run !== null && state.next === options.run) {
-    return { kind: 'running', state, step: 0, times: [] };
+    return { kind: 'running', state, step: 0 };
   }
   return { kind: 'ready', runs: options.runs };
 }

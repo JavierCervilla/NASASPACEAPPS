@@ -44,7 +44,7 @@ export function BenchRunning({ state, step }: Running) {
   const total = state.order.length * ids.length;
   const variant = state.order[state.next] === 'B' ? 'bench.runB' : 'bench.runA';
   const run = Math.floor(state.next / 2) + 1;
-  const now = ids[Math.min(step, ids.length - 1)] ?? ids[0];
+  const now = ids[Math.min(step, ids.length - 1)];
   return (
     <>
       <div className="bench__strip">

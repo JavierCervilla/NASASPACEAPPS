@@ -96,7 +96,7 @@ describe('the phase of a page load', () => {
 
   it('is the running panel on the load the kept state names for its next run, and only that one', () => {
     const state = recordRun(startState(3, false), [], HEADER);
-    expect(initialPhase(state, { ...options, run: 1 })).toEqual({ kind: 'running', state, step: 0, times: [] });
+    expect(initialPhase(state, { ...options, run: 1 })).toEqual({ kind: 'running', state, step: 0 });
     expect(initialPhase(state, { ...options, run: 0 }).kind).toBe('ready');
     expect(initialPhase(state, options).kind).toBe('ready');
   });

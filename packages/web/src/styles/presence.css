@@ -28,8 +28,8 @@
  * §12): they leave along the path they came in, and the glass ones
  * materialise, blur and scale with the opacity. They move on the
  * critically damped --spring over --dur-enter; components/presence.ts
- * keeps a leaving surface mounted for that long. Under reduced motion a plain fade (§14) over --dur-fade,
- * which presence.ts waits instead.
+ * keeps a leaving surface mounted for that long. Under reduced motion a
+ * plain fade (§14) over --dur-fade, which presence.ts waits instead.
  */
 
 /*
@@ -71,7 +71,8 @@
 
 /*
  * The first-time pin hint, «Offline» and «New version ready» (VENT-82):
- * `in` while shown, `out` through the exit, then gone. Their taps stop as the exit starts.
+ * `in` while shown, `out` through the exit, then gone. Their taps stop as
+ * the exit starts.
  */
 [data-presence] {
   transition:

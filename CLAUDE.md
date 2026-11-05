@@ -572,7 +572,7 @@ Every visible change follows `.claude/skills/apple-design/SKILL.md` (vendored fr
   so turning the camera renders no shadow pass (`data-shadows` on the host counts the passes done, held by
   `tests/shadow-gate.test.ts` and `tests/e2e/vent-73-shadow-pass.spec.ts`); a path that adds a shadow caster outside the
   slicer must call `stage.shadow.mark()`. A PowerVR GPU draws the view with no shadow map at every tier (VENT-75,
-  `src/terrain/shadow-safety.ts`, read from `gpuName` in `stage.ts`), and so does a phone whose browser hides its GPU (no
+  `src/terrain/shadow-safety.ts`, read from `unmaskedGpuName` in `stage.ts`), and so does a phone whose browser hides its GPU (no
   `WEBGL_debug_renderer_info`, as Brave does: the Pixel 10 went unrecognised and lost both contexts in the bench, VENT-84,
   `tests/e2e/vent-84-hidden-gpu-shadows.spec.ts`): the human's bisect on the Pixel 10 kept the context
   with the shadows or the logarithmic depth left out and lost it with both on, even at low; held by

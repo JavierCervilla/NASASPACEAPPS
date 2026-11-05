@@ -97,8 +97,12 @@ export function readEnvironment(
   };
 }
 
-/** The GPU's name when the driver exposes it, else null. */
-export function gpuName(
+/**
+ * The GPU's name when the driver exposes it, else null: never the masked
+ * `RENDERER`, which lib/quality.ts `gpuName` falls back to (VENT-84: a
+ * hidden GPU must read as unknown).
+ */
+export function unmaskedGpuName(
   gl: Pick<WebGLRenderingContext, 'getExtension' | 'getParameter'>,
 ): string | null {
   try {

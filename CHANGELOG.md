@@ -202,6 +202,7 @@
   renderizado por software, de 38 fotogramas a 6).
 
 ### Arreglado
+- Vista 3D en un móvil cuyo navegador esconde la GPU (Brave): se dibuja sin el mapa de sombras del Sol. Brave no deja ver qué GPU hay, así que el Pixel 10 no se reconocía como PowerVR, no se aplicaba la protección de VENT-75 y en el banco de pruebas la GPU se cayó y el navegador bloqueó el 3D. En escritorio no cambia nada (VENT-84).
 - Banco de pruebas `?bench`: si la vista 3D falla durante una pasada (pierde el contexto de la GPU o el navegador bloquea el 3D), el banco se para enseguida con «Benchmark stopped» y el motivo, también en el informe, en vez de esperar 60 s en cada paso y parecer colgado (VENT-83).
 - En el móvil con el texto al 200 %, cuando el navegador ha bloqueado el 3D, la hoja inferior a veces no se cerraba para dejar sitio al aviso y este quedaba tapado (más o menos 1 de cada 7 cargas en las pruebas). Ahora se cierra siempre (VENT-81).
 - Tras un despliegue, una página abierta que no puede cargar una vista bajo demanda (Horizon, su escena 3D, el globo o

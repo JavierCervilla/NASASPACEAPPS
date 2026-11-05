@@ -155,6 +155,11 @@ Every visible change follows `.claude/skills/apple-design/SKILL.md` (vendored fr
   Moon while a finger is down on it (`src/pin/place-gesture.ts`). Held by `tests/e2e/app-feel.spec.ts`.
 - Must run on a laptop without a dedicated GPU (globe: 64-segment sphere, 2K texture to start, LOLA relief as a normal
   map; sharper maps load only as the zoom needs them: 4K, then 8K on the high tier, see `src/globe/texture-lod.ts`).
+  The device's tier is read once per page (VENT-91): `pickQuality` (`src/globe/quality-pick.ts`, built by
+  `qualityPicker` over injected sources) names the GPU from one throwaway WebGL2 context on its first call and keeps
+  it for the globe, its contents, the glass gate and the on-foot view, while `?quality=`, the hash and the pointer are
+  read again on every call; the page creates two WebGL contexts at load (that probe and the globe), three with the
+  on-foot view (`tests/e2e/vent-91-probe-lens.spec.ts`).
   Phones (below 768 px): the globe fills the screen at the low or medium tier (1K texture, up to 4K on zoom, pixel ratio
   capped), one finger turns it and two pinch; a glass top bar holds the title and the site pill, a draggable bottom
   sheet (closed, peek, half with four widgets, full with the site picker or the calendar) follows apple-design's sheet
@@ -231,6 +236,10 @@ Every visible change follows `.claude/skills/apple-design/SKILL.md` (vendored fr
   calendar strip and site card) wear Liquid glass or the frosted blur; the phone's site pill, inside the top
   bar's glass, takes only the Liquid rim. Liquid refracts through a
   lens per surface: a rounded-rect displacement map that pulls the backdrop in at the edge (`src/glass/lens-map.ts`),
+  handed to `feImage` as a PNG data URL drawn on a canvas asked for `willReadFrequently` (`src/glass/lens-filter.ts`;
+  VENT-91: Chromium keeps that canvas in memory, so `toDataURL()` reads no GPU memory back on the main thread; the CSP
+  allows `data:` images, not `blob:`), and each lens's PNG decodes to exactly its map
+  (`tests/e2e/vent-91-probe-lens.spec.ts`),
   added as its own filter to the inline SVG of `src/components/GlassFilter.astro` and named on the surface in
   `--glass-lens` (CSSOM), rebuilt only when the surface's layout size settles (`src/glass/lens-set.ts`); the shared
   `#glass-liquid` filter covers a surface until its lens is built (`--glass-lens` is registered non-inheriting, so a

@@ -86,6 +86,10 @@
   flex: none;
   overflow-x: auto;
   border-radius: 4px;
+  /* Scrolled to its end, a table of fractional width kept its last column
+     a fraction of a pixel past the clip (the scroll range rounds down;
+     measured 0.14 px in DejaVu Sans): the end padding is scrollable room. */
+  padding-inline-end: 2px;
 }
 
 .bench__warning {

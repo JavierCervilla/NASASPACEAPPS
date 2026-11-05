@@ -82,6 +82,10 @@
   flex: none;
   overflow-x: auto;
   border-radius: 4px;
+  /* Scrolled to its end, a table of fractional width kept its last column
+     half a pixel under the clip (the scroll range rounds down; seen in CI):
+     the end padding is scrollable room, so «Change» shows whole. */
+  padding-inline-end: 2px;
 }
 
 .bench__warning {

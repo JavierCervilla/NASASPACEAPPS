@@ -23,14 +23,24 @@
  *             :::.. .  .               SPDX-License-Identifier: MIT
  */
 
+/**
+ * The build's hash of each file the worker may keep (VENT-90), put in
+ * `__SW_CONFIG__` by scripts/service-worker.mjs: the first 16 hex digits
+ * of the sha256 of its bytes. A kept copy is reused by a new build only
+ * when its body hashes to that, never on a label: a script on the origin
+ * could put any label on a copy, and a copy kept by an older worker may
+ * hold bytes of another build than the worker's (seguridad, VENT-90).
+ */
 import { underScope } from './sw-routes';
-import type { Stamp } from './sw-strategies';
-
-/** The header that carries a kept copy's hash. */
-export const HASH_HEADER = 'x-ventana-hash';
 
 /** A short sha256 of each file's bytes, keyed by its path under scope. */
 export type Hashes = Readonly<Record<string, string>>;
+
+/** The SHA-256 of `data` (the worker's `crypto.subtle.digest`). */
+export type Digest = (data: ArrayBuffer) => Promise<ArrayBuffer>;
+
+/** The length of a file's hash in hex digits, as the build writes it. */
+const HASH_HEX = 16;
 
 /** The build's hash of the file `url` asks for, if the build knows it. */
 export function hashFor(
@@ -42,26 +52,25 @@ export function hashFor(
   return path === null ? undefined : hashes[path];
 }
 
-/** `response` carrying `hash`; the body streams through, never read. */
-export function withHash(response: Response, hash: string): Response {
-  const headers = new Headers(response.headers);
-  headers.set(HASH_HEADER, hash);
-  const { status, statusText } = response;
-  return new Response(response.body, { status, statusText, headers });
+/** The hash of `bytes` as the build writes it. */
+async function bytesHash(bytes: ArrayBuffer, digest: Digest) {
+  const sum = new Uint8Array(await digest(bytes));
+  const hex = [...sum].map((b) => b.toString(16).padStart(2, '0'));
+  return hex.join('').slice(0, HASH_HEX);
 }
 
-/** Whether a kept copy carries `hash`. */
-export function holdsHash(
+/**
+ * `kept`, read whole, when its body hashes to `hash`; else undefined.
+ * Its headers do not count.
+ */
+export async function unchanged(
   kept: Response | undefined,
   hash: string,
-): kept is Response {
-  return kept?.headers.get(HASH_HEADER) === hash;
-}
-
-/** Stamps each kept copy with its build's hash, when the build has one. */
-export function hashStamp(hashes: Hashes, scope: URL): Stamp {
-  return async (copy, request) => {
-    const hash = hashFor(hashes, new URL(request.url), scope);
-    return hash === undefined ? copy : withHash(copy, hash);
-  };
+  digest: Digest,
+): Promise<Response | undefined> {
+  if (!kept) return undefined;
+  const bytes = await kept.arrayBuffer();
+  if ((await bytesHash(bytes, digest)) !== hash) return undefined;
+  const { status, statusText, headers } = kept;
+  return new Response(bytes, { status, statusText, headers });
 }

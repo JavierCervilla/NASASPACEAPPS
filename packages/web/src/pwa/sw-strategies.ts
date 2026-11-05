@@ -50,11 +50,8 @@ export interface Keep {
   readonly ignoreSearch?: boolean;
 }
 
-/** Turns the copy of `request`'s answer into what is kept (stamped). */
-export type Stamp = (
-  response: Response,
-  request: Request,
-) => Promise<Response>;
+/** Turns the copy into what is kept (the API stamps it). */
+type Stamp = (response: Response) => Promise<Response>;
 
 /** How a copy is kept: where, and stamped how. */
 type KeepHow = Keep & { readonly stamp?: Stamp | undefined };
@@ -83,7 +80,7 @@ async function keepCopy(
     ? new Request(url.href, { headers: request.headers })
     : request;
   const copy = await unredirected(response);
-  await cache.put(key, how.stamp ? await how.stamp(copy, request) : copy);
+  await cache.put(key, how.stamp ? await how.stamp(copy) : copy);
 }
 
 /** Keeps a copy of a good `response` in the background, never failing. */
@@ -125,12 +122,11 @@ export async function cacheFirst(
   net: SwNet,
   request: Request,
   cacheName: string,
-  stamp?: Stamp,
 ): Promise<Response> {
   const cache = await net.caches.open(cacheName);
   const kept = await cache.match(request);
   if (kept) return kept;
   const response = await net.fetch(request);
-  keepLater(net, cache, request, { cache: cacheName, response, stamp });
+  keepLater(net, cache, request, { cache: cacheName, response });
   return response;
 }

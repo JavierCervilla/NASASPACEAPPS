@@ -14,14 +14,16 @@ deleted when the new worker activates. Under Save-Data the worker is not registe
 
 A deploy downloads only what changed (VENT-90). The build also puts in `sw.js` a hash of each file the worker may keep
 (the first 16 hex digits of its sha256, keyed by its path under the base: the precache and the files kept on use, the
-4K and 8K maps and the on-demand chunks), and every copy the worker keeps carries its hash in the `x-ventana-hash`
-header. The install copies from an older `ventana-static-*` cache each precached file whose hash did not change and
-asks the server (past the HTTP cache) only for the rest; it is all or nothing, like `addAll`: if any file cannot be had
-or stored, the new cache is deleted and the install fails. The activation then carries over from the older caches every
-entry whose hash the new build still has (that is how a kept 4K or 8K map survives a deploy), never one whose hash
-changed, and only then deletes them. Same path and same hash are taken as the same bytes. A copy kept by an older worker
-after the server had a newer build is stamped with the older build's hash; it is only carried over if a later build has
-that hash again.
+4K and 8K maps and the on-demand chunks). The install copies from an older `ventana-static-*` cache each precached file
+whose kept body still hashes to the new build's hash, and asks the server (past the HTTP cache) only for the rest; it
+is all or nothing, like `addAll`: if any file cannot be had or stored, the new cache is deleted and the install fails.
+The activation then carries over from the older caches every entry whose body hashes to the new build's hash for its
+path (that is how a kept 4K or 8K map survives a deploy), never one that does not, and only then deletes them.
+
+The worker hashes the kept body itself (`crypto.subtle.digest`) and trusts no header or label on a copy: a script
+already running on the origin could put any header on an entry, and a copy kept by an older worker may hold bytes of a
+newer build than that worker's. Reading and hashing the whole static cache (100 files, 6.5 MB with a 4K map) took
+140 to 435 ms in headless Chromium; it runs in the worker, off the page's main thread, once per deploy.
 
 Every answer goes to the page before its copy is kept: the copy is written in the background, the worker kept alive
 with `waitUntil`, so the page gets the first byte as the network sends it, not after the whole file is down and stored.

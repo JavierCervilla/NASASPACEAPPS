@@ -25,15 +25,16 @@
 
 /**
  * VENT-90: the service worker answers before it keeps the copy, and a deploy downloads only the files that changed. The
- * build hashes every file the worker may keep; each kept copy carries its hash, the install copies the unchanged ones
- * from the older build's cache, and the activation carries over what the zoom kept (the 4K and 8K maps).
+ * build hashes every file the worker may keep; the install copies from the older build's cache each copy whose body
+ * still hashes to the new build's hash, and the activation carries over what the zoom kept (the 4K and 8K maps) on the
+ * same test. A header never decides it: a script on the origin can put any header on a copy (seguridad, VENT-90).
  */
 import { describe, expect, it } from 'vitest';
+import { createHash } from 'node:crypto';
 import { mkdirSync, mkdtempSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { precacheOf } from '../scripts/service-worker.mjs';
-import { HASH_HEADER, hashStamp } from '../src/pwa/sw-hash';
 import { activateBuild, installBuild } from '../src/pwa/sw-reuse';
 import { staticCacheName } from '../src/pwa/sw-routes';
 import { cacheFirst, networkFirst, type SwNet } from '../src/pwa/sw-strategies';
@@ -42,6 +43,11 @@ const SCOPE = new URL('https://ventana.test/');
 const at = (path: string) => new URL(path, SCOPE).href;
 const OLD = staticCacheName('aaaaaaaaaaaa');
 const NEW = staticCacheName('bbbbbbbbbbbb');
+/** The hash the build writes for `body`: the first 16 hex digits of its sha256. */
+const h = (body: string) => createHash('sha256').update(body).digest('hex').slice(0, 16);
+/** The label the first VENT-90 build stamped on kept copies; a lie here must never be believed. */
+const CLAIM = 'x-ventana-hash';
+const digest = (data: ArrayBuffer) => crypto.subtle.digest('SHA-256', data);
 
 /** A promise and the hand that settles it. */
 function gate() {
@@ -78,12 +84,18 @@ function fakeCaches() {
   return { caches, stores, state };
 }
 
-/** Puts `files` (path to body and hash) into the cache `name`, each with its hash header. */
-function seed(stores: Map<string, Map<string, Response>>, name: string, files: Record<string, [string, string]>) {
+/** Puts `files` (path to body) into the cache `name`; `claims` adds a hash header to some (path to the claimed hash). */
+function seed(
+  stores: Map<string, Map<string, Response>>,
+  name: string,
+  files: Record<string, string>,
+  claims: Record<string, string> = {},
+) {
   const store = stores.get(name) ?? new Map<string, Response>();
   stores.set(name, store);
-  for (const [path, [body, hash]] of Object.entries(files)) {
-    store.set(at(path), new Response(body, { headers: { [HASH_HEADER]: hash } }));
+  for (const [path, body] of Object.entries(files)) {
+    const headers: Record<string, string> = path in claims ? { [CLAIM]: claims[path]! } : {};
+    store.set(at(path), new Response(body, { headers }));
   }
 }
 
@@ -140,57 +152,35 @@ describe('answer first (VENT-90)', () => {
     expect([...(stores.get('c')?.keys() ?? [])]).toEqual([at('es/')]);
   });
 
-  it('stamps the kept copy with what the stamp adds, never the answer', async () => {
-    const { net, stores, deferred } = setup();
-    const stamp = async (copy: Response) => new Response(await copy.blob(), { headers: { [HASH_HEADER]: 'h4k' } });
-    const request = new Request(at('textures/moon-lroc-4k.jpg'));
-    const response = await cacheFirst(net, request, 'c', stamp);
-    expect(response.headers.get(HASH_HEADER)).toBeNull();
-    await Promise.all(deferred);
-    expect(stores.get('c')?.get(request.url)?.headers.get(HASH_HEADER)).toBe('h4k');
-  });
-});
-
-describe('the hash stamp (VENT-90)', () => {
-  const stamp = hashStamp({ '': 'h-page', 'textures/moon-lroc-4k.jpg': 'h-4k' }, SCOPE);
-  const stamped = async (url: string) =>
-    (await stamp(new Response('body', { headers: { 'content-type': 'image/jpeg' } }), new Request(url))).headers;
-
-  it('stamps a file the build knows with its hash, keeping its other headers', async () => {
-    const headers = await stamped(at('textures/moon-lroc-4k.jpg'));
-    expect(headers.get(HASH_HEADER)).toBe('h-4k');
-    expect(headers.get('content-type')).toBe('image/jpeg');
-  });
-
-  it('stamps a page by its path, whatever its query string', async () => {
-    expect((await stamped(at('?site=apollo11'))).get(HASH_HEADER)).toBe('h-page');
-  });
-
-  it('leaves a file the build does not know, or another origin’s, unstamped', async () => {
-    expect((await stamped(at('textures/unknown.jpg'))).get(HASH_HEADER)).toBeNull();
-    expect((await stamped('https://elsewhere.test/textures/moon-lroc-4k.jpg')).get(HASH_HEADER)).toBeNull();
-  });
 });
 
 const NEXT = {
   cache: NEW,
   scope: SCOPE,
-  hashes: { '': 'h-page', '_astro/app.2.js': 'h-app2', 'textures/moon-lroc-2k.jpg': 'h-2k', 'textures/moon-lroc-4k.jpg': 'h-4k' },
+  hashes: { '': h('new page'), '_astro/app.2.js': h('app2'), 'textures/moon-lroc-2k.jpg': h('2k'), 'textures/moon-lroc-4k.jpg': h('4k') },
 };
 const PRECACHE = ['', '_astro/app.2.js', 'textures/moon-lroc-2k.jpg'];
 
 describe('install reuses what did not change (VENT-90)', () => {
-  it('copies the unchanged files from the older cache and downloads only the changed ones, stamped', async () => {
+  it('copies the files whose body did not change from the older cache and downloads only the changed ones', async () => {
     const { caches, stores } = fakeCaches();
-    seed(stores, OLD, { '': ['old page', 'h-page-old'], 'textures/moon-lroc-2k.jpg': ['2k', 'h-2k'] });
+    seed(stores, OLD, { '': 'old page', 'textures/moon-lroc-2k.jpg': '2k' });
     const server = fakeServer({ '': 'new page', '_astro/app.2.js': 'app2', 'textures/moon-lroc-2k.jpg': '2k' });
-    await installBuild({ caches, fetch: server.fetch }, NEXT, PRECACHE);
+    await installBuild({ caches, fetch: server.fetch, digest }, NEXT, PRECACHE);
     expect(server.asked.toSorted()).toEqual(['', '_astro/app.2.js']);
     const kept = stores.get(NEW)!;
     expect(await kept.get(at(''))?.text()).toBe('new page');
-    expect(kept.get(at(''))?.headers.get(HASH_HEADER)).toBe('h-page');
-    expect(kept.get(at('_astro/app.2.js'))?.headers.get(HASH_HEADER)).toBe('h-app2');
+    expect(await kept.get(at('_astro/app.2.js'))?.text()).toBe('app2');
     expect(await kept.get(at('textures/moon-lroc-2k.jpg'))?.text()).toBe('2k');
+  });
+
+  it('never believes a header: a copy that claims the new hash with another body is downloaded again', async () => {
+    const { caches, stores } = fakeCaches();
+    seed(stores, OLD, { '_astro/app.2.js': 'evil', 'textures/moon-lroc-2k.jpg': '2k' }, { '_astro/app.2.js': h('app2') });
+    const server = fakeServer({ '': 'new page', '_astro/app.2.js': 'app2', 'textures/moon-lroc-2k.jpg': '2k' });
+    await installBuild({ caches, fetch: server.fetch, digest }, NEXT, PRECACHE);
+    expect(server.asked.toSorted()).toEqual(['', '_astro/app.2.js']);
+    expect(await stores.get(NEW)!.get(at('_astro/app.2.js'))?.text()).toBe('app2');
   });
 
   it('asks the server, not the HTTP cache, for what it downloads', async () => {
@@ -200,14 +190,14 @@ describe('install reuses what did not change (VENT-90)', () => {
       modes.push(request.cache);
       return new Response('x');
     };
-    await installBuild({ caches, fetch }, NEXT, PRECACHE);
+    await installBuild({ caches, fetch, digest }, NEXT, PRECACHE);
     expect(modes).toEqual(['reload', 'reload', 'reload']);
   });
 
   it('fails as a whole when one file cannot be had, leaving no new cache', async () => {
     const { caches, stores } = fakeCaches();
     const server = fakeServer({ '': 'new page', 'textures/moon-lroc-2k.jpg': '2k' }, ['_astro/app.2.js']);
-    await expect(installBuild({ caches, fetch: server.fetch }, NEXT, PRECACHE)).rejects.toThrow();
+    await expect(installBuild({ caches, fetch: server.fetch, digest }, NEXT, PRECACHE)).rejects.toThrow();
     expect(stores.has(NEW)).toBe(false);
   });
 
@@ -216,14 +206,14 @@ describe('install reuses what did not change (VENT-90)', () => {
     const server = fakeServer({ '': 'new page', '_astro/app.2.js': 'app2', 'textures/moon-lroc-2k.jpg': '2k' });
     state.hold = Promise.reject(new DOMException('quota', 'QuotaExceededError'));
     state.hold.catch(() => undefined);
-    await expect(installBuild({ caches, fetch: server.fetch }, NEXT, PRECACHE)).rejects.toThrow('quota');
+    await expect(installBuild({ caches, fetch: server.fetch, digest }, NEXT, PRECACHE)).rejects.toThrow('quota');
     expect(stores.has(NEW)).toBe(false);
   });
 
   it('fails when the server answers an error for a needed file', async () => {
     const { caches, stores } = fakeCaches();
     const server = fakeServer({ '': 'new page', '_astro/app.2.js': 'app2' });
-    await expect(installBuild({ caches, fetch: server.fetch }, NEXT, PRECACHE)).rejects.toThrow();
+    await expect(installBuild({ caches, fetch: server.fetch, digest }, NEXT, PRECACHE)).rejects.toThrow();
     expect(stores.has(NEW)).toBe(false);
   });
 });
@@ -232,15 +222,15 @@ describe('activate carries over what the zoom kept (VENT-90)', () => {
   it('carries an unchanged runtime file, drops a changed one, and deletes the stale caches', async () => {
     const { caches, stores } = fakeCaches();
     seed(stores, OLD, {
-      'textures/moon-lroc-4k.jpg': ['4k', 'h-4k'],
-      'textures/moon-lroc-8k.jpg': ['8k', 'h-8k'],
-      '_astro/app.1.js': ['app1', 'h-app1'],
-      '': ['old page', 'h-page-old'],
+      'textures/moon-lroc-4k.jpg': '4k',
+      'textures/moon-lroc-8k.jpg': '8k',
+      '_astro/app.1.js': 'app1',
+      '': 'old page',
     });
-    seed(stores, NEW, { '': ['new page', 'h-page'] });
-    seed(stores, 'ventana-api-v1', { 'api/v1/sites': ['[]', 'x'] });
-    const next = { ...NEXT, hashes: { ...NEXT.hashes, 'textures/moon-lroc-8k.jpg': 'h-8k-new' } };
-    await activateBuild({ caches, fetch: fakeServer({}).fetch }, next);
+    seed(stores, NEW, { '': 'new page' });
+    seed(stores, 'ventana-api-v1', { 'api/v1/sites': '[]' });
+    const next = { ...NEXT, hashes: { ...NEXT.hashes, 'textures/moon-lroc-8k.jpg': h('8k new') } };
+    await activateBuild({ caches, fetch: fakeServer({}).fetch, digest }, next);
     expect(stores.has(OLD)).toBe(false);
     expect(stores.has('ventana-api-v1')).toBe(true);
     const kept = stores.get(NEW)!;
@@ -250,12 +240,21 @@ describe('activate carries over what the zoom kept (VENT-90)', () => {
     expect(await kept.get(at(''))?.text()).toBe('new page');
   });
 
+  it('never believes a header: a copy that claims the new hash with another body is left behind', async () => {
+    const { caches, stores } = fakeCaches();
+    const claims = { 'textures/moon-lroc-4k.jpg': h('4k') };
+    seed(stores, OLD, { 'textures/moon-lroc-4k.jpg': 'evil' }, claims);
+    await activateBuild({ caches, fetch: fakeServer({}).fetch, digest }, NEXT);
+    expect(stores.get(NEW)!.has(at('textures/moon-lroc-4k.jpg'))).toBe(false);
+    expect(stores.has(OLD)).toBe(false);
+  });
+
   it('still deletes the stale caches when a carried copy cannot be stored', async () => {
     const { caches, stores, state } = fakeCaches();
-    seed(stores, OLD, { 'textures/moon-lroc-4k.jpg': ['4k', 'h-4k'] });
+    seed(stores, OLD, { 'textures/moon-lroc-4k.jpg': '4k' });
     state.hold = Promise.reject(new DOMException('quota', 'QuotaExceededError'));
     state.hold.catch(() => undefined);
-    await activateBuild({ caches, fetch: fakeServer({}).fetch }, NEXT);
+    await activateBuild({ caches, fetch: fakeServer({}).fetch, digest }, NEXT);
     expect(stores.has(OLD)).toBe(false);
   });
 });

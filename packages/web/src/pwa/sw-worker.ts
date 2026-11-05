@@ -37,7 +37,7 @@
  * changed (sw-reuse.ts, VENT-90).
  */
 import { apiFirst } from './sw-api';
-import { hashStamp, type Hashes } from './sw-hash';
+import type { Hashes } from './sw-hash';
 import { activateBuild, installBuild } from './sw-reuse';
 import {
   API_CACHE,
@@ -80,9 +80,12 @@ const scope = new URL(sw.registration.scope);
 // Read once: the build inlines the config at each use of the name.
 const CONFIG = __SW_CONFIG__;
 const STATIC = staticCacheName(CONFIG.digest);
-const store = { caches, fetch: (request: Request) => fetch(request) };
+const store = {
+  caches,
+  fetch: (request: Request) => fetch(request),
+  digest: (data: ArrayBuffer) => crypto.subtle.digest('SHA-256', data),
+};
 const build = { cache: STATIC, hashes: CONFIG.hashes, scope };
-const stamp = hashStamp(build.hashes, scope);
 
 async function install(): Promise<void> {
   await installBuild(store, build, CONFIG.precache);
@@ -98,17 +101,17 @@ function answer(event: SwFetchEvent): Promise<Response> | null {
   const { request } = event;
   if (request.method !== 'GET') return null;
   const net: SwNet = {
-    ...store,
+    caches: store.caches,
+    fetch: store.fetch,
     now: () => Date.now(),
     defer: (work) => event.waitUntil(work),
   };
   const url = new URL(request.url);
   const route = routeOf(url, scope, request.mode === 'navigate');
   if (route === 'html') {
-    const keep = { cache: STATIC, ignoreSearch: true };
-    return networkFirst(net, request, keep, stamp);
+    return networkFirst(net, request, { cache: STATIC, ignoreSearch: true });
   }
-  if (route === 'static') return cacheFirst(net, request, STATIC, stamp);
+  if (route === 'static') return cacheFirst(net, request, STATIC);
   if (route === 'api') {
     const syncUrl = new URL(SYNC_ENTRY, scope).href;
     return apiFirst(net, request, { cache: API_CACHE, syncUrl });

@@ -46,9 +46,17 @@ export interface Trickle {
 export async function startTrickle(): Promise<Trickle> {
   const waiting = new Map<string, ServerResponse>();
   const beats = new Map<string, NodeJS.Timeout>();
+  // A body released before its request reached the server (the test can release as soon as the route is held).
+  const early = new Map<string, string>();
   const server = createServer((request, response) => {
     const key = decodeURIComponent(new URL(request.url ?? '/', 'http://x').pathname.slice(1));
     response.writeHead(200, { 'content-type': 'application/json', 'access-control-allow-origin': '*' });
+    const body = early.get(key);
+    if (body !== undefined) {
+      early.delete(key);
+      response.end(body);
+      return;
+    }
     response.write(' ');
     waiting.set(key, response);
     beats.set(key, setInterval(() => response.write(' '), BEAT_MS));
@@ -59,8 +67,13 @@ export async function startTrickle(): Promise<Trickle> {
   return {
     hold: (route, key) => route.continue({ url: `http://127.0.0.1:${port}/${encodeURIComponent(key)}` }),
     release: (key, body) => {
+      const response = waiting.get(key);
+      if (!response) {
+        early.set(key, body);
+        return;
+      }
       clearInterval(beats.get(key));
-      waiting.get(key)?.end(body);
+      response.end(body);
       waiting.delete(key);
     },
     close: () => {

@@ -56,7 +56,7 @@
   backdrop-filter: var(--float-blur);
 }
 
-@media (max-width: 767px) {
+@media (max-width: 767.98px) {
   .ventana-bench-panel {
     --bench-bottom: calc(34px + 4rem + env(safe-area-inset-bottom, 0px));
   }
@@ -142,11 +142,6 @@
  * benchmark measures stays in sight.
  */
 .ventana-bench-panel[data-phase='running'] {
-  /* Under the bar as measured (--top, use-under-bars.ts, VENT-88): the
-     strip must not hide the bar it shares the screen with; the other
-     states take the room they need over it. */
-  --bench-top: var(--top, calc(8px + 3rem + env(safe-area-inset-top, 0px)));
-
   gap: 8px;
   padding: 10px 10px 10px 14px;
   border-radius: 16px;
@@ -182,10 +177,17 @@
   color: var(--text-secondary);
 }
 
-/* On a phone the compass stands under the bar's right end: the strip keeps
-   clear of it (VENT-88). */
-@media (max-width: 767px) {
+/*
+ * On a phone the running strip sits under the glass bar as measured (--top,
+ * use-under-bars.ts) and keeps clear of the compass under the bar's right
+ * end (VENT-88); the other states take the room they need over the bar. A
+ * desktop keeps the strip where it was: under a wrapped two-row header it
+ * would land on the globe's compass.
+ */
+@media (max-width: 767.98px) {
   .ventana-bench-panel[data-phase='running'] {
+    --bench-top: var(--top, calc(8px + 3rem + env(safe-area-inset-top, 0px)));
+
     right: calc(12px + var(--compass-size) + 8px);
   }
 }

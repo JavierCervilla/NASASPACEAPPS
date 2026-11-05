@@ -91,6 +91,25 @@ test('«Stop» while the on-foot view is open leaves on purpose: no death counte
   expect(marks).toEqual(['false', null, null]);
 });
 
+test.describe('on a desktop whose header wraps, 1024x768', () => {
+  test.use({ viewport: { width: 1024, height: 768 } });
+
+  test('the running strip keeps clear of the globe\'s compass', async ({ page }) => {
+    test.setTimeout(3 * 60_000);
+    await open(page, './?bench&benchRuns=1&benchFast', []);
+    await panel(page).getByRole('button', { name: 'Start' }).click();
+    const running = page.locator('.ventana-bench-panel[data-phase="running"]');
+    await expect(running).toContainText(/step \d of 6/, { timeout: START_MS });
+    const compass = page.locator('.compass:visible').first();
+    await expect(compass).toBeVisible();
+    const [box, c] = [await running.boundingBox(), await compass.boundingBox()];
+    const apart = !box || !c || box.x + box.width <= c.x || c.x + c.width <= box.x || c.y + c.height <= box.y
+      || box.y + box.height <= c.y;
+    expect(apart).toBe(true);
+    await running.getByRole('button', { name: 'Stop' }).click();
+  });
+});
+
 test.describe('on a phone, 390x844', () => {
   test.use({ viewport: { width: 390, height: 844 }, hasTouch: true, isMobile: true });
 

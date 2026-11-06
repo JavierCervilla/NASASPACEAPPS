@@ -153,17 +153,21 @@ Every visible change follows `.claude/skills/apple-design/SKILL.md` (vendored fr
   `textarea`) and the coordinates (`.card-head__point`, `.summary__coords`), the one datum worth pasting elsewhere.
   The pin refuses the context menu, so a long press stays the start of a carry (`no-context-menu.ts`), and so does the
   Moon while a finger is down on it (`src/pin/place-gesture.ts`). Held by `tests/e2e/app-feel.spec.ts`.
-- Must run on a laptop without a dedicated GPU (globe: 64-segment sphere, 2K texture to start, LOLA relief as a normal
-  map; sharper maps load only as the zoom needs them: 4K, then 8K on the high tier, see `src/globe/texture-lod.ts`).
+- Must run on a laptop without a dedicated GPU (globe: 64-segment sphere, the precached start map (2K on the high
+  tier, 1K below), LOLA relief as a normal map; then the smallest map sharp enough for the disc on screen, up to 4K, 8K
+  on the high tier (VENT-97, `src/globe/texture-lod.ts`, `disc-density.ts`): a texel covers at most 1.15 drawing-buffer
+  px at the disc's centre, the disc measured from the camera distance, the 35° field of view and the framed band's
+  height times the pixel ratio (`frameBufferPx`, `src/globe/frame.ts`); levels only climb, so no threshold flips).
   The device's tier is read once per page (VENT-91): `pickQuality` (`src/globe/quality-pick.ts`, built by
   `qualityPicker` over injected sources) names the GPU from one throwaway WebGL2 context on its first call and keeps
   it for the globe, its contents, the glass gate and the on-foot view, while `?quality=`, the hash and the pointer are
   read again on every call; the page creates two WebGL contexts at load (that probe and the globe), three with the
   on-foot view (`tests/e2e/vent-91-probe-lens.spec.ts`).
-  Phones (below 768 px): the globe fills the screen at the low or medium tier (1K texture, up to 4K on zoom, pixel ratio
-  capped), one finger turns it and two pinch; a glass top bar holds the title and the site pill, a draggable bottom
-  sheet (closed, peek, half with four widgets, full with the site picker or the calendar) follows apple-design's sheet
-  physics, and a floating tab bar switches views. One shared instant (`src/calendar/time-store.ts`: live on the clock by
+  Phones (below 768 px): the globe fills the screen at the low or medium tier (opening on the 1K map, then 2K for
+  the disc at the opening view and 4K zoomed in, pixel ratio capped), one finger turns it and two pinch; a glass top
+  bar holds the title and the site pill, a draggable bottom sheet (closed, peek, half with four widgets, full with the
+  site picker or the calendar) follows apple-design's sheet physics, and a floating tab bar switches views.
+  One shared instant (`src/calendar/time-store.ts`: live on the clock by
   default, following it to the minute and again when a hidden page comes back, `src/calendar/follow-clock.ts`, so the DSN
   handoff shows when it happens; scrubbed or played) drives the globe's Sun, the widgets and the calendar (the strip
   under the globe on desktop); what is worked out per hour or month stays keyed by them; the hours come from one cached request per site and month (`src/phone/hours-cache.ts`). The answer is

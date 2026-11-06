@@ -44,7 +44,12 @@ import type { EarlyStart } from './start-maps';
 import { keepNightDark } from './night-side';
 import { samplePolesExactly } from './pole-uv';
 import type { Stage } from './stage';
-import { levelUrls, startLevel, wantedLevel } from './texture-lod';
+import {
+  levelUrls,
+  startLevel,
+  wantedLevel,
+  type LodView,
+} from './texture-lod';
 import { textureBytes } from './texture-bytes';
 import { TextureSwap } from './texture-swap';
 
@@ -57,8 +62,8 @@ const BARE_MOON = { color: 0x8c8a85, normalMapType: ObjectSpaceNormalMap };
 export interface Moon {
   /** Bytes the maps hold on the GPU, with mipmaps; 0 until loaded. */
   textureBytes(): number;
-  /** The camera's distance (Moon radii) is now `distance`. */
-  track(distance: number): void;
+  /** The camera now sees the Moon as `view` says (texture-lod.ts). */
+  track(view: LodView): void;
   /**
    * Back to the start map, freeing the bigger ones (the globe is hidden:
    * VENT-86); the next frame drawn climbs again as the zoom asks.
@@ -102,7 +107,7 @@ export function addMoon(stage: Stage, options: MoonOptions): Moon {
   stage.scene.add(new Mesh(geometry, material));
   return {
     textureBytes: () => textureBytes(material.map, material.normalMap),
-    track: (d) => swap.want(wantedLevel(d, { ...options, maxTextureSize })),
+    track: (v) => swap.want(wantedLevel(v, { ...options, maxTextureSize })),
     rest: () => swap.lower(startLevel(options.tier)),
     dispose: () => {
       swap.dispose();

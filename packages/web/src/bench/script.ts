@@ -31,7 +31,7 @@
  * a. the globe idle 5 s;
  * b. the globe turned and zoomed in by keys (globe/keys.ts: 10° an arrow,
  *    two zoom steps a «+»; four «+» bring the opening 5 radii to 2.2, past
- *    the 3.5 at which globe/texture-lod.ts asks for the 4K map), then 3 s;
+ *    close enough for globe/texture-lod.ts to ask the 4K map), then 3 s;
  * c. the on-foot view of IM-2 until it settles (60 s at most);
  * d. a full turn by ArrowRight (look-input.ts: 5° a key);
  * e. the point changed to Malapert Massif without a reload, until it

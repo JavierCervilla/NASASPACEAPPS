@@ -52,6 +52,14 @@ describe('nginx.conf', () => {
     expect(textures).toContain('add_header Cache-Control "public, max-age=86400";');
     expect(textures).not.toContain('immutable');
   });
+
+  // VENT-96: without a Cache-Control the browser guessed a lifetime from Last-Modified.
+  it.each(['/thumbs/', '/icons/'])('caches %s for a day and then revalidates: the names carry no hash', (path) => {
+    const body = blocks.get(path) ?? '';
+    expect(body).toContain('include /etc/nginx/snippets/security-headers.conf;');
+    expect(body).toContain('add_header Cache-Control "public, max-age=86400";');
+    expect(body).not.toContain('immutable');
+  });
 });
 
 describe('the locale routes (VENT-35)', () => {

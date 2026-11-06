@@ -187,6 +187,18 @@ describe('encodeTileBinary / decodeTileBinary', () => {
     for (const bytes of bad) expect(() => decodeTileBinary(bytes)).toThrow(RangeError);
     expect(() => encodeTileBinary(synthetic(fill(() => 1), { version: 'stub0001' }))).toThrow(RangeError);
   });
+
+  it('refuses a header whose step, resolution, range or coverage is not a finite number', () => {
+    const good = encodeTileBinary(synthetic(fill(() => 1)));
+    const FIELDS = ['quantumM', 'resolutionM', 'minM', 'maxM', 'coverage'];
+    for (const [index, field] of FIELDS.entries()) {
+      for (const value of [Number.NaN, Number.POSITIVE_INFINITY, Number.NEGATIVE_INFINITY]) {
+        const copy = good.slice();
+        new DataView(copy.buffer).setFloat64(24 + index * 8, value, true);
+        expect(() => decodeTileBinary(copy), `${field} = ${value}`).toThrow(RangeError);
+      }
+    }
+  });
 });
 
 describe('the size of a tile over the wire', () => {

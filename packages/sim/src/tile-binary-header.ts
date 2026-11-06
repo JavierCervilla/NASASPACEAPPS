@@ -104,8 +104,11 @@ export function readHeader(view: DataView): TileHeader {
     || view.getUint16(18, true) !== NO_DATA) {
     throw new RangeError('not a binary tile');
   }
-  const [quantumM, resolutionM, minM, maxM, coverage] = [0, 1, 2, 3, 4]
-    .map((i) => view.getFloat64(24 + i * 8, true)) as number[];
+  const floats = [0, 1, 2, 3, 4].map((i) => view.getFloat64(24 + i * 8, true));
+  // JSON cannot carry NaN or Infinity, a float64 can: refuse them here, so
+  // a corrupt body never puts them into the geometry.
+  if (!floats.every(Number.isFinite)) throw new RangeError('not finite');
+  const [quantumM, resolutionM, minM, maxM, coverage] = floats as number[];
   return {
     version: view.getUint32(64, true).toString(16).padStart(8, '0'),
     key: keyOf(view), n: view.getUint16(16, true),

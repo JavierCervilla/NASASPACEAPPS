@@ -30,6 +30,7 @@
  */
 import { Vector3 } from 'three';
 import { cameraPose, type Look } from '../view-camera';
+import { inFront } from './in-front';
 import type { World } from './world';
 
 /** Aims the camera from the eye over the point. */
@@ -44,7 +45,8 @@ export function aimCamera(world: World, look: Look): void {
 /** «x,y» of `point` on the host, or empty when off screen. */
 function onHost(world: World, point: Vector3, host: HTMLElement): string {
   const q = point.clone().project(world.stage.camera);
-  if (q.z > 1 || Math.abs(q.x) > 1 || Math.abs(q.y) > 1) return '';
+  const off = Math.abs(q.x) > 1 || Math.abs(q.y) > 1;
+  if (off || !inFront(world.stage.camera, point)) return '';
   const x = ((q.x + 1) / 2) * host.clientWidth;
   const y = ((1 - q.y) / 2) * host.clientHeight;
   return `${Math.round(x)},${Math.round(y)}`;

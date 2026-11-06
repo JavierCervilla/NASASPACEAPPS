@@ -31,7 +31,8 @@
  * Next Generation, public domain), ASSETS.md. A phone takes the 512 px
  * Earth (VENT-94): its disc is some 30 device pixels wide there. The albedo
  * and the Earth come as KTX2 where the GPU takes it (VENT-101), 4 bits per
- * texel on the GPU instead of 32, with the WebP behind them.
+ * texel on the GPU instead of 32, with the WebP behind them; a KTX2 that
+ * fails is told to `?debug` (VENT-107).
  */
 import {
   ClampToEdgeWrapping,
@@ -59,6 +60,13 @@ const WEBP_OF: ReadonlyMap<string, string> = new Map([
   [earthPhoneKtx2, earthPhoneUrl],
 ]);
 
+/** Each colour map's name in a `?debug` line, by its KTX2. */
+const NAME_OF: ReadonlyMap<string, string> = new Map([
+  [albedoKtx2, 'albedo'],
+  [earthKtx2, 'Earth'],
+  [earthPhoneKtx2, 'Earth'],
+]);
+
 export interface SurfaceMaps {
   readonly albedo: Texture;
   readonly normal: Texture;
@@ -72,6 +80,18 @@ function prepared(texture: Texture, colour: boolean, tiling: boolean): Texture {
   texture.wrapT = tiling ? RepeatWrapping : ClampToEdgeWrapping;
   texture.anisotropy = 8;
   return texture;
+}
+
+/** `load`'s KTX2 loader, telling each failure to its crumb, if any. */
+function told(load: SurfaceLoad): SurfaceLoad['ktx2'] {
+  const { crumb } = load;
+  if (!crumb) return load.ktx2;
+  return (url, target) => load.ktx2(url, target).catch((error: unknown) => {
+    const reason = error instanceof Error ? error.message : String(error);
+    const name = NAME_OF.get(url) ?? url;
+    crumb(`on-foot: ${name} KTX2 failed → WebP: ${reason}`);
+    throw error;
+  });
 }
 
 /** The Earth's map for a phone-sized viewport or a wider one. */
@@ -89,6 +109,7 @@ export async function loadSurfaceMaps(
 ): Promise<SurfaceMaps> {
   const colour = ktx2OrJpeg<Texture>({
     ...load,
+    ktx2: told(load),
     jpeg: load.image,
     fallbackOf: (url) => WEBP_OF.get(url) ?? url,
   });

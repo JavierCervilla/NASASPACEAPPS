@@ -198,12 +198,17 @@ Every visible change follows `.claude/skills/apple-design/SKILL.md` (vendored fr
   bounded by 20 s). nginx serves that one script under its own CSP, `default-src 'self'; script-src 'self'
   'unsafe-eval' 'wasm-unsafe-eval'` (`nginx-basis-worker-headers.conf`), since a worker runs under its own response's
   policy; the page's policy is unchanged. The session's switch (`src/textures/ktx2-session.ts` `pageKtx2`): KTX2 on
-  when the profile has a target and the address has no `?ktx2=0`, and off for the rest of the session the first time
+  when the profile has a target, the address has no `?ktx2=0` and the browser does not ask for Save-Data (VENT-107:
+  there the globe never climbs past its start map, so the page fetches no transcoder and starts no worker, and
+  `?debug` says «ktx2 off: Save-Data»), and off for the rest of the session the first time
   the worker cannot start (another engine applying the page's policy), the transcoder fails to load, a fetch or a
   transcode fails, or an ask times out; the same load then answers with the JPEG or WebP sibling (`src/globe/ktx2-map.ts`
-  `ktx2OrJpeg`, the swapper's contract unchanged), and the levels after it ask the JPEG. On the high tier the early
+  `ktx2OrJpeg`, the swapper's contract unchanged), and the levels after it ask the JPEG; under `?debug` an on-foot
+  colour map whose KTX2 fails is marked «on-foot: albedo KTX2 failed → WebP: <reason>» (or «Earth»;
+  `terrain/scene/surface-maps.ts`, `surface-load.ts` `crumbMark`, VENT-107). On the high tier the early
   start asks the 2K colour's KTX2 bytes and starts the worker beside the globe's chunk. `texture-bytes.ts` counts a
-  compressed map by the bytes of its levels. Held by `tests/e2e/globe-ktx2.spec.ts` (under the production CSP: BC1 on
+  compressed map by the bytes of its levels; the readout estimates it every 30 frames or every half-second refresh,
+  whichever comes first (`devtools/renderer-sampler.ts`, VENT-107: a phone's slow frames kept the 1K figure). Held by `tests/e2e/globe-ktx2.spec.ts` (under the production CSP: BC1 on
   SwiftShader and the texture memory down; a worker policy without `'unsafe-eval'` falls back to the JPEG with no page
   error; `?ktx2=0`).
   Phones (below 768 px): the globe fills the screen at the low or medium tier (opening on the 1K map, then 2K for
@@ -802,7 +807,9 @@ Every visible change follows `.claude/skills/apple-design/SKILL.md` (vendored fr
   the selected site or point, day or night by `isNight` against its horizon profile, else «(level)»), handed to the
   tools by the island (`components/use-debug-instant.ts`); and each lost context, «WebGL context lost: on-foot at 115.2
   s» (the breadcrumbs' seconds; the trail marks «context lost: on-foot»). The folded line is unchanged. Held by
-  `tests/debug-conditions.test.ts` and `tests/e2e/vent-105-debug-conditions.spec.ts`.
+  `tests/debug-conditions.test.ts` and `tests/e2e/vent-105-debug-conditions.spec.ts`. When the on-foot view loses its
+  context the readout folds itself to its line («· 1 error»), so on a phone it leaves the view's «Try again» in reach;
+  a press opens it again (VENT-107, `HudView.fold`).
   `scripts/check-no-devtools.mjs` (decision in `devtools-guard.mjs`) fails a build whose pages, start chunks or precache
   carry the tools' markers, or any file Spector.js.
   `?bench` (VENT-81, the human's canvas «Benchmark») is a scripted benchmark for comparing runs on a phone, loaded
@@ -821,7 +828,7 @@ Every visible change follows `.claude/skills/apple-design/SKILL.md` (vendored fr
   (`location.replace` with `&benchRun=k`), order A1 B1 A2 B2 A3 B3, and while a run plays the panel is one strip under
   the top bar (VENT-85, canvas «VENT-85 · Banco compacto», option A: the variant, run and step, the step's name, «Stop»
   and the progress; `BenchRunning.tsx`; on a phone under the bar as measured by `use-under-bars.ts` and clear of the
-  compass, VENT-88), so the measured view stays in sight, state in `sessionStorage` `ventana.bench`
+  compass, VENT-88; on desktop at the window's foot, over the calendar strip, clear of the on-foot caption, VENT-107), so the measured view stays in sight, state in `sessionStorage` `ventana.bench`
   (`run-state.ts`, `navigate.ts`); «Stop» forgets it, «Close» leaves `?bench`. Every one of those reloads leaves on
   purpose (`leave.ts`): it forgets the session's kept tier (`ventana.onFootTier`, `TIER_KEY`) so every run starts from
   the device's tier, and clears the open mark with `leftOnPurpose` as the language switch does, so no run counts as a
@@ -840,8 +847,9 @@ Every visible change follows `.claude/skills/apple-design/SKILL.md` (vendored fr
   (`BenchFrame.tsx`, `BenchTable.tsx`); the first state and the results take the focus to their first button. Params: `benchRuns=1|3` presets the runs (3), `benchFast` scales the
   waits by 0.2 and the turn to 90° for software GL (the e2e). `?bench=depth` (VENT-104; any other value, or none, is
   the A/B suite above) is the depth suite, the bisect of VENT-103 played by itself on the phone (`src/bench/depth-*.ts`):
-  variants `log` (the app), `reversed` (`depth=reversed&shadows=force`), `linear` (`depth=linear&shadows=force`) and
-  last `log+shadows` (`shadows=force`, the known loss, so a crash cannot spoil the others), each a clean page load whose
+  variants, in this order (VENT-107), `log` (the app) and `reversed` (`depth=reversed`, the shadow map as the app has
+  it), the comparison for reversed depth by default on PowerVR, then `reversed+shadows`, `linear+shadows` and
+  `log+shadows` (`shadows=force`), the known losses last, since a loss can make Chrome block WebGL for the site, each a clean page load whose
   address carries its switches (`runHref`; the results and «Close» drop them), one round by default (`benchRuns=3` for
   three); its script (`depth-script.ts`, `DEPTH_SCRIPT_VERSION`) opens `#horizon` at IM-2 and settles as step c does,
   then presses ArrowRight every 16 ms for 60 s (`keysFor`; 12 s with `benchFast`). A lost context (`data-status`
@@ -850,8 +858,14 @@ Every visible change follows `.claude/skills/apple-design/SKILL.md` (vendored fr
   run reads, once the view has opened, `data-depth`, the depth buffer's bits, three's `reversedDepthBuffer` and the
   shadow map from the on-foot renderer (`depth-reading.ts`); the results are a row per run (`depth-results.ts`,
   `DepthTable.tsx`: survived or «Lost after N s of the turn», depth, bits, reversed buffer, shadow map, median fps, p95
-  and worst frame of the turn) and the report lists the same under the usual header (`depth-report.ts`). Held by
-  `tests/bench-depth*.test.ts` and `tests/e2e/vent-104-bench-depth.spec.ts` (in the `bench` project; SwiftShader draws
+  and worst frame of the turn) under «Logarithmic vs reversed, no shadow map: 50.0 fps vs 45.0 fps · p95 20 ms vs 22 ms · worst 40 ms vs 44 ms»
+  (`logVersusReversed`, the median over rounds), and the report lists the same under the usual header
+  (`depth-report.ts`). A context lost while the view opens is heard in the capture phase (`loss-tier.ts`), so the
+  header keeps the tier the run ran at, not the `low` the view drops to; `readState` drops a state whose `suite` is
+  unknown. Held by
+  `tests/bench-depth*.test.ts`, `tests/bench-loss-tier.test.ts`, `tests/e2e/vent-107-bench-layout.spec.ts` (every
+  results row reached at 200 % text by a finger's swipe, the strip clear of the caption) and
+  `tests/e2e/vent-104-bench-depth.spec.ts` (in the `bench` project; SwiftShader draws
   `reversed` reversed, and the last run's context is lost on purpose while it turns). Its chunk and `bench.css` are out of the precache
   (`ON_DEMAND`) and `devtools-guard.mjs` keeps its markers out of the first load. Held by `tests/bench-*.test.ts` and
   `tests/e2e/vent-81-bench.spec.ts`, which is its own Playwright project (`bench`, with the depth suite's spec): `npm run e2e` runs the `app`

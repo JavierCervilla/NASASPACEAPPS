@@ -49,8 +49,8 @@ describe('the depth suite in the address', () => {
 });
 
 describe('the depth run order', () => {
-  it('runs log, reversed, linear, then the known loss last, once per round', () => {
-    expect(depthOrder(1)).toEqual(['log', 'reversed', 'linear', 'log+shadows']);
+  it('runs log against reversed without shadows first, then the forced shadow maps, the known loss last (VENT-107)', () => {
+    expect(depthOrder(1)).toEqual(['log', 'reversed', 'reversed+shadows', 'linear+shadows', 'log+shadows']);
     expect(depthOrder(3)).toEqual([...depthOrder(1), ...depthOrder(1), ...depthOrder(1)]);
   });
 
@@ -77,11 +77,15 @@ describe('the depth run addresses', () => {
 
   it('asks each variant its own depth and shadow switches, and drops the last run\'s', () => {
     expect(variantParams('log')).toEqual([]);
-    expect(variantParams('reversed')).toEqual([['depth', 'reversed'], ['shadows', 'force']]);
-    expect(variantParams('linear')).toEqual([['depth', 'linear'], ['shadows', 'force']]);
+    expect(variantParams('reversed')).toEqual([['depth', 'reversed']]);
+    expect(variantParams('reversed+shadows')).toEqual([['depth', 'reversed'], ['shadows', 'force']]);
+    expect(variantParams('linear+shadows')).toEqual([['depth', 'linear'], ['shadows', 'force']]);
     expect(variantParams('log+shadows')).toEqual([['shadows', 'force']]);
     expect(query(runHref(where, 1, 'reversed'))).toEqual({
-      bench: 'depth', benchFast: '', site: 'im2-athena', benchRun: '1', depth: 'reversed', shadows: 'force',
+      bench: 'depth', benchFast: '', site: 'im2-athena', benchRun: '1', depth: 'reversed',
+    });
+    expect(query(runHref(where, 2, 'reversed+shadows'))).toEqual({
+      bench: 'depth', benchFast: '', site: 'im2-athena', benchRun: '2', depth: 'reversed', shadows: 'force',
     });
     expect(query(runHref(where, 0, 'log'))).toEqual({ bench: 'depth', benchFast: '', site: 'im2-athena', benchRun: '0' });
     expect(query(runHref(where, 3, 'log+shadows'))).toMatchObject({ shadows: 'force' });

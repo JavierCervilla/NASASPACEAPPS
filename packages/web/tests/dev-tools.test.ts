@@ -33,12 +33,17 @@ import { threeAdapter, type RendererAdapter, type ThreeRendererLike } from '../s
 interface FakeView extends HudView {
   readonly samples: (RenderStats | null)[];
   readonly errors: string[];
+  readonly folds: number[];
 }
 
 function fakeView(): FakeView {
   const samples: (RenderStats | null)[] = [];
   const errors: string[] = [];
-  return { samples, errors, sample: (_dt, stats) => void samples.push(stats), error: (message) => void errors.push(message) };
+  const folds: number[] = [];
+  return {
+    samples, errors, folds, sample: (_dt, stats) => void samples.push(stats), error: (message) => void errors.push(message),
+    fold: () => void folds.push(errors.length),
+  };
 }
 
 function tools(view: FakeView, hash = ''): DevTools {
@@ -98,6 +103,20 @@ describe('dev tools', () => {
     expect(view.samples.at(-1)?.textureMB).toBe(8);
   });
 
+  it('estimates texture memory at every readout refresh, however slow the frames (VENT-107)', () => {
+    const view = fakeView();
+    const devTools = tools(view);
+    let bytes = 8_000_000;
+    devTools.attach({ ...fakeAdapter(), textureBytes: () => bytes });
+    devTools.frame(0.6);
+    expect(view.samples.at(-1)?.textureMB).toBe(8);
+    // A bigger map lands while the page draws slow frames, as a phone's
+    // start does (QA saw 166 to 883 ms): the next refresh reads it.
+    bytes = 16_000_000;
+    devTools.frame(0.6);
+    expect(view.samples.at(-1)?.textureMB).toBe(16);
+  });
+
   it('reports a lost WebGL context of the attached canvas', () => {
     const view = fakeView();
     const devTools = tools(view);
@@ -117,6 +136,20 @@ describe('dev tools', () => {
     expect(view.errors).toEqual(['WebGL context lost: on-foot at 0.0 s']);
     expect(devTools.crumbs.current.at(-1)).toBe('0.0s context lost: on-foot');
     expect(devTools.conditions.lines()).toContain('WebGL context lost: on-foot at 0.0 s');
+  });
+
+  it('folds the readout away when the on-foot view loses its context, after telling the loss (VENT-107)', () => {
+    const view = fakeView();
+    const devTools = tools(view);
+    const globe = fakeAdapter();
+    devTools.attach(globe, 'globe');
+    globe.canvas.dispatchEvent(new Event('webglcontextlost'));
+    expect(view.folds).toEqual([]);
+    const onFoot = fakeAdapter();
+    devTools.attach(onFoot, 'onFoot');
+    onFoot.canvas.dispatchEvent(new Event('webglcontextlost'));
+    // Its «Try again» sits where the open readout would cover it on a phone.
+    expect(view.folds).toEqual([2]);
   });
 
   it('reads the hash flags at start', () => {

@@ -61,10 +61,14 @@ export function headerGpu(live: string | null, probe: string): string {
   return live || probe || 'unknown';
 }
 
-/** The header, read now: call it once the on-foot view has opened. */
+/**
+ * The header, read now: call it once the on-foot view has opened. `tier`,
+ * when known, is the view's tier as it ran (loss-tier.ts, VENT-107).
+ */
 export async function readHeader(
   registry: Registry,
   doc: Document,
+  tier: string | null = null,
 ): Promise<BenchHeader> {
   const gl = registry.handles().map((h) => h.renderer.getContext())
     .find((context) => !context.isContextLost()) ?? null;
@@ -75,7 +79,7 @@ export async function readHeader(
     userAgent: navigator.userAgent,
     viewport: `${innerWidth} × ${innerHeight} @ ${devicePixelRatio}`,
     screen: `${width} × ${height}`,
-    tier: host?.dataset['tier'] ?? 'unknown',
+    tier: tier ?? host?.dataset['tier'] ?? 'unknown',
     script: SCRIPT_VERSION,
     build: await buildId(doc),
     instant: BENCH_INSTANT_ISO,

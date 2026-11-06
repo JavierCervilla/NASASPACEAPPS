@@ -97,4 +97,12 @@ describe('the KTX2 choice', () => {
     expect(ktx2Choice(EMPTY_PROFILE, 'other', ''))
       .toEqual({ target: null, reason: 'no ETC2 or BC1' });
   });
+
+  it('is off under Save-Data, whatever the GPU and the address (VENT-107)',
+    () => {
+      expect(ktx2Choice(PIXEL, 'other', '', true))
+        .toEqual({ target: null, reason: 'Save-Data' });
+      expect(ktx2Choice(PIXEL, 'other', '?ktx2=0', true))
+        .toEqual({ target: null, reason: 'Save-Data' });
+    });
 });

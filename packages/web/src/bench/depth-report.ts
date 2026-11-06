@@ -32,6 +32,7 @@
 import { depthRows, type DepthRow } from './depth-results';
 import { DEPTH_SCRIPT_VERSION } from './depth-script';
 import { DEPTH_VARIANTS } from './depth-suite';
+import { versusLine } from './depth-versus';
 import { num, reportText, runLines } from './report';
 import { deviceLines } from './report-notes';
 import type { BenchState } from './types';
@@ -66,8 +67,9 @@ export function depthReportText(state: BenchState): string {
     ...deviceLines(state),
     `Suite: depth (script v${DEPTH_SCRIPT_VERSION}). Runs: ${rounds}, order ${DEPTH_VARIANTS.join(' ')}${
       state.fast ? ' (fast script)' : ''}`,
-    'log: the app as it is. reversed, linear: that depth buffer, shadow map'
-      + ' forced. log+shadows: logarithmic depth, shadow map forced.',
+    'log: the app as it is. reversed: the reversed buffer, shadow map as'
+      + ' the app has it. +shadows: that depth buffer, shadow map forced.',
+    '', versusLine(state.results),
     '', 'Every run', ...depthRows(state.results).map(rowLine),
     '', 'Every step', ...runLines(state.results), '',
   ].join('\n');

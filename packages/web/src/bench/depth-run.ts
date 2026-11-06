@@ -32,7 +32,9 @@
  * counted once, in that step's `lost` (registry.ts), and the reload leaves
  * on purpose (leave.ts), so the next run starts at the device's tier and
  * counts no death. Any other failure stops the benchmark as in the A/B
- * suite.
+ * suite. A loss while the view opens comes before the readings, so the
+ * header takes the tier the view had when its context went (loss-tier.ts,
+ * VENT-107), not the `low` the view drops to.
  */
 import { readDepth } from './depth-reading';
 import { depthScript } from './depth-script';
@@ -41,7 +43,8 @@ import { readHeader } from './environment';
 import { startMeter } from './meter';
 import type { RunDeps, RunOutcome } from './run';
 import type { Step } from './script';
-import { hostMarks } from './settle';
+import { tierAtLoss, type LossTier } from './loss-tier';
+import { hostMarks, ON_FOOT_HOST } from './settle';
 import type { DepthReading, LostAt, StepMetrics } from './types';
 
 export interface DepthOutcome extends RunOutcome {
@@ -77,6 +80,21 @@ export async function runDepthScript(
   fast: boolean,
   deps: RunDeps,
 ): Promise<DepthOutcome> {
+  const loss = tierAtLoss(deps.doc, () => deps.doc
+    .querySelector<HTMLElement>(ON_FOOT_HOST)?.dataset['tier'] ?? null);
+  try {
+    return await playScript(fast, deps, loss);
+  } finally {
+    loss.stop();
+  }
+}
+
+/** The depth script's steps, then what the view drew with. */
+async function playScript(
+  fast: boolean,
+  deps: RunDeps,
+  loss: LossTier,
+): Promise<DepthOutcome> {
   const script = depthScript(fast);
   const steps: StepMetrics[] = [];
   let read: Pick<DepthOutcome, 'depth' | 'header'> | null = null;
@@ -86,19 +104,20 @@ export async function runDepthScript(
     const done = await played(step, deps);
     steps.push(done.metrics);
     // Read once the view has opened, before a turn can take it down.
-    read ??= await readings(deps);
+    read ??= await readings(deps, loss);
     lostAt = done.lostAt;
     if (lostAt) break;
   }
   deps.onStep(script.length);
-  return { steps, ...(read ?? await readings(deps)),
+  return { steps, ...(read ?? await readings(deps, loss)),
     ...(lostAt ? { lostAt } : {}) };
 }
 
 /** What the view draws with, and the report's header, read now. */
 async function readings(
   deps: RunDeps,
+  loss: LossTier,
 ): Promise<Pick<DepthOutcome, 'depth' | 'header'>> {
   return { depth: readDepth(deps.registry, deps.doc),
-    header: await readHeader(deps.registry, deps.doc) };
+    header: await readHeader(deps.registry, deps.doc, loss.tier()) };
 }

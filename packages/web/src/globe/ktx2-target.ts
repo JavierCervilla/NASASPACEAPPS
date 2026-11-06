@@ -78,14 +78,18 @@ export const ktx2Off = (search: string): boolean =>
   new URLSearchParams(search).get('ktx2') === '0';
 
 /**
- * The decision for this page: off on `?ktx2=0` (to bisect from a phone's
+ * The decision for this page: off under Save-Data (VENT-107: the globe
+ * never climbs past its start map there, so neither the transcoder nor its
+ * worker is worth a download), off on `?ktx2=0` (to bisect from a phone's
  * address bar, like `?onfoot=`), else the profile's target.
  */
 export function ktx2Choice(
   profile: GpuProfile,
   platform: Platform,
   search: string,
+  saveData = false,
 ): Ktx2Choice {
+  if (saveData) return { target: null, reason: 'Save-Data' };
   if (ktx2Off(search)) {
     return { target: null, reason: '?ktx2=0' };
   }

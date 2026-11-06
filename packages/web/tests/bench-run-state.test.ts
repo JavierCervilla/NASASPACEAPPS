@@ -85,6 +85,17 @@ describe('the kept state', () => {
     expect(writeState(memory(true), startState(3, false))).toBe(false);
     expect(readState(null)).toBeNull();
   });
+
+  it('is no state when its suite is unknown, and reads both suites (VENT-107)', () => {
+    const storage = memory();
+    storage.kept.set(STATE_KEY, JSON.stringify({ ...startState(1, true, 'depth'), suite: 'stencil' }));
+    expect(readState(storage)).toBeNull();
+    storage.kept.set(STATE_KEY, JSON.stringify({ ...startState(1, true, 'depth'), suite: null }));
+    expect(readState(storage)).toBeNull();
+    const depth = startState(1, true, 'depth');
+    writeState(storage, depth);
+    expect(readState(storage)).toEqual(depth);
+  });
 });
 
 describe('the phase of a page load', () => {

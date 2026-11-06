@@ -25,6 +25,8 @@ jobs:
           check-latest: true
           cache: npm
       - run: npm ci
+      # The committed KTX2 maps and their sources match their manifest (VENT-101; `--check` re-encodes, locally).
+      - run: npm run ktx2:check
       - run: npm run lint
       - run: npm run typecheck
       - run: npm test

@@ -90,6 +90,20 @@ async function offlineVisit(context: BrowserContext, page: Page, path: string): 
   return map;
 }
 
+/** The maps only the desktop layout uses, left out of the install and kept once a desktop page asks (VENT-95). */
+const DESKTOP_EXTRAS = ['textures/moon-lroc-2k.jpg', 'textures/moon-lola-normal-2k.jpg', 'textures/moon-south-polar-2k.jpg'];
+/** Past the page's start (src/lib/after-start.ts waits 2 s at most), when a desktop page asks for its extras. */
+const START_WAIT_MS = 3000;
+
+/** The paths under the base the context's service workers ask the network for, as they are asked. */
+function workerAsks(context: BrowserContext): string[] {
+  const asked: string[] = [];
+  context.on('request', (request) => {
+    if (request.serviceWorker()) asked.push(new URL(request.url()).pathname.slice(base.length));
+  });
+  return asked;
+}
+
 /** The width and height a PNG declares in its header. */
 function pngSize(bytes: Buffer): [number, number] {
   expect(bytes.subarray(1, 4).toString('latin1')).toBe('PNG');
@@ -162,11 +176,12 @@ test.describe('offline', () => {
 });
 
 test.describe('what the worker downloads', () => {
-  test('the install keeps the offline set: pages, icons, every phase frame and thumbnail, the start maps', async ({
+  test('the install keeps the offline set: pages, icons, every phase frame and thumbnail, the 1K maps', async ({
     context,
     page,
   }) => {
     await page.setViewportSize({ width: 390, height: 844 });
+    const asked = workerAsks(context);
     await open(context, page, '');
     await controlled(page);
     const kept = await keptFiles(page);
@@ -180,17 +195,55 @@ test.describe('what the worker downloads', () => {
         'manifest.webmanifest',
         'icons/icon-192.png',
         'textures/moon-lroc-1k.jpg',
-        'textures/moon-lroc-2k.jpg',
         'textures/moon-lola-normal-1k.jpg',
-        'textures/moon-lola-normal-2k.jpg',
-        'textures/moon-south-polar-2k.jpg',
       ]),
     );
+    // The maps only the desktop uses are neither installed nor asked for once the phone's page has started (VENT-95).
+    await page.waitForTimeout(START_WAIT_MS);
+    expect(kept.filter((f) => DESKTOP_EXTRAS.includes(f))).toEqual([]);
+    expect((await keptFiles(page)).filter((f) => DESKTOP_EXTRAS.includes(f))).toEqual([]);
+    expect(asked.filter((f) => DESKTOP_EXTRAS.includes(f))).toEqual([]);
     expect(kept.filter((f) => f.startsWith('en-xa/'))).toEqual([]);
     expect(kept.filter((f) => /^icons\/phase\/moon-\d{2}\.webp$/.test(f))).toHaveLength(30);
     expect(kept.filter((f) => f.startsWith('thumbs/')).length).toBeGreaterThan(0);
     // The sharper maps are kept only when the zoom asks for them.
     expect(kept.filter((f) => /-(4|8)k\.jpg$/.test(f))).toEqual([]);
+  });
+
+  test('a phone’s globe opens offline on its 1K map, with no desktop map kept (VENT-95)', async ({ context, page }) => {
+    const map = await offlineVisit(context, page, '');
+    expect(map.fromServiceWorker()).toBe(true);
+    expect(new URL(map.url()).pathname).toBe(`${base}textures/moon-lroc-1k.jpg`);
+    await expect(page.locator('.globe-markers')).toHaveAttribute('data-state', 'window');
+    expect((await keptFiles(page)).filter((f) => DESKTOP_EXTRAS.includes(f))).toEqual([]);
+  });
+
+  test('a desktop’s first visit ends with its maps kept, and offline its 2K globe and polar map still show (VENT-95)', async ({
+    context,
+    page,
+  }) => {
+    await page.setViewportSize({ width: 1440, height: 900 });
+    // The high tier opens on the 2K maps; software GL would start low (src/lib/quality.ts).
+    await open(context, page, '?quality=high');
+    await controlled(page);
+    await expect.poll(async () => (await keptFiles(page)).filter((f) => DESKTOP_EXTRAS.includes(f)).toSorted(), {
+      timeout: 15_000,
+    }).toEqual(DESKTOP_EXTRAS.toSorted());
+    // As offlineVisit does: a second visit through the worker keeps the API's answers before the network goes.
+    await page.reload();
+    await expect(page.locator('.globe-markers')).toHaveAttribute('data-state', 'window');
+    await context.setOffline(true);
+    const globeMap = page.waitForResponse(/\/textures\/moon-lroc-2k\.jpg$/);
+    await page.reload();
+    expect((await globeMap).fromServiceWorker()).toBe(true);
+    await expect(page.locator('.globe-markers')).toHaveAttribute('data-state', 'window');
+    const polarMap = page.waitForResponse(/\/textures\/moon-south-polar-2k\.jpg$/);
+    await page.goto('./?quality=high#polar-map');
+    const polar = await polarMap;
+    expect(polar.fromServiceWorker()).toBe(true);
+    expect(polar.ok()).toBe(true);
+    await expect.poll(() => page.locator('.polar__image').evaluate((img: HTMLImageElement) => img.naturalWidth)).toBe(2048);
+    await page.screenshot({ path: test.info().outputPath('offline-polar-1440.png') });
   });
 
   test('under Save-Data no worker is registered', async ({ context, page }) => {

@@ -9,6 +9,10 @@
   GPU escondida y la vista se dibuja sin mapa de sombras.
 
 ### Cambiado
+- **La app instalada pesa menos en el móvil (VENT-95).** Al instalarse, el móvil ya no descarga los mapas 2K del
+  globo ni el mapa polar, que nunca usa (abre en 1K, salta a 4K al acercarse y no tiene vista polar): su primera visita
+  baja 1,7 MB menos. El escritorio los guarda después de arrancar, así que todo lo que funcionaba sin conexión sigue
+  funcionando.
 - **La vista 3D descarga menos al abrirse (VENT-94).** El mapa de relieve fino del regolito pasa de 469 kB a 193 kB
   (WebP q50, sin diferencia visible en el suelo iluminado) y el móvil usa una Tierra de 512 px, que en su pantalla
   ocupa unos 28 px: en el móvil la vista baja unos 335 kB menos.

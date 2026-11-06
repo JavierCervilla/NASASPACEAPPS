@@ -3,6 +3,10 @@
 ## [Sin publicar]
 
 ### Arreglado
+- **La Luna ya no se ve borrosa en el móvil (VENT-97).** El globo elegía el mapa por una distancia fija pensada para
+  una pantalla de escritorio, así que en un móvil se quedaba en el mapa 1K estirado al doble. Ahora elige el mapa más
+  pequeño que se ve nítido para el tamaño que la Luna ocupa en pantalla: en un móvil como el Pixel sube al 2K nada más
+  abrir y al 4K al acercarse.
 - **La vista 3D ya no se cae en Brave en el móvil (VENT-92).** Brave da «Brave» como nombre de la GPU, así que la app no
   la reconocía como escondida y mantenía el mapa de sombras junto a la profundidad logarítmica, la combinación que hace
   perder el contexto en el Pixel 10. Ahora, en el móvil, un nombre que no es de ninguna GPU conocida se trata como una

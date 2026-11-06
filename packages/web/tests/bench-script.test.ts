@@ -25,7 +25,7 @@
 
 /** The benchmark's script v1 (VENT-81): its steps, its keys and what the fast script keeps. */
 import { describe, expect, it } from 'vitest';
-import { LOD_DISTANCE } from '../src/globe/texture-lod';
+import { wantedLevel } from '../src/globe/texture-lod';
 import { SOUTH_POLE_VIEW, zoomedDistance } from '../src/globe/framing';
 import { keyLook } from '../src/terrain/look-input';
 import { NEXT_SITE, SCRIPT_VERSION, benchScript, turnKeyCount, type Action } from '../src/bench/script';
@@ -49,10 +49,12 @@ describe('script v1', () => {
     expect(waitOf(script[5]?.actions ?? [])).toBe(3000);
   });
 
-  it('zooms the globe from its opening view past the distance that asks for the 4K map', () => {
+  it('zooms the globe from its opening view close enough for the 4K map on a 1440 x 900 desktop', () => {
     const zooms = keysOf(script[1]?.actions ?? [], 'globe').filter((k) => k === '+').length;
     const distance = zoomedDistance(SOUTH_POLE_VIEW.distance, -2 * zooms);
-    expect(distance).toBeLessThanOrEqual(LOD_DISTANCE.level4);
+    const caps = { tier: 'medium', saveData: false, maxTextureSize: 16384 } as const;
+    // The globe of a 1440 x 900 window is 547 px tall, beside the site card.
+    expect(wantedLevel({ distance, frameBufferPx: 547 }, caps)).toBe(4);
   });
 
   it('turns the on-foot view a full turn by ArrowRight, as many keys as 360° takes', () => {

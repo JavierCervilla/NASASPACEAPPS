@@ -76,13 +76,28 @@ function projector(stage: Stage): Projector {
   };
 }
 
+/**
+ * Drawing-buffer px the camera's field of view spans: the view offset's
+ * full height when the Moon is framed (stage.ts, frameCamera), else the
+ * canvas's, times the pixel ratio.
+ */
+export function frameBufferPx(
+  stage: Pick<Stage, 'camera' | 'renderer'>,
+): number {
+  const { camera, renderer } = stage;
+  const view = camera.view?.enabled === true ? camera.view : null;
+  const css = view?.fullHeight ?? renderer.getSize(new Vector2()).y;
+  return css * renderer.getPixelRatio();
+}
+
 /** Draws one frame `dt` seconds on; true while the springs still move. */
 export function drawFrame(parts: FrameParts, dt: number): boolean {
   const { stage, orbit, markers, moon } = parts;
   const moving = stepOrbit(orbit, dt);
   // The target, not the live value: the map starts loading as the zoom
   // starts, not once it lands.
-  moon.track(orbit.distance.target);
+  const distance = orbit.distance.target;
+  moon.track({ distance, frameBufferPx: frameBufferPx(stage) });
   const pose = poseOf(orbit);
   aimCamera(stage.camera, pose);
   stage.renderer.render(stage.scene, stage.camera);

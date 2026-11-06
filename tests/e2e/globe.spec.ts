@@ -236,11 +236,13 @@ test.describe('desktop texture detail, 1440x900', () => {
   const MAP_4K = /\/textures\/moon-lroc-4k\.jpg$/;
   const MAP_8K = /\/textures\/moon-lroc-8k\.jpg$/;
 
-  /** Two zoom steps from the opening view (5 Moon radii) reach 3.2 radii: past the 4K threshold, short of 8K. */
+  /**
+   * Four «+» from the opening view (5 Moon radii) reach 2.2 radii: on this window's 547 px globe the disc then needs
+   * the 4K map (texture-lod.ts, VENT-97), short of 8K.
+   */
   async function zoomToMedium(page: Page): Promise<void> {
     await page.getByRole('application', { name: 'The Moon, seen over its south pole' }).focus();
-    await page.keyboard.press('+');
-    await page.keyboard.press('+');
+    for (let press = 0; press < 4; press += 1) await page.keyboard.press('+');
   }
 
   test('zooming in fetches the 4K map and its relief, and logs no errors', async ({ page }) => {

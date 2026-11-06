@@ -36,12 +36,11 @@ import {
   Scene,
   type WebGLRenderer,
 } from 'three';
-import { createGlRenderer, releaseRenderer } from '../../lib/gl-renderer';
-import { unmaskedGpuName } from '../report/environment';
+import { releaseRenderer } from '../../lib/gl-renderer';
 import { terrainPixelRatio } from '../pixel-ratio';
-import { shadowMapUnsafe } from '../shadow-safety';
 import { VIEW_FOV } from '../view-fov';
 import { createShadowGate, type ShadowGate } from './shadow-gate';
+import { stageRenderer } from './stage-renderer';
 import type { SceneSetup } from './scene-types';
 
 export interface Stage {
@@ -68,23 +67,15 @@ const DARK_EXPOSURE = 2.8;
 /** A stage in a new canvas in `host`; throws without WebGL. */
 export function createStage(
   host: HTMLElement,
-  { quality, leave }: SceneSetup,
+  setup: SceneSetup,
   phone: boolean,
 ): Stage {
-  const renderer = createGlRenderer({
-    antialias: quality.antialias,
-    powerPreference: 'low-power',
-    // The rings reach 190 km and the sky is farther: a linear depth buffer
-    // would z-fight at 100 km with a near plane of 0.2 m. (`?onfoot=logdepth`
-    // turns it off to bisect a crash, accepting that.)
-    logarithmicDepthBuffer: !leave.has('logdepth'),
-  });
+  const { quality } = setup;
+  const renderer = stageRenderer(setup, phone);
   renderer.setPixelRatio(terrainPixelRatio(quality, phone, devicePixelRatio));
   renderer.setClearColor(0x000000, 1);
   renderer.toneMapping = ACESFilmicToneMapping;
   renderer.toneMappingExposure = EXPOSURE;
-  renderer.shadowMap.enabled = !leave.has('shadows') &&
-    !shadowMapUnsafe(unmaskedGpuName(renderer.getContext()), phone);
   renderer.shadowMap.type = PCFShadowMap;
   renderer.shadowMap.autoUpdate = false;
   renderer.domElement.setAttribute('aria-hidden', 'true');

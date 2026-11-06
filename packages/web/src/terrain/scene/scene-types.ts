@@ -32,6 +32,7 @@
  */
 import type { HorizonProfile } from '@ventana/sim';
 import type { QualitySettings } from '../../lib/quality';
+import type { DepthChoice } from '../depth-mode';
 import type { LeaveOut } from '../leave-out';
 import type { ReportSink } from '../report/sink';
 import type { RingView } from '../ring/ring-session';
@@ -83,6 +84,8 @@ export interface SceneSetup {
   readonly quality: QualitySettings;
   /** The `?onfoot=` diagnostic switches (leave-out.ts). */
   readonly leave: ReadonlySet<LeaveOut>;
+  /** The `?depth=` and `?shadows=` bisection switches (depth-mode.ts). */
+  readonly depth: DepthChoice;
   readonly report: ReportSink;
 }
 

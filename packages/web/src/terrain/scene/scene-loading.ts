@@ -41,6 +41,7 @@ import type { World } from './world';
 /** Writes the tier and the parts left out on the host. */
 export function markSetup(host: HTMLElement, setup: SceneSetup): void {
   host.dataset['tier'] = setup.quality.tier;
+  host.dataset['depth'] = setup.depth.mode;
   if (setup.leave.size > 0) host.dataset['onfoot'] = [...setup.leave].join();
   else delete host.dataset['onfoot'];
 }

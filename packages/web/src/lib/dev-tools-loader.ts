@@ -64,14 +64,24 @@ export function loadDevTools(
   });
 }
 
+/** The dev server or a PUBLIC_PERF_HUD=1 build. */
+const devBuild = (): boolean =>
+  import.meta.env.DEV || import.meta.env.PUBLIC_PERF_HUD === '1';
+
+/**
+ * Whether this page runs with the dev tools: a dev build, or `?debug`.
+ * Three then checks every shader it links (gl-renderer.ts, VENT-93).
+ */
+export const devToolsWanted = (): boolean =>
+  devBuild() || debugAsked(window.location.search);
+
 let page: Promise<DevToolsModule> | null | undefined;
 
 /** The page's dev tools, asked once; null when the page has none. */
 export function devToolsModule(): Promise<DevToolsModule> | null {
   if (page === undefined) {
     page = loadDevTools({
-      devBuild: import.meta.env.DEV
-        || import.meta.env.PUBLIC_PERF_HUD === '1',
+      devBuild: devBuild(),
       search: window.location.search,
       host: window,
       load: () => import('../devtools/boot'),

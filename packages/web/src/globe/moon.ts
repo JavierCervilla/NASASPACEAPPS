@@ -40,6 +40,7 @@ import {
 } from 'three';
 import type { Tier } from '../lib/quality';
 import { moonTextureDeps } from './moon-textures';
+import type { EarlyStart } from './start-maps';
 import { keepNightDark } from './night-side';
 import { samplePolesExactly } from './pole-uv';
 import type { Stage } from './stage';
@@ -78,6 +79,10 @@ export interface MoonOptions {
   /** Whether the globe shows (shown-frames.ts). */
   readonly shown: () => boolean;
   readonly warn: (message: string) => void;
+  /** The start maps the boot asked before the globe mounted (VENT-93). */
+  readonly early?: EarlyStart | undefined;
+  /** Compiles the scene's programs before a map shows (compile-gate.ts). */
+  readonly compile?: (() => Promise<void>) | undefined;
 }
 
 /** Adds the Moon to the stage's scene. */

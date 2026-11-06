@@ -24,13 +24,16 @@
  */
 
 /**
- * Starts the globe: imports `./globe` (Three.js inside) and mounts it. When
- * the browser asks to save data, nothing is downloaded until the visitor
- * asks for the globe (`load`).
+ * Starts the globe: reads the tier and asks its start maps (start-maps.ts,
+ * VENT-93), then imports `./globe` (Three.js inside) and mounts it, so the
+ * maps download while the chunk arrives and the scene is built. When the
+ * browser asks to save data, nothing is downloaded until the visitor asks
+ * for the globe (`load`).
  */
 import { isGlBlocked } from '../lib/gl-memory';
 import { loadChunk } from '../pwa/missing-chunk';
 import type { GlobeOptions } from './globe';
+import { earlyStart } from './start-maps';
 
 /**
  * How the start went: drawing, no WebGL, a browser that blocked it after a
@@ -62,8 +65,10 @@ async function mount(
   cancelled: () => boolean,
 ): Promise<Outcome> {
   try {
+    const early = earlyStart(options.base);
     const { mountGlobe } = await loadChunk(() => import('./globe'), window);
-    const dispose = cancelled() ? null : mountGlobe(host, options);
+    const dispose = cancelled() ? null
+      : mountGlobe(host, { ...options, early });
     return { dispose, status: { kind: 'ready' } };
   } catch (error) {
     options.warn(`Ventana Lunar: the 3D globe could not start (${String(error)}).`);

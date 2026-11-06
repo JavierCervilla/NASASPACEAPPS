@@ -53,6 +53,8 @@ export class TextureSwap<T> {
     if (state.disposed || level <= Math.max(state.target, state.held.level)) {
       return;
     }
+    const shown = state.held.level;
+    this.deps.trace?.mark({ kind: 'wanted', level, shown });
     state.target = level;
     if (!state.busy) void climb(state, this.deps);
   }
@@ -67,6 +69,8 @@ export class TextureSwap<T> {
     if (state.disposed || level >= Math.max(state.target, state.held.level)) {
       return;
     }
+    const shown = state.held.level;
+    this.deps.trace?.mark({ kind: 'lowered', level, shown });
     state.target = level;
     if (!state.busy) void climb(state, this.deps);
   }

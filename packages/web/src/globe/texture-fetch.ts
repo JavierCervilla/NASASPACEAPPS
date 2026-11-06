@@ -29,6 +29,8 @@
  * behind. Generic over the texture type, with the loader and the GPU
  * injected.
  */
+import type { MapKind, MapTrace } from './map-trace';
+import { loadMap, type LoadClock } from './texture-load';
 import type { LodLevel } from './texture-lod';
 
 /** The colour map and the relief map shown together. */
@@ -63,6 +65,10 @@ export interface SwapDeps<T> {
   readonly apply: (maps: MoonMaps<T>) => void;
   readonly dispose: (texture: T) => void;
   readonly warn: (message: string) => void;
+  /** Where each step is told under `?debug` (map-crumbs.ts), if anywhere. */
+  readonly trace?: MapTrace<T> | undefined;
+  /** Times and bounds each load (texture-load.ts); the page's by default. */
+  readonly clock?: LoadClock | undefined;
 }
 
 /** Frees the textures of `old` that `keep` does not show. */
@@ -83,6 +89,7 @@ export function release<T>(
  * (8K reuses the 4K relief), else a new one, or the old one on failure.
  */
 async function loadNormal<T>(
+  level: LodLevel,
   url: string,
   held: HeldLevel<T>,
   deps: SwapDeps<T>,
@@ -90,10 +97,35 @@ async function loadNormal<T>(
   const shown = held.maps?.normal ?? null;
   if (url === held.normalUrl) return shown;
   try {
-    return await deps.load(url, 'normal');
+    return await loadMap({ url, map: 'relief', level }, deps);
   } catch {
     deps.warn(`Ventana Lunar: Moon relief ${url} did not load.`);
     return shown;
+  }
+}
+
+/**
+ * Uploads a level's new maps, telling the GL error each left under
+ * `?debug`; if an upload throws, frees them before the throw goes on, so
+ * the level fails like one that did not load (texture-climb.ts).
+ */
+function uploadNew<T>(
+  level: LodLevel,
+  fresh: MoonMaps<T>,
+  deps: SwapDeps<T>,
+): void {
+  const { trace } = deps;
+  const told = (map: MapKind): void => trace?.mark(
+    { kind: 'uploaded', level, map, gl: trace.glError?.() ?? 'not read' });
+  try {
+    deps.upload(fresh.colour);
+    told('colour');
+    if (fresh.normal === null) return;
+    deps.upload(fresh.normal);
+    told('relief');
+  } catch (error) {
+    release(fresh, null, deps);
+    throw error;
   }
 }
 
@@ -107,8 +139,9 @@ export async function fetchLevel<T>(
   deps: SwapDeps<T>,
 ): Promise<FetchedLevel<T> | null> {
   const urls = deps.urls(level);
-  const relief = loadNormal(urls.normal, held, deps);
-  const colour = await deps.load(urls.colour, 'colour').catch(() => null);
+  const relief = loadNormal(level, urls.normal, held, deps);
+  const ask = { url: urls.colour, map: 'colour', level } as const;
+  const colour = await loadMap(ask, deps).catch(() => null);
   const normal = await relief;
   const fresh = normal !== null && normal !== held.maps?.normal;
   if (colour === null) {
@@ -116,7 +149,6 @@ export async function fetchLevel<T>(
     if (fresh) deps.dispose(normal);
     return null;
   }
-  deps.upload(colour);
-  if (fresh) deps.upload(normal);
+  uploadNew(level, { colour, normal: fresh ? normal : null }, deps);
   return { level, normalUrl: urls.normal, maps: { colour, normal } };
 }

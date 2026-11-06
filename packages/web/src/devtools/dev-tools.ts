@@ -57,6 +57,8 @@ type FrameScheduler = (callback: (now: number) => void) => unknown;
 export interface DevToolsOptions {
   readonly tier: Tier;
   readonly gpu: string;
+  /** The GPU's profile lines for the readout (VENT-101). */
+  readonly gpuLines?: (() => readonly string[]) | undefined;
   readonly hash: string;
   /** Starts the on-screen panel folded to its first line. */
   readonly folded?: boolean;
@@ -87,6 +89,7 @@ export class DevTools {
       : new PerfHud({
           tier: options.tier,
           gpu: options.gpu,
+          gpuLines: options.gpuLines,
           flags: this.flags,
           previous: crumbs.previous,
           current: () => crumbs.current,

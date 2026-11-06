@@ -47,6 +47,8 @@ export interface RenderStats extends RendererReading {
 export interface DeviceLabels {
   readonly tierLabel: string;
   readonly gpu: string;
+  /** The GPU's profile, under its name (gpu-lines.ts, VENT-101). */
+  readonly gpuLines?: readonly string[] | undefined;
 }
 
 function frameLine(frame: FrameReading): string {
@@ -95,5 +97,6 @@ export function readout(
     frameLine(frame),
     ...rendererLines(stats, device.tierLabel),
     device.gpu || PERF_TEXT.noGpu,
+    ...(device.gpuLines ?? []),
   ].join('\n');
 }

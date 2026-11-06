@@ -5053,7 +5053,8 @@
         <path data-edge-from="sky" data-edge-to="store" data-edge-label="instant" data-edge-key="13" data-edge-id="instant-sky" data-composition-points="210,520;520,520" d="M 210 520 L 520 520" class="a-dashed" stroke-width="1.5" marker-end="url(#arrowhead-dashed)"/>
         <path data-edge-from="pin" data-edge-to="store" data-edge-label="custom point" data-edge-key="14" data-edge-id="drop-point" data-composition-points="760,147;710,147;710,513;660,513" d="M 760 147 L 718 147 Q 710 147 710 155 L 710 505 Q 710 513 702 513 L 660 513" class="a-dashed" stroke-width="1.5" marker-end="url(#arrowhead-dashed)"/>
         <path data-edge-from="pin" data-edge-to="layers" data-edge-label="saves" data-edge-key="15" data-edge-id="save-point" data-composition-points="760,133;660,133" d="M 760 133 L 660 133" class="a-dashed" stroke-width="1.5" marker-end="url(#arrowhead-dashed)"/>
-        <path data-edge-from="store" data-edge-to="onfoot" data-edge-key="16" data-edge-id="sub-onfoot" data-composition-points="625,550;625,615;1035,615;1035,680" d="M 625 550 L 625 607 Q 625 615 633 615 L 1027 615 Q 1035 615 1035 623 L 1035 680" class="a-default" stroke-width="1.5" marker-end="url(#arrowhead)"/>
+        <path data-edge-from="store" data-edge-to="onfoot" data-edge-key="16" data-edge-id="sub-onfoot" data-composition-points="625,550;625,656;1028,656;1028,680" d="M 625 550 L 625 648 Q 625 656 633 656 L 1020 656 Q 1028 656 1028 664 L 1028 680" class="a-default" stroke-width="1.5" marker-end="url(#arrowhead)"/>
+        <path data-edge-from="ktx2worker" data-edge-to="onfoot" data-edge-key="17" data-edge-id="ktx2-maps" data-composition-points="1042,648;1042,680" d="M 1042 648 L 1042 680" class="a-dashed" stroke-width="1.5" marker-end="url(#arrowhead-dashed)"/>
 
         <!-- Components -->
         <g id="node-horizons" data-node-id="horizons" data-node-label="JPL Horizons API" tabindex="0" role="button" aria-label="Focus JPL Horizons API, NASA/JPL ephemerides, Architecture component" aria-pressed="false" data-node-kind="external" data-node-sublabel="NASA/JPL ephemerides" data-node-context="Architecture component">
@@ -5316,6 +5317,21 @@
         <text data-detail="context" x="1035" y="724" class="t-muted" font-size="9" text-anchor="middle">API tiles · lazy</text>
         </g>
 
+        <g id="node-ktx2worker" data-node-id="ktx2worker" data-node-label="Texture worker" tabindex="0" role="button" aria-label="Focus Texture worker, KTX2 to ETC2 or BC1, Web app (Astro + React)" aria-pressed="false" data-node-kind="frontend" data-node-sublabel="KTX2 to ETC2 or BC1" data-node-tag="built" data-node-context="Web app (Astro + React)">
+          <title>Texture worker · KTX2 to ETC2 or BC1 · Web app (Astro + React) · built</title>
+          <rect x="965" y="598" width="140" height="50" rx="6" class="c-mask"/>
+          <rect x="965" y="598" width="140" height="50" rx="6" class="c-frontend" stroke-width="1.5"/>
+          <g aria-hidden="true" data-semantic-sigil="frontend" class="semantic-sigil s-frontend" transform="translate(971 604) scale(0.6875)">
+            <rect x="2" y="3" width="12" height="10" rx="2"/>
+            <path d="M2 6.5h12"/>
+            <circle cx="4.1" cy="4.8" r=".7" class="sigil-fill"/>
+            <circle cx="6.3" cy="4.8" r=".7" class="sigil-fill"/>
+          </g>
+          <text data-node-label="" data-detail-anchor="" x="1035" y="621" class="t-primary" font-size="11" font-weight="600" text-anchor="middle">Texture worker</text>
+        <text data-detail="context" x="1035" y="637" class="t-muted" font-size="9" text-anchor="middle">KTX2 to ETC2 or BC1</text>
+        <text data-detail="fine" x="1035" y="640" class="t-frontend" font-size="7" text-anchor="middle">built</text>
+        </g>
+
         <!-- Connection labels -->
         <g data-detail="context" data-edge-from="horizons" data-edge-to="pipeline" data-edge-label="az/el series" data-edge-key="0" data-edge-id="query-horizons">
           <rect x="196.2" y="337" width="67.6" height="14" rx="3" class="c-mask"/>
@@ -5366,6 +5382,7 @@
           <rect x="693" y="113" width="34" height="14" rx="3" class="c-mask"/>
           <text x="710" y="123" class="t-messagebus" font-size="8" text-anchor="middle">saves</text>
         </g>
+
 
 
         <!-- Boundary labels (foreground masks keep routes out of titles) -->
@@ -5611,6 +5628,7 @@
           <li>&bull; Globe layers (VENT-37): a registry of layers (id, z, visible) the globe mounts; landing sites, zones and the sites saved on this device are layers, switched from the Layers key and kept on the device; API for other teams in docs/globe-layers.md</li>
           <li>&bull; DSN mode (VENT-7): the simulator finds each handoff between Goldstone, Canberra and Robledo to the minute, once per UTC day; a «Listening on Earth» block in the desktop card and the phone widget (small Earth seen from the Moon, real terminator, «No link» first when the Earth is under 3°) and a DSN view (#dsn, phone tab) with the big Earth, the Moon above 10° ring and the 24 h band following the shared instant</li>
           <li>&bull; On-foot 3D view (VENT-34, #horizon and the phone&#39;s Horizon tab, lazy-loaded, first person only since VENT-54): relief in rings from the aligned levelled tiles of /api/v1/terrain/tiles through a RingSource seam (VENT-46; a Web Worker streamer replaces it later), the far horizon from the point&#39;s profile, the Sun and the Earth at the shared instant, illustrative fine detail captioned; the API gzips its JSON</li>
+          <li>&bull; Texture worker (VENT-101): the globe&#39;s 2K and 4K colour and the on-foot albedo and Earth ship as KTX2 (ETC1S); a worker of its own runs three&#39;s Basis transcoder under a CSP of its own, so the GPU holds 4 bits per texel, with the JPEG as fallback</li>
         </ul>
       </div>
     </div>

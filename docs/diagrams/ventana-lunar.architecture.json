@@ -287,6 +287,21 @@
         140,
         60
       ]
+    },
+    {
+      "id": "ktx2worker",
+      "type": "frontend",
+      "label": "Texture worker",
+      "sublabel": "KTX2 to ETC2 or BC1",
+      "pos": [
+        965,
+        598
+      ],
+      "size": [
+        140,
+        50
+      ],
+      "tag": "built"
     }
   ],
   "boundaries": [
@@ -319,7 +334,8 @@
         "sitecard",
         "moon3d",
         "dsn",
-        "onfoot"
+        "onfoot",
+        "ktx2worker"
       ]
     }
   ],
@@ -447,6 +463,14 @@
       "to": "onfoot",
       "fromSide": "bottom",
       "toSide": "top"
+    },
+    {
+      "id": "ktx2-maps",
+      "from": "ktx2worker",
+      "to": "onfoot",
+      "variant": "dashed",
+      "fromSide": "bottom",
+      "toSide": "top"
     }
   ],
   "cards": [
@@ -480,7 +504,8 @@
         "VENT-10, VENT-37: a pin, dropped by a click (or a held finger) on the globe or the polar map and dragged to adjust, makes any point the selected site (?lat&lon), answered at once by the simulator and then by Horizons",
         "Globe layers (VENT-37): a registry of layers (id, z, visible) the globe mounts; landing sites, zones and the sites saved on this device are layers, switched from the Layers key and kept on the device; API for other teams in docs/globe-layers.md",
         "DSN mode (VENT-7): the simulator finds each handoff between Goldstone, Canberra and Robledo to the minute, once per UTC day; a «Listening on Earth» block in the desktop card and the phone widget (small Earth seen from the Moon, real terminator, «No link» first when the Earth is under 3°) and a DSN view (#dsn, phone tab) with the big Earth, the Moon above 10° ring and the 24 h band following the shared instant",
-        "On-foot 3D view (VENT-34, #horizon and the phone's Horizon tab, lazy-loaded, first person only since VENT-54): relief in rings from the aligned levelled tiles of /api/v1/terrain/tiles through a RingSource seam (VENT-46; a Web Worker streamer replaces it later), the far horizon from the point's profile, the Sun and the Earth at the shared instant, illustrative fine detail captioned; the API gzips its JSON"
+        "On-foot 3D view (VENT-34, #horizon and the phone's Horizon tab, lazy-loaded, first person only since VENT-54): relief in rings from the aligned levelled tiles of /api/v1/terrain/tiles through a RingSource seam (VENT-46; a Web Worker streamer replaces it later), the far horizon from the point's profile, the Sun and the Earth at the shared instant, illustrative fine detail captioned; the API gzips its JSON",
+        "Texture worker (VENT-101): the globe's 2K and 4K colour and the on-foot albedo and Earth ship as KTX2 (ETC1S); a worker of its own runs three's Basis transcoder under a CSP of its own, so the GPU holds 4 bits per texel, with the JPEG as fallback"
       ]
     }
   ]

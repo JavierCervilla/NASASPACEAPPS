@@ -128,6 +128,18 @@ describe('texture level of detail', () => {
       normal: '/sub/textures/moon-lola-normal-4k.jpg',
     });
   });
+
+  it('asks the 2K and 4K colour as KTX2 when the GPU takes it, the 1K, 8K and reliefs as JPEG (VENT-101)', () => {
+    const colours = ([1, 2, 4, 8] as const).map((level) => levelUrls(level, '/', 'etc2').colour);
+    expect(colours).toEqual([
+      '/textures/moon-lroc-1k.jpg',
+      '/textures/moon-lroc-2k.ktx2',
+      '/textures/moon-lroc-4k.ktx2',
+      '/textures/moon-lroc-8k.jpg',
+    ]);
+    expect(levelUrls(4, '/', 'bc1').normal).toBe('/textures/moon-lola-normal-4k.jpg');
+    expect(levelUrls(2, '/', null).colour).toBe('/textures/moon-lroc-2k.jpg');
+  });
 });
 
 interface Fake {

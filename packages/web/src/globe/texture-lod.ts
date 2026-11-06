@@ -31,6 +31,7 @@
  * rule is tested alone.
  */
 import type { Tier } from '../lib/quality';
+import type { Ktx2Target } from './ktx2-target';
 import { pxPerTexel, type LodView } from './disc-density';
 
 export type { LodView } from './disc-density';
@@ -94,15 +95,27 @@ export function wantedLevel(view: LodView, caps: LodCaps): LodLevel {
   return Math.min(wanted, maxLevel(caps)) as LodLevel;
 }
 
-/** The colour and relief maps of a level, under the site's base path. */
+/**
+ * The levels whose colour also ships as KTX2 (VENT-101): the 1K stays JPEG
+ * (the start, offline and the fallback), and the 8K is past the wasm
+ * encoder's reach.
+ */
+const KTX2_LEVELS: ReadonlySet<LodLevel> = new Set([2, 4]);
+
+/**
+ * The colour and relief maps of a level, under the site's base path; the
+ * colour as KTX2 when `target` names the GPU's format and the level has one.
+ */
 export function levelUrls(
   level: LodLevel,
   base: string,
+  target: Ktx2Target | null = null,
 ): { colour: string; normal: string } {
   const root = `${base.replace(/\/?$/, '/')}textures/`;
   const relief = Math.min(level, 4);
+  const ktx2 = target !== null && KTX2_LEVELS.has(level);
   return {
-    colour: `${root}moon-lroc-${level}k.jpg`,
+    colour: `${root}moon-lroc-${level}k.${ktx2 ? 'ktx2' : 'jpg'}`,
     normal: `${root}moon-lola-normal-${relief}k.jpg`,
   };
 }

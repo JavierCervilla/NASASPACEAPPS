@@ -32,7 +32,8 @@
 import { expect, test, type Page } from '@playwright/test';
 import { stubApi } from './api-stub';
 
-const map = (name: string): RegExp => new RegExp(`/textures/moon-${name}\\.jpg$`);
+// A colour map comes as KTX2 where the GPU takes it (VENT-101; SwiftShader: BC1), at 2K and 4K.
+const map = (name: string): RegExp => new RegExp(`/textures/moon-${name}\\.(jpg|ktx2)$`);
 // The canvas is software-rendered in CI: a 4K map takes a while to decode.
 const MAP_MS = 30_000;
 
@@ -40,7 +41,7 @@ const MAP_MS = 30_000;
 function mapRequests(page: Page): string[] {
   const requested: string[] = [];
   page.on('request', (r) => {
-    if (/\/textures\/moon-l(roc|ola-normal)-\dk\.jpg$/.test(r.url())) requested.push(r.url().split('/').pop() ?? '');
+    if (/\/textures\/moon-l(roc|ola-normal)-\dk\.(jpg|ktx2)$/.test(r.url())) requested.push(r.url().split('/').pop() ?? '');
   });
   return requested;
 }
@@ -87,7 +88,7 @@ test.describe('the globe map, Retina desktop 1440x900 at the medium tier', () =>
       'moon-lola-normal-1k.jpg',
       'moon-lola-normal-2k.jpg',
       'moon-lroc-1k.jpg',
-      'moon-lroc-2k.jpg',
+      'moon-lroc-2k.ktx2',
     ]);
   });
 });

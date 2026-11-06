@@ -50,7 +50,15 @@ export type MapStepEvent = { level: LodLevel; map: MapKind } & (
   | { kind: 'failed'; file: string; reason: string }
   | { kind: 'timedOut'; file: string; seconds: number }
   | { kind: 'uploaded'; gl: string }
+  /** Came as KTX2, transcoded to `target` (VENT-101). */
+  | { kind: 'ktx2'; target: string }
 );
+
+/** KTX2 turned off for the session, and why (VENT-101). */
+export interface Ktx2OffEvent {
+  kind: 'ktx2Off';
+  reason: string;
+}
 
 /** The density rule's answer and what it read (texture-lod.ts). */
 export interface RuleEvent {
@@ -70,7 +78,7 @@ export type LevelEvent = { level: LodLevel } & (
   | { kind: 'threw'; message: string }
 );
 
-export type MapEvent = MapStepEvent | RuleEvent | LevelEvent;
+export type MapEvent = MapStepEvent | RuleEvent | LevelEvent | Ktx2OffEvent;
 
 /** Where the globe tells its events. */
 export interface MapTrace<T> {
@@ -98,6 +106,8 @@ function stepLine(event: MapStepEvent): string {
       return `${at} timed out after ${event.seconds} s: ${event.file}`;
     case 'uploaded':
       return `${at} uploaded, gl ${event.gl}`;
+    case 'ktx2':
+      return `${at} as KTX2 → ${event.target.toUpperCase()}`;
   }
 }
 
@@ -133,5 +143,6 @@ function levelLine(event: LevelEvent): string {
 /** The breadcrumb line of `event`, short enough for a phone's readout. */
 export function mapLine(event: MapEvent): string {
   if (event.kind === 'rule') return ruleLine(event);
+  if (event.kind === 'ktx2Off') return `KTX2 off: ${event.reason}`;
   return 'map' in event ? stepLine(event) : levelLine(event);
 }

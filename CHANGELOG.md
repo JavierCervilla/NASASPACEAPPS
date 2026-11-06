@@ -18,6 +18,10 @@
   se oculta en vez de cortarse. De día la vista no cambia.
 
 ### Arreglado
+- **La noche lunar de la vista 3D, coherente (VENT-106).** La escena, el aviso «Noche lunar aquí» y la leyenda responden
+  con la hora que muestran los widgets, así que en la hora de un amanecer o un atardecer ya no dicen cosas distintas; la
+  cuenta «El Sol sale en …» sale de las mismas horas que el widget «Salida del Sol en» (las de Horizons si es la fuente
+  elegida). En el móvil el aviso nunca queda bajo la brújula y las etiquetas de 25 y 100 m se apartan de él.
 - **De noche la luz de la Tierra ya llega al suelo (VENT-100).** La máscara del Sol apagaba toda la luz directa del
   suelo y de las rocas, también la de la Tierra: de noche solo quedaba el relleno plano. Ahora, de noche, la máscara
   solo apaga el Sol (en todos los niveles de calidad, también con la fotometría lunar del nivel alto); con la Tierra

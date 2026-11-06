@@ -24,36 +24,32 @@
  */
 
 /**
- * Whether the view is at night (VENT-100), the Sun under the point's
- * horizon at the instant, the answer the scene lights by; and, then, the
- * notice of when it rises, worked out once per hour of the instant.
+ * Whether the view is at night (VENT-100) and, then, the notice of when
+ * the Sun rises: one answer for the scene's light, the caption and the
+ * notice, read from the hour the widgets show (VENT-106, night-notice.ts
+ * says why), worked out once per hour of the instant.
  */
 import { useMemo } from 'react';
 import { HOUR_MS, type HorizonProfile } from '@ventana/sim';
-import { isNight } from '../../terrain/night-light';
-import { nightNotice, type NightNotice } from '../../terrain/night-notice';
-import type { SkyDirs } from '../../terrain/scene/scene-types';
+import { nightAnswer, type NightAnswer } from '../../terrain/night-notice';
+import type { HoursResult } from '../../phone/widgets-loader';
 import { useI18n } from '../i18n-context';
 import type { OnFootSite } from './use-on-foot';
 
-export interface Night {
-  readonly night: boolean;
-  /** «Lunar night here · The Sun rises in …»; null by day. */
-  readonly notice: NightNotice | null;
-}
+export type Night = NightAnswer;
 
 export function useNight(
   site: OnFootSite,
-  sky: SkyDirs | null,
   atMs: number | null,
   profile: HorizonProfile | null,
+  hours: HoursResult | undefined,
 ): Night {
   const i18n = useI18n();
-  const night = sky !== null && isNight(sky, profile);
   const hour = atMs === null ? null : Math.floor(atMs / HOUR_MS) * HOUR_MS;
+  const shown = hours?.kind === 'ready' ? hours.hours : null;
   const { lat, lonEast, shadow } = site;
-  const notice = useMemo(() => (night && hour !== null
-    ? nightNotice({ lat, lonEast, profile, shadow }, hour, i18n)
-    : null), [night, hour, lat, lonEast, profile, shadow, i18n]);
-  return { night, notice };
+  return useMemo(() => (hour === null
+    ? { night: false, notice: null }
+    : nightAnswer({ lat, lonEast, profile, shadow }, hour, shown, i18n)),
+  [hour, lat, lonEast, profile, shadow, shown, i18n]);
 }

@@ -27,12 +27,16 @@
  * The lunar night in the 3D view (VENT-100, the human's «intermediate» night): on the recorded IM-2 relief, at night the
  * view says when the Sun rises (the «Sunrise in» widget's count) and its caption says the light is added; the Earth's
  * light reaches the ground when the Earth is over the terrain (before VENT-100 the Sun's mask put it out at night); by
- * day neither shows; and on a phone the notice is never cut.
+ * day neither shows; and on a phone the notice is never cut. VENT-106: the notice, the caption and the scene answer by the
+ * hour the widgets show, the notice keeps clear of the compass and of the scale's labels, and it is measured again when
+ * the text size changes.
  */
 import { expect, test, type Browser, type BrowserContextOptions, type Locator, type Page } from '@playwright/test';
 import sharp from 'sharp';
 import { stubApi } from './api-stub';
 import { stubRealRelief } from './terrain-stub';
+
+type Box = { x: number; y: number; width: number; height: number };
 
 /** Sun −3.7°, Earth −0.3° at IM-2, under the level but 0.9° over the terrain, which dips there: night. */
 const NIGHT = new Date('2026-11-06T15:04:00Z');
@@ -44,6 +48,10 @@ const EARTH_UP = new Date('2026-12-02T00:00:00Z');
  */
 const EARTH_OVER = new Date('2026-11-04T00:00:00Z');
 const EARTH_HIDDEN = new Date('2026-11-10T00:00:00Z');
+/** The Sun set behind IM-2's terrain at 10:40 UTC, but the hour's sample (10:00), which the widgets read, has it up. */
+const SUNSET = new Date('2026-11-15T10:40:00Z');
+/** The Sun rises over it at 06:50 UTC, but the hour's sample (06:00) is night. */
+const SUNRISE = new Date('2026-11-15T06:50:00Z');
 /** Sun +6.7° at IM-2: day. */
 const DAY = new Date('2026-11-22T00:00:00Z');
 const START_MS = 30_000;
@@ -174,6 +182,69 @@ for (const [device, use] of [
   });
 }
 
+/** Whether two boxes share any pixel. */
+function meet(a: Box, b: Box): boolean {
+  return a.x < b.x + b.width && b.x < a.x + a.width && a.y < b.y + b.height && b.y < a.y + a.height;
+}
+
+/** The boxes of the scale's labels that show. */
+async function labelBoxes(page: Page): Promise<Box[]> {
+  return page.locator('.on-foot__label').evaluateAll((els) => els
+    .filter((el) => !(el as HTMLElement).hidden && el.textContent !== '')
+    .map((el) => { const r = el.getBoundingClientRect(); return { x: r.x, y: r.y, width: r.width, height: r.height }; }));
+}
+
+/** Whether the notice shows and covers the compass or a label that shows. */
+async function noticeCovers(page: Page): Promise<string | null> {
+  if ((await notice(page).getAttribute('data-cut')) !== null) return null;
+  const own = await notice(page).boundingBox();
+  if (!own) return null;
+  const compass = await page.locator('.compass--heading').boundingBox();
+  if (compass && meet(own, compass)) return 'compass';
+  const label = (await labelBoxes(page)).find((box) => meet(own, box));
+  return label ? `label at ${label.x.toFixed(0)},${label.y.toFixed(0)}` : null;
+}
+
+for (const [device, use] of [
+  ['phone', { viewport: { width: 390, height: 844 }, hasTouch: true, isMobile: true }],
+  ['desktop', { viewport: { width: 1280, height: 800 } }],
+] as const) {
+  test.describe(`one night answer on a ${device} (VENT-106)`, () => {
+    test.use(use);
+
+    test('in the hour of a sunset the view says day, as the widgets\' hour does', async ({ page }) => {
+      await open(page, SUNSET);
+      await expect(note(page)).toHaveText(DAY_NOTE);
+      await expect(notice(page)).toHaveCount(0);
+    });
+
+    test('in the hour of a sunrise the view says night and counts the widgets\' hour', async ({ page }) => {
+      await open(page, SUNRISE);
+      await expect(note(page)).toHaveText(NIGHT_NOTE);
+      await expect(notice(page)).toContainText('The Sun rises in 1 h');
+    });
+
+    for (const scale of device === 'phone' ? [1, 2] : [1]) {
+      test(`the notice covers neither the compass nor a scale label, text x${scale}`, async ({ page }) => {
+        await page.addInitScript((s) => {
+          document.addEventListener('DOMContentLoaded', () => { document.documentElement.style.fontSize = `${s * 100}%`; });
+        }, scale);
+        await open(page, NIGHT);
+        if (device === 'phone') await page.locator('.tab-bar .tab').nth(3).click();
+        await expect(notice(page)).toBeVisible();
+        await expect.poll(() => notice(page).getAttribute('data-cut')).toBeNull();
+        await expect.poll(() => noticeCovers(page)).toBeNull();
+        // A turn moves the labels under the notice's place: they keep clear of it.
+        for (let i = 0; i < 6; i += 1) {
+          await host(page).focus();
+          await page.keyboard.press('ArrowLeft');
+          await expect.poll(() => noticeCovers(page)).toBeNull();
+        }
+      });
+    }
+  });
+}
+
 for (const [scale, path] of [[2, './'], [1, './en-xa/']] as const) {
   test.describe(`the night notice on a phone, text x${scale}${path === './' ? '' : ', pseudo-locale'}`, () => {
     test.use({ viewport: { width: 390, height: 844 }, hasTouch: true, isMobile: true });
@@ -197,3 +268,30 @@ for (const [scale, path] of [[2, './'], [1, './en-xa/']] as const) {
     });
   });
 }
+
+test.describe('the night notice on a phone, text x2, pseudo-locale (VENT-106)', () => {
+  test.use({ viewport: { width: 390, height: 844 }, hasTouch: true, isMobile: true });
+
+  test('at peek it is whole and clear of the compass, or hidden; measured again when the text size changes', async ({ page }) => {
+    await page.addInitScript(() => {
+      document.addEventListener('DOMContentLoaded', () => { document.documentElement.style.fontSize = '200%'; });
+    });
+    await open(page, NIGHT, './en-xa/');
+    await page.locator('.tab-bar .tab').nth(3).click();
+    await expect(page.locator('.compass--heading')).toBeVisible();
+    const wholeAndClear = async (): Promise<boolean> =>
+      (await notice(page).getAttribute('data-cut')) !== null || (await whole(notice(page)) && await noticeCovers(page) === null);
+    await expect.poll(wholeAndClear).toBe(true);
+    // The page's own text size: room for it whole, under the compass's corner.
+    await page.evaluate(() => { document.documentElement.style.fontSize = '100%'; });
+    await expect.poll(() => notice(page).getAttribute('data-cut')).toBeNull();
+    expect(await whole(notice(page))).toBe(true);
+    await expect.poll(() => noticeCovers(page)).toBeNull();
+    // Larger again, by steps: whole and clear, or hidden, never cut or over the compass.
+    for (const size of ['150%', '200%']) {
+      await page.evaluate((s) => { document.documentElement.style.fontSize = s; }, size);
+      await expect.poll(wholeAndClear).toBe(true);
+    }
+    await shot(page, 'phone-night-x2-en-xa-peek');
+  });
+});

@@ -30,7 +30,9 @@
  * phone it keeps to the free band with it (on-foot.css). A polite status,
  * so the wait is said when the night starts, not on every hour. Where the
  * band leaves it no room whole (the sheet risen over a 200 % text) it is
- * hidden rather than cut, until the band grows again.
+ * hidden rather than cut, until the band grows again; and so it is where
+ * it would sit under the compass (VENT-106). While it shows, the scale's
+ * labels keep clear of it (`data-label-clear`, scene/label-clear.ts).
  */
 import { useRef } from 'react';
 import type { NightNotice } from '../../terrain/night-notice';
@@ -39,9 +41,10 @@ import { useCut } from './use-cut';
 
 export function OnFootNight({ notice }: { readonly notice: NightNotice }) {
   const ref = useRef<HTMLDivElement>(null);
-  const cut = useCut(ref);
+  const cut = useCut(ref, '.compass');
   return (
-    <div ref={ref} className="on-foot__night" data-cut={cut || undefined}>
+    <div ref={ref} className="on-foot__night" data-cut={cut || undefined}
+      data-label-clear={cut ? undefined : ''}>
       <Icon name="horizon" className="notice-row__mark" />
       <p className="notice-row__lines" role="status">
         <span className="notice-row__title">{notice.title}</span>

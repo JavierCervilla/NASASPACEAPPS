@@ -32,6 +32,7 @@
 import { useCallback, useMemo, useRef } from 'react';
 import { skyAt, type SiteShadow } from '@ventana/sim';
 import type { TimeStore } from '../../calendar/time-store';
+import type { HoursResult } from '../../phone/widgets-loader';
 import type { HorizonStore } from '../../horizon/horizon-store';
 import { useTime } from '../calendar/hooks';
 import { useSiteHorizon } from '../horizon/use-horizon';
@@ -61,6 +62,11 @@ export interface OnFootParts {
   readonly tiles: RingSource;
   /** The view's tier, shared by its scene and its rings (VENT-49). */
   readonly viewTier: ViewTier;
+  /**
+   * The hours the widgets show: their hour says if it is night, and on
+   * desktop the horizon strip under the view reads them.
+   */
+  readonly hours?: HoursResult | undefined;
 }
 
 /** The point's tile, placed, and the sky over it at the instant. */
@@ -102,14 +108,15 @@ export function useOnFoot(parts: OnFootParts, report: Recorder) {
   const bodies = useMemo(() => (placed && sky
     ? seenBodies(placed, profile, sky) : []), [placed, profile, sky]);
   const seed = seedOf(parts.site);
+  const night = useNight(parts.site, ground.atMs, profile, parts.hours);
+  const dark = night.night;
   const input = useMemo<SceneInput | null>(() => {
     if (!placed || !ring || !sky) return null;
     const words = sceneWords(i18n, bodies);
     const earthSpin = spinOf(parts.site.lat, sky, ground.atMs ?? 0);
     return { tiles: [placed], ring, profile, seed, sky, earthSpin,
-      startYawDeg, words };
+      startYawDeg, words, night: dark };
   }, [placed, ring, sky, profile, seed, startYawDeg, bodies, i18n,
-    parts.site.lat, ground.atMs]);
-  const night = useNight(parts.site, sky, ground.atMs, profile);
+    parts.site.lat, ground.atMs, dark]);
   return { ...ground, input, bodies, startYawDeg, profile, night };
 }

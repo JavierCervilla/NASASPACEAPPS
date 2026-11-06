@@ -30,11 +30,11 @@
  */
 import { MeshStandardMaterial, ShaderLib } from 'three';
 import { describe, expect, it } from 'vitest';
-import { computedHours, shadowedHours, skyAt, terrainHours, toIso, type SiteShadow } from '@ventana/sim';
+import { computedHours, hasSun, shadowedHours, skyAt, terrainHours, toIso, type SiteShadow } from '@ventana/sim';
 import { bodyWidget, SUN } from '../src/phone/body-widget';
 import { shippedTerrain } from '../src/source/terrain-profiles';
 import { isNight, NIGHT_LIGHT, nightLight } from '../src/terrain/night-light';
-import { nightNotice } from '../src/terrain/night-notice';
+import { nightAnswer, nightNotice } from '../src/terrain/night-notice';
 import { createFillUniforms, patchPhotometry } from '../src/terrain/scene/ground-photometry';
 import { createSky, FILL, KEY_INTENSITY } from '../src/terrain/scene/sky';
 import { placeSky } from '../src/terrain/scene/sky-place';
@@ -199,5 +199,53 @@ describe('the caption at night', () => {
     expect(captionNote(EN, true)).toBe('Earth: NASA Blue Marble · light added for legibility');
     expect(captionNote(EN, false)).toBe('Earth: NASA Blue Marble · shadows lifted and exposure raised 20 % for legibility');
     expect(captionNote(EN)).toBe(captionNote(EN, false));
+  });
+});
+
+describe('one night answer for the hour the views show (VENT-106)', () => {
+  const place = { ...IM2_PLACE, profile: PROFILE };
+  const hourOf = (ms: number): number => Math.floor(ms / 3_600_000) * 3_600_000;
+  const shownFrom = (ms: number) => {
+    const at = hourOf(ms);
+    return terrainHours(shadowedHours(computedHours(IM2, toIso(at - 24 * 3_600_000), toIso(at + 720 * 3_600_000)), undefined), PROFILE);
+  };
+  /** The Sun sets behind IM-2's terrain at 10:40 UTC; the hour's sample, 10:00, still has it. */
+  const SUNSET_MS = Date.parse('2026-11-15T10:40:00Z');
+  /** It rises at 06:50 UTC; the hour's sample, 06:00, is night. */
+  const SUNRISE_MS = Date.parse('2026-11-15T06:50:00Z');
+
+  it('is the hour\'s answer, the widgets\', not the exact instant\'s', () => {
+    expect(isNight(skyAt(IM2, SUNSET_MS), PROFILE)).toBe(true);
+    expect(nightAnswer(place, SUNSET_MS, null, EN)).toEqual({ night: false, notice: null });
+    expect(isNight(skyAt(IM2, SUNRISE_MS), PROFILE)).toBe(false);
+    const rise = nightAnswer(place, SUNRISE_MS, null, EN);
+    expect(rise.night).toBe(true);
+    expect(rise.notice?.rise).toBe('The Sun rises in 1 h');
+  });
+
+  it('counts from the hours the widgets show when there are some', () => {
+    const shown = shownFrom(NIGHT_MS);
+    // A source that has the Sun rise one hour later than the simulator does.
+    const rise = shown.findIndex((hour) => Date.parse(hour.t) > NIGHT_MS && hasSun(hour));
+    const later = shown.map((hour, i) => (i === rise ? { ...hour, sunEl: -1, sunAboveTerrain: false } : hour));
+    const answer = nightAnswer(place, NIGHT_MS, later, EN);
+    const now = later.find((hour) => Date.parse(hour.t) === hourOf(NIGHT_MS))!;
+    const ahead = later.filter((hour) => Date.parse(hour.t) >= hourOf(NIGHT_MS));
+    expect(answer.notice?.rise).toBe(`The Sun rises in ${bodyWidget(SUN, ahead, now, EN).value}`);
+    expect(answer.notice?.rise).toBe('The Sun rises in 8 d 17 h');
+  });
+
+  it('says day by the shown hours even where the simulator says night', () => {
+    const shown = shownFrom(NIGHT_MS).map((hour) => ({ ...hour, sunEl: 5, sunAboveTerrain: true }));
+    expect(nightAnswer(place, NIGHT_MS, shown, EN)).toEqual({ night: false, notice: null });
+  });
+
+  it('falls back to the simulator\'s hours when the shown ones miss the hour', () => {
+    expect(nightAnswer(place, NIGHT_MS, [], EN)).toEqual(nightAnswer(place, NIGHT_MS, null, EN));
+    expect(nightAnswer(place, NIGHT_MS, null, EN).notice?.rise).toBe('The Sun rises in 8 d 16 h');
+  });
+
+  it('is night with no notice where NASA\'s maps put the point in permanent shadow', () => {
+    expect(nightAnswer({ ...place, shadow: PSR }, DAY_MS, null, EN)).toEqual({ night: true, notice: null });
   });
 });

@@ -617,8 +617,11 @@ Every visible change follows `.claude/skills/apple-design/SKILL.md` (vendored fr
   the Earth's light by its lit share, the ground's bounce by the Sun's height and a dim sky floor (`sky-light.ts`), and
   when the Sun does not reach the point the exposure opens up instead of faking sunlight (`exposureFor`, `stage.ts`).
   **Lunar night** (VENT-100, the human's «intermediate» night on the canvas): while the Sun is under the point's
-  horizon (`isNight`, `src/terrain/night-light.ts`: the horizon profile's answer where there is one, else the level;
-  the answer `hasSun` gives the widgets) the view keeps a quarter of the day's hemisphere floor, the Earth's light is a
+  horizon by the hour the widgets show (VENT-106, `nightAnswer` in `src/terrain/night-notice.ts`: `hasSun` of that
+  hour's sample, from the hours the views show, Horizons or computed, with the site's shadow and terrain, else the
+  simulator's own; so the scene's light (`SceneInput.night`, relit when it turns), the caption and the notice give one
+  answer with the widgets, at the price of the light turning up to an hour off the Sun drawn; a site in permanent
+  shadow is night with no notice) the view keeps a quarter of the day's hemisphere floor, the Earth's light is a
   real directional light from the Earth, half the key at most, by its lit share and its height over that horizon (none
   while the terrain hides it), and the bounce light, which has nothing to bounce at night, becomes a low reading light
   from 300° and 10° up at 0.15 of the key, cool white and without shadows (`NIGHT_LIGHT`, `nightLight`; placed by
@@ -628,14 +631,17 @@ Every visible change follows `.claude/skills/apple-design/SKILL.md` (vendored fr
   the ground's lunar one masks the first directional light alone while `uSunNight` is 1 (before, it also put out the
   Earth's light, the only light of the night). The view then says «Lunar night here» over «The Sun rises in 8 d 16 h»
   (`components/terrain/OnFootNight.tsx`, `src/terrain/night-notice.ts`, `use-night.ts`): the «Sunrise in» widget's
-  count, the simulator's hours from the instant's hour over the widgets' 30 days with the site's shadow and terrain
-  applied, through the widget's `timeLeft`; none for a site NASA's maps put in permanent shadow. It is a notice row in
-  the view's dark material over the caption (on a phone in the free band, hidden rather than cut when the band has no
-  room for it whole, `use-cut.ts`), and the caption's second line says «Earth: NASA Blue Marble · light added for
+  count, from the same hours (the desktop's month and the phone sheet's widgets' hours, passed to the view as `hours`)
+  from the instant's hour over the widgets' 30 days, through the widget's `timeLeft`; none for a site NASA's maps put in
+  permanent shadow. It is a notice row in the view's dark material over the caption (on a phone in the free band,
+  hidden rather than cut when the band has no room for it whole, and hidden where it would sit under the compass,
+  measured again when the band, its size or the compass changes, `use-cut.ts`); while it shows, the scale's labels keep
+  clear of it (`data-label-clear`, `scene/label-clear.ts`, `keptLabels` in `scene/label-declutter.ts`), and the caption's second line says «Earth: NASA Blue Marble · light added for
   legibility» (`captionNote(i18n, night)`, `onFoot.captionNoteNight`). Held by `tests/lunar-night.test.ts` and
   `tests/e2e/vent-100-lunar-night.spec.ts` (IM-2's recorded relief: the notice and the caption at 2026-11-06 15:04 UTC,
   the ground about three times brighter with the Earth 4.2° over the terrain than 0.9° behind it, the day unchanged, the
-  notice whole in the phone's band at 200 % text and in the pseudo-locale).
+  notice whole in the phone's band at 200 % text and in the pseudo-locale; VENT-106: the hours of a sunset and a sunrise
+  on 2026-11-15, the notice off the compass and the labels, re-measured as the text size changes).
   Safe start (VENT-69, after a Pixel 10's first frame took 1.6 s and its GPU reset): the ground's cost is set per tier in
   one place (`src/terrain/ground-policy.ts`, `groundPolicy(tier, leave)`): lunar photometry (`RE_Direct_Ground`), the
   second normal read (`antitile`), the `fwidth` footprint fade and the fine relief (no `fine-tiles/` request, no shader

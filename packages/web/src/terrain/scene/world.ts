@@ -186,7 +186,8 @@ export function applyInput(world: World, input: SceneInput): boolean {
   if (tilesChanged || profileChanged) applyProfile(world, input);
   if (tilesChanged || profileChanged || ringChanged) world.stage.shadow.mark();
   const forced = tilesChanged || profileChanged || was?.ring !== input.ring;
-  const lit = (forced || was?.sky !== input.sky) &&
+  const lit = (forced || was?.sky !== input.sky ||
+    was?.night !== input.night) &&
     relightWorld(world, input, forced);
   return lit || drawsAgain(was, input);
 }

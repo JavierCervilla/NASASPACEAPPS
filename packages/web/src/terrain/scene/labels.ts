@@ -34,6 +34,7 @@
 import { Vector3, type PerspectiveCamera } from 'three';
 import { direction } from '../view-camera';
 import { declutter } from './label-declutter';
+import { inFront } from './in-front';
 import {
   RING_BEARINGS_DEG,
   RING_DISTANCES_M,
@@ -64,7 +65,8 @@ function place(
   view: { camera: PerspectiveCamera; ground: Ground; host: HTMLElement },
 ): void {
   const q = point.clone().project(view.camera);
-  const shown = q.z < 1 && Math.abs(q.x) < 0.95 && Math.abs(q.y) < 0.95 &&
+  const shown = inFront(view.camera, point)
+    && Math.abs(q.x) < 0.95 && Math.abs(q.y) < 0.95 &&
     !behindGround(view.camera, point, view.ground);
   el.hidden = !shown;
   if (!shown) return;

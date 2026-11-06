@@ -42,6 +42,8 @@ import {
   type RefObject,
 } from 'react';
 import { settingsFor } from '../../lib/quality';
+import { pickQuality } from '../../globe/quality-pick';
+import { depthChoice } from '../../terrain/depth-mode';
 import { parseLeaveOut } from '../../terrain/leave-out';
 import type { Recorder } from '../../terrain/report/recorder';
 import type { SceneInput, SceneSetup, TerrainScene }
@@ -85,8 +87,11 @@ function setupOf(m: Mount): SceneSetup {
   const { report } = m.hooks.current;
   report.environment({ tier });
   report.step(`scene mounted at tier ${tier}`);
-  return { quality: settingsFor(tier),
-    leave: parseLeaveOut(window.location.search), report };
+  const { search } = window.location;
+  const leave = parseLeaveOut(search);
+  const { clipControl } = pickQuality.gpuProfile();
+  return { quality: settingsFor(tier), leave, report,
+    depth: depthChoice(search, leave, clipControl) };
 }
 
 /** Loads and mounts the scene; returns what undoes it. */

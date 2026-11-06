@@ -316,6 +316,39 @@ describe('GET /api/v1/sites', () => {
     expect(body.ephemeris.hours).toHaveLength(24);
   });
 
+  // VENT-96: the list changes only with a deploy, so a browser may keep it a few minutes and then revalidate it.
+  it('lets the list be cached for five minutes, with an ETag of its content', async () => {
+    const res = await app(fixtureFetch()).request('/api/v1/sites');
+    expect(res.headers.get('Cache-Control')).toBe('public, max-age=300');
+    expect(res.headers.get('ETag')).toMatch(/^"[0-9a-f]{16}"$/);
+    const again = await app(fixtureFetch()).request('/api/v1/sites');
+    expect(again.headers.get('ETag')).toBe(res.headers.get('ETag'));
+  });
+
+  it('answers 304 to a matching If-None-Match, strong or weakened by compression', async () => {
+    const api = app(fixtureFetch());
+    const tag = (await api.request('/api/v1/sites')).headers.get('ETag')!;
+    for (const header of [tag, `W/${tag}`, `"other", ${tag}`]) {
+      const res = await api.request('/api/v1/sites', { headers: { 'If-None-Match': header } });
+      expect(res.status).toBe(304);
+      expect(res.headers.get('ETag')).toBe(tag);
+      expect(res.headers.get('Cache-Control')).toBe('public, max-age=300');
+    }
+    expect((await api.request('/api/v1/sites', { headers: { 'If-None-Match': '"other"' } })).status).toBe(200);
+  });
+
+  it('gives another site list another ETag', async () => {
+    const horizons = createHorizonsClient({ fetch: fixtureFetch(), cacheDir });
+    const fewer = createApp({ horizons, pointsCache: horizons.points, sites: SITES.slice(1), now: () => NOW });
+    const tag = (await app(fixtureFetch()).request('/api/v1/sites')).headers.get('ETag');
+    expect((await fewer.request('/api/v1/sites')).headers.get('ETag')).not.toBe(tag);
+  });
+
+  it('keeps the single-site answer without a cache policy of its own', async () => {
+    const res = await app(fixtureFetch()).request('/api/v1/sites/im2-athena');
+    expect(res.headers.get('Cache-Control')).toBeNull();
+  });
+
   it('answers 404 for an unknown site and 400 for half a range', async () => {
     const api = app(fixtureFetch());
     expect((await api.request('/api/v1/sites/nowhere')).status).toBe(404);

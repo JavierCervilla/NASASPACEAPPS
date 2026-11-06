@@ -90,6 +90,8 @@ completa está en el documento «Ventana Lunar · Especificación y roadmap».
   movimiento reducido y menos recálculo de estilos al arrastrar la hoja (VENT-82)
 - [x] Noche lunar en la vista 3D: luz de la Tierra real, relleno mínimo y una luz baja de lectura, con el aviso de
   cuándo sale el Sol y el pie que dice que la luz se ha añadido (VENT-100)
+- [x] Texturas comprimidas para la GPU: los mapas de color 2K y 4K del globo y la Tierra de la vista 3D en KTX2, con un
+  worker propio y una CSP solo para él; perfil de la GPU en `?debug` (VENT-101)
 - [ ] Probar la vista 3D en móviles reales en la nube (PowerVR, Adreno, Mali) y recuperar las sombras en PowerVR con
   reverse-Z (VENT-77, aparcado)
 - [ ] Variante C del cargador, el descenso, en equipos potentes (VENT-61)

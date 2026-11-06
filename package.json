@@ -22,7 +22,8 @@
     "e2e": "playwright test --project=app && playwright test --project=bench",
     "lint": "eslint .",
     "headers": "node scripts/file-header.mjs --write",
-    "headers:check": "node scripts/file-header.mjs --check"
+    "headers:check": "node scripts/file-header.mjs --check",
+    "ktx2:check": "node packages/web/scripts/moon-ktx2.mjs --verify"
   },
   "devDependencies": {
     "@playwright/test": "1.64.1",

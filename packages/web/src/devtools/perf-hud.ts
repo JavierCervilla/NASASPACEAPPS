@@ -75,6 +75,8 @@ export interface HudView {
 export interface PerfHudOptions {
   readonly tier: Tier;
   readonly gpu: string;
+  /** The GPU's profile lines, read at each reading (VENT-101). */
+  readonly gpuLines?: (() => readonly string[]) | undefined;
   readonly flags: DebugFlags;
   /** The breadcrumb trail the previous session left. */
   readonly previous: readonly string[];
@@ -130,7 +132,8 @@ export class PerfHud implements HudView {
     const { tier, gpu, current } = this.options;
     const tierLabel = PERF_TEXT.tiers[tier];
     const live = current().slice(-LIVE_TRAIL_LINES).join('\n');
-    const text = readout(reading, stats, { tierLabel, gpu });
+    const gpuLines = this.options.gpuLines?.();
+    const text = readout(reading, stats, { tierLabel, gpu, gpuLines });
     this.lastText = `${text}\n${PERF_TEXT.currentTrail}\n${live}`;
     this.lastLine = foldedLine(reading);
     this.show();

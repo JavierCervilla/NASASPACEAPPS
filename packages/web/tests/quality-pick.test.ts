@@ -29,15 +29,19 @@
  * are read again on every pick, so a forced tier still decides.
  */
 import { describe, expect, it } from 'vitest';
+import { probeDevice } from '../src/globe/device-probe';
 import { qualityPicker, type PickSources } from '../src/globe/quality-pick';
+import { EMPTY_PROFILE, type GpuProfile } from '../src/lib/gpu-profile';
+
+const PROFILE: GpuProfile = { ...EMPTY_PROFILE, maxTextureSize: 4096 };
 
 /** Sources over a mutable address and pointer, counting the probes. */
 function sources(gpu: string) {
   const state = { search: '', hash: '', coarse: false, probes: 0 };
   const picks: PickSources = {
-    probeGpu: () => {
+    probeDevice: () => {
       state.probes++;
-      return gpu;
+      return { gpu, profile: PROFILE };
     },
     hints: (name) => ({ gpu: name, coarsePointer: state.coarse, cores: 8 }),
     address: () => ({ search: state.search, hash: state.hash }),
@@ -87,11 +91,61 @@ describe('the quality picker', () => {
     expect(state.probes).toBe(1);
   });
 
+  it('keeps the profile of that one probe, for any number of reads', () => {
+    const { state, picks } = sources('Adreno (TM) 740');
+    const pick = qualityPicker(picks);
+    expect(pick.gpuProfile()).toBe(PROFILE);
+    pick(false);
+    expect(pick.device()).toEqual({ gpu: 'Adreno (TM) 740', profile: PROFILE });
+    expect(state.probes).toBe(1);
+  });
+
   it('gives each picker its own probe', () => {
     const one = sources('SwiftShader');
     const two = sources('SwiftShader');
     qualityPicker(one.picks)(false);
     qualityPicker(two.picks)(false);
     expect([one.state.probes, two.state.probes]).toEqual([1, 1]);
+  });
+});
+
+describe('the page probe', () => {
+  /** A context that logs what is read of it, and when it is given back. */
+  function loggingContext() {
+    const log: string[] = [];
+    const lose = { loseContext: () => log.push('lose') };
+    const gl = {
+      RENDERER: 1,
+      MAX_TEXTURE_SIZE: 2,
+      getSupportedExtensions: () => {
+        log.push('extensions');
+        return ['WEBGL_compressed_texture_etc'];
+      },
+      getExtension: (name: string) => {
+        log.push(name);
+        return name === 'WEBGL_lose_context' ? lose : null;
+      },
+      getParameter: (name: number) => (name === 1 ? 'Mali-G715' : 8192),
+    };
+    return { gl, log };
+  }
+
+  it('reads the name and the profile before giving the context back', () => {
+    const { gl, log } = loggingContext();
+    const options: unknown[] = [];
+    const device = probeDevice((attributes) => {
+      options.push(attributes);
+      return gl as never;
+    });
+    expect(device.gpu).toBe('Mali-G715');
+    expect(device.profile.textureFormats.etc2).toBe(true);
+    expect(device.profile.maxTextureSize).toBe(8192);
+    expect(log.at(-1)).toBe('lose');
+    expect(log.indexOf('extensions')).toBeLessThan(log.indexOf('lose'));
+    expect(options).toEqual([{ powerPreference: 'low-power' }]);
+  });
+
+  it('answers an empty device without a context', () => {
+    expect(probeDevice(() => null)).toEqual({ gpu: '', profile: EMPTY_PROFILE });
   });
 });

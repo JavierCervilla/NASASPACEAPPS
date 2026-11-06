@@ -105,6 +105,29 @@ test.describe('?debug, desktop 1440x900', () => {
     await expect(page).toHaveURL(/#horizon$/);
   });
 
+  test('with ?debug the readout shows the GPU profile from the page\'s one probe', async ({ page }) => {
+    // VENT-101: the tools read the page probe's profile instead of making a context of their own.
+    await page.addInitScript(() => {
+      const w = window as unknown as { glContexts: number };
+      w.glContexts = 0;
+      const getContext = HTMLCanvasElement.prototype.getContext;
+      HTMLCanvasElement.prototype.getContext = function (this: HTMLCanvasElement, ...args: unknown[]) {
+        if (/webgl/.test(String(args[0]))) w.glContexts++;
+        return (getContext as (...a: unknown[]) => RenderingContext | null).apply(this, args);
+      } as typeof getContext;
+    });
+    await open(page, `./?${POINT}&debug`);
+    await expect(readout(page)).toBeVisible({ timeout: START_MS });
+    await readout(page).getByRole('button', { name: 'Performance readout' }).click();
+    // The readout's text (hud-elements.ts TEXT_ID), one line per row.
+    const text = page.locator('#ventana-perf-hud-text');
+    await expect(text).toHaveText(/\ntex [A-Za-z0-9 -]+ · max \d+ · aniso \d+\n/, { timeout: START_MS });
+    await expect(text).toHaveText(/\n(no )?clip_control · (no )?parallel compile · (no )?float cb\n/);
+    await expect(text).toHaveText(/\nktx2 (→ (ETC2|BC1)|off: [^\n]+)\n/);
+    // The probe and the globe: no context of the tools' own.
+    expect(await page.evaluate(() => (window as unknown as { glContexts: number }).glContexts)).toBe(2);
+  });
+
   test('opening #horizon with ?debug marks the on-foot view\'s steps in the breadcrumbs', async ({ page }) => {
     await load(page, `./?${POINT}&debug#horizon`);
     await expect(readout(page)).toBeVisible({ timeout: START_MS });

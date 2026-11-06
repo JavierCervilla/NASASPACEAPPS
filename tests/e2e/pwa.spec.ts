@@ -30,6 +30,7 @@
  * lets all of it run with no violation on every locale.
  */
 import { execFileSync } from 'node:child_process';
+import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { expect, test, type BrowserContext, type Page, type Response } from '@playwright/test';
 import { stubApi } from './api-stub';
@@ -176,7 +177,7 @@ test.describe('offline', () => {
 });
 
 test.describe('what the worker downloads', () => {
-  test('the install keeps the offline set: pages, icons, every phase frame and thumbnail, the 1K and 2K maps', async ({
+  test('the install keeps the offline set: pages, icons, every phase frame and thumbnail, the 1K maps, the 2K relief', async ({
     context,
     page,
   }) => {
@@ -196,12 +197,13 @@ test.describe('what the worker downloads', () => {
         'icons/icon-192.png',
         'textures/moon-lroc-1k.jpg',
         'textures/moon-lola-normal-1k.jpg',
-        'textures/moon-lroc-2k.jpg',
         'textures/moon-lola-normal-2k.jpg',
       ]),
     );
-    // The 2K globe maps are fetched by the phone's install (VENT-97: its globe climbs to them after opening).
-    expect(asked).toEqual(expect.arrayContaining(['textures/moon-lroc-2k.jpg', 'textures/moon-lola-normal-2k.jpg']));
+    // The 2K relief is fetched by the phone's install (VENT-97: its globe climbs to 2K after opening). The 2K colour
+    // is not (VENT-101): it comes as KTX2 where the GPU takes it, with its transcoder, and is kept when the page uses it.
+    expect(asked).toEqual(expect.arrayContaining(['textures/moon-lola-normal-2k.jpg']));
+    expect(kept).not.toContain('textures/moon-lroc-2k.jpg');
     // The polar map, the desktop's alone, is neither installed nor asked for once the phone's page has started (VENT-95).
     await page.waitForTimeout(START_WAIT_MS);
     expect(kept.filter((f) => DESKTOP_EXTRAS.includes(f))).toEqual([]);
@@ -237,7 +239,8 @@ test.describe('what the worker downloads', () => {
     await page.reload();
     await expect(page.locator('.globe-markers')).toHaveAttribute('data-state', 'window');
     await context.setOffline(true);
-    const globeMap = page.waitForResponse(/\/textures\/moon-lroc-2k\.jpg$/);
+    // The 2K colour comes as KTX2 where the GPU takes it (VENT-101; SwiftShader: BC1), kept on the first visit's use.
+    const globeMap = page.waitForResponse(/\/textures\/moon-lroc-2k\.ktx2$/);
     await page.reload();
     expect((await globeMap).fromServiceWorker()).toBe(true);
     await expect(page.locator('.globe-markers')).toHaveAttribute('data-state', 'window');
@@ -248,6 +251,51 @@ test.describe('what the worker downloads', () => {
     expect(polar.ok()).toBe(true);
     await expect.poll(() => page.locator('.polar__image').evaluate((img: HTMLImageElement) => img.naturalWidth)).toBe(2048);
     await page.screenshot({ path: test.info().outputPath('offline-polar-1440.png') });
+  });
+
+  test('after a visit, offline, the 2K KTX2, its transcoder and its worker come from the cache, the worker with its own CSP (VENT-101)', async ({
+    context,
+    page,
+  }) => {
+    const workerPolicy = /Content-Security-Policy "([^"]+)"/.exec(
+      readFileSync(new URL('../../nginx-basis-worker-headers.conf', import.meta.url), 'utf8'),
+    )![1]!;
+    // As nginx sends it: the worker's response carries its own policy, which the kept copy must keep.
+    await context.route(/\/_astro\/basis-worker[.-][^/]*\.js$/, async (route) => {
+      const response = await route.fetch();
+      await route.fulfill({ response, headers: { ...response.headers(), 'content-security-policy': workerPolicy } });
+    });
+    await page.setViewportSize({ width: 1440, height: 900 });
+    await open(context, page, '?quality=high&debug');
+    await controlled(page);
+    await page.reload();
+    await expect(page.locator('.globe-markers')).toHaveAttribute('data-state', 'window');
+    await expect.poll(async () => (await keptFiles(page)).filter((f) => /moon-lroc-2k\.ktx2$|basis/.test(f)).length, {
+      timeout: 15_000,
+    }).toBe(4);
+    const keptPolicy = await page.evaluate(async () => {
+      const names = (await caches.keys()).filter((n) => n.startsWith('ventana-static-'));
+      for (const name of names) {
+        const keys = await (await caches.open(name)).keys();
+        const worker = keys.find((r) => /\/_astro\/basis-worker[.-]/.test(r.url));
+        if (worker) return (await caches.match(worker))?.headers.get('content-security-policy') ?? null;
+      }
+      return null;
+    });
+    expect(keptPolicy).toBe(workerPolicy);
+    // Only the offline visit's lines.
+    await page.evaluate(() => localStorage.removeItem('ventana.devtools.breadcrumbs'));
+    await context.setOffline(true);
+    const asked: string[] = [];
+    page.on('request', (request) => asked.push(new URL(request.url()).pathname));
+    const map = page.waitForResponse(/\/textures\/moon-lroc-2k\.ktx2$/);
+    await page.reload();
+    expect((await map).fromServiceWorker()).toBe(true);
+    const lines = () =>
+      page.evaluate(() => (JSON.parse(localStorage.getItem('ventana.devtools.breadcrumbs') ?? '[]') as string[]).join('\n'));
+    await expect.poll(lines, { timeout: 30_000 }).toMatch(/globe: 2K colour as KTX2 → BC1[\s\S]*globe: 2K on the Moon/);
+    expect(await lines()).not.toMatch(/KTX2 off/);
+    expect(asked).not.toContain(`${base}textures/moon-lroc-2k.jpg`);
   });
 
   test('under Save-Data no worker is registered', async ({ context, page }) => {

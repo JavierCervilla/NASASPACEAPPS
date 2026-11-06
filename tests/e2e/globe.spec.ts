@@ -233,7 +233,8 @@ test.describe('desktop texture detail, 1440x900', () => {
   // Headless Chromium draws with SwiftShader, which the tier detection rates low (stops at 4K): force the high tier a
   // desktop GPU gets.
   const HIGH = './?quality=high';
-  const MAP_4K = /\/textures\/moon-lroc-4k\.jpg$/;
+  // The 4K colour comes as KTX2 where the GPU takes it (VENT-101; SwiftShader: BC1), else as JPEG.
+  const MAP_4K = /\/textures\/moon-lroc-4k\.(jpg|ktx2)$/;
   const MAP_8K = /\/textures\/moon-lroc-8k\.jpg$/;
 
   /**
@@ -270,7 +271,7 @@ test.describe('desktop texture detail, 1440x900', () => {
     const requested: string[] = [];
     page.on('request', (r) => requested.push(r.url()));
     await page.goto(HIGH);
-    const start = page.waitForResponse(/\/textures\/moon-lroc-2k\.jpg$/);
+    const start = page.waitForResponse(/\/textures\/moon-lroc-2k\.(jpg|ktx2)$/);
     await page.getByRole('button', { name: 'Load the 3D globe' }).click();
     await start;
     await zoomToMedium(page);

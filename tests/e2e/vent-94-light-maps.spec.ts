@@ -35,9 +35,10 @@ import { stubTile, stubWall } from './terrain-stub';
 const AT = new Date('2026-11-30T20:00:00Z');
 const START_MS = 30_000;
 /** The phone Earth is 512 px wide (on-foot-earth-512), the desktop's 1024 px (on-foot-earth). */
-const PHONE_EARTH = /\/on-foot-earth-512[.-][^/]*\.webp$/;
-const DESKTOP_EARTH = /\/on-foot-earth\.[^/]*\.webp$/;
-const MAPS = /\/on-foot-(regolith|earth)[^/]*\.webp$/;
+// The Earths come as KTX2 where the GPU takes it (VENT-101; SwiftShader: BC1), the albedo and normal map as WebP.
+const PHONE_EARTH = /\/on-foot-earth-512[.-][^/]*\.(webp|ktx2)$/;
+const DESKTOP_EARTH = /\/on-foot-earth\.[^/]*\.(webp|ktx2)$/;
+const MAPS = /\/on-foot-(regolith|earth)[^/]*\.(webp|ktx2)$/;
 /** What the three maps may weigh together, bytes: 234 kB on a phone and 293 kB on a desktop since VENT-94 (it was 570 kB). */
 const MAPS_BUDGET = 300_000;
 

@@ -31,9 +31,13 @@
  */
 import type { MeshLambertMaterial, Texture, WebGLRenderer } from 'three';
 import { devToolsModule } from '../lib/dev-tools-loader';
+import { loadKtx2 } from '../textures/ktx2-load';
+import { pageKtx2Deps } from '../textures/ktx2-page';
+import { pageKtx2 } from '../textures/ktx2-session';
 import { discPixels, pxPerTexel } from './disc-density';
 import { mapCrumbs } from './map-crumbs';
 import { glErrorName } from './map-failure';
+import type { Ktx2Target } from './ktx2-target';
 import type { MapTrace } from './map-trace';
 import type { MoonOptions } from './moon';
 import { moonTextureDeps } from './moon-textures';
@@ -80,9 +84,16 @@ export function moonSwap(
 ): MoonSwap {
   const glError = (): string => glErrorName(renderer.getContext().getError());
   const trace = mapCrumbs<Texture>(devToolsModule(), glError);
+  // KTX2 (VENT-101): the start colour's bytes may have been asked early.
+  const early = options.early?.maps;
+  const deps = pageKtx2Deps((url) => early?.takeBytes(url) ?? null);
+  const ktx2 = {
+    session: pageKtx2,
+    load: (url: string, target: Ktx2Target) => loadKtx2(url, target, deps),
+  };
   const swap = new TextureSwap<Texture>({
-    ...moonTextureDeps({ ...options, renderer, material }),
-    urls: (level) => levelUrls(level, options.base),
+    ...moonTextureDeps({ ...options, renderer, material, ktx2, trace }),
+    urls: (level) => levelUrls(level, options.base, pageKtx2.choice().target),
     warn: options.warn,
     trace,
   });

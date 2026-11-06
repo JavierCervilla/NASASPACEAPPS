@@ -99,3 +99,64 @@ describe('the web image', () => {
     expect(DOCKERFILE).toMatch(/SITE_URL="\$SITE_URL" PSEUDO_LOCALE=0 npm run build -w @ventana\/web/);
   });
 });
+
+describe('the KTX2 maps and their transcoder (VENT-101)', () => {
+  const WORKER_SNIPPET = readFileSync(new URL('../../../nginx-basis-worker-headers.conf', import.meta.url), 'utf8');
+  const PAGE_SNIPPET = readFileSync(new URL('../../../nginx-security-headers.conf', import.meta.url), 'utf8');
+  const regexBlock = (pattern: string): string => {
+    const at = CONF.indexOf(`location ~ ${pattern} {`);
+    expect(at, pattern).toBeGreaterThanOrEqual(0);
+    return CONF.slice(at, CONF.indexOf('\n  }', at));
+  };
+  const headers = (snippet: string): string[] =>
+    snippet.split('\n').filter((line) => line.startsWith('add_header') && !line.includes('Content-Security-Policy'));
+
+  it('gzips the transcoder\'s wasm (527 kB, 245 kB gzipped), not the KTX2 maps, which gain nothing', () => {
+    const types = /gzip_types ([^;]+);/.exec(CONF)?.[1]?.split(/\s+/) ?? [];
+    expect(types).toContain('application/wasm');
+    expect(types).not.toContain('image/ktx2');
+  });
+
+  it('caches the transcoder for good: its folder carries three\'s version', () => {
+    const body = locations(CONF).get('/basis/') ?? '';
+    expect(body).toContain('include /etc/nginx/snippets/security-headers.conf;');
+    expect(body).toContain('add_header Cache-Control "public, max-age=31536000, immutable";');
+  });
+
+  it('serves the transcoder\'s worker under its own CSP, never the page\'s', () => {
+    const pattern = '^/_astro/basis-worker-[A-Za-z0-9_-]+\\.js$';
+    const block = regexBlock(pattern);
+    // Anchored at both ends: only the built worker file takes the eval-allowing CSP, never a map or a longer path.
+    const matches = (path: string) => new RegExp(pattern).test(path);
+    expect(matches('/_astro/basis-worker-QNbRvZpx.js')).toBe(true);
+    for (const path of ['/_astro/basis-worker-QNbRvZpx.js.map', '/_astro/basis-worker-a/b.js', '/_astro/basis-worker.js', '/x/_astro/basis-worker-a.js']) {
+      expect(matches(path), path).toBe(false);
+    }
+    expect(block).toContain('include /etc/nginx/snippets/basis-worker-headers.conf;');
+    expect(block).not.toContain('security-headers.conf');
+    expect(block).toContain('add_header Cache-Control "public, max-age=31536000, immutable";');
+    expect(WORKER_SNIPPET).toContain(
+      `add_header Content-Security-Policy "default-src 'self'; script-src 'self' 'unsafe-eval' 'wasm-unsafe-eval'" always;`,
+    );
+    expect(WORKER_SNIPPET).not.toMatch(/^include /m);
+  });
+
+  it('gives the worker the same headers as every other response, but the CSP', () => {
+    expect(headers(WORKER_SNIPPET)).toEqual(headers(PAGE_SNIPPET));
+    expect(headers(PAGE_SNIPPET).length).toBeGreaterThanOrEqual(4);
+  });
+
+  it.each([
+    ['^/textures/.+\\.ktx2$', 'public, max-age=86400'],
+    ['^/_astro/.+\\.ktx2$', 'public, max-age=31536000, immutable'],
+  ])('serves %s as image/ktx2, cached as its folder is', (pattern, cache) => {
+    const block = regexBlock(pattern);
+    expect(block).toMatch(/types \{ \}\s+default_type image\/ktx2;/);
+    expect(block).toContain(`add_header Cache-Control "${cache}";`);
+    expect(block).toContain('include /etc/nginx/snippets/security-headers.conf;');
+  });
+
+  it('puts the worker\'s snippet in the image', () => {
+    expect(DOCKERFILE).toContain('COPY nginx-basis-worker-headers.conf /etc/nginx/snippets/basis-worker-headers.conf');
+  });
+});

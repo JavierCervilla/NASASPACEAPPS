@@ -28,7 +28,8 @@
  * and never in the first load (their file names carry `on-foot`, which the
  * service worker leaves out of the precache): the regolith's albedo and
  * normal map (Poly Haven «Moon 02», CC0) and the Earth (NASA Blue Marble
- * Next Generation, public domain), ASSETS.md.
+ * Next Generation, public domain), ASSETS.md. A phone takes the 512 px
+ * Earth (VENT-94): its disc is some 30 device pixels wide there.
  */
 import {
   ClampToEdgeWrapping,
@@ -41,6 +42,7 @@ import {
 import albedoUrl from '../maps/on-foot-regolith-albedo.webp?url';
 import normalUrl from '../maps/on-foot-regolith-normal.webp?url';
 import earthUrl from '../maps/on-foot-earth.webp?url';
+import earthPhoneUrl from '../maps/on-foot-earth-512.webp?url';
 
 export interface SurfaceMaps {
   readonly albedo: Texture;
@@ -57,11 +59,17 @@ function prepared(texture: Texture, colour: boolean, tiling: boolean): Texture {
   return texture;
 }
 
+/** The Earth's map for a phone-sized viewport or a wider one. */
+export function earthMapUrl(phone: boolean): string {
+  return phone ? earthPhoneUrl : earthUrl;
+}
+
 /** Loads the three maps; rejects when any is missing. */
-export async function loadSurfaceMaps(): Promise<SurfaceMaps> {
+export async function loadSurfaceMaps(phone: boolean): Promise<SurfaceMaps> {
   const loader = new TextureLoader();
   const [albedo, normal, earth] = await Promise.all(
-    [albedoUrl, normalUrl, earthUrl].map((url) => loader.loadAsync(url)));
+    [albedoUrl, normalUrl, earthMapUrl(phone)]
+      .map((url) => loader.loadAsync(url)));
   return {
     albedo: prepared(albedo as Texture, true, true),
     normal: prepared(normal as Texture, false, true),

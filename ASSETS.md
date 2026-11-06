@@ -337,8 +337,9 @@ All load on demand with the 3D view (file names `on-foot-*`, left out of the pre
 | File | What | sha256 |
 |---|---|---|
 | `packages/web/src/terrain/maps/on-foot-regolith-albedo.webp` | 1024 px, from `moon_02_diff_1k.jpg`, desaturated to near neutral and stretched in contrast, WebP q82, 14 536 bytes | `8563640a36c8dc7558c1903cc1536cc3eb5e842f9a393bf8624cbbb274e1d2cc` |
-| `packages/web/src/terrain/maps/on-foot-regolith-normal.webp` | 1024 px OpenGL normal map, from `moon_02_nor_gl_1k.jpg`, WebP q88, 469 352 bytes | `b4b5989bbf1c722cad2111304bc4396ae31e26b7296b2f99f3b3737d11ffe66a` |
-| `packages/web/src/terrain/maps/on-foot-earth.webp` | 1024 x 512 equirectangular, from the 5400 x 2700 Blue Marble, Lanczos, WebP q86, 85 926 bytes | `8edd5b933a5987878257f43f9f5d67c0dc9128581441baa4ffe9d19a3285baf3` |
+| `packages/web/src/terrain/maps/on-foot-regolith-normal.webp` | 1024 px OpenGL normal map, from `moon_02_nor_gl_1k.jpg`, WebP q50 (VENT-94; it was q88, 469 352 bytes), 192 640 bytes | `c7352ea0799f6fce8ca047448c661343eab6e9f64a054714be2b3cab72e80688` |
+| `packages/web/src/terrain/maps/on-foot-earth.webp` | 1024 x 512 equirectangular, from the 5400 x 2700 Blue Marble, Lanczos, WebP q86, 85 926 bytes (desktops) | `8edd5b933a5987878257f43f9f5d67c0dc9128581441baa4ffe9d19a3285baf3` |
+| `packages/web/src/terrain/maps/on-foot-earth-512.webp` | 512 x 256 equirectangular, the same way (VENT-94, phones), 27 256 bytes | `4099871d4733a4477e625175d713fbd34e2f6c3dcf7dc8c689ca1f2de3300316` |
 
 - **Regolith**: Poly Haven «Moon 02» (https://polyhaven.com/a/moon_02; Greg Zaal, Rico Cilliers, Jenelle van Heerden,
   Dario Barresi), CC0. Sources fetched from `https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/moon_02/`:
@@ -349,6 +350,17 @@ All load on demand with the 3D view (file names `on-foot-*`, left out of the pre
   `world.topo.bathy.200412.3x5400x2700.jpg`, https://visibleearth.nasa.gov/images/73909), NASA imagery, public domain under the
   NASA media usage guidelines; sha256 of the source `a9f0088972dee0254610af851c4d6838ca3f2cf79176987e0a5713e2c15ec042`.
   Cloud-free, so it shows land and ocean, not the weather of the day.
+- **How the normal and Earth maps were made** (VENT-94): `python3 packages/web/scripts/on_foot_maps.py normal
+  moon_02_nor_gl_1k.jpg packages/web/src/terrain/maps` and `… earth world.topo.bathy.200412.3x5400x2700.jpg
+  packages/web/src/terrain/maps` (Pillow 12.3.0 with libwebp 1.6.0, WebP `method=6`; another libwebp may give other
+  bytes). The same code at the old settings (q88 for the normal) gives the VENT-34 files byte for byte, so it is how they
+  were made too. Why q50 for the normal: the map is fine grain all over, and the on-foot view at
+  the high tier (1440 x 900, IM-2, 2026-11-22 20:00 UTC, the ground lit and the camera pitched down) renders it within
+  one level per channel of the q88 file on average (mean 0.9 of 255, 0.6 to 1.2 % of pixels more than 8 levels off,
+  isolated grains). The render hid every quality tried (q30 to q80: mean 1.2 to 0.6), so the texture chose: its 4 px
+  block edges grow as the quality drops (jump across a block edge over the jump inside, 1.04 at q88, 1.28 at q50, 1.35
+  at q40, 1.40 at q30) and at q30 its smoothest patches go visibly flat, the first step to banding; q50 keeps a margin. The phone's
+  512 px Earth changes at most 2 levels on 107 pixels of a 16 px disc (390 x 844, medium).
 
 ## On-foot ground: lunar photometry, fine real relief and rocks (VENT-62)
 

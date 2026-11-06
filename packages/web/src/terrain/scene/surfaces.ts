@@ -29,6 +29,7 @@
  * A map that fails to load leaves the plain colours and a warning, never a
  * broken view.
  */
+import { isPhoneViewport } from '../../lib/viewport';
 import { attachGroundMaps } from './ground';
 import { loadSurfaceMaps } from './surface-maps';
 import type { World } from './world';
@@ -39,7 +40,7 @@ export async function loadSurfaces(
   warn: (message: string) => void,
 ): Promise<boolean> {
   try {
-    const maps = await loadSurfaceMaps();
+    const maps = await loadSurfaceMaps(isPhoneViewport());
     attachGroundMaps(world.material, maps);
     if (world.patchMaterial) attachGroundMaps(world.patchMaterial, maps);
     const uniform = world.sky.earth.material.uniforms['uMap'];

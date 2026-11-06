@@ -9,6 +9,9 @@
   GPU escondida y la vista se dibuja sin mapa de sombras.
 
 ### Cambiado
+- **La vista 3D descarga menos al abrirse (VENT-94).** El mapa de relieve fino del regolito pasa de 469 kB a 193 kB
+  (WebP q50, sin diferencia visible en el suelo iluminado) y el móvil usa una Tierra de 512 px, que en su pantalla
+  ocupa unos 28 px: en el móvil la vista baja unos 335 kB menos.
 - **El globo arranca antes (VENT-93).** Los mapas de arranque (1K, o 2K en equipos potentes) se piden en cuanto se
   conoce la calidad del equipo, antes de descargar el código del globo, y se reutilizan sin volver a pedirse; los
   programas de la GPU se compilan sin bloquear donde el navegador lo permite, y la comprobación de shaders solo se hace

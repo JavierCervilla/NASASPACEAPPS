@@ -29,9 +29,10 @@
  * service worker leaves out of the precache): the regolith's albedo and
  * normal map (Poly Haven «Moon 02», CC0) and the Earth (NASA Blue Marble
  * Next Generation, public domain), ASSETS.md. A phone takes the 512 px
- * Earth (VENT-94): its disc is some 30 device pixels wide there. The albedo
- * and the Earth come as KTX2 where the GPU takes it (VENT-101), 4 bits per
- * texel on the GPU instead of 32, with the WebP behind them.
+ * Earth (VENT-94): its disc is some 30 device pixels wide there. The Earth
+ * comes as KTX2 where the GPU takes it (VENT-101), 4 bits per texel on the
+ * GPU instead of 32, with the WebP behind it; the albedo stays WebP, since
+ * its KTX2 would put the view's opening maps over their VENT-94 budget.
  */
 import {
   ClampToEdgeWrapping,
@@ -45,7 +46,6 @@ import albedoUrl from '../maps/on-foot-regolith-albedo.webp?url';
 import normalUrl from '../maps/on-foot-regolith-normal.webp?url';
 import earthUrl from '../maps/on-foot-earth.webp?url';
 import earthPhoneUrl from '../maps/on-foot-earth-512.webp?url';
-import albedoKtx2 from '../maps/on-foot-regolith-albedo.ktx2?url';
 import earthKtx2 from '../maps/on-foot-earth.ktx2?url';
 import earthPhoneKtx2 from '../maps/on-foot-earth-512.ktx2?url';
 import { pageSurfaceLoad, type SurfaceLoad } from './surface-load';
@@ -54,7 +54,6 @@ export type { SurfaceLoad } from './surface-load';
 
 /** Each colour map's WebP, by its KTX2. */
 const WEBP_OF: ReadonlyMap<string, string> = new Map([
-  [albedoKtx2, albedoUrl],
   [earthKtx2, earthUrl],
   [earthPhoneKtx2, earthPhoneUrl],
 ]);
@@ -80,8 +79,8 @@ export function earthMapUrl(phone: boolean): string {
 }
 
 /**
- * Loads the three maps, the colour ones as KTX2 while the session takes
- * it, else (or when KTX2 fails) as WebP; rejects when any is missing.
+ * Loads the three maps, the Earth as KTX2 while the session takes it, else
+ * (or when KTX2 fails) as WebP; rejects when any is missing.
  */
 export async function loadSurfaceMaps(
   phone: boolean,
@@ -93,7 +92,7 @@ export async function loadSurfaceMaps(
     fallbackOf: (url) => WEBP_OF.get(url) ?? url,
   });
   const [albedo, normal, earth] = await Promise.all([
-    colour(albedoKtx2),
+    load.image(albedoUrl),
     load.image(normalUrl),
     colour(phone ? earthPhoneKtx2 : earthKtx2),
   ]);

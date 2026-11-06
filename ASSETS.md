@@ -332,7 +332,7 @@ No elevation grid ships: only the profiles, and the catalogue of what the server
 
 ## KTX2 maps (VENT-101)
 
-The globe's 2K and 4K colour maps and the on-foot view's regolith albedo and Earths also ship as KTX2 (Basis Universal
+The globe's 2K and 4K colour maps and the on-foot view's Earths also ship as KTX2 (Basis Universal
 ETC1S), which the page transcodes to ETC2 or BC1 on the GPU: 4 bits per texel instead of 32, with mipmaps. Each is
 made from the committed file named on its row, so its source and licence are that file's (above and below). The 1K
 and 8K colour maps and every relief map stay JPEG or WebP; every KTX2 map keeps its JPEG or WebP sibling as the
@@ -342,7 +342,6 @@ fallback.
 |---|---|---|
 | `packages/web/public/textures/moon-lroc-2k.ktx2` | 2048 x 1024, 12 mip levels, from `moon-lroc-2k.jpg`, 312 599 bytes | `dc93c29756d1633b7cff1ad86d656d2b7e2f0c927b9c46091608adfc8be9bd8e` |
 | `packages/web/public/textures/moon-lroc-4k.ktx2` | 4096 x 2048, 13 mip levels, from `moon-lroc-4k.jpg`, 1 213 762 bytes | `e89f71eb329b18752ec8c04cb639be70b424340272851b863bb81e237de6eff5` |
-| `packages/web/src/terrain/maps/on-foot-regolith-albedo.ktx2` | 1024 x 1024, 11 mip levels, from `on-foot-regolith-albedo.webp`, 58 594 bytes | `6aa23971e7563b624819f217564b4be1bd56471129677749d4ba46deac48bca4` |
 | `packages/web/src/terrain/maps/on-foot-earth.ktx2` | 1024 x 512, 11 mip levels, from `on-foot-earth.webp`, 83 126 bytes | `2abe00070a841231991b9af78eceb236637ba4e662eac128618dd259d85d0761` |
 | `packages/web/src/terrain/maps/on-foot-earth-512.ktx2` | 512 x 256, 10 mip levels, from `on-foot-earth-512.webp`, 28 666 bytes | `5ce7f0b9db3d592ae9822e07eaddfa60f6f244a7896d9f713b094b2a6baec6f1` |
 

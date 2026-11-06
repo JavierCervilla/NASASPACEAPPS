@@ -35,7 +35,7 @@ import { stubTile, stubWall } from './terrain-stub';
 const AT = new Date('2026-11-30T20:00:00Z');
 const START_MS = 30_000;
 /** The phone Earth is 512 px wide (on-foot-earth-512), the desktop's 1024 px (on-foot-earth). */
-// The albedo and the Earths come as KTX2 where the GPU takes it (VENT-101; SwiftShader: BC1), the normal map as WebP.
+// The Earths come as KTX2 where the GPU takes it (VENT-101; SwiftShader: BC1), the albedo and normal map as WebP.
 const PHONE_EARTH = /\/on-foot-earth-512[.-][^/]*\.(webp|ktx2)$/;
 const DESKTOP_EARTH = /\/on-foot-earth\.[^/]*\.(webp|ktx2)$/;
 const MAPS = /\/on-foot-(regolith|earth)[^/]*\.(webp|ktx2)$/;

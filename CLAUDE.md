@@ -182,14 +182,15 @@ Every visible change follows `.claude/skills/apple-design/SKILL.md` (vendored fr
   float buffers), kept by the picker (`pickQuality.gpuProfile()`); the dev tools read it too instead of a context of
   their own. Capability is not safety: what is safe on a device is still the verdicts' (the bench, the crash marks,
   `terrain/shadow-safety.ts`).
-  GPU-compressed maps (VENT-101): the globe's 2K and 4K colour maps and the on-foot view's regolith albedo and Earths
-  also ship as KTX2 (Basis ETC1S q128, `packages/web/scripts/moon-ktx2.mjs` with the pinned `ktx2-encoder` 0.6.0,
-  deterministic, manifest `src/textures/ktx2.json` held by `npm run ktx2:check` in CI; ASSETS.md), transcoded to ETC2 RGB
+  GPU-compressed maps (VENT-101): the globe's 2K and 4K colour maps and the on-foot view's Earths also ship as KTX2
+  (Basis ETC1S q128, `packages/web/scripts/moon-ktx2.mjs` with the pinned `ktx2-encoder` 0.6.0, deterministic, manifest `src/textures/ktx2.json` held by `npm run ktx2:check` in CI; ASSETS.md), transcoded to ETC2 RGB
   or BC1 RGB, 4 bits per texel on the GPU instead of 32 (2K colour 1.4 MB instead of 11.2, 4K 5.6 instead of 44.7), with
   their levels made at encode, so nothing is decoded, uploaded as RGBA or mipmapped on the main thread (2K colour upload
   about 1 ms instead of 62 to 217 ms). `ktx2Target` (`src/globe/ktx2-target.ts`) picks ETC2, else BC1 with S3TC in sRGB,
   else none, from the probe's profile alone, so the early start knows it; on desktop Linux exposing every family it
-  skips ETC (three's rule against Mesa's emulated formats). The 1K and 8K colour and every relief stay JPEG or WebP.
+  skips ETC (three's rule against Mesa's emulated formats). The 1K and 8K colour, every relief and the on-foot
+  regolith albedo stay JPEG or WebP (the albedo's KTX2 is 44 kB more than its WebP, over the VENT-94 budget of the
+  view's opening maps, `tests/e2e/vent-94-light-maps.spec.ts`).
   three's `KTX2Loader` cannot run under the page's CSP (its workers come from a `blob:` and its transcoder's embind glue
   calls `new Function`), so the page has a transcoder worker of its own (`src/textures/basis-worker.ts`, a classic
   worker Vite emits as `_astro/basis-worker-<hash>.js`; `basis-transcode.ts`, after the KTX2Loader's BasisWorker) that

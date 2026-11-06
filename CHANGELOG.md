@@ -17,8 +17,8 @@
   GPU escondida y la vista se dibuja sin mapa de sombras.
 
 ### Cambiado
-- **Los mapas de color ocupan ocho veces menos en la GPU (VENT-101).** Los mapas de color 2K y 4K del globo y los del
-  suelo y la Tierra de la vista 3D se sirven en un formato comprimido para la tarjeta gráfica (KTX2), que el navegador
+- **Los mapas de color ocupan ocho veces menos en la GPU (VENT-101).** Los mapas de color 2K y 4K del globo y el de la
+  Tierra de la vista 3D se sirven en un formato comprimido para la tarjeta gráfica (KTX2), que el navegador
   convierte en un hilo aparte al formato del teléfono o del ordenador: el 2K pasa de 11,2 MB a 1,4 MB de memoria gráfica
   y el 4K de 44,7 MB a 5,6 MB, la red baja un 16 % en la escalera de color y subir el mapa ya no congela la página (de
   60-220 ms a 1 ms en el 2K). Si el navegador no puede (otro motor, un fallo o `?ktx2=0`), se usa el JPEG de siempre.

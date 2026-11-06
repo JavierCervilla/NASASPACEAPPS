@@ -36,12 +36,12 @@ export const MANIFEST = 'src/textures/ktx2.json';
 
 /**
  * Each map and its source, under packages/web: the globe's 2K and 4K colour (the 1K stays JPEG: start, offline and
- * fallback; the 8K is past the wasm encoder's 12 Mpx cap) and the on-foot albedo and Earths. Reliefs stay JPEG/WebP.
+ * fallback; the 8K is past the wasm encoder's 12 Mpx cap) and the on-foot Earths. Reliefs stay JPEG/WebP, and so does
+ * the on-foot albedo: its KTX2 is 44 kB more than its WebP, over the VENT-94 budget of the view's opening maps.
  */
 export const KTX2_JOBS = [
   { source: 'public/textures/moon-lroc-2k.jpg', output: 'public/textures/moon-lroc-2k.ktx2' },
   { source: 'public/textures/moon-lroc-4k.jpg', output: 'public/textures/moon-lroc-4k.ktx2' },
-  { source: 'src/terrain/maps/on-foot-regolith-albedo.webp', output: 'src/terrain/maps/on-foot-regolith-albedo.ktx2' },
   { source: 'src/terrain/maps/on-foot-earth.webp', output: 'src/terrain/maps/on-foot-earth.ktx2' },
   { source: 'src/terrain/maps/on-foot-earth-512.webp', output: 'src/terrain/maps/on-foot-earth-512.ktx2' },
 ];

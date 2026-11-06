@@ -88,7 +88,7 @@ completa está en el documento «Ventana Lunar · Especificación y roadmap».
   globo liberado con la vista 3D abierta) y un informe para copiar (VENT-81)
 - [x] Auditoría de movimiento aplicada: filas que se iluminan al pulsar, avisos que salen como entran, fundidos con
   movimiento reducido y menos recálculo de estilos al arrastrar la hoja (VENT-82)
-- [x] Texturas comprimidas para la GPU: los mapas de color 2K y 4K del globo y los de la vista 3D en KTX2, con un
+- [x] Texturas comprimidas para la GPU: los mapas de color 2K y 4K del globo y la Tierra de la vista 3D en KTX2, con un
   worker propio y una CSP solo para él; perfil de la GPU en `?debug` (VENT-101)
 - [ ] Probar la vista 3D en móviles reales en la nube (PowerVR, Adreno, Mali) y recuperar las sombras en PowerVR con
   reverse-Z (VENT-77, aparcado)

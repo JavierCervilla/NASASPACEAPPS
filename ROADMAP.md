@@ -92,6 +92,7 @@ completa está en el documento «Ventana Lunar · Especificación y roadmap».
   cuándo sale el Sol y el pie que dice que la luz se ha añadido (VENT-100)
 - [x] Texturas comprimidas para la GPU: los mapas de color 2K y 4K del globo y la Tierra de la vista 3D en KTX2, con un
   worker propio y una CSP solo para él; perfil de la GPU en `?debug` (VENT-101)
+- [x] El color del suelo de la vista 3D también en KTX2: 44 kB más de red por 4,9 MB menos de GPU (VENT-102)
 - [ ] Probar la vista 3D en móviles reales en la nube (PowerVR, Adreno, Mali) y recuperar las sombras en PowerVR con
   reverse-Z (VENT-77, aparcado)
 - [ ] Variante C del cargador, el descenso, en equipos potentes (VENT-61)

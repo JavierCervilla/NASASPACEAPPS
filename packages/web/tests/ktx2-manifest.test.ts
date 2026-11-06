@@ -50,10 +50,11 @@ describe('the KTX2 manifest', () => {
     expect(manifestProblems(manifest, read)).toEqual([]);
   });
 
-  it('covers the 2K and 4K colour maps and the on-foot Earths, not the albedo (it stays WebP: the VENT-94 budget)', () => {
+  it('covers the 2K and 4K colour maps and the on-foot albedo and Earths', () => {
     expect(KTX2_JOBS.map((job) => job.output)).toEqual([
       'public/textures/moon-lroc-2k.ktx2',
       'public/textures/moon-lroc-4k.ktx2',
+      'src/terrain/maps/on-foot-regolith-albedo.ktx2',
       'src/terrain/maps/on-foot-earth.ktx2',
       'src/terrain/maps/on-foot-earth-512.ktx2',
     ]);

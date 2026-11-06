@@ -25,12 +25,13 @@
 
 /**
  * Whether the page takes its maps as KTX2 (VENT-101), for the whole page
- * session: decided once from the probe's profile and the address, and off
- * for good the first time the transcoder worker or a map fails, so later
- * maps go straight to their JPEG or WebP sibling.
+ * session: decided once from the probe's profile, the address and the
+ * Save-Data hint, and off for good the first time the transcoder worker or
+ * a map fails, so later maps go straight to their JPEG or WebP sibling.
  */
 import { ktx2Choice, pagePlatform, type Ktx2Choice } from '../globe/ktx2-target';
 import { pickQuality } from '../globe/quality-pick';
+import { prefersSaveData } from '../lib/viewport';
 
 export interface Ktx2Switch {
   /** The decision now: a target, or off with the reason. */
@@ -54,4 +55,4 @@ export function ktx2Switch(decide: () => Ktx2Choice): Ktx2Switch {
 /** This page's switch, from the page probe (globe/quality-pick.ts). */
 export const pageKtx2 = ktx2Switch(() =>
   ktx2Choice(pickQuality.gpuProfile(), pagePlatform(navigator),
-    window.location.search));
+    window.location.search, prefersSaveData()));

@@ -155,4 +155,15 @@ test.describe('the globe\'s KTX2 colour maps, desktop 1440x900 (VENT-101)', () =
     expect(await readoutText(page)).toContain('\nktx2 off: ?ktx2=0\n');
     expect(errors).toEqual([]);
   });
+
+  test('under Save-Data asks for no KTX2 map, no transcoder and no worker, and says why (VENT-107)', async ({ page }) => {
+    await page.addInitScript(() => Object.defineProperty(navigator, 'connection', { value: { saveData: true } }));
+    const { errors, asked } = await openHigh(page, workerPolicy());
+    await page.getByRole('button', { name: 'Load the 3D globe' }).click();
+    await textureMB(page);
+    expect(asked.filter((path) => /\.ktx2$|basis/.test(path))).toEqual([]);
+    expect(asked).toContain('/textures/moon-lroc-2k.jpg');
+    expect(await readoutText(page)).toContain('\nktx2 off: Save-Data\n');
+    expect(errors).toEqual([]);
+  });
 });

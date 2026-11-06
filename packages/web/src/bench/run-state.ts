@@ -85,7 +85,9 @@ export function readState(storage: StateStorage | null): BenchState | null {
     const raw = storage?.getItem(STATE_KEY);
     const state = raw ? (JSON.parse(raw) as BenchState) : null;
     const ok = state?.v === 1 && Array.isArray(state.order)
-      && Array.isArray(state.results) && Number.isInteger(state.next);
+      && Array.isArray(state.results) && Number.isInteger(state.next)
+      // A suite this build does not know: no state (VENT-107).
+      && (state.suite === undefined || state.suite === 'depth');
     return ok ? state : null;
   } catch {
     return null;

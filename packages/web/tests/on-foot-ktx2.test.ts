@@ -33,7 +33,9 @@
 import { CompressedTexture, RepeatWrapping, RGB_ETC2_Format, Texture } from 'three';
 import { describe, expect, it } from 'vitest';
 import { loadSurfaceMaps, type SurfaceLoad } from '../src/terrain/scene/surface-maps';
+import { crumbMark } from '../src/terrain/scene/surface-load';
 import { ktx2Switch } from '../src/textures/ktx2-session';
+import type { DevToolsModule } from '../src/lib/dev-tools-loader';
 
 function harness(ktx2Fails: boolean) {
   const asked: string[] = [];
@@ -84,5 +86,38 @@ describe('the on-foot surfaces as KTX2', () => {
       'image on-foot-earth.webp',
     ]));
     expect(load.session.choice().target).toBeNull();
+  });
+
+  it('marks each KTX2 failure for ?debug, as the globe\'s map trace does (VENT-107)', async () => {
+    const { load } = harness(true);
+    const lines: string[] = [];
+    await loadSurfaceMaps(false, { ...load, crumb: (line) => lines.push(line) });
+    expect(lines.toSorted()).toEqual([
+      'on-foot: Earth KTX2 failed → WebP: worker failed: CSP',
+      'on-foot: albedo KTX2 failed → WebP: worker failed: CSP',
+    ]);
+  });
+
+  it('marks nothing when KTX2 comes', async () => {
+    const { load } = harness(false);
+    const lines: string[] = [];
+    await loadSurfaceMaps(true, { ...load, crumb: (line) => lines.push(line) });
+    expect(lines).toEqual([]);
+  });
+});
+
+describe('the on-foot surfaces\' crumbs (VENT-107)', () => {
+  it('are none without the dev tools', () => {
+    expect(crumbMark(null)).toBeUndefined();
+  });
+
+  it('go to the dev tools\' breadcrumbs once they come', async () => {
+    const marked: string[] = [];
+    const crumbs = { mark: (line: string) => void marked.push(line) };
+    const tools = Promise.resolve({ devTools: () => Promise.resolve({ crumbs }) } as unknown as DevToolsModule);
+    crumbMark(tools)?.('on-foot: albedo KTX2 failed → WebP: x');
+    await tools;
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    expect(marked).toEqual(['on-foot: albedo KTX2 failed → WebP: x']);
   });
 });

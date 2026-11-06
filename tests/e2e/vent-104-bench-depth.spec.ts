@@ -25,8 +25,9 @@
 
 /**
  * The benchmark's depth suite (VENT-104): `?bench=depth` plays the on-foot view of IM-2 with each depth buffer, the
- * app's logarithmic one, the reversed and the linear ones with the shadow map forced, and last the logarithmic one with
- * the shadow map forced, each run a clean page load, and ends on a row per run. SwiftShader exposes EXT_clip_control,
+ * app's logarithmic one against the reversed one, both with the shadow map as the app has it (VENT-107), then the
+ * reversed, the linear and last the logarithmic one with the shadow map forced, each run a clean page load, and ends on
+ * log against reversed and a row per run. SwiftShader exposes EXT_clip_control,
  * so `reversed` draws reversed. The last run's context is lost on purpose while it turns, as the Pixel 10's would be:
  * a loss is a result, so its row says when and the benchmark still ends on its results. The relief is the stubbed
  * synthetic one of terrain-view.spec.ts.
@@ -36,7 +37,7 @@ import { stubApi } from './api-stub';
 import { stubTile, stubWall } from './terrain-stub';
 
 const START_MS = 30_000;
-/** Four runs of the fast depth script in software GL, each opening the on-foot view once. */
+/** Five runs of the fast depth script in software GL, each opening the on-foot view once. */
 const RUNS_MS = 8 * 60_000;
 
 const panel = (page: Page) => page.getByRole('region', { name: 'Benchmark' });
@@ -77,10 +78,13 @@ test.describe('on a phone, 390x844', () => {
     await expect(page.locator('.ventana-bench-panel[data-phase="results"]')).toBeVisible({ timeout: RUNS_MS });
     await expect(page).not.toHaveURL(/[?&](depth|shadows)=/);
     const table = panel(page).getByRole('region', { name: 'Depth buffers, turning' });
-    await expect(table.getByRole('row')).toHaveCount(5);
-    await expect(table.getByRole('row', { name: /^log Survived log \d+ no / })).toBeVisible();
-    await expect(table.getByRole('row', { name: /^reversed Survived reversed \d+ yes on / })).toBeVisible();
-    await expect(table.getByRole('row', { name: /^linear Survived linear \d+ no on / })).toBeVisible();
+    await expect(table.getByRole('row')).toHaveCount(6);
+    await expect(table.getByRole('row').nth(1)).toHaveAccessibleName(/^log Survived log \d+ no /);
+    await expect(table.getByRole('row').nth(2)).toHaveAccessibleName(/^reversed Survived reversed \d+ yes /);
+    await expect(table.getByRole('row', { name: /^reversed\+shadows Survived reversed \d+ yes on / })).toBeVisible();
+    await expect(table.getByRole('row', { name: /^linear\+shadows Survived linear \d+ no on / })).toBeVisible();
+    await expect(panel(page).locator('.bench__versus'))
+      .toHaveText(/^Logarithmic vs reversed, no shadow map: [\d.]+ fps vs [\d.]+ fps · p95 [\d.]+ ms vs [\d.]+ ms · worst /);
     await expect(table.getByRole('row', { name: /^log\+shadows Lost after [\d.]+ s of the turn log \d+ no on / }))
       .toBeVisible();
 
@@ -88,10 +92,11 @@ test.describe('on a phone, 390x844', () => {
     await expect(panel(page).getByRole('status')).toHaveText('Report copied');
     const report = await page.evaluate(() => navigator.clipboard.readText());
     expect(report).toMatch(/^GPU: \S/m);
-    expect(report).toContain('Suite: depth (script v1). Runs: 1 round, order log reversed linear log+shadows (fast script)');
-    expect(report).toMatch(/^reversed: survived · depth reversed · \d+ bits · reversed buffer yes · shadow map on · fps \d/m);
+    expect(report).toContain('Suite: depth (script v1). Runs: 1 round, order log reversed reversed+shadows linear+shadows log+shadows (fast script)');
+    expect(report).toMatch(/^log vs reversed, no shadow map: fps [\d.]+ vs [\d.]+ · p95Ms /m);
+    expect(report).toMatch(/^reversed\+shadows: survived · depth reversed · \d+ bits · reversed buffer yes · shadow map on · fps \d/m);
     expect(report).toMatch(/^log\+shadows: lost after [\d.]+ s of the turn · depth log · /m);
-    expect(report).toMatch(/^linear1 turnMinute: .*timedOut=0$/m);
+    expect(report).toMatch(/^linear\+shadows1 turnMinute: .*timedOut=0$/m);
     expect(errors).toEqual([]);
   });
 });

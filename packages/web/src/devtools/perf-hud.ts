@@ -70,6 +70,12 @@ export interface HudView {
   sample(dt: number, stats: RenderStats | null): void;
   /** Shows a message under the readout, such as a lost WebGL context. */
   error(message: string): void;
+  /**
+   * Folds the readout to its one line, or opens it, as a press does: the
+   * on-foot view's lost context folds it, since «Try again» shows where
+   * the open readout sits on a phone (VENT-107).
+   */
+  fold?(folded: boolean): void;
 }
 
 export interface PerfHudOptions {
@@ -152,7 +158,7 @@ export class PerfHud implements HudView {
     this.show();
   }
 
-  private fold(folded: boolean): void {
+  fold(folded: boolean): void {
     this.folded = folded;
     this.details.hidden = folded;
     this.errors.hidden = folded;

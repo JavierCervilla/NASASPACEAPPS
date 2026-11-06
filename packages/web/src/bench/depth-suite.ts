@@ -26,11 +26,13 @@
 /**
  * The benchmark's depth suite (VENT-104), `?bench=depth`: the on-foot
  * view's depth buffers side by side, to bisect the Pixel 10's lost context
- * (VENT-75, VENT-103) on the phone itself. Its variants, in run order: the
- * app as it is (logarithmic depth, the shadow map as the safety rules
- * say), the reversed and the linear buffers with the shadow map forced,
- * and last the logarithmic one with the shadow map forced, the known loss,
- * so a crash cannot spoil the others. Each variant is the address's
+ * (VENT-75, VENT-103) on the phone itself. Its variants, in run order
+ * (VENT-107): the app as it is (logarithmic depth, the shadow map as the
+ * safety rules say) and the reversed buffer the same way, the two the
+ * human weighs for the default on PowerVR; then the shadow map forced with
+ * the reversed, the linear and last the logarithmic buffer, the known
+ * losses, last because a loss can make Chrome block WebGL for the site,
+ * which stops the bench. Each variant is the address's
  * switches (terrain/depth-mode.ts). Pure but for the `params` it is
  * handed.
  */
@@ -38,7 +40,7 @@ import { BENCH_PARAM } from '../lib/bench-param';
 import type { RunCount, Suite } from './types';
 
 export const DEPTH_VARIANTS = [
-  'log', 'reversed', 'linear', 'log+shadows',
+  'log', 'reversed', 'reversed+shadows', 'linear+shadows', 'log+shadows',
 ] as const;
 
 export type DepthVariant = (typeof DEPTH_VARIANTS)[number];
@@ -51,8 +53,9 @@ const FORCE: readonly [string, string] = ['shadows', 'force'];
 const PARAMS: Readonly<Record<DepthVariant,
   readonly (readonly [string, string])[]>> = {
   log: [],
-  reversed: [['depth', 'reversed'], FORCE],
-  linear: [['depth', 'linear'], FORCE],
+  reversed: [['depth', 'reversed']],
+  'reversed+shadows': [['depth', 'reversed'], FORCE],
+  'linear+shadows': [['depth', 'linear'], FORCE],
   'log+shadows': [FORCE],
 };
 

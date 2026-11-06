@@ -27,6 +27,13 @@
       "bytes": 1213762
     },
     {
+      "source": "src/terrain/maps/on-foot-regolith-albedo.webp",
+      "output": "src/terrain/maps/on-foot-regolith-albedo.ktx2",
+      "sourceSha256": "8563640a36c8dc7558c1903cc1536cc3eb5e842f9a393bf8624cbbb274e1d2cc",
+      "outputSha256": "6aa23971e7563b624819f217564b4be1bd56471129677749d4ba46deac48bca4",
+      "bytes": 58594
+    },
+    {
       "source": "src/terrain/maps/on-foot-earth.webp",
       "output": "src/terrain/maps/on-foot-earth.ktx2",
       "sourceSha256": "8edd5b933a5987878257f43f9f5d67c0dc9128581441baa4ffe9d19a3285baf3",

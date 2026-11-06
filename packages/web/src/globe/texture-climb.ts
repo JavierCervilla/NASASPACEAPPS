@@ -36,7 +36,9 @@ import {
   type HeldLevel,
   type SwapDeps,
 } from './texture-fetch';
+import { failedAt, NO_BACKOFF, type Backoff } from './level-backoff';
 import { messageOf } from './map-failure';
+import { PAGE_CLOCK } from './texture-load';
 import type { LodLevel } from './texture-lod';
 
 /** What the swapper holds and aims at; the loop updates it. */
@@ -45,6 +47,8 @@ export interface SwapState<T> {
   target: LodLevel | 0;
   busy: boolean;
   disposed: boolean;
+  /** The last failed level's wait (level-backoff.ts). */
+  backoff: Backoff;
 }
 
 /** Takes in a level just fetched, or frees it when it is not wanted. */
@@ -62,10 +66,11 @@ function settle<T>(
   deps.apply(next.maps);
   release(state.held.maps, next.maps, deps);
   state.held = next;
+  if (next.level >= state.backoff.level) state.backoff = NO_BACKOFF;
   deps.trace?.mark({ kind: 'applied', level: next.level });
 }
 
-/** Leaves a level that failed for the one shown. */
+/** Leaves a level that failed for the one shown, for a while. */
 function giveUp<T>(
   state: SwapState<T>,
   level: LodLevel,
@@ -73,6 +78,8 @@ function giveUp<T>(
 ): void {
   const shown = state.held.level;
   deps.trace?.mark({ kind: 'gaveUp', level, shown });
+  const now = (deps.clock ?? PAGE_CLOCK).now();
+  state.backoff = failedAt(state.backoff, level, now);
   // Give up on the failed level only: a higher one asked for
   // meanwhile is still wanted, and is fetched next.
   if (state.target === level) state.target = shown;

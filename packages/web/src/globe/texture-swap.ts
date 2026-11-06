@@ -34,7 +34,9 @@
  * frame drawn climbs back.
  */
 import { climb, type SwapState } from './texture-climb';
+import { heldBack, NO_BACKOFF } from './level-backoff';
 import { NO_LEVEL, release, type SwapDeps } from './texture-fetch';
+import { PAGE_CLOCK } from './texture-load';
 import type { LodLevel } from './texture-lod';
 
 export class TextureSwap<T> {
@@ -43,16 +45,22 @@ export class TextureSwap<T> {
     target: 0,
     busy: false,
     disposed: false,
+    backoff: NO_BACKOFF,
   };
 
   constructor(private readonly deps: SwapDeps<T>) {}
 
-  /** Asks for `level`; at or below what is shown or coming, a no-op. */
+  /**
+   * Asks for `level`; a no-op at or below what is shown or coming, and for
+   * a level that failed until its wait has passed (level-backoff.ts).
+   */
   want(level: LodLevel): void {
     const { state } = this;
     if (state.disposed || level <= Math.max(state.target, state.held.level)) {
       return;
     }
+    const now = (this.deps.clock ?? PAGE_CLOCK).now();
+    if (heldBack(state.backoff, level, now)) return;
     const shown = state.held.level;
     this.deps.trace?.mark({ kind: 'wanted', level, shown });
     state.target = level;

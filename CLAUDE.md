@@ -560,7 +560,8 @@ Every visible change follows `.claude/skills/apple-design/SKILL.md` (vendored fr
   atmosphere) (`sun-shade.ts`), darkening the whole view when terrain beyond the near ground hides it (`ridge.ts` `blockerOf`,
   `scene/sun-mask.ts`; whether a body is hidden is the horizon profile's answer, the card's, and the near ground only
   names the ridge that does it: VENT-59, the human's decision, held by `tests/terrain-im2-verdict.test.ts`); the Earth at its true size with its true phase, wearing NASA's Blue Marble turned to the face the Moon sees
-  (`earth-orientation.ts`, from the sub-lunar point and the ecliptic roll, about 2° accurate); faint seeded stars; the fill is
+  (`earth-orientation.ts`, from the sub-lunar point and the ecliptic roll, about 2° accurate; 1024 px wide on a desktop,
+  512 px on a phone, where its disc is some 30 device pixels: `earthMapUrl`, `scene/surface-maps.ts`, VENT-94); faint seeded stars; the fill is
   the Earth's light by its lit share, the ground's bounce by the Sun's height and a dim sky floor (`sky-light.ts`), and
   when the Sun does not reach the point the exposure opens up instead of faking sunlight (`exposureFor`, `stage.ts`).
   Safe start (VENT-69, after a Pixel 10's first frame took 1.6 s and its GPU reset): the ground's cost is set per tier in
@@ -653,7 +654,8 @@ Every visible change follows `.claude/skills/apple-design/SKILL.md` (vendored fr
   contact occlusion on the stones (`contactAo`). Illustrative and said so in the caption («Fine detail illustrative · relief
   LOLA 20 m» over «Earth: NASA Blue Marble · shadows lifted for legibility», `captionNote`, `onFoot.captionNote`): rounded rocks under
   1 m seeded from the point (`seeded.ts`, `rocks.ts`), the regolith a CC0 photographed material (Poly Haven «Moon 02»,
-  albedo and normal, 1K WebP in `src/terrain/maps/`, ASSETS.md) tiled at 3.5 m and read twice, turned and at another
+  albedo and normal, 1K WebP in `src/terrain/maps/`, the normal lossy at q50 since VENT-94, 193 kB where q88 took 469 kB
+  for the same rendered ground; maps built by `scripts/on_foot_maps.py`, ASSETS.md) tiled at 3.5 m and read twice, turned and at another
   scale, with a slow brightness noise and a fade with distance so it never repeats (`scene/ground-shader.ts`). Rings at 25, 100 and 500 m with HTML labels, and the ridge that
   hides a body labelled with its height and distance (`on-foot-model.ts`); a text alternative says the heading, where
   each body is and what hides it (`view-alt.ts`); the desktop view keeps the horizon strip under it, and the site card beside it leaves its own strip out (VENT-55). The view loads no model

@@ -87,6 +87,11 @@ export interface PerfHudOptions {
    * would cover the page's controls.
    */
   readonly folded?: boolean;
+  /**
+   * The conditions of what it shows, read at each reading and shown under
+   * the frame line when unfolded (conditions.ts, VENT-105).
+   */
+  readonly conditions?: (() => readonly string[]) | undefined;
 }
 
 /** The readout on screen. */
@@ -133,7 +138,8 @@ export class PerfHud implements HudView {
     const tierLabel = PERF_TEXT.tiers[tier];
     const live = current().slice(-LIVE_TRAIL_LINES).join('\n');
     const gpuLines = this.options.gpuLines?.();
-    const text = readout(reading, stats, { tierLabel, gpu, gpuLines });
+    const text = readout(reading, stats, { tierLabel, gpu, gpuLines },
+      this.options.conditions?.());
     this.lastText = `${text}\n${PERF_TEXT.currentTrail}\n${live}`;
     this.lastLine = foldedLine(reading);
     this.show();

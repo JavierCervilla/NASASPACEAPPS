@@ -29,10 +29,27 @@
  */
 import type { WebGLRenderer } from 'three';
 import { createGlRenderer } from '../../lib/gl-renderer';
-import { depthStep } from '../depth-mode';
+import { depthDrawn, depthStep } from '../depth-mode';
 import { unmaskedGpuName } from '../report/environment';
+import {
+  shadowMapState, writeSceneMarks, type ShadowMapState,
+} from '../scene-marks';
 import { shadowMapUnsafe } from '../shadow-safety';
 import type { SceneSetup } from './scene-types';
+
+/**
+ * Writes on the canvas what the renderer was made with, for the `?debug`
+ * readout to read from the scene and not from the address (VENT-105).
+ */
+function markDrawn(
+  renderer: WebGLRenderer,
+  setup: SceneSetup,
+  shadows: ShadowMapState,
+): void {
+  const { mode, bits, reversed } = depthDrawn(setup.depth, renderer);
+  writeSceneMarks(renderer.domElement,
+    { depth: mode, bits, reversed, shadows, tier: setup.quality.tier });
+}
 
 /**
  * The stage's renderer, with the depth buffer and shadow map the setup chose
@@ -52,8 +69,11 @@ export function stageRenderer(
     logarithmicDepthBuffer: depth.mode === 'log',
     reversedDepthBuffer: depth.mode === 'reversed',
   });
-  renderer.shadowMap.enabled = !leave.has('shadows') && (depth.forceShadows
-    || !shadowMapUnsafe(unmaskedGpuName(renderer.getContext()), phone));
+  const shadows = shadowMapState({ leftOut: leave.has('shadows'),
+    forced: depth.forceShadows,
+    unsafe: shadowMapUnsafe(unmaskedGpuName(renderer.getContext()), phone) });
+  renderer.shadowMap.enabled = shadows === 'on' || shadows === 'forced';
   setup.report.step(depthStep(depth, renderer));
+  markDrawn(renderer, setup, shadows);
   return renderer;
 }

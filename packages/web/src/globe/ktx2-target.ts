@@ -73,6 +73,10 @@ export function pagePlatform(nav: {
   return linux && !android ? 'linux-desktop' : 'other';
 }
 
+/** Whether the address turns KTX2 off with `?ktx2=0`. */
+export const ktx2Off = (search: string): boolean =>
+  new URLSearchParams(search).get('ktx2') === '0';
+
 /**
  * The decision for this page: off on `?ktx2=0` (to bisect from a phone's
  * address bar, like `?onfoot=`), else the profile's target.
@@ -82,7 +86,7 @@ export function ktx2Choice(
   platform: Platform,
   search: string,
 ): Ktx2Choice {
-  if (new URLSearchParams(search).get('ktx2') === '0') {
+  if (ktx2Off(search)) {
     return { target: null, reason: '?ktx2=0' };
   }
   const target = ktx2Target(profile, platform);

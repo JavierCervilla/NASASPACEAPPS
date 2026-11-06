@@ -43,9 +43,9 @@ function toDevTools(handle: RendererHandle): () => void {
   let detach: (() => void) | undefined;
   void devToolsModule()?.then(async ({ devTools, threeAdapter }) => {
     const tools = await devTools();
-    const { renderer, textureBytes } = handle;
+    const { renderer, textureBytes, kind } = handle;
     const options = textureBytes ? { textureBytes } : {};
-    if (live) detach = tools.attach(threeAdapter(renderer, options));
+    if (live) detach = tools.attach(threeAdapter(renderer, options), kind);
   });
   return () => {
     live = false;

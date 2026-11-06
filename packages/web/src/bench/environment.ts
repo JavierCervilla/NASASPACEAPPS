@@ -25,7 +25,9 @@
 
 /**
  * The report's header (VENT-81): the GPU (lib/quality.ts `gpuName`, read
- * from an attached renderer's context, so no context is made for it), the
+ * from an attached renderer's context, so no context is made for it; with
+ * none alive, as when the view has already lost its context and been
+ * freed, the page probe's name, VENT-105), the
  * browser, the viewport and the device's screen, the on-foot view's tier
  * (its host's `data-tier`),
  * the script's version, the fixed instant, and the build: the service
@@ -33,6 +35,7 @@
  * page's first module script.
  */
 import { BENCH_INSTANT_ISO } from '../lib/bench-param';
+import { pickQuality } from '../globe/quality-pick';
 import { gpuName } from '../lib/quality';
 import type { Registry } from './registry';
 import { SCRIPT_VERSION } from './script';
@@ -50,6 +53,14 @@ async function buildId(doc: Document): Promise<string> {
   return script?.src.split('/').pop() ?? 'unknown';
 }
 
+/**
+ * The GPU's name from a live renderer's context, else the page probe's,
+ * else «unknown».
+ */
+export function headerGpu(live: string | null, probe: string): string {
+  return live || probe || 'unknown';
+}
+
 /** The header, read now: call it once the on-foot view has opened. */
 export async function readHeader(
   registry: Registry,
@@ -60,7 +71,7 @@ export async function readHeader(
   const host = doc.querySelector<HTMLElement>(ON_FOOT_HOST);
   const { width, height } = window.screen;
   return {
-    gpu: gl ? gpuName(gl) : 'unknown',
+    gpu: headerGpu(gl && gpuName(gl), pickQuality.device().gpu),
     userAgent: navigator.userAgent,
     viewport: `${innerWidth} × ${innerHeight} @ ${devicePixelRatio}`,
     screen: `${width} × ${height}`,

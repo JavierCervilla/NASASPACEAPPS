@@ -71,7 +71,7 @@ import { BenchSlot } from './bench/BenchSlot';
 import { sheetChannels } from './sheet-channels';
 import { browserHourClock } from '../phone/hour-clock';
 import type { CardSite } from '../card/site-facts';
-import { createSiteStore } from '../phone/site-store';
+import { createSiteStore, type SiteStore } from '../phone/site-store';
 import { PinLayers } from './pin/PinLayers';
 import { PinContext } from './pin/context';
 import { useCreatePinKit } from './pin/use-kit';
@@ -89,6 +89,7 @@ import { PhoneShell } from './phone/PhoneShell';
 import { useStateFeed } from './use-state-feed';
 import { useLiveFavicon } from './use-live-favicon';
 import { useHoursLoader } from './use-hours-loader';
+import { useDebugInstant } from './use-debug-instant';
 
 interface Props {
   /** The landing sites endpoint, same origin in production. */
@@ -143,13 +144,16 @@ function createClock(sitesUrl: string, sites: readonly CardSite[]) {
  * curated sites' at once, a custom point's once the API answers, when
  * the loaders are made again so the views read the hours anew; a point
  * whose request failed in passing is asked again when the browser comes
- * back online or the page is shown again (VENT-45).
+ * back online or the page is shown again (VENT-45). Under `?debug` the
+ * readout is handed the instant and the selected point (VENT-105).
  */
 function useCalendarParts(
   sitesUrl: string,
   sites: readonly CardSite[],
+  store: SiteStore,
 ): CalendarParts {
   const [clock] = useState(() => createClock(sitesUrl, sites));
+  useDebugInstant({ ...clock, store, sites });
   const api = useHoursLoader(sitesUrl);
   const { terrain } = clock.horizons;
   const terrainOf = useSyncExternalStore(
@@ -208,7 +212,7 @@ function GlobeSection({ globe, source, computed, view }: SectionProps) {
 function Island({ sitesUrl, base, selectedId, sites }: Props) {
   const [store] = useState(() => createSiteStore(selectedId));
   const [channels] = useState(sheetChannels);
-  const parts = useCalendarParts(sitesUrl, sites);
+  const parts = useCalendarParts(sitesUrl, sites, store);
   const view = useView(VIEW_NAV);
   const { feed: state, computed } = useStateFeed(store, parts);
   useLiveFavicon(base, parts.time, state);

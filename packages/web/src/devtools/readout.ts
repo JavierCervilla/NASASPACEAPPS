@@ -87,14 +87,19 @@ function rendererLines(stats: RenderStats | null, tierLabel: string): string[] {
   ];
 }
 
-/** The readout's text; `stats` is `null` while no renderer is attached. */
+/**
+ * The readout's text; `stats` is `null` while no renderer is attached.
+ * `conditions` (VENT-105) follow the frame line, so they show at the top.
+ */
 export function readout(
   frame: FrameReading,
   stats: RenderStats | null,
   device: DeviceLabels,
+  conditions: readonly string[] = [],
 ): string {
   return [
     frameLine(frame),
+    ...conditions,
     ...rendererLines(stats, device.tierLabel),
     device.gpu || PERF_TEXT.noGpu,
     ...(device.gpuLines ?? []),

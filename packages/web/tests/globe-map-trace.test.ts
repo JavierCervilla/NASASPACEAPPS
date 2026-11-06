@@ -218,6 +218,71 @@ describe('a level whose upload throws', () => {
   });
 });
 
+/** The first wait after a failure, and the most a wait grows to (src/globe/level-backoff.ts). */
+const FIRST_WAIT_MS = 2000;
+const MAX_WAIT_MS = 60_000;
+
+/** A swapper showing 2K whose 4K colour map fails every time it is asked. */
+async function failingFourK() {
+  const parts = setUp();
+  parts.swap.want(2);
+  await parts.level(2);
+  const fail = async (): Promise<void> => {
+    await parts.answer('lola-normal-4k');
+    await parts.answer('lroc-4k', 0, new Error('404 Not Found'));
+  };
+  const asks = (): number => parts.log.filter((line) => line === 'load lroc-4k').length;
+  return { ...parts, fail, asks };
+}
+
+describe('a level that failed waits before it is asked again', () => {
+  it('is not fetched again on the next frames drawn, only once its wait has passed', async () => {
+    const { swap, fail, asks, advance } = await failingFourK();
+    swap.want(4);
+    await fail();
+    for (let frame = 0; frame < 10; frame++) {
+      await advance(100);
+      swap.want(4);
+    }
+    expect(asks()).toBe(1);
+    await advance(FIRST_WAIT_MS - 1000);
+    swap.want(4);
+    expect(asks()).toBe(2);
+  });
+
+  it('waits twice as long after each failure of the same level, up to a minute', async () => {
+    const { swap, fail, asks, advance } = await failingFourK();
+    const waits: number[] = [];
+    swap.want(4);
+    for (let failures = 1; failures <= 7; failures++) {
+      await fail();
+      let waited = 0;
+      while (asks() === failures) {
+        await advance(1000);
+        waited += 1000;
+        swap.want(4);
+      }
+      waits.push(waited);
+    }
+    expect(waits).toEqual([2000, 4000, 8000, 16000, 32000, MAX_WAIT_MS, MAX_WAIT_MS]);
+  });
+
+  it('never holds back a higher level, and starts afresh once a level lands', async () => {
+    const { swap, fail, asks, advance, log, level } = await failingFourK();
+    swap.want(4);
+    await fail();
+    swap.want(8);
+    expect(log).toContain('load lroc-8k');
+    await level(8);
+    expect(swap.shown()).toBe(8);
+    swap.lower(2);
+    await level(2);
+    await advance(1);
+    swap.want(4);
+    expect(asks()).toBe(2);
+  });
+});
+
 describe('a map load that never settles', () => {
   it('fails after the bound, so the swapper is free and a higher level asked later is fetched', async () => {
     const { swap, log, lines, answer, advance } = setUp();
@@ -240,7 +305,7 @@ describe('a map load that never settles', () => {
     expect(swap.shown()).toBe(4);
   });
 
-  it('is retried when the level is asked again', async () => {
+  it('is retried when the level is asked again after its wait', async () => {
     const { swap, log, answer, advance } = setUp();
     swap.want(1);
     await answer('lola-normal-1k');
@@ -249,7 +314,8 @@ describe('a map load that never settles', () => {
     await answer('lola-normal-2k');
     await advance(MAP_TIMEOUT_MS);
     expect(swap.shown()).toBe(1);
-    // The next frame drawn asks for 2K again: it is fetched again.
+    // A frame drawn after the first wait asks for 2K again: it is fetched again.
+    await advance(FIRST_WAIT_MS);
     swap.want(2);
     expect(log.filter((line) => line === 'load lroc-2k')).toHaveLength(2);
     await answer('lola-normal-2k');
@@ -325,7 +391,7 @@ describe('the map trace in the dev tools\' breadcrumbs', () => {
     expect(marks).toEqual(['globe: 1K wanted (none shown)', 'globe: 1K on the Moon']);
   });
 
-  it('marks a line repeated by retries once, so a failing level does not flood the trail', async () => {
+  it('marks an event repeated by retries once, whatever its seconds, so a failing level does not flood the trail', async () => {
     const marks: string[] = [];
     const trace = mapCrumbs(Promise.resolve({
       devTools: async () => ({ crumbs: { mark: (s: string) => void marks.push(s) } }),
@@ -334,11 +400,14 @@ describe('the map trace in the dev tools\' breadcrumbs', () => {
     for (let i = 0; i < 3; i++) {
       trace?.mark({ kind: 'wanted', level: 4, shown: 2 });
       trace?.mark({ kind: 'failed', level: 4, map: 'colour', file: 'moon-lroc-4k.jpg', reason: 'no details' });
+      // Each try's relief lands in its own time: still the same event.
+      trace?.mark({ kind: 'landed', level: 4, map: 'relief', seconds: 0.2 + i / 10, size: '4096x2048' });
       trace?.mark({ kind: 'gaveUp', level: 4, shown: 2 });
     }
     expect(marks).toEqual([
       'globe: 4K wanted (2K shown)',
       'globe: 4K colour failed: moon-lroc-4k.jpg (no details)',
+      'globe: 4K relief landed in 0.2 s (4096x2048)',
       'globe: 4K given up, 2K stays',
     ]);
   });

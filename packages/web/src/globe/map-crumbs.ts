@@ -33,16 +33,17 @@
  */
 import type { DevToolsModule } from '../lib/dev-tools-loader';
 import type { CrumbTrail } from '../terrain/report/report-crumbs';
-import { mapLine, type MapTrace } from './map-trace';
+import { mapLine, type MapEvent, type MapTrace } from './map-trace';
 
 /** Lines kept until the tools come: a start's climb to 2K is about twenty. */
 const EARLY_KEEP = 30;
 
 /**
- * A line seen among the last few is not marked again: a level that fails
- * is asked again on every frame drawn, and would push the rest out.
+ * An event seen among the last few is not marked again, whatever its
+ * seconds: a level that fails is asked again after its wait, and each try's
+ * lines would push the failure out of the readout's last lines.
  */
-const RECENT = 8;
+const RECENT = 12;
 
 /** A map's size in pixels, from its image, as «4096x2048». */
 export function pixelSize(texture: { readonly image?: unknown }): string {
@@ -52,14 +53,18 @@ export function pixelSize(texture: { readonly image?: unknown }): string {
   return known ? `${width}x${height}` : 'size unknown';
 }
 
-/** Marks each line once among the last RECENT, prefixed for the globe. */
-function foldRepeats(mark: (line: string) => void): (line: string) => void {
+/** Marks each event once among the last RECENT, as a «globe: …» line. */
+function foldRepeats(
+  mark: (line: string) => void,
+): (event: MapEvent) => void {
   const recent: string[] = [];
-  return (line) => {
-    const seen = recent.includes(line);
-    recent.push(line);
+  return (event) => {
+    const identity = JSON.stringify(event,
+      (key, value: unknown) => (key === 'seconds' ? undefined : value));
+    const seen = recent.includes(identity);
+    recent.push(identity);
     if (recent.length > RECENT) recent.shift();
-    if (!seen) mark(`globe: ${line}`);
+    if (!seen) mark(`globe: ${mapLine(event)}`);
   };
 }
 
@@ -84,6 +89,6 @@ export function mapCrumbs<T extends { readonly image?: unknown }>(
 ): MapTrace<T> | undefined {
   if (!tools) return undefined;
   const trail = tools.then(async ({ devTools }) => (await devTools()).crumbs);
-  const line = foldRepeats(untilTrail(trail));
-  return { mark: (event) => line(mapLine(event)), size: pixelSize, glError };
+  const mark = foldRepeats(untilTrail(trail));
+  return { mark, size: pixelSize, glError };
 }

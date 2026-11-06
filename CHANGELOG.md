@@ -17,6 +17,9 @@
   GPU escondida y la vista se dibuja sin mapa de sombras.
 
 ### Cambiado
+- **El suelo de la vista 3D ocupa ocho veces menos en la GPU (VENT-102).** El color del regolito también llega en KTX2,
+  como los mapas del globo y la Tierra: 0,7 MB de memoria gráfica en vez de 5,6 MB, a cambio de 44 kB más de descarga al
+  abrir la vista (decisión de Javier). Si el navegador no puede, se usa el WebP de siempre.
 - **Los mapas de color ocupan ocho veces menos en la GPU (VENT-101).** Los mapas de color 2K y 4K del globo y el de la
   Tierra de la vista 3D se sirven en un formato comprimido para la tarjeta gráfica (KTX2), que el navegador
   convierte en un hilo aparte al formato del teléfono o del ordenador: el 2K pasa de 11,2 MB a 1,4 MB de memoria gráfica

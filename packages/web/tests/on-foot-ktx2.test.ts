@@ -24,10 +24,9 @@
  */
 
 /**
- * The on-foot view's Earth as KTX2 (VENT-101): both sizes come through the
- * page's transcoder in the GPU's format; the regolith's albedo and normal map
- * stay WebP (the albedo's KTX2 is 44 kB more than its WebP, over the VENT-94
- * budget of the view's opening maps), and any KTX2 failure turns
+ * The on-foot view's colour maps as KTX2 (VENT-101): the regolith's albedo
+ * and the Earth (both sizes) come through the page's transcoder in the GPU's
+ * format, the regolith's normal map stays WebP, and any KTX2 failure turns
  * KTX2 off for the session and loads the WebP instead, so the view still
  * gets its surfaces.
  */
@@ -55,17 +54,17 @@ function harness(ktx2Fails: boolean) {
 }
 
 describe('the on-foot surfaces as KTX2', () => {
-  it('takes the Earth as KTX2 and the albedo and normal map as WebP', async () => {
+  it('takes the albedo and the Earth as KTX2 and the normal map as WebP', async () => {
     const { load, asked } = harness(false);
     const maps = await loadSurfaceMaps(true, load);
-    expect(maps.albedo).not.toBeInstanceOf(CompressedTexture);
+    expect(maps.albedo).toBeInstanceOf(CompressedTexture);
     expect(maps.earth).toBeInstanceOf(CompressedTexture);
     expect(maps.normal).not.toBeInstanceOf(CompressedTexture);
     expect(maps.albedo.wrapS).toBe(RepeatWrapping);
     expect(maps.albedo.anisotropy).toBe(8);
     expect(asked.toSorted()).toEqual([
       'etc2 on-foot-earth-512.ktx2',
-      'image on-foot-regolith-albedo.webp',
+      'etc2 on-foot-regolith-albedo.ktx2',
       'image on-foot-regolith-normal.webp',
     ]);
   });
@@ -79,7 +78,7 @@ describe('the on-foot surfaces as KTX2', () => {
   it('falls back to the WebP maps when KTX2 fails, and turns it off', async () => {
     const { load, asked } = harness(true);
     const maps = await loadSurfaceMaps(false, load);
-    expect(maps.earth).not.toBeInstanceOf(CompressedTexture);
+    expect(maps.albedo).not.toBeInstanceOf(CompressedTexture);
     expect(asked).toEqual(expect.arrayContaining([
       'image on-foot-regolith-albedo.webp',
       'image on-foot-earth.webp',

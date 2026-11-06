@@ -9,6 +9,11 @@
   GPU escondida y la vista se dibuja sin mapa de sombras.
 
 ### Cambiado
+- **El arranque gasta menos en el cristal y en la GPU (VENT-91).** Los mapas de lente del cristal Liquid se dibujan en
+  un canvas en memoria, así que su PNG ya no se lee de vuelta desde la GPU en el hilo principal (en un móvil simulado
+  pasa de ~220 ms a ~30 ms al cargar, idéntico píxel a píxel), y la página prueba la GPU una sola vez en lugar de crear
+  y tirar un contexto WebGL en cada consulta del nivel de calidad (de 4 contextos a 2 al cargar, de 6 a 3 con la vista
+  3D).
 - **Un despliegue ya no vuelve a bajar la app entera (VENT-90).** Cada vez que se publicaba una versión nueva, la app
   instalada volvía a descargar unos 5 MB al abrirse, aunque casi nada hubiera cambiado, y esa descarga competía con los
   mapas del globo en alta. Ahora solo baja los ficheros que cambiaron, los mapas 4K y 8K ya guardados pasan a la versión

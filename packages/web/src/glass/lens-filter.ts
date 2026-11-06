@@ -27,7 +27,10 @@
  * One surface's lens as an SVG filter (VENT-27): its displacement map
  * (lens-map.ts) drawn on a canvas, handed to `feImage` as a PNG data URL,
  * and bent through `feDisplacementMap`. Presentation attributes only: the
- * page's CSP allows no style attributes.
+ * page's CSP allows no style attributes. The canvas is asked for frequent
+ * reads so Chromium keeps it in memory: a GPU-backed one made
+ * `toDataURL()` read the map back from the GPU on the main thread, the
+ * biggest cost of the start in the phone profile (VENT-91).
  */
 import { LENS_SCALE, lensMap, type LensBox } from './lens-map';
 
@@ -45,7 +48,7 @@ function mapUrl(doc: Document, box: LensBox): string {
   const canvas = doc.createElement('canvas');
   canvas.width = box.width;
   canvas.height = box.height;
-  const context = canvas.getContext('2d');
+  const context = canvas.getContext('2d', { willReadFrequently: true });
   if (!context) return '';
   const image = new ImageData(lensMap(box), box.width, box.height);
   context.putImageData(image, 0, 0);

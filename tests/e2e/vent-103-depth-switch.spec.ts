@@ -23,7 +23,6 @@
  *             :::.. .  .               SPDX-License-Identifier: MIT
  */
 
-
 /**
  * Point 8 of VENT-80 (VENT-103): the address picks the on-foot view's depth buffer, `?depth=log|linear|reversed`,
  * and `?shadows=force` draws the shadow map on a GPU the safety rules turn it off for, so the human can bisect the
@@ -43,6 +42,8 @@ interface Drawn {
   readonly depth: string | null;
   readonly shadows: number;
   readonly report: string;
+  /** Where the Sun and the Earth fall on the host, empty when off screen or behind the eye. */
+  readonly marks: readonly (string | null)[];
   readonly errors: readonly string[];
 }
 
@@ -72,6 +73,7 @@ async function open(page: Page, query: string): Promise<Drawn> {
     depth: await host(page).getAttribute('data-depth'),
     shadows: Number(await host(page).getAttribute('data-shadows')),
     report: await page.evaluate(() => sessionStorage.getItem('ventana.onFootReport') ?? ''),
+    marks: [await host(page).getAttribute('data-sun-at'), await host(page).getAttribute('data-earth-at')],
     errors,
   };
 }
@@ -97,4 +99,23 @@ test('?depth=reversed reverses the depth where EXT_clip_control is, else keeps t
     document.createElement('canvas').getContext('webgl2')?.getExtension('EXT_clip_control') != null);
   expect(drawn.depth).toBe(clip ? 'reversed' : 'log');
   expect(drawn.report).toMatch(clip ? /depth reversed · \d+ bits/ : /depth log \(asked reversed\)/);
+});
+
+test('the reversed depth marks no body behind the eye, as the logarithmic one does', async ({ browser }) => {
+  const seen: (readonly (string | null)[])[] = [];
+  for (const query of ['', '&depth=reversed']) {
+    const page = await browser.newPage();
+    const opened = await open(page, query);
+    // Half a turn (5° a key): the body the view opened facing is now straight behind the eye.
+    await host(page).focus();
+    const frames = Number(await host(page).getAttribute('data-frames'));
+    for (let k = 0; k < 36; k += 1) await page.keyboard.press('ArrowRight');
+    await expect.poll(async () => Number(await host(page).getAttribute('data-frames'))).toBeGreaterThan(frames);
+    await expect(host(page)).toHaveAttribute('data-working', 'false');
+    seen.push([...opened.marks, await host(page).getAttribute('data-sun-at'),
+      await host(page).getAttribute('data-earth-at')]);
+    await page.close();
+  }
+  expect(seen[0]?.slice(2)).toContain('');
+  expect(seen[1]).toEqual(seen[0]);
 });

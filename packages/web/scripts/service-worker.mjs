@@ -25,8 +25,9 @@
 
 // The service worker's build step (VENT-28), an Astro integration: after `astro build` it lists the files the worker
 // caches at install, hashes every file it may keep into the build's digest (so the static cache's name changes with
-// any of them, and a deploy never serves an older file from it), and bundles src/pwa/sw-worker.ts with both into
-// dist/sw.js at the base.
+// any of them, and a deploy never serves an older file from it), hashes each of them on its own (so a new build copies
+// the unchanged ones from the older build's cache instead of downloading them again, VENT-90), and bundles
+// src/pwa/sw-worker.ts with all three into dist/sw.js at the base.
 //
 // Cached at install, the whole offline set: every locale's page (not the pseudo-locale's), the build's scripts and
 // styles, the manifests, the icons with the 30 phase frames, every site thumbnail, the 1K and 2K maps and the polar
@@ -88,22 +89,29 @@ export function precached(file) {
 /** The URL path under the scope a file is asked by: a page by its folder, `es/` for es/index.html. */
 export const requestPath = (file) => file.replace(/(^|\/)index\.html$/, '$1');
 
+/** The first 16 hex digits of the sha256 of `body`: a file's hash, which the worker stamps on its kept copy. */
+const fileHash = (body) => createHash('sha256').update(body).digest('hex').slice(0, 16);
+
 /**
- * What the worker caches at install, as paths under the scope, their total size in bytes, and the build's digest: the
- * sha256 of the path and bytes of every file it may keep, at install or later, in order.
+ * What the worker caches at install, as paths under the scope, their total size in bytes, the build's digest (the
+ * sha256 of the path and bytes of every file it may keep, at install or later, in order) and the hash of each of those
+ * files by its path under the scope (VENT-90: a new build copies the unchanged ones from the older build's cache).
  * @param {string} dist
- * @returns {{ precache: string[], bytes: number, digest: string }}
+ * @returns {{ precache: string[], bytes: number, digest: string, hashes: Record<string, string> }}
  */
 export function precacheOf(dist) {
   const files = filesUnder(dist).filter(keepable).sort();
   const hash = createHash('sha256');
+  /** @type {Record<string, string>} */
+  const hashes = {};
   let bytes = 0;
   for (const file of files) {
     const body = readFileSync(join(dist, file));
     hash.update(`${file}\0`).update(body);
+    hashes[requestPath(file)] = fileHash(body);
     if (precached(file)) bytes += body.length;
   }
-  return { precache: files.filter(precached).map(requestPath), bytes, digest: hash.digest('hex') };
+  return { precache: files.filter(precached).map(requestPath), bytes, digest: hash.digest('hex'), hashes };
 }
 
 /** `bytes` in megabytes (MiB), two decimals. */
@@ -144,9 +152,9 @@ export function serviceWorker() {
     hooks: {
       'astro:build:done': async ({ dir, logger }) => {
         const dist = fileURLToPath(dir);
-        const { precache, bytes, digest } = precacheOf(dist);
+        const { precache, bytes, digest, hashes } = precacheOf(dist);
         assertPrecacheBudget(bytes);
-        await bundle(dist, { precache, digest });
+        await bundle(dist, { precache, digest, hashes });
         logger.info(
           `sw.js: ${precache.length} files, precache ${megabytes(bytes)} of ${megabytes(PRECACHE_BUDGET)}, ` +
             `cache ${digest.slice(0, 12)}`,

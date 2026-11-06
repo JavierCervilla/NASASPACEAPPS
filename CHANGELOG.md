@@ -9,6 +9,9 @@
   GPU escondida y la vista se dibuja sin mapa de sombras.
 
 ### Cambiado
+- **Miniaturas, iconos y lista de sitios con caché explícita (VENT-96).** Las miniaturas de los sitios y los iconos se
+  guardan un día en la caché del navegador y la lista de sitios cinco minutos (con revalidación), en lugar de lo que el
+  navegador adivinara. Medido también si cambiar de punto en la vista 3D deja memoria sin liberar: no la deja.
 - **La app instalada pesa menos en el móvil (VENT-95).** Al instalarse, el móvil ya no descarga el mapa polar, que
   nunca usa porque no tiene vista polar: su primera visita baja unos 0,76 MB menos. El escritorio lo guarda después de
   arrancar, así que la vista polar sigue funcionando sin conexión.

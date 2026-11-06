@@ -24,9 +24,17 @@
  */
 
 import { describe, expect, it, vi } from 'vitest';
-import { SOUTH_POLE_VIEW, LIMITS } from '../src/globe/framing';
+import { LIMITS, SOUTH_POLE_VIEW } from '../src/globe/framing';
 import type { SwapDeps } from '../src/globe/texture-fetch';
-import { levelUrls, LOD_DISTANCE, maxLevel, startLevel, wantedLevel, type LodCaps, type LodLevel } from '../src/globe/texture-lod';
+import { discPixels, pxPerTexel } from '../src/globe/disc-density';
+import {
+  levelUrls,
+  maxLevel,
+  startLevel,
+  wantedLevel,
+  type LodCaps,
+  type LodLevel,
+} from '../src/globe/texture-lod';
 import { TextureSwap } from '../src/globe/texture-swap';
 
 // A GPU that takes 8K maps, as every desktop GPU of the last decade does.
@@ -37,9 +45,31 @@ const caps = (tier: LodCaps['tier'], extra: Partial<LodCaps> = {}): LodCaps => (
   maxTextureSize: BIG_GPU,
   ...extra,
 });
-// Just past each threshold, and the closest zoom the orbit allows.
-const MEDIUM_ZOOM = LOD_DISTANCE.level4 - 0.1;
+// The human's Pixel: 412 x 880 CSS px at the medium tier's pixel ratio 1.75; the phone frames the Moon above the
+// sheet, leaving out 290 px (--globe-frame-inset, phone.css), so the field of view spans 590 CSS px.
+const PHONE = (590 * 1.75);
+// A 1440 x 900 desktop window: the globe is 547 CSS px tall (between the header and the calendar strip, beside the
+// card), at pixel ratio 1, and 2 on a Retina screen (capped at 1.75 on the medium tier).
+const DESKTOP = 547;
+const RETINA = 547 * 2;
+const RETINA_MEDIUM = 547 * 1.75;
+const view = (distance: number, frameBufferPx: number) => ({ distance, frameBufferPx });
 const CLOSE_ZOOM = LIMITS.minDistance;
+
+describe('the Moon disc on screen', () => {
+  it('measures the disc across as three projects the sphere: tan(asin(1/d)) / tan(fov/2) of the frame', () => {
+    // At 5 radii a 35° field of view: tan(asin(0.2)) / tan(17.5°) = 0.6474 of the frame's height.
+    expect(discPixels(view(5, 900))).toBeCloseTo(582.6, 0);
+    expect(discPixels(view(5, PHONE))).toBeCloseTo(668.5, 0);
+    expect(discPixels(view(2, PHONE))).toBeCloseTo(1890.7, 0);
+  });
+
+  it('counts the pixels per texel at the disc centre, where the map is stretched the most', () => {
+    // pi/2 x the disc's pixels over the level's 512 texels across the disc.
+    expect(pxPerTexel(1, view(5, DESKTOP))).toBeCloseTo(1.09, 2);
+    expect(pxPerTexel(2, view(5, PHONE))).toBeCloseTo(1.03, 2);
+  });
+});
 
 describe('texture level of detail', () => {
   it('opens on 2K on the high tier and 1K on the others', () => {
@@ -48,49 +78,47 @@ describe('texture level of detail', () => {
     expect(startLevel('low')).toBe(1);
   });
 
-  it('keeps the start map at the opening view', () => {
-    expect(wantedLevel(SOUTH_POLE_VIEW.distance, caps('high'))).toBe(2);
-    expect(wantedLevel(SOUTH_POLE_VIEW.distance, caps('medium'))).toBe(1);
+  // Literal distances: a change of the density rule must show up here.
+  it('climbs a Pixel-sized phone to 2K at the opening view and to 4K once zoomed in', () => {
+    const levels = [5, 4.3, 3.5, 3, 2].map((d) => wantedLevel(view(d, PHONE), caps('medium')));
+    expect(levels).toEqual([2, 4, 4, 4, 4]);
+    expect(SOUTH_POLE_VIEW.distance).toBe(5);
   });
 
-  it('asks for 4K at a medium zoom and 8K at a close zoom on a desktop at the high tier', () => {
-    expect(wantedLevel(MEDIUM_ZOOM, caps('high'))).toBe(4);
-    expect(wantedLevel(LOD_DISTANCE.level8, caps('high'))).toBe(8);
-    expect(wantedLevel(CLOSE_ZOOM, caps('high'))).toBe(8);
+  it('climbs a Retina desktop at the medium tier to 2K at the opening view; at ratio 1 the 1K map is sharp there', () => {
+    expect([5, 3.5, 2.2].map((d) => wantedLevel(view(d, RETINA_MEDIUM), caps('medium')))).toEqual([2, 4, 4]);
+    expect([5, 3.5, 2.2].map((d) => wantedLevel(view(d, DESKTOP), caps('medium')))).toEqual([1, 2, 4]);
+  });
+
+  it('reaches 8K on the high tier only where the disc needs it, a Retina desktop zoomed in', () => {
+    expect([5, 3.5, 2.2].map((d) => wantedLevel(view(d, RETINA), caps('high')))).toEqual([2, 4, 8]);
+    expect([5, 3.5, 2.2, CLOSE_ZOOM].map((d) => wantedLevel(view(d, DESKTOP), caps('high')))).toEqual([2, 2, 4, 4]);
   });
 
   it('stops a phone (medium or low tier) at 4K when its GPU takes 4K', () => {
-    expect(wantedLevel(MEDIUM_ZOOM, caps('medium'))).toBe(4);
-    expect(wantedLevel(CLOSE_ZOOM, caps('medium'))).toBe(4);
-    expect(wantedLevel(MEDIUM_ZOOM, caps('low'))).toBe(4);
-    expect(wantedLevel(CLOSE_ZOOM, caps('low'))).toBe(4);
+    expect(wantedLevel(view(CLOSE_ZOOM, PHONE), caps('medium'))).toBe(4);
+    expect(wantedLevel(view(CLOSE_ZOOM, RETINA), caps('medium'))).toBe(4);
+    expect(wantedLevel(view(CLOSE_ZOOM, PHONE), caps('low'))).toBe(4);
     expect(maxLevel(caps('low', { maxTextureSize: 4096 }))).toBe(4);
     expect(maxLevel(caps('low', { maxTextureSize: 2048 }))).toBe(2);
   });
 
-  it('keeps the low tier at its start map under Save-Data', () => {
-    expect(maxLevel(caps('low', { saveData: true }))).toBe(1);
-    expect(wantedLevel(CLOSE_ZOOM, caps('low', { saveData: true }))).toBe(1);
-  });
-
-  // Literal distances, not LOD_DISTANCE: a change of threshold must show up here.
-  it('switches maps at exactly 3.5 and 2.2 Moon radii', () => {
-    expect(wantedLevel(3.5, caps('high'))).toBe(4);
-    expect(wantedLevel(3.51, caps('high'))).toBe(2);
-    expect(wantedLevel(3.51, caps('medium'))).toBe(1);
-    expect(wantedLevel(2.2, caps('high'))).toBe(8);
-    expect(wantedLevel(2.21, caps('high'))).toBe(4);
+  it('never asks below the start map, however small the disc', () => {
+    expect(wantedLevel(view(LIMITS.maxDistance, 300), caps('high'))).toBe(2);
+    expect(wantedLevel(view(LIMITS.maxDistance, 300), caps('medium'))).toBe(1);
   });
 
   it('never goes past the start map under Save-Data', () => {
+    expect(maxLevel(caps('low', { saveData: true }))).toBe(1);
     expect(maxLevel(caps('high', { saveData: true }))).toBe(2);
-    expect(wantedLevel(CLOSE_ZOOM, caps('high', { saveData: true }))).toBe(2);
-    expect(wantedLevel(CLOSE_ZOOM, caps('medium', { saveData: true }))).toBe(1);
+    expect(wantedLevel(view(5, PHONE), caps('medium', { saveData: true }))).toBe(1);
+    expect(wantedLevel(view(CLOSE_ZOOM, PHONE), caps('low', { saveData: true }))).toBe(1);
+    expect(wantedLevel(view(CLOSE_ZOOM, RETINA), caps('high', { saveData: true }))).toBe(2);
   });
 
   it('never asks the GPU for a map wider than it takes', () => {
-    expect(wantedLevel(CLOSE_ZOOM, caps('high', { maxTextureSize: 4096 }))).toBe(4);
-    expect(wantedLevel(CLOSE_ZOOM, caps('high', { maxTextureSize: 2048 }))).toBe(2);
+    expect(wantedLevel(view(CLOSE_ZOOM, RETINA), caps('high', { maxTextureSize: 4096 }))).toBe(4);
+    expect(wantedLevel(view(CLOSE_ZOOM, RETINA), caps('high', { maxTextureSize: 2048 }))).toBe(2);
   });
 
   it('pairs each colour map with the relief, which stops at 4K', () => {

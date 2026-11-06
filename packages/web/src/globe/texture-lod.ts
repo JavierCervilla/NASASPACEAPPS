@@ -24,23 +24,31 @@
  */
 
 /**
- * Which Moon map the globe needs: a level of detail chosen from the zoom,
- * capped by the device. A level is the colour map's width in thousands of
- * pixels; the relief (LOLA normal map) follows it up to 4K, the most the
- * 16 px/degree LOLA source holds. Pure, so every rule is tested alone.
+ * Which Moon map the globe needs: the smallest level of detail sharp enough
+ * for the Moon's disc on screen, capped by the device. A level is the colour
+ * map's width in thousands of pixels; the relief (LOLA normal map) follows
+ * it up to 4K, the most the 16 px/degree LOLA source holds. Pure, so every
+ * rule is tested alone.
  */
 import type { Tier } from '../lib/quality';
+import { pxPerTexel, type LodView } from './disc-density';
+
+export type { LodView } from './disc-density';
 
 export type LodLevel = 1 | 2 | 4 | 8;
 
+const LEVELS: readonly LodLevel[] = [1, 2, 4, 8];
+
 /**
- * Camera distances, in Moon radii, from which the next map is fetched.
- * At the opening view (5 radii) the 2K map is about one texel per pixel on
- * a 900 px tall viewport; at 3.5 radii it is magnified 1.6 times and the
- * 4K map takes over, and at 2.2 radii the 4K map is magnified as much and
- * the 8K map takes over.
+ * The most drawing-buffer pixels one texel may cover at the disc's centre,
+ * where the map is stretched the most (pi/2 times the average across the
+ * disc). Over about 1.2 bilinear magnification reads as soft; 1.15 keeps a
+ * margin, so a Pixel-sized phone (590 CSS px frame at ratio 1.75) wants 2K
+ * at the opening view (1.03) and 4K from about 4.5 radii, and the 547 px
+ * globe of a 1440 x 900 desktop window keeps 1K at the opening view at
+ * ratio 1 (1.09) and wants 2K at ratio 2.
  */
-export const LOD_DISTANCE = { level4: 3.5, level8: 2.2 } as const;
+export const MAX_PX_PER_TEXEL = 1.15;
 
 /**
  * The most each tier may load: 4K on the low and medium tiers (phones
@@ -76,17 +84,14 @@ export function maxLevel(caps: LodCaps): LodLevel {
   return Math.max(start, Math.min(TIER_MAX[caps.tier], fits ?? 1)) as LodLevel;
 }
 
-/** The level the zoom alone asks for (1: the start map is enough). */
-function zoomLevel(distance: number): LodLevel {
-  if (distance <= LOD_DISTANCE.level8) return 8;
-  return distance <= LOD_DISTANCE.level4 ? 4 : 1;
-}
-
-/** The map the camera at `distance` (Moon radii) needs, within the caps. */
-export function wantedLevel(distance: number, caps: LodCaps): LodLevel {
-  const start = startLevel(caps.tier);
-  const zoomed = Math.max(zoomLevel(distance), start);
-  return Math.min(zoomed, maxLevel(caps)) as LodLevel;
+/**
+ * The map `view` needs, within the caps. Levels only climb (texture-swap.ts
+ * ignores a lower one), so a zoom across a threshold never flips maps.
+ */
+export function wantedLevel(view: LodView, caps: LodCaps): LodLevel {
+  const sharp = LEVELS.find((l) => pxPerTexel(l, view) <= MAX_PX_PER_TEXEL);
+  const wanted = Math.max(sharp ?? 8, startLevel(caps.tier));
+  return Math.min(wanted, maxLevel(caps)) as LodLevel;
 }
 
 /** The colour and relief maps of a level, under the site's base path. */

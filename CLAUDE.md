@@ -790,7 +790,19 @@ Every visible change follows `.claude/skills/apple-design/SKILL.md` (vendored fr
   profile (VENT-101, `src/devtools/gpu-lines.ts`): «tex ASTC ETC2 ETC1 RGTC · max 8192 · aniso 16», «clip_control · no
   parallel compile · float cb» and «ktx2 → ETC2» (or «ktx2 off: <reason>», read live). The readout starts folded on every screen to one
   line (the frame rate, the slowest frame and a count of the errors under the fold), top left over the header's title,
-  so it covers no control; a press unfolds it (VENT-51, `tests/e2e/debug.spec.ts`).
+  so it covers no control; a press unfolds it (VENT-51, `tests/e2e/debug.spec.ts`). Unfolded, under the frame line and above
+  the trail, it states the conditions of what it shows (VENT-105, `src/devtools/conditions.ts`, `condition-lines.ts`,
+  `switch-line.ts`), so a screenshot explains itself: «switches: depth=linear shadows=force onfoot=far quality=low» (the
+  address's `depth`, `shadows`, `ktx2`, `onfoot`, `quality`, `glass` and `bench`, read through the app's own parsers at
+  each reading, so it follows the address when the app changes it in place; only known words, never the query's text;
+  «switches: none»); while the on-foot view is mounted, what it draws with from the scene itself, «on-foot: depth linear
+  · 24 bits · reversed off · shadow map on (forced) · tier low» (the shadow map «off (?onfoot=shadows)» or «off (unsafe
+  GPU)»), which `scene/stage-renderer.ts` writes on its canvas as `data-scene-*` (`src/terrain/scene-marks.ts`); the
+  shared instant, «instant live · 2026-11-22 00:00 UTC · Sun +6.7° · day (terrain)» (live or set, the simulator's Sun at
+  the selected site or point, day or night by `isNight` against its horizon profile, else «(level)»), handed to the
+  tools by the island (`components/use-debug-instant.ts`); and each lost context, «WebGL context lost: on-foot at 115.2
+  s» (the breadcrumbs' seconds; the trail marks «context lost: on-foot»). The folded line is unchanged. Held by
+  `tests/debug-conditions.test.ts` and `tests/e2e/vent-105-debug-conditions.spec.ts`.
   `scripts/check-no-devtools.mjs` (decision in `devtools-guard.mjs`) fails a build whose pages, start chunks or precache
   carry the tools' markers, or any file Spector.js.
   `?bench` (VENT-81, the human's canvas «Benchmark») is a scripted benchmark for comparing runs on a phone, loaded
@@ -820,7 +832,7 @@ Every visible change follows `.claude/skills/apple-design/SKILL.md` (vendored fr
   benchmark), whose `render` is wrapped (`renderer-watch.ts`, `registry.ts`): per step (`meter.ts`) the animation-frame
   intervals of frames the app drew (median fps, p95, worst), long tasks, WebGL contexts alive, the globe's map bytes
   while its context lives («Globe map memory»; three gives no bytes for the on-foot view) and the on-foot texture count, the JS heap, triangles and calls per frame, Resource Timing
-  bytes and requests, and context losses; the header has the GPU, browser, viewport and device screen, script version, build
+  bytes and requests, and context losses; the header has the GPU (from a live renderer's context, else the page probe's name, VENT-105), browser, viewport and device screen, script version, build
   (the precache's digest, else the first script's name) and the instant. The results (`results.ts`,
   `BenchResults.tsx`) show the full turn's medians for A and B with B's change, and «Copy report» copies every step,
   metric and run as plain English (`report.ts`). The panel fits the viewport over the phone's tab bar at any text

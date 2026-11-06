@@ -67,6 +67,28 @@ export function depthChoice(
   return { mode, asked, forceShadows: word(params, 'shadows') === 'force' };
 }
 
+/** The depth buffer `renderer` draws with, as the readout and report say. */
+export interface DepthDrawn {
+  /** The mode, or «linear (reversed refused)» when three refused it. */
+  readonly mode: string;
+  readonly bits: number;
+  /** Whether three's reversed depth buffer is on. */
+  readonly reversed: boolean;
+}
+
+/** The depth buffer `renderer` was made with for `choice`. */
+export function depthDrawn(
+  choice: DepthChoice,
+  renderer: WebGLRenderer,
+): DepthDrawn {
+  const gl = renderer.getContext();
+  const bits = Number(gl.getParameter(gl.DEPTH_BITS));
+  const asked = choice.mode === 'reversed';
+  const reversed = asked && renderer.capabilities.reversedDepthBuffer;
+  const mode = asked && !reversed ? 'linear (reversed refused)' : choice.mode;
+  return { mode, bits, reversed };
+}
+
 /**
  * The report's step for what `renderer` draws with: the mode, what the
  * address asked when it differs, the depth buffer's bits and the shadow map,
@@ -76,13 +98,9 @@ export function depthStep(
   choice: DepthChoice,
   renderer: WebGLRenderer,
 ): string {
-  const gl = renderer.getContext();
-  const bits = Number(gl.getParameter(gl.DEPTH_BITS));
-  const reversedOff = choice.mode === 'reversed'
-    && !renderer.capabilities.reversedDepthBuffer;
+  const { mode, bits } = depthDrawn(choice, renderer);
   const asked = choice.asked && choice.asked !== choice.mode
     ? ` (asked ${choice.asked})` : '';
-  const mode = reversedOff ? 'linear (reversed refused)' : choice.mode;
   const map = renderer.shadowMap.enabled ? 'on' : 'off';
   const forced = choice.forceShadows ? ' (forced)' : '';
   return `depth ${mode}${asked} · ${bits} bits · shadow map ${map}${forced}`;

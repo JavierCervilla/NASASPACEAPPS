@@ -90,9 +90,14 @@ export class Breadcrumbs {
     return this.trail;
   }
 
+  /** Seconds since this session's trail started. */
+  elapsed(): number {
+    return (this.now() - this.started) / 1000;
+  }
+
   /** Records a step, with the seconds since this session started. */
   mark(step: string): void {
-    const seconds = ((this.now() - this.started) / 1000).toFixed(1);
+    const seconds = this.elapsed().toFixed(1);
     this.trail.push(`${seconds}s ${step}`);
     if (this.trail.length > this.keep) {
       this.trail = this.trail.slice(-this.keep);

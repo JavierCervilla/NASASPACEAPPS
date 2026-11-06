@@ -37,6 +37,10 @@
   línea de memoria de texturas se actualiza aunque los fotogramas vayan lentos, los fallos de KTX2 de la vista 3D
   dejan miga («on-foot: albedo KTX2 failed → WebP: …») y, al perderse el contexto de la vista 3D, el lector se pliega
   solo para no tapar «Try again» en el móvil (sigue contando «· 1 error» y se despliega al tocarlo).
+- **El aviso de noche lunar cuenta como el widget (VENT-106).** «El Sol sale en …» sale de las mismas horas que el
+  widget «Salida del Sol en» (las de Horizons si es la fuente elegida) y aparece según la misma hora; la luz de la
+  escena y la leyenda siguen al Sol que se dibuja. En el móvil el aviso nunca queda bajo la brújula y las etiquetas de
+  25 y 100 m se apartan de él.
 - **De noche la luz de la Tierra ya llega al suelo (VENT-100).** La máscara del Sol apagaba toda la luz directa del
   suelo y de las rocas, también la de la Tierra: de noche solo quedaba el relleno plano. Ahora, de noche, la máscara
   solo apaga el Sol (en todos los niveles de calidad, también con la fotometría lunar del nivel alto); con la Tierra

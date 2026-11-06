@@ -79,11 +79,13 @@ function openScene(host: HTMLElement, input: SceneInput, hooks: SceneHooks,
 }
 
 /** What undoes a mounted scene, in order, and frees its GPU last. */
-function freeScene(parts: { world: World; labels: { root: ChildNode };
+function freeScene(parts: { world: World;
+  labels: { root: ChildNode; stop: () => void };
   loop: Loop; steps: readonly (() => void)[] }): () => void {
   return () => {
     for (const undo of parts.steps) undo();
     parts.loop.stop();
+    parts.labels.stop();
     parts.labels.root.remove();
     parts.world.slicer.clear();
     parts.world.rings?.dispose();

@@ -32,6 +32,7 @@
 import { useCallback, useMemo, useRef } from 'react';
 import { skyAt, type SiteShadow } from '@ventana/sim';
 import type { TimeStore } from '../../calendar/time-store';
+import type { HoursResult } from '../../phone/widgets-loader';
 import type { HorizonStore } from '../../horizon/horizon-store';
 import { useTime } from '../calendar/hooks';
 import { useSiteHorizon } from '../horizon/use-horizon';
@@ -61,6 +62,11 @@ export interface OnFootParts {
   readonly tiles: RingSource;
   /** The view's tier, shared by its scene and its rings (VENT-49). */
   readonly viewTier: ViewTier;
+  /**
+   * The hours the widgets show: the night's notice counts from them, and
+   * on desktop the horizon strip under the view reads them.
+   */
+  readonly hours?: HoursResult | undefined;
 }
 
 /** The point's tile, placed, and the sky over it at the instant. */
@@ -110,6 +116,7 @@ export function useOnFoot(parts: OnFootParts, report: Recorder) {
       startYawDeg, words };
   }, [placed, ring, sky, profile, seed, startYawDeg, bodies, i18n,
     parts.site.lat, ground.atMs]);
-  const night = useNight(parts.site, sky, ground.atMs, profile);
+  const night = useNight(parts.site, sky, profile,
+    { atMs: ground.atMs, hours: parts.hours });
   return { ...ground, input, bodies, startYawDeg, profile, night };
 }

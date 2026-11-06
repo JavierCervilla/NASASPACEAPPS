@@ -42,6 +42,9 @@ const SCHEMES: readonly TileScheme[] = ['polar-south', 'polar-north', 'latlon'];
 const WHOLE = /^-?\d{1,9}$/;
 const TOKEN = /^[0-9a-f]{8}$/;
 
+/** How a tile is sent: `json` (base64 heights) or `bin` (VENT-98). */
+export type TileFormat = 'json' | 'bin';
+
 /** The raw path of a tile. */
 export interface RawTileKey {
   readonly scheme?: string | undefined;
@@ -55,6 +58,7 @@ export interface RawIndexParams {
   readonly lat?: string | undefined;
   readonly lon?: string | undefined;
   readonly levels?: string | undefined;
+  readonly format?: string | undefined;
 }
 
 /** The checked ring request: the point on the 0.01° grid, and the levels. */
@@ -62,6 +66,11 @@ export interface IndexParams {
   readonly lat: number;
   readonly lonEast: number;
   readonly levels: number;
+  /**
+   * The tiles' format: `bin` only when asked for it; any other value lists
+   * JSON urls, as a server without binary tiles does (VENT-98).
+   */
+  readonly format: TileFormat;
 }
 
 function wholeParam(name: string, raw: string | undefined): number {
@@ -102,7 +111,8 @@ export function parseIndexParams(raw: RawIndexParams): IndexParams {
   if (levels < 1 || levels > TILE_LEVELS) {
     throw new ParamError(`"levels" must be a whole number from 1 to ${TILE_LEVELS}`);
   }
-  return { lat, lonEast, levels };
+  const format = raw.format === 'bin' ? 'bin' : 'json';
+  return { lat, lonEast, levels, format };
 }
 
 /**
@@ -113,5 +123,16 @@ export function parseIndexParams(raw: RawIndexParams): IndexParams {
 export function parseVersion(raw: string | undefined): string | undefined {
   if (raw === undefined) return undefined;
   if (!TOKEN.test(raw)) throw new ParamError('"v" must be a version token');
+  return raw;
+}
+
+/**
+ * The format a tile url's `format` asks for: JSON without one.
+ *
+ * @throws ParamError for any other value than `bin`.
+ */
+export function parseFormat(raw: string | undefined): TileFormat {
+  if (raw === undefined) return 'json';
+  if (raw !== 'bin') throw new ParamError('"format" must be bin');
   return raw;
 }

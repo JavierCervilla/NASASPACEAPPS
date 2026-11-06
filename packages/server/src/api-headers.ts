@@ -26,7 +26,8 @@
 /** Headers every API answer carries, whatever the route or the outcome. */
 import type { MiddlewareHandler } from 'hono';
 
-// The API serves JSON only: nothing in it may run, load or be framed.
+// The API serves JSON and binary terrain tiles: nothing in it may run,
+// load or be framed.
 const CONTENT_SECURITY_POLICY = "default-src 'none'; frame-ancestors 'none'";
 const HTTP_FIRST_ERROR = 400;
 

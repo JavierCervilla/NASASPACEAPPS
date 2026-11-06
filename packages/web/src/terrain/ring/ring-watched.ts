@@ -38,27 +38,42 @@ import {
 
 export type { Timer } from './ring-silence';
 
-/** The body as text, read chunk by chunk under `watch`. */
-async function bodyText(response: Response, watch: Watch): Promise<string> {
+/** The chunks of a body as one array of bytes. */
+function joined(chunks: readonly Uint8Array[], length: number): Uint8Array {
+  const bytes = new Uint8Array(length);
+  let at = 0;
+  for (const chunk of chunks) {
+    bytes.set(chunk, at);
+    at += chunk.length;
+  }
+  return bytes;
+}
+
+/**
+ * The body as bytes (JSON or a binary tile, VENT-98), read chunk by chunk
+ * under `watch`.
+ */
+async function bodyBytes(response: Response, watch: Watch) {
   const reader = response.body?.getReader();
-  if (!reader) return response.text();
+  if (!reader) return new Uint8Array(await response.arrayBuffer());
   const cancel = (): void => void reader.cancel().catch(() => undefined);
   watch.signal.addEventListener('abort', cancel, { once: true });
-  const decoder = new TextDecoder();
-  let text = '';
+  const chunks: Uint8Array[] = [];
+  let length = 0;
   for (;;) {
     const { done, value } = await reader.read();
     if (watch.signal.aborted) throw watch.signal.reason;
-    if (done) return text + decoder.decode();
+    if (done) return joined(chunks, length);
     watch.poke();
-    text += decoder.decode(value, { stream: true });
+    chunks.push(value);
+    length += value.length;
   }
 }
 
 /** What one watched GET gave: the response, and its body when it is ok. */
 export interface Watched {
   readonly response: Response;
-  readonly text: string | null;
+  readonly bytes: Uint8Array | null;
 }
 
 /**
@@ -76,8 +91,8 @@ export async function fetchWatched(
   try {
     const response = await fetcher(url, { signal: watch.signal });
     watch.poke();
-    const text = response.ok ? await bodyText(response, watch) : null;
-    return { response, text };
+    const bytes = response.ok ? await bodyBytes(response, watch) : null;
+    return { response, bytes };
   } catch (error) {
     if (!watch.stalled()) throw error;
     throw new TransientHorizonError(null, `ring: silent for ${STALL_MS} ms`);

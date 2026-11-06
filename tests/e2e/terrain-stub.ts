@@ -35,7 +35,7 @@
  */
 import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import {
-  alignedTile, encodeQuantised, planePoint, quantiseHeights, tilesAround,
+  alignedTile, encodeQuantised, encodeTileBinary, planePoint, quantiseHeights, tilesAround,
   type DemGrid, type TileKey, type TileScheme,
 } from '@ventana/sim';
 import type { Page, Route } from '@playwright/test';
@@ -162,26 +162,63 @@ async function record(path: string, name: string): Promise<string> {
 }
 
 /**
+ * The recorded JSON answer of a tile in the binary format (VENT-98, docs/terrain-api.md), as the API sends it for a
+ * `format=bin` url: the same heights, header from the same fields.
+ */
+export function binaryOfRecorded(text: string): Buffer {
+  const j = JSON.parse(text) as {
+    version: string; scheme: TileScheme; level: number; x: number; y: number; n: number; quantumM: number;
+    baseUnits: number; heights: string; resolutionM: number; minM: number; maxM: number; coverage: number;
+  };
+  const bytes = Buffer.from(j.heights, 'base64');
+  const q = Uint16Array.from({ length: bytes.length / 2 }, (_, i) => bytes.readUInt16LE(i * 2));
+  const { version, scheme, level, x, y, n, quantumM, baseUnits, resolutionM, minM, maxM, coverage } = j;
+  return Buffer.from(encodeTileBinary({ version, key: { scheme, level, x, y }, n, quantumM, baseUnits, q, resolutionM, minM, maxM, coverage }));
+}
+
+/** The recorded ring with its urls as an API with binary tiles lists them to a client that asks `format=bin`. */
+function binaryRing(text: string): string {
+  const ring = JSON.parse(text) as { levels: { tiles: { url: string }[] }[] };
+  for (const level of ring.levels) for (const tile of level.tiles) tile.url += '&format=bin';
+  return JSON.stringify(ring);
+}
+
+export interface RealReliefStub {
+  /** Answer as an API with binary tiles (VENT-98): binary urls and bodies for a client that asks `format=bin`. */
+  readonly binary?: boolean;
+  /** Collects the Content-Type of every tile answered. */
+  readonly tileTypes?: string[];
+}
+
+/**
  * REAL LOLA relief for IM-2 (84.79° S 29.20° E), recorded on 2026-11-03 from the levelled tile routes (docs/terrain-api.md,
  * `VENT46_RECORD=<server url>` records again) of the production API (https://nasa.cervilla.es), with every tier installed:
  * levels 0 and 1 read NASA's LDEM_80S_20M, level 2 LDEM_80S_80M and level 3 LDEM_75S_240M, as production does (VENT-59;
  * the earlier recording came from a local server without the 20 m tier). Whatever point is asked, the answers are these.
- * The horizon is the recorded one of IM-2 (`fixtures/horizon-im2.json`).
+ * The horizon is the recorded one of IM-2 (`fixtures/horizon-im2.json`). Without `binary` it answers as an API without
+ * binary tiles: JSON whatever the client asks.
  */
-export async function stubRealRelief(page: Page): Promise<void> {
+export async function stubRealRelief(page: Page, stub: RealReliefStub = {}): Promise<void> {
   const horizon = readFileSync(new URL('./fixtures/horizon-im2.json', import.meta.url), 'utf8');
   const json = (body: string) => (route: Route) => route.fulfill({ body, contentType: 'application/json' });
+  const binary = (body: Buffer) => (route: Route) => route.fulfill({ body, contentType: 'application/octet-stream' });
   await page.route(/\/api\/v1\/horizon\?/, json(horizon));
   await page.route(/\/api\/v1\/terrain\/tiles/, async (route) => {
     const url = new URL(route.request().url());
     const m = TILE_PATH.exec(url.pathname);
+    const asksBinary = stub.binary === true && url.searchParams.get('format') === 'bin';
     try {
       if (!m) {
         const query = '?lat=-84.79&lon=29.2&levels=4';
-        return await json(RECORD ? await record(`/api/v1/terrain/tiles${query}`, 'ring.json') : recorded('ring.json'))(route);
+        const ring = RECORD ? await record(`/api/v1/terrain/tiles${query}`, 'ring.json') : recorded('ring.json');
+        return await json(asksBinary ? binaryRing(ring) : ring)(route);
       }
-      const body = RECORD ? await record(url.pathname + url.search, fileOf(m)) : recorded(fileOf(m));
-      return await json(body)(route);
+      // The fixtures are the JSON answers: a recording asks without `format`.
+      const plain = new URL(url);
+      plain.searchParams.delete('format');
+      const body = RECORD ? await record(plain.pathname + plain.search, fileOf(m)) : recorded(fileOf(m));
+      stub.tileTypes?.push(asksBinary ? 'application/octet-stream' : 'application/json');
+      return await (asksBinary ? binary(binaryOfRecorded(body)) : json(body))(route);
     } catch {
       return route.fulfill({ status: 404, json: { error: 'no terrain data covers this point' } });
     }

@@ -27,10 +27,14 @@
  * What the ring route and the tile route answer (VENT-46,
  * docs/terrain-api.md), checked and decoded: the list of tiles a view asks
  * for, and a tile's 16-bit heights as float32 metres over the sphere (NaN
- * where no tier covers). A body that is not one is null, so the source
- * calls it a failure that may pass. Pure.
+ * where no tier covers), from the JSON answer or the binary one (VENT-98).
+ * A body that is not one is null, so the source calls it a failure that
+ * may pass. Pure.
  */
-import { TILE_CELLS, decodeQuantised, type TileScheme } from '@ventana/sim';
+import {
+  TILE_CELLS, decodeQuantised, dequantiseHeights, type BinaryTile,
+  type TileScheme,
+} from '@ventana/sim';
 import type { RingTile } from './ring-store';
 
 export interface RingEntry {
@@ -89,4 +93,33 @@ export function parseTile(
   } catch {
     return null;
   }
+}
+
+/** The tile of `entry` in a binary answer, or null when it is another. */
+function fromBinary(
+  b: BinaryTile,
+  entry: RingEntry,
+  scheme: TileScheme,
+): RingTile | null {
+  const { key } = b;
+  const same = key.scheme === scheme && key.level === entry.level
+    && key.x === entry.x && key.y === entry.y;
+  if (!same || b.n !== N) return null;
+  return { key, n: N, heights: dequantiseHeights(b),
+    resolutionM: b.resolutionM };
+}
+
+/**
+ * The tile of `entry` in a tile route answer, JSON or binary (a decoded
+ * `BinaryTile`), or null when it is not one.
+ */
+export function tileOfAnswer(
+  body: unknown,
+  entry: RingEntry,
+  scheme: TileScheme,
+): RingTile | null {
+  const q = (body as { q?: unknown } | null)?.q;
+  return q instanceof Uint16Array
+    ? fromBinary(body as BinaryTile, entry, scheme)
+    : parseTile(body, entry, scheme);
 }

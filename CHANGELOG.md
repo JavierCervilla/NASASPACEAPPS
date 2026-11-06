@@ -13,6 +13,10 @@
   GPU escondida y la vista se dibuja sin mapa de sombras.
 
 ### Cambiado
+- **La vista 3D baja la mitad de relieve al abrirse (VENT-98).** Las teselas del relieve viajan en binario, con cada
+  altura guardada como diferencia respecto a sus vecinas, en lugar de JSON: al abrir la vista en IM-2 se descargan unos
+  0,54 MB en vez de 1,1 MB, y cada tesela se lee unas ocho veces más deprisa. La app instalada con una versión anterior
+  sigue recibiendo JSON.
 - **Miniaturas, iconos y lista de sitios con caché explícita (VENT-96).** Las miniaturas de los sitios y los iconos se
   guardan un día en la caché del navegador y la lista de sitios cinco minutos (con revalidación), en lugar de lo que el
   navegador adivinara. Medido también si cambiar de punto en la vista 3D deja memoria sin liberar: no la deja.

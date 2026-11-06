@@ -29,13 +29,13 @@
 // the unchanged ones from the older build's cache instead of downloading them again, VENT-90), and bundles
 // src/pwa/sw-worker.ts with all three into dist/sw.js at the base.
 //
-// Cached at install, the whole offline set: every locale's page (not the pseudo-locale's), the build's scripts and
-// styles, the manifests, the icons with the 30 phase frames, every site thumbnail, the 1K and 2K maps and the polar
-// map. The sharper maps (4K, 8K) are left to the runtime cache: the zoom asks for them, and most visits never do. So
-// are the on-foot 3D view's files (ON_DEMAND), which only that view asks for, and the dev tools, which only `?debug`
-// asks for.
-// The install set has a hard budget, PRECACHE_BUDGET: a build over it fails (human decision, 2026-10-31: under 5 MB
-// is fine for this app).
+// Cached at install, the offline set every device uses: every locale's page (not the pseudo-locale's), the build's
+// scripts and styles, the manifests, the icons with the 30 phase frames, every site thumbnail and the 1K and 2K globe
+// maps. The map only the desktop layout uses, the polar map (DEVICE_EXTRAS), is kept once a desktop page has started
+// and asks for it (VENT-95: a phone has no polar view). The sharper maps (4K, 8K) are left to the runtime cache: the zoom asks for them, and most visits never do. So are the
+// on-foot 3D view's files (ON_DEMAND), which only that view asks for, and the dev tools, which only `?debug` asks for.
+// What a first visit downloads has a hard budget, PRECACHE_BUDGET, counted on the largest one (the install set and the
+// desktop extras): a build over it fails (human decision, 2026-10-31: under 5 MB is fine for this app).
 import { createHash } from 'node:crypto';
 import { readdirSync, readFileSync } from 'node:fs';
 import { join, relative, sep } from 'node:path';
@@ -47,8 +47,15 @@ const START_MAPS = new Set([
   'textures/moon-lroc-2k.jpg',
   'textures/moon-lola-normal-1k.jpg',
   'textures/moon-lola-normal-2k.jpg',
-  'textures/moon-south-polar-2k.jpg',
 ]);
+/**
+ * The files only some devices use, by the name of the set a page asks the worker to keep (src/pwa/keep-extras.ts):
+ * the desktop's polar map (src/components/polar/PolarMap.tsx: the phone has no polar view). Never in the install set.
+ * The 2K globe maps are not here: every device's globe climbs to them (VENT-97).
+ */
+export const DEVICE_EXTRAS = {
+  desktop: ['textures/moon-south-polar-2k.jpg'],
+};
 const WHOLE_FOLDERS = ['_astro/', 'icons/', 'thumbs/'];
 const ROOT_FILES = new Set(['favicon.ico', 'favicon.svg', 'apple-touch-icon.png']);
 /**
@@ -75,7 +82,7 @@ function filesUnder(dir, root = dir) {
 /** Whether the worker may keep `file` (a path under dist) at all: not the pseudo-locale, source maps nor itself. */
 const keepable = (file) => !file.startsWith(PSEUDO) && !file.endsWith('.map') && file !== 'sw.js';
 
-/** The most the install may download, in bytes; the build fails over it. */
+/** The most a first visit's worker may download, in bytes; the build fails over it. */
 export const PRECACHE_BUDGET = 5 * 1024 * 1024;
 
 /** Whether the worker caches `file` (a path under dist) at install: the offline set. */
@@ -94,10 +101,12 @@ const fileHash = (body) => createHash('sha256').update(body).digest('hex').slice
 
 /**
  * What the worker caches at install, as paths under the scope, their total size in bytes, the build's digest (the
- * sha256 of the path and bytes of every file it may keep, at install or later, in order) and the hash of each of those
- * files by its path under the scope (VENT-90: a new build copies the unchanged ones from the older build's cache).
+ * sha256 of the path and bytes of every file it may keep, at install or later, in order), the hash of each of those
+ * files by its path under the scope (VENT-90: a new build copies the unchanged ones from the older build's cache), and
+ * the device extras with the bytes of each set (VENT-95).
  * @param {string} dist
- * @returns {{ precache: string[], bytes: number, digest: string, hashes: Record<string, string> }}
+ * @returns {{ precache: string[], bytes: number, digest: string, hashes: Record<string, string>,
+ *   extras: Record<string, string[]>, extraBytes: Record<string, number> }}
  */
 export function precacheOf(dist) {
   const files = filesUnder(dist).filter(keepable).sort();
@@ -105,27 +114,47 @@ export function precacheOf(dist) {
   /** @type {Record<string, string>} */
   const hashes = {};
   let bytes = 0;
+  const extraBytes = Object.fromEntries(Object.keys(DEVICE_EXTRAS).map((set) => [set, 0]));
   for (const file of files) {
     const body = readFileSync(join(dist, file));
     hash.update(`${file}\0`).update(body);
     hashes[requestPath(file)] = fileHash(body);
     if (precached(file)) bytes += body.length;
+    for (const [set, extras] of Object.entries(DEVICE_EXTRAS)) {
+      if (extras.includes(file)) extraBytes[set] += body.length;
+    }
   }
-  return { precache: files.filter(precached).map(requestPath), bytes, digest: hash.digest('hex'), hashes };
+  const precache = files.filter(precached).map(requestPath);
+  return { precache, bytes, digest: hash.digest('hex'), hashes, extras: DEVICE_EXTRAS, extraBytes };
 }
 
 /** `bytes` in megabytes (MiB), two decimals. */
 export const megabytes = (bytes) => `${(bytes / 1024 / 1024).toFixed(2)} MB`;
 
 /**
- * Throws when the install would download more than `budget` bytes, so the build fails instead of shipping it.
+ * Throws when a first visit's worker would download more than `budget` bytes: the install set, plus the largest set
+ * of device extras (`extraBytes`, by set), so the build fails instead of shipping it.
  * @param {number} bytes
+ * @param {Record<string, number>} [extraBytes]
  * @param {number} [budget]
  */
-export function assertPrecacheBudget(bytes, budget = PRECACHE_BUDGET) {
-  if (bytes > budget) {
-    throw new Error(`sw.js: the precache is ${megabytes(bytes)} (${bytes} bytes), over its ${megabytes(budget)} budget`);
+export function assertPrecacheBudget(bytes, extraBytes = {}, budget = PRECACHE_BUDGET) {
+  for (const [set, extra] of Object.entries({ common: 0, ...extraBytes })) {
+    const total = bytes + extra;
+    if (total <= budget) continue;
+    const what = set === 'common' ? 'the precache' : `the precache with the ${set} extras`;
+    throw new Error(`sw.js: ${what} is ${megabytes(total)} (${total} bytes), over its ${megabytes(budget)} budget`);
   }
+}
+
+/** The build log's line: the install set, each set of extras and the largest first visit, against the budget. */
+function budgetLine(precache, bytes, extraBytes) {
+  const extras = Object.entries(extraBytes).map(([set, extra]) => `, ${set} extras ${megabytes(extra)}`);
+  const largest = bytes + Math.max(0, ...Object.values(extraBytes));
+  return (
+    `sw.js: ${precache.length} files, precache ${megabytes(bytes)}${extras.join('')}, ` +
+    `largest first visit ${megabytes(largest)} of ${megabytes(PRECACHE_BUDGET)}`
+  );
 }
 
 /** Bundles the worker into `dist/sw.js` with its config. */
@@ -152,13 +181,10 @@ export function serviceWorker() {
     hooks: {
       'astro:build:done': async ({ dir, logger }) => {
         const dist = fileURLToPath(dir);
-        const { precache, bytes, digest, hashes } = precacheOf(dist);
-        assertPrecacheBudget(bytes);
-        await bundle(dist, { precache, digest, hashes });
-        logger.info(
-          `sw.js: ${precache.length} files, precache ${megabytes(bytes)} of ${megabytes(PRECACHE_BUDGET)}, ` +
-            `cache ${digest.slice(0, 12)}`,
-        );
+        const { precache, bytes, digest, hashes, extras, extraBytes } = precacheOf(dist);
+        assertPrecacheBudget(bytes, extraBytes);
+        await bundle(dist, { precache, digest, hashes, extras });
+        logger.info(`${budgetLine(precache, bytes, extraBytes)}, cache ${digest.slice(0, 12)}`);
       },
     },
   };

@@ -83,13 +83,20 @@ const root = import.meta.env.BASE_URL.replace(/\/?$/, '/');
     <script>
       // The service worker (VENT-28): offline pages, maps and data. Only in
       // a production build (the dev server has no sw.js), never under
-      // Save-Data.
+      // Save-Data. A desktop page then asks it for the polar map, which
+      // only the desktop uses (VENT-95).
       import { prefersSaveData } from '../lib/viewport';
+      import { browserExtrasHost } from '../pwa/extras-host';
+      import { keepDeviceExtras } from '../pwa/keep-extras';
       import { registerServiceWorker } from '../pwa/register-sw';
       if (import.meta.env.PROD) {
         const base = import.meta.env.BASE_URL;
         const { serviceWorker } = navigator;
-        registerServiceWorker(base, serviceWorker, prefersSaveData());
+        const saveData = prefersSaveData();
+        registerServiceWorker(base, serviceWorker, saveData);
+        if (serviceWorker && !saveData) {
+          keepDeviceExtras(browserExtrasHost(serviceWorker));
+        }
       }
     </script>
     <script>

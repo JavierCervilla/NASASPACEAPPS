@@ -811,17 +811,25 @@ Every visible change follows `.claude/skills/apple-design/SKILL.md` (vendored fr
   VENT-82). A phase frame that fails to load leaves the ring alone and
   is asked again on the next update.
 - **Offline**: `scripts/service-worker.mjs` (an Astro integration) bundles `src/pwa/sw-worker.ts` into `dist/sw.js`
-  after every build, with the files it caches at install, the whole offline set (every locale's page except `/en-xa/`,
-  `_astro/`, the manifests, `icons/` with the 30 phase frames, every site thumbnail, the 1K and 2K maps, the polar map,
-  `favicon.ico`, `favicon.svg` and the root `apple-touch-icon.png`), fetched past the HTTP cache (`cache: 'reload'`),
+  after every build, with the files it caches at install, the offline set every device uses (every locale's page except
+  `/en-xa/`, `_astro/`, the manifests, `icons/` with the 30 phase frames, every site thumbnail, the 1K and 2K globe
+  maps, `favicon.ico`, `favicon.svg` and the root `apple-touch-icon.png`), fetched past the HTTP cache (`cache: 'reload'`),
   and the build's digest over every file the worker may keep, which names the static cache (`ventana-static-<digest>`),
   so a deploy drops the old one. A deploy downloads only the files that changed (VENT-90): the build also hashes each
   file the worker may keep (`hashes` in the worker's config, the precache and the files kept on use), the install
   copies from the older build's cache each kept copy whose body still hashes to it (all or nothing: a file it cannot
   have fails it and deletes the new cache), and the activation carries over the older caches' entries whose body
   hashes to the new build's hash (a kept 4K or 8K map) before deleting them; the worker hashes the bodies itself and
-  trusts no header (`src/pwa/sw-reuse.ts`, `sw-hash.ts`). The install set has a hard budget of 5 MB (`PRECACHE_BUDGET`, human decision
-  2026-10-31): the build logs the precache total and fails over it (4.76 MB with VENT-60's loader, its styles on demand; 4.75 MB with VENT-55's press, presence, rail and scroll-fade sheets; 4.74 MB with VENT-54, no models; 4.78 MB with VENT-52's update row; 4.77 MB with VENT-50's compass and graticule; 4.75 MB with VENT-46's rings, landers and rigged astronaut, their files left out; 4.70 MB with VENT-34's on-foot view, its files left out; 4.68 MB with VENT-40's horizon strip; 4.63 MB with VENT-39's shadow notes; 4.57 MB with VENT-37's saved sites; 4.52 MB when it left the astronaut's sprites out, 4.60 MB with them). The 4K and 8K maps, and any build file not
+  trusts no header (`src/pwa/sw-reuse.ts`, `sw-hash.ts`). The map only the desktop layout uses, the polar map (no polar
+  view on a phone), is not in the install set (VENT-95; the 2K globe maps stay in it, since every device's globe climbs
+  to them, VENT-97): it is named once, `DEVICE_EXTRAS` in `service-worker.mjs`, and a page in the desktop layout (at
+  start, or when it turns into it) posts `ventana:keep-extras` for the `desktop` set once it has started
+  (`src/pwa/keep-extras.ts`, `afterStart`); the worker keeps each file it does not hold, the HTTP cache's copy or the
+  server's, only when its body hashes to the build's hash (`src/pwa/sw-extras.ts`), so a deploy carries it over like the
+  4K map. A phone's first visit downloads 4.27 MB instead of 5.02 MB; a desktop's the same 5.02 MB as before. What a first visit downloads has a
+  hard budget of 5 MB (`PRECACHE_BUDGET`, human decision 2026-10-31), counted on the largest one, the install set plus
+  the desktop extras: the build logs the precache, the desktop extras and that total, and fails over it (VENT-95: 4.07
+  MB common plus 0.72 MB desktop extras, 4.79 MB; 4.76 MB with VENT-60's loader, its styles on demand; 4.75 MB with VENT-55's press, presence, rail and scroll-fade sheets; 4.74 MB with VENT-54, no models; 4.78 MB with VENT-52's update row; 4.77 MB with VENT-50's compass and graticule; 4.75 MB with VENT-46's rings, landers and rigged astronaut, their files left out; 4.70 MB with VENT-34's on-foot view, its files left out; 4.68 MB with VENT-40's horizon strip; 4.63 MB with VENT-39's shadow notes; 4.57 MB with VENT-37's saved sites; 4.52 MB when it left the astronaut's sprites out, 4.60 MB with them). The 4K and 8K maps, and any build file not
   precached, are kept cache first the first time the page fetches them. Under Save-Data the worker is not registered
   at all. Pages and API GETs are network first,
   build files cache first; the answer goes to the page before its copy is kept, in the background under `waitUntil`

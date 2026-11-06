@@ -30,13 +30,15 @@
  * the hash of each file it may keep.
  * The pages, network first, so a deploy is never hidden behind a stale
  * shell; the build's files, cache first, under a cache named after the
- * build: the offline set at install, the rest (the 4K and 8K maps) the
+ * build: the offline set at install, the desktop's extras when its page
+ * asks (sw-extras.ts, VENT-95), the rest (the 4K and 8K maps) the
  * first time the page uses them; the API's GETs, network first,
  * their last answers offline. Every answer goes to the page before its
  * copy is kept, and a new build downloads only the files whose hash
  * changed (sw-reuse.ts, VENT-90).
  */
 import { apiFirst } from './sw-api';
+import { extrasAsked, keepExtras, type ExtrasSets } from './sw-extras';
 import type { Hashes } from './sw-hash';
 import { activateBuild, installBuild } from './sw-reuse';
 import {
@@ -50,17 +52,23 @@ import { cacheFirst, networkFirst, type SwNet } from './sw-strategies';
 declare const __SW_CONFIG__: {
   readonly digest: string;
   /**
-   * Paths under the scope: the offline set (pages, build files, manifests,
-   * icons and phase frames, thumbnails, the 1K, 2K and polar maps). The
-   * 4K and 8K maps are kept as the zoom uses them.
+   * Paths under the scope: the offline set every device uses (pages,
+   * build files, manifests, icons and phase frames, thumbnails, the 1K
+   * and 2K globe maps). The 4K and 8K maps are kept as the zoom uses them.
    */
   readonly precache: readonly string[];
+  /** The maps only some devices use, by set: kept when a page asks. */
+  readonly extras: ExtrasSets;
   /** Every file it may keep, at install or later: path to its hash. */
   readonly hashes: Hashes;
 };
 
 interface WaitEvent extends Event {
   waitUntil(promise: Promise<unknown>): void;
+}
+
+interface SwMessageEvent extends WaitEvent {
+  readonly data: unknown;
 }
 
 interface SwFetchEvent extends WaitEvent {
@@ -124,6 +132,10 @@ sw.addEventListener('install', (event: WaitEvent) => {
 });
 sw.addEventListener('activate', (event: WaitEvent) => {
   event.waitUntil(activate());
+});
+sw.addEventListener('message', (event: SwMessageEvent) => {
+  const paths = extrasAsked(event.data, CONFIG.extras);
+  if (paths.length > 0) event.waitUntil(keepExtras(store, build, paths));
 });
 sw.addEventListener('fetch', (event: SwFetchEvent) => {
   const response = answer(event);

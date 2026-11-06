@@ -24,6 +24,19 @@
   se oculta en vez de cortarse. De día la vista no cambia.
 
 ### Arreglado
+- **Con «Ahorro de datos» ya no se descarga el transcodificador de texturas (VENT-107).** Con el ahorro de datos el
+  globo nunca pasa de su mapa inicial, así que la página ya no pide el transcodificador KTX2 ni arranca su worker: toma
+  el JPEG. `?debug` lo dice («ktx2 off: Save-Data») en vez de «ktx2 → BC1».
+- **El orden del banco de profundidad responde a tu pregunta (VENT-107).** `?bench=depth` mide primero el búfer
+  logarítmico frente al invertido, los dos sin forzar el mapa de sombras, y encima de la tabla pone la comparación
+  (fotogramas por segundo, p95 y peor fotograma del giro de 60 s); después van el invertido, el lineal y el logarítmico
+  con sombras forzadas, al final porque una pérdida puede hacer que Chrome bloquee WebGL para el sitio y pare el banco.
+- **Pulido del banco y de `?debug` (VENT-107).** En escritorio la tira del banco en marcha va al pie de la ventana y ya
+  no tapa el pie de la vista 3D; si se pierde el contexto al abrir la vista, la cabecera guarda el nivel con el que
+  corría y no el «low» al que cae después; un estado guardado con una suite desconocida se descarta. En `?debug`, la
+  línea de memoria de texturas se actualiza aunque los fotogramas vayan lentos, los fallos de KTX2 de la vista 3D
+  dejan miga («on-foot: albedo KTX2 failed → WebP: …») y, al perderse el contexto de la vista 3D, el lector se pliega
+  solo para no tapar «Try again» en el móvil (sigue contando «· 1 error» y se despliega al tocarlo).
 - **De noche la luz de la Tierra ya llega al suelo (VENT-100).** La máscara del Sol apagaba toda la luz directa del
   suelo y de las rocas, también la de la Tierra: de noche solo quedaba el relleno plano. Ahora, de noche, la máscara
   solo apaga el Sol (en todos los niveles de calidad, también con la fotometría lunar del nivel alto); con la Tierra

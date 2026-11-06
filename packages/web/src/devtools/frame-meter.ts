@@ -31,7 +31,7 @@
  */
 
 /** Seconds between readout refreshes. */
-const REFRESH_SECONDS = 0.5;
+export const REFRESH_SECONDS = 0.5;
 
 export interface FrameReading {
   readonly fps: number;

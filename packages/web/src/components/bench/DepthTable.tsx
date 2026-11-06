@@ -27,10 +27,13 @@
  * The depth suite's results table (VENT-104): a row per run, whether the
  * 3D view kept its context or when it lost it, the depth buffer it drew
  * with, its bits, three's reversed buffer and the shadow map, and the
- * turn's frames, in the box of BenchTable.tsx that scrolls sideways.
+ * turn's frames, in the box of BenchTable.tsx that scrolls sideways; and
+ * above it the comparison the suite is run for (VENT-107), logarithmic
+ * against reversed depth without a forced shadow map.
  */
 import type { DepthRow } from '../../bench/depth-results';
 import { depthRows } from '../../bench/depth-results';
+import { logVersusReversed } from '../../bench/depth-versus';
 import { cellText } from '../../bench/display';
 import type { RunResult } from '../../bench/types';
 import type { TextKey } from '../../i18n/catalogue';
@@ -67,6 +70,20 @@ function Row({ row }: { row: DepthRow }) {
       <td>{cellText('p95', row.p95, i18n)}</td>
       <td>{cellText('worst', row.worst, i18n)}</td>
     </tr>
+  );
+}
+
+/** «Logarithmic vs reversed, no shadow map: 50.0 fps vs 40.0 fps · …». */
+export function DepthVersus({ results }: { results: readonly RunResult[] }) {
+  const i18n = useI18n();
+  const { log, reversed } = logVersusReversed(results);
+  const pair = (id: 'fps' | 'p95' | 'worst') => i18n.t('bench.depth.pair', {
+    a: cellText(id, log[id], i18n), b: cellText(id, reversed[id], i18n),
+  });
+  return (
+    <p className="bench__note bench__versus">
+      {i18n.t('bench.depth.versus', { fps: pair('fps'), p95: pair('p95'), worst: pair('worst') })}
+    </p>
   );
 }
 

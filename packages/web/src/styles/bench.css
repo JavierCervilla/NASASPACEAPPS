@@ -184,6 +184,15 @@
  * desktop keeps the strip where it was: under a wrapped two-row header it
  * would land on the globe's compass.
  */
+/* On desktop the strip sits at the window's foot, over the calendar strip:
+   under the header it covered the on-foot view's caption (VENT-107). */
+@media (min-width: 768px) {
+  .ventana-bench-panel[data-phase='running'] {
+    top: auto;
+    bottom: var(--bench-bottom);
+  }
+}
+
 @media (max-width: 767.98px) {
   .ventana-bench-panel[data-phase='running'] {
     --bench-top: var(--top, calc(8px + 3rem + env(safe-area-inset-top, 0px)));

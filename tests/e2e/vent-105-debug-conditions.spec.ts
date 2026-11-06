@@ -85,8 +85,32 @@ test.describe('?debug conditions, desktop 1440x900', () => {
     await host(page).locator('canvas').evaluate((canvas) => {
       (canvas as HTMLCanvasElement).getContext('webgl2')?.getExtension('WEBGL_lose_context')?.loseContext();
     });
+    // The readout folds itself away from the view's «Try again» (VENT-107), counting the loss on its one line.
+    const button = readout(page).getByRole('button', { name: 'Performance readout' });
+    await expect(button).toHaveAttribute('aria-expanded', 'false', { timeout: START_MS });
+    await expect(readout(page)).toContainText('· 1 error');
+    await button.click();
     await expect(text(page)).toHaveText(/\nWebGL context lost: on-foot at \d+\.\d s\n/, { timeout: START_MS });
     const trail = await page.evaluate((key) => JSON.parse(localStorage.getItem(key) ?? '[]') as string[], CRUMBS_KEY);
     expect(trail.some((line) => / context lost: on-foot$/.test(line))).toBe(true);
+  });
+});
+
+test.describe('?debug after a lost on-foot context, phone 412x915 (VENT-107)', () => {
+  test.use({ viewport: { width: 412, height: 915 }, hasTouch: true, isMobile: true });
+
+  test('the open readout folds itself, so «Try again» is in reach', async ({ page }) => {
+    await openOnFoot(page);
+    await expect(readout(page).getByRole('button', { name: 'Performance readout' })).toHaveAttribute('aria-expanded', 'true');
+    await host(page).locator('canvas').evaluate((canvas) => {
+      (canvas as HTMLCanvasElement).getContext('webgl2')?.getExtension('WEBGL_lose_context')?.loseContext();
+    });
+    const again = page.getByRole('button', { name: 'Try again' });
+    await expect(again).toBeVisible({ timeout: START_MS });
+    await expect(readout(page)).toContainText('· 1 error');
+    const [r, a] = [await readout(page).boundingBox(), await again.boundingBox()];
+    const apart = !r || !a || r.x + r.width <= a.x || a.x + a.width <= r.x || r.y + r.height <= a.y || a.y + a.height <= r.y;
+    await page.screenshot({ path: test.info().outputPath('phone-lost.png') });
+    expect(apart).toBe(true);
   });
 });

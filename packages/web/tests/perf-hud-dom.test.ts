@@ -139,6 +139,19 @@ describe('perf hud on the page', () => {
     expect(alert?.textContent).toBe('');
   });
 
+  it('folds itself on request, its errors counted on the one line, and a press opens it again (VENT-107)', () => {
+    const view = hud();
+    view.sample(FULL_WINDOW, null);
+    view.error('WebGL context lost: on-foot at 3.0 s');
+    view.fold(true);
+    expect(target('aria-controls').hidden).toBe(true);
+    expect(readoutButton().getAttribute('aria-expanded')).toBe('false');
+    const alert = panel().all().find((element) => element.className === 'ventana-perf-hud__alert');
+    expect(`${target('aria-describedby').textContent}${alert?.textContent}`).toBe('2 fps · slowest 500 ms · 1 error');
+    readoutButton().click();
+    expect(target('aria-controls').hidden).toBe(false);
+  });
+
   it('starts open by default', () => {
     hud();
     expect(target('aria-controls').hidden).toBe(false);

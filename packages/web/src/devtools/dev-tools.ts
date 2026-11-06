@@ -136,9 +136,11 @@ export class DevTools {
     const lossText = (): string => (kind
       ? lossLine(this.conditions.lost(kind, this.crumbs.elapsed()))
       : PERF_TEXT.contextLost);
-    watchContext(renderer.canvas, this.crumbs, (event) => this.hud.error(
-      event === 'lost' ? lossText() : PERF_TEXT.contextRestored,
-    ), kind && KIND_NAMES[kind]);
+    watchContext(renderer.canvas, this.crumbs, (event) => {
+      this.hud.error(event === 'lost' ? lossText() : PERF_TEXT.contextRestored);
+      // The view's «Try again» shows under the open readout on a phone.
+      if (event === 'lost' && kind === 'onFoot') this.hud.fold?.(true);
+    }, kind && KIND_NAMES[kind]);
     const unscene = kind === 'onFoot' && 'dataset' in renderer.canvas
       ? this.conditions.attachScene(renderer.canvas as HTMLElement)
       : () => undefined;
@@ -154,7 +156,7 @@ export class DevTools {
   frame(dt: number): void {
     this.frames += 1;
     if (FRAME_MARKS.has(this.frames)) this.crumbs.mark(`frame ${this.frames}`);
-    this.hud.sample(dt, this.sampler?.read(this.frames) ?? null);
+    this.hud.sample(dt, this.sampler?.read(dt) ?? null);
   }
 
   /**

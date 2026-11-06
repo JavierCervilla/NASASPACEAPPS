@@ -30,7 +30,8 @@
  * differ, and «Copy report», «Run again» and «Close». A run that threw
  * shows here too, as «Benchmark stopped» with its error, «Copy report»,
  * «Run again» and «Stop». The depth suite (VENT-104) shows its own table,
- * a row per run, and copies its own report.
+ * a row per run under log against reversed (VENT-107), and copies its own
+ * report.
  */
 import { useState } from 'react';
 import { copyText } from '../../bench/copy';
@@ -43,7 +44,7 @@ import type { BenchState } from '../../bench/types';
 import { useI18n } from '../i18n-context';
 import { BenchFrame } from './BenchFrame';
 import { BenchTable } from './BenchTable';
-import { DepthTable } from './DepthTable';
+import { DepthTable, DepthVersus } from './DepthTable';
 
 type Shown = Extract<Phase, { kind: 'results' | 'failed' }>;
 
@@ -70,7 +71,15 @@ function TierNotes({ state }: { state: BenchState }) {
 
 /** The suite's table: A against B, or the depth suite's runs. */
 function RunsTable({ state }: { state: BenchState }) {
-  if (state.suite) return <DepthTable results={state.results} />;
+  if (state.suite) {
+    const { results } = state;
+    return (
+      <>
+        <DepthVersus results={results} />
+        <DepthTable results={results} />
+      </>
+    );
+  }
   return <BenchTable state={state} />;
 }
 

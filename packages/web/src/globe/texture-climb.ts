@@ -29,7 +29,14 @@
  * target moves meanwhile: up as the zoom asks, or down when the globe hides
  * (VENT-86), so a level that lands above it is freed, never shown.
  */
-import { fetchLevel, release, type HeldLevel, type SwapDeps } from './texture-fetch';
+import {
+  fetchLevel,
+  release,
+  type FetchedLevel,
+  type HeldLevel,
+  type SwapDeps,
+} from './texture-fetch';
+import { messageOf } from './map-failure';
 import type { LodLevel } from './texture-lod';
 
 /** What the swapper holds and aims at; the loop updates it. */
@@ -40,6 +47,56 @@ export interface SwapState<T> {
   disposed: boolean;
 }
 
+/** Takes in a level just fetched, or frees it when it is not wanted. */
+function settle<T>(
+  state: SwapState<T>,
+  next: FetchedLevel<T>,
+  deps: SwapDeps<T>,
+): void {
+  if (state.disposed || next.level > state.target) {
+    // Lowered while it was in flight: not wanted any more.
+    release(next.maps, state.held.maps, deps);
+    if (!state.disposed) deps.trace?.mark({ kind: 'freed', level: next.level });
+    return;
+  }
+  deps.apply(next.maps);
+  release(state.held.maps, next.maps, deps);
+  state.held = next;
+  deps.trace?.mark({ kind: 'applied', level: next.level });
+}
+
+/** Leaves a level that failed for the one shown. */
+function giveUp<T>(
+  state: SwapState<T>,
+  level: LodLevel,
+  deps: SwapDeps<T>,
+): void {
+  const shown = state.held.level;
+  deps.trace?.mark({ kind: 'gaveUp', level, shown });
+  // Give up on the failed level only: a higher one asked for
+  // meanwhile is still wanted, and is fetched next.
+  if (state.target === level) state.target = shown;
+}
+
+/**
+ * Fetches `level` and swaps it in. A throw on the way (an upload the
+ * driver refuses) fails the level like a map that did not load, so the
+ * swapper is never left busy.
+ */
+async function step<T>(
+  state: SwapState<T>,
+  level: LodLevel,
+  deps: SwapDeps<T>,
+): Promise<void> {
+  try {
+    const next = await fetchLevel(level, state.held, deps);
+    if (next) return settle(state, next, deps);
+  } catch (error) {
+    deps.trace?.mark({ kind: 'threw', level, message: messageOf(error) });
+  }
+  giveUp(state, level, deps);
+}
+
 /** Fetches and swaps in levels until the target is on screen. */
 export async function climb<T>(
   state: SwapState<T>,
@@ -48,19 +105,8 @@ export async function climb<T>(
   state.busy = true;
   while (!state.disposed && state.target !== state.held.level) {
     const level = state.target as LodLevel;
-    const next = await fetchLevel(level, state.held, deps);
-    if (!next) {
-      // Give up on the failed level only: a higher one asked for
-      // meanwhile is still wanted, and is fetched next.
-      if (state.target === level) state.target = state.held.level;
-    } else if (state.disposed || next.level > state.target) {
-      // Lowered while it was in flight: not wanted any more.
-      release(next.maps, state.held.maps, deps);
-    } else {
-      deps.apply(next.maps);
-      release(state.held.maps, next.maps, deps);
-      state.held = next;
-    }
+    deps.trace?.mark({ kind: 'asked', level });
+    await step(state, level, deps);
   }
   state.busy = false;
 }

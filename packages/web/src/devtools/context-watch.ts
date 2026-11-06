@@ -37,15 +37,16 @@ export type ContextEvent = 'lost' | 'restored';
 /**
  * Watches a canvas for a lost and a restored context. The renderer is
  * expected to call `preventDefault` on the loss (Three.js does), which asks
- * for the restore.
+ * for the restore. `name` says in the trail which canvas lost it (VENT-105).
  */
 export function watchContext(
   canvas: EventTarget,
   crumbs: Breadcrumbs,
   onEvent?: (event: ContextEvent) => void,
+  name?: string,
 ): void {
   canvas.addEventListener('webglcontextlost', () => {
-    crumbs.mark('context lost');
+    crumbs.mark(name ? `context lost: ${name}` : 'context lost');
     onEvent?.('lost');
   });
   canvas.addEventListener('webglcontextrestored', () => {

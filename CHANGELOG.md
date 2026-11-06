@@ -3,6 +3,12 @@
 ## [Sin publicar]
 
 ### Añadido
+- **El lector `?debug` dice en qué condiciones mide (VENT-105).** Desplegado, sobre el rastro, muestra los interruptores
+  de diagnóstico de la dirección («switches: depth=linear shadows=force»), con qué dibuja la vista 3D según la propia
+  escena (búfer de profundidad, bits, invertido, mapa de sombras y por qué está apagado, nivel), el instante (en vivo o
+  fijado, en UTC al minuto, con la elevación del Sol y si es de día o de noche en el sitio) y qué lienzo perdió el
+  contexto WebGL y a qué segundo; así una captura se explica sola. La cabecera del banco de pruebas nombra la GPU
+  aunque el contexto de la vista ya se haya perdido.
 - **Suite de profundidad en el banco de pruebas (VENT-104).** `?bench=depth` hace la bisección del Pixel sola: abre la
   vista 3D en IM-2 y la gira 60 s con cada búfer de profundidad (logarítmico como hoy, invertido y lineal con el mapa
   de sombras forzado, y al final el logarítmico con sombras forzadas, la pérdida conocida). Si se pierde el contexto se

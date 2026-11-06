@@ -37,6 +37,10 @@
  * (`studio/engines/web/scaffold/packages/client/src/engine/dev-tools.ts`).
  */
 import { Breadcrumbs } from './breadcrumbs';
+import {
+  KIND_NAMES, lossLine, type RendererKind,
+} from './condition-lines';
+import { Conditions } from './conditions';
 import { watchContext } from './context-watch';
 import { parseDebugHash, type DebugFlags } from './debug-flags';
 import { PerfHud, type HudView } from './perf-hud';
@@ -76,6 +80,12 @@ export interface DevToolsOptions {
 export class DevTools {
   readonly crumbs: Breadcrumbs;
   readonly flags: DebugFlags;
+  /**
+   * What the readout states above its trail (VENT-105); the island hands it
+   * the shared instant (`conditions.watchInstant`).
+   */
+  readonly conditions = new Conditions(
+    () => globalThis.location?.search ?? '');
   private readonly hud: HudView;
   private sampler: RendererSampler | null = null;
   private frames = 0;
@@ -94,6 +104,7 @@ export class DevTools {
           previous: crumbs.previous,
           current: () => crumbs.current,
           folded: options.folded === true,
+          conditions: () => this.conditions.lines(),
         });
     crumbs.mark(`boot ${options.tier} ${options.gpu}`);
   }
@@ -112,21 +123,27 @@ export class DevTools {
   }
 
   /**
-   * Starts reading a renderer's frames and watches its canvas. Returns what
-   * gives the readout back to the renderer it read before, for a view that
-   * leaves before the page does (the on-foot view).
+   * Starts reading a renderer's frames and watches its canvas; `kind` names
+   * it in a loss, and the on-foot canvas's marks show while it is attached.
+   * Returns what gives the readout back to the renderer it read before, for
+   * a view that leaves before the page does (the on-foot view).
    */
-  attach(renderer: RendererAdapter): () => void {
+  attach(renderer: RendererAdapter, kind?: RendererKind): () => void {
     const previous = this.sampler;
     const sampler = new RendererSampler(renderer);
     this.sampler = sampler;
     this.crumbs.mark('renderer attached');
-    watchContext(renderer.canvas, this.crumbs, (event) =>
-      this.hud.error(
-        event === 'lost' ? PERF_TEXT.contextLost : PERF_TEXT.contextRestored,
-      ),
-    );
+    const lossText = (): string => (kind
+      ? lossLine(this.conditions.lost(kind, this.crumbs.elapsed()))
+      : PERF_TEXT.contextLost);
+    watchContext(renderer.canvas, this.crumbs, (event) => this.hud.error(
+      event === 'lost' ? lossText() : PERF_TEXT.contextRestored,
+    ), kind && KIND_NAMES[kind]);
+    const unscene = kind === 'onFoot' && 'dataset' in renderer.canvas
+      ? this.conditions.attachScene(renderer.canvas as HTMLElement)
+      : () => undefined;
     return () => {
+      unscene();
       if (this.sampler !== sampler) return;
       this.sampler = previous;
       this.crumbs.mark('renderer detached');

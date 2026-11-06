@@ -108,6 +108,17 @@ describe('dev tools', () => {
     expect(devTools.crumbs.current.at(-1)).toBe('0.0s context lost');
   });
 
+  it('names the canvas of a lost context and when, in the readout and the trail (VENT-105)', () => {
+    const view = fakeView();
+    const devTools = tools(view);
+    const adapter = fakeAdapter();
+    devTools.attach(adapter, 'onFoot');
+    adapter.canvas.dispatchEvent(new Event('webglcontextlost'));
+    expect(view.errors).toEqual(['WebGL context lost: on-foot at 0.0 s']);
+    expect(devTools.crumbs.current.at(-1)).toBe('0.0s context lost: on-foot');
+    expect(devTools.conditions.lines()).toContain('WebGL context lost: on-foot at 0.0 s');
+  });
+
   it('reads the hash flags at start', () => {
     expect(tools(fakeView(), '#stats-low').flags).toEqual({ tier: 'low', capture: false });
   });

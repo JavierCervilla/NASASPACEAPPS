@@ -24,7 +24,8 @@
  */
 
 /**
- * The requests of the ring (VENT-46): one GET as JSON with the horizon's
+ * The requests of the ring (VENT-46): one GET, JSON or a binary tile by
+ * its Content-Type (VENT-98), with the horizon's
  * classification of failures (VENT-45, horizon-errors.ts), watched for
  * silence (ring-watched.ts) and tried again on the tiles' own short waits
  * (VENT-78), and a queue that runs the jobs a few at a time.
@@ -34,7 +35,10 @@ import { TransientHorizonError, failureOf }
 import {
   retryDelayMs, type Random, type RetryPolicy, type Sleep,
 } from '../../horizon/horizon-retry';
+import { decodeTileBinary } from '@ventana/sim';
 import { fetchWatched, type Timer } from './ring-watched';
+
+const BINARY_TYPE = 'application/octet-stream';
 
 export interface Waits {
   readonly sleep: Sleep;
@@ -55,16 +59,36 @@ export const TILE_RETRY: RetryPolicy = {
 };
 
 /** The body of an ok answer as JSON. */
-function parsed(text: string | null): unknown {
+function parsed(text: string): unknown {
   try {
-    return JSON.parse(text ?? '');
+    return JSON.parse(text);
   } catch {
     throw new TransientHorizonError(null, 'ring: not JSON');
   }
 }
 
-/** GET `url` as JSON, its failures classified, on {@link TILE_RETRY}. */
-export async function getJson(
+/**
+ * The body of an ok answer by its Content-Type (VENT-98): a binary tile
+ * decoded, anything else as JSON. A body that is neither is a failure that
+ * may pass.
+ */
+function answerOf(response: Response, bytes: Uint8Array | null): unknown {
+  const type = response.headers.get('content-type') ?? '';
+  if (!type.startsWith(BINARY_TYPE)) {
+    return parsed(new TextDecoder().decode(bytes ?? new Uint8Array(0)));
+  }
+  try {
+    return decodeTileBinary(bytes ?? new Uint8Array(0));
+  } catch {
+    throw new TransientHorizonError(null, 'ring: not a binary tile');
+  }
+}
+
+/**
+ * GET `url`, its body by its Content-Type (JSON, or a binary tile as
+ * `BinaryTile`), its failures classified, on {@link TILE_RETRY}.
+ */
+export async function getAnswer(
   fetcher: typeof fetch,
   url: string,
   waits: Waits,
@@ -72,14 +96,14 @@ export async function getJson(
 ): Promise<unknown> {
   for (let failures = 0; ; failures++) {
     try {
-      const { response, text } = await fetchWatched(
+      const { response, bytes } = await fetchWatched(
         fetcher, url, signal, waits.timer,
       ).catch((e: unknown) => {
         if (signal.aborted || e instanceof TransientHorizonError) throw e;
         throw new TransientHorizonError(null, `ring: ${String(e)}`);
       });
       if (!response.ok) throw await failureOf(response);
-      return parsed(text);
+      return answerOf(response, bytes);
     } catch (error) {
       const wait = retryDelayMs(error, failures, TILE_RETRY, waits.random);
       if (wait === null || signal.aborted) throw error;

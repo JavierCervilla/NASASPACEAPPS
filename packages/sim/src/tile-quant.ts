@@ -82,9 +82,13 @@ export function quantiseHeights(
 /** The heights a client reads from `q`: float32, NaN for no data. */
 export function dequantiseHeights(quantised: QuantisedHeights): Float32Array {
   const { quantumM, baseUnits, q } = quantised;
-  return Float32Array.from(q, (v) =>
-    v === NO_DATA ? Number.NaN : (baseUnits + v) * quantumM,
-  );
+  // A plain loop: `Float32Array.from` with a mapper took 1.3 ms a tile.
+  const heights = new Float32Array(q.length);
+  for (let i = 0; i < q.length; i++) {
+    const v = q[i] as number;
+    heights[i] = v === NO_DATA ? Number.NaN : (baseUnits + v) * quantumM;
+  }
+  return heights;
 }
 
 /** `q` as base64 of its little-endian 16-bit values. */

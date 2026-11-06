@@ -283,7 +283,7 @@ describe('parameters', () => {
   });
 
   it('reads the ring request: the point on the 0.01° grid, 3 levels unless told', () => {
-    expect(parseIndexParams({ lat: '-85.504', lon: '31.006' })).toEqual({ lat: -85.5, lonEast: 31.01, levels: 3 });
+    expect(parseIndexParams({ lat: '-85.504', lon: '31.006' })).toEqual({ lat: -85.5, lonEast: 31.01, levels: 3, format: 'json' });
     expect(parseIndexParams({ lat: '0', lon: '0', levels: '4' }).levels).toBe(4);
     for (const levels of ['0', '5', 'x', '', '1.5']) {
       expect(() => parseIndexParams({ lat: '0', lon: '0', levels })).toThrow(/levels/);

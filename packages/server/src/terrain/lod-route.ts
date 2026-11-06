@@ -40,7 +40,10 @@ import { limitMisses, type MissLimiter } from '../miss-limiter.ts';
 import { CACHE_CONTROL, NOT_INSTALLED, errorResponse } from './horizon-route.ts';
 import type { LodAnswer } from './lod-answer.ts';
 import type { LodSource } from './lod-cache.ts';
-import { parseIndexParams, parseTileKey, parseVersion } from './lod-params.ts';
+import { formatQuery, tileBody } from './lod-body.ts';
+import {
+  parseFormat, parseIndexParams, parseTileKey, parseVersion,
+} from './lod-params.ts';
 
 const TILES_PATH = '/api/v1/terrain/tiles';
 /** A tile under the current version never changes. */
@@ -82,6 +85,7 @@ export async function lodTileResponse(
   try {
     const key = parseTileKey(c.req.param());
     const asked = parseVersion(c.req.query('v'));
+    const format = parseFormat(c.req.query('format'));
     const current = source.version();
     if (matches(c.req.header('If-None-Match'), current)) {
       return notModified(c, cacheControlOf(asked, current), current);
@@ -91,7 +95,7 @@ export async function lodTileResponse(
     const answer: LodAnswer = await source.tile(key, onMiss, slot);
     c.header('ETag', `"${answer.version}"`);
     c.header('Cache-Control', cacheControlOf(asked, answer.version));
-    return c.json(answer);
+    return tileBody(c, answer, format);
   } catch (error) {
     return errorResponse(c, error, TILE_BUSY_RETRY_SEC);
   }
@@ -104,11 +108,12 @@ export function lodIndexResponse(
 ): Response {
   if (!source) return c.json({ error: NOT_INSTALLED }, 503);
   try {
-    const { lat, lonEast, levels } = parseIndexParams(c.req.query());
+    const { lat, lonEast, levels, format } = parseIndexParams(c.req.query());
     const version = source.version();
     const plan = tilesAround({ latDeg: lat, lonEastDeg: lonEast }, levels);
     const url = ({ scheme, level, x, y }: (typeof plan.levels)[0]['tiles'][0]) =>
-      `${TILES_PATH}/${scheme}/${level}/${x}/${y}?v=${version}`;
+      `${TILES_PATH}/${scheme}/${level}/${x}/${y}?v=${version}` +
+      formatQuery(format);
     const rings = plan.levels.map(({ tiles, ...ring }) => ({
       ...ring,
       tiles: tiles.map((t) => ({ x: t.x, y: t.y, url: url(t) })),

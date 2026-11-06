@@ -167,3 +167,9 @@ export {
   quantiseHeights,
   type QuantisedHeights,
 } from './tile-quant.ts';
+export {
+  TILE_BINARY_HEADER_BYTES,
+  decodeTileBinary,
+  encodeTileBinary,
+  type BinaryTile,
+} from './tile-binary.ts';

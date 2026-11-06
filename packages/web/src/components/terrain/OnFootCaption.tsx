@@ -25,7 +25,8 @@
 
 /**
  * The on-foot view's caption (VENT-34): what is measured and what is not.
- * «Fine detail illustrative · relief LOLA 20 m», then the Earth's map.
+ * «Fine detail illustrative · relief LOLA 20 m», then the Earth's map and
+ * what was done for legibility, by day or at night.
  */
 import type { FineSite } from '../../terrain/fine/fine-catalog';
 import { fineCaption } from '../../terrain/fine/fine-caption';
@@ -36,14 +37,16 @@ interface Props {
   readonly resolutionM: number;
   /** The fine real relief under the point, when it has one (VENT-62). */
   readonly fine: FineSite | null;
+  /** The Sun is under the point's horizon: the light is added (VENT-100). */
+  readonly night: boolean;
 }
 
-export function OnFootCaption({ resolutionM, fine }: Props) {
+export function OnFootCaption({ resolutionM, fine, night }: Props) {
   const i18n = useI18n();
   return (
     <p className="on-foot__caption">
       <span className="on-foot__caption-main">{fine ? fineCaption(i18n, fine, resolutionM) : detailCaption(i18n, resolutionM)}</span>
-      <span className="on-foot__caption-note">{captionNote(i18n)}</span>
+      <span className="on-foot__caption-note">{captionNote(i18n, night)}</span>
     </p>
   );
 }

@@ -31,6 +31,7 @@
  * one lit every ring again while the GPU drew them. Each instant, lit or
  * skipped, is noted in the crash report.
  */
+import { isNight } from '../night-light';
 import { decideRelight } from '../relight';
 import type { SceneInput } from './scene-types';
 import { placeSky, shadeSun } from './sky-place';
@@ -40,7 +41,9 @@ import type { World } from './world';
 /** Lights the world for `input`'s sky. */
 function lightWorld(world: World, input: SceneInput): void {
   let ringGrid: { lit: Float32Array; sizeM: number } | null = null;
-  placeSky(world.sky, input.sky, input.earthSpin);
+  const night = isNight(input.sky, input.profile);
+  placeSky(world.sky, input.sky, input.earthSpin,
+    night ? { profile: input.profile } : null);
   const onLit = (lit: Float32Array): void => {
     const grid = { lit, sizeM: input.tiles[0]?.tile.sizeM ?? 0 };
     world.rings?.setLit(0, grid);
@@ -53,7 +56,8 @@ function lightWorld(world: World, input: SceneInput): void {
   world.craters?.relight(input.sky, ringGrid);
   const reached = world.mask.near.value > 0;
   world.shared.fill.uSunHere.value = reached ? 1 : 0;
-  world.stage.renderer.toneMappingExposure = exposureFor(reached);
+  world.mask.night.value = night ? 1 : 0;
+  world.stage.renderer.toneMappingExposure = exposureFor(reached && !night);
 }
 
 /**

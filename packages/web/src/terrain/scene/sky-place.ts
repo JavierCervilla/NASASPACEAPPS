@@ -37,18 +37,36 @@ import { sunLit } from '../sun-shade';
 import { nearestSample } from '../tile-sample';
 import { direction } from '../view-camera';
 import type { PlacedTile, SkyDirs } from './scene-types';
-import { EARTH_M, KEY_INTENSITY, SUN_M, type SkyParts } from './sky';
+import {
+  BOUNCE_COLOUR,
+  EARTH_M,
+  FILL,
+  KEY_INTENSITY,
+  SUN_M,
+  type SkyParts,
+} from './sky';
 import { fillLight } from '../sky-light';
+import { NIGHT_LIGHT, nightLight } from '../night-light';
 import type { SunMask } from './sun-mask';
 
 /** How far the light stands from the point, metres. */
 const LIGHT_M = 600;
 
-/** Moves the Sun, the Earth and the light to `sky`'s directions. */
+/**
+ * At night (the Sun under the point's horizon), the horizon the Earth's
+ * light is read over; null by day.
+ */
+export type NightOver = { readonly profile: HorizonProfile | null } | null;
+
+/**
+ * Moves the Sun, the Earth and the light to `sky`'s directions, with the
+ * night's lights when `night` is not null.
+ */
 export function placeSky(
   parts: SkyParts,
   sky: SkyDirs,
   spin: readonly number[],
+  night: NightOver,
 ): void {
   const [sx, sy, sz] = direction(sky.sunAz, sky.sunEl);
   const [ex, ey, ez] = direction(sky.earthAz, sky.earthEl);
@@ -63,18 +81,39 @@ export function placeSky(
   const bodyUniform = parts.earth.material.uniforms['uBody'];
   (bodyUniform?.value as Matrix3 | undefined)?.fromArray(spin as number[])
     .transpose();
-  placeFill(parts, sky);
+  if (night) placeNight(parts, sky, night.profile);
+  else placeFill(parts, sky);
+}
+
+type Aimed = { readonly toward: readonly number[]; readonly intensity: number };
+
+/** Puts `light` toward `part` at its level, relative to the key. */
+function aim(light: SkyParts['bounce'], part: Aimed): void {
+  light.position.set(...part.toward.map((c) => c * LIGHT_M) as
+    [number, number, number]);
+  light.intensity = part.intensity * KEY_INTENSITY;
 }
 
 /** Aims the Earth's light and the ground's bounce, and sets their level. */
 function placeFill(parts: SkyParts, sky: SkyDirs): void {
   const fill = fillLight(sky);
-  for (const [light, part] of [[parts.earthshine, fill.earthshine],
-    [parts.bounce, fill.bounce]] as const) {
-    light.position.set(...part.toward.map((c) => c * LIGHT_M) as
-      [number, number, number]);
-    light.intensity = part.intensity * KEY_INTENSITY;
-  }
+  aim(parts.earthshine, fill.earthshine);
+  aim(parts.bounce, fill.bounce);
+  parts.bounce.color.setHex(BOUNCE_COLOUR);
+  parts.fill.intensity = FILL.intensity;
+}
+
+/** The night's floor, Earth's light and reading light (night-light.ts). */
+function placeNight(
+  parts: SkyParts,
+  sky: SkyDirs,
+  profile: HorizonProfile | null,
+): void {
+  const night = nightLight(sky, profile);
+  aim(parts.earthshine, night.earthshine);
+  aim(parts.bounce, night.reading);
+  parts.bounce.color.setHex(NIGHT_LIGHT.readingColour);
+  parts.fill.intensity = FILL.intensity * night.floor;
 }
 
 export interface Shading {

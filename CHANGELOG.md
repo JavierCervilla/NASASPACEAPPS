@@ -2,7 +2,22 @@
 
 ## [Sin publicar]
 
+### Añadido
+- **La vista 3D en la noche lunar (VENT-100, la noche «intermedia» que elegiste en el lienzo).** Cuando el Sol está
+  bajo el horizonte del punto (el del relieve, el mismo que usan las tarjetas), la vista ya no es un plano gris: queda
+  un cuarto del relleno de día, la luz de la Tierra llega como luz direccional real desde donde está la Tierra, según
+  su fase y lo alta que esté sobre el relieve, y una luz baja y fija desde el oeste-noroeste (300°, 10° de altura)
+  marca el relieve para que se lea. Un aviso dice «Lunar night here · The Sun rises in 8 d 16 h» con la misma cuenta
+  que el widget «Sunrise in», en los cinco idiomas, y el pie de la vista dice que la luz se ha añadido para leerse en
+  vez de «exposición subida un 20 %». En el móvil el aviso vive en la franja libre sobre la hoja y, si no cabe entero,
+  se oculta en vez de cortarse. De día la vista no cambia.
+
 ### Arreglado
+- **De noche la luz de la Tierra ya llega al suelo (VENT-100).** La máscara del Sol apagaba toda la luz directa del
+  suelo y de las rocas, también la de la Tierra: de noche solo quedaba el relleno plano. Ahora, de noche, la máscara
+  solo apaga el Sol (en todos los niveles de calidad, también con la fotometría lunar del nivel alto); con la Tierra
+  sobre el relieve el suelo cercano se ve unas tres veces más claro que con la Tierra oculta. De día la máscara sigue
+  como estaba.
 - **El globo ya no se queda atascado si un mapa falla al subir a la GPU (VENT-99).** Un error al subir un mapa dejaba
   al globo sin pedir ningún mapa más, y una descarga que no respondía nunca lo bloqueaba igual; ahora ese nivel se da
   por fallido y se vuelve a intentar, con un límite de 60 s por mapa. Con `?debug`, el panel cuenta qué mapa pide el

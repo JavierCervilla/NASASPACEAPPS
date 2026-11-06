@@ -26,7 +26,8 @@
 /**
  * The report's notes under its header (VENT-81): each run's view tier, a
  * warning when the runs ran at different tiers (their figures do not
- * compare), and the error a run stopped on, if any. Pure.
+ * compare), and the error a run stopped on, if any; and the device's lines
+ * over them, which every suite's report heads (VENT-104). Pure.
  */
 import { tierSummary } from './results';
 import type { BenchState } from './types';
@@ -42,3 +43,14 @@ export function noteLines(state: BenchState): string[] {
   ];
 }
 
+/** The device's lines and the notes, which every suite's report heads. */
+export function deviceLines(state: BenchState): string[] {
+  const h = state.header;
+  return [
+    'Ventana Lunar benchmark report',
+    `Script v${h?.script ?? '?'} · instant ${h?.instant ?? '?'}`,
+    `GPU: ${h?.gpu ?? '?'}`, `Browser: ${h?.userAgent ?? '?'}`,
+    `Viewport: ${h?.viewport ?? '?'}`, `Screen: ${h?.screen ?? '?'}`,
+    `Build: ${h?.build ?? '?'}`, ...noteLines(state),
+  ];
+}

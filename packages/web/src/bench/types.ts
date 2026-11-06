@@ -29,10 +29,14 @@
  * reloads that start each run. Plain data, so it is kept in
  * `sessionStorage` and copied into the report as it is.
  */
+import type { DepthVariant } from './depth-suite';
 import type { StepId } from './script';
 
-/** A: the app as it is; B: the hidden globe's WebGL context released. */
-export type Variant = 'A' | 'B';
+/**
+ * A: the app as it is; B: the hidden globe's WebGL context released; or
+ * one of the depth suite's buffers (depth-suite.ts, VENT-104).
+ */
+export type Variant = 'A' | 'B' | DepthVariant;
 
 /** The frames the app drew while a step ran. */
 export interface FrameStats {
@@ -76,6 +80,28 @@ export interface RunResult {
   /** The on-foot view's tier this run ran at (its host's `data-tier`). */
   readonly tier: string;
   readonly steps: readonly StepMetrics[];
+  /** What the on-foot view drew with (depth suite only). */
+  readonly depth?: DepthReading;
+  /** When the on-foot view lost its context (depth suite only). */
+  readonly lostAt?: LostAt;
+}
+
+/** The depth buffer and shadow map the on-foot view drew with. */
+export interface DepthReading {
+  /** The host's `data-depth`; null without the view. */
+  readonly drawn: string | null;
+  /** `gl.DEPTH_BITS`; null when the context could not say. */
+  readonly bits: number | null;
+  /** three's `reversedDepthBuffer`. */
+  readonly reversed: boolean | null;
+  readonly shadowMap: boolean | null;
+}
+
+/** A depth-suite run that lost the on-foot context: in which step, when. */
+export interface LostAt {
+  readonly step: StepId;
+  /** Seconds since the step began. */
+  readonly seconds: number;
 }
 
 export interface BenchHeader {
@@ -94,6 +120,8 @@ export interface BenchHeader {
 
 export interface BenchState {
   readonly v: 1;
+  /** `?bench=depth` (VENT-104); absent for the A/B suite. */
+  readonly suite?: Suite;
   readonly runs: RunCount;
   readonly fast: boolean;
   readonly order: readonly Variant[];
@@ -106,3 +134,6 @@ export interface BenchState {
 }
 
 export type RunCount = 1 | 3;
+
+/** The suites besides the A/B one, which has no name. */
+export type Suite = 'depth';

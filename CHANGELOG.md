@@ -3,6 +3,11 @@
 ## [Sin publicar]
 
 ### Añadido
+- **Suite de profundidad en el banco de pruebas (VENT-104).** `?bench=depth` hace la bisección del Pixel sola: abre la
+  vista 3D en IM-2 y la gira 60 s con cada búfer de profundidad (logarítmico como hoy, invertido y lineal con el mapa
+  de sombras forzado, y al final el logarítmico con sombras forzadas, la pérdida conocida). Si se pierde el contexto se
+  anota cuándo y sigue la siguiente pasada; los resultados dan una fila por pasada (aguantó o «perdido a los N s», la
+  profundidad dibujada, sus bits, el mapa de sombras y los fotogramas) y el informe copiado lo mismo.
 - **La vista 3D en la noche lunar (VENT-100, la noche «intermedia» que elegiste en el lienzo).** Cuando el Sol está
   bajo el horizonte del punto (el del relieve, el mismo que usan las tarjetas), la vista ya no es un plano gris: queda
   un cuarto del relleno de día, la luz de la Tierra llega como luz direccional real desde donde está la Tierra, según

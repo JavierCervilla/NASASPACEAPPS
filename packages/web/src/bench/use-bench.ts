@@ -31,12 +31,11 @@
  */
 import { useEffect, useState } from 'react';
 import type { SiteStore } from '../phone/site-store';
-import { nextLoad } from './navigate';
 import { benchOptions } from './params';
 import { pageRegistry } from './page-registry';
 import { initialPhase, type Phase } from './phase';
+import { playRun } from './play';
 import { readState } from './run-state';
-import { runScript } from './run';
 import { sessionStore, writeState } from './state-store';
 import type { BenchState } from './types';
 
@@ -67,12 +66,10 @@ function useRun(
   useEffect(() => {
     if (first.kind !== 'running') return;
     const { state } = first;
-    const variant = state.order[state.next] ?? 'A';
-    void runScript(variant, state.fast, {
+    void playRun(state, {
       doc: document, place: location, store, sleep, registry: pageRegistry,
       local: window.localStorage, onStep: stepShower(state, setPhase),
-    }).then(({ steps, header }) => nextLoad(state, steps, header))
-      .catch((error: unknown) => setPhase(failedRun(state, error)));
+    }).catch((error: unknown) => setPhase(failedRun(state, error)));
   }, [first, setPhase, store]);
 }
 

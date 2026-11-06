@@ -25,13 +25,15 @@
 
 /**
  * The benchmark's state across the page loads of its runs (VENT-81): the
- * order A1 B1 A2 B2 A3 B3 (or A B for one run each), the next run, the
+ * order A1 B1 A2 B2 A3 B3 (or A B for one run each; the depth suite's
+ * in depth-suite.ts), the next run, the
  * results so far and the device's header, kept in `sessionStorage` under
  * `ventana.bench`. A stored state that does not read back is no state.
  * Pure but for the injected storage.
  */
+import { depthOrder } from './depth-suite';
 import type {
-  BenchHeader, BenchState, RunCount, RunResult, Variant,
+  BenchHeader, BenchState, RunCount, RunResult, Suite, Variant,
 } from './types';
 
 export const STATE_KEY = 'ventana.bench';
@@ -43,22 +45,34 @@ export function runOrder(runs: RunCount): Variant[] {
   return Array.from({ length: runs }, () => ['A', 'B'] as const).flat();
 }
 
-/** A new benchmark of `runs` runs per variant, at its first run. */
-export const startState = (runs: RunCount, fast: boolean): BenchState =>
-  ({ v: 1, runs, fast, order: runOrder(runs), next: 0, results: [],
-    header: null });
+/**
+ * A new benchmark of `runs` runs per variant, at its first run; the depth
+ * suite (VENT-104) runs its own order, `runs` rounds of it.
+ */
+export const startState = (
+  runs: RunCount,
+  fast: boolean,
+  suite?: Suite,
+): BenchState => ({ v: 1, ...(suite ? { suite } : {}), runs, fast,
+  order: suite ? depthOrder(runs) : runOrder(runs), next: 0, results: [],
+  header: null });
+
+/** What a depth-suite run keeps besides its steps (VENT-104). */
+export type RunExtra = Pick<RunResult, 'depth' | 'lostAt'>;
 
 /** `state` after run `state.next` measured `steps`, with the header. */
 export function recordRun(
   state: BenchState,
   steps: RunResult['steps'],
   header: BenchHeader,
+  extra: RunExtra = {},
 ): BenchState {
   const variant = state.order[state.next] ?? 'A';
   const run = state.order.slice(0, state.next + 1)
     .filter((v) => v === variant).length;
+  const result = { variant, run, tier: header.tier, steps, ...extra };
   return { ...state, next: state.next + 1, header,
-    results: [...state.results, { variant, run, tier: header.tier, steps }] };
+    results: [...state.results, result] };
 }
 
 /** Whether every run of `state` is done. */

@@ -467,5 +467,24 @@
   "bench.tiers": "Ansichtsstufe je Durchlauf: {list}",
   "bench.tiersMixed": "Die Durchläufe liefen mit unterschiedlichen Ansichtsstufen, ihre Zahlen sind daher nicht vergleichbar.",
   "bench.failed": "Benchmark abgebrochen",
-  "bench.failedHint": "Ein Durchlauf brach mit einem Fehler ab: {error}"
+  "bench.failedHint": "Ein Durchlauf brach mit einem Fehler ab: {error}",
+  "bench.step.turnMinute": "Drehung für 60 s",
+  "bench.runDepth": "Tiefe · {variant}",
+  "bench.depthHint": "Tiefen-Suite: Jeder Durchlauf lädt die Seite neu, öffnet die 3D-Ansicht bei IM-2 und dreht sie 60 s lang, mit dem logarithmischen Tiefenpuffer, wie die App ihn zeichnet, dem umgekehrten und dem linearen mit erzwungener Schattenkarte und zuletzt dem logarithmischen mit erzwungener Schattenkarte. Ein verlorener Kontext wird notiert, und der nächste Durchlauf geht weiter.",
+  "bench.depth.table": "Tiefenpuffer, beim Drehen",
+  "bench.depth.col.run": "Durchlauf",
+  "bench.depth.col.result": "Ergebnis",
+  "bench.depth.col.depth": "Tiefe",
+  "bench.depth.col.bits": "Tiefenbits",
+  "bench.depth.col.reversed": "Umgekehrter Puffer",
+  "bench.depth.col.shadows": "Schattenkarte",
+  "bench.depth.survived": "Überstanden",
+  "bench.depth.lostTurn": "Verloren nach {n} s Drehung",
+  "bench.depth.lostOpen": "Verloren nach {n} s Öffnen",
+  "bench.depth.on": "an",
+  "bench.depth.off": "aus",
+  "bench.depth.note": {
+    "one": "Eine Zeile je Durchlauf, {n} Runde. Alle Schritte stehen im kopierten Bericht.",
+    "other": "Eine Zeile je Durchlauf, {n} Runden. Alle Schritte stehen im kopierten Bericht."
+  }
 }

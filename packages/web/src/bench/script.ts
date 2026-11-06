@@ -45,7 +45,7 @@ export const SCRIPT_VERSION = 1;
 
 export type StepId =
   | 'globeIdle' | 'globeMoves' | 'openView' | 'turn' | 'changePoint'
-  | 'backToGlobe';
+  | 'backToGlobe' | 'turnMinute';
 
 export type KeyTarget = 'globe' | 'onFoot';
 
@@ -54,6 +54,9 @@ export type Action =
   | { readonly kind: 'wait'; readonly ms: number }
   | { readonly kind: 'keys'; readonly target: KeyTarget;
       readonly keys: readonly string[]; readonly gapMs: number }
+  /** `key` pressed every `gapMs` for `ms`, depth suite (VENT-104). */
+  | { readonly kind: 'keysFor'; readonly target: KeyTarget;
+      readonly key: string; readonly gapMs: number; readonly ms: number }
   | { readonly kind: 'settle'; readonly timeoutMs: number;
       /** Wait first for a point change to park the scene. */
       readonly park: boolean }
@@ -71,14 +74,14 @@ export const NEXT_SITE = 'artemis-malapert-massif';
 /** Degrees of one ArrowRight on the on-foot view (look-input.ts). */
 export const LOOK_KEY_DEG = 5;
 /** Keys apart while turning the view: about one a frame at 60 Hz. */
-const TURN_GAP_MS = 16;
+export const TURN_GAP_MS = 16;
 const GLOBE_GAP_MS = 100;
 const ZOOM_GAP_MS = 250;
 const GLOBE_KEY_DEG = 10;
 const ZOOM_IN_PRESSES = 4;
-const SETTLE_MS = 60_000;
+export const SETTLE_MS = 60_000;
 /** What `fast` keeps of every wait and turn. */
-const FAST = { waits: 0.2, turnDeg: 90 } as const;
+export const FAST = { waits: 0.2, turnDeg: 90 } as const;
 
 /** How many keys of `stepDeg` turn the view `turnDeg`. */
 export function turnKeyCount(turnDeg: number, stepDeg = LOOK_KEY_DEG) {

@@ -29,28 +29,47 @@
  * step over the step's name, «Stop», and the progress over every run, so
  * the view being measured stays in sight. It changes only when a step
  * does, so it costs no frames while the app is measured, and it leaves the
- * focus where it is.
+ * focus where it is. The depth suite (VENT-104) names its variant, the
+ * round and its own steps.
  */
+import { depthScript } from '../../bench/depth-script';
+import { DEPTH_VARIANTS } from '../../bench/depth-suite';
 import { benchScript } from '../../bench/script';
 import type { Phase } from '../../bench/phase';
 import { endBench } from '../../bench/navigate';
+import type { BenchState } from '../../bench/types';
 import { useI18n } from '../i18n-context';
 
 type Running = Extract<Phase, { kind: 'running' }>;
 
+/** The variant under way, as the strip names it. */
+function VariantName({ state }: { state: BenchState }) {
+  const { t } = useI18n();
+  const variant = state.order[state.next] ?? 'A';
+  if (state.suite) return <span>{t('bench.runDepth', { variant })}</span>;
+  return <span>{t(variant === 'B' ? 'bench.runB' : 'bench.runA')}</span>;
+}
+
+/** The suite's step ids, and the round under way (1-based). */
+function scriptOf(state: BenchState) {
+  const script = state.suite ? depthScript(state.fast)
+    : benchScript(state.fast);
+  const perRound = state.suite ? DEPTH_VARIANTS.length : 2;
+  return { ids: script.map((s) => s.id),
+    run: Math.floor(state.next / perRound) + 1 };
+}
+
 export function BenchRunning({ state, step }: Running) {
   const { t } = useI18n();
-  const ids = benchScript(state.fast).map((s) => s.id);
+  const { ids, run } = scriptOf(state);
   const total = state.order.length * ids.length;
-  const variant = state.order[state.next] === 'B' ? 'bench.runB' : 'bench.runA';
-  const run = Math.floor(state.next / 2) + 1;
   const now = ids[Math.min(step, ids.length - 1)];
   return (
     <>
       <div className="bench__strip">
         <div className="bench__strip-text">
           <p className="bench__strip-run">
-            <span>{t(variant)}</span>
+            <VariantName state={state} />
             {' · '}{t('bench.runLabel', { n: run, total: state.runs })}
             {' · '}{t('bench.stepOf', { n: Math.min(step + 1, ids.length), total: ids.length })}
           </p>

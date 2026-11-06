@@ -46,7 +46,7 @@ export const ON_FOOT_HOST = '.on-foot__host';
 export const QUIET_MS = 1000;
 const FAR_PENDING = '.on-foot__far[data-done="false"]';
 /** The view's statuses that never settle (use-terrain-scene.ts). */
-const FAILED = new Set(['failed', 'blocked', 'lost', 'missing', 'offline']);
+export const FAILED: ReadonlySet<string> = new Set(['failed', 'blocked', 'lost', 'missing', 'offline']);
 /** How long a point change may take to park the scene. */
 const PARK_MS = 5000;
 

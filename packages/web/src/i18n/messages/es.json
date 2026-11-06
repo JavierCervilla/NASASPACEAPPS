@@ -479,5 +479,25 @@
   "bench.tiers": "Nivel de la vista por pasada: {list}",
   "bench.tiersMixed": "Las pasadas usaron niveles de vista distintos, así que sus cifras no se pueden comparar.",
   "bench.failed": "Banco de pruebas detenido",
-  "bench.failedHint": "Una pasada se detuvo por un error: {error}"
+  "bench.failedHint": "Una pasada se detuvo por un error: {error}",
+  "bench.step.turnMinute": "Giro durante 60 s",
+  "bench.runDepth": "Profundidad · {variant}",
+  "bench.depthHint": "Suite de profundidad: cada pasada recarga la página, abre la vista 3D en IM-2 y la gira durante 60 s, con el búfer de profundidad logarítmico tal como lo dibuja la app, el invertido y el lineal con el mapa de sombras forzado, y por último el logarítmico con el mapa de sombras forzado. Si se pierde el contexto se anota y sigue la siguiente pasada.",
+  "bench.depth.table": "Búferes de profundidad, girando",
+  "bench.depth.col.run": "Pasada",
+  "bench.depth.col.result": "Resultado",
+  "bench.depth.col.depth": "Profundidad",
+  "bench.depth.col.bits": "Bits de profundidad",
+  "bench.depth.col.reversed": "Búfer invertido",
+  "bench.depth.col.shadows": "Mapa de sombras",
+  "bench.depth.survived": "Aguantó",
+  "bench.depth.lostTurn": "Perdido a los {n} s del giro",
+  "bench.depth.lostOpen": "Perdido a los {n} s de abrir",
+  "bench.depth.on": "activado",
+  "bench.depth.off": "desactivado",
+  "bench.depth.note": {
+    "one": "Una fila por pasada, {n} ronda. Todos los pasos están en el informe copiado.",
+    "many": "Una fila por pasada, {n} rondas. Todos los pasos están en el informe copiado.",
+    "other": "Una fila por pasada, {n} rondas. Todos los pasos están en el informe copiado."
+  }
 }

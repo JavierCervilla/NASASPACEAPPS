@@ -826,9 +826,23 @@ Every visible change follows `.claude/skills/apple-design/SKILL.md` (vendored fr
   metric and run as plain English (`report.ts`). The panel fits the viewport over the phone's tab bar at any text
   size: its body scrolls with the app's edge fade and the table scrolls sideways, the actions stay in reach
   (`BenchFrame.tsx`, `BenchTable.tsx`); the first state and the results take the focus to their first button. Params: `benchRuns=1|3` presets the runs (3), `benchFast` scales the
-  waits by 0.2 and the turn to 90° for software GL (the e2e). Its chunk and `bench.css` are out of the precache
+  waits by 0.2 and the turn to 90° for software GL (the e2e). `?bench=depth` (VENT-104; any other value, or none, is
+  the A/B suite above) is the depth suite, the bisect of VENT-103 played by itself on the phone (`src/bench/depth-*.ts`):
+  variants `log` (the app), `reversed` (`depth=reversed&shadows=force`), `linear` (`depth=linear&shadows=force`) and
+  last `log+shadows` (`shadows=force`, the known loss, so a crash cannot spoil the others), each a clean page load whose
+  address carries its switches (`runHref`; the results and «Close» drop them), one round by default (`benchRuns=3` for
+  three); its script (`depth-script.ts`, `DEPTH_SCRIPT_VERSION`) opens `#horizon` at IM-2 and settles as step c does,
+  then presses ArrowRight every 16 ms for 60 s (`keysFor`; 12 s with `benchFast`). A lost context (`data-status`
+  lost, while it settles or turns) is a result, not a stop: the step ends there and the run keeps when
+  (`depth-run.ts`), counted once in that step's `lost`, and the next load leaves on purpose as every run does. Each
+  run reads, once the view has opened, `data-depth`, the depth buffer's bits, three's `reversedDepthBuffer` and the
+  shadow map from the on-foot renderer (`depth-reading.ts`); the results are a row per run (`depth-results.ts`,
+  `DepthTable.tsx`: survived or «Lost after N s of the turn», depth, bits, reversed buffer, shadow map, median fps, p95
+  and worst frame of the turn) and the report lists the same under the usual header (`depth-report.ts`). Held by
+  `tests/bench-depth*.test.ts` and `tests/e2e/vent-104-bench-depth.spec.ts` (in the `bench` project; SwiftShader draws
+  `reversed` reversed, and the last run's context is lost on purpose while it turns). Its chunk and `bench.css` are out of the precache
   (`ON_DEMAND`) and `devtools-guard.mjs` keeps its markers out of the first load. Held by `tests/bench-*.test.ts` and
-  `tests/e2e/vent-81-bench.spec.ts`, which is its own Playwright project (`bench`): `npm run e2e` runs the `app`
+  `tests/e2e/vent-81-bench.spec.ts`, which is its own Playwright project (`bench`, with the depth suite's spec): `npm run e2e` runs the `app`
   project, then `bench` alone (`playwright.config.ts`: its full runs would slow other specs' bounded waits); alone:
   `npx playwright test --project=bench`.
   `?onfoot=shadows,far,shade,logdepth,photometry,antitile,footprint,fine,rocks` (`astronaut` and `lander` from before VENT-54 are ignored, so old links still open)

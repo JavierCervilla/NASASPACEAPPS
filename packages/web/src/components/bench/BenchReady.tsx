@@ -26,10 +26,12 @@
 /**
  * The benchmark's first state (VENT-81): what it does, «Runs: 1 | 3» in
  * the app's segmented control (3 by default, or the address's
- * `benchRuns`), «Start», which reloads at the first run, and «Close».
+ * `benchRuns`), «Start», which reloads at the first run, and «Close». The
+ * depth suite (VENT-104) says what it does instead.
  */
 import { useState } from 'react';
 import { endBench, startBench } from '../../bench/navigate';
+import { benchOptions } from '../../bench/params';
 import type { RunCount } from '../../bench/types';
 import { useI18n } from '../i18n-context';
 import { BenchFrame } from './BenchFrame';
@@ -69,7 +71,7 @@ export function BenchReady({ runs: preset }: { runs: RunCount }) {
   );
   return (
     <BenchFrame title={t('bench.title')} actions={actions} focus>
-      <p className="bench__note">{t('bench.readyHint')}</p>
+      <p className="bench__note">{t(benchOptions(location.search).suite ? 'bench.depthHint' : 'bench.readyHint')}</p>
       <p className="bench__note">{t('bench.hint')}</p>
       <RunsChoice runs={runs} onRuns={setRuns} />
     </BenchFrame>

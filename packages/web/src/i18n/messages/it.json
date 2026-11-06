@@ -479,5 +479,25 @@
   "bench.tiers": "Livello della vista per esecuzione: {list}",
   "bench.tiersMixed": "Le esecuzioni hanno usato livelli di vista diversi, quindi le cifre non sono confrontabili.",
   "bench.failed": "Benchmark interrotto",
-  "bench.failedHint": "Un’esecuzione si è fermata per un errore: {error}"
+  "bench.failedHint": "Un’esecuzione si è fermata per un errore: {error}",
+  "bench.step.turnMinute": "Giro per 60 s",
+  "bench.runDepth": "Profondità · {variant}",
+  "bench.depthHint": "Suite di profondità: ogni esecuzione ricarica la pagina, apre la vista 3D su IM-2 e la fa girare per 60 s, con il buffer di profondità logaritmico come lo disegna l’app, quello invertito e quello lineare con la mappa delle ombre forzata, e per ultimo quello logaritmico con la mappa delle ombre forzata. Un contesto perso viene annotato e si passa all’esecuzione successiva.",
+  "bench.depth.table": "Buffer di profondità, in rotazione",
+  "bench.depth.col.run": "Esecuzione",
+  "bench.depth.col.result": "Risultato",
+  "bench.depth.col.depth": "Profondità",
+  "bench.depth.col.bits": "Bit di profondità",
+  "bench.depth.col.reversed": "Buffer invertito",
+  "bench.depth.col.shadows": "Mappa delle ombre",
+  "bench.depth.survived": "Superata",
+  "bench.depth.lostTurn": "Perso dopo {n} s di giro",
+  "bench.depth.lostOpen": "Perso dopo {n} s di apertura",
+  "bench.depth.on": "attiva",
+  "bench.depth.off": "disattiva",
+  "bench.depth.note": {
+    "one": "Una riga per esecuzione, {n} giro. Tutti i passi sono nel rapporto copiato.",
+    "many": "Una riga per esecuzione, {n} giri. Tutti i passi sono nel rapporto copiato.",
+    "other": "Una riga per esecuzione, {n} giri. Tutti i passi sono nel rapporto copiato."
+  }
 }

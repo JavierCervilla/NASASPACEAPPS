@@ -124,7 +124,14 @@ describe('the KTX2 maps and their transcoder (VENT-101)', () => {
   });
 
   it('serves the transcoder\'s worker under its own CSP, never the page\'s', () => {
-    const block = regexBlock('^/_astro/basis-worker[.-]');
+    const pattern = '^/_astro/basis-worker-[A-Za-z0-9_-]+\\.js$';
+    const block = regexBlock(pattern);
+    // Anchored at both ends: only the built worker file takes the eval-allowing CSP, never a map or a longer path.
+    const matches = (path: string) => new RegExp(pattern).test(path);
+    expect(matches('/_astro/basis-worker-QNbRvZpx.js')).toBe(true);
+    for (const path of ['/_astro/basis-worker-QNbRvZpx.js.map', '/_astro/basis-worker-a/b.js', '/_astro/basis-worker.js', '/x/_astro/basis-worker-a.js']) {
+      expect(matches(path), path).toBe(false);
+    }
     expect(block).toContain('include /etc/nginx/snippets/basis-worker-headers.conf;');
     expect(block).not.toContain('security-headers.conf');
     expect(block).toContain('add_header Cache-Control "public, max-age=31536000, immutable";');

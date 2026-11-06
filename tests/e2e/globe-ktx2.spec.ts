@@ -139,7 +139,6 @@ test.describe('the globe\'s KTX2 colour maps, desktop 1440x900 (VENT-101)', () =
       expect.stringMatching(/^globe: KTX2 off: /),
       'globe: 2K on the Moon',
     ]));
-    console.log((await globeLines(page)).filter((l) => /KTX2/.test(l)));
     expect(await globeLines(page)).not.toContain('globe: 2K colour as KTX2 → BC1');
     expect(asked).toContain('/textures/moon-lroc-2k.jpg');
     expect(mb).toBeGreaterThan(20);

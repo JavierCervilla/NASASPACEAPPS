@@ -892,7 +892,7 @@ Every visible change follows `.claude/skills/apple-design/SKILL.md` (vendored fr
   start, or when it turns into it) posts `ventana:keep-extras` for the `desktop` set once it has started
   (`src/pwa/keep-extras.ts`, `afterStart`); the worker keeps each file it does not hold, the HTTP cache's copy or the
   server's, only when its body hashes to the build's hash (`src/pwa/sw-extras.ts`), so a deploy carries it over like the
-  4K map. A phone's first visit downloads 4.27 MB instead of 5.02 MB; a desktop's the same 5.02 MB as before. What a first visit downloads has a
+  4K map. A phone's first visit skips those 0.72 MB (VENT-95: 3.71 MB against a desktop's 4.44 MB with VENT-101). What a first visit downloads has a
   hard budget of 5 MB (`PRECACHE_BUDGET`, human decision 2026-10-31), counted on the largest one, the install set plus
   the desktop extras: the build logs the precache, the desktop extras and that total, and fails over it (VENT-95: 4.07
   MB common plus 0.72 MB desktop extras, 4.79 MB; 4.44 MB with VENT-101, the 2K colour out of the install set; 4.76 MB with VENT-60's loader, its styles on demand; 4.75 MB with VENT-55's press, presence, rail and scroll-fade sheets; 4.74 MB with VENT-54, no models; 4.78 MB with VENT-52's update row; 4.77 MB with VENT-50's compass and graticule; 4.75 MB with VENT-46's rings, landers and rigged astronaut, their files left out; 4.70 MB with VENT-34's on-foot view, its files left out; 4.68 MB with VENT-40's horizon strip; 4.63 MB with VENT-39's shadow notes; 4.57 MB with VENT-37's saved sites; 4.52 MB when it left the astronaut's sprites out, 4.60 MB with them). The 4K and 8K maps, and any build file not

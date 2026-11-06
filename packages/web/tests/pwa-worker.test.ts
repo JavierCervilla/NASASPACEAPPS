@@ -151,7 +151,7 @@ describe('precache', () => {
     expect(precached('_astro/dev-tools-loader.Ab1.js')).toBe(true);
   });
 
-  it('caches the common offline set at install: pages, build files, manifests, icons, phase frames, thumbnails, 1K maps', () => {
+  it('caches the common offline set at install: pages, build files, manifests, icons, phase frames, thumbnails, 1K and 2K maps', () => {
     expect(precacheOf(dist(BUILD)).precache.toSorted()).toEqual([
       '',
       '_astro/app.1.js',
@@ -162,7 +162,9 @@ describe('precache', () => {
       'icons/apple-touch-icon.png',
       'icons/icon-192.png',
       'icons/phase/moon-00.webp',
+      'textures/moon-lola-normal-2k.jpg',
       'textures/moon-lroc-1k.jpg',
+      'textures/moon-lroc-2k.jpg',
       'thumbs/im2-athena-320.webp',
     ]);
     for (const file of ['en-xa/index.html', 'textures/moon-lroc-4k.jpg', 'textures/moon-lroc-8k.jpg', 'sw.js']) {
@@ -172,32 +174,30 @@ describe('precache', () => {
   });
 
   it('counts the bytes of the install set only', () => {
-    const precachedBodies = ['en', 'es', '{}', 'js', 'i', 't', 'w', 't', 'f', 'th', '1k'];
+    const precachedBodies = ['en', 'es', '{}', 'js', 'i', 't', 'w', 't', 'f', 'th', '1k', '2k', 'n2k'];
     const expected = precachedBodies.join('').length;
     expect(precacheOf(dist(BUILD)).bytes).toBe(expected);
   });
 
-  it('leaves the 2K start maps and the polar map out of the install: a phone never uses them (VENT-95)', () => {
-    for (const file of ['textures/moon-lroc-2k.jpg', 'textures/moon-lola-normal-2k.jpg', 'textures/moon-south-polar-2k.jpg']) {
-      expect(precached(file)).toBe(false);
+  it('installs the 1K and 2K globe maps on every device, and leaves the polar map out: a phone has no polar view (VENT-95)', () => {
+    for (const level of [1, 2] as const) {
+      const { colour, normal } = levelUrls(level, '/');
+      expect(precached(colour.slice(1))).toBe(true);
+      expect(precached(normal.slice(1))).toBe(true);
     }
-    expect(precached('textures/moon-lroc-1k.jpg')).toBe(true);
-    expect(precached('textures/moon-lola-normal-1k.jpg')).toBe(true);
+    expect(precached('textures/moon-south-polar-2k.jpg')).toBe(false);
   });
 
-  it('names the desktop extras in one place: the 2K start maps the globe asks for and the polar map (VENT-95)', () => {
-    const { colour, normal } = levelUrls(2, '/');
-    expect(DEVICE_EXTRAS).toEqual({
-      desktop: [colour.slice(1), normal.slice(1), 'textures/moon-south-polar-2k.jpg'],
-    });
+  it('names the desktop extras in one place: the polar map alone (VENT-95)', () => {
+    expect(DEVICE_EXTRAS).toEqual({ desktop: ['textures/moon-south-polar-2k.jpg'] });
     const polar = readFileSync(new URL('../src/components/polar/PolarMap.tsx', import.meta.url), 'utf8');
-    expect(polar).toContain(`'${DEVICE_EXTRAS.desktop[2]}'`);
+    expect(polar).toContain(`'${DEVICE_EXTRAS.desktop[0]}'`);
   });
 
   it('hands the worker the desktop extras with their hashes, and counts their bytes apart (VENT-95)', () => {
     const built = precacheOf(dist(BUILD));
     expect(built.extras).toEqual(DEVICE_EXTRAS);
-    expect(built.extraBytes).toEqual({ desktop: ['2k', 'n2k', 'polar'].join('').length });
+    expect(built.extraBytes).toEqual({ desktop: 'polar'.length });
     for (const path of DEVICE_EXTRAS.desktop) expect(built.hashes[path]).toMatch(/^[0-9a-f]{16}$/);
   });
 

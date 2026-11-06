@@ -25,8 +25,8 @@
 
 /**
  * The page's half of the device extras (VENT-95): the install set leaves
- * out the maps a phone never uses (the 2K start maps and the polar map),
- * so a page in the desktop layout asks the worker to keep them once it
+ * out the map a phone never uses (the polar map: no polar view there),
+ * so a page in the desktop layout asks the worker to keep it once it
  * has started, on every start (the worker asks nothing for what it
  * keeps). A phone-sized page asks only if it turns into the desktop
  * layout (a tablet turned to landscape, a window widened).

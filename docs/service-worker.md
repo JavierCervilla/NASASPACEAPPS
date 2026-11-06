@@ -5,8 +5,8 @@ The service worker (VENT-28) is `packages/web/src/pwa/sw-worker.ts`, bundled int
 
 | Cache | What | When |
 |---|---|---|
-| `ventana-static-<digest>` | Every locale's page (not `/en-xa/`), `_astro/`, the manifests, the icons and the 30 phase frames, every site thumbnail, the 1K maps | At install |
-| `ventana-static-<digest>` | The desktop extras: the 2K start maps and the polar map (`DEVICE_EXTRAS`) | When a page in the desktop layout asks, once it has started |
+| `ventana-static-<digest>` | Every locale's page (not `/en-xa/`), `_astro/`, the manifests, the icons and the 30 phase frames, every site thumbnail, the 1K and 2K globe maps | At install |
+| `ventana-static-<digest>` | The desktop extras: the polar map (`DEVICE_EXTRAS`) | When a page in the desktop layout asks, once it has started |
 | `ventana-static-<digest>` | The 4K and 8K maps, and any other build file not precached | The first time the page fetches each one |
 | `ventana-api-v1` | The API's GET answers, stamped with when they came | Each answer; the 24 latest only |
 
@@ -30,9 +30,9 @@ Every answer goes to the page before its copy is kept: the copy is written in th
 with `waitUntil`, so the page gets the first byte as the network sends it, not after the whole file is down and stored.
 A copy that cannot be kept (a full quota) is skipped and the file is fetched again next time.
 
-The install set is what every device uses (VENT-95). The maps only the desktop layout uses are left out of it: the 2K
-start maps (the globe opens on them at the high tier, which a phone never runs: a phone opens on the 1K map and its
-zoom goes from 1K to 4K) and the polar map (a phone has no polar view). They are named once, `DEVICE_EXTRAS` in
+The install set is what every device uses (VENT-95). The map only the desktop layout uses is left out of it: the polar
+map (a phone has no polar view). The 2K globe maps stay in it, since every device's globe climbs to them right after
+opening (VENT-97). The extras are named once, `DEVICE_EXTRAS` in
 `service-worker.mjs`, which the build hands to the worker as `extras`. A page in the desktop layout, once it has started
 (`afterStart`, after the first paint), posts `{ type: 'ventana:keep-extras', set: 'desktop' }` to the active worker
 (`src/pwa/keep-extras.ts`); a phone-sized page posts it only if it turns into the desktop layout. The worker

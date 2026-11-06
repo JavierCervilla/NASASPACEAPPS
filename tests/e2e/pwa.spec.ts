@@ -90,8 +90,8 @@ async function offlineVisit(context: BrowserContext, page: Page, path: string): 
   return map;
 }
 
-/** The maps only the desktop layout uses, left out of the install and kept once a desktop page asks (VENT-95). */
-const DESKTOP_EXTRAS = ['textures/moon-lroc-2k.jpg', 'textures/moon-lola-normal-2k.jpg', 'textures/moon-south-polar-2k.jpg'];
+/** The map only the desktop layout uses, left out of the install and kept once a desktop page asks (VENT-95). */
+const DESKTOP_EXTRAS = ['textures/moon-south-polar-2k.jpg'];
 /** Past the page's start (src/lib/after-start.ts waits 2 s at most), when a desktop page asks for its extras. */
 const START_WAIT_MS = 3000;
 
@@ -176,7 +176,7 @@ test.describe('offline', () => {
 });
 
 test.describe('what the worker downloads', () => {
-  test('the install keeps the offline set: pages, icons, every phase frame and thumbnail, the 1K maps', async ({
+  test('the install keeps the offline set: pages, icons, every phase frame and thumbnail, the 1K and 2K maps', async ({
     context,
     page,
   }) => {
@@ -196,9 +196,13 @@ test.describe('what the worker downloads', () => {
         'icons/icon-192.png',
         'textures/moon-lroc-1k.jpg',
         'textures/moon-lola-normal-1k.jpg',
+        'textures/moon-lroc-2k.jpg',
+        'textures/moon-lola-normal-2k.jpg',
       ]),
     );
-    // The maps only the desktop uses are neither installed nor asked for once the phone's page has started (VENT-95).
+    // The 2K globe maps are fetched by the phone's install (VENT-97: its globe climbs to them after opening).
+    expect(asked).toEqual(expect.arrayContaining(['textures/moon-lroc-2k.jpg', 'textures/moon-lola-normal-2k.jpg']));
+    // The polar map, the desktop's alone, is neither installed nor asked for once the phone's page has started (VENT-95).
     await page.waitForTimeout(START_WAIT_MS);
     expect(kept.filter((f) => DESKTOP_EXTRAS.includes(f))).toEqual([]);
     expect((await keptFiles(page)).filter((f) => DESKTOP_EXTRAS.includes(f))).toEqual([]);
@@ -210,7 +214,7 @@ test.describe('what the worker downloads', () => {
     expect(kept.filter((f) => /-(4|8)k\.jpg$/.test(f))).toEqual([]);
   });
 
-  test('a phone’s globe opens offline on its 1K map, with no desktop map kept (VENT-95)', async ({ context, page }) => {
+  test('a phone’s globe opens offline on its 1K map, with no polar map kept (VENT-95)', async ({ context, page }) => {
     const map = await offlineVisit(context, page, '');
     expect(map.fromServiceWorker()).toBe(true);
     expect(new URL(map.url()).pathname).toBe(`${base}textures/moon-lroc-1k.jpg`);
@@ -218,7 +222,7 @@ test.describe('what the worker downloads', () => {
     expect((await keptFiles(page)).filter((f) => DESKTOP_EXTRAS.includes(f))).toEqual([]);
   });
 
-  test('a desktop’s first visit ends with its maps kept, and offline its 2K globe and polar map still show (VENT-95)', async ({
+  test('a desktop’s first visit ends with its polar map kept, and offline its 2K globe and polar map still show (VENT-95)', async ({
     context,
     page,
   }) => {

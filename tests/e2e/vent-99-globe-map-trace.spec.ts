@@ -45,7 +45,8 @@ test.describe('the globe map trace, a Pixel-sized phone 412x880 at pixel ratio 1
     await stubApi(page);
     await page.route(/\/textures\/moon-lroc-4k\.jpg$/, (route) => route.abort('failed'));
     const sharper = page.waitForResponse(/\/textures\/moon-lroc-2k\.jpg$/, { timeout: MAP_MS });
-    await page.goto('./?quality=medium&debug');
+    // The JPEG path's lines (`?ktx2=0`); the KTX2 path's are in globe-ktx2.spec.ts (VENT-101).
+    await page.goto('./?quality=medium&debug&ktx2=0');
     await sharper;
     await expect(readout(page)).toBeVisible({ timeout: MAP_MS });
     await expect.poll(() => globeLines(page), { timeout: MAP_MS }).toContain('globe: 2K on the Moon');
@@ -69,7 +70,7 @@ test.describe('the globe map trace, a Pixel-sized phone 412x880 at pixel ratio 1
 
   test('without ?debug the globe marks nothing', async ({ page }) => {
     await stubApi(page);
-    const sharper = page.waitForResponse(/\/textures\/moon-lroc-2k\.jpg$/, { timeout: MAP_MS });
+    const sharper = page.waitForResponse(/\/textures\/moon-lroc-2k\.(jpg|ktx2)$/, { timeout: MAP_MS });
     await page.goto('./?quality=medium');
     await sharper;
     await page.waitForLoadState('networkidle');

@@ -34,7 +34,10 @@
  *   (await devTools()).attach(threeAdapter(renderer));
  */
 import { DevTools } from './dev-tools';
+import { gpuLines } from './gpu-lines';
 import { detectTier, deviceHints } from '../lib/quality';
+import { pickQuality } from '../globe/quality-pick';
+import { pageKtx2 } from '../textures/ktx2-session';
 
 export { threeAdapter } from './renderer';
 
@@ -46,17 +49,20 @@ export function devTools(): Promise<DevTools> {
 }
 
 async function start(): Promise<DevTools> {
-  // A throwaway context tells the GPU's name; it is given back at once,
-  // since a device allows few contexts.
-  const probe = document.createElement('canvas').getContext('webgl2');
-  const device = deviceHints(probe);
-  probe?.getExtension('WEBGL_lose_context')?.loseContext();
+  // The page's one probe tells the GPU's name and profile (VENT-101: no
+  // context of the tools' own).
+  const { gpu, profile } = pickQuality.device();
   const { search, hash } = window.location;
-  const tier = detectTier(device, search, hash);
+  const tier = detectTier({ ...deviceHints(null), gpu }, search, hash);
   // Folded on every screen: open, the panel covers the page's controls
   // (VENT-51); perf-hud.css keeps the folded line over the header's title.
-  const tools = await DevTools.start(
-    { tier, gpu: device.gpu, hash, folded: true });
+  const tools = await DevTools.start({
+    tier,
+    gpu,
+    gpuLines: () => gpuLines(profile, pageKtx2.choice()),
+    hash,
+    folded: true,
+  });
   tools.run();
   return tools;
 }

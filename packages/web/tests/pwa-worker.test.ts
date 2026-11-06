@@ -151,7 +151,7 @@ describe('precache', () => {
     expect(precached('_astro/dev-tools-loader.Ab1.js')).toBe(true);
   });
 
-  it('caches the common offline set at install: pages, build files, manifests, icons, phase frames, thumbnails, 1K and 2K maps', () => {
+  it('caches the common offline set at install: pages, build files, manifests, icons, phase frames, thumbnails, 1K maps, 2K relief', () => {
     expect(precacheOf(dist(BUILD)).precache.toSorted()).toEqual([
       '',
       '_astro/app.1.js',
@@ -164,28 +164,40 @@ describe('precache', () => {
       'icons/phase/moon-00.webp',
       'textures/moon-lola-normal-2k.jpg',
       'textures/moon-lroc-1k.jpg',
-      'textures/moon-lroc-2k.jpg',
       'thumbs/im2-athena-320.webp',
     ]);
-    for (const file of ['en-xa/index.html', 'textures/moon-lroc-4k.jpg', 'textures/moon-lroc-8k.jpg', 'sw.js']) {
+    const later = ['en-xa/index.html', 'textures/moon-lroc-2k.jpg', 'textures/moon-lroc-4k.jpg', 'textures/moon-lroc-8k.jpg', 'sw.js'];
+    for (const file of later) {
       expect(precached(file)).toBe(false);
     }
     expect(requestPath('de/index.html')).toBe('de/');
   });
 
   it('counts the bytes of the install set only', () => {
-    const precachedBodies = ['en', 'es', '{}', 'js', 'i', 't', 'w', 't', 'f', 'th', '1k', '2k', 'n2k'];
+    const precachedBodies = ['en', 'es', '{}', 'js', 'i', 't', 'w', 't', 'f', 'th', '1k', 'n2k'];
     const expected = precachedBodies.join('').length;
     expect(precacheOf(dist(BUILD)).bytes).toBe(expected);
   });
 
-  it('installs the 1K and 2K globe maps on every device, and leaves the polar map out: a phone has no polar view (VENT-95)', () => {
-    for (const level of [1, 2] as const) {
-      const { colour, normal } = levelUrls(level, '/');
-      expect(precached(colour.slice(1))).toBe(true);
-      expect(precached(normal.slice(1))).toBe(true);
-    }
+  it('installs the 1K globe maps and the 2K relief on every device, and leaves the polar map out: a phone has no polar view (VENT-95)', () => {
+    const one = levelUrls(1, '/');
+    for (const url of [one.colour, one.normal, levelUrls(2, '/').normal]) expect(precached(url.slice(1))).toBe(true);
     expect(precached('textures/moon-south-polar-2k.jpg')).toBe(false);
+  });
+
+  it('leaves the 2K colour, its KTX2 and the transcoder to the runtime cache: in the install set they break the budget (VENT-101)', () => {
+    const files = [
+      levelUrls(2, '/').colour.slice(1),
+      levelUrls(2, '/', 'etc2').colour.slice(1),
+      levelUrls(4, '/', 'bc1').colour.slice(1),
+      '_astro/basis-worker-QNbRvZpx.js',
+      '_astro/basis-worker.Ab1.js',
+      '_astro/on-foot-earth.Ab1.ktx2',
+      'basis/0.186.1/basis_transcoder.js',
+      'basis/0.186.1/basis_transcoder.wasm',
+    ];
+    for (const file of files) expect(precached(file), file).toBe(false);
+    expect(precached('_astro/basis-ish.Ab1.js')).toBe(true);
   });
 
   it('names the desktop extras in one place: the polar map alone (VENT-95)', () => {

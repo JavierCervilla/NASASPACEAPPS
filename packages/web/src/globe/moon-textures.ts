@@ -44,7 +44,11 @@ import {
   type WebGLRenderer,
 } from 'three';
 import type { Tier } from '../lib/quality';
+import type { Ktx2Switch } from '../textures/ktx2-session';
 import { textureAt } from './early-texture';
+import { ktx2OrJpeg } from './ktx2-map';
+import type { Ktx2Target } from './ktx2-target';
+import type { MapTrace } from './map-trace';
 import type { StartMaps } from './start-maps';
 import type { SwapDeps } from './texture-fetch';
 
@@ -78,6 +82,16 @@ export interface MoonTextureOptions {
   readonly early?: { readonly maps: StartMaps } | undefined;
   /** Compiles the scene's programs; the frame waits for it. */
   readonly compile?: (() => Promise<void>) | undefined;
+  /**
+   * KTX2 colour maps for the session (VENT-101): the switch and the loader
+   * of a `.ktx2` map. Without it, every map is a JPEG.
+   */
+  readonly ktx2?: {
+    readonly session: Ktx2Switch;
+    readonly load: (url: string, target: Ktx2Target) => Promise<Texture>;
+  } | undefined;
+  /** Where a KTX2 map or its fallback is told under `?debug`. */
+  readonly trace?: Pick<MapTrace<Texture>, 'mark'> | undefined;
 }
 
 type GpuDeps = Pick<SwapDeps<Texture>, 'load' | 'upload' | 'apply' | 'dispose'>;
@@ -88,18 +102,29 @@ const uploadWhenShown = (renderer: WebGLRenderer, shown: () => boolean) =>
     if (shown()) renderer.initTexture(texture);
   };
 
-/** Loads a map as the Moon's texture: filtered, in its colour space. */
+/**
+ * Loads a map as the Moon's texture: filtered, in its colour space. A
+ * `.ktx2` colour comes with its own levels (VENT-101), else its JPEG.
+ */
 function mapLoader(options: MoonTextureOptions): GpuDeps['load'] {
   const gpuMax = options.renderer.capabilities.getMaxAnisotropy();
   const anisotropy = Math.min(ANISOTROPY[options.tier], gpuMax);
   const loader = new TextureLoader();
-  return (url, kind) =>
+  const jpeg = (url: string, kind: 'colour' | 'normal') =>
     textureAt(url, loader, options.early?.maps).then((texture) =>
       Object.assign(texture, MIPMAPPED, {
         anisotropy,
         colorSpace: kind === 'colour' ? SRGBColorSpace : NoColorSpace,
-      }),
-    );
+      }));
+  const { ktx2 } = options;
+  const colour = ktx2 ? ktx2OrJpeg<Texture>({
+    ktx2: (url, target) => ktx2.load(url, target)
+      .then((texture) => Object.assign(texture, { anisotropy })),
+    jpeg: (url) => jpeg(url, 'colour'),
+    session: ktx2.session,
+    mark: options.trace?.mark,
+  }) : (url: string) => jpeg(url, 'colour');
+  return (url, kind) => (kind === 'colour' ? colour(url) : jpeg(url, kind));
 }
 
 /**

@@ -30,12 +30,15 @@
 import {
   detectTier,
   deviceHints,
-  gpuName,
   settingsFor,
   type DeviceHints,
   type QualitySettings,
   type Tier,
 } from '../lib/quality';
+import type { GpuProfile } from '../lib/gpu-profile';
+import { probePage, type PageDevice } from './device-probe';
+
+export type { PageDevice } from './device-probe';
 
 /**
  * A phone never runs the high tier: it opens on the 1K map, stops at the
@@ -47,37 +50,33 @@ export function phoneTier(tier: Tier, phone: boolean): Tier {
 
 /** Where a pick reads the device and the address. */
 export interface PickSources {
-  /** Names the GPU; called once, by the first pick. */
-  readonly probeGpu: () => string;
+  /** Probes the device; called once, by the first pick or read. */
+  readonly probeDevice: () => PageDevice;
   /** The device's hints around that name, read on every pick. */
   readonly hints: (gpu: string) => DeviceHints;
   /** The page's address, read on every pick (`?quality=`, a hash word). */
   readonly address: () => { readonly search: string; readonly hash: string };
 }
 
+/** A pick, and the device its one probe read. */
+export interface QualityPicker {
+  (phone: boolean): QualitySettings;
+  readonly device: () => PageDevice;
+  readonly gpuProfile: () => GpuProfile;
+}
+
 /**
  * A picker that probes the device once and reads the address on every
  * call; `phone` caps the tier with {@link phoneTier}.
  */
-export function qualityPicker(
-  sources: PickSources,
-): (phone: boolean) => QualitySettings {
-  let gpu: string | null = null;
-  return (phone) => {
-    gpu ??= sources.probeGpu();
+export function qualityPicker(sources: PickSources): QualityPicker {
+  let probed: PageDevice | null = null;
+  const device = (): PageDevice => (probed ??= sources.probeDevice());
+  return Object.assign((phone: boolean): QualitySettings => {
     const { search, hash } = sources.address();
-    const tier = detectTier(sources.hints(gpu), search, hash);
-    return settingsFor(phoneTier(tier, phone));
-  };
-}
-
-/** The GPU's name, from a throwaway WebGL context. */
-function probePageGpu(): string {
-  const probe = document.createElement('canvas').getContext('webgl2');
-  const name = gpuName(probe);
-  // A device allows few contexts: give the probe back at once.
-  probe?.getExtension('WEBGL_lose_context')?.loseContext();
-  return name;
+    const hints = sources.hints(device().gpu);
+    return settingsFor(phoneTier(detectTier(hints, search, hash), phone));
+  }, { device, gpuProfile: () => device().profile });
 }
 
 /**
@@ -85,7 +84,7 @@ function probePageGpu(): string {
  * on-foot view together (VENT-91: each used to make and drop its own).
  */
 export const pickQuality = qualityPicker({
-  probeGpu: probePageGpu,
+  probeDevice: probePage,
   hints: (gpu) => ({ ...deviceHints(null), gpu }),
   address: () => window.location,
 });

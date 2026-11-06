@@ -80,6 +80,17 @@ describe('perf hud on the page', () => {
     expect(live).toEqual(trail.slice(-6));
   });
 
+  it('reads the GPU block at each reading, so a session switch shows', () => {
+    let ktx2 = 'ktx2 → ETC2';
+    const view = hud({ gpuLines: () => ['tex ETC2 · max 4096 · aniso 1', ktx2] });
+    view.sample(FULL_WINDOW, null);
+    const text = () => target('aria-describedby').textContent ?? '';
+    expect(text()).toContain('Test GPU\ntex ETC2 · max 4096 · aniso 1\nktx2 → ETC2');
+    ktx2 = 'ktx2 off: worker failed';
+    view.sample(FULL_WINDOW, null);
+    expect(text()).toContain('\nktx2 off: worker failed\n');
+  });
+
   it('keeps the newest 600 characters of the errors', () => {
     const view = hud();
     view.error('a'.repeat(700));

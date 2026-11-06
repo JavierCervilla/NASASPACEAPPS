@@ -34,16 +34,22 @@ import { expect, test, type Page } from '@playwright/test';
 import { stubApi } from './api-stub';
 
 const MAP_1K = /\/textures\/moon-lroc-1k\.jpg$/;
-const MAP_4K = /\/textures\/moon-lroc-4k\.jpg$/;
+// The 4K colour comes as KTX2 where the GPU takes it (VENT-101; SwiftShader: BC1), fetched rather than an image.
+const MAP_4K = /\/textures\/moon-lroc-4k\.(jpg|ktx2)$/;
 
 /** The Moon maps the page has loaded so far, in order. */
 const loaded = (page: Page): Promise<string[]> =>
   page.evaluate(() => (window as unknown as { mapLoads: string[] }).mapLoads.filter((url) => /moon-lroc-/.test(url)));
 
-/** Records every image `src` the page sets. */
+/** Records every image `src` the page sets, and every map it fetches (a KTX2 map, VENT-101). */
 function recordImageLoads(): void {
   const loads: string[] = [];
   (window as unknown as { mapLoads: string[] }).mapLoads = loads;
+  const fetchOf = window.fetch.bind(window);
+  window.fetch = (input: RequestInfo | URL, init?: RequestInit) => {
+    loads.push(input instanceof Request ? input.url : String(input));
+    return fetchOf(input, init);
+  };
   const src = Object.getOwnPropertyDescriptor(HTMLImageElement.prototype, 'src');
   Object.defineProperty(HTMLImageElement.prototype, 'src', {
     ...src,

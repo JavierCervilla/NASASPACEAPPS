@@ -34,7 +34,8 @@
 import { expect, test, type Page } from '@playwright/test';
 import { stubApi } from './api-stub';
 
-const MOON_MAP = /\/textures\/moon-l(roc|ola-normal)-\dk\.jpg$/;
+// A colour map comes as KTX2 where the GPU takes it (VENT-101; SwiftShader: BC1), at 2K and 4K.
+const MOON_MAP = /\/textures\/moon-l(roc|ola-normal)-\dk\.(jpg|ktx2)$/;
 const GLOBE_CHUNK = /\/_astro\/globe\.[^/]*\.js$/;
 // The canvas is software-rendered in CI; the splash leaves at the first map or after 6 s (GlobeSplash.tsx).
 const TEXTURED_MS = 20_000;
@@ -120,7 +121,7 @@ test.describe('the globe start, desktop 1440x900', () => {
     await page.goto('./?quality=high');
     await waitTextured(page);
     await page.waitForLoadState('networkidle');
-    expect(requested.sort()).toEqual(['moon-lola-normal-2k.jpg', 'moon-lroc-2k.jpg']);
+    expect(requested.sort()).toEqual(['moon-lola-normal-2k.jpg', 'moon-lroc-2k.ktx2']);
   });
 
   /** Counts the shader and program info log reads of every WebGL context. */

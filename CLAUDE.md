@@ -166,8 +166,8 @@ Every visible change follows `.claude/skills/apple-design/SKILL.md` (vendored fr
   `textarea`) and the coordinates (`.card-head__point`, `.summary__coords`), the one datum worth pasting elsewhere.
   The pin refuses the context menu, so a long press stays the start of a carry (`no-context-menu.ts`), and so does the
   Moon while a finger is down on it (`src/pin/place-gesture.ts`). Held by `tests/e2e/app-feel.spec.ts`.
-- Must run on a laptop without a dedicated GPU (globe: 64-segment sphere, the precached start map (2K on the high
-  tier, 1K below), LOLA relief as a normal map; then the smallest map sharp enough for the disc on screen, up to 4K, 8K
+- Must run on a laptop without a dedicated GPU (globe: 64-segment sphere, the start map (2K on the high tier, 1K
+  below; the 1K maps and the 2K relief are precached), LOLA relief as a normal map; then the smallest map sharp enough for the disc on screen, up to 4K, 8K
   on the high tier (VENT-97, `src/globe/texture-lod.ts`, `disc-density.ts`): a texel covers at most 1.15 drawing-buffer
   px at the disc's centre, the disc measured from the camera distance, the 35° field of view and the framed band's
   height times the pixel ratio (`frameBufferPx`, `src/globe/frame.ts`); levels only climb, so no threshold flips).
@@ -175,7 +175,38 @@ Every visible change follows `.claude/skills/apple-design/SKILL.md` (vendored fr
   `qualityPicker` over injected sources) names the GPU from one throwaway WebGL2 context on its first call and keeps
   it for the globe, its contents, the glass gate and the on-foot view, while `?quality=`, the hash and the pointer are
   read again on every call; the page creates two WebGL contexts at load (that probe and the globe), three with the
-  on-foot view (`tests/e2e/vent-91-probe-lens.spec.ts`).
+  on-foot view (`tests/e2e/vent-91-probe-lens.spec.ts`). The same probe, asked like the renderers ask theirs
+  (`powerPreference: 'low-power'`), also reads the GPU's capability profile before it is given back (VENT-101,
+  `src/globe/device-probe.ts`, `src/lib/gpu-profile.ts`: compressed texture families from `getSupportedExtensions()`,
+  which enables nothing, the largest texture, the anisotropy, `EXT_clip_control`, `KHR_parallel_shader_compile`, the
+  float buffers), kept by the picker (`pickQuality.gpuProfile()`); the dev tools read it too instead of a context of
+  their own. Capability is not safety: what is safe on a device is still the verdicts' (the bench, the crash marks,
+  `terrain/shadow-safety.ts`).
+  GPU-compressed maps (VENT-101): the globe's 2K and 4K colour maps and the on-foot view's Earths also ship as KTX2
+  (Basis ETC1S q128, `packages/web/scripts/moon-ktx2.mjs` with the pinned `ktx2-encoder` 0.6.0, deterministic, manifest `src/textures/ktx2.json` held by `npm run ktx2:check` in CI; ASSETS.md), transcoded to ETC2 RGB
+  or BC1 RGB, 4 bits per texel on the GPU instead of 32 (2K colour 1.4 MB instead of 11.2, 4K 5.6 instead of 44.7), with
+  their levels made at encode, so nothing is decoded, uploaded as RGBA or mipmapped on the main thread (2K colour upload
+  about 1 ms instead of 62 to 217 ms). `ktx2Target` (`src/globe/ktx2-target.ts`) picks ETC2, else BC1 with S3TC in sRGB,
+  else none, from the probe's profile alone, so the early start knows it; on desktop Linux exposing every family it
+  skips ETC (three's rule against Mesa's emulated formats). The 1K and 8K colour, every relief and the on-foot
+  regolith albedo stay JPEG or WebP (the albedo's KTX2 is 44 kB more than its WebP, over the VENT-94 budget of the
+  view's opening maps, `tests/e2e/vent-94-light-maps.spec.ts`).
+  three's `KTX2Loader` cannot run under the page's CSP (its workers come from a `blob:` and its transcoder's embind glue
+  calls `new Function`), so the page has a transcoder worker of its own (`src/textures/basis-worker.ts`, a classic
+  worker Vite emits as `_astro/basis-worker-<hash>.js`; `basis-transcode.ts`, after the KTX2Loader's BasisWorker) that
+  loads three's transcoder, copied at build into `dist/basis/<three version>/` (`scripts/basis-transcoder.mjs`, never
+  committed), and answers one map at a time (`ktx2-transcoder.ts`, `ktx2-worker-link.ts`: made on first use, each ask
+  bounded by 20 s). nginx serves that one script under its own CSP, `default-src 'self'; script-src 'self'
+  'unsafe-eval' 'wasm-unsafe-eval'` (`nginx-basis-worker-headers.conf`), since a worker runs under its own response's
+  policy; the page's policy is unchanged. The session's switch (`src/textures/ktx2-session.ts` `pageKtx2`): KTX2 on
+  when the profile has a target and the address has no `?ktx2=0`, and off for the rest of the session the first time
+  the worker cannot start (another engine applying the page's policy), the transcoder fails to load, a fetch or a
+  transcode fails, or an ask times out; the same load then answers with the JPEG or WebP sibling (`src/globe/ktx2-map.ts`
+  `ktx2OrJpeg`, the swapper's contract unchanged), and the levels after it ask the JPEG. On the high tier the early
+  start asks the 2K colour's KTX2 bytes and starts the worker beside the globe's chunk. `texture-bytes.ts` counts a
+  compressed map by the bytes of its levels. Held by `tests/e2e/globe-ktx2.spec.ts` (under the production CSP: BC1 on
+  SwiftShader and the texture memory down; a worker policy without `'unsafe-eval'` falls back to the JPEG with no page
+  error; `?ktx2=0`).
   Phones (below 768 px): the globe fills the screen at the low or medium tier (opening on the 1K map, then 2K for
   the disc at the opening view and 4K zoomed in, pixel ratio capped), one finger turns it and two pinch; a glass top
   bar holds the title and the site pill, a draggable bottom sheet (closed, peek, half with four widgets, full with the
@@ -754,8 +785,11 @@ Every visible change follows `.claude/skills/apple-design/SKILL.md` (vendored fr
   rule's answer changes, «4K wanted (2K shown)», «4K maps asked», «4K colour loading: moon-lroc-4k.jpg», «4K colour
   landed in 1.4 s (4096x2048)», «4K colour failed: moon-lroc-4k.jpg (error event, no details)», «4K colour timed out
   after 60 s: …», «4K colour uploaded, gl NO_ERROR» (`gl.getError()` read after each upload, under `?debug` only),
-  «4K threw: …», «4K given up, 2K stays», «4K on the Moon», «lowered to 1K, globe hidden (4K shown)» and «4K freed on
-  landing, lowered meanwhile» (`src/globe/map-trace.ts`; `tests/e2e/vent-99-globe-map-trace.spec.ts`). The readout starts folded on every screen to one
+  «4K threw: …», «4K given up, 2K stays», «4K on the Moon», «lowered to 1K, globe hidden (4K shown)», «4K freed on
+  landing, lowered meanwhile», «2K colour as KTX2 → ETC2» and «KTX2 off: <reason>» (VENT-101)
+  (`src/globe/map-trace.ts`; `tests/e2e/vent-99-globe-map-trace.spec.ts`). Under the GPU's name the readout shows its
+  profile (VENT-101, `src/devtools/gpu-lines.ts`): «tex ASTC ETC2 ETC1 RGTC · max 8192 · aniso 16», «clip_control · no
+  parallel compile · float cb» and «ktx2 → ETC2» (or «ktx2 off: <reason>», read live). The readout starts folded on every screen to one
   line (the frame rate, the slowest frame and a count of the errors under the fold), top left over the header's title,
   so it covers no control; a press unfolds it (VENT-51, `tests/e2e/debug.spec.ts`).
   `scripts/check-no-devtools.mjs` (decision in `devtools-guard.mjs`) fails a build whose pages, start chunks or precache
@@ -863,8 +897,10 @@ Every visible change follows `.claude/skills/apple-design/SKILL.md` (vendored fr
   is asked again on the next update.
 - **Offline**: `scripts/service-worker.mjs` (an Astro integration) bundles `src/pwa/sw-worker.ts` into `dist/sw.js`
   after every build, with the files it caches at install, the offline set every device uses (every locale's page except
-  `/en-xa/`, `_astro/`, the manifests, `icons/` with the 30 phase frames, every site thumbnail, the 1K and 2K globe
-  maps, `favicon.ico`, `favicon.svg` and the root `apple-touch-icon.png`), fetched past the HTTP cache (`cache: 'reload'`),
+  `/en-xa/`, `_astro/`, the manifests, `icons/` with the 30 phase frames, every site thumbnail, the 1K globe maps and the
+  2K relief (VENT-101: the 2K colour is asked as KTX2 where the GPU takes it, and with the transcoder in the install
+  set the budget broke, so the 2K colour, its KTX2, the transcoder and its worker are kept cache first on use; offline
+  and never seen, the globe stays on the 1K), `favicon.ico`, `favicon.svg` and the root `apple-touch-icon.png`), fetched past the HTTP cache (`cache: 'reload'`),
   and the build's digest over every file the worker may keep, which names the static cache (`ventana-static-<digest>`),
   so a deploy drops the old one. A deploy downloads only the files that changed (VENT-90): the build also hashes each
   file the worker may keep (`hashes` in the worker's config, the precache and the files kept on use), the install
@@ -877,10 +913,10 @@ Every visible change follows `.claude/skills/apple-design/SKILL.md` (vendored fr
   start, or when it turns into it) posts `ventana:keep-extras` for the `desktop` set once it has started
   (`src/pwa/keep-extras.ts`, `afterStart`); the worker keeps each file it does not hold, the HTTP cache's copy or the
   server's, only when its body hashes to the build's hash (`src/pwa/sw-extras.ts`), so a deploy carries it over like the
-  4K map. A phone's first visit downloads 4.27 MB instead of 5.02 MB; a desktop's the same 5.02 MB as before. What a first visit downloads has a
+  4K map. A phone's first visit skips those 0.72 MB (VENT-95: 3.71 MB against a desktop's 4.44 MB with VENT-101). What a first visit downloads has a
   hard budget of 5 MB (`PRECACHE_BUDGET`, human decision 2026-10-31), counted on the largest one, the install set plus
   the desktop extras: the build logs the precache, the desktop extras and that total, and fails over it (VENT-95: 4.07
-  MB common plus 0.72 MB desktop extras, 4.79 MB; 4.76 MB with VENT-60's loader, its styles on demand; 4.75 MB with VENT-55's press, presence, rail and scroll-fade sheets; 4.74 MB with VENT-54, no models; 4.78 MB with VENT-52's update row; 4.77 MB with VENT-50's compass and graticule; 4.75 MB with VENT-46's rings, landers and rigged astronaut, their files left out; 4.70 MB with VENT-34's on-foot view, its files left out; 4.68 MB with VENT-40's horizon strip; 4.63 MB with VENT-39's shadow notes; 4.57 MB with VENT-37's saved sites; 4.52 MB when it left the astronaut's sprites out, 4.60 MB with them). The 4K and 8K maps, and any build file not
+  MB common plus 0.72 MB desktop extras, 4.79 MB; 4.44 MB with VENT-101, the 2K colour out of the install set; 4.76 MB with VENT-60's loader, its styles on demand; 4.75 MB with VENT-55's press, presence, rail and scroll-fade sheets; 4.74 MB with VENT-54, no models; 4.78 MB with VENT-52's update row; 4.77 MB with VENT-50's compass and graticule; 4.75 MB with VENT-46's rings, landers and rigged astronaut, their files left out; 4.70 MB with VENT-34's on-foot view, its files left out; 4.68 MB with VENT-40's horizon strip; 4.63 MB with VENT-39's shadow notes; 4.57 MB with VENT-37's saved sites; 4.52 MB when it left the astronaut's sprites out, 4.60 MB with them). The 4K and 8K maps, and any build file not
   precached, are kept cache first the first time the page fetches them. Under Save-Data the worker is not registered
   at all. Pages and API GETs are network first,
   build files cache first; the answer goes to the page before its copy is kept, in the background under `waitUntil`

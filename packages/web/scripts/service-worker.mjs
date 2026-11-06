@@ -30,9 +30,10 @@
 // src/pwa/sw-worker.ts with all three into dist/sw.js at the base.
 //
 // Cached at install, the offline set every device uses: every locale's page (not the pseudo-locale's), the build's
-// scripts and styles, the manifests, the icons with the 30 phase frames, every site thumbnail and the 1K and 2K globe
-// maps. The map only the desktop layout uses, the polar map (DEVICE_EXTRAS), is kept once a desktop page has started
-// and asks for it (VENT-95: a phone has no polar view). The sharper maps (4K, 8K) are left to the runtime cache: the zoom asks for them, and most visits never do. So are the
+// scripts and styles, the manifests, the icons with the 30 phase frames, every site thumbnail, the 1K globe maps and the
+// 2K relief. The map only the desktop layout uses, the polar map (DEVICE_EXTRAS), is kept once a desktop page has started
+// and asks for it (VENT-95: a phone has no polar view). The sharper maps (the 2K colour, 4K, 8K, their KTX2 and the KTX2
+// transcoder, VENT-101) are left to the runtime cache: the zoom asks for them, and most visits never do. So are the
 // on-foot 3D view's files (ON_DEMAND), which only that view asks for, and the dev tools, which only `?debug` asks for.
 // What a first visit downloads has a hard budget, PRECACHE_BUDGET, counted on the largest one (the install set and the
 // desktop extras): a build over it fails (human decision, 2026-10-31: under 5 MB is fine for this app).
@@ -42,9 +43,11 @@ import { join, relative, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const WORKER = fileURLToPath(new URL('../src/pwa/sw-worker.ts', import.meta.url));
+// The 2K colour is not here (VENT-101): it is asked as KTX2 where the GPU takes it, and the transcoder (585 kB) would
+// break the budget in the install set, so the 2K colour, its KTX2 and the transcoder are kept cache first the first time
+// the page asks. Offline and never seen, the globe stays on the 1K.
 const START_MAPS = new Set([
   'textures/moon-lroc-1k.jpg',
-  'textures/moon-lroc-2k.jpg',
   'textures/moon-lola-normal-1k.jpg',
   'textures/moon-lola-normal-2k.jpg',
 ]);
@@ -67,7 +70,9 @@ const ROOT_FILES = new Set(['favicon.ico', 'favicon.svg', 'apple-touch-icon.png'
 // only asked for by `?bench` (VENT-81); the small bench-param chunk is the page's own: it fixes the instant.
 // The fine real-relief tiles (VENT-62, public/fine-tiles/) are on demand too: only a view of a point inside one asks for
 // its two files (about 84 to 123 kB), and the worker keeps them cache first from then on.
-const ON_DEMAND = /^(_astro\/(TerrainPanel|terrain-scene|on-foot|boot|perf-hud|spector|bench-boot)[.-][^/]+|_astro\/bench\.[^/]+\.css|fine-tiles\/.+)$/;
+// The KTX2 transcoder's worker (VENT-101) is asked only where the GPU takes KTX2, with its transcoder under basis/.
+const ON_DEMAND =
+  /^(_astro\/(TerrainPanel|terrain-scene|on-foot|boot|perf-hud|spector|bench-boot|basis-worker)[.-][^/]+|_astro\/bench\.[^/]+\.css|fine-tiles\/.+)$/;
 /** The pseudo-locale's folder (src/i18n/locales.ts): never offered, never cached. */
 const PSEUDO = 'en-xa/';
 

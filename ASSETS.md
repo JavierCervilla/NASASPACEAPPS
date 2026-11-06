@@ -330,6 +330,32 @@ No elevation grid ships: only the profiles, and the catalogue of what the server
 - **Licence**: NASA data, not subject to copyright in the United States; credit NASA/GSFC, the LOLA team, via the PDS
   Geosciences Node.
 
+## KTX2 maps (VENT-101)
+
+The globe's 2K and 4K colour maps and the on-foot view's Earths also ship as KTX2 (Basis Universal
+ETC1S), which the page transcodes to ETC2 or BC1 on the GPU: 4 bits per texel instead of 32, with mipmaps. Each is
+made from the committed file named on its row, so its source and licence are that file's (above and below). The 1K
+and 8K colour maps and every relief map stay JPEG or WebP; every KTX2 map keeps its JPEG or WebP sibling as the
+fallback.
+
+| File | What | sha256 |
+|---|---|---|
+| `packages/web/public/textures/moon-lroc-2k.ktx2` | 2048 x 1024, 12 mip levels, from `moon-lroc-2k.jpg`, 312 599 bytes | `dc93c29756d1633b7cff1ad86d656d2b7e2f0c927b9c46091608adfc8be9bd8e` |
+| `packages/web/public/textures/moon-lroc-4k.ktx2` | 4096 x 2048, 13 mip levels, from `moon-lroc-4k.jpg`, 1 213 762 bytes | `e89f71eb329b18752ec8c04cb639be70b424340272851b863bb81e237de6eff5` |
+| `packages/web/src/terrain/maps/on-foot-earth.ktx2` | 1024 x 512, 11 mip levels, from `on-foot-earth.webp`, 83 126 bytes | `2abe00070a841231991b9af78eceb236637ba4e662eac128618dd259d85d0761` |
+| `packages/web/src/terrain/maps/on-foot-earth-512.ktx2` | 512 x 256, 10 mip levels, from `on-foot-earth-512.webp`, 28 666 bytes | `5ce7f0b9db3d592ae9822e07eaddfa60f6f244a7896d9f713b094b2a6baec6f1` |
+
+- **How they were made**: `node packages/web/scripts/moon-ktx2.mjs`, with `ktx2-encoder` 0.6.0 (pinned devDependency,
+  MIT, Basis Universal v2.5 compiled to wasm, https://github.com/gz65555/ktx2-encoder) and sharp to decode the source:
+  ETC1S quality 128, compression level 2, mipmaps made at encode, perceptual and sRGB (the sRGB transfer function in
+  the data format descriptor), no supercompression, flipped in Y (a compressed texture is not flipped at upload as a
+  JPEG is). The encoding is deterministic: `--check` re-encodes and compares the bytes; `--verify` (CI,
+  `npm run ktx2:check`) holds the files to their manifest, `packages/web/src/textures/ktx2.json` (sources, outputs,
+  sha256 of both, encoder and settings).
+- **Quality** (VENT-101 plan, measured against the JPEG): 34.4 to 35.4 dB PSNR on the map itself, 42.5 dB and SSIM
+  0.993 on the globe's render at 2.2 radii with the 4K, 46 dB at the start view; no banding at the terminator.
+- **8K**: the wasm encoder stops at 12 Mpx, so the 8K stays JPEG until a native `basisu` encodes it.
+
 ## On-foot view surfaces (VENT-34 quality pass)
 
 All load on demand with the 3D view (file names `on-foot-*`, left out of the precache by `ON_DEMAND`).

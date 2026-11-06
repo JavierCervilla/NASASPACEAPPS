@@ -24,9 +24,10 @@
  */
 
 /**
- * VENT-95: the install set is what every device uses; the maps only the desktop layout uses (the 2K start maps and the
- * polar map) are kept after the page has started, by the worker, when the page asks for the desktop's set. A phone never
- * asks. The worker keeps a copy only when its body hashes to the build's hash, as the install does (VENT-90).
+ * VENT-95: the install set is what every device uses; the map only the desktop layout uses (the polar map) is kept after
+ * the page has started, by the worker, when the page asks for the desktop's set. A phone never asks. The worker keeps a
+ * copy only when its body hashes to the build's hash, as the install does (VENT-90); the sets below are fixtures of
+ * several maps, since a set may hold more than one.
  */
 import { createHash } from 'node:crypto';
 import { describe, expect, it, vi } from 'vitest';

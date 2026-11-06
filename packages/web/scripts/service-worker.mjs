@@ -30,10 +30,9 @@
 // src/pwa/sw-worker.ts with all three into dist/sw.js at the base.
 //
 // Cached at install, the offline set every device uses: every locale's page (not the pseudo-locale's), the build's
-// scripts and styles, the manifests, the icons with the 30 phase frames, every site thumbnail and the 1K maps. The maps
-// only the desktop layout uses, the 2K start maps and the polar map (DEVICE_EXTRAS), are kept once a desktop page has
-// started and asks for them (VENT-95: a phone opens on the 1K map, zooms from 1K to 4K and has no polar view). The
-// sharper maps (4K, 8K) are left to the runtime cache: the zoom asks for them, and most visits never do. So are the
+// scripts and styles, the manifests, the icons with the 30 phase frames, every site thumbnail and the 1K and 2K globe
+// maps. The map only the desktop layout uses, the polar map (DEVICE_EXTRAS), is kept once a desktop page has started
+// and asks for it (VENT-95: a phone has no polar view). The sharper maps (4K, 8K) are left to the runtime cache: the zoom asks for them, and most visits never do. So are the
 // on-foot 3D view's files (ON_DEMAND), which only that view asks for, and the dev tools, which only `?debug` asks for.
 // What a first visit downloads has a hard budget, PRECACHE_BUDGET, counted on the largest one (the install set and the
 // desktop extras): a build over it fails (human decision, 2026-10-31: under 5 MB is fine for this app).
@@ -43,14 +42,19 @@ import { join, relative, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const WORKER = fileURLToPath(new URL('../src/pwa/sw-worker.ts', import.meta.url));
-const START_MAPS = new Set(['textures/moon-lroc-1k.jpg', 'textures/moon-lola-normal-1k.jpg']);
+const START_MAPS = new Set([
+  'textures/moon-lroc-1k.jpg',
+  'textures/moon-lroc-2k.jpg',
+  'textures/moon-lola-normal-1k.jpg',
+  'textures/moon-lola-normal-2k.jpg',
+]);
 /**
  * The files only some devices use, by the name of the set a page asks the worker to keep (src/pwa/keep-extras.ts):
- * the desktop's 2K start maps (src/globe/texture-lod.ts: the high tier opens on them, and a phone never runs it) and
- * its polar map (src/components/polar/PolarMap.tsx: the phone has no polar view). Never in the install set.
+ * the desktop's polar map (src/components/polar/PolarMap.tsx: the phone has no polar view). Never in the install set.
+ * The 2K globe maps are not here: every device's globe climbs to them (VENT-97).
  */
 export const DEVICE_EXTRAS = {
-  desktop: ['textures/moon-lroc-2k.jpg', 'textures/moon-lola-normal-2k.jpg', 'textures/moon-south-polar-2k.jpg'],
+  desktop: ['textures/moon-south-polar-2k.jpg'],
 };
 const WHOLE_FOLDERS = ['_astro/', 'icons/', 'thumbs/'];
 const ROOT_FILES = new Set(['favicon.ico', 'favicon.svg', 'apple-touch-icon.png']);

@@ -54,7 +54,7 @@ declare const __SW_CONFIG__: {
   /**
    * Paths under the scope: the offline set every device uses (pages,
    * build files, manifests, icons and phase frames, thumbnails, the 1K
-   * maps). The 4K and 8K maps are kept as the zoom uses them.
+   * and 2K globe maps). The 4K and 8K maps are kept as the zoom uses them.
    */
   readonly precache: readonly string[];
   /** The maps only some devices use, by set: kept when a page asks. */

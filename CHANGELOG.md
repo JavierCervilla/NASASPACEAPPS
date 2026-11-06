@@ -3,6 +3,10 @@
 ## [Sin publicar]
 
 ### Arreglado
+- **El globo ya no se queda atascado si un mapa falla al subir a la GPU (VENT-99).** Un error al subir un mapa dejaba
+  al globo sin pedir ningún mapa más, y una descarga que no respondía nunca lo bloqueaba igual; ahora ese nivel se da
+  por fallido y se vuelve a intentar, con un límite de 60 s por mapa. Con `?debug`, el panel cuenta qué mapa pide el
+  globo y por qué (tamaño del disco en píxeles), cuándo llega, si falla y qué error da la GPU al subirlo.
 - **La Luna ya no se ve borrosa en el móvil (VENT-97).** El globo elegía el mapa por una distancia fija pensada para
   una pantalla de escritorio, así que en un móvil se quedaba en el mapa 1K estirado al doble. Ahora elige el mapa más
   pequeño que se ve nítido para el tamaño que la Luna ocupa en pantalla: en un móvil como el Pixel sube al 2K nada más

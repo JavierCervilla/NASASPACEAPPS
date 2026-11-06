@@ -247,7 +247,12 @@ Every visible change follows `.claude/skills/apple-design/SKILL.md` (vendored fr
   `?bench` run: the context stays, only the big maps go): `shownFrames(draw, onHide)` tells the shown-to-hidden edge,
   `Moon.rest()` calls `TextureSwap.lower(startLevel)`, which fetches and shows the start map before it frees the 4K or
   8K one (a bigger level still in flight is freed when it lands, `texture-climb.ts`), and the next frame drawn climbs
-  back with `track`. Held by `tests/globe-lod.test.ts`, `tests/shown-frames.test.ts` and
+  back with `track`. Each map load is bounded (VENT-99): one that neither lands nor fails within 60 s
+  (`MAP_TIMEOUT_MS`, `src/globe/texture-load.ts`, an injected `LoadClock`) fails like any other and a texture it brings
+  late is freed, never shown; and a throw while a level is fetched or uploaded (`texture-climb.ts` `step`) fails that
+  level with its new maps freed, so the swapper is never left busy. A failed level is asked again only after a wait
+  (`src/globe/level-backoff.ts`: 2 s, doubling with each failure of the same level up to 60 s, started afresh when a
+  level lands or a higher one is wanted), so a map that fails fast is not fetched again on every frame drawn. Held by `tests/globe-map-trace.test.ts`, `tests/globe-lod.test.ts`, `tests/shown-frames.test.ts` and
   `tests/e2e/vent-86-globe-rest.spec.ts`. The globe starts sooner (VENT-93, VENT-80 findings 5 and 6): the boot reads
   the tier and asks the start maps of `startLevel(tier)` (colour and relief, through `levelUrls`) before it imports the
   globe's chunk (`src/globe/start-maps.ts` `earlyStart`, plain `<img>` loads as three's ImageLoader makes them; under
@@ -721,7 +726,15 @@ Every visible change follows `.claude/skills/apple-design/SKILL.md` (vendored fr
   breadcrumbs and the context watch, after the page has started (`src/lib/dev-tools-loader.ts`, the one place that
   imports `src/devtools/boot.ts`), for the globe and the on-foot canvas (`globe/dev-hook.ts`), with the report's steps
   marked in the breadcrumbs (`report-crumbs.ts`, the report stays the source); kept by the language switch, out of the
-  precache (`ON_DEMAND`), and Spector.js only in the dev server or a `PUBLIC_PERF_HUD=1` build. The readout starts folded on every screen to one
+  precache (`ON_DEMAND`), and Spector.js only in the dev server or a `PUBLIC_PERF_HUD=1` build. The globe's Moon maps
+  are marked there too as «globe: …» lines (VENT-99, `src/globe/map-crumbs.ts`, built in `moon-swap.ts` only when
+  `devToolsModule()` is not null, the lines told before the tools came kept and marked when they come,
+  an event seen among the last 12, whatever its seconds, not marked again): «rule wants 4K: disc 854 px, 0.65 px/texel; medium, max 8192» when the density
+  rule's answer changes, «4K wanted (2K shown)», «4K maps asked», «4K colour loading: moon-lroc-4k.jpg», «4K colour
+  landed in 1.4 s (4096x2048)», «4K colour failed: moon-lroc-4k.jpg (error event, no details)», «4K colour timed out
+  after 60 s: …», «4K colour uploaded, gl NO_ERROR» (`gl.getError()` read after each upload, under `?debug` only),
+  «4K threw: …», «4K given up, 2K stays», «4K on the Moon», «lowered to 1K, globe hidden (4K shown)» and «4K freed on
+  landing, lowered meanwhile» (`src/globe/map-trace.ts`; `tests/e2e/vent-99-globe-map-trace.spec.ts`). The readout starts folded on every screen to one
   line (the frame rate, the slowest frame and a count of the errors under the fold), top left over the header's title,
   so it covers no control; a press unfolds it (VENT-51, `tests/e2e/debug.spec.ts`).
   `scripts/check-no-devtools.mjs` (decision in `devtools-guard.mjs`) fails a build whose pages, start chunks or precache

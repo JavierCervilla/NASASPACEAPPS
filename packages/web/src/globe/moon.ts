@@ -36,22 +36,15 @@ import {
   MeshLambertMaterial,
   ObjectSpaceNormalMap,
   SphereGeometry,
-  type Texture,
 } from 'three';
 import type { Tier } from '../lib/quality';
-import { moonTextureDeps } from './moon-textures';
+import { moonSwap } from './moon-swap';
 import type { EarlyStart } from './start-maps';
 import { keepNightDark } from './night-side';
 import { samplePolesExactly } from './pole-uv';
 import type { Stage } from './stage';
-import {
-  levelUrls,
-  startLevel,
-  wantedLevel,
-  type LodView,
-} from './texture-lod';
+import { startLevel, type LodView } from './texture-lod';
 import { textureBytes } from './texture-bytes';
-import { TextureSwap } from './texture-swap';
 
 /** Widthwise and heightwise segments of the sphere (spec: 64). */
 const SEGMENTS = 64;
@@ -96,18 +89,12 @@ export function addMoon(stage: Stage, options: MoonOptions): Moon {
   const material = new MeshLambertMaterial(BARE_MOON);
   keepNightDark(material);
   samplePolesExactly(material);
-  const { renderer } = stage;
-  const { maxTextureSize } = renderer.capabilities;
-  const swap = new TextureSwap<Texture>({
-    ...moonTextureDeps({ ...options, renderer, material }),
-    urls: (level) => levelUrls(level, options.base),
-    warn: options.warn,
-  });
+  const { swap, want } = moonSwap(stage.renderer, material, options);
   swap.want(startLevel(options.tier));
   stage.scene.add(new Mesh(geometry, material));
   return {
     textureBytes: () => textureBytes(material.map, material.normalMap),
-    track: (v) => swap.want(wantedLevel(v, { ...options, maxTextureSize })),
+    track: (view) => swap.want(want(view)),
     rest: () => swap.lower(startLevel(options.tier)),
     dispose: () => {
       swap.dispose();

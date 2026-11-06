@@ -29,9 +29,14 @@
  * context marks `ventana.glWorked`, a lost one `ventana.glLostAt` (a context
  * the page frees on purpose does not), and one that cannot be made throws a
  * {@link GlUnavailableError} that says whether the browser blocked it,
- * with the browser's own message kept for the report.
+ * with the browser's own message kept for the report. Three checks each
+ * shader it links only where the dev tools run (VENT-93): reading the info
+ * logs right after the link makes the driver finish the compile on the
+ * spot, 1.47 s on the VENT-80 phone profile, and stalls the on-foot view's
+ * programs that `compileAsync` does not reach (its ring meshes) the same way.
  */
 import { WebGLRenderer, type WebGLRendererParameters } from 'three';
+import { devToolsWanted } from './dev-tools-loader';
 import { GL_LOST_KEY, GL_WORKED_KEY, glStorage, markGl } from './gl-marks';
 import {
   GlUnavailableError,
@@ -57,6 +62,7 @@ export function createGlRenderer(
   const storage = glStorage();
   try {
     const renderer = new WebGLRenderer({ ...parameters, canvas });
+    renderer.debug.checkShaderErrors = devToolsWanted();
     markGl(storage, GL_WORKED_KEY, Date.now());
     const lost = (): void => markGl(storage, GL_LOST_KEY, Date.now());
     canvas.addEventListener('webglcontextlost', lost);

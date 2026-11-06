@@ -9,6 +9,10 @@
   GPU escondida y la vista se dibuja sin mapa de sombras.
 
 ### Cambiado
+- **El globo arranca antes (VENT-93).** Los mapas de arranque (1K, o 2K en equipos potentes) se piden en cuanto se
+  conoce la calidad del equipo, antes de descargar el código del globo, y se reutilizan sin volver a pedirse; los
+  programas de la GPU se compilan sin bloquear donde el navegador lo permite, y la comprobación de shaders solo se hace
+  con `?debug`. En un móvil simulado, el globo aparece unos 0,6 s antes.
 - **El arranque gasta menos en el cristal y en la GPU (VENT-91).** Los mapas de lente del cristal Liquid se dibujan en
   un canvas en memoria, así que su PNG ya no se lee de vuelta desde la GPU en el hilo principal (en un móvil simulado
   pasa de ~220 ms a ~30 ms al cargar, idéntico píxel a píxel), y la página prueba la GPU una sola vez en lugar de crear

@@ -30,7 +30,9 @@
  * onto the material. A map that arrives while the globe is hidden is not
  * uploaded (VENT-52): the GPU is the visible view's, and the first frame
  * drawn once the globe shows again uploads it, as Three.js does for any
- * texture not yet on the GPU.
+ * texture not yet on the GPU. The start maps the boot asked early
+ * (start-maps.ts) are taken, not fetched again, and a map goes on only
+ * once the programs that draw it are compiled (compile-gate.ts, VENT-93).
  */
 import {
   LinearMipmapLinearFilter,
@@ -42,7 +44,9 @@ import {
   type WebGLRenderer,
 } from 'three';
 import type { Tier } from '../lib/quality';
-import type { MoonMaps, SwapDeps } from './texture-fetch';
+import { textureAt } from './early-texture';
+import type { StartMaps } from './start-maps';
+import type { SwapDeps } from './texture-fetch';
 
 /**
  * Anisotropic samples per tier, within what the GPU offers: the low
@@ -70,6 +74,10 @@ export interface MoonTextureOptions {
   readonly onTextured?: (() => void) | undefined;
   /** Whether the globe shows; hidden, no map goes to the GPU. */
   readonly shown: () => boolean;
+  /** The start maps asked before the globe mounted, if any. */
+  readonly early?: { readonly maps: StartMaps } | undefined;
+  /** Compiles the scene's programs; the frame waits for it. */
+  readonly compile?: (() => Promise<void>) | undefined;
 }
 
 type GpuDeps = Pick<SwapDeps<Texture>, 'load' | 'upload' | 'apply' | 'dispose'>;
@@ -80,29 +88,45 @@ const uploadWhenShown = (renderer: WebGLRenderer, shown: () => boolean) =>
     if (shown()) renderer.initTexture(texture);
   };
 
-/** Loads, uploads, applies and frees the Moon's textures. */
-export function moonTextureDeps(options: MoonTextureOptions): GpuDeps {
-  const { renderer, material, tier, onChange, onTextured, shown } = options;
-  const gpuMax = renderer.capabilities.getMaxAnisotropy();
-  const anisotropy = Math.min(ANISOTROPY[tier], gpuMax);
+/** Loads a map as the Moon's texture: filtered, in its colour space. */
+function mapLoader(options: MoonTextureOptions): GpuDeps['load'] {
+  const gpuMax = options.renderer.capabilities.getMaxAnisotropy();
+  const anisotropy = Math.min(ANISOTROPY[options.tier], gpuMax);
   const loader = new TextureLoader();
-  return {
-    load: (url, kind) =>
-      loader.loadAsync(url).then((texture) =>
-        Object.assign(texture, MIPMAPPED, {
-          anisotropy,
-          colorSpace: kind === 'colour' ? SRGBColorSpace : NoColorSpace,
-        }),
-      ),
-    upload: uploadWhenShown(renderer, shown),
-    apply: (maps: MoonMaps<Texture>) => {
-      material.color.set(0xffffff);
-      material.map = maps.colour;
-      material.normalMap = maps.normal;
-      material.needsUpdate = true;
+  return (url, kind) =>
+    textureAt(url, loader, options.early?.maps).then((texture) =>
+      Object.assign(texture, MIPMAPPED, {
+        anisotropy,
+        colorSpace: kind === 'colour' ? SRGBColorSpace : NoColorSpace,
+      }),
+    );
+}
+
+/**
+ * Puts the maps on the material, then, once their programs are compiled,
+ * asks a frame and tells that the Moon is textured.
+ */
+function mapsApplier(options: MoonTextureOptions): GpuDeps['apply'] {
+  const { material, onChange, onTextured } = options;
+  const compile = options.compile ?? (() => Promise.resolve());
+  return (maps) => {
+    material.color.set(0xffffff);
+    material.map = maps.colour;
+    material.normalMap = maps.normal;
+    material.needsUpdate = true;
+    void compile().then(() => {
       onChange();
       onTextured?.();
-    },
+    });
+  };
+}
+
+/** Loads, uploads, applies and frees the Moon's textures. */
+export function moonTextureDeps(options: MoonTextureOptions): GpuDeps {
+  return {
+    load: mapLoader(options),
+    upload: uploadWhenShown(options.renderer, options.shown),
+    apply: mapsApplier(options),
     dispose: (texture) => texture.dispose(),
   };
 }

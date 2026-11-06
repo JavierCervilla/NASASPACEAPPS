@@ -29,7 +29,6 @@
  * asks for it (boot.ts).
  */
 import type { TimeStore } from '../calendar/time-store';
-import { isPhoneViewport } from '../lib/viewport';
 import type { WatchedValue } from '../lib/watched-value';
 import type { SiteStore } from '../phone/site-store';
 import type { NowState } from '../phone/widget-types';
@@ -55,12 +54,14 @@ import {
   pinchEnd,
   pointerControls,
 } from './pointer-controls';
-import { pickQuality } from './quality-pick';
+import { globeQuality } from './globe-quality';
 import { bindSheetEdge, frameInset } from './sheet-edge';
 import { loadSelection, type SelectionParts } from './selection';
 import { createSiteFramer, type SiteFramerParts } from './site-framer';
 import type { GraticuleText } from './graticule/text';
 import { addContents } from './contents';
+import { stageCompileGate } from './compile-gate';
+import type { EarlyStart } from './start-maps';
 import { createStage, disposeStage, resizeStage, type Stage } from './stage';
 import { shownFrames, type ShownFrames } from './shown-frames';
 import { bindSun } from './sun-light';
@@ -104,6 +105,11 @@ export interface GlobeOptions {
    * the landing sites and the approximate zones registered on it.
    */
   readonly layers?: LayerRegistry;
+  /**
+   * The tier and the start maps the boot read and asked before the
+   * chunk loaded (VENT-93); absent, the globe reads and asks them itself.
+   */
+  readonly early?: EarlyStart | undefined;
 }
 
 /**
@@ -212,12 +218,14 @@ function bindSites(
  * browser has no WebGL; the caller shows the text alternative instead.
  */
 export function mountGlobe(host: HTMLElement, options: GlobeOptions) {
-  const stage = createStage(host, pickQuality(isPhoneViewport()));
+  const stage = createStage(host, globeQuality(options.early));
   const orbit = createOrbit(SOUTH_POLE_VIEW);
   const invalidate = (): void => loop.invalidate();
+  const gate = stageCompileGate(stage, invalidate);
   // The frames are made first: the Moon asks them whether the globe shows.
-  const frames = shownFrames((dt) => drawFrame(parts, dt), () => moon.rest());
-  const contents = addContents(host, options, stage, { ...frames, invalidate });
+  const frames = { ...shownFrames(gate.gated((dt) => drawFrame(parts, dt)),
+    () => moon.rest()), invalidate, compile: gate.compile };
+  const contents = addContents(host, options, stage, frames);
   const { markers, moon, layers, graticule } = contents;
   const link = linkView(stage, options.onView);
   const parts = { stage, orbit, moon, layers, graticule, ...link, markers };
@@ -225,15 +233,13 @@ export function mountGlobe(host: HTMLElement, options: GlobeOptions) {
   const input = bindInput(host, orbit, loop, options.reducedMotion);
   const globeParts = { markers, orbit, invalidate, camera: stage.camera };
   const sites = bindSites(host, options, globeParts);
-  const home = sites.home;
-  const { onCompass } = options;
-  const compass = linkCompass({ stage, frames: link, home, onCompass });
+  const compass = linkCompass(
+    { stage, frames: link, home: sites.home, onCompass: options.onCompass });
   const sun = bindSun(stage.scene, options.time, invalidate);
   const watch = watchHost(host, stage, loop, frames);
   const devTools = attachDevTools(stage.renderer, 'globe', moon.textureBytes);
   const unbind = [() => loop.stop(), link.unlink, compass, watch, ...input];
-  const end = [sun, layers.dispose, graticule.dispose,
-    () => markers.dispose()];
+  const end = [sun, layers.dispose, graticule.dispose, () => markers.dispose()];
   const teardown = [...unbind, sites.stop, ...end, moon.dispose, devTools];
   return () => [...teardown, () => disposeStage(stage)].forEach((fn) => fn());
 }

@@ -63,8 +63,8 @@ export interface OnFootParts {
   /** The view's tier, shared by its scene and its rings (VENT-49). */
   readonly viewTier: ViewTier;
   /**
-   * The hours the widgets show: their hour says if it is night, and on
-   * desktop the horizon strip under the view reads them.
+   * The hours the widgets show: the night's notice counts from them, and
+   * on desktop the horizon strip under the view reads them.
    */
   readonly hours?: HoursResult | undefined;
 }
@@ -108,15 +108,15 @@ export function useOnFoot(parts: OnFootParts, report: Recorder) {
   const bodies = useMemo(() => (placed && sky
     ? seenBodies(placed, profile, sky) : []), [placed, profile, sky]);
   const seed = seedOf(parts.site);
-  const night = useNight(parts.site, ground.atMs, profile, parts.hours);
-  const dark = night.night;
   const input = useMemo<SceneInput | null>(() => {
     if (!placed || !ring || !sky) return null;
     const words = sceneWords(i18n, bodies);
     const earthSpin = spinOf(parts.site.lat, sky, ground.atMs ?? 0);
     return { tiles: [placed], ring, profile, seed, sky, earthSpin,
-      startYawDeg, words, night: dark };
+      startYawDeg, words };
   }, [placed, ring, sky, profile, seed, startYawDeg, bodies, i18n,
-    parts.site.lat, ground.atMs, dark]);
+    parts.site.lat, ground.atMs]);
+  const night = useNight(parts.site, sky, profile,
+    { atMs: ground.atMs, hours: parts.hours });
   return { ...ground, input, bodies, startYawDeg, profile, night };
 }

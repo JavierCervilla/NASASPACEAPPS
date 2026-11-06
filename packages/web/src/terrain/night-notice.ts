@@ -34,13 +34,9 @@
  * Where NASA's maps put the point in permanent shadow there is no sunrise
  * to wait for, and the site's own note says so: no notice.
  *
- * Whether it is night is read from the same hour (VENT-106), not from the
- * exact instant: the widgets, the pill and the strip all answer by the
- * hour the views show, so the scene's light, the caption and the notice
- * answering by it too keep the view from saying night beside a widget
- * that still counts down to sunset. The price is that, within the hour
- * of a sunrise or a sunset, the view's light turns up to an hour off the
- * Sun it draws.
+ * The notice speaks for the widgets' hour (VENT-106), so it shows when
+ * that hour's sample has no Sun, even if the scene, which lights by the
+ * Sun it draws at the exact instant, is still by day (use-night.ts).
  */
 import {
   computedHours,
@@ -71,12 +67,6 @@ export interface NightNotice {
   readonly rise: string;
 }
 
-/** Whether it is night and, then, the notice; null by day. */
-export interface NightAnswer {
-  readonly night: boolean;
-  readonly notice: NightNotice | null;
-}
-
 /** The simulator's hours of the point from `from`, as the views shade them. */
 function computedAhead(
   place: NightPlace,
@@ -105,31 +95,22 @@ function hoursAhead(
 }
 
 /**
- * The night at `atMs` by the hour the views show, from `shown` (the
- * widgets' hours; null while there are none) or the simulator's.
+ * The notice at the hour of `atMs`, from `shown` (the widgets' hours;
+ * null while there are none) or the simulator's; null when that hour has
+ * the Sun, or where it never comes.
  */
-export function nightAnswer(
+export function nightNotice(
   place: NightPlace,
   atMs: number,
   shown: readonly HourSample[] | null,
   i18n: I18n,
-): NightAnswer {
+): NightNotice | null {
   const hours = hoursAhead(place, atMs, shown);
   const now = hours[0];
-  if (!now || hasSun(now)) return { night: false, notice: null };
-  if (now.sunHidden === true) return { night: true, notice: null };
+  if (!now || hasSun(now) || now.sunHidden === true) return null;
   const span = timeLeft(hours, now, (hour) => !hasSun(hour), i18n);
-  return { night: true, notice: {
+  return {
     title: i18n.t('onFoot.nightTitle'),
     rise: i18n.t('onFoot.nightRise', { span }),
-  } };
-}
-
-/** The notice at `atMs`, or null when the Sun is up or never comes. */
-export function nightNotice(
-  place: NightPlace,
-  atMs: number,
-  i18n: I18n,
-): NightNotice | null {
-  return nightAnswer(place, atMs, null, i18n).notice;
+  };
 }

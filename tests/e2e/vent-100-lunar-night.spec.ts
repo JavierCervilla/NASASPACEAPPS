@@ -27,9 +27,10 @@
  * The lunar night in the 3D view (VENT-100, the human's «intermediate» night): on the recorded IM-2 relief, at night the
  * view says when the Sun rises (the «Sunrise in» widget's count) and its caption says the light is added; the Earth's
  * light reaches the ground when the Earth is over the terrain (before VENT-100 the Sun's mask put it out at night); by
- * day neither shows; and on a phone the notice is never cut. VENT-106: the notice, the caption and the scene answer by the
- * hour the widgets show, the notice keeps clear of the compass and of the scale's labels, and it is measured again when
- * the text size changes.
+ * day neither shows; and on a phone the notice is never cut. VENT-106: the light and the caption follow the Sun drawn at
+ * the instant and the notice the hour the widgets show, so within a transition hour the ground is lit as the hour after
+ * it; the notice keeps clear of the compass and of the scale's labels, and it is measured again when the text size
+ * changes.
  */
 import { expect, test, type Browser, type BrowserContextOptions, type Locator, type Page } from '@playwright/test';
 import sharp from 'sharp';
@@ -52,6 +53,16 @@ const EARTH_HIDDEN = new Date('2026-11-10T00:00:00Z');
 const SUNSET = new Date('2026-11-15T10:40:00Z');
 /** The Sun rises over it at 06:50 UTC, but the hour's sample (06:00) is night. */
 const SUNRISE = new Date('2026-11-15T06:50:00Z');
+/** After those hours: the Sun as far behind the terrain, and as far up, as in them. */
+const AFTER_SUNSET = new Date('2026-11-15T11:05:00Z');
+const AFTER_SUNRISE = new Date('2026-11-15T07:05:00Z');
+/**
+ * The ground's spread under the skyline (p90 − p50) in a sunset hour may not fall under this share of the hour after's:
+ * lit by day with the Sun behind the ridge, the rejected build of VENT-106 drew a flat grey slab (0.0024 against 0.026).
+ */
+const SPREAD_SHARE = 0.5;
+/** How much brighter the ground of a sunrise hour may be than the hour after's (the rejected build: +74 %). */
+const SUNRISE_MARGIN = 1.15;
 /** Sun +6.7° at IM-2: day. */
 const DAY = new Date('2026-11-22T00:00:00Z');
 const START_MS = 30_000;
@@ -182,6 +193,41 @@ for (const [device, use] of [
   });
 }
 
+/** The ground's mean, median and 90th percentile linear luminance under the skyline, with the view's texts at `at`. */
+async function groundStatsAt(browser: Browser, options: BrowserContextOptions, at: Date) {
+  const context = await browser.newContext(options);
+  try {
+    const page = await context.newPage();
+    await open(page, at);
+    const texts = { note: await note(page).textContent(), notice: await notice(page).count(),
+      rise: await notice(page).count() ? await notice(page).textContent() : null };
+    await page.addStyleTag({ content: '.on-foot__labels { visibility: hidden !important; }' });
+    await shot(page, `${options.isMobile ? 'phone' : 'desktop'}-ground-${at.toISOString().slice(0, 16)}`);
+    return { ...texts, ...await groundStats(page) };
+  } finally {
+    await context.close();
+  }
+}
+
+/** The ground's luminance under the skyline as `groundLuminance` reads it: mean, p50 and p90. */
+async function groundStats(page: Page): Promise<{ mean: number; p50: number; p90: number }> {
+  await page.addStyleTag({ content: '.on-foot__top { visibility: hidden !important; }' });
+  const box = (await host(page).boundingBox())!;
+  const floor = await page.evaluate(() => Math.min(
+    document.querySelector('.sheet')?.getBoundingClientRect().top ?? Infinity,
+    document.querySelector('.tab-bar')?.getBoundingClientRect().top ?? Infinity));
+  const bottom = Math.min(box.y + box.height, floor) - 4;
+  const height = Math.min(box.height * 0.2, 60);
+  const clip = { x: box.x + box.width * 0.1, y: bottom - height, width: box.width * 0.8, height };
+  const raw = await sharp(await page.screenshot({ clip })).removeAlpha().raw().toBuffer();
+  const linear = (v: number): number => { const c = v / 255; return c <= 0.04045 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4; };
+  const ys: number[] = [];
+  for (let i = 0; i < raw.length; i += 3) ys.push(0.2126 * linear(raw[i]!) + 0.7152 * linear(raw[i + 1]!) + 0.0722 * linear(raw[i + 2]!));
+  ys.sort((a, b) => a - b);
+  const mean = ys.reduce((sum, y) => sum + y, 0) / ys.length;
+  return { mean, p50: ys[Math.floor(ys.length * 0.5)]!, p90: ys[Math.floor(ys.length * 0.9)]! };
+}
+
 /** Whether two boxes share any pixel. */
 function meet(a: Box, b: Box): boolean {
   return a.x < b.x + b.width && b.x < a.x + a.width && a.y < b.y + b.height && b.y < a.y + a.height;
@@ -212,16 +258,22 @@ for (const [device, use] of [
   test.describe(`one night answer on a ${device} (VENT-106)`, () => {
     test.use(use);
 
-    test('in the hour of a sunset the view says day, as the widgets\' hour does', async ({ page }) => {
-      await open(page, SUNSET);
-      await expect(note(page)).toHaveText(DAY_NOTE);
-      await expect(notice(page)).toHaveCount(0);
+    test('in the hour of a sunset the light is the night\'s, as the Sun drawn; the notice waits for the widgets\' hour', async ({ browser, baseURL }) => {
+      const options: BrowserContextOptions = { ...use, serviceWorkers: 'block', ...(baseURL ? { baseURL } : {}) };
+      const [inHour, after] = [await groundStatsAt(browser, options, SUNSET), await groundStatsAt(browser, options, AFTER_SUNSET)];
+      console.log(`${device}: sunset hour ${JSON.stringify(inHour)}, after ${JSON.stringify(after)}`);
+      expect(inHour.note).toBe(NIGHT_NOTE);
+      expect(inHour.notice).toBe(0);
+      expect(inHour.p90 - inHour.p50).toBeGreaterThan((after.p90 - after.p50) * SPREAD_SHARE);
     });
 
-    test('in the hour of a sunrise the view says night and counts the widgets\' hour', async ({ page }) => {
-      await open(page, SUNRISE);
-      await expect(note(page)).toHaveText(NIGHT_NOTE);
-      await expect(notice(page)).toContainText('The Sun rises in 1 h');
+    test('in the hour of a sunrise the ground is lit as after it; the notice counts the widgets\' hour', async ({ browser, baseURL }) => {
+      const options: BrowserContextOptions = { ...use, serviceWorkers: 'block', ...(baseURL ? { baseURL } : {}) };
+      const [inHour, after] = [await groundStatsAt(browser, options, SUNRISE), await groundStatsAt(browser, options, AFTER_SUNRISE)];
+      console.log(`${device}: sunrise hour ${JSON.stringify(inHour)}, after ${JSON.stringify(after)}`);
+      expect(inHour.note).toBe(DAY_NOTE);
+      expect(inHour.rise).toContain('The Sun rises in 1 h');
+      expect(inHour.mean).toBeLessThan(after.mean * SUNRISE_MARGIN);
     });
 
     for (const scale of device === 'phone' ? [1, 2] : [1]) {

@@ -74,8 +74,6 @@ export interface SceneInput {
   /** Where the view opens: the Sun's azimuth, or the Earth's. */
   readonly startYawDeg: number;
   readonly words: SceneWords;
-  /** Lit as the night (night-notice.ts: the hour the widgets show). */
-  readonly night: boolean;
 }
 
 /**

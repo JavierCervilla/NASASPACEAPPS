@@ -24,32 +24,52 @@
  */
 
 /**
- * Whether the view is at night (VENT-100) and, then, the notice of when
- * the Sun rises: one answer for the scene's light, the caption and the
- * notice, read from the hour the widgets show (VENT-106, night-notice.ts
- * says why), worked out once per hour of the instant.
+ * Whether the view is at night (VENT-100), the Sun under the point's
+ * horizon at the instant, the answer the scene lights by and the caption
+ * says; and the notice of when it rises, by the hour the widgets show
+ * (VENT-106), worked out once per hour of the instant.
+ *
+ * The two may disagree within the hour of a sunrise or a sunset: the
+ * light speaks for the Sun the scene draws, which has to be the exact
+ * instant (lit by day with the Sun already behind the ridge, the view is
+ * a flat grey slab), while the notice speaks for the widgets' hour, so
+ * its count is the «Sunrise in» widget's.
  */
 import { useMemo } from 'react';
 import { HOUR_MS, type HorizonProfile } from '@ventana/sim';
-import { nightAnswer, type NightAnswer } from '../../terrain/night-notice';
+import { isNight } from '../../terrain/night-light';
+import { nightNotice, type NightNotice } from '../../terrain/night-notice';
+import type { SkyDirs } from '../../terrain/scene/scene-types';
 import type { HoursResult } from '../../phone/widgets-loader';
 import { useI18n } from '../i18n-context';
 import type { OnFootSite } from './use-on-foot';
 
-export type Night = NightAnswer;
+export interface Night {
+  /** The scene's answer: the Sun under the horizon at the instant. */
+  readonly night: boolean;
+  /** «Lunar night here · The Sun rises in …», by the widgets' hour. */
+  readonly notice: NightNotice | null;
+}
+
+/** The instant the view shows and the hours its widgets show. */
+interface When {
+  readonly atMs: number | null;
+  readonly hours: HoursResult | undefined;
+}
 
 export function useNight(
   site: OnFootSite,
-  atMs: number | null,
+  sky: SkyDirs | null,
   profile: HorizonProfile | null,
-  hours: HoursResult | undefined,
+  { atMs, hours }: When,
 ): Night {
   const i18n = useI18n();
+  const night = sky !== null && isNight(sky, profile);
   const hour = atMs === null ? null : Math.floor(atMs / HOUR_MS) * HOUR_MS;
   const shown = hours?.kind === 'ready' ? hours.hours : null;
   const { lat, lonEast, shadow } = site;
-  return useMemo(() => (hour === null
-    ? { night: false, notice: null }
-    : nightAnswer({ lat, lonEast, profile, shadow }, hour, shown, i18n)),
+  const notice = useMemo(() => (hour === null ? null
+    : nightNotice({ lat, lonEast, profile, shadow }, hour, shown, i18n)),
   [hour, lat, lonEast, profile, shadow, shown, i18n]);
+  return { night, notice };
 }

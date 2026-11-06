@@ -405,6 +405,20 @@ describe('strategies', () => {
     const sync = await online.stores.get(API_CACHE)?.get(keep.syncUrl)?.text();
     expect(sync).toBe('1793000000000');
   });
+
+  // VENT-98: a binary terrain tile is kept and served offline as a JSON one is, byte for byte, with its type.
+  it('keeps a binary terrain tile as it keeps JSON, and serves it offline unchanged', async () => {
+    const bytes = Uint8Array.from({ length: 4096 }, (_, i) => (i * 37) % 256);
+    const headers = { 'content-type': 'application/octet-stream' };
+    const online = fakeNet(() => Promise.resolve(new Response(bytes, { headers })));
+    const keep = { cache: API_CACHE, syncUrl: 'https://ventana.test/__ventana-synced-at' };
+    const url = 'https://ventana.test/api/v1/terrain/tiles/polar-south/0/37/67?v=57129b75&format=bin';
+    await apiFirst(online.net, new Request(url), keep);
+    await online.settled();
+    const kept = await apiFirst({ ...online.net, fetch: down }, new Request(url), keep);
+    expect(kept.headers.get('content-type')).toBe('application/octet-stream');
+    expect(new Uint8Array(await kept.arrayBuffer())).toEqual(bytes);
+  });
 });
 
 describe('the API cache', () => {

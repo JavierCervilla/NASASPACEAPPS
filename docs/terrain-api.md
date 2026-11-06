@@ -17,6 +17,7 @@ offline script and other projects call the same functions:
 | `dem-grid.ts` | `DemGrid`: a grid's size, projection (polar stereographic or simple cylindrical, as the PDS labels define them) and a `dnAt(line, sample)` accessor; `demHeightAt` (bilinear), `pixelOf`, `arrayGrid` |
 | `tile-scheme.ts`, `tile-key.ts`, `tile-georef.ts`, `tile-locate.ts`, `tile-ring.ts`, `tile-candidates.ts` | The global tiling of VENT-46: `schemeFor`, `tileGeoref`, `sampleDirection`, `tileContaining`, `tilesAround`, `isTileKey` (see «Aligned tiles with levels of detail») |
 | `lod-tile.ts`, `tile-quant.ts` | `alignedTile(grids, key)`: the heights at a tile's nodes; `quantiseHeights` / `encodeQuantised` / `decodeQuantised`: the 16-bit form |
+| `tile-binary.ts`, `tile-binary-header.ts`, `tile-predict.ts` | `encodeTileBinary` / `decodeTileBinary`: a levelled tile in binary, its 16-bit values as residuals of a 2D predictor (VENT-98, see «The tile in binary») |
 | `terrain-tile.ts`, `tile-codec.ts` | `terrainTile(grids, centre, sizeM, n)`: an `n` x `n` height grid in the local tangent plane, and `encodeHeights` / `decodeHeights` (little-endian float32 in base64) |
 | `ray-stops.ts`, `ray-march.ts` | `terrainHorizon(bands, observer, bins = 720)`: great-circle rays on the sphere, curvature included, each stop reading the first grid of its band that has a height |
 | `terrain-hours.ts` | `terrainHours(hours, profile)`: marks `sunAboveTerrain`, `sunDisc` and `earthAboveTerrain` on each hour; `hasSun`, `hasEarth` and `earthLink` honour them |
@@ -334,6 +335,9 @@ computation for the gate and the limiter.
 
 - `lat`, `lon`: as `/horizon` (0.01° grid, `lon` east from -180 to 360).
 - `levels`: 1 to 4, default 3 (to 32 km). Our choice: three levels are about 27 tiles.
+- `format`: `bin` lists the tiles' binary urls (`…?v=<version>&format=bin`, see «The tile in binary»); any other value,
+  or none, lists the JSON urls. Unknown values are not an error on purpose: a server without binary tiles ignores the
+  parameter too, so a client that asks for `bin` reads each tile by its answer's `Content-Type` and works with both.
 
 Level `L` covers a square of half-side one tile of that level around the point (2, 8, 32, 128 km). On the polar
 plane that is at most 3 x 3 tiles a level; on the lat-lon grid, where a tile is narrower than it is tall, up to 6 x 3
@@ -355,7 +359,7 @@ max-age=300`; 400 (bad point or `levels`), 503 (`terrain data is not installed`)
 function has it in `@ventana/sim`: `tilesAround({ latDeg, lonEastDeg }, levels)`, and `tileContaining(scheme, level,
 lat, lon)` gives the tile under a point at any level, so a walking viewer can find the next tiles without the server.
 
-### The tile: `GET /api/v1/terrain/tiles/{scheme}/{level}/{x}/{y}[?v=<version>]`
+### The tile: `GET /api/v1/terrain/tiles/{scheme}/{level}/{x}/{y}[?v=<version>][&format=bin]`
 
 `scheme` is `polar-south`, `polar-north` or `latlon`; `level` 0 to 3; `x`, `y` whole numbers (negative allowed on the
 polar plane). A tile `(x, y)` covers `[x * size, (x + 1) * size]` on each axis of the plane (X east, Y up, see below),
@@ -407,7 +411,7 @@ changes the token the ring route hands out. Without `v` it is `max-age=86400`; u
 current it is `max-age=300` (the answer is the current tiles, and says its `version`, so the client re-reads the ring).
 `If-None-Match` with the current ETag answers **304** before the limiter and the gate: a revalidation costs nothing.
 
-**Errors and limits.** 400 (bad scheme, level, `x`, `y` or `v`, or a key outside the grid of its scheme and level), 404
+**Errors and limits.** 400 (bad scheme, level, `x`, `y`, `v` or `format`, or a key outside the grid of its scheme and level), 404
 (no tier on this server covers a single node of the tile), 503 (`terrain data is not installed`, or the queue is full,
 with `Retry-After: 2`: the queue drains in tenths of a second, VENT-78), 429. Every `/api/*` error answer is logged as
 one line (VENT-45), and every answer slower than 1 s as `api slow:` (VENT-78); a tile's path is written with `{x}/{y}`
@@ -442,5 +446,67 @@ a seventh of the 4 km tile's 352 kB. On a synthetic rough surface (a 400 m swell
 worse than LOLA's) it gzips to 31.9 kB against 63.9 kB for the same tile in float32; the API gzips every JSON answer
 over 1 kB. Measured on the test fixture (a 600 x 600 polar grid and a coarse globe, Node 22, cold LRU): 20 to 100 ms a
 tile (a probing pass and a real one over 16 641 nodes), `tilesAround` 0.05 ms. Not measured on the real 48.6 GB volume.
-A byte-plane shuffle of the 16-bit values (high bytes first) would shrink the gzip further; it is not built.
+The binary form below is smaller still over the wire (measured on the recorded LOLA tiles).
+
+### The tile in binary (VENT-98)
+
+With `format=bin` the tile route answers the same tile as `application/octet-stream`; without it, the JSON above,
+unchanged. Same ETag, 304, `Cache-Control`, limiter, gate, slots and disk cache: the cache keeps the JSON answer and the
+binary is encoded from it on the way out (0.46 ms a tile in Node 22), so it costs no memory or disk. The API's
+`compress()` gzips it (Hono leaves `application/octet-stream` out of its list; `src/compressible.ts` adds it), and then
+weakens the ETag to `W/"<version>"`, which `If-None-Match` still matches. Little-endian throughout:
+
+| Offset | Type | Field |
+|---|---|---|
+| 0 | 4 bytes | magic, ASCII `VLTB` |
+| 4 | uint8 | format, 1 |
+| 5 | uint8 | scheme: 0 `polar-south`, 1 `polar-north`, 2 `latlon` |
+| 6 | uint8 | level |
+| 7 | uint8 | predictor: 1, the gradient below |
+| 8, 12 | int32 | `x`, `y` |
+| 16 | uint16 | `n` |
+| 18 | uint16 | `noData`, 65535 |
+| 20 | int32 | `baseUnits` |
+| 24 | float64 | `quantumM` |
+| 32, 40, 48 | float64 | `resolutionM`, `minM`, `maxM` |
+| 56 | float64 | `coverage` |
+| 64 | uint32 | `version`, its eight hex digits as a number |
+| 68 | `n * n` bytes | the low bytes of the residuals |
+| 68 + `n * n` | `n * n` bytes | their high bytes |
+
+The georeference is not sent: it is `tileGeoref(key)` of `@ventana/sim`, the very function the server fills the JSON's
+`georef` with. Neither is `tiers` (the viewer reads `resolutionM` only). **Residuals**: the values `q` in reading order
+(rows from north, columns from west) are predicted from the ones before them, `left + up - upLeft` inside the tile, the
+left value along the first row, the value above down the first column and 0 for the first; the difference
+`q - prediction` is taken modulo 65536 as a signed 16-bit number and zigzagged (0, -1, 1, -2… become 0, 1, 2, 3…), so any
+16-bit input, `noData` included, comes back exactly: `q = (prediction + unzigzag(r)) mod 65536`. Splitting the low and
+high bytes into planes puts the mostly zero high bytes of small residuals together. `decodeTileBinary` of
+`@ventana/sim` reads it (and `dequantiseHeights` gives the metres); a body that is not a tile throws `RangeError`.
+
+**Why this predictor.** Measured on the 78 recorded LOLA tiles of IM-2 and Oceanus (`tests/e2e/fixtures/terrain-ring-*`,
+gzip level 6, mean bytes a tile at IM-2's level 0): left 11 339, up 10 733, average 10 327, Paeth 10 243, LOCO-I's
+median 9 599, **gradient 8 850**; the gradient was the smallest at every level of both places but Oceanus's level 3, where
+the average and the median were 3 % smaller. Byte planes against a varint of the residuals: 1 to 2 % larger at level 0,
+1 to 8 % smaller at levels 1 to 3, and of fixed size.
+
+**Size, measured through the API's own `compress()`** (IM-2's recorded tiles, `Accept-Encoding: gzip`):
+
+| Level | JSON gzipped | Binary gzipped | |
+|---|---|---|---|
+| 0 | 25 638 B | 8 943 B | -65 % |
+| 1 | 30 898 B | 13 918 B | -55 % |
+| 2 | 33 013 B | 16 076 B | -51 % |
+| 3 | 33 107 B | 20 657 B | -38 % |
+| the 39-tile ring of 4 levels | 1 180 819 B | 563 167 B | -52 % |
+
+A view opening at IM-2 (high tier, 36 tiles), measured in Chromium on the wire against the same app serving the
+recorded tiles: 1 105 499 bytes of tile bodies as JSON, 536 928 as binary (-51 %). On Oceanus (lat-lon, smoother) level
+0 is 4.6 kB against 29.5 kB. Decoding a tile (Node 22, the same V8 as Chromium):
+0.25 ms from the binary against 1.7 to 2.0 ms from the JSON (`JSON.parse`, base64, the 16-bit values to metres).
+
+**Negotiation, safe in both deploy orders.** The web asks the list with `format=bin` and builds no tile url itself: it
+fetches what the list hands out and reads each answer by its `Content-Type` (`application/octet-stream`: the binary
+codec; anything else: the JSON). A new web on an old API gets JSON urls (the old API ignores `format`); an old web (an
+installed app keeps its scripts) never asks and gets JSON. The service worker keeps a binary answer as it keeps a JSON
+one (`ventana-api-v1`, its bytes and type, offline included).
 

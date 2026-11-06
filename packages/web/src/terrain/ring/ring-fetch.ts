@@ -38,8 +38,8 @@ import { snapPoint } from '../../pin/custom-point';
 import type { LatLon } from '../../lib/polar-projection';
 import { countByLevel, settleEmpty } from './ring-count';
 import { watchNear } from './ring-absent';
-import { getJson, inFlight, type Waits } from './ring-http';
-import { parseRing, parseTile, type RingEntry } from './ring-answer';
+import { getAnswer, inFlight, type Waits } from './ring-http';
+import { parseRing, tileOfAnswer, type RingEntry } from './ring-answer';
 import type { RingFeed, RingRequest, RingSource } from './ring-source';
 import type { TileScheme } from '@ventana/sim';
 
@@ -50,11 +50,16 @@ const NEAR_LEVELS = 2;
 const ABSENT = Symbol('absent');
 const SITES_PATH = /\/sites$/;
 
-/** The ring route's URL for `point`, on the server's 0.01° grid. */
+/**
+ * The ring route's URL for `point`, on the server's 0.01° grid. It asks for
+ * binary tiles (VENT-98): an API that has them lists binary urls, an older
+ * one ignores the parameter and lists JSON ones; each tile is read by its
+ * answer's Content-Type, so either works.
+ */
 export function ringUrl(sitesUrl: string, point: LatLon, levels: number) {
   const at = snapPoint(point) ?? point;
   const query = new URLSearchParams({ lat: at.lat.toFixed(2),
-    lon: at.lonEast.toFixed(2), levels: String(levels) });
+    lon: at.lonEast.toFixed(2), levels: String(levels), format: 'bin' });
   return `${sitesUrl.replace(SITES_PATH, '/terrain/tiles')}?${query}`;
 }
 
@@ -75,13 +80,13 @@ async function fetchTile(
   io: { feed: RingFeed; signal: AbortSignal },
 ): Promise<boolean> {
   const url = new URL(e.url, d.base()).toString();
-  const body = await getJson(d.fetcher, url, d.waits, io.signal)
+  const body = await getAnswer(d.fetcher, url, d.waits, io.signal)
     .catch((error: unknown) => {
       if (io.signal.aborted) throw error;
       return error instanceof NoTerrainHereError ? ABSENT : null;
     });
   const tile = body === null || body === ABSENT
-    ? null : parseTile(body, e, list.scheme);
+    ? null : tileOfAnswer(body, e, list.scheme);
   if (tile && !io.signal.aborted) io.feed.tile(tile);
   return body === ABSENT;
 }
@@ -94,7 +99,7 @@ async function loadRing(
   io: { feed: RingFeed; signal: AbortSignal },
 ): Promise<void> {
   const url = ringUrl(sitesUrl, request.point, request.levels);
-  const list = parseRing(await getJson(d.fetcher, url, d.waits, io.signal));
+  const list = parseRing(await getAnswer(d.fetcher, url, d.waits, io.signal));
   if (!list) throw new TransientHorizonError(null, 'ring: not a ring');
   io.feed.scheme(list.scheme);
   const wanted = request.wanted(list.scheme, list.entries);

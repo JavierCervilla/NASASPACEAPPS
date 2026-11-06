@@ -64,7 +64,14 @@ epic: `VENT-1` (Dashboard project «Ventana Lunar», prefix `VENT`).
   at two levels, within the two steps (`levelQuantumM`: 0.1, 0.1, 0.2 and 0.4 m at levels 0 to 3) and where the levels read different LOLA tiers
   by metres, which the viewer stitches at its level boundaries; urls carry a version token of the tiers present and are immutable (ETag, 304); pure core in `@ventana/sim`
   (`tile-scheme.ts`, `tile-georef.ts`, `tile-ring.ts`, `lod-tile.ts`, `tile-quant.ts`), server in
-  `src/terrain/lod-*.ts`, with its own limiter, cache (`TERRAIN_LOD_CACHE_MB`), gate (`TERRAIN_LOD_MAX_RUNNING`) and per-address slots (`TERRAIN_LOD_PER_IP`, `src/ip-slots.ts`), so a tile flood cannot fill the horizon's queue. The server fills that volume itself (VENT-43): with
+  `src/terrain/lod-*.ts`, with its own limiter, cache (`TERRAIN_LOD_CACHE_MB`), gate (`TERRAIN_LOD_MAX_RUNNING`) and per-address slots (`TERRAIN_LOD_PER_IP`, `src/ip-slots.ts`), so a tile flood cannot fill the horizon's queue. A tile also
+  comes in binary (VENT-98): a list asked with `format=bin` hands out `…?v=…&format=bin` urls answered as
+  `application/octet-stream` (a 68-byte header, then the heights as residuals of a 2D gradient predictor, zigzagged, in
+  two byte planes: `tile-binary.ts`, `tile-predict.ts`), encoded from the cached JSON on the way out (0.5 ms) and gzipped
+  by the API's `compress()` (`src/compressible.ts`, which adds that type); on IM-2's recorded tiles 8.9 kB gzipped at
+  level 0 against 25.6 kB of JSON, a view opening there 537 kB against 1.11 MB (36 tiles, measured in Chromium). Any
+  other `format` lists JSON urls, as an API
+  without binary tiles does, so a new web works with an old API and an old web never sees binary. The server fills that volume itself (VENT-43): with
   `TERRAIN_FETCH_TIERS` (`all` or tier ids) it fetches the missing tiers in the background once it listens, one file at
   a time, resumable (`.part` and HTTP Range), sha256-checked, stopping when the volume would keep under 2 GB free, and
   re-scans after each tier so it serves without a restart (`src/terrain/terrain-boot.ts`; progress at
@@ -535,8 +542,8 @@ Every visible change follows `.claude/skills/apple-design/SKILL.md` (vendored fr
   (`src/terrain/look-home.ts`), at once under reduced motion; a drag or an arrow stops them. Held by
   `tests/heading-compass.test.ts` and the compass cases of `tests/e2e/terrain-view.spec.ts`.
   The relief comes **only from our API, as rings of real 3D relief** from the aligned tiles with levels of detail
-  (VENT-46, `docs/terrain-api.md`): `GET /api/v1/terrain/tiles?lat&lon&levels` lists the tiles and each is fetched from
-  its immutable `?v=` URL, at most 6 in flight, nearest and finest first (`terrain/ring/ring-fetch.ts`, behind a
+  (VENT-46, `docs/terrain-api.md`): `GET /api/v1/terrain/tiles?lat&lon&levels&format=bin` lists the tiles and each is fetched from
+  its immutable `?v=` URL and read by its answer's Content-Type, binary or JSON (VENT-98, `ring-http.ts`, `ring-answer.ts`), at most 6 in flight, nearest and finest first (`terrain/ring/ring-fetch.ts`, behind a
   **`RingSource`** (`ring-source.ts`): the seam the Web Worker streamer of VENT-47 plugs into; it feeds `RingTile`s,
   plain numbers a worker can transfer, to a `RingStore`). Level 0 (2 km, 15.6 m nodes) is the near ground, level 1 (8
   km, 62.5 m) the mid relief, levels 2 and 3 (32 and 128 km, 250 m and 1 km) the far relief, so the ridges that hide

@@ -59,7 +59,11 @@ const GLARE_R_DEG = 2.5;
  * their form where the Sun does not reach. Three.js divides
  * indirect light by pi: this is a dim grey on level ground.
  */
-const FILL = { sky: 0x9097a8, ground: 0x8a857d, intensity: 1.1 } as const;
+export const FILL = {
+  sky: 0x9097a8, ground: 0x8a857d, intensity: 1.1,
+} as const;
+/** The ground's bounce by day, warm as the sunlit regolith. */
+export const BOUNCE_COLOUR = 0xe8e0d2;
 /** The Sun's key light, relative to which the fill is set. */
 export const KEY_INTENSITY = 4;
 
@@ -69,7 +73,14 @@ export interface SkyParts {
   readonly earth: Mesh<SphereGeometry, ShaderMaterial>;
   readonly light: DirectionalLight;
   readonly earthshine: DirectionalLight;
+  /**
+   * The ground's bounce by day; at night, when there is no bounce, the
+   * low reading light (night-light.ts), so the night adds no light the
+   * day's shaders would pay for.
+   */
   readonly bounce: DirectionalLight;
+  /** The hemisphere floor: lowered at night (night-light.ts). */
+  readonly fill: HemisphereLight;
 }
 
 /** A sphere `distance` away that looks `radiusDeg` across. */
@@ -113,7 +124,7 @@ export function createSky(seed: number, shadowPx: number): SkyParts {
   // Earthshine, the ground's bounce and a floor lifted for legibility.
   const fill = new HemisphereLight(FILL.sky, FILL.ground, FILL.intensity);
   const earthshine = new DirectionalLight(0xbfd2ff, 0);
-  const bounce = new DirectionalLight(0xe8e0d2, 0);
+  const bounce = new DirectionalLight(BOUNCE_COLOUR, 0);
   group.add(stars, sun, earth, light, light.target, fill, earthshine, bounce);
-  return { group, sun, earth, light, earthshine, bounce };
+  return { group, sun, earth, light, earthshine, bounce, fill };
 }

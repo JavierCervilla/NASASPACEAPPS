@@ -586,6 +586,26 @@ Every visible change follows `.claude/skills/apple-design/SKILL.md` (vendored fr
   512 px on a phone, where its disc is some 30 device pixels: `earthMapUrl`, `scene/surface-maps.ts`, VENT-94); faint seeded stars; the fill is
   the Earth's light by its lit share, the ground's bounce by the Sun's height and a dim sky floor (`sky-light.ts`), and
   when the Sun does not reach the point the exposure opens up instead of faking sunlight (`exposureFor`, `stage.ts`).
+  **Lunar night** (VENT-100, the human's «intermediate» night on the canvas): while the Sun is under the point's
+  horizon (`isNight`, `src/terrain/night-light.ts`: the horizon profile's answer where there is one, else the level;
+  the answer `hasSun` gives the widgets) the view keeps a quarter of the day's hemisphere floor, the Earth's light is a
+  real directional light from the Earth, half the key at most, by its lit share and its height over that horizon (none
+  while the terrain hides it), and the bounce light, which has nothing to bounce at night, becomes a low reading light
+  from 300° and 10° up at 0.15 of the key, cool white and without shadows (`NIGHT_LIGHT`, `nightLight`; placed by
+  `scene/sky-place.ts`), so the night adds no light the day's shaders pay for; the exposure is the dark one (2.8). By
+  day nothing changes, to the pixel. The Sun's mask (`scene/sun-mask.ts`) still multiplies all the direct light by day,
+  as the small shadows were tuned with, but at night only the Sun's: a wrapper of `RE_Direct` inserted after three's or
+  the ground's lunar one masks the first directional light alone while `uSunNight` is 1 (before, it also put out the
+  Earth's light, the only light of the night). The view then says «Lunar night here» over «The Sun rises in 8 d 16 h»
+  (`components/terrain/OnFootNight.tsx`, `src/terrain/night-notice.ts`, `use-night.ts`): the «Sunrise in» widget's
+  count, the simulator's hours from the instant's hour over the widgets' 30 days with the site's shadow and terrain
+  applied, through the widget's `timeLeft`; none for a site NASA's maps put in permanent shadow. It is a notice row in
+  the view's dark material over the caption (on a phone in the free band, hidden rather than cut when the band has no
+  room for it whole, `use-cut.ts`), and the caption's second line says «Earth: NASA Blue Marble · light added for
+  legibility» (`captionNote(i18n, night)`, `onFoot.captionNoteNight`). Held by `tests/lunar-night.test.ts` and
+  `tests/e2e/vent-100-lunar-night.spec.ts` (IM-2's recorded relief: the notice and the caption at 2026-11-06 15:04 UTC,
+  the ground about three times brighter with the Earth 4.2° over the terrain than 0.9° behind it, the day unchanged, the
+  notice whole in the phone's band at 200 % text and in the pseudo-locale).
   Safe start (VENT-69, after a Pixel 10's first frame took 1.6 s and its GPU reset): the ground's cost is set per tier in
   one place (`src/terrain/ground-policy.ts`, `groundPolicy(tier, leave)`): lunar photometry (`RE_Direct_Ground`), the
   second normal read (`antitile`), the `fwidth` footprint fade and the fine relief (no `fine-tiles/` request, no shader
@@ -674,7 +694,8 @@ Every visible change follows `.claude/skills/apple-design/SKILL.md` (vendored fr
   displaced mesh, fading by the pixel's footprint (about 13 m); slow noise alternates smooth dust and clusters.
   Rendering: ACES filmic tone mapping, `MeshStandardMaterial` everywhere, the Sun a hard key with a 60 m PCF shadow, baked
   contact occlusion on the stones (`contactAo`). Illustrative and said so in the caption («Fine detail illustrative · relief
-  LOLA 20 m» over «Earth: NASA Blue Marble · shadows lifted for legibility», `captionNote`, `onFoot.captionNote`): rounded rocks under
+  LOLA 20 m» over «Earth: NASA Blue Marble · shadows lifted and exposure raised 20 % for legibility», or at night «… · light
+  added for legibility», `captionNote`, `onFoot.captionNote`): rounded rocks under
   1 m seeded from the point (`seeded.ts`, `rocks.ts`), the regolith a CC0 photographed material (Poly Haven «Moon 02»,
   albedo and normal, 1K WebP in `src/terrain/maps/`, the normal lossy at q50 since VENT-94, 193 kB where q88 took 469 kB
   for the same rendered ground; maps built by `scripts/on_foot_maps.py`, ASSETS.md) tiled at 3.5 m and read twice, turned and at another

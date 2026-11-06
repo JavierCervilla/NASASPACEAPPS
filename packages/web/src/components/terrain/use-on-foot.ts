@@ -43,6 +43,7 @@ import { seedOf } from '../../terrain/seeded';
 import type { Recorder } from '../../terrain/report/recorder';
 import type { RingSource } from '../../terrain/ring/ring-source';
 import type { ViewTier } from '../../terrain/view-tier';
+import { useNight } from './use-night';
 import { useRing } from './use-ring';
 
 export interface OnFootSite {
@@ -109,5 +110,6 @@ export function useOnFoot(parts: OnFootParts, report: Recorder) {
       startYawDeg, words };
   }, [placed, ring, sky, profile, seed, startYawDeg, bodies, i18n,
     parts.site.lat, ground.atMs]);
-  return { ...ground, input, bodies, startYawDeg, profile };
+  const night = useNight(parts.site, sky, ground.atMs, profile);
+  return { ...ground, input, bodies, startYawDeg, profile, night };
 }

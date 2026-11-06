@@ -34,9 +34,12 @@ import type { Ridge } from './ridge';
 export const detailCaption = (i18n: I18n, resolutionM: number): string =>
   i18n.t('onFoot.caption', { res: i18n.number(resolutionM) });
 
-/** The caption's second line: the Earth's map, and the lifted shadows. */
-export const captionNote = (i18n: I18n): string =>
-  i18n.t('onFoot.captionNote');
+/**
+ * The caption's second line: the Earth's map, and the lifted shadows by
+ * day, or the light added at night (VENT-100).
+ */
+export const captionNote = (i18n: I18n, night = false): string =>
+  i18n.t(night ? 'onFoot.captionNoteNight' : 'onFoot.captionNote');
 
 /** «100 m», a distance ring's label. */
 export const ringLabel = (i18n: I18n, metres: number): string =>

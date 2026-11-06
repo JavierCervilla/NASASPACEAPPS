@@ -27,8 +27,8 @@
  * The on-foot view's stage (VENT-34): the focusable host the scene draws
  * in (React renders nothing inside it: the scene owns its canvas and
  * labels), the loader over it until it has drawn (VENT-60), the caption,
- * the far relief's chip and the compass (VENT-63) once it has, and what it
- * says when it cannot draw.
+ * the night's notice (VENT-100), the far relief's chip and the compass
+ * (VENT-63) once it has, and what it says when it cannot draw.
  */
 import type { ComponentProps, RefObject } from 'react';
 import { HeadingCompass } from '../compass/HeadingCompass';
@@ -36,6 +36,7 @@ import { useI18n } from '../i18n-context';
 import { FarChip } from './loader/FarChip';
 import { OnFootLoader, type LoaderProps } from './loader/OnFootLoader';
 import { OnFootCaption } from './OnFootCaption';
+import { OnFootNight } from './OnFootNight';
 import { OnFootStatus } from './OnFootStatus';
 import type { useOnFoot } from './use-on-foot';
 import type { SceneStatus } from './use-terrain-scene';
@@ -58,6 +59,30 @@ interface Props {
   readonly compass: ComponentProps<typeof HeadingCompass>;
 }
 
+interface TopProps {
+  readonly view: Props['view'];
+  /** The relief's resolution once the scene has drawn, else null. */
+  readonly resolution: number | null;
+  readonly drawn: boolean;
+}
+
+/** Over the scene: the night's notice, the caption and the far chip. */
+function StageTop({ view, resolution, drawn }: TopProps) {
+  const tile = view.tile.state;
+  const fine = tile.kind === 'ready' ? tile.ring.fine?.site ?? null : null;
+  return (
+    <div className="on-foot__top">
+      {resolution !== null && view.night.notice
+        ? <OnFootNight notice={view.night.notice} /> : null}
+      {resolution === null
+        ? null
+        : <OnFootCaption resolutionM={resolution} night={view.night.night}
+          fine={fine} />}
+      <FarChip progress={view.tile.progress} drawn={drawn} />
+    </div>
+  );
+}
+
 export function OnFootStageArea(props: Props) {
   const { view, host, status, onRetry, onCopyReport, altId } = props;
   const { t } = useI18n();
@@ -68,13 +93,7 @@ export function OnFootStageArea(props: Props) {
     <div className="on-foot__stage">
       <div ref={host} className="on-foot__host" tabIndex={0} role="application" aria-roledescription={t('onFoot.role')} aria-label={t('onFoot.view')} aria-describedby={altId} data-status={status} />
       {props.loader ? <OnFootLoader {...props.loader} /> : null}
-      <div className="on-foot__top">
-        {resolution === null
-          ? null
-          : <OnFootCaption resolutionM={resolution}
-            fine={tile.kind === 'ready' ? tile.ring.fine?.site ?? null : null} />}
-        <FarChip progress={view.tile.progress} drawn={props.drawn} />
-      </div>
+      <StageTop view={view} resolution={resolution} drawn={props.drawn} />
       {props.drawn && status === 'ready'
         ? <HeadingCompass {...props.compass} /> : null}
       <OnFootStatus located={view.located} tile={tile} scene={status}

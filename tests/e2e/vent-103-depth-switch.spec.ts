@@ -101,21 +101,27 @@ test('?depth=reversed reverses the depth where EXT_clip_control is, else keeps t
   expect(drawn.report).toMatch(clip ? /depth reversed · \d+ bits/ : /depth log \(asked reversed\)/);
 });
 
-test('the reversed depth marks no body behind the eye, as the logarithmic one does', async ({ browser }) => {
-  const seen: (readonly (string | null)[])[] = [];
-  for (const query of ['', '&depth=reversed']) {
-    const page = await browser.newPage();
-    const opened = await open(page, query);
-    // Half a turn (5° a key): the body the view opened facing is now straight behind the eye.
-    await host(page).focus();
-    const frames = Number(await host(page).getAttribute('data-frames'));
-    for (let k = 0; k < 36; k += 1) await page.keyboard.press('ArrowRight');
-    await expect.poll(async () => Number(await host(page).getAttribute('data-frames'))).toBeGreaterThan(frames);
-    await expect(host(page)).toHaveAttribute('data-working', 'false');
-    seen.push([...opened.marks, await host(page).getAttribute('data-sun-at'),
-      await host(page).getAttribute('data-earth-at')]);
-    await page.close();
-  }
-  expect(seen[0]?.slice(2)).toContain('');
-  expect(seen[1]).toEqual(seen[0]);
+/** Opens the view, turns it half a turn (5° a key) and returns every Sun and Earth mark, at opening and after. */
+async function marksAfterHalfTurn(page: Page, query: string): Promise<(string | null)[]> {
+  const opened = await open(page, query);
+  await host(page).focus();
+  const frames = Number(await host(page).getAttribute('data-frames'));
+  for (let k = 0; k < 36; k += 1) await page.keyboard.press('ArrowRight');
+  await expect.poll(async () => Number(await host(page).getAttribute('data-frames'))).toBeGreaterThan(frames);
+  await expect(host(page)).toHaveAttribute('data-working', 'false');
+  return [...opened.marks, await host(page).getAttribute('data-sun-at'), await host(page).getAttribute('data-earth-at')];
+}
+
+// One view a test, so each keeps within the usual budget; serial, so the second compares with the first.
+test.describe.serial('the reversed depth marks no body behind the eye, as the logarithmic one does', () => {
+  let logarithmic: (string | null)[] = [];
+
+  test('the logarithmic depth leaves a body behind the eye unmarked', async ({ page }) => {
+    logarithmic = await marksAfterHalfTurn(page, '');
+    expect(logarithmic.slice(2)).toContain('');
+  });
+
+  test('the reversed depth marks the same places', async ({ page }) => {
+    expect(await marksAfterHalfTurn(page, '&depth=reversed')).toEqual(logarithmic);
+  });
 });

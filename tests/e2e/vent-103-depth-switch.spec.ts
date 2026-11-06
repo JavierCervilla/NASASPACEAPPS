@@ -23,7 +23,6 @@
  *             :::.. .  .               SPDX-License-Identifier: MIT
  */
 
-
 /**
  * Point 8 of VENT-80 (VENT-103): the address picks the on-foot view's depth buffer, `?depth=log|linear|reversed`,
  * and `?shadows=force` draws the shadow map on a GPU the safety rules turn it off for, so the human can bisect the

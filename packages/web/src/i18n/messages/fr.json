@@ -479,5 +479,25 @@
   "bench.tiers": "Niveau de la vue par passage : {list}",
   "bench.tiersMixed": "Les passages ont tourné à des niveaux de vue différents : leurs chiffres ne se comparent pas.",
   "bench.failed": "Banc d’essai interrompu",
-  "bench.failedHint": "Un passage s’est arrêté sur une erreur : {error}"
+  "bench.failedHint": "Un passage s’est arrêté sur une erreur : {error}",
+  "bench.step.turnMinute": "Rotation pendant 60 s",
+  "bench.runDepth": "Profondeur · {variant}",
+  "bench.depthHint": "Suite de profondeur : chaque passage recharge la page, ouvre la vue 3D à IM-2 et la fait tourner pendant 60 s, avec le tampon de profondeur logarithmique tel que l’app le dessine, l’inversé et le linéaire avec la carte d’ombres forcée, et en dernier le logarithmique avec la carte d’ombres forcée. Un contexte perdu est noté et le passage suivant continue.",
+  "bench.depth.table": "Tampons de profondeur, en rotation",
+  "bench.depth.col.run": "Passage",
+  "bench.depth.col.result": "Résultat",
+  "bench.depth.col.depth": "Profondeur",
+  "bench.depth.col.bits": "Bits de profondeur",
+  "bench.depth.col.reversed": "Tampon inversé",
+  "bench.depth.col.shadows": "Carte d’ombres",
+  "bench.depth.survived": "Tenu",
+  "bench.depth.lostTurn": "Perdu après {n} s de rotation",
+  "bench.depth.lostOpen": "Perdu après {n} s d’ouverture",
+  "bench.depth.on": "activée",
+  "bench.depth.off": "désactivée",
+  "bench.depth.note": {
+    "one": "Une ligne par passage, {n} tour. Toutes les étapes sont dans le rapport copié.",
+    "many": "Une ligne par passage, {n} tours. Toutes les étapes sont dans le rapport copié.",
+    "other": "Une ligne par passage, {n} tours. Toutes les étapes sont dans le rapport copié."
+  }
 }

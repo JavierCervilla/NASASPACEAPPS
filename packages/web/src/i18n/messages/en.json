@@ -467,5 +467,24 @@
   "bench.tiers": "View tier per run: {list}",
   "bench.tiersMixed": "The runs ran at different view tiers, so their figures do not compare.",
   "bench.failed": "Benchmark stopped",
-  "bench.failedHint": "A run stopped on an error: {error}"
+  "bench.failedHint": "A run stopped on an error: {error}",
+  "bench.step.turnMinute": "Turn for 60 s",
+  "bench.runDepth": "Depth · {variant}",
+  "bench.depthHint": "Depth suite: each run reloads the page, opens the 3D view at IM-2 and turns it for 60 s, with the logarithmic depth buffer as the app draws it, the reversed and the linear ones with the shadow map forced, and last the logarithmic one with the shadow map forced. A lost context is recorded and the next run goes on.",
+  "bench.depth.table": "Depth buffers, turning",
+  "bench.depth.col.run": "Run",
+  "bench.depth.col.result": "Result",
+  "bench.depth.col.depth": "Depth",
+  "bench.depth.col.bits": "Depth bits",
+  "bench.depth.col.reversed": "Reversed buffer",
+  "bench.depth.col.shadows": "Shadow map",
+  "bench.depth.survived": "Survived",
+  "bench.depth.lostTurn": "Lost after {n} s of the turn",
+  "bench.depth.lostOpen": "Lost after {n} s of opening",
+  "bench.depth.on": "on",
+  "bench.depth.off": "off",
+  "bench.depth.note": {
+    "one": "One row per run, {n} round. Every step is in the copied report.",
+    "other": "One row per run, {n} rounds. Every step is in the copied report."
+  }
 }

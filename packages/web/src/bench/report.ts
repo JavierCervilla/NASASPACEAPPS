@@ -29,7 +29,7 @@
  * run. Plain English for whoever reads it next to the code, never
  * translated. Pure.
  */
-import { noteLines } from './report-notes';
+import { deviceLines } from './report-notes';
 import { variantMedian } from './results';
 import type { BenchState, RunResult, StepMetrics } from './types';
 
@@ -57,19 +57,14 @@ const METRICS: readonly (readonly [string, Read])[] = [
 ];
 
 /** `value` with at most one decimal, or «n/a». */
-const num = (value: number | null): string =>
+export const num = (value: number | null): string =>
   value === null ? 'n/a' : String(Math.round(value * 10) / 10);
 
 /** The header's lines. */
 function headerLines(state: BenchState): string[] {
-  const h = state.header;
   const order = state.order.join(' ');
   return [
-    'Ventana Lunar benchmark report',
-    `Script v${h?.script ?? '?'} · instant ${h?.instant ?? '?'}`,
-    `GPU: ${h?.gpu ?? '?'}`, `Browser: ${h?.userAgent ?? '?'}`,
-    `Viewport: ${h?.viewport ?? '?'}`, `Screen: ${h?.screen ?? '?'}`,
-    `Build: ${h?.build ?? '?'}`, ...noteLines(state),
+    ...deviceLines(state),
     `Runs: ${state.runs} per variant, order ${order}${state.fast
       ? ' (fast script)' : ''}`,
     'A: globe kept. B: globe WebGL context released while the 3D view is'
@@ -88,7 +83,7 @@ function medianLines(results: readonly RunResult[]): string[] {
 }
 
 /** One line per step of every run, every metric on it. */
-function runLines(results: readonly RunResult[]): string[] {
+export function runLines(results: readonly RunResult[]): string[] {
   return results.flatMap((r) => r.steps.map((step) => {
     const values = METRICS.map(([name, read]) => `${name}=${num(read(step))}`);
     return `${r.variant}${r.run} ${step.id}: ${values.join(' ')}`;

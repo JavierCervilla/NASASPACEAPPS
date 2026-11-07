@@ -181,6 +181,7 @@ function PhoneUi(props: Props) {
     <div className="phone">
       <div ref={scrim} className="phone-scrim" aria-hidden="true" />
       <ViewStage {...props} dsn={phone.dsn} site={site} bar={bar}
+        hours={phone.widgets.hours}
         makeRoom={(to = 'peek') => phone.setDetent(to)} />
       <PhoneBar ref={bar} {...pill} />
       <Sheet {...sheet}>

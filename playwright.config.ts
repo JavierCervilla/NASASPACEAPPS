@@ -30,6 +30,11 @@ const base = (process.env.SITE_BASE ?? '/').replace(/\/$/, '');
 const port = Number(process.env.PW_PORT ?? 4321);
 /** The benchmark's specs: its own project, run alone (see below). */
 const BENCH_SPECS = /(vent-81-bench|vent-104-bench-depth)\.spec\.ts$/;
+/**
+ * The on-foot specs that stand IM-2's real relief at the high tier: their own
+ * project, run with two workers (see below).
+ */
+const ONFOOT_SPECS = /(terrain-view|vent-98-binary-tiles|vent-100-lunar-night)\.spec\.ts$/;
 
 export default defineConfig({
   testDir: 'tests/e2e',
@@ -49,9 +54,14 @@ export default defineConfig({
   // minute of full CPU: run alongside the suite it slowed other specs'
   // bounded waits (VENT-81: vent-60-loader's far chip missed its 5 s in two
   // CI runs while it ran). `npm run e2e` runs `app`, then `bench` alone,
-  // with the depth suite's spec too (VENT-104).
+  // with the depth suite's spec too (VENT-104). The heavy on-foot specs need
+  // about 12 s of a loaded runner to reach rest, against idleCount's 15 s, and
+  // failed it in about half the CI runs of 6 Nov (VENT-108: the same rate on
+  // 172a05b and on main under the same load, none alone): `onfoot` runs them
+  // with two workers between `app` and `bench`, the same specs and limits.
   projects: [
-    { name: 'app', testIgnore: BENCH_SPECS },
+    { name: 'app', testIgnore: [BENCH_SPECS, ONFOOT_SPECS] },
+    { name: 'onfoot', testMatch: ONFOOT_SPECS },
     { name: 'bench', testMatch: BENCH_SPECS },
   ],
   webServer: {

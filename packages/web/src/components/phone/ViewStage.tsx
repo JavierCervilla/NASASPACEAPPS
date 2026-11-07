@@ -33,6 +33,7 @@
 import type { RefObject } from 'react';
 import type { View } from '../../lib/view-tabs';
 import { bandMoves } from '../../phone/band-moves';
+import type { HoursResult } from '../../phone/widgets-loader';
 import type { WatchedValue } from '../../lib/watched-value';
 import type { CalendarParts } from '../calendar/hooks';
 import { DsnStage } from '../dsn/DsnPhone';
@@ -51,6 +52,8 @@ interface Props {
   readonly sheetEdge: WatchedValue<number | null>;
   /** Lowers the sheet, for a notice the band has no room for. */
   readonly makeRoom: (to?: 'peek' | 'closed') => void;
+  /** The hours the sheet's widgets show (the view's night reads them). */
+  readonly hours: HoursResult;
 }
 
 export function ViewStage(props: Props) {
@@ -66,7 +69,7 @@ export function ViewStage(props: Props) {
   return (
     <OnFootView layout="phone" site={site} time={parts.time}
       horizons={parts.horizons} tiles={parts.tiles}
-      viewTier={parts.viewTier} band={band}
+      viewTier={parts.viewTier} hours={props.hours} band={band}
       bandMoves={bandMoves(() => bar.current, sheetEdge.subscribe)}
       makeRoom={props.makeRoom} sheetEdge={sheetEdge} />
   );

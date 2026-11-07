@@ -50,3 +50,23 @@ describe('the on-foot labels that stay shown (VENT-52)', () => {
     expect(keptLabels([box(0, 0, 50, 20), box(50, 0, 50, 20), box(0, 20, 50, 20)])).toEqual([true, true, true]);
   });
 });
+
+describe('the on-foot labels keep clear of the night\'s notice (VENT-106)', () => {
+  // The notice at 200 % text on a phone at peek, over the 100 m ring's label (IM-2, 6 November 2026, 15:04 UTC).
+  const notice = box(17, 312, 356, 146);
+  const ring25 = box(98, 418, 64, 35);
+  const ring100 = box(231, 398, 78, 35);
+
+  it('leaves out a label the notice would cover', () => {
+    expect(keptLabels([ring25, ring100], [notice])).toEqual([false, false]);
+  });
+
+  it('keeps a label clear of it, and lets it stand where a left-out label was', () => {
+    const below = box(98, 470, 64, 35);
+    expect(keptLabels([ring100, below, box(110, 480, 64, 35)], [notice])).toEqual([false, true, false]);
+  });
+
+  it('keeps every label when there is nothing to keep clear of', () => {
+    expect(keptLabels([ring25, ring100], [])).toEqual(keptLabels([ring25, ring100]));
+  });
+});

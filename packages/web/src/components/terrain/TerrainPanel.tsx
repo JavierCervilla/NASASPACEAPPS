@@ -35,7 +35,6 @@
  * nor the scene reach the first load or the precache.
  */
 import { useId, useRef, useState } from 'react';
-import type { HoursResult } from '../../phone/widgets-loader';
 import { pageReport } from '../../terrain/report/page-report';
 import type { SceneHooks } from '../../terrain/scene/scene-types';
 import { viewAlt } from '../../terrain/view-alt';
@@ -55,8 +54,6 @@ import { useTerrainScene, type BandMoves } from './use-terrain-scene';
 
 export interface PanelProps extends OnFootParts {
   readonly layout: 'desktop' | 'phone';
-  /** The month's hours, for the desktop's horizon strip. */
-  readonly hours?: HoursResult;
   readonly band?: SceneHooks['band'];
   readonly bandMoves?: BandMoves;
   /** Asks the phone's sheet to make room for the notice of a lost view. */

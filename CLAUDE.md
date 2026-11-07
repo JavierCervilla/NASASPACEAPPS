@@ -633,14 +633,20 @@ Every visible change follows `.claude/skills/apple-design/SKILL.md` (vendored fr
   the ground's lunar one masks the first directional light alone while `uSunNight` is 1 (before, it also put out the
   Earth's light, the only light of the night). The view then says «Lunar night here» over «The Sun rises in 8 d 16 h»
   (`components/terrain/OnFootNight.tsx`, `src/terrain/night-notice.ts`, `use-night.ts`): the «Sunrise in» widget's
-  count, the simulator's hours from the instant's hour over the widgets' 30 days with the site's shadow and terrain
-  applied, through the widget's `timeLeft`; none for a site NASA's maps put in permanent shadow. It is a notice row in
-  the view's dark material over the caption (on a phone in the free band, hidden rather than cut when the band has no
-  room for it whole, `use-cut.ts`), and the caption's second line says «Earth: NASA Blue Marble · light added for
+  count, from the same hours (the desktop's month and the phone sheet's widgets' hours, passed to the view as `hours`,
+  else the simulator's) from the instant's hour over the widgets' 30 days, through the widget's `timeLeft`; none for a
+  site NASA's maps put in permanent shadow. The notice speaks for that hour's sample, the light and the caption for the
+  instant (VENT-106), so within the hour of a sunrise or a sunset the two may disagree: lit by the hour, the view was a
+  flat grey slab with the Sun already behind the ridge. It is a notice row in the view's dark material over the caption (on a phone in the free band,
+  hidden rather than cut when the band has no room for it whole, and hidden where it would sit under the compass,
+  measured again when the band, its size or the compass changes, `use-cut.ts`); while it shows, the scale's labels keep
+  clear of it (`data-label-clear`, `scene/label-clear.ts`, `keptLabels` in `scene/label-declutter.ts`), and the caption's second line says «Earth: NASA Blue Marble · light added for
   legibility» (`captionNote(i18n, night)`, `onFoot.captionNoteNight`). Held by `tests/lunar-night.test.ts` and
   `tests/e2e/vent-100-lunar-night.spec.ts` (IM-2's recorded relief: the notice and the caption at 2026-11-06 15:04 UTC,
   the ground about three times brighter with the Earth 4.2° over the terrain than 0.9° behind it, the day unchanged, the
-  notice whole in the phone's band at 200 % text and in the pseudo-locale).
+  notice whole in the phone's band at 200 % text and in the pseudo-locale; VENT-106: in the sunset and sunrise hours of
+  2026-11-15 the ground is lit as the hour after, not flat nor brighter, the notice off the compass and the labels,
+  re-measured as the text size changes).
   Safe start (VENT-69, after a Pixel 10's first frame took 1.6 s and its GPU reset): the ground's cost is set per tier in
   one place (`src/terrain/ground-policy.ts`, `groundPolicy(tier, leave)`): lunar photometry (`RE_Direct_Ground`), the
   second normal read (`antitile`), the `fwidth` footprint fade and the fine relief (no `fine-tiles/` request, no shader
@@ -869,8 +875,11 @@ Every visible change follows `.claude/skills/apple-design/SKILL.md` (vendored fr
   `reversed` reversed, and the last run's context is lost on purpose while it turns). Its chunk and `bench.css` are out of the precache
   (`ON_DEMAND`) and `devtools-guard.mjs` keeps its markers out of the first load. Held by `tests/bench-*.test.ts` and
   `tests/e2e/vent-81-bench.spec.ts`, which is its own Playwright project (`bench`, with the depth suite's spec): `npm run e2e` runs the `app`
-  project, then `bench` alone (`playwright.config.ts`: its full runs would slow other specs' bounded waits); alone:
-  `npx playwright test --project=bench`.
+  project, then `onfoot` with two workers (`terrain-view`, `vent-98-binary-tiles` and `vent-100-lunar-night`, which stand
+  IM-2's real relief at the high tier and need about 12 s of a loaded runner to reach rest against `idleCount`'s 15 s,
+  VENT-108), then `bench` alone (`playwright.config.ts`: its full runs would slow other specs' bounded waits); alone:
+  `npx playwright test --project=bench`. In CI the web job runs one at a time across branches (a concurrency group) on
+  a 20-minute budget (VENT-108).
   `?onfoot=shadows,far,shade,logdepth,photometry,antitile,footprint,fine,rocks` (`astronaut` and `lander` from before VENT-54 are ignored, so old links still open)
   leaves parts out to bisect a crash from a phone's address bar (`src/terrain/leave-out.ts`, unknown words ignored,
   listed in `data-onfoot`, kept by the language switch like `?site=`). Point 8 of VENT-80 (VENT-103) adds two more for the Pixel's bisect (`src/terrain/depth-mode.ts`, applied by `scene/stage-renderer.ts`): `?depth=log|linear|reversed` picks the depth buffer (`reversed` is three's `reversedDepthBuffer`, only with `EXT_clip_control` from the page's probe, else the logarithmic one; `?onfoot=logdepth` still means linear, and `?depth=` wins), and `?shadows=force` draws the shadow map where `shadow-safety.ts` turns it off; the choice is in `data-depth` and the report notes «depth reversed · 24 bits · shadow map on (forced)», which `?debug` shows among its breadcrumbs (`tests/depth-mode.test.ts`, `tests/e2e/vent-103-depth-switch.spec.ts`). The API gzips its JSON

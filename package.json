@@ -19,7 +19,7 @@
     "preview": "npm run preview -w @ventana/web",
     "typecheck": "npm run typecheck --workspaces --if-present && tsc --noEmit -p .",
     "test": "vitest run",
-    "e2e": "playwright test --project=app && playwright test --project=bench",
+    "e2e": "playwright test --project=app && playwright test --project=onfoot --workers=2 && playwright test --project=bench",
     "lint": "eslint .",
     "headers": "node scripts/file-header.mjs --write",
     "headers:check": "node scripts/file-header.mjs --check",

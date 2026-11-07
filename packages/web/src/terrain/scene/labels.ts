@@ -29,10 +29,12 @@
  * a body labelled with its height and distance. The labels are HTML over
  * the canvas, so they follow the text size; placed after every frame
  * through the CSSOM (no style attribute: CSP), hidden behind the ground
- * and where another label already stands (label-declutter.ts).
+ * where another label already stands (label-declutter.ts) and under the
+ * night's notice (label-clear.ts).
  */
 import { Vector3, type PerspectiveCamera } from 'three';
 import { direction } from '../view-camera';
+import { clearBoxes, watchClear } from './label-clear';
 import { declutter } from './label-declutter';
 import { inFront } from './in-front';
 import {
@@ -79,6 +81,8 @@ export interface LabelLayer {
   readonly root: HTMLElement;
   /** Writes the words and places every label for the frame. */
   readonly draw: (words: SceneWords, yawDeg: number) => void;
+  /** Stops following what the labels keep clear of. */
+  readonly stop: () => void;
 }
 
 interface Spots {
@@ -110,12 +114,8 @@ function drawLabels(
   place(spots.ridge, new Vector3(rx * d, top, rz * d), view);
 }
 
-/** The labels' layer in `host`, placed by `camera` over `ground`. */
-export function labelLayer(
-  host: HTMLElement,
-  camera: PerspectiveCamera,
-  ground: () => Ground,
-): LabelLayer {
+/** The labels' root in `host`, and a label for each ring and the ridge. */
+function spotsIn(host: HTMLElement): { root: HTMLElement; spots: Spots } {
   const root = document.createElement('div');
   root.className = 'on-foot__labels';
   root.setAttribute('aria-hidden', 'true');
@@ -125,10 +125,28 @@ export function labelLayer(
   const spots = { rings: RING_DISTANCES_M.map(() => make('ring')),
     ridge: make('ridge') };
   host.append(root);
+  return { root, spots };
+}
+
+/** The labels' layer in `host`, placed by `camera` over `ground`. */
+export function labelLayer(
+  host: HTMLElement,
+  camera: PerspectiveCamera,
+  ground: () => Ground,
+): LabelLayer {
+  const { root, spots } = spotsIn(host);
   // The ridge's label first: it says what hides a body; then the rings'.
   const order = [spots.ridge, ...spots.rings];
-  return { root, draw: (words, yawDeg) => {
-    drawLabels(spots, { camera, ground: ground(), host }, { words, yawDeg });
-    declutter(order);
-  } };
+  const stage = host.parentElement;
+  let last: { words: SceneWords; yawDeg: number } | null = null;
+  const draw = (words: SceneWords, yawDeg: number): void => {
+    last = { words, yawDeg };
+    drawLabels(spots, { camera, ground: ground(), host }, last);
+    declutter(order, clearBoxes(stage));
+  };
+  const again = (): void => {
+    if (last) draw(last.words, last.yawDeg);
+  };
+  const stop = stage ? watchClear(stage, root, again) : () => undefined;
+  return { root, draw, stop };
 }

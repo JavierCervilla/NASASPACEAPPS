@@ -16,7 +16,15 @@ jobs:
   web:
     name: Web · lint, typecheck, unit, build, e2e
     runs-on: ${{ vars.CI_RUNNER || 'ubuntu-latest' }}
-    timeout-minutes: 15
+    # The suite took 13.5 to 15 min on 6 Nov (9.6 to 12 min of e2e as it grew) and one main run was cancelled at 15:
+    # the job's budget, not any test's, which keep their own limits (VENT-108, the human's decision).
+    timeout-minutes: 20
+    # Two of this repo's suites on the shared self-hosted pool slowed each other past the on-foot view's idle checks
+    # (VENT-108: the same failure rate on 172a05b and on main under the same load, none alone). One at a time across
+    # branches; a waiting one is queued, not cancelled (GitHub keeps one pending per group).
+    concurrency:
+      group: ventana-web-suite
+      cancel-in-progress: false
     steps:
       - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
       - uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444 # v5.0.0

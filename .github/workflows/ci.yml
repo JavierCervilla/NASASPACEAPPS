@@ -21,7 +21,8 @@ jobs:
     timeout-minutes: 20
     # Two of this repo's suites on the shared self-hosted pool slowed each other past the on-foot view's idle checks
     # (VENT-108: the same failure rate on 172a05b and on main under the same load, none alone). One at a time across
-    # branches; a waiting one is queued, not cancelled (GitHub keeps one pending per group).
+    # branches. GitHub keeps one pending run per group: the running one is never cancelled, but a newer arrival cancels
+    # the one already waiting, which then shows «cancelled» (never green) and is re-run by hand.
     concurrency:
       group: ventana-web-suite
       cancel-in-progress: false

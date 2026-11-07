@@ -869,8 +869,11 @@ Every visible change follows `.claude/skills/apple-design/SKILL.md` (vendored fr
   `reversed` reversed, and the last run's context is lost on purpose while it turns). Its chunk and `bench.css` are out of the precache
   (`ON_DEMAND`) and `devtools-guard.mjs` keeps its markers out of the first load. Held by `tests/bench-*.test.ts` and
   `tests/e2e/vent-81-bench.spec.ts`, which is its own Playwright project (`bench`, with the depth suite's spec): `npm run e2e` runs the `app`
-  project, then `bench` alone (`playwright.config.ts`: its full runs would slow other specs' bounded waits); alone:
-  `npx playwright test --project=bench`.
+  project, then `onfoot` with two workers (`terrain-view`, `vent-98-binary-tiles` and `vent-100-lunar-night`, which stand
+  IM-2's real relief at the high tier and need about 12 s of a loaded runner to reach rest against `idleCount`'s 15 s,
+  VENT-108), then `bench` alone (`playwright.config.ts`: its full runs would slow other specs' bounded waits); alone:
+  `npx playwright test --project=bench`. In CI the web job runs one at a time across branches (a concurrency group) on
+  a 20-minute budget (VENT-108).
   `?onfoot=shadows,far,shade,logdepth,photometry,antitile,footprint,fine,rocks` (`astronaut` and `lander` from before VENT-54 are ignored, so old links still open)
   leaves parts out to bisect a crash from a phone's address bar (`src/terrain/leave-out.ts`, unknown words ignored,
   listed in `data-onfoot`, kept by the language switch like `?site=`). Point 8 of VENT-80 (VENT-103) adds two more for the Pixel's bisect (`src/terrain/depth-mode.ts`, applied by `scene/stage-renderer.ts`): `?depth=log|linear|reversed` picks the depth buffer (`reversed` is three's `reversedDepthBuffer`, only with `EXT_clip_control` from the page's probe, else the logarithmic one; `?onfoot=logdepth` still means linear, and `?depth=` wins), and `?shadows=force` draws the shadow map where `shadow-safety.ts` turns it off; the choice is in `data-depth` and the report notes «depth reversed · 24 bits · shadow map on (forced)», which `?debug` shows among its breadcrumbs (`tests/depth-mode.test.ts`, `tests/e2e/vent-103-depth-switch.spec.ts`). The API gzips its JSON

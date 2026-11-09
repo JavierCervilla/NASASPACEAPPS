@@ -8,3 +8,6 @@ __pycache__/
 .env
 .env.*
 .cache/
+# © MotionSites: downloaded with scripts/motionsites-library.sh, not redistributed (see .claude/skills/NOTICE.md).
+.claude/skills/motionsites-web-builder/examples/
+.claude/skills/motionsites-web-builder/media/

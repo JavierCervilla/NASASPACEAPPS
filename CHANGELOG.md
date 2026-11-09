@@ -3,6 +3,16 @@
 ## [Sin publicar]
 
 ### Añadido
+- **Una portada que explica el proyecto, y la app en `/app` (VENT-109, la opción A del lienzo con la franja del mes de
+  la B).** https://nasa.universelle.io abre ahora una página que plantea la pregunta del reto («Sun for power. Earth for
+  a voice.») junto a una Luna renderizada con el mapa LROC y una tarjeta en vivo de IM-2 Athena: si tiene Sol y Tierra
+  sobre su horizonte LOLA, si hay ventana y cuánto dura o cuándo se abre, y qué antena de la DSN escucha, calculado en
+  tu navegador con el cielo propio de Ventana Lunar y actualizado cada minuto. Debajo, «cómo funciona» en tres pasos con
+  la franja del mes (Sol, Tierra, ventana) y la línea de ahora, la ciencia en cuatro cifras con sus fuentes, un recorrido
+  por cuatro vistas de la app y el equipo, el reto y el hueco del vídeo. En los cinco idiomas, en `/`, `/es/`, `/fr/`,
+  `/de/` e `/it/`, siempre oscura, y se lee sin JavaScript. La app se mueve a `/app/` (`/app/es/`…); los enlaces viejos
+  con `?site=` o `?lat` abren la app en el mismo sitio, los de una vista (`/#horizon`) también, y quien la tenía
+  instalada en la raíz pierde el service worker viejo sin perder la caché. La API sigue en `/api`.
 - **El lector `?debug` dice en qué condiciones mide (VENT-105).** Desplegado, sobre el rastro, muestra los interruptores
   de diagnóstico de la dirección («switches: depth=linear shadows=force»), con qué dibuja la vista 3D según la propia
   escena (búfer de profundidad, bits, invertido, mapa de sombras y por qué está apagado, nivel), el instante (en vivo o

@@ -1,0 +1,66 @@
+---
+/*
+ *   _   _       _                         _ _
+ *  | | | |_ __ (_)_   _____ _ __ ___  ___| | | ___
+ *  | | | | '_ \| \ \ / / _ \ '__/ __|/ _ \ | |/ _ \
+ *  | |_| | | | | |\ V /  __/ |  \__ \  __/ | |  __/
+ *   \___/|_| |_|_| \_/ \___|_|  |___/\___|_|_|\___|
+ *
+ *             =++==--::.
+ *         %%%%##**++=--:..  .
+ *      ##**#%@%%#***+=--::.   .
+ *    #**=+*#*#**#++++=-:::.. .  .
+ *   #++-====*@%+*++==--::...   .  .    Ventana Lunar
+ *  #+=-=--++==+===-+==--:..   .  .  .  Sun, Earth and landing
+ * #----====-------=-=---:..  .  .  .   windows at the lunar
+ * #+---+=====--=---==-::..     .  .  . south pole
+ * #*----==---==-=-=-:-....    .  .  .
+ * *#----===+*===--:-::...    .  .  .   Built for the NASA Space
+ *  *----=*-+*%*+=-:::....   .  .  .    Apps Challenge 2026,
+ *   *------=+*=--:::-:::.. .  .  .     Madrid. Not endorsed
+ *    %*===-=-==--==-:::.  .  .  .      by NASA.
+ *      *+:--+:--::::::.  .  .  .
+ *         -=:::...:..   .  .           (c) 2026 Universelle
+ *             :::.. .  .               SPDX-License-Identifier: MIT
+ */
+
+import '../styles/base.css';
+import '../styles/hero.css';
+import '../styles/sections.css';
+import { catalogueOf, translator } from '../i18n/catalogue';
+import { LOCALES, landingPath, type Locale } from '../i18n/locales';
+
+interface Props {
+  readonly locale: Locale;
+}
+
+const { locale } = Astro.props;
+const t = translator(catalogueOf(locale));
+const site = Astro.site;
+const href = (l: Locale) =>
+  site ? new URL(landingPath(l), site).href : landingPath(l);
+---
+
+<!doctype html>
+<html lang={locale}>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="color-scheme" content="dark" />
+    <meta name="theme-color" content="#07080b" />
+    <title>{t('meta.title')}</title>
+    <meta name="description" content={t('meta.description')} />
+    <link rel="canonical" href={href(locale)} />
+    {LOCALES.map((l) => <link rel="alternate" hreflang={l} href={href(l)} />)}
+    <link rel="alternate" hreflang="x-default" href={href('en')} />
+    <link rel="icon" href="/app/favicon.svg" type="image/svg+xml" />
+    <link rel="icon" href="/app/favicon.ico" sizes="32x32" />
+    <link rel="apple-touch-icon" href="/app/icons/apple-touch-icon.png" />
+    <link rel="preload" as="image" href="/media/moon-1600.webp"
+      imagesrcset="/media/moon-800.webp 800w, /media/moon-1600.webp 1600w"
+      imagesizes="(max-width: 820px) 100vw, 56vw" />
+  </head>
+  <body>
+    <slot />
+  </body>
+</html>

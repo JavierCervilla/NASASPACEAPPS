@@ -1,0 +1,77 @@
+---
+/*
+ *   _   _       _                         _ _
+ *  | | | |_ __ (_)_   _____ _ __ ___  ___| | | ___
+ *  | | | | '_ \| \ \ / / _ \ '__/ __|/ _ \ | |/ _ \
+ *  | |_| | | | | |\ V /  __/ |  \__ \  __/ | |  __/
+ *   \___/|_| |_|_| \_/ \___|_|  |___/\___|_|_|\___|
+ *
+ *             =++==--::.
+ *         %%%%##**++=--:..  .
+ *      ##**#%@%%#***+=--::.   .
+ *    #**=+*#*#**#++++=-:::.. .  .
+ *   #++-====*@%+*++==--::...   .  .    Ventana Lunar
+ *  #+=-=--++==+===-+==--:..   .  .  .  Sun, Earth and landing
+ * #----====-------=-=---:..  .  .  .   windows at the lunar
+ * #+---+=====--=---==-::..     .  .  . south pole
+ * #*----==---==-=-=-:-....    .  .  .
+ * *#----===+*===--:-::...    .  .  .   Built for the NASA Space
+ *  *----=*-+*%*+=-:::....   .  .  .    Apps Challenge 2026,
+ *   *------=+*=--:::-:::.. .  .  .     Madrid. Not endorsed
+ *    %*===-=-==--==-:::.  .  .  .      by NASA.
+ *      *+:--+:--::::::.  .  .  .
+ *         -=:::...:..   .  .           (c) 2026 Universelle
+ *             :::.. .  .               SPDX-License-Identifier: MIT
+ */
+
+import { catalogueOf, translator } from '../i18n/catalogue';
+import type { Locale } from '../i18n/locales';
+import { liveAnswer } from '../live/answer';
+import { cardText } from '../live/card-text';
+
+interface Props {
+  readonly locale: Locale;
+  readonly atMs: number;
+}
+
+// Built at deploy time so the card reads without JavaScript; live/boot.ts
+// works it out again for the visitor's instant and every minute after.
+const { locale, atMs } = Astro.props;
+const t = translator(catalogueOf(locale));
+const answer = liveAnswer(atMs);
+const text = cardText(answer, t, locale);
+const state = answer.window ? 'window' : 'none';
+---
+
+<section
+  class="live rise rise--5"
+  aria-label={t('live.label')}
+  data-live-card
+  data-state={state}
+>
+  <div class="live__head">
+    <span class="live__now">{t('live.now')}</span>
+    <span class="live__when" data-live="when">{text.when}</span>
+  </div>
+  <div>
+    <p class="live__site">{t('live.site')}</p>
+    <p class="live__place">{t('live.place')}</p>
+  </div>
+  <dl class="live__rows">
+    <div class="live__row">
+      <dt><span class="dot dot--sun"></span>{t('live.sunName')}</dt>
+      <dd data-live="sun">{text.sun}</dd>
+    </div>
+    <div class="live__row">
+      <dt><span class="dot dot--earth"></span>{t('live.earthName')}</dt>
+      <dd data-live="earth">{text.earth}</dd>
+    </div>
+  </dl>
+  <p class="live__verdict">
+    <span class="dot dot--verdict"></span>
+    <span class="live__state" data-live="verdict">{text.verdict}</span>
+    <span class="live__left" data-live="left">{text.left}</span>
+  </p>
+  <p class="live__listening" data-live="listening">{text.listening}</p>
+  <p class="live__note">{t('live.computed')}</p>
+</section>

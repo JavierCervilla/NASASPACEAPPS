@@ -32,6 +32,7 @@
  */
 import curated from '../../../server/data/sites.json';
 import GlassFilter from './GlassFilter.astro';
+import { API_SITES_PATH } from '../lib/api-path';
 import LocaleHead from './LocaleHead.astro';
 import LunarApp from './LunarApp';
 import Base from '../layouts/Base.astro';
@@ -67,8 +68,9 @@ const messages = catalogueOf(locale);
 const i18n = createI18n(locale, messages);
 const { t } = i18n;
 
-// Same origin in production: the API sits behind the same domain.
-const sitesUrl = `${import.meta.env.BASE_URL.replace(/\/$/, '')}/api/v1/sites`;
+// Same origin in production, at the domain's root whatever the app's base:
+// the app lives under /app (VENT-109), the API under /api beside it.
+const sitesUrl = API_SITES_PATH;
 
 // The site pickers, the polar map and the site card read the curated list
 // the API serves, built in, with its names in the page's language.

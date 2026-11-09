@@ -1,0 +1,67 @@
+---
+/*
+ *   _   _       _                         _ _
+ *  | | | |_ __ (_)_   _____ _ __ ___  ___| | | ___
+ *  | | | | '_ \| \ \ / / _ \ '__/ __|/ _ \ | |/ _ \
+ *  | |_| | | | | |\ V /  __/ |  \__ \  __/ | |  __/
+ *   \___/|_| |_|_| \_/ \___|_|  |___/\___|_|_|\___|
+ *
+ *             =++==--::.
+ *         %%%%##**++=--:..  .
+ *      ##**#%@%%#***+=--::.   .
+ *    #**=+*#*#**#++++=-:::.. .  .
+ *   #++-====*@%+*++==--::...   .  .    Ventana Lunar
+ *  #+=-=--++==+===-+==--:..   .  .  .  Sun, Earth and landing
+ * #----====-------=-=---:..  .  .  .   windows at the lunar
+ * #+---+=====--=---==-::..     .  .  . south pole
+ * #*----==---==-=-=-:-....    .  .  .
+ * *#----===+*===--:-::...    .  .  .   Built for the NASA Space
+ *  *----=*-+*%*+=-:::....   .  .  .    Apps Challenge 2026,
+ *   *------=+*=--:::-:::.. .  .  .     Madrid. Not endorsed
+ *    %*===-=-==--==-:::.  .  .  .      by NASA.
+ *      *+:--+:--::::::.  .  .  .
+ *         -=:::...:..   .  .           (c) 2026 Universelle
+ *             :::.. .  .               SPDX-License-Identifier: MIT
+ */
+
+import { catalogueOf, translator } from '../i18n/catalogue';
+import type { Locale } from '../i18n/locales';
+import MonthStrip from './MonthStrip.astro';
+
+interface Props {
+  readonly locale: Locale;
+  readonly atMs: number;
+}
+
+const { locale, atMs } = Astro.props;
+const t = translator(catalogueOf(locale));
+const steps = [
+  ['1', t('how.placeTitle'), t('how.placeBody')],
+  ['2', t('how.timeTitle'), t('how.timeBody')],
+  ['3', t('how.answerTitle'), t('how.answerBody')],
+] as const;
+---
+
+<section class="section" id="how" aria-labelledby="how-title">
+  <p class="eyebrow">{t('how.eyebrow')}</p>
+  <h2 class="section__title" id="how-title">{t('how.title')}</h2>
+  <ol class="steps">
+    {
+      steps.map(([n, title, body]) => (
+        <li class="step">
+          <span class="step__n">{n}</span>
+          <h3 class="step__title">{title}</h3>
+          <p class="step__body">{body}</p>
+        </li>
+      ))
+    }
+  </ol>
+  <p class="rule">
+    <span class="ink--sun">{t('legend.ruleSun')}</span>
+    <span>+</span>
+    <span class="ink--earth">{t('legend.ruleEarth')}</span>
+    <span>=</span>
+    <span class="ink--window">{t('legend.ruleWindow')}</span>
+  </p>
+  <MonthStrip locale={locale} atMs={atMs} />
+</section>

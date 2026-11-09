@@ -1,0 +1,296 @@
+/*
+ *   _   _       _                         _ _
+ *  | | | |_ __ (_)_   _____ _ __ ___  ___| | | ___
+ *  | | | | '_ \| \ \ / / _ \ '__/ __|/ _ \ | |/ _ \
+ *  | |_| | | | | |\ V /  __/ |  \__ \  __/ | |  __/
+ *   \___/|_| |_|_| \_/ \___|_|  |___/\___|_|_|\___|
+ *
+ *             =++==--::.
+ *         %%%%##**++=--:..  .
+ *      ##**#%@%%#***+=--::.   .
+ *    #**=+*#*#**#++++=-:::.. .  .
+ *   #++-====*@%+*++==--::...   .  .    Ventana Lunar
+ *  #+=-=--++==+===-+==--:..   .  .  .  Sun, Earth and landing
+ * #----====-------=-=---:..  .  .  .   windows at the lunar
+ * #+---+=====--=---==-::..     .  .  . south pole
+ * #*----==---==-=-=-:-....    .  .  .
+ * *#----===+*===--:-::...    .  .  .   Built for the NASA Space
+ *  *----=*-+*%*+=-:::....   .  .  .    Apps Challenge 2026,
+ *   *------=+*=--:::-:::.. .  .  .     Madrid. Not endorsed
+ *    %*===-=-==--==-:::.  .  .  .      by NASA.
+ *      *+:--+:--::::::.  .  .  .
+ *         -=:::...:..   .  .           (c) 2026 Universelle
+ *             :::.. .  .               SPDX-License-Identifier: MIT
+ */
+
+/* The hero (VENT-109, canvas option A): the question, the Moon, the answer. */
+.hero {
+  position: relative;
+  max-width: var(--max);
+  margin: 0 auto;
+  padding: 24px var(--gutter) 96px;
+  display: grid;
+  grid-template-columns: minmax(0, 5fr) minmax(0, 6fr);
+  gap: 32px;
+  align-items: center;
+  min-height: min(780px, calc(100dvh - 84px));
+}
+
+.hero__copy {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  flex-direction: column;
+  gap: 28px;
+}
+
+.hero__title {
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  font-size: clamp(2.5rem, 4.9vw, 4.25rem);
+  font-weight: 600;
+  line-height: 0.98;
+  letter-spacing: -0.035em;
+  text-wrap: balance;
+}
+
+.hero__muted {
+  color: var(--text-muted);
+}
+
+@media (min-width: 821px) {
+  .hero__title span {
+    white-space: nowrap;
+  }
+}
+
+.hero__lede {
+  margin: 0;
+  max-width: 30rem;
+  font-size: clamp(1.0625rem, 1.4vw, 1.1875rem);
+  line-height: 1.5;
+  letter-spacing: -0.01em;
+  color: var(--text-secondary);
+}
+
+.hero__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  align-items: center;
+}
+
+.hero__stage {
+  position: relative;
+  height: 720px;
+}
+
+.hero__moon {
+  position: absolute;
+  top: 50%;
+  right: -120px;
+  width: 820px;
+  max-width: none;
+  height: 820px;
+  translate: 0 -50%;
+  animation: moon-settle 1.8s var(--ease-out) both;
+}
+
+.live {
+  position: absolute;
+  left: 0;
+  bottom: 56px;
+  width: 340px;
+  padding: 20px;
+  border-radius: 22px;
+  background: var(--float-fill);
+  backdrop-filter: var(--float-blur);
+  -webkit-backdrop-filter: var(--float-blur);
+  box-shadow: inset 0 0 0 1px var(--hairline);
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.live p,
+.live dl,
+.live dd {
+  margin: 0;
+}
+
+.live__head {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 8px;
+}
+
+.live__now {
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+.live__when,
+.live__place,
+.live__row dd,
+.live__left {
+  font-variant-numeric: tabular-nums;
+}
+
+.live__when {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+}
+
+.live__site {
+  font-size: 1.375rem;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+}
+
+.live__place {
+  margin-top: 2px;
+  font-size: 0.875rem;
+  color: var(--text-muted);
+}
+
+.live__rows {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  font-size: 0.9375rem;
+}
+
+.live__row {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+}
+
+.live__row dt {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.live__row dd {
+  margin-left: auto;
+  text-align: right;
+  color: var(--text-secondary);
+}
+
+.live__verdict {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 4px 10px;
+  padding-top: 12px;
+  border-top: 1px solid var(--hairline);
+  font-weight: 600;
+}
+
+.dot--verdict {
+  background: var(--signal-none);
+}
+
+[data-state='window'] .dot--verdict {
+  background: var(--signal-window);
+}
+
+[data-state='window'] .live__state {
+  color: var(--signal-window);
+}
+
+.live__left {
+  margin-left: auto;
+}
+
+.live__listening {
+  font-size: 0.8125rem;
+  color: var(--text-secondary);
+}
+
+.live__note {
+  font-size: 0.75rem;
+  line-height: 1.4;
+  color: var(--text-muted);
+}
+
+/* Entrance: eyebrow, title, lede, actions, card; done by about 1.5 s. */
+.rise {
+  animation: rise 0.8s var(--ease-out) both;
+}
+
+.rise--2 {
+  animation-delay: 0.12s;
+}
+
+.rise--3 {
+  animation-delay: 0.24s;
+}
+
+.rise--4 {
+  animation-delay: 0.36s;
+}
+
+.rise--5 {
+  animation-delay: 0.6s;
+}
+
+@keyframes rise {
+  from {
+    opacity: 0;
+    transform: translateY(24px);
+    filter: blur(8px);
+  }
+}
+
+@keyframes moon-settle {
+  from {
+    opacity: 0;
+    scale: 1.06;
+  }
+}
+
+@media (max-width: 820px) {
+  .hero {
+    grid-template-columns: 1fr;
+    padding-bottom: 48px;
+  }
+
+  .hero__stage {
+    height: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+  }
+
+  /* The lit half centred on the narrow screen; the night side runs off it. */
+  .hero__moon {
+    position: relative;
+    top: auto;
+    right: auto;
+    width: 100%;
+    height: auto;
+    translate: -21% 0;
+    margin: -8% 0 -14%;
+  }
+
+  .live {
+    position: relative;
+    left: auto;
+    bottom: auto;
+    width: 100%;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .rise,
+  .hero__moon {
+    animation: none;
+  }
+}

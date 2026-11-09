@@ -10,8 +10,25 @@ epic: `VENT-1` (Dashboard project «Ventana Lunar», prefix `VENT`).
 
 ## Stack
 
-- **Monorepo** (npm workspaces, layout of GAMESTUDIO's Web starter): `packages/web`, `packages/sim` and
-  `packages/server`. Web and server import the same `@ventana/sim` and its data contract types.
+- **Monorepo** (npm workspaces, layout of GAMESTUDIO's Web starter): `packages/web`, `packages/landing`,
+  `packages/sim` and `packages/server`. Web, landing and server import the same `@ventana/sim` and its data contract
+  types.
+- **Landing** (`packages/landing`, VENT-109, canvas option A with option B's month strip, the human's verdict): the
+  explanatory page at the domain's root, `/`, `/es/`, `/fr/`, `/de/`, `/it/`; the app lives under `/app`. Astro static,
+  no React, no Three.js: one module script (`src/live/boot.ts`) and one stylesheet per part. The hero asks the question
+  («Sun for power. Earth for a voice.») beside a Moon rendered from the shipped LROC map
+  (`scripts/moon_hero.py`) and a live card for IM-2 Athena: Sun and Earth over its LOLA horizon, the window and how long
+  it lasts, and the DSN complex listening, from `computedHours`, `terrainHours` and `dsnOutlook` (`src/live/answer.ts`,
+  `card-text.ts`). The page is built with the build's instant, so it reads without JavaScript, and the browser works it
+  out again for the visitor's instant and every minute while shown. «How it works» ends with the month strip of the
+  visitor's UTC month (`src/live/month.ts`, runs placed through the CSSOM). Then the science in four figures, a tour of
+  four of the app's own views (`scripts/tour-shots.mjs`, at 22 Nov 2026 20:00 UTC) and the team, challenge and video.
+  Every word in `src/i18n/messages/<locale>.json` (typed from `en.json`, the same lint rule as the app); its signal
+  colours are the app's tokens, held equal by `tests/catalogues.test.ts`. Always dark. An old link to one of the app's
+  views by hash (`/#horizon`) is sent on to `/app/#horizon` by the page (`src/live/app-hash.ts`), since the hash never
+  reaches nginx. Its own `/sw.js` retires the worker the app registered at the root before the move (unregisters, deletes
+  no cache). Held by `packages/landing/tests/` and `tests/e2e/landing.spec.ts` (Playwright project `landing`, its own
+  preview one port above the app's, under the production CSP).
 - **Web** (`packages/web`): Astro 7 (static output) + React 19 islands + TypeScript (strictest). Three.js joins with
   the globe (luxury 1). No login and no user accounts.
 - **Sim** (`packages/sim`): pure TypeScript, no network, disk or DOM: the site data contract and the
@@ -79,13 +96,18 @@ epic: `VENT-1` (Dashboard project «Ventana Lunar», prefix `VENT`).
   the route answers 503 «terrain data is not installed», which the web shows as «Real terrain not installed on the
   server yet». The image's entrypoint gives the mounted volumes' top directories to `node` and drops to it with
   `su-exec`, so a root-owned volume works.
-- **Deploy**: Dokploy builds the `Dockerfile` (static build served by nginx, `nginx.conf`) from `main`, at the domain
-  root (`SITE_BASE` sets a sub-path if ever needed). The primary domain is **https://nasa.universelle.io** (VENT-76);
+- **Deploy**: Dokploy builds the `Dockerfile` (static build served by nginx, `nginx.conf`) from `main`: the landing at
+  the domain's root and the app under `/app` (`SITE_BASE=/app`, VENT-109; CI builds and runs the e2e the same way). The
+  API stays at the domain's root, `/api`, whatever the app's base: the app names it from `src/lib/api-path.ts`, and its
+  service worker treats any same-origin `/api/` request as the API's (`sw-routes.ts`). A landing page whose query
+  carries the app's place (`?site=`, `?lat`) is redirected by nginx to the same path under `/app` (302, relative:
+  `absolute_redirect off`). One CSP is computed over both builds' pages. The primary domain is **https://nasa.universelle.io** (VENT-76);
   https://nasa.cervilla.es serves the same app as a second domain. The image builds with `SITE_URL` set to the primary
   domain (`ARG` in the `Dockerfile`), so every page's `rel="canonical"` and `hreflang` links are absolute to it
   (`canonicalHref`, `alternates` in `src/i18n/routes.ts`); the API answers on both hosts under `/api`. nginx's cache
-  policy (`nginx.conf`, held by `packages/web/tests/nginx-conf.test.ts`): `/_astro/` is fingerprinted, a year and
-  `immutable`; `/textures/`, `/thumbs/` and `/icons/` (the phase frames too) are not, so a day (`max-age=86400`) and then
+  policy (`nginx.conf`, held by `packages/web/tests/nginx-conf.test.ts`; each location matches the root and `/app/`):
+  `_astro/` is fingerprinted, a year and `immutable`; `textures/`, `thumbs/`, `icons/` (the phase frames too) and the
+  landing's `/media/` are not, so a day (`max-age=86400`) and then
   revalidate, never `immutable` (VENT-96); `sw.js` and the manifests `no-cache`; every location re-includes the security
   headers, since an `add_header` in a location drops the ones above it. The API's `GET /api/v1/sites` is
   `public, max-age=300` with an ETag of the list's content and a 304 on a match (`src/sites-route.ts`, VENT-96): the
@@ -1039,12 +1061,13 @@ Moon in the header is drawn by `packages/web/scripts/header_moon.py` (see `ASSET
 | Command | What |
 |---|---|
 | `npm run dev` | Web dev server at `http://localhost:4321/` |
+| `npm run dev:landing` | Landing dev server at `http://localhost:4322/` (its links to `/app/` need the app beside it) |
 | `npm run server` | API server (`packages/server`, after `npm run build`) at `http://localhost:3000/api/v1/health` |
 | `npm run lint` | ESLint + the anti-slop preset (`eslint.anti-slop.mjs`) over every package |
 | `npm run typecheck` | `astro check` for the web, `tsc` for sim, server and the root configs and e2e |
 | `npm test` | Vitest unit tests of every package (`packages/*/tests/`) |
 | `npm run build` | Static web into `packages/web/dist/`, compiled server into `packages/server/dist/` |
-| `npm run e2e` | Playwright smoke against the built web (`tests/e2e/`); in a cloud container set `PW_CHROMIUM_PATH=/opt/pw-browsers/chromium-*/chrome-linux64/chrome` |
+| `npm run e2e` | Playwright against the built web and landing (`tests/e2e/`; `SITE_BASE=/app` as in production); in a cloud container set `PW_CHROMIUM_PATH=/opt/pw-browsers/chromium-*/chrome-linux64/chrome` |
 | `npm run headers` | Adds or refreshes the file header on every code file; `npm run headers:check` is the CI check |
 | `bash .claude/skills/security-gate/scripts/security-gate.sh --strict .` | Security ladder (gitleaks, semgrep, osv-scanner, npm audit) |
 

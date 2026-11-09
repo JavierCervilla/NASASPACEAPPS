@@ -39,12 +39,16 @@ jobs:
       - run: npm run lint
       - run: npm run typecheck
       - run: npm test
+      # The app as production serves it: under /app, the landing at the root (VENT-109; Dockerfile).
       - run: npm run build
+        env:
+          SITE_BASE: /app
       # The runner pool's image already ships Chromium's system deps and forbids sudo; GitHub-hosted runners need them.
       - run: npx playwright install ${{ !vars.CI_RUNNER && '--with-deps' || '' }} chromium
       - run: npm run e2e
         env:
           CI: "true"
+          SITE_BASE: /app
 
   agent-config:
     name: Guardián · Unicode safety and agent config
@@ -63,10 +67,10 @@ jobs:
         run: node scripts/file-header.mjs --check
       # The texture pipeline's Python. Pinned: a new ruff release can add rules and turn a green PR red with no change
       # of ours.
-      - name: Ruff (packages/web/scripts)
+      - name: Ruff (packages/web/scripts, packages/landing/scripts)
         run: |
-          pipx run --spec "ruff==0.16.8" ruff check packages/web/scripts
-          pipx run --spec "ruff==0.16.8" ruff format --check packages/web/scripts
+          pipx run --spec "ruff==0.16.8" ruff check packages/web/scripts packages/landing/scripts
+          pipx run --spec "ruff==0.16.8" ruff format --check packages/web/scripts packages/landing/scripts
       # The Python the texture scripts' requirements.txt is compiled for (its header has the command).
       - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6.3.0
         with:

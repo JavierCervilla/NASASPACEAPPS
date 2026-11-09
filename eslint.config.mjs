@@ -75,7 +75,13 @@ export default [
   },
   // i18n (VENT-35): every word the interface shows or speaks comes from the message catalogues, in five languages.
   {
-    files: ['packages/web/src/**/*.tsx', 'packages/web/src/**/*.astro', 'packages/web/src/**/*.ts'],
+    files: [
+      'packages/web/src/**/*.tsx',
+      'packages/web/src/**/*.astro',
+      'packages/web/src/**/*.ts',
+      'packages/landing/src/**/*.astro',
+      'packages/landing/src/**/*.ts',
+    ],
     // The dev tools (performance readout, breadcrumbs) never ship and speak to developers, in English.
     ignores: ['packages/web/src/devtools/**'],
     plugins: { i18n: { rules: { 'no-literal-ui-text': noLiteralUiText } } },

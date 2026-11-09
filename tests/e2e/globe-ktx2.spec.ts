@@ -101,9 +101,17 @@ async function textureMB(page: Page): Promise<number> {
 }
 
 /** Opens the high tier's globe (a 2K start) under `worker`'s CSP, with `?debug`. */
+/** The app's base without its last slash: '' at the root, '/app' as production serves it (VENT-109). */
+const BASE = (process.env.SITE_BASE ?? '/').replace(/\/$/, '');
+
+/** A path as the app names it under its base: `/app/textures/a.jpg` is `/textures/a.jpg`. */
+function underBase(path: string): string {
+  return BASE && path.startsWith(`${BASE}/`) ? path.slice(BASE.length) : path;
+}
+
 async function openHigh(page: Page, worker: string, extra = ''): Promise<{ errors: string[]; asked: string[] }> {
   const asked: string[] = [];
-  page.on('request', (request) => asked.push(new URL(request.url()).pathname));
+  page.on('request', (request) => asked.push(underBase(new URL(request.url()).pathname)));
   const errors = await underPolicies(page, worker);
   await stubApi(page);
   await page.goto(`./?quality=high&debug${extra}`);

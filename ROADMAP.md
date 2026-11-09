@@ -97,4 +97,6 @@ completa está en el documento «Ventana Lunar · Especificación y roadmap».
   reverse-Z (VENT-77, aparcado)
 - [ ] Variante C del cargador, el descenso, en equipos potentes (VENT-61)
 - [ ] Comparador de sitios o exportar a .ics (VENT-8)
-- [ ] Página del proyecto, vídeo de 30 s y pitch; envío antes de las 20:00 (VENT-9)
+- [x] Portada explicativa en la raíz, en cinco idiomas, con la respuesta en vivo de IM-2 y la franja del mes; la app
+  pasa a `/app` (VENT-109)
+- [ ] Página del proyecto en spaceappschallenge.org, vídeo de 30 s y pitch; envío antes de las 20:00 (VENT-9)

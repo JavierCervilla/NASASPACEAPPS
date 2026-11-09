@@ -8,3 +8,7 @@ __pycache__/
 .env
 .env.*
 .cache/
+
+# Demo video: footage, frames and renders, rebuilt by video/demo/README.md
+video/demo/media/
+video/demo/out/

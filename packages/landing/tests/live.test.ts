@@ -75,6 +75,23 @@ describe('the live answer at IM-2 (VENT-109)', () => {
     expect(text.left).toMatch(/^opens in \d+ d/);
   });
 
+  // The verificador's findings on VENT-109: the card must agree with the app's words.
+  it('says a Sun seen over the ridge is still below the level, as the app does (IM-2, 30 Nov 20:00 UTC)', () => {
+    const answer = liveAnswer(Date.parse('2026-11-30T20:00:00Z'));
+    expect(answer.hour.sunEl).toBeLessThan(0);
+    expect(cardText(answer, t, 'en').sun).toBe('0.1° below the level, over the ridge');
+  });
+
+  it('puts the link first: no antenna listens to a site whose Earth is out of sight', () => {
+    const text = cardText(liveAnswer(NIGHT), t, 'en');
+    expect(text.listening).toMatch(/^No link: the Earth is out of sight · (Goldstone|Canberra|Robledo de Chavela) would listen$/);
+  });
+
+  it('never ends the antenna line on a dangling «~»', () => {
+    const answer = { ...liveAnswer(WINDOW), dsnLeftMs: null };
+    expect(cardText(answer, t, 'en').listening).toBe('Listening on Earth: Robledo de Chavela');
+  });
+
   it('speaks each language through its catalogue and Intl', () => {
     const es = cardText(liveAnswer(WINDOW), translator(catalogueOf('es')), 'es');
     expect(es.sun).toBe('6,7° sobre el horizonte');

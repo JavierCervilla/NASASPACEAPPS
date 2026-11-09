@@ -48,26 +48,29 @@ export function cardText(
 ): CardText {
   const { hour } = answer;
   const deg = degrees(locale);
-  const sunWord = hasSun(hour) ? 'live.up' : bodyDown(hour.sunEl);
   const link = earthLink(hour.earthEl, hour.earthAboveTerrain);
-  const earthWord = link === 'low' ? 'live.low' : linkWord(link, hour.earthEl);
+  const earthWord =
+    link === 'low' ? 'live.low' : bodyWord(link === 'link', hour.earthEl);
   return {
     when: instantText(answer.atMs, locale),
-    sun: t(sunWord, { deg: deg.format(Math.abs(hour.sunEl)) }),
+    sun: t(bodyWord(hasSun(hour), hour.sunEl), {
+      deg: deg.format(Math.abs(hour.sunEl)),
+    }),
     earth: t(earthWord, { deg: deg.format(Math.abs(hour.earthEl)) }),
     verdict: t(answer.window ? 'live.window' : 'live.noWindow'),
     left: leftText(answer, t),
-    listening: listeningText(answer, t),
+    listening: listeningText(answer, link === 'link', t),
   };
 }
 
-/** A body that is not seen: under the level, or up and behind terrain. */
-function bodyDown(elevation: number): 'live.down' | 'live.hidden' {
+/**
+ * A body's words, as the app's tiles say them (VENT-40): seen over the
+ * level, seen over a ridge while under the level, under the level, or up
+ * and hidden by the terrain.
+ */
+function bodyWord(seen: boolean, elevation: number) {
+  if (seen) return elevation >= 0 ? 'live.up' : 'live.overRidge';
   return elevation > 0 ? 'live.hidden' : 'live.down';
-}
-
-function linkWord(link: string, elevation: number) {
-  return link === 'link' ? 'live.up' : bodyDown(elevation);
 }
 
 function leftText(answer: LiveAnswer, t: Translate): string {
@@ -76,8 +79,18 @@ function leftText(answer: LiveAnswer, t: Translate): string {
   return t(answer.window ? 'live.closesIn' : 'live.opensIn', { left });
 }
 
-function listeningText(answer: LiveAnswer, t: Translate): string {
-  if (!answer.dsn) return t('live.noListening');
-  const left = answer.dsnLeftMs === null ? '' : msText(answer.dsnLeftMs, t);
-  return t('live.listening', { station: t(`dsn.${answer.dsn}`), left });
+/** The antenna line: the site's link with the Earth comes first (VENT-7). */
+function listeningText(
+  answer: LiveAnswer,
+  linked: boolean,
+  t: Translate,
+): string {
+  const station = answer.dsn ? t(`dsn.${answer.dsn}`) : null;
+  if (!linked) {
+    return station ? t('live.noLink', { station }) : t('live.noLinkNone');
+  }
+  if (!station) return t('live.noListening');
+  if (answer.dsnLeftMs === null) return t('live.listeningOpen', { station });
+  const left = msText(answer.dsnLeftMs, t);
+  return t('live.listening', { station, left });
 }

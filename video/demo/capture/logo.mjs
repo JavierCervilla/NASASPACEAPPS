@@ -38,12 +38,15 @@ const SVG = fileURLToPath(new URL('../assets/universelle-logo.svg', import.meta.
 const OUT = fileURLToPath(new URL('../media/universelle-logo.png', import.meta.url));
 const WIDTH = 1600;
 const INK = '#f2f2f4';
+/** Transparent margin, so the texture's edge sampling never bleeds a glyph's edge across. */
+const PAD = 16;
 
 const svg = readFileSync(SVG, 'utf8');
 const height = Math.ceil((WIDTH * 113.21) / 521.98);
 const browser = await chromium.launch();
 const page = await browser.newPage({ viewport: { width: WIDTH, height }, deviceScaleFactor: 1 });
-await page.setContent(`<style>:root{--color-dark:${INK}}html,body{margin:0;background:transparent}svg{display:block;width:${WIDTH}px;height:${height}px}</style>${svg}`);
-await page.locator('svg').screenshot({ path: OUT, omitBackground: true });
+await page.setViewportSize({ width: WIDTH + 2 * PAD, height: height + 2 * PAD });
+await page.setContent(`<style>:root{--color-dark:${INK}}html,body{margin:0;background:transparent}div{padding:${PAD}px;width:${WIDTH}px}svg{display:block;width:${WIDTH}px;height:${height}px}</style><div>${svg}</div>`);
+await page.locator('div').screenshot({ path: OUT, omitBackground: true });
 await browser.close();
-process.stdout.write(`media/universelle-logo.png ${WIDTH} x ${height}\n`);
+process.stdout.write(`media/universelle-logo.png ${WIDTH + 2 * PAD} x ${height + 2 * PAD}\n`);

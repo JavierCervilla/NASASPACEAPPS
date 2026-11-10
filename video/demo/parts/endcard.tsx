@@ -29,11 +29,15 @@
  */
 import { Animate, Img, staticFile } from "raea";
 import { qrMatrix } from "./qr";
-import { C, FONT, TAGLINE, TEAM, URL_QR, URL_TEXT } from "./theme";
+import { C, FONT, TAGLINE, URL_QR, URL_TEXT } from "./theme";
 
 const QR = qrMatrix(URL_QR);
 /** The team's wordmark, white, made by capture/logo.mjs from assets/universelle-logo.svg. */
 const LOGO = staticFile("universelle-logo.png");
+/** The wordmark's width over its height (its SVG viewBox), and the height that gives its capitals about the cap height of the 40 px «Team» (the capitals fill 72 % of the mark, the stars the rest), in the PNG's padded pixels. */
+const LOGO_PX = { width: 1632, height: 380, pad: 16 };
+const LOGO_H = 50;
+const LOGO_PAD = (LOGO_H * LOGO_PX.pad) / LOGO_PX.height;
 
 /** The QR code, `size` px square with a light quiet zone, as one row of runs per line. */
 function Qr({ size }: { size: number }) {
@@ -68,9 +72,9 @@ export function EndCard({ at = 0, compact = false }: { at?: number; compact?: bo
         <Animate enter="fade" at={at} style={{ marginTop: -10, marginBottom: 6, fontFamily: FONT, fontSize: 36, fontWeight: 520, color: C.secondary }}>{TAGLINE}</Animate>
         <Animate enter="slam" at={at + Math.round(2 * k)} style={{ fontFamily: FONT, fontSize: 108, fontWeight: 760, letterSpacing: "-0.035em", lineHeight: 1, color: C.window, whiteSpace: "nowrap" }}>{URL_TEXT}</Animate>
         <Animate enter="fade" at={at + Math.round(10 * k)} style={{ marginTop: 30, fontFamily: FONT, fontSize: 40, fontWeight: 560, color: C.text }}>NASA Space Apps Challenge 2026 · Madrid</Animate>
-        <Animate enter="fade" at={at + Math.round(14 * k)} style={{ display: "flex", flexDirection: "row", alignItems: "center", gap: 26 }}>
-          <div style={{ fontFamily: FONT, fontSize: 40, fontWeight: 560, color: C.secondary }}>{`Team ${TEAM}`}</div>
-          <Img src={LOGO} style={{ width: 166, height: 36, opacity: 0.9 }} />
+        <Animate enter="fade" at={at + Math.round(14 * k)} style={{ display: "flex", flexDirection: "row", alignItems: "flex-end", gap: 18 }}>
+          <div style={{ fontFamily: FONT, fontSize: 40, fontWeight: 560, lineHeight: 1, color: C.secondary }}>Team</div>
+          <Img src={LOGO} style={{ width: (LOGO_H * LOGO_PX.width) / LOGO_PX.height, height: LOGO_H, marginBottom: 4 - LOGO_PAD, marginLeft: -LOGO_PAD }} />
         </Animate>
         <Animate enter="fade" at={at + Math.round(18 * k)} style={{ marginTop: 22, fontFamily: FONT, fontSize: 30, fontWeight: 500, color: C.muted }}>NASA open data · not endorsed by NASA</Animate>
       </div>

@@ -41,7 +41,8 @@
  * SKY draws a sphere around the camera: black, the Sun's disc and a small
  * bloom, and the Earth by ray-sphere intersection at its true place and
  * size, its Blue Marble face turned as at the instant and lit by the Sun, so
- * its phase is the true one. No stars.
+ * its phase is the true one. No stars; SKY_STARS is the same sky with a
+ * faint starfield, for night views.
  */
 
 const COMMON = /* wgsl */ `
@@ -325,15 +326,16 @@ fn shade(in: VertexOutput) -> vec4<f32> {
 }
 `;
 
-export const SKY = /* wgsl */ `${COMMON}
-fn shade(in: VertexOutput) -> vec4<f32> {
+// The sky's shader in two halves, so a starfield can go between the Sun and the Earth.
+const SKY_HEAD = /* wgsl */ `fn shade(in: VertexOutput) -> vec4<f32> {
   let d = normalize(in.world_position.xyz - u_eye());
   let px = u_pixel();
   // the Sun: its disc (0.2666° radius), far over the exposure, and a small bloom
   let a = 2.0 * asin(clamp(length(d - u_sun()) * 0.5, 0.0, 1.0));
   let disc = smoothstep(0.004653 + px, 0.004653 - px, a);
   var c = vec3<f32>(1.0, 0.97, 0.92) * (disc * 60.0 + exp(-a / 0.003) * 0.6);
-  // the Earth: ray against its sphere, in units of its distance
+`;
+const SKY_TAIL = /* wgsl */ `  // the Earth: ray against its sphere, in units of its distance
   let rel = u_earth_rel();
   let ec = normalize(rel);
   let sr = u_earth_radius() / length(rel);
@@ -354,3 +356,63 @@ fn shade(in: VertexOutput) -> vec4<f32> {
   return vec4<f32>(c, 1.0);
 }
 `;
+
+export const SKY = `${COMMON}
+${SKY_HEAD}${SKY_TAIL}`;
+
+/**
+ * A faint starfield for night views: one star at most per cell of a cube
+ * map of the sky (about 0.3° cells), most of them faint (a steep power law
+ * of a uniform draw), each a small Gaussian a little under a final pixel
+ * wide (u_pixel) so it neither shimmers nor grows with the frame's size,
+ * tinted from blue-white to orange. Fixed on the world's axes, as the sky
+ * is over one instant. Its brightness is u_stars (1 is faint).
+ */
+const STARS = /* wgsl */ `
+fn star_rand(c: vec2<i32>, face: u32) -> vec4<f32> {
+  var v = vec3<u32>(bitcast<u32>(c.x), bitcast<u32>(c.y), face * 7919u + 17u) * 1664525u + 1013904223u;
+  v.x += v.y * v.z; v.y += v.z * v.x; v.z += v.x * v.y;
+  v = v ^ (v >> vec3<u32>(16u));
+  v.x += v.y * v.z; v.y += v.z * v.x; v.z += v.x * v.y;
+  let w = (v.x ^ v.z) * 747796405u + 2891336453u;
+  return vec4<f32>(vec4<u32>(v.x, v.y, v.z, w) >> vec4<u32>(8u)) / 16777216.0;
+}
+fn face_dir(face: u32, uv: vec2<f32>) -> vec3<f32> {
+  let s = select(-1.0, 1.0, face % 2u == 0u);
+  if (face < 2u) { return vec3<f32>(s, uv.x, uv.y); }
+  if (face < 4u) { return vec3<f32>(uv.x, s, uv.y); }
+  return vec3<f32>(uv.x, uv.y, s);
+}
+fn starfield(d: vec3<f32>, px: f32) -> vec3<f32> {
+  let a = abs(d);
+  var face = 4u;
+  var uv = d.xy / a.z;
+  if (a.x >= a.y && a.x >= a.z) { face = 0u; uv = d.yz / a.x; }
+  else if (a.y >= a.z) { face = 2u; uv = d.xz / a.y; }
+  if (dot(d, face_dir(face, vec2<f32>(0.0))) < 0.0) { face += 1u; }
+  let cells = 320.0;
+  let g = (uv * 0.5 + 0.5) * cells;
+  let base = vec2<i32>(floor(g));
+  let sigma = 0.45 * px;
+  var c = vec3<f32>(0.0);
+  for (var j = -1; j <= 1; j++) {
+    for (var i = -1; i <= 1; i++) {
+      let cell = base + vec2<i32>(i, j);
+      let r = star_rand(cell, face);
+      if (r.x < 0.09) {
+        let at = (vec2<f32>(cell) + vec2<f32>(0.15) + 0.7 * r.yz) / cells * 2.0 - 1.0;
+        let sd = normalize(face_dir(face, at));
+        let off = length(d - sd) / sigma;
+        let flux = 0.5 * pow(r.w, 7.0);
+        let tint = mix(vec3<f32>(0.78, 0.86, 1.0), vec3<f32>(1.0, 0.86, 0.7), fract(r.w * 37.0));
+        c += tint * flux * exp(-0.5 * off * off);
+      }
+    }
+  }
+  return c;
+}
+`;
+
+export const SKY_STARS = `${COMMON}${STARS}
+${SKY_HEAD}  c += u_stars() * starfield(d, px);
+${SKY_TAIL}`;

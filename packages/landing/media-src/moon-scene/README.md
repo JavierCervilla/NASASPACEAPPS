@@ -28,8 +28,9 @@ Caches, all under `cache/` (git-ignored): the tiles by key; the seamless field b
 and instant (`cache/shadows/`). A second instant over the same site re-marches only its shadows (about 15 s); the same
 instant again only rewrites the two files (about 2 s).
 
-Sites live in `scripts/sites.mjs` (`im2`, IM-2 Athena's point on Mons Mouton). Another site is a target point, the
-radius read at each tile level, optionally one of the app's fine DTM tiles and its id in
+Sites live in `scripts/sites.mjs`: `im2`, IM-2 Athena's point on Mons Mouton, and the app's ten other curated sites
+south of 80° S under their ids in `packages/sim/data/horizons.json` (the site films, `../site-films`). Another site is a
+target point, the radius read at each tile level, optionally one of the app's fine DTM tiles and its id in
 `packages/sim/data/horizons.json`.
 
 ## Use it in a composition
@@ -68,6 +69,8 @@ far point, so f32 does not round the view). `MoonScene` props:
 | `earthGain` | the Earth's day side over its albedo, its own exposure (a camera exposed for the ground would clip it) |
 | `detail` | strength of the illustrative relief, 0 to 1 (1) |
 | `bounce` | the share of the surrounding sunlit ground's light a shadow receives (0.03) |
+| `fill` | the Earth's light on ground facing it, relative to the Sun's (0.002); not scaled by `exposure` |
+| `stars` | a faint procedural starfield's brightness, 0 for none (0); over 0 the sky uses `SKY_STARS` |
 | `mode` | diagnostic views: 1 geometric normals, 2 hillshade of the data alone, 3 shading normal, 4 sunlit share (0) |
 
 `frame.ts` also has `project(shot, direction, aspect)` (where a direction lands on screen) and `horizontal(direction)`
@@ -95,7 +98,8 @@ far point, so f32 does not round the view). `MoonScene` props:
 - **Light**: the app's Hapke photometry; albedo from the LROC map, blurred where real relief carries the shading (the
   polar mosaics hold their own shadows); the only fill is the Earth's light (physically small) and the light the sunlit
   regolith around scatters into shadows (`bounce`, 3 % of it), so shadows are dark but not 0; the Earth drawn
-  analytically at its true size, phase and orientation, Blue Marble cloud-free; no stars.
+  analytically at its true size, phase and orientation, Blue Marble cloud-free; no stars unless `stars` asks for a
+  faint procedural field (night views).
 
 ## What raea 0.1.0 could not do, and the way round
 

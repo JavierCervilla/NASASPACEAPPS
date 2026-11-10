@@ -36,6 +36,7 @@ node video/demo/capture/logo.mjs               # the team's wordmark as a white 
 node video/demo/capture/capture.mjs all        # media/{desktop,onfoot,mobile}.mp4 and .json, about two minutes
 cd video/demo
 RAEA="env HOME=$HOME/.gamestudio/raea/home RAEA_OFFLINE=1 $HOME/.gamestudio/raea/raea/bin/raea"
+$RAEA render backdrop.tsx -o media/plates/end-backdrop-placeholder.png --frame 0   # end card backdrop until VENT-112
 $RAEA render hero.tsx -o out/ventana-lunar-hero.mp4 --manifest out/hero.json --quality 0.97
 $RAEA check out/ventana-lunar-hero.mp4 --manifest out/hero.json --shape 16:9
 # the submission cut opens on dark 3D: render PNG frames and encode them with more bits for the near-blacks
@@ -74,7 +75,9 @@ The opening's shots are specified in `scenes/plates.ts` for the terrain pipeline
 LOLA mesh with shadows baked for the instant): instant or time-lapse span, target, camera move, length per cut and
 what must be in frame, each instant chosen from `@ventana/sim` (`skyAt` and the curated sites' terrain horizons). Each
 shot plays, in this order, a scene imported into `SCENES` (`scenes/opening.tsx`), its rendered plate
-(`media/plates/<file>`, named in `plate`), or the raea 3D fallback.
+(`media/plates/<file>`, named in `plate`), or the raea 3D fallback. The end card's backdrop is one still, `END_BACKDROP`
+in `scenes/plates.ts`: a frame of the raea Moon for now (`backdrop.tsx`), the hold frame of the hero film (the Mons
+Mouton horizon with the Earth, 2026-12-15 05:00 UTC) once it exists, shown defocused and darkened behind the text.
 
 ## Claims on screen and their sources
 

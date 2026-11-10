@@ -68,7 +68,7 @@ describe('the split draw planes (VENT-114)', () => {
     expect(FAR_PLANES.far).toBeGreaterThan(900_000);
     const step = (d: number) => (d * d) / (FAR_PLANES.near * 2 ** 24);
     expect(step(190_000)).toBeLessThan(3);
-    expect(step(NEAR_PLANES.far)).toBeLessThan(0.01);
+    expect(step(NEAR_PLANES.far)).toBeLessThan(0.02);
   });
 
   it('keeps the rings of level 2 and up for the far pass', () => {

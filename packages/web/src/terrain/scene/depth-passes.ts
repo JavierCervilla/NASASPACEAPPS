@@ -38,8 +38,11 @@
  * The near pass is painted over the far one whole: a pixel the near ground
  * covers is never the far relief's, since the windows nest (a level draws
  * where the finer one does not, ring-window.ts) and a ray leaves the nearer
- * window once. Which pass an object is in is its three.js layer; the lights
- * are on both, so both passes build the same programs.
+ * window once. One exception: where a level 1 tile failed, level 2 fills
+ * its hole in the far pass and level 1 tiles behind it can paint over that
+ * fill (a rare failure, accepted). Which pass an object is in is its
+ * three.js layer; the lights are on both, so both passes build the same
+ * programs.
  */
 import type {
   Object3D,
@@ -68,9 +71,10 @@ export const FULL_PLANES: Planes = { near: 0.2, far: 1_200_000 };
 
 /**
  * Level 1's window is 16 km across, 11.3 km to its corner and up to 0.25
- * km more when it is aligned to level 2's cells; 12.5 km holds it whole.
+ * km more when it is aligned to level 2's cells; 15 km holds it whole with
+ * 9 km of relief to spare (the south pole's rims drop 4 to 5 km).
  */
-export const NEAR_PLANES: Planes = { near: FULL_PLANES.near, far: 12_500 };
+export const NEAR_PLANES: Planes = { near: FULL_PLANES.near, far: 15_000 };
 
 /**
  * The far pass starts at 1 km: level 2 draws nearer only where a level 1

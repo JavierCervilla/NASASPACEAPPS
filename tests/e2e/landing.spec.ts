@@ -153,7 +153,6 @@ function heroRequests(page: Page): string[] {
   return asked;
 }
 
-const videosIn = (asked: readonly string[]) => asked.filter((path) => path.endsWith('.mp4'));
 const shownFrame = (page: Page) => page.locator('.hero__poster').evaluate((img: HTMLImageElement) => img.currentSrc);
 
 async function stillPage(browser: Browser, width: number, height: number) {
@@ -185,7 +184,7 @@ async function backdropLuminance(page: Page, selectors: readonly string[]): Prom
   return Promise.all(shots);
 }
 
-test.describe('the hero film (VENT-112)', () => {
+test.describe('the hero film (VENT-116)', () => {
   test('shows the still alone under reduced motion: no start frame and no video asked', async ({ browser }) => {
     const { context, page } = await stillPage(browser, 1440, 900);
     const asked = heroRequests(page);
@@ -202,16 +201,23 @@ test.describe('the hero film (VENT-112)', () => {
     await context.close();
   });
 
-  test('shows the still under Save-Data and asks for no video', async ({ page }) => {
+  // Under Save-Data nginx answers the start frame with the still's bytes (VENT-118, held by nginx-conf.test.ts), as
+  // this route does, so the page must not ask for the still again: one picture and no video.
+  test('shows the still under Save-Data with one picture asked and no video', async ({ page }) => {
     await page.addInitScript(() => {
       Object.defineProperty(navigator, 'connection', { value: { saveData: true } });
+    });
+    await page.route('**/media/hero/hero-desktop-start.webp', async (route) => {
+      const still = await route.fetch({ url: route.request().url().replace('-start.webp', '-poster.webp') });
+      await route.fulfill({ response: still });
     });
     const asked = heroRequests(page);
     await page.goto('./');
     await expect(page.locator('[data-film]')).toHaveAttribute('data-film', 'still');
-    await expect.poll(() => shownFrame(page)).toMatch(/hero-desktop-poster\.webp$/);
+    const still = page.locator('.hero__poster');
+    await expect.poll(() => still.evaluate((img: HTMLImageElement) => img.complete && img.naturalWidth)).toBe(1920);
     await page.waitForTimeout(500);
-    expect(videosIn(asked)).toEqual([]);
+    expect(asked).toEqual(['/media/hero/hero-desktop-start.webp']);
   });
 
   for (const [cut, width, height] of SIZES) {

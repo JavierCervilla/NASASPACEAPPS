@@ -39,7 +39,7 @@ const REFRESH_MS = 60_000;
 /**
  * The landing's only script (VENT-109): an old link to one of the app's
  * views (`/#horizon`) opens the app; otherwise the hero film starts
- * (VENT-112) and the live card and the month strip are worked out for the
+ * (VENT-116) and the live card and the month strip are worked out for the
  * visitor's instant, and again every minute.
  */
 export function boot(doc: Document = document): void {

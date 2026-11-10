@@ -66,7 +66,7 @@ function stage(refuseDescent = false) {
 
 const flush = () => new Promise((resolve) => setTimeout(resolve, 0));
 
-describe('which film the hero asks for (VENT-112)', () => {
+describe('which film the hero asks for (VENT-116)', () => {
   it('asks for none under reduced motion or Save-Data: the still stays', () => {
     expect(filmCut({ reducedMotion: true, saveData: false, phone: false })).toBeNull();
     expect(filmCut({ reducedMotion: false, saveData: true, phone: true })).toBeNull();
@@ -112,7 +112,7 @@ describe('which film the hero asks for (VENT-112)', () => {
   });
 });
 
-describe('the hero film\'s playback (VENT-112)', () => {
+describe('the hero film\'s playback (VENT-116)', () => {
   it('loads both parts of the cut but plays nothing until shown', () => {
     const parts = stage();
     filmPlayer(parts, 'desktop');

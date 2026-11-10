@@ -28,7 +28,8 @@
  * `render` call, wrapped so each drawn frame reports its draw calls and
  * triangles (`info.render` after the call: three resets it at each
  * render; a render on a lost context draws nothing and is not one), and
- * the canvas's context losses.
+ * the canvas's context losses. The renders of one turn are one frame,
+ * their counts summed: the split draw renders twice a frame (VENT-118).
  */
 import type { WebGLRenderer } from 'three';
 
@@ -47,18 +48,39 @@ export interface Draw {
   readonly triangles: number;
 }
 
+/**
+ * What `renderer` draws from now on, read after the render: three resets its
+ * counts at each render, unless the dev tools turned that off to add them up.
+ */
+function countsSince(renderer: WebGLRenderer): () => Draw {
+  const { info } = renderer;
+  const was = info.autoReset === false
+    ? { calls: info.render.calls, triangles: info.render.triangles }
+    : { calls: 0, triangles: 0 };
+  return () => ({ calls: info.render.calls - was.calls,
+    triangles: info.render.triangles - was.triangles });
+}
+
 /** Calls `onDraw` after each of `renderer`'s renders; returns the undo. */
 export function wrapRender(
   renderer: WebGLRenderer,
   onDraw: (draw: Draw) => void,
 ): () => void {
   const render = renderer.render;
+  let frame: Draw | null = null;
+  const close = () => {
+    if (frame) onDraw(frame);
+    frame = null;
+  };
   renderer.render = (scene, camera) => {
+    const counted = countsSince(renderer);
     render.call(renderer, scene, camera);
     // A lost context draws nothing: three returns at once.
     if (renderer.getContext().isContextLost()) return;
-    const { calls, triangles } = renderer.info.render;
-    onDraw({ calls, triangles });
+    const { calls, triangles } = counted();
+    if (!frame) queueMicrotask(close);
+    frame = { calls: (frame?.calls ?? 0) + calls,
+      triangles: (frame?.triangles ?? 0) + triangles };
   };
   return () => {
     renderer.render = render;

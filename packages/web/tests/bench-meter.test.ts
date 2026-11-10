@@ -58,7 +58,7 @@ function fakeRenderer(lose?: () => void) {
 describe('startMeter', () => {
   afterEach(() => vi.unstubAllGlobals());
 
-  it('counts the interval of each animation frame a wrapped render drew in, and no idle one', () => {
+  it('counts the interval of each animation frame a wrapped render drew in, and no idle one', async () => {
     const frames: ((at: number) => void)[] = [];
     vi.stubGlobal('requestAnimationFrame', (run: (at: number) => void) => frames.push(run));
     vi.stubGlobal('cancelAnimationFrame', () => undefined);
@@ -66,15 +66,17 @@ describe('startMeter', () => {
     const { renderer } = fakeRenderer();
     registry.attach({ renderer, kind: 'onFoot' });
     const end = startMeter('turn', registry);
-    const frame = (at: number, draw: boolean) => {
+    // The browser runs the microtasks after each animation-frame callback, so the app's frame closes before the meter's.
+    const frame = async (at: number, draw: boolean) => {
       if (draw) renderer.render({} as never, {} as never);
+      await Promise.resolve();
       frames.shift()?.(at);
     };
-    frame(0, false);
-    frame(16, true);
-    frame(32, false);
-    frame(48, false);
-    frame(100, true);
+    await frame(0, false);
+    await frame(16, true);
+    await frame(32, false);
+    await frame(48, false);
+    await frame(100, true);
     const metrics = end(false);
     expect(metrics.frames.drawn).toBe(2);
     expect(metrics.frames.worstMs).toBe(52);

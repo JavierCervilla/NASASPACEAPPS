@@ -75,6 +75,21 @@ describe('nginx.conf', () => {
   });
 });
 
+describe('the hero under Save-Data (VENT-118)', () => {
+  const hero = locations(CONF).get('^/media/hero/hero-(phone|desktop)-start\\.webp$') ?? '';
+
+  it('answers a start frame asked with Save-Data: on with the still, so the page fetches one picture', () => {
+    expect(CONF).toMatch(/map \$http_save_data \$hero_save_data \{\s*default 0;\s*~\*\^on\$ 1;\s*\}/);
+    expect(hero).toMatch(/if \(\$hero_save_data\) \{\s*rewrite \^\/media\/hero\/hero-\(phone\|desktop\)-start\\\.webp\$ \/media\/hero\/hero-\$1-poster\.webp break;\s*\}/);
+  });
+
+  it('caches the start frame per Save-Data, a day, with the security headers', () => {
+    expect(hero).toContain('include /etc/nginx/snippets/security-headers.conf;');
+    expect(hero).toContain('add_header Cache-Control "public, max-age=86400";');
+    expect(hero).toContain('add_header Vary "Save-Data";');
+  });
+});
+
 describe('the locale routes (VENT-35)', () => {
   it('serves each locale’s folder: /es/ is es/index.html', () => {
     expect(locations(CONF).get('/') ?? '').toMatch(/try_files \$uri \$uri\/ /);

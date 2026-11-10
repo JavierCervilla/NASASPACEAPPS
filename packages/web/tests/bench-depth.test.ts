@@ -50,7 +50,7 @@ describe('the depth suite in the address', () => {
 
 describe('the depth run order', () => {
   it('runs log against reversed without shadows first, then the forced shadow maps, the known loss last (VENT-107)', () => {
-    expect(depthOrder(1)).toEqual(['log', 'reversed', 'reversed+shadows', 'linear+shadows', 'log+shadows']);
+    expect(depthOrder(1)).toEqual(['split', 'log', 'reversed', 'reversed+shadows', 'linear+shadows', 'log+shadows']);
     expect(depthOrder(3)).toEqual([...depthOrder(1), ...depthOrder(1), ...depthOrder(1)]);
   });
 
@@ -63,9 +63,9 @@ describe('the depth run order', () => {
   it('keeps each run under its variant and round, with what it drew and its loss', () => {
     const depth = { drawn: 'reversed', bits: 24, reversed: true, shadowMap: true };
     let state = startState(1, false, 'depth');
-    state = recordRun(state, run('log', 1, 30).steps, HEADER, { depth });
+    state = recordRun(state, run('split', 1, 30).steps, HEADER, { depth });
     state = recordRun(state, run('log', 1, 30).steps, HEADER, { depth, lostAt: { step: 'turnMinute', seconds: 3.2 } });
-    expect(state.results.map((r) => `${r.variant}${r.run}`)).toEqual(['log1', 'reversed1']);
+    expect(state.results.map((r) => `${r.variant}${r.run}`)).toEqual(['split1', 'log1']);
     expect(state.results[0]).toMatchObject({ depth });
     expect(state.results[0]?.lostAt).toBeUndefined();
     expect(state.results[1]?.lostAt).toEqual({ step: 'turnMinute', seconds: 3.2 });
@@ -76,20 +76,20 @@ describe('the depth run addresses', () => {
   const where = { pathname: '/', search: '?bench=depth&benchFast&depth=linear&shadows=force&benchRun=2&lat=-85&lon=40' };
 
   it('asks each variant its own depth and shadow switches, and drops the last run\'s', () => {
-    expect(variantParams('log')).toEqual([]);
+    expect(variantParams('split')).toEqual([]);
+    expect(variantParams('log')).toEqual([['depth', 'log']]);
     expect(variantParams('reversed')).toEqual([['depth', 'reversed']]);
     expect(variantParams('reversed+shadows')).toEqual([['depth', 'reversed'], ['shadows', 'force']]);
     expect(variantParams('linear+shadows')).toEqual([['depth', 'linear'], ['shadows', 'force']]);
-    expect(variantParams('log+shadows')).toEqual([['shadows', 'force']]);
+    expect(variantParams('log+shadows')).toEqual([['depth', 'log'], ['shadows', 'force']]);
     expect(query(runHref(where, 1, 'reversed'))).toEqual({
       bench: 'depth', benchFast: '', site: 'im2-athena', benchRun: '1', depth: 'reversed',
     });
     expect(query(runHref(where, 2, 'reversed+shadows'))).toEqual({
       bench: 'depth', benchFast: '', site: 'im2-athena', benchRun: '2', depth: 'reversed', shadows: 'force',
     });
-    expect(query(runHref(where, 0, 'log'))).toEqual({ bench: 'depth', benchFast: '', site: 'im2-athena', benchRun: '0' });
-    expect(query(runHref(where, 3, 'log+shadows'))).toMatchObject({ shadows: 'force' });
-    expect(query(runHref(where, 3, 'log+shadows')).depth).toBeUndefined();
+    expect(query(runHref(where, 0, 'split'))).toEqual({ bench: 'depth', benchFast: '', site: 'im2-athena', benchRun: '0' });
+    expect(query(runHref(where, 3, 'log+shadows'))).toMatchObject({ shadows: 'force', depth: 'log' });
   });
 
   it('opens the results without any switch, and «Close» leaves them too', () => {

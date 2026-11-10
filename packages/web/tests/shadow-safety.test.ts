@@ -66,4 +66,21 @@ describe('shadow safety', () => {
       expect(shadowMapUnsafe(name, true)).toBe(false);
     }
   });
+
+  // VENT-114: the split draw and the linear buffer survive the shadow map on PowerVR, so they keep it.
+  it('keeps it with the split and the linear depth on a PowerVR or a hidden GPU', () => {
+    const powervr = 'ANGLE (Imagination Technologies, PowerVR D-Series DXT-48-1536, OpenGL ES 3.2)';
+    for (const mode of ['split', 'linear'] as const) {
+      expect(shadowMapUnsafe(powervr, true, mode)).toBe(false);
+      expect(shadowMapUnsafe(null, true, mode)).toBe(false);
+      expect(shadowMapUnsafe('Brave', true, mode)).toBe(false);
+    }
+  });
+
+  it('still drops it with the single-pass logarithmic and reversed depth', () => {
+    for (const mode of ['log', 'reversed'] as const) {
+      expect(shadowMapUnsafe('PowerVR Rogue GE8320', false, mode)).toBe(true);
+      expect(shadowMapUnsafe(null, true, mode)).toBe(true);
+    }
+  });
 });

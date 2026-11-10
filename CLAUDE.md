@@ -633,8 +633,11 @@ Every visible change follows `.claude/skills/apple-design/SKILL.md` (vendored fr
   no headers or no next bytes, aborts it as a passing failure (`STALL_MS`, `ring/ring-silence.ts`, `ring-watched.ts`), and
   passing failures are tried again after 0.5, 1, 2 and 4 s, a longer Retry-After waited only up to 8 s (`TILE_RETRY`,
   `ring-http.ts`); once the tries run out a tile is a hole its parent fills; the tile route's full queue asks for 2 s
-  (`TILE_BUSY_RETRY_SEC`). Held by `tests/terrain-ring-waits.test.ts`. A depth buffer that is logarithmic (the rings reach 190 km, the sky bodies are drawn at 450 to 900 km so
-  terrain always hides them) keeps the 0.2 m near plane from z-fighting. The sky at the shared instant (`skyAt`): the Sun at its
+  (`TILE_BUSY_RETRY_SEC`). Held by `tests/terrain-ring-waits.test.ts`. The rings reach 190 km and the sky bodies are drawn at 450 to 900 km, so one linear 24-bit depth buffer cannot keep a 0.2 m
+  near plane; the view draws in **two passes of linear depth** on every GPU (VENT-114, `scene/depth-passes.ts`,
+  `scene/stage-draw.ts`; `depthChoice` in `depth-mode.ts` names it `split`, the default): the FAR pass (ring levels 2 and 3, the far horizon's wall and the sky: stars, Sun, Earth; planes 1 km to 1200 km, 2 m of depth resolution at 190 km) is drawn
+  first, then the depth buffer alone is cleared (`autoClearColor` off), then the NEAR pass (ring levels 0 and 1, the near ground, rocks, craters; planes 0.2 m to 15 km, which holds level 1's window whole, 11.3 km to its corner, with 9 km of relief to spare) is drawn over it with the Sun's shadow map, asked
+  between the passes by `stage.shadow.beforeDraw()` so only the near pass renders it (no far mesh casts or receives a shadow). Which pass an object is in is its three.js layer (`sendFar`, `farWhen`: the lights are on both, so both passes build the same programs; the camera's full 0.2 m to 1200 km planes are put back after the draw, for the labels and the bodies' marks). The near pass is painted whole over the far one, which is exact because the windows nest (a level draws where the finer one does not) and a ray leaves the nearer window once; a ring tile that failed at level 1 is a hole filled by level 2 in the far pass, which clips it under 1 km. `stage.drawing.cost()` sums both passes for `data-draws` and the crash report. The sky at the shared instant (`skyAt`): the Sun at its
   true size and direction is the key light, with hard shadows near the point (shadow map), per vertex over the near ground and, level by level, over
   each ring from a grid of its own (16, 64 and 256 km at 62.5 m to 1 km, `scene/ring-shade.ts`, in slices, no cast shadow beyond a grid's edge; distant rings are shaded by their normals, no haze: the Moon has no
   atmosphere) (`sun-shade.ts`), darkening the whole view when terrain beyond the near ground hides it (`ridge.ts` `blockerOf`,
@@ -700,12 +703,13 @@ Every visible change follows `.claude/skills/apple-design/SKILL.md` (vendored fr
   shows geometry (`shadow-jobs.ts` `castsShadow`: not the rings' `lit:` and `far` shading, nor the clod and crater bakes)),
   so turning the camera renders no shadow pass (`data-shadows` on the host counts the passes done, held by
   `tests/shadow-gate.test.ts` and `tests/e2e/vent-73-shadow-pass.spec.ts`); a path that adds a shadow caster outside the
-  slicer must call `stage.shadow.mark()`. A PowerVR GPU draws the view with no shadow map at every tier (VENT-75,
-  `src/terrain/shadow-safety.ts`, read from `unmaskedGpuName` in `stage.ts`), and so does a phone whose browser hides its GPU (no
+  slicer must call `stage.shadow.mark()`. On a PowerVR GPU the shadow map with a logarithmic or reversed single-pass depth lost the context (VENT-75), so with `?depth=log` or `?depth=reversed` the view still draws there with no shadow map at every tier
+  (`src/terrain/shadow-safety.ts`, read from `unmaskedGpuName` in `stage-renderer.ts`), and so does a phone whose browser hides its GPU (no
   `WEBGL_debug_renderer_info`: the Pixel 10 went unrecognised and lost both contexts in the bench, VENT-84; or a name
   that is no GPU's, not matching `KNOWN_GPU`: Brave answers «Brave», and the view lost its context after 9.8 s of turning
   at low, VENT-92; `tests/e2e/vent-84-hidden-gpu-shadows.spec.ts`): the human's bisect on the Pixel 10 kept the context
-  with the shadows or the logarithmic depth left out and lost it with both on, even at low; held by
+  with the shadows or the logarithmic depth left out and lost it with both on, even at low, and with a linear depth and the shadow map on it
+  ran a minute of turning, so the default split draw (linear in both passes) keeps the shadow map on every GPU, PowerVR and hidden ones included (VENT-114, `tests/e2e/vent-114-split-depth.spec.ts`: on IM-2's recorded relief at the high tier the skyline of `?depth=split` against `?depth=log` differs by a mean of under 0.2 of 255); held by
   `tests/shadow-safety.test.ts` and `tests/e2e/vent-75-powervr-shadows.spec.ts` (the GPU's name spoofed). The view's pixel ratio is `terrainPixelRatio` (`src/terrain/pixel-ratio.ts`: a phone
   at medium draws at 1.25 at most, the globe and the desktop keep the tier's cap, `tests/pixel-ratio.test.ts`). While a
   finger drags the view or its swipe coasts on a phone, frames are spaced to about 30 a second
@@ -876,8 +880,7 @@ Every visible change follows `.claude/skills/apple-design/SKILL.md` (vendored fr
   (`BenchFrame.tsx`, `BenchTable.tsx`); the first state and the results take the focus to their first button. Params: `benchRuns=1|3` presets the runs (3), `benchFast` scales the
   waits by 0.2 and the turn to 90° for software GL (the e2e). `?bench=depth` (VENT-104; any other value, or none, is
   the A/B suite above) is the depth suite, the bisect of VENT-103 played by itself on the phone (`src/bench/depth-*.ts`):
-  variants, in this order (VENT-107), `log` (the app) and `reversed` (`depth=reversed`, the shadow map as the app has
-  it), the comparison for reversed depth by default on PowerVR, then `reversed+shadows`, `linear+shadows` and
+  variants, in this order (VENT-107, VENT-114), `split` (the app: two linear passes with the shadow map), `log` (`depth=log`) and `reversed` (`depth=reversed`), both with the shadow map as the safety rules say, the comparison for the single-pass depth buffers on PowerVR, then `reversed+shadows`, `linear+shadows` and
   `log+shadows` (`shadows=force`), the known losses last, since a loss can make Chrome block WebGL for the site, each a clean page load whose
   address carries its switches (`runHref`; the results and «Close» drop them), one round by default (`benchRuns=3` for
   three); its script (`depth-script.ts`, `DEPTH_SCRIPT_VERSION`) opens `#horizon` at IM-2 and settles as step c does,
@@ -905,7 +908,7 @@ Every visible change follows `.claude/skills/apple-design/SKILL.md` (vendored fr
   a 20-minute budget (VENT-108).
   `?onfoot=shadows,far,shade,logdepth,photometry,antitile,footprint,fine,rocks` (`astronaut` and `lander` from before VENT-54 are ignored, so old links still open)
   leaves parts out to bisect a crash from a phone's address bar (`src/terrain/leave-out.ts`, unknown words ignored,
-  listed in `data-onfoot`, kept by the language switch like `?site=`). Point 8 of VENT-80 (VENT-103) adds two more for the Pixel's bisect (`src/terrain/depth-mode.ts`, applied by `scene/stage-renderer.ts`): `?depth=log|linear|reversed` picks the depth buffer (`reversed` is three's `reversedDepthBuffer`, only with `EXT_clip_control` from the page's probe, else the logarithmic one; `?onfoot=logdepth` still means linear, and `?depth=` wins), and `?shadows=force` draws the shadow map where `shadow-safety.ts` turns it off; the choice is in `data-depth` and the report notes «depth reversed · 24 bits · shadow map on (forced)», which `?debug` shows among its breadcrumbs (`tests/depth-mode.test.ts`, `tests/e2e/vent-103-depth-switch.spec.ts`). The API gzips its JSON
+  listed in `data-onfoot`, kept by the language switch like `?site=`). Point 8 of VENT-80 (VENT-103) adds two more for the Pixel's bisect (`src/terrain/depth-mode.ts`, applied by `scene/stage-renderer.ts`): `?depth=split|log|linear|reversed` picks the depth buffer (`split` is the default, two linear passes; `log`, `linear` and `reversed` draw one pass, as escape hatches; `reversed` is three's `reversedDepthBuffer`, only with `EXT_clip_control` from the page's probe, else the default split one; `?onfoot=logdepth` still means linear, and `?depth=` wins), and `?shadows=force` draws the shadow map where `shadow-safety.ts` turns it off; the choice is in `data-depth` and the report notes «depth reversed · 24 bits · shadow map on (forced)», which `?debug` shows among its breadcrumbs (`tests/depth-mode.test.ts`, `tests/e2e/vent-103-depth-switch.spec.ts`). The API gzips its JSON
   (`compress()` in `packages/server/src/app.ts`; base64 floats shrink about 26 %). Held by `tests/terrain-view.test.ts`,
   `tests/terrain-ring.test.ts`, `tests/view-tier.test.ts`, `tests/frame-probe.test.ts`, `tests/leave-out.test.ts`, `tests/relight.test.ts`, `tests/input-change.test.ts`, `tests/on-foot-report.test.ts`, `tests/on-foot-device.test.ts`, `tests/scene-guard.test.ts` and `tests/e2e/terrain-view.spec.ts` (the ring and tile routes answered by the simulator's own core over a synthetic polar grid, or by real LOLA tiles of IM-2 recorded from the production API at the 20 m tier (VENT-59), `fixtures/terrain-ring-im2/`: first person only, no camera switch, no `.glb` fetched, the caption naming no lander, no idle
   frames, the Sun drawn hidden behind a far wall, none of the view's files in the first load).

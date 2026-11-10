@@ -32,15 +32,15 @@ const choose = (search: string, clipControl = true) =>
   depthChoice(search, parseLeaveOut(search), clipControl);
 
 describe('depth mode (VENT-103)', () => {
-  it('draws with the logarithmic depth and the usual shadows by default', () => {
-    expect(choose('?site=im2-athena')).toEqual({ mode: 'log', asked: null, forceShadows: false });
+  it('draws in two linear passes and with the usual shadows by default', () => {
+    expect(choose('?site=im2-athena')).toEqual({ mode: 'split', asked: null, forceShadows: false });
   });
 
   it('keeps ?onfoot=logdepth meaning a linear depth', () => {
     expect(choose('?onfoot=logdepth').mode).toBe('linear');
   });
 
-  it.each(['log', 'linear', 'reversed'] as const)('takes ?depth=%s', (mode) => {
+  it.each(['split', 'log', 'linear', 'reversed'] as const)('takes ?depth=%s', (mode) => {
     expect(choose(`?depth=${mode}`)).toMatchObject({ mode, asked: mode });
   });
 
@@ -48,13 +48,13 @@ describe('depth mode (VENT-103)', () => {
     expect(choose('?onfoot=logdepth&depth=reversed').mode).toBe('reversed');
   });
 
-  it('falls back to the logarithmic depth when the GPU has no EXT_clip_control', () => {
-    expect(choose('?depth=reversed', false)).toEqual({ mode: 'log', asked: 'reversed', forceShadows: false });
+  it('falls back to the default split draw when the GPU has no EXT_clip_control', () => {
+    expect(choose('?depth=reversed', false)).toEqual({ mode: 'split', asked: 'reversed', forceShadows: false });
   });
 
   it('reads the words in any case and ignores an unknown one', () => {
     expect(choose('?depth=%20Reversed%20').mode).toBe('reversed');
-    expect(choose('?depth=zbuffer')).toMatchObject({ mode: 'log', asked: null });
+    expect(choose('?depth=zbuffer')).toMatchObject({ mode: 'split', asked: null });
   });
 
   it('forces the shadow map only for ?shadows=force', () => {

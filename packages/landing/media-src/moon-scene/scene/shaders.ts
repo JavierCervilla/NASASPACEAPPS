@@ -161,12 +161,21 @@ fn detail_height(p: vec2<f32>, px: f32, min_size: f32) -> f32 {
     if (w > 0.0 && cell >= min_size) { h += w * craters(p, cell, 11u + k); }
     cell *= 2.0;
   }
-  // hummocky regolith from 0.4 to 13 m, amplitude 1 % of the scale (slopes of 2 to 4 degrees)
+  // hummocky regolith from 0.4 to 13 m, amplitude 3 % of the scale: RMS
+  // slopes of a few degrees, as LOLA measures on the highlands at metre
+  // baselines (Rosenburg et al. 2011, JGR 116, E02001)
   var size = 0.4;
   for (var k = 0u; k < 6u; k++) {
     let w = smoothstep(2.0 * px, 6.0 * px, size);
-    if (w > 0.0 && size >= min_size) { h += w * 0.01 * size * vnoise(p / size, 401u + k); }
+    if (w > 0.0 && size >= min_size) { h += w * 0.03 * size * vnoise(p / size, 401u + k); }
     size *= 2.0;
+  }
+  // clods and grain, 6 to 24 cm, seen only in the nearest metres
+  var grain = 0.06;
+  for (var k = 0u; k < 3u; k++) {
+    let w = smoothstep(2.0 * px, 6.0 * px, grain);
+    if (w > 0.0 && grain >= min_size) { h += w * 0.06 * grain * vnoise(p / grain, 601u + k); }
+    grain *= 2.0;
   }
   // k = 0.006 (a little over the plains' Diviner median), q held at 9.39
   // below k = 0.02 as the app does; the chance per cell of each doubling
@@ -238,8 +247,15 @@ fn relief_normal(m: vec3<f32>, radial: vec3<f32>) -> vec3<f32> {
   let n = to_world(normalize(vec3<f32>(raw.x, -raw.z, raw.y)));
   return normalize(mix(radial, n, 0.34));
 }
+// The visible share of a disc whose centre stands x radii over an edge.
+fn disc_share(x: f32) -> f32 {
+  let c = clamp(x, -1.0, 1.0);
+  return 1.0 - acos(c) / PI + c * sqrt(1.0 - c * c) / PI;
+}
 // The share of the Sun's disc the illustrative relief leaves on p: a march
 // toward the Sun over the detail height, against the base surface's plane.
+// The edge is soft by the Sun's own 0.53° and, where a pixel spans more
+// than that seen from the occluder, by the pixel (so it never aliases).
 fn detail_sunlit(p: vec2<f32>, h0: f32, base: vec3<f32>, l: vec3<f32>, px: f32) -> f32 {
   let up_part = dot(base, l);
   if (up_part <= 0.0) { return 0.0; }
@@ -251,24 +267,34 @@ fn detail_sunlit(p: vec2<f32>, h0: f32, base: vec3<f32>, l: vec3<f32>, px: f32) 
   let t0 = max(px, 0.02);
   let t1 = 160.0;
   var worst = -1.0;
+  var at = t1;
   for (var i = 0; i < 24; i++) {
     let t = t0 * pow(t1 / t0, f32(i) / 23.0);
     // a scale whose relief subtends less than the Sun's disc from here is skipped
-    let rise = detail_height(p + dir * t, px, 0.08 * t) - h0 - t * slope;
-    worst = max(worst, rise / t);
-    if (worst > 0.00465) { break; }
+    let rise = (detail_height(p + dir * t, px, 0.08 * t) - h0 - t * slope) / t;
+    if (rise > worst) { worst = rise; at = t; }
+    if (worst > 0.02) { break; }
   }
-  return smoothstep(0.00465, -0.00465, worst);
+  let radius = 0.004653 + 0.5 * px / at;
+  return disc_share(-worst / radius);
 }
 fn shade(in: VertexOutput) -> vec4<f32> {
   let wp = in.world_position.xyz;
   let pw = wp - u_centre();
   let radial = normalize(pw);
   let m = normalize(to_moon(pw));
-  let albedo = albedo_at(m, in.uv.y);
+  // a faint mottling of the regolith's albedo (±6 %), 1 to 30 m, fading by the footprint
+  let dist0 = length(wp - u_eye());
+  let px0 = max(dist0 * u_pixel(), 0.002);
+  let mottle = 1.0 + 0.04 * vnoise(wp.xz / 1.3, 701u) * smoothstep(2.0 * px0, 6.0 * px0, 1.3) + 0.04 * vnoise(wp.xz / 9.0, 702u) * smoothstep(2.0 * px0, 6.0 * px0, 9.0) + 0.03 * vnoise(wp.xz / 31.0, 703u) * smoothstep(2.0 * px0, 6.0 * px0, 31.0);
+  let albedo = albedo_at(m, in.uv.y) * mottle;
   let base = normalize(mix(normalize(in.world_normal), relief_normal(m, radial), in.uv.y));
   let dist = length(wp - u_eye());
-  let px = max(dist * u_pixel(), 0.002);
+  let v = normalize(u_eye() - wp);
+  // a pixel's footprint: across the view, and stretched along it on ground
+  // seen at a grazing angle (the geometric mean of the two), so a scale
+  // fades out before it would alias into speckles in depth
+  let px = max(dist * u_pixel(), 0.002) / sqrt(max(dot(base, v), 0.02));
   let l = u_sun();
   // illustrative relief: its slope by central differences at the footprint
   let e = max(0.5 * px, 0.01);
@@ -278,13 +304,14 @@ fn shade(in: VertexOutput) -> vec4<f32> {
   let n = normalize(base + vec3<f32>(-hx, 0.0, -hz) / e * u_detail());
   var lit = in.uv.x;
   if (lit > 0.001 && u_detail() > 0.0 && px < 8.0) { lit *= mix(1.0, detail_sunlit(wp.xz, h0, base, l, px), u_detail()); }
-  let v = normalize(u_eye() - wp);
   let mu0 = dot(n, l);
   let mu = max(dot(n, v), 0.02);
   let alpha = acos(clamp(dot(l, v), -1.0, 1.0));
   let f = select(0.0, reflectance(mu0, mu, alpha), mu0 > 0.0) * lit;
-  // fill: the Earth's light (bluish) and a little bounce from the sunlit ground around
-  let earthshine = max(dot(n, u_earth_dir()), 0.0) * vec3<f32>(0.55, 0.7, 1.0) * u_fill() + vec3<f32>(u_fill() * 2.0 * u_exposure() * max(dot(base, u_sun()), 0.0) * 4.0);
+  // fill: the Earth's light (bluish, physically small) and the light the
+  // sunlit regolith around scatters into a shadow, a few per cent of it
+  let around = reflectance(max(dot(radial, l), 0.04), mu, alpha);
+  let earthshine = max(dot(n, u_earth_dir()), 0.0) * vec3<f32>(0.55, 0.7, 1.0) * u_fill() + vec3<f32>(u_bounce() * around * u_exposure());
   // diagnostic views (u_mode): 1 the geometric normal as colour, 2 a hard
   // hillshade of the geometric normal alone, 3 the shading normal's hillshade
   // (data and detail), 4 the sunlit share (baked and per pixel)

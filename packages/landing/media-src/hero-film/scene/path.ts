@@ -43,8 +43,9 @@
  *   smooth function of the log altitude, so the aim stops when the camera
  *   stops.
  * - Lens: from 2 km down the focal length grows continuously (its log
- *   follows the same smooth curve of the log altitude) to a long lens on
- *   the Earth, at its true size; it settles with the camera.
+ *   follows the same smooth curve of the log altitude) to a moderate long
+ *   lens on the Earth, at its true size, still wide enough for the near
+ *   ground's perspective; it settles with the camera.
  */
 import { add, cross, dot, norm, scale, sub, type Frame, type Shot as SceneShot, type V3 } from '../../moon-scene/scene/frame.ts';
 
@@ -67,10 +68,10 @@ export interface Look {
 }
 
 export const LOOKS = {
-  /** 16:9: a 58° horizontal field narrowing to 27°; the Earth (1.8°) top centre, right of the headline's box */
-  desktop: { fovYDeg: 34.64, fovYEndDeg: 15.36, headingDeg: 324.5, pitchEndDeg: 0.8, startAltM: 5.6e6 },
-  /** 9:16: a 23° horizontal field narrowing to 9°; the Earth centred near the top */
-  phone: { fovYDeg: 40, fovYEndDeg: 15.9, headingDeg: 324.7, pitchEndDeg: 1.0, startAltM: 9.0e6 },
+  /** 16:9: a 58° horizontal field narrowing to 38°; the Earth (1.8°) above the horizon, right of the headline's box */
+  desktop: { fovYDeg: 34.64, fovYEndDeg: 21.9, headingDeg: 324.5, pitchEndDeg: 1.7, startAltM: 5.6e6 },
+  /** 9:16: a 40° vertical field narrowing to 26° (15° wide); the Earth centred above the horizon */
+  phone: { fovYDeg: 40, fovYEndDeg: 26, headingDeg: 324.7, pitchEndDeg: 2.4, startAltM: 9.0e6 },
 } as const satisfies Record<string, Look>;
 
 export interface Shot extends SceneShot {

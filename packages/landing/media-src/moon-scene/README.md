@@ -67,6 +67,7 @@ far point, so f32 does not round the view). `MoonScene` props:
 | `exposure` | the sunlit ground's exposure; keep it a smooth function of time |
 | `earthGain` | the Earth's day side over its albedo, its own exposure (a camera exposed for the ground would clip it) |
 | `detail` | strength of the illustrative relief, 0 to 1 (1) |
+| `bounce` | the share of the surrounding sunlit ground's light a shadow receives (0.03) |
 | `mode` | diagnostic views: 1 geometric normals, 2 hillshade of the data alone, 3 shading normal, 4 sunlit share (0) |
 
 `frame.ts` also has `project(shot, direction, aspect)` (where a direction lands on screen) and `horizontal(direction)`
@@ -87,10 +88,13 @@ far point, so f32 does not round the view). `MoonScene` props:
 - **Illustrative relief under the data's resolution**, per pixel in the shader, seeded by world cell, so it never
   repeats and never switches: craters 0.15 to 19 m (count from Minton et al. 2019's lower bound at Apollo 15, depths
   from Basilevsky's classes, as the app's on-foot view), rocks 8 cm to 1.3 m (Golombek and Rapp's law, k = 0.006, q held
-  at 9.39), hummocks 0.4 to 13 m; each scale fades in by the pixel's footprint, and their shadows are marched toward
-  the Sun per pixel.
+  at 9.39), hummocks 0.4 to 13 m (RMS slopes of a few degrees, as LOLA measures on the highlands: Rosenburg et al. 2011),
+  clods 6 to 24 cm and a faint albedo mottling. Each scale fades in by the pixel's footprint, stretched on ground seen
+  at a grazing angle, so it fades out before it aliases. Their shadows are marched toward the Sun per pixel, soft by
+  the visible share of the Sun's disc (and by the pixel where it is larger).
 - **Light**: the app's Hapke photometry; albedo from the LROC map, blurred where real relief carries the shading (the
-  polar mosaics hold their own shadows); the Earth's light and a little bounce as the only fill; the Earth drawn
+  polar mosaics hold their own shadows); the only fill is the Earth's light (physically small) and the light the sunlit
+  regolith around scatters into shadows (`bounce`, 3 % of it), so shadows are dark but not 0; the Earth drawn
   analytically at its true size, phase and orientation, Blue Marble cloud-free; no stars.
 
 ## What raea 0.1.0 could not do, and the way round

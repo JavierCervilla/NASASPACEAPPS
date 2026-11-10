@@ -21,14 +21,19 @@ node $S/build.mjs --instant 2026-12-15T05:00:00Z --out $F/media/moon --sector 32
 node $F/scripts/framing.mjs        # the path as built, where the Earth lands
 cd $F
 RAEA="env HOME=$HOME/.gamestudio/raea/home RAEA_OFFLINE=1 $HOME/.gamestudio/raea/raea/bin/raea"
-$RAEA render film.tsx --composition desktop-descent -o out/masters/desktop-descent-png   # 421 PNG, about 40 s
-$RAEA render film.tsx --composition phone-descent -o out/masters/phone-descent-png
-bash scripts/deliver.sh            # lossless masters, the holds, posters and H.264 previews from the PNGs
+$RAEA render film.tsx --composition desktop-descent-2x -o out/masters/desktop-descent-2x-png   # 421 PNG at 2x
+$RAEA render film.tsx --composition phone-descent-2x -o out/masters/phone-descent-2x-png
+bash scripts/deliver.sh            # scales the 2x frames down, then masters, holds, posters and previews
+# coverage: the Moon fills every frame below its horizon (no sky under the ground)
+$RAEA render film.tsx --composition diag-normals --w 480 --h 270 -o out/coverage/desktop
+$RAEA render film.tsx --composition diag-normals-phone --w 270 --h 480 -o out/coverage/phone
+python3 scripts/coverage.py out/coverage/desktop out/coverage/phone
 ```
 
-`media/` and `out/` are git-ignored. Compositions: `<look>-descent` (frames 0 to 420, the masters), `<look>` (descent
-and 6 s of hold, previews), `<look>-guides` (with the brief's framing guides) and `diag-*` (normals, hillshade, shading,
-sunlit, no detail: the views used to hunt the tile structure).
+`media/` and `out/` are git-ignored. Compositions: `<look>-descent` (frames 0 to 420), `<look>-descent-2x` (the same
+at twice the size: the masters are these frames scaled down, so the fine relief is supersampled), `<look>` (descent
+and 6 s of hold), `<look>-guides` (with the brief's framing guides) and `diag-*`, `diag-*-phone` (normals, hillshade,
+shading, sunlit, no detail: the views used to hunt the tile structure and to check coverage).
 
 ## Deliverables (out/)
 
@@ -45,9 +50,10 @@ sunlit, no detail: the views used to hunt the tile structure).
 The path (`scene/path.ts`) follows the brief's beats on a monotone cubic of the log altitude, flat at both ends: about
 3 900 km at 3 s, 150 km at 7 s, 200 m at 11.5 s, 2 m at 14 s, the speed falling all the way down. The camera comes in
 along the final heading over the south pole, looking at the lit Moon, then at the target, then pitching up to the
-horizon. From 2 km down the focal length grows on the same smooth curve: desktop 58° to 27° horizontal, phone 23° to 9°,
-so the Earth, at its true 1.83°, takes 7 % of the desktop frame's width and 20 % of the phone's. Final heading 324.5°
-(desktop) and 324.7° (phone), on the Earth.
+horizon. From 2 km down the focal length grows on the same smooth curve, stopping wide enough for the near ground's
+perspective: desktop 58° to 38° horizontal (21.9° vertical), phone 40° to 26° vertical (15° horizontal), so the Earth,
+at its true 1.83°, takes 4.6 % of the desktop frame's width and 12 % of the phone's. Final heading 324.5° (desktop) and
+324.7° (phone), on the Earth; pitch 1.7° and 2.4°.
 
 ## Provenance (for ASSETS.md)
 
@@ -71,4 +77,5 @@ so the Earth, at its true 1.83°, takes 7 % of the desktop frame's width and 20 
 - **Photometry**: Hapke et al. 2012 (JGR 117, E00H15), lunar highlands, as the app's on-foot view.
 - **Illustrative detail** (below the relief's resolution, generated, not measured): crater counts after Minton et al.
   2019 (arXiv:1902.07746) lower bound, depths after Basilevsky 1976 (LPSC 7); rocks after Golombek and Rapp 1997 (JGR
-  102, 4117); our own hummock noise. The caption should say it is illustrative.
+  102, 4117); hummock roughness sized to LOLA's highland slopes (Rosenburg et al. 2011, JGR 116, E02001); our own
+  noise for clods and albedo mottling. The caption should say it is illustrative.

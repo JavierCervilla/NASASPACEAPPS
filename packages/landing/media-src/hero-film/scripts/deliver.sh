@@ -22,7 +22,7 @@
 #         -=:::...:..   .  .           (c) 2026 Universelle
 #             :::.. .  .               SPDX-License-Identifier: MIT
 
-# The hero film's deliverables from the rendered descent PNGs (README.md):
+# The hero film's deliverables from the rendered 2x descent PNGs (README.md):
 # lossless masters (FFV1), the hold (the descent's last frame, locked, 7 s,
 # so it loops seamlessly and starts exactly where the descent ends), PNG
 # posters and H.264 previews, each preview under 30 MB. Needs ffmpeg.
@@ -35,6 +35,10 @@ HOLD_FRAMES=210
 mkdir -p out/masters out/posters out/previews
 for look in desktop phone; do
   png="out/masters/${look}-descent-png"
+  # the masters are the supersampled render scaled down (Lanczos)
+  if [ "${look}" = desktop ]; then size=1920:1080; else size=1080:1920; fi
+  mkdir -p "$png"
+  ffmpeg -loglevel error -y -i "out/masters/${look}-descent-2x-png/frame-%05d.png" -vf "scale=${size}:flags=lanczos" -start_number 0 "$png/frame-%05d.png"
   last=$(ls "$png" | sort | tail -1)
   test "$(ls "$png" | wc -l | tr -d ' ')" = 421 || { echo "missing frames in $png" >&2; exit 1; }
   ffmpeg -loglevel error -y -framerate $FPS -i "$png/frame-%05d.png" -c:v ffv1 -level 3 -pix_fmt gbrp "out/masters/hero-${look}-descent.mkv"

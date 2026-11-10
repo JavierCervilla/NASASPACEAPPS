@@ -53,6 +53,8 @@ export interface MoonSceneProps {
   readonly earthGain?: number;
   /** strength of the illustrative relief, 0 to 1 */
   readonly detail?: number;
+  /** the share of the surrounding sunlit ground's light a shadow receives (0.03) */
+  readonly bounce?: number;
   /** a diagnostic view of the surface (shaders.ts), 0 for the picture */
   readonly mode?: number;
 }
@@ -73,7 +75,7 @@ export function sceneFrame(world: WorldFile): Frame {
 }
 
 /** The camera, the sky (Sun, Earth) and the Moon for one frame. */
-export function MoonScene({ world, media = "moon/", shot, height, exposure, earthGain = 1, detail = 1, mode = 0 }: MoonSceneProps) {
+export function MoonScene({ world, media = "moon/", shot, height, exposure, earthGain = 1, detail = 1, bounce = 0.03, mode = 0 }: MoonSceneProps) {
   const frame = sceneFrame(world);
   const earthRel = sub(frame.earth, shot.eye);
   const pixel = (2 * Math.tan(shot.fovY / 2)) / height;
@@ -81,7 +83,7 @@ export function MoonScene({ world, media = "moon/", shot, height, exposure, eart
   const terrain = {
     east: frame.east, up: frame.up, north: frame.north, centre: frame.centre,
     eye: shot.eye, sun: frame.sun, earth_dir: norm(earthRel), exposure,
-    pixel, detail, fill: 0.002, mode,
+    pixel, detail, fill: 0.002, bounce, mode,
   };
   const sky = {
     eye: shot.eye, sun: frame.sun, pixel,

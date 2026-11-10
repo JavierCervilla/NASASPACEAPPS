@@ -34,9 +34,12 @@
  * Compositions, per look (`desktop` 16:9, `phone` 9:16):
  * - `<look>-descent`: the 14 s descent, frames 0 to 420; its last frame is
  *   the hold's (README.md makes the hold and the poster from it).
+ * - `<look>-descent-2x`: the same at twice the size, supersampled: the
+ *   masters are these frames scaled down (the detail still fades by the
+ *   final pixel's footprint).
  * - `<look>`: the descent and 6 s of the locked hold, for previews.
  * - `<look>-guides`: the same with the review guides over it.
- * - `diag-<view>`: diagnostic views of the surface, desktop.
+ * - `diag-<view>`, `diag-<view>-phone`: diagnostic views of the surface.
  */
 import { AbsoluteFill, Composition, registerRoot, useCurrentFrame } from "raea";
 import world from "./media/moon/moon-im2-20261215T0500Z.json";
@@ -54,7 +57,7 @@ const frame = sceneFrame(built);
  */
 function exposureAt(altitude: number): number {
   const s = Math.min(1, Math.max(0, (Math.log(altitude) - Math.log(3)) / (Math.log(3e4) - Math.log(3))));
-  return 1.6 + 0.8 * s * s * (3 - 2 * s);
+  return 1.9 + 0.5 * s * s * (3 - 2 * s);
 }
 
 interface FilmProps {
@@ -74,7 +77,7 @@ function Film({ look, width, height, guides = false, mode = 0, detail = 1 }: Fil
   const shot = shotAt(frame, t, look);
   return (
     <AbsoluteFill style={{ background: "#000000" }}>
-      <MoonScene world={built} shot={shot} height={height} exposure={exposureAt(shot.altitude)} earthGain={1.8} detail={detail} mode={mode} />
+      <MoonScene world={built} shot={shot} height={height} exposure={exposureAt(shot.altitude)} earthGain={mode > 0 ? 0 : 1.8} detail={detail} mode={mode} />
       {guides ? <Guides frame={frame} shot={shot} aspect={width / height} t={t} headingDeg={look.headingDeg} /> : null}
     </AbsoluteFill>
   );
@@ -94,6 +97,9 @@ registerRoot(() => (
       <Composition key={`${id}-descent`} id={`${id}-descent`} component={() => <Film look={look} width={width} height={height} />} width={width} height={height} fps={FPS} durationInFrames={DESCENT} />
     ))}
     {looks.map(({ id, look, width, height }) => (
+      <Composition key={`${id}-descent-2x`} id={`${id}-descent-2x`} component={() => <Film look={look} width={width} height={height} />} width={2 * width} height={2 * height} fps={FPS} durationInFrames={DESCENT} />
+    ))}
+    {looks.map(({ id, look, width, height }) => (
       <Composition key={id} id={id} component={() => <Film look={look} width={width} height={height} />} width={width} height={height} fps={FPS} durationInFrames={ALL} />
     ))}
     {looks.map(({ id, look, width, height }) => (
@@ -101,6 +107,9 @@ registerRoot(() => (
     ))}
     {DIAGNOSTICS.map((name, i) => (
       <Composition key={name} id={`diag-${name}`} component={() => <Film look={LOOKS.desktop} width={1920} height={1080} mode={i + 1} />} width={1920} height={1080} fps={FPS} durationInFrames={ALL} />
+    ))}
+    {DIAGNOSTICS.map((name, i) => (
+      <Composition key={`${name}-phone`} id={`diag-${name}-phone`} component={() => <Film look={LOOKS.phone} width={1080} height={1920} mode={i + 1} />} width={1080} height={1920} fps={FPS} durationInFrames={ALL} />
     ))}
     <Composition id="diag-no-detail" component={() => <Film look={LOOKS.desktop} width={1920} height={1080} detail={0} />} width={1920} height={1080} fps={FPS} durationInFrames={ALL} />
   </>

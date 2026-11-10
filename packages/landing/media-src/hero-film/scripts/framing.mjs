@@ -60,5 +60,10 @@ for (const [name, look, aspect] of [['desktop 16:9', LOOKS.desktop, 16 / 9], ['p
   const pH = project(shot, [Math.sin((look.headingDeg * Math.PI) / 180), 0, -Math.cos((look.headingDeg * Math.PI) / 180)], aspect);
   const pct = (p) => (p ? `x ${(100 * p.x).toFixed(1)} %, y ${(100 * p.y).toFixed(1)} %` : 'behind');
   const inBox = pE && pE.x < 0.45 && pE.y > 0.15 && pE.y < 0.5;
-  process.stdout.write(`${name}: heading ${look.headingDeg}°, pitch ${look.pitchEndDeg}°; level line at y ${(100 * pH.y).toFixed(1)} %; Sun ${pct(pS)}; Earth ${pct(pE)}${aspect > 1 ? (inBox ? ' INSIDE the headline box' : ' (outside the headline box)') : ''}\n`);
+  // the Earth's apparent diameter as shares of the frame's width and height
+  const span = (2 * Math.asin(frame.earthRadiusM / Math.hypot(...sub(frame.earth, shot.eye))));
+  const ty = Math.tan(shot.fovY / 2);
+  const dW = Math.tan(span / 2) / (ty * aspect);
+  const dH = Math.tan(span / 2) / ty;
+  process.stdout.write(`${name}: heading ${look.headingDeg}°, pitch ${look.pitchEndDeg}°; level line at y ${(100 * pH.y).toFixed(1)} %; Sun ${pct(pS)}; Earth ${pct(pE)}, ${(100 * dW).toFixed(1)} % of the width (${(100 * dH).toFixed(1)} % of the height) across; vertical field ${(shot.fovY * 180 / Math.PI).toFixed(1)}°${aspect > 1 ? (inBox ? ' INSIDE the headline box' : ' (outside the headline box)') : ''}\n`);
 }

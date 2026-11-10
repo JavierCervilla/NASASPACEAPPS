@@ -269,7 +269,7 @@ test.describe('the hero film (VENT-116)', () => {
 test.describe('the demo video (VENT-120)', () => {
   const DEMO = /\/media\/demo\//;
 
-  test('plays the 68 s cut on a press only and links the 30 s cut, under the production CSP', async ({ page }) => {
+  test('asks for none of the 68 s cut with the page and links the 30 s cut, under the production CSP', async ({ page }) => {
     const problems = await strict(page);
     const asked: string[] = [];
     page.on('request', (request) => {

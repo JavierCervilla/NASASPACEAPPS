@@ -29,7 +29,7 @@
  * precache. The plan of the near tiles, then the skyline, over the scene
  * until it has drawn. Every move is a transform or an opacity on the
  * compositor (the tilt, the zoom, the glint, the fades); a tile is drawn
- * once, when it lands. Dark in both themes, as the view is; the signal
+ * once, when it lands. Dark, as the view is; the signal
  * colours only on the real Sun and Earth.
  */
 .on-foot-loader {

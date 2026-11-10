@@ -68,7 +68,7 @@
   --card-skeleton: #23252c;
   /* The polar map's panel, darker than the sky so the disk stands out. */
   --map-panel: #0c0d11;
-  /* Words beside the disk: the panel stays dark in both themes (VENT-52). */
+  /* Words beside the disk: the panel stays dark (VENT-52). */
   --polar-label: #9a9ca6;
 
   /*
@@ -92,7 +92,7 @@
   --glass-liquid-scrim-feather: 4px;
 
   /*
-   * The lunar sky stays black in both themes, and the site markers drawn on
+   * The lunar sky stays black, and the site markers drawn on
    * the Moon stay light: they sit on the globe, not on the page.
    */
   --sky: radial-gradient(120% 90% at 50% 40%, #11131a 0%, #07080b 70%);
@@ -100,7 +100,7 @@
 
   /*
    * The globe's orientation references (VENT-50): a faint grid on the Moon,
-   * never a signal colour, and the same in both themes (the globe stays
+   * never a signal colour, and fixed (the globe stays
    * dark). The line is drawn in the scene (src/globe/graticule/scene.ts reads
    * these two); the labels and the pole cross are HTML (styles/orientation.css).
    * The label is white (the human's choice over grey text on a darker chip)
@@ -120,7 +120,7 @@
   --signal-earth: #4a9cff;
   --signal-window: #3ddc84;
   --signal-none: #3a3c44;
-  /* Text on a «neither» bar, which stays dark in both themes. */
+  /* Text on a «neither» bar, which stays dark. */
   --on-signal-none: #e5e5ea;
   /*
    * The same three meanings as text on the phone's glass cards: as bright
@@ -132,7 +132,7 @@
 
   /*
    * The DSN (VENT-7): never one of the four signal colours, so it reads as
-   * its own thing. The Earth stays dark in both themes, a body in space
+   * its own thing. The Earth stays dark, a body in space
    * like the Moon; the antenna listening is white with a soft glow.
    */
   --dsn-earth-ocean: #1a1d24;

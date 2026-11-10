@@ -484,7 +484,7 @@
   }
 }
 
-/* Over the sky, which stays dark in both themes. */
+/* Over the sky, which stays dark. */
 .globe-load:focus-visible {
   outline: 2px solid var(--focus-ring-on-moon);
   outline-offset: 2px;

@@ -71,6 +71,7 @@ far point, so f32 does not round the view). `MoonScene` props:
 | `bounce` | the share of the surrounding sunlit ground's light a shadow receives (0.03) |
 | `fill` | the Earth's light on ground facing it, relative to the Sun's (0.002); not scaled by `exposure` |
 | `stars` | a faint procedural starfield's brightness, 0 for none (0); over 0 the sky uses `SKY_STARS` |
+| `night` | the Ventana Lunar app's lunar-night lights on the terrain, `{ floor, reading, readingDir }` relative to the key (`TERRAIN_NIGHT`; none by default) |
 | `mode` | diagnostic views: 1 geometric normals, 2 hillshade of the data alone, 3 shading normal, 4 sunlit share (0) |
 
 `frame.ts` also has `project(shot, direction, aspect)` (where a direction lands on screen) and `horizontal(direction)`

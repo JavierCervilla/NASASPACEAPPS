@@ -28,23 +28,28 @@
  * target and its LOLA horizon (moon-scene's sky.mjs, written into the built
  * world's JSON). Pure.
  *
- * Three cases, decided at the eye (2 m over the target):
+ * Three cases, decided at the eye (2 m over the target) from the same
+ * profile the app decides day and night with (night-light.ts `isNight`):
  * - `sunlit`: some of the Sun's disc clears the terrain. The hero film's
- *   light: its exposure curve, the Earth's light and 3 % of the sunlit
- *   ground's light scattered into shadows.
- * - `earthlit`: the Sun is under the terrain, the Earth over it. No Sun is
- *   faked: the camera opens up as it descends into the shadow, as a camera
- *   set for the dark would, until the Earth-lit ground reads; everything in
- *   the frame is brightened by the same factor, so sunlit peaks clip.
- * - `dim`: neither clears the terrain. The exposure opens up only a
- *   little (DIM_GAIN), so the terrain the low Sun reaches reads and the
- *   floor stays near black (only the scattered share lights it); a faint
- *   starfield.
+ *   light all the way: its exposure curve, the Earth's light and 3 % of the
+ *   sunlit ground's light scattered into shadows.
+ * - `earthlit`: the Sun is under the terrain, the Earth over it.
+ * - `dim`: neither clears the terrain.
  *
- * The Earth's light is not shadowed by the terrain in the shader, so it is
- * left out wherever the target does not see the Earth.
+ * The two night cases end on the app's lunar night (VENT-100), so the
+ * loader's crossfade into the live view neither brightens nor darkens: the
+ * app's dark exposure (stage.ts, DARK_EXPOSURE over the day's EXPOSURE,
+ * applied to the hero's day exposure at the eye), its hemisphere floor at a
+ * quarter of the day's, the Earth's light as a directional light of half
+ * the key by its lit share and by how far it stands over the horizon, and
+ * the cool reading light from 300° at 10°. No Sun is faked: the Sun term
+ * stays the baked one. High up the film has the hero's light; from 3 km
+ * down to 20 m every value blends smoothly into the app's, and a faint
+ * starfield fades in (the app's night sky has stars too).
  */
 import type { WorldFile } from '../../moon-scene/scene/frame.ts';
+import type { NightLights } from '../../moon-scene/scene/MoonScene.tsx';
+import { direction } from '../../../../web/src/terrain/view-camera.ts';
 
 export type LightCase = 'sunlit' | 'earthlit' | 'dim';
 
@@ -61,6 +66,7 @@ export interface Light {
   readonly fill: number;
   readonly bounce: number;
   readonly stars: number;
+  readonly night?: NightLights;
 }
 
 /** A body this far under the level still opens the app's view, degrees (on-foot-model.ts, NEAR_SKY_DEG). */
@@ -70,21 +76,39 @@ const FILL = 0.002;
 /** moon-scene's scattered share (MoonScene's default) */
 const BOUNCE = 0.03;
 /**
- * Earth-lit ground is brought to this exposure-weighted light: FILL x the
- * gain x the sine of the Earth's elevation (flat ground). Set by eye on
- * the first Earth-lit site so the ground reads as night, well under day.
+ * The app's lunar night, relative to the Sun's key light, as the app has
+ * it (packages/web/src/terrain/night-light.ts NIGHT_LIGHT and its Earth
+ * rise; scene/sky.ts FILL.intensity 1.1 and KEY_INTENSITY 4; scene/stage.ts
+ * EXPOSURE 1.35 x 1.2 and DARK_EXPOSURE 2.8).
+ * packages/landing/tests/site-films-light.test.ts holds these to the app.
  */
-const NIGHT_KEY = 0.03;
-/** the camera opens up over this stretch of altitude, metres: Earth-lit films (the frame is in shadow late) */
-const EARTHLIT_ADAPT: Stretch = [80, 3];
-/** the dim films open up a little, so the floor's scattered light reads near black, not as nothing */
-const DIM_GAIN = 1.5;
-const DIM_ADAPT: Stretch = [20_000, 200];
-/** the faint starfield of the dim films, moon-scene's `stars` */
-const DIM_STARS = 1;
-
-/** From and to, metres of altitude. */
-type Stretch = readonly [number, number];
+export const APP_NIGHT = {
+  /** the hemisphere floor: a quarter of the day's 1.1, over the key's 4 */
+  floor: (0.25 * 1.1) / 4,
+  earthMax: 0.5,
+  earthFromDeg: -0.5,
+  earthRiseDeg: 2,
+  reading: 0.15,
+  readingAzDeg: 300,
+  readingElDeg: 10,
+  /** the dark exposure over the day's */
+  exposureRatio: 2.8 / (1.35 * 1.2),
+} as const;
+/**
+ * The night lights' level in the film over the app's, measured: with the
+ * app's values the films' night ground came out about twice as bright (in
+ * sRGB) as the app's live view at the same point and instant (IM-2's sunlit
+ * ground matched), from the renderers' different maps, photometry and tone
+ * curves (the app's ACES toe). This brings the Earth-lit and dim ground to
+ * the app's, checked against screenshots of the live app at Malapert Massif
+ * and Haworth; the exposure, and with it the sunlit terrain, stays the app's.
+ */
+export const APP_MATCH = 0.3;
+/** the night lights blend in over this stretch of altitude, metres */
+const NIGHT_FROM_M = 3000;
+const NIGHT_TO_M = 20;
+/** the starfield at the end of a night film, moon-scene's `stars` */
+const NIGHT_STARS = 0.5;
 
 /** The heading the app's 3D view opens on: the Sun's azimuth while it is near the sky, else the Earth's. */
 export function startHeading(sky: SiteSky): number {
@@ -112,32 +136,45 @@ function sunlitExposure(altitude: number): number {
   return 1.9 + 0.5 * s * s * (3 - 2 * s);
 }
 
-/** The Earth-lit films' gain at the eye over the sunlit exposure. */
-export function nightGain(sky: SiteSky): number {
-  const flat = Math.sin(Math.max(sky.earth.elDeg, 1) * (Math.PI / 180));
-  return NIGHT_KEY / (FILL * flat * sunlitExposure(2));
+/** The night films' exposure at the eye: the hero's day exposure there, opened as the app opens it. */
+export const NIGHT_EXPOSURE = sunlitExposure(2) * APP_NIGHT.exposureRatio;
+
+/** The Earth's lit share seen from the site, as the app reckons it (sky-light.ts `earthPhase`). */
+export function earthPhase(sky: SiteSky): number {
+  const s = direction(sky.sun.azDeg, sky.sun.elDeg);
+  const e = direction(sky.earth.azDeg, sky.earth.elDeg);
+  return (1 - (s[0] * e[0] + s[1] * e[1] + s[2] * e[2])) / 2;
+}
+
+/** The app's night Earth light, relative to the key: half of it, by the lit share and the rise over the horizon. */
+export function nightEarth(sky: SiteSky): number {
+  const horizon = sky.terrain ? sky.terrain.earthHorizonDeg : 0;
+  const rise = Math.min(Math.max((sky.earth.elDeg - horizon - APP_NIGHT.earthFromDeg) / APP_NIGHT.earthRiseDeg, 0), 1);
+  return APP_NIGHT.earthMax * earthPhase(sky) * rise;
 }
 
 /** 0 over the stretch, 1 under it, smooth in the log altitude between. */
-function adaptation(altitude: number, [from, to]: Stretch): number {
-  const x = Math.min(1, Math.max(0, (Math.log(from) - Math.log(altitude)) / (Math.log(from) - Math.log(to))));
+function nightShare(altitude: number): number {
+  const x = Math.min(1, Math.max(0, (Math.log(NIGHT_FROM_M) - Math.log(altitude)) / (Math.log(NIGHT_FROM_M) - Math.log(NIGHT_TO_M))));
   return x * x * x * (x * (x * 6 - 15) + 10);
 }
+
+const READING_DIR = direction(APP_NIGHT.readingAzDeg, APP_NIGHT.readingElDeg) as [number, number, number];
 
 /** The light of a frame `altitude` metres over the target. */
 export function lightAt(sky: SiteSky, altitude: number): Light {
   const base = sunlitExposure(altitude);
   const fill = seesEarth(sky) ? FILL : 0;
-  const lightCase = lightCaseOf(sky);
-  if (lightCase === 'sunlit') return { exposure: base, fill, bounce: BOUNCE, stars: 0 };
-  if (lightCase === 'dim') {
-    return { exposure: base * DIM_GAIN ** adaptation(altitude, DIM_ADAPT), fill, bounce: BOUNCE, stars: DIM_STARS };
-  }
-  const gain = nightGain(sky) ** adaptation(altitude, EARTHLIT_ADAPT);
-  // the scattered light keeps its brightness as the camera opens up (the
-  // shadows of sunlit ground high up) down to a tenth of the Earth's light
-  // on flat ground (the light scattered off Earth-lit ground at the eye)
-  const flat = Math.sin(Math.max(sky.earth.elDeg, 1) * (Math.PI / 180));
-  const night = (0.1 * FILL * flat) / (0.08 * sunlitExposure(2));
-  return { exposure: base * gain, fill: fill * gain, bounce: Math.max(night, BOUNCE / gain), stars: 0 };
+  if (lightCaseOf(sky) === 'sunlit') return { exposure: base, fill, bounce: BOUNCE, stars: 0 };
+  const w = nightShare(altitude);
+  const exposure = Math.exp(Math.log(base) + (Math.log(NIGHT_EXPOSURE) - Math.log(base)) * w);
+  // moon-scene's `fill` is not scaled by the exposure; the app's night Earth is
+  const earth = fill + (APP_MATCH * nightEarth(sky) * exposure - fill) * w;
+  return {
+    exposure,
+    fill: earth,
+    bounce: BOUNCE * (1 - w),
+    stars: NIGHT_STARS * w,
+    night: { floor: APP_MATCH * APP_NIGHT.floor * w, reading: APP_MATCH * APP_NIGHT.reading * w, readingDir: READING_DIR },
+  };
 }

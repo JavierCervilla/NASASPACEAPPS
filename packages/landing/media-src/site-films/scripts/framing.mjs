@@ -41,7 +41,7 @@ import { readFileSync } from 'node:fs';
 import { frameOf, project, sub } from '../../moon-scene/scene/frame.ts';
 import { heightFast, heightSmooth, loadField, planeOf } from '../../moon-scene/scripts/field.mjs';
 import { RADIUS_M, SITES } from '../../moon-scene/scripts/sites.mjs';
-import { lightAt, lightCaseOf, nightGain, seesEarth, skyOf, startHeading } from '../scene/light.ts';
+import { NIGHT_EXPOSURE, lightAt, lightCaseOf, nightEarth, seesEarth, skyOf, startHeading } from '../scene/light.ts';
 import { LOOKS, MOVE_S, shotAt } from '../scene/path.ts';
 import { INSTANT, sceneKeyOf, tagOf } from './sites.mjs';
 
@@ -98,8 +98,8 @@ const sunField = fieldHorizon(sky.sun.azDeg);
 const earthField = fieldHorizon(sky.earth.azDeg);
 out(`film's relief from the eye: horizon ${f2(sunField)}° toward the Sun (${(100 * discOver(sky.sun.elDeg, sunField)).toFixed(0)} % of the disc clears it), ${f2(earthField)}° toward the Earth (${sky.earth.elDeg > earthField ? 'over it' : 'under it'})`);
 out(`heading ${f2(heading)}°: the ${sky.sun.elDeg > -2 ? `Sun's azimuth (its elevation ${f2(sky.sun.elDeg)}° > -2°)` : `Earth's azimuth (the Sun ${f2(sky.sun.elDeg)}° <= -2°)`}`);
-out(`light: ${lightCaseOf(sky)}${lightCaseOf(sky) === 'earthlit' ? `, the camera opens up ${nightGain(sky).toFixed(0)} times at the eye` : ''}`);
-out('\n  t (s)    altitude   clearance    pitch      speed   exposure    fill    bounce');
+out(`light: ${lightCaseOf(sky)}${lightCaseOf(sky) === 'sunlit' ? '' : `, ends on the app's night: exposure ${NIGHT_EXPOSURE.toFixed(2)}, the Earth's light ${nightEarth(sky).toFixed(3)} of the key`}`);
+out('\n  t (s)    altitude   clearance    pitch      speed   exposure    fill    bounce   night');
 let lowest = Infinity;
 for (let i = 0; i <= MOVE_S * 30; i++) {
   const s = shotAt(frame, i / 30, LOOKS.wide, heading);
@@ -109,7 +109,7 @@ for (let i = 0; i <= MOVE_S * 30; i++) {
   const s2 = shotAt(frame, i / 30 + 0.01, LOOKS.wide, heading);
   const l = lightAt(sky, s.altitude);
   const speed = Math.hypot(...sub(s2.eye, s.eye)) / 0.01;
-  out(`${(i / 30).toFixed(1).padStart(7)}  ${km(s.altitude).padStart(10)}  ${km(c).padStart(10)}  ${s.pitchDeg.toFixed(1).padStart(6)}°  ${km(speed).padStart(8)}/s  ${l.exposure.toFixed(1).padStart(8)}  ${l.fill.toFixed(4)}  ${l.bounce.toFixed(5)}`);
+  out(`${(i / 30).toFixed(1).padStart(7)}  ${km(s.altitude).padStart(10)}  ${km(c).padStart(10)}  ${s.pitchDeg.toFixed(1).padStart(6)}°  ${km(speed).padStart(8)}/s  ${l.exposure.toFixed(1).padStart(8)}  ${l.fill.toFixed(4)}  ${l.bounce.toFixed(5)}  ${l.night ? (l.night.floor / (0.06875 * 0.3)).toFixed(2) : '-'}`);
 }
 for (const [name, look, aspect] of [['wide 16:9', LOOKS.wide, 16 / 9], ['phone 9:16', LOOKS.phone, 9 / 16]]) {
   const s = shotAt(frame, MOVE_S, look, heading);

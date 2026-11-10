@@ -67,19 +67,26 @@ else the Earth's; the pitch `START_PITCH` = 2° up; the vertical field of view 5
 ## The light (`scene/light.ts`)
 
 Decided at the eye from the app's LOLA horizon (`packages/sim/data/horizons.json`), written into the built world by
-moon-scene's `sky.mjs`:
+moon-scene's `sky.mjs`, the profile the app decides day and night with:
 
-- **sunlit** (some of the Sun's disc clears the terrain): the hero film's light, its exposure curve (2.4 high up to 1.9
-  at the eye), the Earth's light and 3 % of the sunlit ground's light scattered into shadows.
-- **earthlit** (the Sun under the terrain, the Earth over it): no Sun is faked. From 80 m down to 3 m the camera opens
-  up, as a camera set for the dark would, until the Earth-lit ground reads as night, darker than the sunlit films'
-  ground (the gain at the eye is 0.03 / (0.002 x 1.9 x the sine of the Earth's elevation), about 100 times). Everything
-  in the frame is brightened by the same factor, so sunlit terrain still in view clips to white. The light scattered
-  into shadows keeps its brightness as the camera opens up, down to a tenth of the Earth's light on flat ground.
-- **dim** (neither clears the terrain): the floor stays near black. The camera opens up only 1.5 times (from 20 km to
-  200 m), so the terrain the low Sun reaches reads as in the sunlit films; the floor gets only the scattered share; a
-  faint starfield (moon-scene's `stars`). The Earth's light is left out wherever the target does not see the Earth (the
-  shader does not shadow it).
+- **sunlit** (some of the Sun's disc clears the terrain): the hero film's light all the way, its exposure curve (2.4
+  high up to 1.9 at the eye), the Earth's light and 3 % of the sunlit ground's light scattered into shadows.
+- **earthlit** (the Sun under the terrain, the Earth over it) and **dim** (neither clears it): no Sun is faked (the
+  Sun term stays the baked one), and the film ends on **the app's lunar night** (VENT-100), so the loader's crossfade
+  neither brightens nor darkens. From 3 km down to 20 m every value blends smoothly from the hero's light into the
+  app's: the exposure opens as the app's does at night (`DARK_EXPOSURE` 2.8 over the day's 1.35 x 1.2, on the hero's
+  1.9: 3.28); the hemisphere floor at a quarter of the day's (0.25 x 1.1 over the key's 4, sky `0x9097a8` over ground
+  `0x8a857d`); the Earth's light at half the key by its lit share and its rise over the horizon (from -0.5°, over
+  2°); the cool reading light (0.15 of the key from 300° at 10°, `0xdfe3ec`, no shadows); the scattered share and the
+  hero's Earth light fade out; a faint starfield fades in. The app's constants are copied into `APP_NIGHT` and held to
+  the app's code by `packages/landing/tests/site-films-light.test.ts`. moon-scene draws these lights only behind its
+  `night` prop (`TERRAIN_NIGHT`); its defaults, and the hero, are unchanged.
+- **Matched to the live app** (`APP_MATCH` 0.3): with the app's values the films' night ground came out about twice
+  as bright (sRGB) as screenshots of the live app at the same point and instant (Playwright on
+  `https://nasa.universelle.io/app/?site=<id>#horizon`, the clock fixed to 2026-12-15T05:00:00Z), while IM-2's sunlit
+  ground matched: the two renderers differ in maps, photometry and tone curve (the app's ACES). The night lights are
+  scaled by 0.3, so the ground under them meets the app's (median luma of the lower ground: Malapert Massif 61 vs the
+  app's 66, Haworth 37 vs 34); the exposure, and with it the sunlit terrain, stays the app's.
 
 ## Provenance (for ASSETS.md)
 
@@ -100,8 +107,8 @@ moon-scene's `sky.mjs`:
   (https://svs.gsfc.nasa.gov/4720), public domain.
 - **Earth**: the app's `on-foot-earth.webp`, NASA Visible Earth «Blue Marble Next Generation» (December 2004), public
   domain; cloud-free. It is out of frame at the end of every film made so far.
-- **Stars** (dim films only): procedural, not a catalogue: one star at most per 0.3° cell, brightness from a steep
-  power law. Illustrative; the caption should not present them as the real sky.
+- **Stars** (Earth-lit and dim films, fading in near the ground): procedural, not a catalogue: one star at most per
+  0.3° cell, brightness from a steep power law. Illustrative; the caption should not present them as the real sky.
 - **Sky** (Sun, Earth, phase): `@ventana/sim`, Ventana Lunar's closed-form sky (Meeus), within 0.05° of JPL Horizons in
   elevation; the Sun's and the Earth's visibility checked against the app's LOLA horizon profile of each site.
 - **Photometry**: Hapke et al. 2012 (JGR 117, E00H15), lunar highlands, as the app's on-foot view.
@@ -118,6 +125,6 @@ moon-scene's `sky.mjs`:
   `/ASSETS.md` notes it for the Sun share too) the profile hides the Sun (horizon 1.18°, the Sun 0.04° up), while from
   2 m over the film's relief about three quarters of its disc clear a near rise: the end frames show the Sun's disc
   on the skyline over Earth-lit ground in shadow (the ground's shadow is baked from 0.5 m up). The film keeps the
-  app's verdict for its light.
-- The app's lunar night adds a reading light and lifts the Earth's light (VENT-100); the films do not, so an Earth-lit
-  or dim film ends darker than the app opens at that site, and the crossfade brightens.
+  app's verdict for its light (kept as it is by the Ventana Lunar session's decision).
+- The night films' end is matched to the app's live view by the ground's brightness, not pixel for pixel: the app's
+  relief, rocks and labels differ, and it shows almost no stars.

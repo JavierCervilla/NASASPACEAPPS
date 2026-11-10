@@ -61,7 +61,7 @@ function Film({ world, look, height, mode = 0 }: FilmProps) {
   return (
     <AbsoluteFill style={{ background: "#000000" }}>
       <MoonScene world={world} shot={shot} height={height} exposure={light.exposure} fill={light.fill} bounce={light.bounce}
-        stars={mode > 0 ? 0 : light.stars} earthGain={mode > 0 ? 0 : 1.8} mode={mode} />
+        stars={mode > 0 ? 0 : light.stars} night={mode > 0 ? undefined : light.night} earthGain={mode > 0 ? 0 : 1.8} mode={mode} />
     </AbsoluteFill>
   );
 }

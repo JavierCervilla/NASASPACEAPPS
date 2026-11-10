@@ -220,8 +220,8 @@ fn reflectance(mu0: f32, mu: f32, alpha: f32) -> f32 {
 }
 `;
 
-export const TERRAIN = /* wgsl */ `${COMMON}${DETAIL}${PHOTOMETRY}
-fn to_moon(w: vec3<f32>) -> vec3<f32> {
+// The terrain's shader up to its last line, so a night variant can end it differently.
+const TERRAIN_BODY = /* wgsl */ `fn to_moon(w: vec3<f32>) -> vec3<f32> {
   return w.x * u_east() + w.y * u_up() - w.z * u_north();
 }
 fn to_world(m: vec3<f32>) -> vec3<f32> {
@@ -322,7 +322,27 @@ fn shade(in: VertexOutput) -> vec4<f32> {
   if (u_mode() > 2.5) { return vec4<f32>(vec3<f32>(pow(clamp(dot(n, probe), 0.0, 1.0), 3.0)), 1.0); }
   if (u_mode() > 1.5) { return vec4<f32>(vec3<f32>(pow(clamp(dot(ng, probe), 0.0, 1.0), 3.0)), 1.0); }
   if (u_mode() > 0.5) { return vec4<f32>(pow(0.5 + 0.5 * ng, vec3<f32>(4.0)), 1.0); }
-  return vec4<f32>(albedo * (f * u_exposure() + earthshine), 1.0);
+`;
+
+export const TERRAIN = `${COMMON}${DETAIL}${PHOTOMETRY}
+${TERRAIN_BODY}  return vec4<f32>(albedo * (f * u_exposure() + earthshine), 1.0);
+}
+`;
+
+/**
+ * The terrain with the Ventana Lunar app's lunar-night lights added
+ * (packages/web/src/terrain/night-light.ts, scene/sky.ts, VENT-100), for
+ * films that end on the app's night view: a hemisphere floor (u_night_floor
+ * of the Sun's key, sky 0x9097a8 over ground 0x8a857d, linear) and a cool
+ * reading light (u_reading of the key from u_reading_dir, 0xdfe3ec, linear,
+ * no shadows), both Lambertian as three.js lights them and scaled by the
+ * exposure like the Sun. The Earth's light is the `fill` term already.
+ */
+export const TERRAIN_NIGHT = `${COMMON}${DETAIL}${PHOTOMETRY}
+${TERRAIN_BODY}  let hemi = mix(vec3<f32>(0.2542, 0.2346, 0.2051), vec3<f32>(0.2789, 0.3095, 0.3916), 0.5 + 0.5 * dot(n, radial));
+  let reading = max(dot(n, u_reading_dir()), 0.0) * vec3<f32>(0.7379, 0.7682, 0.8388);
+  let night = (hemi * u_night_floor() + reading * u_reading()) * u_exposure();
+  return vec4<f32>(albedo * (f * u_exposure() + earthshine + night), 1.0);
 }
 `;
 

@@ -21,6 +21,16 @@
   you». En escritorio, las cuatro en fila; en los cinco idiomas. El menú dice «The app» en vez de «Tour».
 
 ### Añadido
+- **Vídeo del descenso en la portada (VENT-112).** La portada se abre con una película a pantalla completa: un descenso
+  continuo desde la órbita lunar hasta 2 m sobre IM-2 Athena, en Mons Mouton, que acaba en el horizonte con la Tierra
+  alta en un cielo negro, renderizado con el relieve LOLA del LRO y la Blue Marble de la NASA. El descenso (14 s) se ve
+  una vez y enlaza sin salto con un plano en bucle; hay un corte para escritorio y otro vertical para el móvil, en AV1 o
+  H.264. La pregunta va sobre el cielo: a la izquierda en escritorio; en el móvil, el titular sobre la Tierra y el texto y los
+  botones debajo. La tarjeta en vivo, sobre el suelo. Mientras llega el vídeo se ve su primer fotograma, así que el descenso arranca sobre
+  la misma imagen, sin salto. Con «reducir movimiento» o el ahorro de datos se ve solo el fotograma final, sin
+  descargar vídeo; se pausa cuando la portada no está a la vista. Una línea al pie cita de dónde sale, en los cinco
+  idiomas. Sustituye a la Luna renderizada de VENT-109. Es el render casi definitivo (p3): el final llegará con los
+  mismos nombres de fichero.
 - **Una portada que explica el proyecto, y la app en `/app` (VENT-109, la opción A del lienzo con la franja del mes de
   la B).** https://nasa.universelle.io abre ahora una página que plantea la pregunta del reto («Sun for power. Earth for
   a voice.») junto a una Luna renderizada con el mapa LROC y una tarjeta en vivo de IM-2 Athena: si tiene Sol y Tierra

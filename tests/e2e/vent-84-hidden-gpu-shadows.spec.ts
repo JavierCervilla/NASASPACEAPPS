@@ -74,8 +74,8 @@ async function openHidden(page: Page, hiding: Hiding = { kind: 'absent' }, query
 test.describe('on a phone, 390x844', () => {
   test.use({ viewport: { width: 390, height: 844 }, hasTouch: true, isMobile: true });
 
-  test('with its GPU hidden it renders the shadow map in two linear passes', async ({ page }) => {
-    expect(await openHidden(page)).toBeGreaterThan(0);
+  test('with its GPU hidden it draws two linear passes without the shadow map', async ({ page }) => {
+    expect(await openHidden(page)).toBe(0);
     await expect(host(page)).toHaveAttribute('data-depth', 'split');
   });
 
@@ -87,8 +87,8 @@ test.describe('on a phone, 390x844', () => {
     expect(await openHidden(page, { kind: 'named', name: 'Brave' }, '&depth=log')).toBe(0);
   });
 
-  test('with its GPU named «Brave» it renders the shadow map in two linear passes', async ({ page }) => {
-    expect(await openHidden(page, { kind: 'named', name: 'Brave' })).toBeGreaterThan(0);
+  test('with its GPU named «Brave» it draws two linear passes without the shadow map', async ({ page }) => {
+    expect(await openHidden(page, { kind: 'named', name: 'Brave' })).toBe(0);
   });
 });
 

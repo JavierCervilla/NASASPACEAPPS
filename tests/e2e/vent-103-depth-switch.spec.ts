@@ -78,11 +78,10 @@ async function open(page: Page, query: string): Promise<Drawn> {
   };
 }
 
-test('the PowerVR draws two linear passes with the shadow map by default (VENT-114)', async ({ page }) => {
+test('the PowerVR draws two linear passes without the shadow map by default (VENT-114)', async ({ page }) => {
   const drawn = await open(page, '');
-  expect(drawn).toMatchObject({ depth: 'split', errors: [] });
-  expect(drawn.shadows).toBeGreaterThan(0);
-  expect(drawn.report).toMatch(/depth split · \d+ bits · shadow map on/);
+  expect(drawn).toMatchObject({ depth: 'split', shadows: 0, errors: [] });
+  expect(drawn.report).toMatch(/depth split · \d+ bits · shadow map off/);
 });
 
 test('?depth=log keeps the logarithmic depth and no shadow map on the PowerVR', async ({ page }) => {

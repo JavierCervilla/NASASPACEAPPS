@@ -2,6 +2,12 @@
 
 ## [Sin publicar]
 
+### Arreglado
+- **En el Pixel 10 la vista 3D vuelve a ir sin sombras.** Con la profundidad partida y el mapa de sombras, el Pixel 10
+  de Javier perdió el contexto a los 10 s de girar en un punto propio en producción. En PowerVR y en los móviles que
+  ocultan su GPU la vista se dibuja otra vez sin mapa de sombras; el resto de equipos las mantiene. `?depth=linear`
+  las devuelve a mano para seguir probando.
+
 ### Cambiado
 - **Las sombras vuelven a PowerVR: la vista 3D se dibuja en dos pasadas de profundidad lineal (VENT-114).** En el Pixel 10
   el mapa de sombras con profundidad logarítmica o invertida tumbaba el contexto de la GPU, y con profundidad lineal sola

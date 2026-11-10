@@ -67,14 +67,21 @@ describe('shadow safety', () => {
     }
   });
 
-  // VENT-114: the split draw and the linear buffer survive the shadow map on PowerVR, so they keep it.
-  it('keeps it with the split and the linear depth on a PowerVR or a hidden GPU', () => {
+  // VENT-114: only an explicit linear buffer keeps the shadow map on PowerVR or a hidden GPU.
+  it('keeps it with the explicit linear depth on a PowerVR or a hidden GPU', () => {
     const powervr = 'ANGLE (Imagination Technologies, PowerVR D-Series DXT-48-1536, OpenGL ES 3.2)';
-    for (const mode of ['split', 'linear'] as const) {
-      expect(shadowMapUnsafe(powervr, true, mode)).toBe(false);
-      expect(shadowMapUnsafe(null, true, mode)).toBe(false);
-      expect(shadowMapUnsafe('Brave', true, mode)).toBe(false);
-    }
+    expect(shadowMapUnsafe(powervr, true, 'linear')).toBe(false);
+    expect(shadowMapUnsafe(null, true, 'linear')).toBe(false);
+    expect(shadowMapUnsafe('Brave', true, 'linear')).toBe(false);
+  });
+
+  // A Pixel 10 lost its context after ten seconds of turning with the split draw and the shadow map (2026-11-10).
+  it('drops it with the split draw on a PowerVR or a hidden phone GPU', () => {
+    const powervr = 'ANGLE (Imagination Technologies, PowerVR D-Series DXT-48-1536, OpenGL ES 3.2)';
+    expect(shadowMapUnsafe(powervr, true, 'split')).toBe(true);
+    expect(shadowMapUnsafe(null, true, 'split')).toBe(true);
+    expect(shadowMapUnsafe('Brave', true, 'split')).toBe(true);
+    expect(shadowMapUnsafe('ANGLE (Qualcomm, Adreno (TM) 740, OpenGL ES 3.2)', true, 'split')).toBe(false);
   });
 
   it('still drops it with the single-pass logarithmic and reversed depth', () => {

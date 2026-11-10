@@ -62,10 +62,10 @@ async function open(page: Page, gpu: string | null, query = ''): Promise<number>
   return Number(await host(page).getAttribute('data-shadows'));
 }
 
-test('a PowerVR renders the shadow map, in two linear passes', async ({ page }) => {
-  expect(await open(page, PIXEL)).toBeGreaterThan(0);
+// A Pixel 10 lost its context with the split draw and the shadow map after ten seconds of turning (2026-11-10).
+test('a PowerVR draws two linear passes without the shadow map', async ({ page }) => {
+  expect(await open(page, PIXEL)).toBe(0);
   await expect(host(page)).toHaveAttribute('data-depth', 'split');
-  await expect(page.locator('canvas[data-scene-shadows]')).toHaveAttribute('data-scene-shadows', 'on');
 });
 
 test('a PowerVR asked for the single-pass logarithmic depth renders the shadow map none of the times', async ({ page }) => {

@@ -95,10 +95,10 @@ completa está en el documento «Ventana Lunar · Especificación y roadmap»
 - [x] Texturas comprimidas para la GPU: los mapas de color 2K y 4K del globo y la Tierra de la vista 3D en KTX2, con un
   worker propio y una CSP solo para él; perfil de la GPU en `?debug` (VENT-101)
 - [x] El color del suelo de la vista 3D también en KTX2: 44 kB más de red por 4,9 MB menos de GPU (VENT-102)
-- [x] Recuperar las sombras en PowerVR: la vista 3D se dibuja en dos pasadas de profundidad lineal, lejos y cerca
-  (VENT-114; falta que Javier lo confirme en el Pixel 10)
+- [ ] Recuperar las sombras en PowerVR: la vista 3D se dibuja en dos pasadas de profundidad lineal (VENT-114), pero
+  en el Pixel 10 de producción el contexto se perdió a los 10 s con las sombras, así que en PowerVR vuelven a ir sin ellas
 - [ ] Probar la vista 3D en móviles reales en la nube (PowerVR, Adreno, Mali) (VENT-77, aparcado)
-- [ ] Variante C del cargador, el descenso, en equipos potentes: un vídeo de descenso por sitio (VENT-61)
+- [x] Variante C del cargador, el descenso, en equipos potentes: un vídeo de descenso por sitio (VENT-61, VENT-117)
 - [ ] Comparador de sitios o exportar a .ics (VENT-8, aparcado hasta después del envío)
 - [x] Portada explicativa en la raíz, en cinco idiomas, con la respuesta en vivo de IM-2 y la franja del mes; la app
   pasa a `/app` (VENT-109)

@@ -308,6 +308,18 @@
 /* Only while the ground is shaped. */
 .on-foot-loader:not([data-phase='shaping']) .loader-glint { display: none; }
 
+/* ---- C: the site's descent film (VENT-117), over the black, its first frame painted until it plays ---- */
+.loader-film {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  background: #000;
+  transition: opacity 600ms var(--spring);
+}
+.on-foot-loader[data-phase='handover'] .loader-film { opacity: 0; }
+
 /* ---- The hand-over: the scene fades in under the skyline, then the line goes ---- */
 .loader-skyline__line,
 .loader-skyline__bodies {

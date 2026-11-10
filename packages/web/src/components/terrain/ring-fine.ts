@@ -55,7 +55,7 @@ export function fineDeps(allowed: boolean) {
 }
 
 /** The site's base path with its trailing slash. */
-function baseUrl(): string {
+export function baseUrl(): string {
   const base = import.meta.env.BASE_URL;
   return base.endsWith('/') ? base : `${base}/`;
 }

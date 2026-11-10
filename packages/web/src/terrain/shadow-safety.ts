@@ -30,9 +30,10 @@ import type { DepthMode } from './depth-mode';
  * shadow map and writes a logarithmic or reversed depth (VENT-75). On the
  * human's Pixel 10 (PowerVR D-Series DXT-48-1536) the on-foot view lost its
  * context after a few seconds of turning at every tier; a linear depth kept
- * it alive with the shadow map on. The default split draw (VENT-114) uses
- * linear depth, so this only decides for the single-pass `?depth=log` and
- * `?depth=reversed` escape hatches.
+ * it alive with the shadow map on for a minute at IM-2. The default split
+ * draw (VENT-114) still lost it after ten seconds of turning at a custom
+ * point in production (2026-11-10, medium tier), so on these GPUs every draw
+ * but an explicit `?depth=linear` goes without the shadow map again.
  */
 const SHADOW_UNSAFE_GPU = /powervr/i;
 
@@ -59,7 +60,7 @@ export function shadowMapUnsafe(
   phone: boolean,
   mode: DepthMode = 'log',
 ) {
-  if (mode === 'split' || mode === 'linear') return false;
+  if (mode === 'linear') return false;
   if (name !== null && SHADOW_UNSAFE_GPU.test(name)) return true;
   return phone && (name === null || !KNOWN_GPU.test(name));
 }

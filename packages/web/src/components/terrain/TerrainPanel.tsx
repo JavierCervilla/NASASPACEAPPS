@@ -87,10 +87,10 @@ function usePanel(props: PanelProps) {
   };
   const onCopyReport = (): Promise<boolean> => copyReport(report);
   const yawDeg = yaw ?? view.startYawDeg;
-  const loader = useLoaderProps({ panel: props, view, scene });
+  const { loader, drawn } = useLoaderProps({ panel: props, view, scene });
   const compass = { yawDeg, onHome: scene.home, sheetEdge: props.sheetEdge
     ?? NO_SHEET, earth: view.bodies.find((body) => body.id === 'earth') };
-  return { view, host, status: scene.status, drawn: scene.drawn, loader,
+  return { view, host, status: scene.status, drawn, loader,
     onRetry, onCopyReport, yawDeg, compass };
 }
 

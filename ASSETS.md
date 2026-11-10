@@ -521,3 +521,92 @@ file names, and this table with it.
 - **End-frame geometry** (drives `--film-focus`, `--earth-x`, `--earth-top`, `--earth-bottom` in `styles/hero.css`):
   desktop Earth centre at 50.6 % across and 35.6 % down, 4.6 % of the width wide, horizon 58.5 to 64.4 % down; phone
   Earth centre at 50.1 % and 40.6 %, 12.3 % of the width wide, horizon 61.9 to 64.7 %.
+
+## Loader descent films (VENT-117)
+
+`packages/web/public/site-films/`, served from `/app/site-films/` (nginx's `site-films/` rule: a day, then revalidate;
+`video/mp4` with byte ranges; never kept by the service worker). The on-foot view's loader plays the selected site's
+film while the relief loads (`src/terrain/loader/site-films.ts`, `loader-picture.ts`). Release **site-films-preview-2**.
+
+- **What it is**: for each of the 11 curated sites south of 80° S, a 6 s descent from about 40 km to the eye 2 m over
+  the point (frames 0 to 150 move, 150 to 179 hold still), ending on the view's opening look at 15 Dec 2026 05:00 UTC:
+  heading to the Sun when its elevation is over −2°, else to the Earth, pitch +2°, vertical field of view 50° (wide)
+  or 62° (phone). Rendered with RAEA (raea 0.1.0) from NASA LRO LOLA terrain, LROC NAC DTMs where they cover the site,
+  the NASA Blue Marble Earth and the `@ventana/sim` sky, with the night lights matched to the app's `NIGHT_LIGHT`
+  (public domain sources, the same this file lists for the app); no third party's footage.
+- **Sources**: RAEA's masters `<site>-{wide,phone}.mp4` and the PNG frames `<site>-{wide,phone}-{start,end}.png`
+  (their sha256 in the release's `sums.txt`), encoded by `encode.sh`: AV1 with SVT-AV1 preset 6 (`rc=1`, wide 700 kb/s,
+  phone 600), GOP 60, and two-pass x264 high profile (wide 900 kb/s, phone 800), both `yuv420p`, Lanczos-scaled to
+  1280 x 720 (wide) or 720 x 1280 (phone), 30 fps, `+faststart`, no audio; the first frame as WebP q78 (libwebp). The
+  `-end` frames are not shipped: the video holds its own last frame.
+- **Known**: Malapert Massif's last frames show a Sun dot near the skyline that the live view (LOLA 20 m profile) does
+  not: the film's fine relief there is 1.2° lower than the app's profile. Left for the human's call.
+
+| File | Bytes | sha256 |
+|---|---|---|
+| `artemis-de-gerlache-rim-2-phone-start.webp` | 2928 | `b302b5a25e3c9391eef2719888257f659e56607e0272a46e7823098cdcca8cbb` |
+| `artemis-de-gerlache-rim-2-phone.av1.mp4` | 282976 | `8c21ebd349e3056f5e73cfec6f47cd7c22e026146a88011f617fc7eea42d4921` |
+| `artemis-de-gerlache-rim-2-phone.h264.mp4` | 694078 | `9f60bbee2f0200905e7b061c0d6e0ec4957bf4f135259fb6abd14649f6060dfc` |
+| `artemis-de-gerlache-rim-2-wide-start.webp` | 6348 | `18a52d83cd975f3afdcbc4bcdd583a9a09908e0bdaec6d08e5ab7ee0e099db03` |
+| `artemis-de-gerlache-rim-2-wide.av1.mp4` | 405912 | `20dd8116f7418bd5285d888fd964110d24700d921a8b11294e58eb556614c8ff` |
+| `artemis-de-gerlache-rim-2-wide.h264.mp4` | 769029 | `e3bc5191e5402633558c6e26fb45a8f4890cf51cd7a3fc418b18e62b20c17c4a` |
+| `artemis-haworth-phone-start.webp` | 5620 | `13d779ab76af9591380e7bd5744cd4c4b235c1df9ef3ee1137f8cb91b4ab2879` |
+| `artemis-haworth-phone.av1.mp4` | 335839 | `48f869ebda834e33bd2736dc4f1cb33fca1340f34a6950a2e4a3b29709a4e4a3` |
+| `artemis-haworth-phone.h264.mp4` | 689430 | `7de4c6c5f35354cba9808a1a13937b7acccf591f41ffb9e8331abe6c03837967` |
+| `artemis-haworth-wide-start.webp` | 7324 | `32c885b65d9ae85fe799b8d8619568719f964a12c1122e563d189af554f8bdae` |
+| `artemis-haworth-wide.av1.mp4` | 437786 | `aa13fa1edcc6017adfcbd4d52d862de80773b7ffe3c180e029c0d9640a28ea99` |
+| `artemis-haworth-wide.h264.mp4` | 764370 | `5bc3aa80dc2e83a92f934c353fbe22bf61213482856df0b81167c267a53ddba5` |
+| `artemis-malapert-massif-phone-start.webp` | 10076 | `6b94b19d33b375db6036470f1f5dbb81ee2e03a886a5bdd2e77557cc60244fa7` |
+| `artemis-malapert-massif-phone.av1.mp4` | 331325 | `8b33c63d65e1396fd8de0a8c325898964df2eba900b5fb5b7caee7842f47c050` |
+| `artemis-malapert-massif-phone.h264.mp4` | 642202 | `b0822e4242c7d666af7b6985034fefabd3ed76e7e805c34414736032837b05e1` |
+| `artemis-malapert-massif-wide-start.webp` | 9928 | `391b6a889d12fc898d5195331a753f1238f66bd2a4d48209cfc600a3283b4407` |
+| `artemis-malapert-massif-wide.av1.mp4` | 398788 | `bf566a5143fd4a350b3bc07ef8063822dccc0ab26717d8cff2fd94aef081d4db` |
+| `artemis-malapert-massif-wide.h264.mp4` | 721950 | `71cc8031a7c7c5a9842fa0cc7ffc1adc0b117a58d40f3f8e28c2377e5371d205` |
+| `artemis-mons-mouton-plateau-phone-start.webp` | 18328 | `37b731a3e5902928798ac4eec91b1ec18d093a029f7ec6bc9d5ae55d953ad92d` |
+| `artemis-mons-mouton-plateau-phone.av1.mp4` | 378416 | `1539d6a4ad8b14cb14ab4f0ea0cfc7b240a19debaac55b254c16b03774a7cb75` |
+| `artemis-mons-mouton-plateau-phone.h264.mp4` | 624410 | `a65f6daa43392fcc18d296496a29926df0ba950409b65a43c44387bcce40886f` |
+| `artemis-mons-mouton-plateau-wide-start.webp` | 20798 | `d9e3c5a7b1a7969084e4ea3ec095f6f26bf21649bf591a4c106524f95d664298` |
+| `artemis-mons-mouton-plateau-wide.av1.mp4` | 447697 | `4ed3b984de208be4b3357011bf19c9fc4dc3c1b057efef365c6b54c516c2b553` |
+| `artemis-mons-mouton-plateau-wide.h264.mp4` | 704504 | `c657654ea98a0caa3345566b338c1aed4094ad1b2cfa764fd5f4d1a339ddf908` |
+| `artemis-peak-near-cabeus-b-phone-start.webp` | 1832 | `ad2d6a0185348b2582763ae934639702b8572855b022943cd6d7157d33335b24` |
+| `artemis-peak-near-cabeus-b-phone.av1.mp4` | 346339 | `0d5e43cc95aaaf063922fdb6bbe2672a6efd94135b620a4436d3e49adc1f2b75` |
+| `artemis-peak-near-cabeus-b-phone.h264.mp4` | 698017 | `d9ae5dde5c268609da7c2f9370404483d93119fbfbeb3ef2582e2bcfa1d32848` |
+| `artemis-peak-near-cabeus-b-wide-start.webp` | 1992 | `5973c621cfa040d04ed0febb17843d8e35d2b402ebd3ef94248cc08676a88a7f` |
+| `artemis-peak-near-cabeus-b-wide.av1.mp4` | 398617 | `20afde1a8ef3b99304b80d5bdd2d2fa5680560bf8b5a6396d995f362cee5ac0c` |
+| `artemis-peak-near-cabeus-b-wide.h264.mp4` | 778793 | `d5f4f53a8d8cfb219e3d55aafe5775f92df6c95073000e8c7e12ea52b21e52a4` |
+| `artemis-slater-plain-phone-start.webp` | 16326 | `aced16728d9e29180911b915bc7c8d7eac5c76cfc75d10ac7593dbd4c662a115` |
+| `artemis-slater-plain-phone.av1.mp4` | 347499 | `04acefe40eacb78d981442ddfd6041b527694b756a062a3a33bb5b571e68ec58` |
+| `artemis-slater-plain-phone.h264.mp4` | 649472 | `90fcb13d9073d82522ddbd79653375b876948f1ae7df29071d3143a1b55e5594` |
+| `artemis-slater-plain-wide-start.webp` | 21250 | `da80c9d3a336035b95fbaf8026b51506d474cf89771703589f22ffaaa6d2a2f4` |
+| `artemis-slater-plain-wide.av1.mp4` | 472619 | `c4c2c33e706ec58208ac0cbd78b7318d0857e5b13fad77d38833d5ae93de2801` |
+| `artemis-slater-plain-wide.h264.mp4` | 738424 | `2e259c09099e5fd42fca5bddd76a70b96ba94c7f1fd3647179ccf58e1edf4a19` |
+| `bluemoon-mk1-pathfinder-phone-start.webp` | 15476 | `91b5067a3cb6b3ba80f76ce914a96b790e53607b1c4df59ea3632531e058f05c` |
+| `bluemoon-mk1-pathfinder-phone.av1.mp4` | 552027 | `d3155b44225de465e20b7ee64d6a9c7ded9eb50ed715d17abb7da0326ba18afe` |
+| `bluemoon-mk1-pathfinder-phone.h264.mp4` | 606832 | `33d75694889aad77139deac9b679597a25333e2a0cc05cf5a29be09a4cda06ee` |
+| `bluemoon-mk1-pathfinder-wide-start.webp` | 17646 | `d3f046c1ecf3124252b9566db8bad4364e3141baafc174fa57436347c319c5f6` |
+| `bluemoon-mk1-pathfinder-wide.av1.mp4` | 612772 | `4537dddd7c4520f76c92b0d6b3945d66ee8d8e26b163d144546552228977d397` |
+| `bluemoon-mk1-pathfinder-wide.h264.mp4` | 668558 | `59f07bbfd1fb1818534147270ba59842832e8108781b19184e31414da428c5d3` |
+| `change7-target-phone-start.webp` | 16078 | `65f53719daee3ede087956c0a56bc952cb4658dd44dda08160b5f6b46a31d682` |
+| `change7-target-phone.av1.mp4` | 358646 | `82c11c9d9002059caa04d04922f4a56badd309b0e489b0f2f41dbc264d359859` |
+| `change7-target-phone.h264.mp4` | 654048 | `3cf5097b5cef462b6c8dc4fe5dd76798fcc183db8a67cc418c4d7561329f14e4` |
+| `change7-target-wide-start.webp` | 21134 | `153bc659a2d5ca4c3e48682bec1a41499035aea1ded76a817a846e0329a64a92` |
+| `change7-target-wide.av1.mp4` | 465580 | `e9413cb5418031d56bd4c5f2ea02714cc15b2c0d1573eafbabe58c51ffe0a701` |
+| `change7-target-wide.h264.mp4` | 717891 | `67fe9a911e924c8c2f5c2200172857012c13a81f06db2c74fa186a485d3ce1c3` |
+| `griffin1-nobile-phone-start.webp` | 19958 | `5f0526f2d3984480aa6e5eb28454321bfbf101915198e5173cd0f3bed8ad3997` |
+| `griffin1-nobile-phone.av1.mp4` | 397710 | `f23c826ac78c7833d598181d3d197c87f2c3c7cd5205ec4a3d341f7945b0ed3b` |
+| `griffin1-nobile-phone.h264.mp4` | 626243 | `f170a08ac52394cb8ae44c8c98193123618a878038a612c5e1c5221a2f074aee` |
+| `griffin1-nobile-wide-start.webp` | 25978 | `a3973b11ce2de3baa5da5fdd2044bdfe1a4c272759b057ffe498db64ef321c80` |
+| `griffin1-nobile-wide.av1.mp4` | 463944 | `d6f087b6d1bbcdaa03d22168ee7dda41bc498b971aed756634a9c33fe8e59b27` |
+| `griffin1-nobile-wide.h264.mp4` | 699470 | `47224610eab496fce597fc836d8120c97a66742a561366cb17289b7a24cdf9dd` |
+| `im1-odysseus-phone-start.webp` | 3158 | `d2a83415f9a5982487f65d329254da76550d7c79a39bd3936e00224f8cad2238` |
+| `im1-odysseus-phone.av1.mp4` | 365567 | `a09b8d87d73333181956a4ac5dde0086d12747b720960c0f7eb7c46736640d0c` |
+| `im1-odysseus-phone.h264.mp4` | 686841 | `a14edeb6bd4ec3d87dbdb809b12d78514998a209f773d9be428129e824e9c904` |
+| `im1-odysseus-wide-start.webp` | 2250 | `e322f4e50dcb9048d2de96ab2fd4845eaa9c98980636523335d8f882925625dd` |
+| `im1-odysseus-wide.av1.mp4` | 475215 | `5418fdd925d8ccfed289d987d2b96b7561a756256417e853654309aa00a909e5` |
+| `im1-odysseus-wide.h264.mp4` | 770483 | `d2a6ce8ec36c732c8ba18b3075dc8cc9289ded66ed4dcad9351d4d2dc05998d0` |
+| `im2-athena-phone-start.webp` | 16270 | `b20bf320b4ba8ee63a210c1ac31f640cb1a31931e09639f97c6a31b1254a172c` |
+| `im2-athena-phone.av1.mp4` | 442050 | `a2df8e089f16c79648647e03f2cbf34a6530a7184c19e384d8ff4f7edef931a7` |
+| `im2-athena-phone.h264.mp4` | 629212 | `2c6efd5035b7cce75d3726fe9ca5e7e4d5987d368dd6a31efb2d5c9a406ce015` |
+| `im2-athena-wide-start.webp` | 18636 | `664f3cbc85fc4810b27a91442cd37ff21340e4b740c64d2f168be68a95f4a2a0` |
+| `im2-athena-wide.av1.mp4` | 494473 | `d323bca4f61047f4e816f20190a526d593056f916dfe220058ce7c85df2ac251` |
+| `im2-athena-wide.h264.mp4` | 707723 | `ffbc23e51e3f784dc53f04b353b3075a85a4c4b200f39e39f91acc27ebe8e787` |

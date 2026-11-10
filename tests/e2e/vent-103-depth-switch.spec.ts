@@ -78,11 +78,10 @@ async function open(page: Page, query: string): Promise<Drawn> {
   };
 }
 
-test('the PowerVR draws two linear passes with the shadow map by default (VENT-114)', async ({ page }) => {
+test('the PowerVR draws two linear passes without the shadow map by default (VENT-114)', async ({ page }) => {
   const drawn = await open(page, '');
-  expect(drawn).toMatchObject({ depth: 'split', errors: [] });
-  expect(drawn.shadows).toBeGreaterThan(0);
-  expect(drawn.report).toMatch(/depth split · \d+ bits · shadow map on/);
+  expect(drawn).toMatchObject({ depth: 'split', shadows: 0, errors: [] });
+  expect(drawn.report).toMatch(/depth split · \d+ bits · shadow map off/);
 });
 
 test('?depth=log keeps the logarithmic depth and no shadow map on the PowerVR', async ({ page }) => {
@@ -108,6 +107,17 @@ test('?depth=reversed reverses the depth where EXT_clip_control is, else keeps t
   expect(drawn.report).toMatch(clip ? /depth reversed · \d+ bits/ : /depth split \(asked reversed\)/);
 });
 
+/** Waits until no frame is drawn for half a second, so a loaded runner has drawn the turn's last key. */
+async function framesAtRest(page: Page): Promise<void> {
+  let last = -1;
+  await expect.poll(async () => {
+    const now = Number(await host(page).getAttribute('data-frames'));
+    const still = now === last;
+    last = now;
+    return still;
+  }, { intervals: [500], timeout: 15_000 }).toBe(true);
+}
+
 /** Opens the view, turns it half a turn (5° a key) and returns every Sun and Earth mark, at opening and after. */
 async function marksAfterHalfTurn(page: Page, query: string): Promise<(string | null)[]> {
   const opened = await open(page, query);
@@ -116,6 +126,7 @@ async function marksAfterHalfTurn(page: Page, query: string): Promise<(string | 
   for (let k = 0; k < 36; k += 1) await page.keyboard.press('ArrowRight');
   await expect.poll(async () => Number(await host(page).getAttribute('data-frames'))).toBeGreaterThan(frames);
   await expect(host(page)).toHaveAttribute('data-working', 'false');
+  await framesAtRest(page);
   return [...opened.marks, await host(page).getAttribute('data-sun-at'), await host(page).getAttribute('data-earth-at')];
 }
 

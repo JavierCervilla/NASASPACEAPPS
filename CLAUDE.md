@@ -723,7 +723,7 @@ Every visible change follows `.claude/skills/apple-design/SKILL.md` (vendored fr
   that is no GPU's, not matching `KNOWN_GPU`: Brave answers «Brave», and the view lost its context after 9.8 s of turning
   at low, VENT-92; `tests/e2e/vent-84-hidden-gpu-shadows.spec.ts`): the human's bisect on the Pixel 10 kept the context
   with the shadows or the logarithmic depth left out and lost it with both on, even at low, and with a linear depth and the shadow map on it
-  ran a minute of turning, so the default split draw (linear in both passes) keeps the shadow map on every GPU, PowerVR and hidden ones included (VENT-114, `tests/e2e/vent-114-split-depth.spec.ts`: on IM-2's recorded relief at the high tier the skyline of `?depth=split` against `?depth=log` differs by a mean of under 0.2 of 255); held by
+  ran a minute of turning at IM-2; the default split draw (linear in both passes) kept the shadow map there too (VENT-114), but in production a Pixel 10 lost its context after ten seconds of turning with it at a custom point (2026-11-10), so on PowerVR and hidden GPUs the split draw goes without the shadow map again and only an explicit `?depth=linear` keeps it; every other GPU keeps it ( `tests/e2e/vent-114-split-depth.spec.ts`: on IM-2's recorded relief at the high tier the skyline of `?depth=split` against `?depth=log` differs by a mean of under 0.2 of 255); held by
   `tests/shadow-safety.test.ts` and `tests/e2e/vent-75-powervr-shadows.spec.ts` (the GPU's name spoofed). The view's pixel ratio is `terrainPixelRatio` (`src/terrain/pixel-ratio.ts`: a phone
   at medium draws at 1.25 at most, the globe and the desktop keep the tier's cap, `tests/pixel-ratio.test.ts`). While a
   finger drags the view or its swipe coasts on a phone, frames are spaced to about 30 a second
@@ -943,9 +943,25 @@ Every visible change follows `.claude/skills/apple-design/SKILL.md` (vendored fr
   line goes after it; the loader unmounts after `HANDOVER_MS` (1.2 s), then the caption shows and «Far relief · n of
   18 tiles» (`FarChip.tsx`, not a live region) until «Far relief · 32 and 128 km in», and goes. Reduced motion: plain
   fades. A failure keeps the skyline and the sky dimmed under the notice, its words centred in the ground when they
-  fit (`data-words`). The loader's picture is chosen in one place by the view's tier (`loader-picture.ts`: B→A on
-  every tier today). No WebGL and no new request; every move is a transform or an opacity. Held by
-  `tests/vent-60-loader.test.ts` and `tests/e2e/vent-60-loader.spec.ts`.
+  fit (`data-words`). The loader's picture is chosen in one place (`loader-picture.ts`): B→A, or the site's **descent
+  film** (VENT-117, VENT-61 variant C, the human's call: «one video per site») for the 11 curated sites south of 80° S
+  that have one (`FILM_SITES`, `site-films.ts`; never a custom or saved point) at the high or medium tier, without
+  reduced motion, Save-Data or `?bench` (`benchAsked`). The film (`LoaderFilm.tsx`, `film-element.ts`, `use-loader-film.ts`): 6 s from orbit to
+  the eye 2 m over the point, ending on the view's opening look at 15 Dec 2026 05:00 UTC (so the live sky and heading
+  may differ; the crossfade covers it), from `public/site-films/<site>-{wide,phone}.{av1,h264}.mp4` (the phone cut
+  under the phone breakpoint, as the scene's field of view), its `-start.webp` as the poster, muted, inline, no
+  controls, `aria-hidden`, `object-fit: cover` in the loader's band, under the loader's status line; paused while the
+  page is hidden; freed (sources removed, `load()`) when it goes. The hand-over (`film-gate.ts`) waits for both the
+  scene's first frame and the film's end: a scene drawn first waits for the end, a film ended first holds its last
+  frame; then the film fades out over 600 ms as the scene shows. A film that fails (every source refused, a decode
+  error, a refused `play()`) gives way to B→A at once, and one still playing 8 s (`FILM_GIVE_UP_MS`) after the scene
+  drew is given up. The caption, the compass and the far chip wait for the hand-over (`useLoaderProps` returns the
+  gated `drawn`). A new point restarts with its own film or B→A. The films are never precached nor kept by the service
+  worker (`sw-routes.ts` leaves `site-films/` to the browser: byte ranges; the build leaves them out of its digest);
+  nginx caches them a day. The e2e stub refuses them unless a spec lets them through (`stubApi(page, { films: true
+  })`). B→A itself makes no WebGL and no new request; every move is a transform or an opacity. Held by
+  `tests/vent-60-loader.test.ts`, `tests/vent-117-loader-film.test.ts`, `tests/e2e/vent-60-loader.spec.ts` and
+  `tests/e2e/vent-117-loader-film.spec.ts`.
 - **Five interface languages** (VENT-35): English (the default and the fallback), Spanish, French, German and Italian,
   each on its own static route (`/`, `/es/`, `/fr/`, `/de/`, `/it/`; `pages/[locale]/index.astro`) with `<html lang>`,
   `hreflang` links and `x-default` → `/`. This replaces the Language rule below for the interface only: every word a

@@ -71,8 +71,12 @@ const ROOT_FILES = new Set(['favicon.ico', 'favicon.svg', 'apple-touch-icon.png'
 // The fine real-relief tiles (VENT-62, public/fine-tiles/) are on demand too: only a view of a point inside one asks for
 // its two files (about 84 to 123 kB), and the worker keeps them cache first from then on.
 // The KTX2 transcoder's worker (VENT-101) is asked only where the GPU takes KTX2, with its transcoder under basis/.
+// The loader's descent films (VENT-117, public/site-films/, 24 MB for 11 sites in two cuts) are on demand and more:
+// the worker never keeps them (FILMS, and sw-routes.ts leaves them to the browser), since a video is asked in byte
+// ranges the Cache API cannot store; the browser's HTTP cache keeps them a day (nginx.conf).
 const ON_DEMAND =
-  /^(_astro\/(TerrainPanel|terrain-scene|on-foot|boot|perf-hud|spector|bench-boot|basis-worker)[.-][^/]+|_astro\/bench\.[^/]+\.css|fine-tiles\/.+)$/;
+  /^(_astro\/(TerrainPanel|terrain-scene|on-foot|boot|perf-hud|spector|bench-boot|basis-worker)[.-][^/]+|_astro\/bench\.[^/]+\.css|fine-tiles\/.+|site-films\/.+)$/;
+const FILMS = 'site-films/';
 /** The pseudo-locale's folder (src/i18n/locales.ts): never offered, never cached. */
 const PSEUDO = 'en-xa/';
 
@@ -84,8 +88,12 @@ function filesUnder(dir, root = dir) {
   });
 }
 
-/** Whether the worker may keep `file` (a path under dist) at all: not the pseudo-locale, source maps nor itself. */
-const keepable = (file) => !file.startsWith(PSEUDO) && !file.endsWith('.map') && file !== 'sw.js';
+/**
+ * Whether the worker may keep `file` (a path under dist) at all: not the pseudo-locale, source maps, the loader's films
+ * nor itself.
+ */
+const keepable = (file) =>
+  !file.startsWith(PSEUDO) && !file.startsWith(FILMS) && !file.endsWith('.map') && file !== 'sw.js';
 
 /** The most a first visit's worker may download, in bytes; the build fails over it. */
 export const PRECACHE_BUDGET = 5 * 1024 * 1024;

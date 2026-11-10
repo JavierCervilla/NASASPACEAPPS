@@ -24,9 +24,10 @@
  */
 
 /**
- * A PowerVR draws the on-foot view without its shadow map (VENT-75): on the human's Pixel 10 a frame that sampled
- * the shadow map and wrote a logarithmic depth lost the GPU context after seconds of turning. The GPU's name is
- * spoofed through WEBGL_debug_renderer_info; any other GPU keeps its shadows.
+ * A PowerVR draws the on-foot view with its shadow map again (VENT-114): on the human's Pixel 10 a frame that sampled
+ * the shadow map and wrote a logarithmic depth lost the GPU context after seconds of turning (VENT-75), but two passes
+ * of linear depth (`data-depth="split"`) survive it. The single-pass logarithmic depth, asked for by the address,
+ * still draws without the shadow map there. The GPU's name is spoofed through WEBGL_debug_renderer_info.
  */
 import { expect, test, type Page } from '@playwright/test';
 import { stubApi } from './api-stub';
@@ -37,7 +38,7 @@ const PIXEL = 'ANGLE (Imagination Technologies, PowerVR D-Series DXT-48-1536, Op
 
 const host = (page: Page) => page.getByRole('application', { name: 'On foot at the site' });
 
-async function open(page: Page, gpu: string | null): Promise<number> {
+async function open(page: Page, gpu: string | null, query = ''): Promise<number> {
   await page.clock.setFixedTime(new Date('2026-11-30T20:00:00Z'));
   await page.addInitScript((name) => {
     localStorage.setItem('ventana.dataSource', 'computed');
@@ -53,7 +54,7 @@ async function open(page: Page, gpu: string | null): Promise<number> {
   await stubApi(page);
   await stubTile(page);
   await stubWall(page, 100, 140);
-  await page.goto('./?site=im2-athena&quality=low&onfoot=far#horizon');
+  await page.goto('./?site=im2-athena&quality=low&onfoot=far' + query + '#horizon');
   await expect(host(page)).toHaveAttribute('data-ready', 'true', { timeout: START_MS });
   await expect.poll(async () => Number(await host(page).getAttribute('data-frames')), { timeout: START_MS })
     .toBeGreaterThan(0);
@@ -61,8 +62,15 @@ async function open(page: Page, gpu: string | null): Promise<number> {
   return Number(await host(page).getAttribute('data-shadows'));
 }
 
-test('a PowerVR renders the shadow map none of the times', async ({ page }) => {
-  expect(await open(page, PIXEL)).toBe(0);
+test('a PowerVR renders the shadow map, in two linear passes', async ({ page }) => {
+  expect(await open(page, PIXEL)).toBeGreaterThan(0);
+  await expect(host(page)).toHaveAttribute('data-depth', 'split');
+  await expect(page.locator('canvas[data-scene-shadows]')).toHaveAttribute('data-scene-shadows', 'on');
+});
+
+test('a PowerVR asked for the single-pass logarithmic depth renders the shadow map none of the times', async ({ page }) => {
+  expect(await open(page, PIXEL, '&depth=log')).toBe(0);
+  await expect(host(page)).toHaveAttribute('data-depth', 'log');
 });
 
 test('another GPU still renders it', async ({ page }) => {

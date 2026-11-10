@@ -39,7 +39,9 @@ import {
 import { releaseRenderer } from '../../lib/gl-renderer';
 import { terrainPixelRatio } from '../pixel-ratio';
 import { VIEW_FOV } from '../view-fov';
+import { FULL_PLANES } from './depth-passes';
 import { createShadowGate, type ShadowGate } from './shadow-gate';
+import { stageDraw, type StageDraw } from './stage-draw';
 import { stageRenderer } from './stage-renderer';
 import type { SceneSetup } from './scene-types';
 
@@ -49,6 +51,8 @@ export interface Stage {
   readonly camera: PerspectiveCamera;
   /** The Sun's shadow map renders only when marked (VENT-73). */
   readonly shadow: ShadowGate;
+  /** How a frame is drawn: one render, or two (VENT-114). */
+  readonly drawing: StageDraw;
 }
 
 /**
@@ -81,9 +85,13 @@ export function createStage(
   renderer.domElement.setAttribute('aria-hidden', 'true');
   host.prepend(renderer.domElement);
   const fov = phone ? VIEW_FOV.phone : VIEW_FOV.wide;
-  const camera = new PerspectiveCamera(fov, 1, 0.2, 1_200_000);
+  const camera = new PerspectiveCamera(fov, 1, FULL_PLANES.near,
+    FULL_PLANES.far);
   const shadow = createShadowGate(renderer.shadowMap);
-  return { renderer, scene: new Scene(), camera, shadow };
+  const scene = new Scene();
+  const drawing = stageDraw({ renderer, scene, camera, shadow },
+    setup.depth.mode);
+  return { renderer, scene, camera, shadow, drawing };
 }
 
 /**

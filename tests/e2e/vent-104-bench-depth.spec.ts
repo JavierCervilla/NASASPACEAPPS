@@ -78,9 +78,10 @@ test.describe('on a phone, 390x844', () => {
     await expect(page.locator('.ventana-bench-panel[data-phase="results"]')).toBeVisible({ timeout: RUNS_MS });
     await expect(page).not.toHaveURL(/[?&](depth|shadows)=/);
     const table = panel(page).getByRole('region', { name: 'Depth buffers, turning' });
-    await expect(table.getByRole('row')).toHaveCount(6);
-    await expect(table.getByRole('row').nth(1)).toHaveAccessibleName(/^log Survived log \d+ no /);
-    await expect(table.getByRole('row').nth(2)).toHaveAccessibleName(/^reversed Survived reversed \d+ yes /);
+    await expect(table.getByRole('row')).toHaveCount(7);
+    await expect(table.getByRole('row').nth(1)).toHaveAccessibleName(/^split Survived split \d+ no on /);
+    await expect(table.getByRole('row').nth(2)).toHaveAccessibleName(/^log Survived log \d+ no /);
+    await expect(table.getByRole('row').nth(3)).toHaveAccessibleName(/^reversed Survived reversed \d+ yes /);
     await expect(table.getByRole('row', { name: /^reversed\+shadows Survived reversed \d+ yes on / })).toBeVisible();
     await expect(table.getByRole('row', { name: /^linear\+shadows Survived linear \d+ no on / })).toBeVisible();
     await expect(panel(page).locator('.bench__versus'))
@@ -92,7 +93,7 @@ test.describe('on a phone, 390x844', () => {
     await expect(panel(page).getByRole('status')).toHaveText('Report copied');
     const report = await page.evaluate(() => navigator.clipboard.readText());
     expect(report).toMatch(/^GPU: \S/m);
-    expect(report).toContain('Suite: depth (script v1). Runs: 1 round, order log reversed reversed+shadows linear+shadows log+shadows (fast script)');
+    expect(report).toContain('Suite: depth (script v1). Runs: 1 round, order split log reversed reversed+shadows linear+shadows log+shadows (fast script)');
     expect(report).toMatch(/^log vs reversed, no shadow map: fps [\d.]+ vs [\d.]+ · p95Ms /m);
     expect(report).toMatch(/^reversed\+shadows: survived · depth reversed · \d+ bits · reversed buffer yes · shadow map on · fps \d/m);
     expect(report).toMatch(/^log\+shadows: lost after [\d.]+ s of the turn · depth log · /m);

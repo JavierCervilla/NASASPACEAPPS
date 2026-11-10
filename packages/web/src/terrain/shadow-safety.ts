@@ -23,13 +23,16 @@
  *             :::.. .  .               SPDX-License-Identifier: MIT
  */
 
+import type { DepthMode } from './depth-mode';
+
 /**
  * GPUs whose driver loses its context when a frame both samples the Sun's
- * shadow map and writes a logarithmic depth (VENT-75). On the human's
- * Pixel 10 (PowerVR D-Series DXT-48-1536) the on-foot view lost its context
- * after a few seconds of turning at every tier; leaving out either the
- * shadow map or the logarithmic depth kept it alive. The shadow map is the
- * one dropped: the far rings need the logarithmic depth.
+ * shadow map and writes a logarithmic or reversed depth (VENT-75). On the
+ * human's Pixel 10 (PowerVR D-Series DXT-48-1536) the on-foot view lost its
+ * context after a few seconds of turning at every tier; a linear depth kept
+ * it alive with the shadow map on. The default split draw (VENT-114) uses
+ * linear depth, so this only decides for the single-pass `?depth=log` and
+ * `?depth=reversed` escape hatches.
  */
 const SHADOW_UNSAFE_GPU = /powervr/i;
 
@@ -51,7 +54,12 @@ const KNOWN_GPU = new RegExp(['adreno', 'mali', 'immortalis', 'powervr',
  * its context after ten seconds of turning at the low tier (VENT-92). A
  * desktop keeps its shadows.
  */
-export function shadowMapUnsafe(name: string | null, phone: boolean) {
+export function shadowMapUnsafe(
+  name: string | null,
+  phone: boolean,
+  mode: DepthMode = 'log',
+) {
+  if (mode === 'split' || mode === 'linear') return false;
   if (name !== null && SHADOW_UNSAFE_GPU.test(name)) return true;
   return phone && (name === null || !KNOWN_GPU.test(name));
 }

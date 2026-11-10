@@ -40,6 +40,7 @@ import { groundPolicy, type GroundPolicy } from '../ground-policy';
 import { drawsAgain } from '../input-change';
 import { EYE_M } from '../view-camera';
 import { backdropMesh } from './backdrop';
+import { farWhen } from './depth-passes';
 import { createClodUniforms } from './clod-glsl';
 import type { ClodLayer } from './clod-layer';
 import { createCraterUniforms } from './crater-depth';
@@ -123,7 +124,7 @@ export function createWorld(stage: Stage, seed: number, setup: SceneSetup) {
     input: null,
     lit: null, rings: null, farShade: null, slicer,
     invalidate: () => undefined, mapsPending: false };
-  stage.scene.add(world.sky.group, world.near);
+  stage.scene.add(farWhen(stage.drawing.split, world.sky.group), world.near);
   if (world.craters) stage.scene.add(world.craters.group);
   return world;
 }
@@ -160,7 +161,7 @@ function applyProfile(world: World, input: SceneInput): void {
   const radius = backdropM(input.ring.tier);
   const eyeY = world.ground(0, 0) + EYE_M;
   world.backdrop = backdropMesh(input.profile, eyeY, radius);
-  world.stage.scene.add(world.backdrop);
+  world.stage.scene.add(farWhen(world.stage.drawing.split, world.backdrop));
 }
 
 /**

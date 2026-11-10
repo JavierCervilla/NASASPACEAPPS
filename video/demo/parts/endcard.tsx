@@ -27,11 +27,13 @@
  * The call to action: the address big, a QR code to it (drawn from
  * parts/qr.ts, checked to decode), the event, the team and the disclaimer.
  */
-import { Animate } from "raea";
+import { Animate, Img, staticFile } from "raea";
 import { qrMatrix } from "./qr";
 import { C, FONT, TAGLINE, TEAM, URL_QR, URL_TEXT } from "./theme";
 
 const QR = qrMatrix(URL_QR);
+/** The team's wordmark, white, made by capture/logo.mjs from assets/universelle-logo.svg. */
+const LOGO = staticFile("universelle-logo.png");
 
 /** The QR code, `size` px square with a light quiet zone, as one row of runs per line. */
 function Qr({ size }: { size: number }) {
@@ -66,7 +68,10 @@ export function EndCard({ at = 0, compact = false }: { at?: number; compact?: bo
         <Animate enter="fade" at={at} style={{ marginTop: -10, marginBottom: 6, fontFamily: FONT, fontSize: 36, fontWeight: 520, color: C.secondary }}>{TAGLINE}</Animate>
         <Animate enter="slam" at={at + Math.round(2 * k)} style={{ fontFamily: FONT, fontSize: 108, fontWeight: 760, letterSpacing: "-0.035em", lineHeight: 1, color: C.window, whiteSpace: "nowrap" }}>{URL_TEXT}</Animate>
         <Animate enter="fade" at={at + Math.round(10 * k)} style={{ marginTop: 30, fontFamily: FONT, fontSize: 40, fontWeight: 560, color: C.text }}>NASA Space Apps Challenge 2026 · Madrid</Animate>
-        <Animate enter="fade" at={at + Math.round(14 * k)} style={{ fontFamily: FONT, fontSize: 40, fontWeight: 560, color: C.secondary }}>{`Team ${TEAM}`}</Animate>
+        <Animate enter="fade" at={at + Math.round(14 * k)} style={{ display: "flex", flexDirection: "row", alignItems: "center", gap: 26 }}>
+          <div style={{ fontFamily: FONT, fontSize: 40, fontWeight: 560, color: C.secondary }}>{`Team ${TEAM}`}</div>
+          <Img src={LOGO} style={{ width: 166, height: 36, opacity: 0.9 }} />
+        </Animate>
         <Animate enter="fade" at={at + Math.round(18 * k)} style={{ marginTop: 22, fontFamily: FONT, fontSize: 30, fontWeight: 500, color: C.muted }}>NASA open data · not endorsed by NASA</Animate>
       </div>
       <Animate enter="pop" at={at + Math.round(6 * k)} style={{ display: "flex" }}><Qr size={qr} /></Animate>

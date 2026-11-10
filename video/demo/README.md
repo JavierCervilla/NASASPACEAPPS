@@ -15,6 +15,8 @@ the app is built on and its accuracy against JPL Horizons) and the call to actio
 | Path | What |
 |---|---|
 | `scenes/moon.tsx`, `scenes/shots.tsx` | The 3D Moon, Earth and star field (shaders over the app's own textures) and the camera paths |
+| `scenes/plates.ts`, `scenes/opening.tsx` | The opening's shot specs for the hero film's terrain pipeline (VENT-112) and the switch that plays a pipeline scene, a rendered plate or the 3D fallback |
+| `assets/universelle-logo.svg` | The team's wordmark, for the end card |
 | `parts/beats.tsx` | Each beat's words, devices and footage, shared by both cuts |
 | `parts/devices.tsx` | A generic laptop and phone drawn in code, the footage inside their screens |
 | `parts/type.tsx`, `parts/theme.ts` | Kinetic type and the app's design tokens (system-ui, the three signal colours) |
@@ -30,6 +32,7 @@ raea 0.1.0 (installed by the studio under `~/.gamestudio/raea/`, rendering on th
 
 ```sh
 node video/demo/capture/textures.mjs           # the app's Moon and Earth textures into media/textures/
+node video/demo/capture/logo.mjs               # the team's wordmark as a white PNG, media/universelle-logo.png
 node video/demo/capture/capture.mjs all        # media/{desktop,onfoot,mobile}.mp4 and .json, about two minutes
 cd video/demo
 RAEA="env HOME=$HOME/.gamestudio/raea/home RAEA_OFFLINE=1 $HOME/.gamestudio/raea/raea/bin/raea"
@@ -65,6 +68,14 @@ lunar Lommel-Seeliger law. The Sun keeps to the real range of the sub-solar lati
 so at the pole it always grazes the horizon; the Earth is the Blue Marble map at its real distance and size, and it
 sets by a change of apparent latitude within the real libration (±6.7°). Everything else is footage of the live app.
 
+## The opening and the terrain pipeline
+
+The opening's shots are specified in `scenes/plates.ts` for the terrain pipeline of the hero film (VENT-112, a real
+LOLA mesh with shadows baked for the instant): instant or time-lapse span, target, camera move, length per cut and
+what must be in frame, each instant chosen from `@ventana/sim` (`skyAt` and the curated sites' terrain horizons). Each
+shot plays, in this order, a scene imported into `SCENES` (`scenes/opening.tsx`), its rendered plate
+(`media/plates/<file>`, named in `plate`), or the raea 3D fallback.
+
 ## Claims on screen and their sources
 
 | On screen | Source |
@@ -84,6 +95,10 @@ sets by a change of apparent latitude within the real libration (±6.7°). Every
 - **Music**: synthesized in the compositions (`parts/score.ts`) with raea's built-in Tone.js synths: no samples, no
   sound library, no generated or third-party audio.
 - **QR code**: drawn by `parts/qr.ts`, written for this repository (MIT, as the rest of it).
+- **Team wordmark**: `assets/universelle-logo.svg`, the team's own mark, copied from
+  `JavierCervilla/universelle-web` `public/logo.svg` (commit `3ab4c495aa9df98a26a576e5c037893826a8fc66`, sha256
+  `a5eb56164e4040d53e00c9b38c589e377fffe6efca942e9c5dc2cb62ab5ed7b5`); `capture/logo.mjs` fills it with the app's
+  near-white for the dark end card.
 - **Devices**: generic shapes drawn in code; no brand's design, mark or logo.
 - **NASA data and imagery shown** (public domain unless noted; full rows in `/ASSETS.md`):
   - Sun and Earth positions: NASA/JPL Horizons API, https://ssd-api.jpl.nasa.gov/doc/horizons.html.

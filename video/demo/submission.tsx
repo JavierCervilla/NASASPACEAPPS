@@ -37,11 +37,12 @@ import {
   CtaBeat, DevicesBeat, DsnBeat, EarthWords, HookWords, ProofWords, RevealWords, SunWords, TerrainBeat, WindowBeat,
 } from "./parts/beats";
 import { buildScore, frames } from "./parts/score";
-import { MoonShot, type ShotName } from "./scenes/shots";
+import { OpeningShot } from "./scenes/opening";
+import type { OpeningId } from "./scenes/plates";
 
 buildScore({ hits: [0, 3, 5.5, 11, 16, 19.5, 23, 25], riser: [6, 8], pulseFrom: 3, groove: [8, 25], breath: [25, 27.5], outro: 27.5, end: 30 });
 
-interface Beat { id: string; at: number; to: number; shot?: ShotName; words?: () => React.ReactNode; app?: (p: { frames: number }) => React.ReactNode }
+interface Beat { id: string; at: number; to: number; shot?: OpeningId; words?: () => React.ReactNode; app?: (p: { frames: number }) => React.ReactNode }
 
 const D = desktop.steps;
 const M = mobile.steps;
@@ -69,7 +70,7 @@ export default function Submission() {
         const App = b.app;
         return (
           <Sequence key={b.id} from={frames(b.at)} durationInFrames={n} name={b.id}>
-            {b.shot ? <MoonShot name={b.shot} frames={n} /> : null}
+            {b.shot ? <OpeningShot id={b.shot} cut="submission" frames={n} /> : null}
             {App ? <App frames={n} /> : null}
             {b.words ? b.words() : null}
           </Sequence>

@@ -36,11 +36,12 @@ import {
   TerrainBeat, WindowBeat,
 } from "./parts/beats";
 import { buildScore, frames } from "./parts/score";
-import { MoonShot, type ShotName } from "./scenes/shots";
+import { OpeningShot } from "./scenes/opening";
+import type { OpeningId } from "./scenes/plates";
 
 buildScore({ hits: [0, 4, 8, 12, 22, 26, 34, 40, 46, 54], riser: [14, 18], pulseFrom: 4, groove: [18, 54], breath: [54, 60], outro: 60, end: 68 });
 
-interface Beat { id: string; at: number; to: number; shot?: ShotName; words?: () => React.ReactNode; app?: (p: { frames: number }) => React.ReactNode }
+interface Beat { id: string; at: number; to: number; shot?: OpeningId; words?: () => React.ReactNode; app?: (p: { frames: number }) => React.ReactNode }
 
 /** The cut, in seconds on the score's grid. */
 const BEATS: Beat[] = [
@@ -68,7 +69,7 @@ export default function Hero() {
         const App = b.app;
         return (
           <Sequence key={b.id} from={frames(b.at)} durationInFrames={n} name={b.id}>
-            {b.shot ? <MoonShot name={b.shot} frames={n} /> : null}
+            {b.shot ? <OpeningShot id={b.shot} cut="hero" frames={n} /> : null}
             {App ? <App frames={n} /> : null}
             {b.words ? b.words() : null}
           </Sequence>

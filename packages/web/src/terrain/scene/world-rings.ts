@@ -46,7 +46,8 @@ export function applyRings(world: World, input: SceneInput): boolean {
   setFine(world.fine, input.ring.fine);
   const { report } = world.setup;
   const rings = createRingLayer(input.ring, world.material, world.slicer, {
-    note: (text) => report.step(text), depth: world.ringDepth });
+    note: (text) => report.step(text), depth: world.ringDepth,
+    split: world.stage.drawing.split });
   world.stage.scene.add(rings.group);
   world.rings = rings;
   world.farShade = world.setup.leave.has('shade') ? null

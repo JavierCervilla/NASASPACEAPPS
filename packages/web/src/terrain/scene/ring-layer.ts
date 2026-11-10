@@ -88,6 +88,8 @@ export interface RingOptions {
   readonly note?: (text: string) => void;
   /** The shadow depth of the nearest level (the crater patch's cut-out). */
   readonly depth?: Material | null;
+  /** Levels from FAR_FROM_LEVEL are drawn in the far pass (VENT-114). */
+  readonly split?: boolean;
 }
 
 /** The layer for `view`, drawing with `material`; it adds nothing yet. */
@@ -99,7 +101,8 @@ export function createRingLayer(
 ): RingLayer {
   const s: LayerState = { view, material, slicer, group: new Group(),
     entries: new Map(), lits: [], built: new Set(),
-    note: options.note ?? (() => undefined), depth: options.depth ?? null };
+    note: options.note ?? (() => undefined), depth: options.depth ?? null,
+    split: options.split ?? false };
   s.group.name = 'ring';
   const known = [...view.store.tiles.values()];
   for (const tile of known.sort((a, b) => a.key.level - b.key.level)) {

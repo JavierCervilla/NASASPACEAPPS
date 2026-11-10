@@ -3,6 +3,14 @@
 ## [Sin publicar]
 
 ### Cambiado
+- **Las sombras vuelven a PowerVR: la vista 3D se dibuja en dos pasadas de profundidad lineal (VENT-114).** En el Pixel 10
+  el mapa de sombras con profundidad logarítmica o invertida tumbaba el contexto de la GPU, y con profundidad lineal sola
+  las crestas lejanas salían en escalones. Ahora, en todas las GPU, primero se dibuja lo lejano (anillos 2 y 3, el muro del
+  horizonte y el cielo, con planos de 1 km a 1200 km), se borra solo la profundidad y encima lo cercano (anillos 0 y 1,
+  suelo, rocas y cráteres, planos de 0,2 m a 12,5 km) con el mapa de sombras. La imagen es la misma que con la
+  profundidad logarítmica (diferencia media de la línea del horizonte por debajo de 0,2 sobre 255 en el relieve grabado
+  de IM-2). `?depth=log|linear|reversed` siguen como salidas de emergencia (en PowerVR `log` y `reversed` siguen sin
+  mapa de sombras) y `?depth=split` fuerza la nueva. El banco `?bench=depth` suma la variante `split`, que es la app.
 - **La app siempre en oscuro (VENT-113).** Como la portada, ya no sigue el tema claro del sistema: el fondo casi negro,
   la Luna y los cuatro colores de señal se ven igual en cualquier equipo; las variantes de más contraste y menos
   transparencia se mantienen. La sección del equipo de la portada dice «Team Universelle» en los cinco idiomas.

@@ -67,8 +67,9 @@ export function depthReportText(state: BenchState): string {
     ...deviceLines(state),
     `Suite: depth (script v${DEPTH_SCRIPT_VERSION}). Runs: ${rounds}, order ${DEPTH_VARIANTS.join(' ')}${
       state.fast ? ' (fast script)' : ''}`,
-    'log: the app as it is. reversed: the reversed buffer, shadow map as'
-      + ' the app has it. +shadows: that depth buffer, shadow map forced.',
+    'split: the app as it is, two linear passes. log, reversed: one pass,'
+      + ' shadow map as the safety rules say. +shadows: that depth buffer,'
+      + ' shadow map forced.',
     '', versusLine(state.results),
     '', 'Every run', ...depthRows(state.results).map(rowLine),
     '', 'Every step', ...runLines(state.results), '',

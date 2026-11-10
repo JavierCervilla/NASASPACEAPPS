@@ -66,6 +66,8 @@ export interface LayerState {
   readonly note: (text: string) => void;
   /** The shadow depth of level 0 (the crater patch's cut-out), or none. */
   readonly depth: Material | null;
+  /** The far levels go in the far pass of the split draw (VENT-114). */
+  readonly split: boolean;
 }
 
 /** The skirt of a level: most of the next level's node spacing, metres. */

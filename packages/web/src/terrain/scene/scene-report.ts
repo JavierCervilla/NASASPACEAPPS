@@ -47,7 +47,7 @@ export function reportStage(world: World): void {
  */
 export function reportFrame(world: World, drawMs: number): void {
   const { renderer } = world.stage;
-  const { calls, triangles } = renderer.info.render;
+  const { calls, triangles } = world.stage.drawing.cost();
   const { geometries, textures } = renderer.info.memory;
   const { width, height } = renderer.domElement;
   const { report } = world.setup;

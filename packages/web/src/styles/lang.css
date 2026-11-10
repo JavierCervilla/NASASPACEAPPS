@@ -294,12 +294,6 @@
   --push-page: #16171c;
 }
 
-@media (prefers-color-scheme: light) {
-  .push__page {
-    --push-page: #f2f2f7;
-  }
-}
-
 /*
  * Reduced motion: a cross-fade in place of the slide (apple-design §14),
  * its opacities written each frame (phone/use-push.ts).

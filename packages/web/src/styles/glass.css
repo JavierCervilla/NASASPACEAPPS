@@ -112,9 +112,3 @@
 :root[data-glass='liquid'] :is(.strip, .card-block) {
   box-shadow: var(--glass-liquid-rim);
 }
-
-@media (prefers-color-scheme: light) {
-  :root[data-glass='liquid'] :is(.strip, .card-block) {
-    box-shadow: var(--strip-edge), var(--glass-liquid-rim);
-  }
-}

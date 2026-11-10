@@ -44,16 +44,9 @@ const root = import.meta.env.BASE_URL.replace(/\/?$/, '/');
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="description" content={description} />
-    <meta
-      name="theme-color"
-      content="#07080b"
-      media="(prefers-color-scheme: dark)"
-    />
-    <meta
-      name="theme-color"
-      content="#f2f2f7"
-      media="(prefers-color-scheme: light)"
-    />
+    <!-- Always dark, whatever the system theme (VENT-113); the manifest's
+         theme_color is the same (pwa/ring.ts BACKGROUND). -->
+    <meta name="theme-color" content="#07080b" />
     <!-- The installed app's icons (VENT-28, scripts/app_icons.py). The SVG
          one is the live favicon's link, repointed by pwa/favicon-dom.ts. -->
     <link rel="icon" href={`${root}favicon.ico`} sizes="48x48" />

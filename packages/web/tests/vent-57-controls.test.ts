@@ -123,14 +123,14 @@ describe('C-16: one segmented control', () => {
     expect(declared(oneRule(SEGMENTS), 'background')).toBe('transparent');
   });
 
-  it('the mark: #636366 in dark, white with a shadow in light', () => {
+  it('the mark: #636366 with no shadow, under a light system too (VENT-113)', () => {
     const mark = oneRule(MARKS);
     expect(declared(mark, 'background')).toBe('var(--segment-on)');
     expect(declared(mark, 'box-shadow')).toBe('var(--segment-shadow)');
     expect(rootToken('--segment-on', [])).toBe('#636366');
     expect(rootToken('--segment-shadow', [])).toBe('none');
-    expect(rootToken('--segment-on', [LIGHT])).toBe('#ffffff');
-    expect(rootToken('--segment-shadow', [LIGHT])).toBe('0 1px 3px rgba(0, 0, 0, 0.12)');
+    expect(rootToken('--segment-on', [LIGHT])).toBe('#636366');
+    expect(rootToken('--segment-shadow', [LIGHT])).toBe('none');
   });
 
   it('no other sheet paints a track, a segment or a mark its own way', () => {

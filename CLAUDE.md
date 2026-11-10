@@ -119,7 +119,8 @@ epic: `VENT-1` (Dashboard project «Ventana Lunar», prefix `VENT`).
 Every visible change follows `.claude/skills/apple-design/SKILL.md` (vendored from `emilkowalski/skills`, MIT; see
 `.claude/skills/NOTICE.md`). Load it before touching UI. Project-specific rules from the spec on top of it:
 
-- Dark by default (near-black background). One screen, no menus: the jury must understand it in five seconds.
+- Always dark (near-black background), whatever the system theme (VENT-113: the light theme was removed; the landing
+  is dark too). One screen, no menus: the jury must understand it in five seconds.
 - Four signal colours with fixed meaning, from `packages/web/src/styles/tokens.css`, and an always-visible legend: Sun
   (`--signal-sun`), Earth (`--signal-earth`), both = window (`--signal-window`), nothing (`--signal-none`). Never use
   them for decoration.
@@ -163,9 +164,9 @@ Every visible change follows `.claude/skills/apple-design/SKILL.md` (vendored fr
   below 768 px): the hint, the compass, the carried pin's readout, the desktop Layers key (which left the Liquid glass)
   and the notice rows. `styles/controls.css` holds one segmented control (the header's view tabs, the site picker's
   regions, «Computed | Horizons | Compare»: a `--fill` track 2 px around a 40 px mark, 44 px in all, radius 12/10, the
-  mark `--segment-on`, #636366 in dark and white with `--segment-shadow` in light, text in `--text`; the phone tab bar
+  mark `--segment-on`, #636366, text in `--text`; the phone tab bar
   keeps its own look) and one secondary button (`.card-retry`, the strip's and the widgets' retry,
-  `.source-note__retry`, `.on-foot__retry` with the dark theme's fill on the 3D view, `.now-button`: a grey pill fully
+  `.source-note__retry`, `.on-foot__retry` with the view's dark fill, `.now-button`: a grey pill fully
   rounded, 44 px, weight 600, no underline, dimmed text when disabled). «Saved» keeps «Save»'s grey pill, only its
   bookmark fills; Play is a grey circle like the month arrows. The notices are rows in the update row's look, sharing
   `update.css` (`.update-notice[data-shown]`, `.offline-notice[data-shown]`, `.undo-toast`, `.globe-load` and the
@@ -275,7 +276,7 @@ Every visible change follows `.claude/skills/apple-design/SKILL.md` (vendored fr
   `src/lib/view-tabs.ts`): the polar map is a south polar stereographic disk from 80° S
   (`src/lib/polar-projection.ts`, image from `scripts/moon_textures.py polar`). No card floats over the globe (VENT-33). On phones the
   top bar's subtitle is the legend's rule, «Sun + Earth = window», each word in its signal colour (`--bar-*-ink`,
-  deeper on the light bar for 4.5:1), and the site pill shows the short name over the state at the shared instant with
+  4.5:1 on the bar), and the site pill shows the short name over the state at the shared instant with
   its time left in its colour («Window · 7 d left», «Sun · …», «Earth · …», «Neither · …»; `src/phone/site-state.ts`;
   a long site name in the pill ends in an ellipsis first, since the bar keeps the pill its state's longest line
   (`--pill-need`, `src/components/phone/use-pill-room.ts`, VENT-55), then the titles wrap, then a narrow pill drops
@@ -489,7 +490,7 @@ Every visible change follows `.claude/skills/apple-design/SKILL.md` (vendored fr
   0.84 chip for grey): the least that keeps the text 4.5:1 over the brightest texel the Moon maps hold, which is white (the 2K, 4K and 8K LROC maps reach 255, 255, 255 and the Sun lights a
   texel at most 1.02 times, `tests/graticule-contrast.test.ts`). The globe's label rules in `orientation.css` are scoped under `.globe-graticule`; the bare `.graticule-label` belongs
   to the polar map (`polar.css`): unscoped, the globe's rules loaded later and piled the polar map's five labels in its
-  corner; on the panel, dark in both themes, they take `--polar-label` (4.5:1 in every theme and contrast,
+  corner; on the dark panel they take `--polar-label` (4.5:1 in either contrast setting,
   `tests/polar-label-contrast.test.ts`) (VENT-52, `tests/graticule-label-css.test.ts`, `tests/e2e/polar-graticule.spec.ts`). Held by
   `tests/globe-compass.test.ts`, `tests/globe-graticule.test.ts` and `tests/e2e/globe-orientation.spec.ts`.
 - **Sites in permanent shadow** (VENT-39, canvas option B, the human's decision). NASA's illumination maps (PGDA
@@ -540,7 +541,7 @@ Every visible change follows `.claude/skills/apple-design/SKILL.md` (vendored fr
   while a custom point's comes, «Smooth horizon» with «Real terrain unavailable here» under the compass when it cannot,
   «Smooth horizon» alone for a listed site north of 80° S. The SVG fills a box the component measures (`use-horizon.ts`), so nothing
   sets a style attribute (CSP); its text alternative says which way each body is, on eight points of the compass, and
-  whether the terrain hides it (`horizon-alt.ts`). Styles in `src/styles/horizon.css` (light theme and more contrast
+  whether the terrain hides it (`horizon-alt.ts`). Styles in `src/styles/horizon.css` (more contrast
   included). Held by `tests/e2e/horizon.spec.ts` (IM-2 on the ridge on 2026-11-30 20:00 UTC, Haworth's hidden Earth on
   2026-11-22 20:00 UTC, the pin with a stubbed `/api/v1/horizon`, the sheet's fit) and `tests/horizon-strip.test.ts`.
 - **DSN mode** (VENT-7, canvases «DsnA» and «DsnC», approved A + C, no DSN row in the calendar, «No link» first, to
@@ -577,7 +578,7 @@ Every visible change follows `.claude/skills/apple-design/SKILL.md` (vendored fr
   ring is not lost among the land dots (VENT-59), labels in HTML over it (so they follow the text size),
   each moved sideways to stay inside the picture (`src/dsn/label-shift.ts`, `components/dsn/use-label-fit.ts`, through
   a `--label-shift` property set in the CSSOM, so at 200 % text on a phone no label leaves the screen). Never the signal
-  colours: `--dsn-*` tokens; the Earth and the DSN view's panel stay dark in both themes. The month's figures add «Hours with DSN» (hours with any complex
+  colours: `--dsn-*` tokens; the Earth and the DSN view's panel are dark. The month's figures add «Hours with DSN» (hours with any complex
   listening, `card/month-facts.ts`).
 - **3D terrain view** (VENT-34, the human's verdict on the canvas): the «Horizon» header tab (`#horizon`,
   `src/lib/view-tabs.ts`) and the phone's Horizon tab (sheet at peek, the ground framed in the band between the top bar
@@ -1088,14 +1089,14 @@ milestones: the draggable pin (VENT-10), the MVP close (globe + DSN) and before 
 forward. At those milestones a break that `qa-adversario` reproduces in a red test blocks the merge until it is fixed,
 and its test then stays as a permanent gate.
 
-**Roadmap canvas** (https://claude.ai/artifact/Sm8QoCwg7DqLbuCSHLPfBg): the live, visual roadmap. It is part of the
+**Roadmap canvas** (https://claude.ai/artifact/7gKDZj5noEJEHH9GR3jcZG): the live, visual roadmap. It is part of the
 definition of done of every step, together with the Dashboard and the vault: when a trajectory or TODO changes state,
 update the canvas in the same step with the `ArtifactData` tool (`items/*` status and note, `meta/state` cards and
 `updatedAt`; `phases/*` and `milestones/*` when the plan changes). Its data lives in the artifact's database, not in
 this repo; only the owner and editors write it. Its text is Spanish (the human reads it).
 
 **Spec document** (Claude Docs «Ventana Lunar · Especificación y roadmap»,
-https://claude.ai/artifact/Pm8HcFMSZZJZGtcEjbKxNu): kept current like the canvas. When a trajectory merges or a
+https://claude.ai/artifact/Wpc59GLJyXQvKNgxesvfan): kept current like the canvas. When a trajectory merges or a
 decision changes the spec, the orchestrator updates the «Última actualización» line at the top (date chip + one line),
 the «Estado al día» table and next steps, and «Cambios de especificación». Its text is Spanish.
 

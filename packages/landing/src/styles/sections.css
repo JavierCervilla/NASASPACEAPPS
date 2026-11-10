@@ -319,32 +319,24 @@
 }
 
 .team__video {
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.team__player {
+  display: block;
+  width: 100%;
+  height: auto;
   aspect-ratio: 16 / 9;
   border-radius: 24px;
   background: var(--card);
   box-shadow: inset 0 0 0 1px var(--hairline);
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 12px;
-  padding: 24px;
-  text-align: center;
+}
+
+.team__caption {
   color: var(--text-muted);
-}
-
-.team__video p {
-  margin: 0;
-}
-
-.team__video circle {
-  fill: none;
-  stroke: currentColor;
-  stroke-width: 1.5;
-}
-
-.team__video path {
-  fill: currentColor;
 }
 
 .team__copy {

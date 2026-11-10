@@ -19,6 +19,7 @@ completa está en el documento «Ventana Lunar · Especificación y roadmap»
 - [x] Pestaña Resources: cerrado; los sitios y los datos salen de fuentes publicadas, citadas en `ASSETS.md`
 - [x] Petición de prueba a JPL Horizons para entender el formato: la API lo consulta desde VENT-3
 - [x] Pitch y guion del vídeo de 30 s, con los textos del formulario, en el documento de entrega
+- [x] El vídeo de la demo de RAEA en la portada, y el corte de 30 s en un enlace público propio (VENT-120)
   (https://claude.ai/artifact/7jzMVScGpGb4FLvWBUVJ6Y)
 - [x] Textura LRO WAC 2K (y 1K para equipos modestos) en el repo, con su fuente y su sha256 en `ASSETS.md` (VENT-6)
 

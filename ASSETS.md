@@ -610,3 +610,19 @@ film while the relief loads (`src/terrain/loader/site-films.ts`, `loader-picture
 | `im2-athena-wide-start.webp` | 18636 | `664f3cbc85fc4810b27a91442cd37ff21340e4b740c64d2f168be68a95f4a2a0` |
 | `im2-athena-wide.av1.mp4` | 494473 | `d323bca4f61047f4e816f20190a526d593056f916dfe220058ce7c85df2ac251` |
 | `im2-athena-wide.h264.mp4` | 707723 | `ffbc23e51e3f784dc53f04b353b3075a85a4c4b200f39e39f91acc27ebe8e787` |
+
+## Landing demo video (VENT-120, RAEA's VENT-110)
+
+`packages/landing/public/media/demo/`, served from `/media/demo/` (nginx's `/media/` rule: a day, then revalidate;
+`video/mp4` with byte ranges). Re-encoded from the masters of the **demo-video-final** pre-release
+(`ventana-lunar-{submission,hero}-r4c-master.mp4`, 83 and 176 MB, H.264 + AAC, 1920 x 1080, 30 fps) with ffmpeg:
+`-c:v libx264 -preset slow -crf 22` (the 30 s cut, SSIM 0.995 against its master) and `-crf 24` (the 68 s cut, SSIM
+0.993), `-profile:v high -pix_fmt yuv420p -c:a aac -b:a 128k -movflags +faststart`. The poster is the 68 s cut's
+frame at 2.8 s, scaled to 1280 x 720, WebP quality 82. Sources and credits of everything on screen:
+`video/demo/README.md`.
+
+| File | Bytes | sha256 |
+|---|---|---|
+| `ventana-lunar-30s.mp4` | 14769156 | `e030b85eb0e5548e78ecb5b3076793156243f5ce560a6151a07746123759d926` |
+| `ventana-lunar-68s.mp4` | 24316637 | `e70ae4daa2a711bf0bd5325873b1d9613cebfc4fd73098705655d59dd89a921b` |
+| `ventana-lunar-poster.webp` | 54086 | `d3f8f1f6aafe24a3a37e7d8823140211a5b539dd3b4e1e6a2b701bb4487f0dbe` |

@@ -116,3 +116,11 @@ export const PLATES: Record<OpeningId, PlateSpec> = {
     plate: { hero: null, submission: null }, fallback: "drift",
   },
 };
+
+/**
+ * The end card's backdrop, a still in media/: the placeholder is a frame of
+ * the raea 3D Moon (backdrop.tsx renders it); the final one is the hold frame
+ * of the VENT-112 hero film (the Mons Mouton horizon with the Earth,
+ * 2026-12-15 05:00 UTC). Change this one path to swap it.
+ */
+export const END_BACKDROP = "plates/end-backdrop-placeholder.png";

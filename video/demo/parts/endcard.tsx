@@ -39,13 +39,17 @@ const LOGO_PX = { width: 1632, height: 380, pad: 16 };
 const LOGO_H = 50;
 const LOGO_PAD = (LOGO_H * LOGO_PX.pad) / LOGO_PX.height;
 
-/** The QR code, `size` px square with a light quiet zone, as one row of runs per line. */
+/**
+ * The QR code, `size` px square: off-white modules on the app's dark card
+ * (a reversed code, which readers accept), a quiet zone of four modules, one
+ * row of runs per line.
+ */
 function Qr({ size }: { size: number }) {
-  const quiet = 3;
+  const quiet = 4;
   const n = QR.length + 2 * quiet;
   const cell = size / n;
   return (
-    <div style={{ position: "relative", width: size, height: size, backgroundColor: "#f2f2f4", borderRadius: 18 }}>
+    <div style={{ position: "relative", width: size, height: size, backgroundColor: "rgba(16, 17, 22, 0.86)", borderRadius: 20, boxShadow: `inset 0 0 0 1px ${C.edge}` }}>
       {QR.flatMap((row, r) => {
         const runs: React.ReactNode[] = [];
         let c = 0;
@@ -53,7 +57,7 @@ function Qr({ size }: { size: number }) {
           if (!row[c]) { c += 1; continue; }
           const s = c;
           while (c < row.length && row[c]) c += 1;
-          runs.push(<div key={`${r}-${s}`} style={{ position: "absolute", left: (s + quiet) * cell, top: (r + quiet) * cell, width: (c - s) * cell + 0.6, height: cell + 0.6, backgroundColor: "#07080b" }} />);
+          runs.push(<div key={`${r}-${s}`} style={{ position: "absolute", left: (s + quiet) * cell, top: (r + quiet) * cell, width: (c - s) * cell + 0.6, height: cell + 0.6, backgroundColor: C.text }} />);
         }
         return runs;
       })}
@@ -63,7 +67,7 @@ function Qr({ size }: { size: number }) {
 
 /** The end card's words and code; `at` is the frame the address lands on. */
 export function EndCard({ at = 0, compact = false }: { at?: number; compact?: boolean }) {
-  const qr = compact ? 300 : 340;
+  const qr = compact ? 200 : 228;
   const k = compact ? 0 : 1;
   return (
     <div style={{ position: "absolute", left: 0, top: 0, width: 1920, height: 1080, display: "flex", flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 110 }}>

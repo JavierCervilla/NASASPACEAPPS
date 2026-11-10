@@ -29,7 +29,8 @@
  * proof and the call to action. Each takes its length in frames; its type
  * lands on beats of the score (15 frames at 120 bpm).
  */
-import { AbsoluteFill, interpolate, useCurrentFrame } from "raea";
+import { AbsoluteFill, Img, interpolate, staticFile, useCurrentFrame } from "raea";
+import { END_BACKDROP } from "../scenes/plates";
 import desktop from "../media/desktop.json";
 import mobile from "../media/mobile.json";
 import onfoot from "../media/onfoot.json";
@@ -225,15 +226,17 @@ export function ProofWords({ compact = false }: { compact?: boolean }) {
   );
 }
 
-/** The end card on the page's black. */
+/** The end card over its backdrop: the Moon, defocused and darkened, pushing in slowly. */
 export function CtaBeat({ frames, compact = false }: { frames: number; compact?: boolean }) {
   const f = useCurrentFrame();
-  const z = interpolate(f, [0, frames], [1, 1.05], clamp);
+  const z = interpolate(f, [0, frames], [1.04, 1.1], clamp);
   return (
     <AbsoluteFill style={{ backgroundColor: C.bg }}>
-      <div style={{ position: "absolute", left: 0, top: 0, width: 1920, height: 1080, transform: `scale(${z})` }}>
-        <EndCard at={2} compact={compact} />
+      <div style={{ position: "absolute", left: 0, top: 0, width: 1920, height: 1080, overflow: "hidden" }}>
+        <Img src={staticFile(END_BACKDROP)} style={{ position: "absolute", left: 0, top: 0, width: 1920, height: 1080, objectFit: "cover", transform: `scale(${z})`, filter: "blur(28px) brightness(0.62)" }} />
       </div>
+      <div style={{ position: "absolute", left: 0, top: 0, width: 1920, height: 1080, backgroundImage: "linear-gradient(90deg, rgba(7, 8, 11, 0.88) 0%, rgba(7, 8, 11, 0.72) 58%, rgba(7, 8, 11, 0.55) 100%)" }} />
+      <EndCard at={2} compact={compact} />
     </AbsoluteFill>
   );
 }

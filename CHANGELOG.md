@@ -2,6 +2,13 @@
 
 ## [Sin publicar]
 
+### Cambiado
+- **El recorrido de la portada se entiende (VENT-111).** «Four ways to look at the same hour» pasa a «Inside the app»:
+  «Pick a site and a moment. Every view answers for it.», una frase que explica que las cuatro vistas muestran el mismo
+  sitio y el mismo momento (IM-2 Athena, 22 de noviembre de 2026 a las 20:00 UTC), y en cada tarjeta el nombre de la
+  vista y lo que haces con ella: «See where the light is», «Stand on the site», «Know who is listening», «Take it with
+  you». En escritorio, las cuatro en fila; en los cinco idiomas. El menú dice «The app» en vez de «Tour».
+
 ### Añadido
 - **Una portada que explica el proyecto, y la app en `/app` (VENT-109, la opción A del lienzo con la franja del mes de
   la B).** https://nasa.universelle.io abre ahora una página que plantea la pregunta del reto («Sun for power. Earth for

@@ -28,7 +28,8 @@
  * `render` call, wrapped so each drawn frame reports its draw calls and
  * triangles (`info.render` after the call: three resets it at each
  * render; a render on a lost context draws nothing and is not one), and
- * the canvas's context losses.
+ * the canvas's context losses. The renders of one turn are one frame,
+ * their counts summed: the split draw renders twice a frame (VENT-118).
  */
 import type { WebGLRenderer } from 'three';
 
@@ -53,12 +54,19 @@ export function wrapRender(
   onDraw: (draw: Draw) => void,
 ): () => void {
   const render = renderer.render;
+  let frame: Draw | null = null;
+  const close = () => {
+    if (frame) onDraw(frame);
+    frame = null;
+  };
   renderer.render = (scene, camera) => {
     render.call(renderer, scene, camera);
     // A lost context draws nothing: three returns at once.
     if (renderer.getContext().isContextLost()) return;
     const { calls, triangles } = renderer.info.render;
-    onDraw({ calls, triangles });
+    if (!frame) queueMicrotask(close);
+    frame = { calls: (frame?.calls ?? 0) + calls,
+      triangles: (frame?.triangles ?? 0) + triangles };
   };
   return () => {
     renderer.render = render;

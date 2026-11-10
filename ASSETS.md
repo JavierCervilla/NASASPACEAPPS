@@ -480,13 +480,13 @@ The landing at the domain's root (`packages/landing/public/media/`). Nothing her
 | `tour-phone.webp` | 34718 | `f556bd0a13acd1f9011e9581f66b5dd92dd62b65c099d4b0dd3cb1ae5beffad7` | the same run |
 
 - **Hero Moon** (VENT-109): `moon-1600.webp`, `moon-800.webp` and their renderer `scripts/moon_hero.py` left the repo
-  with VENT-112, when the film took the hero; they stay in git history.
+  with VENT-116, when the film took the hero; they stay in git history.
 - **Tour**: screenshots of the app itself at IM-2 Athena on 22 Nov 2026, 20:00 UTC (a landing window, Robledo
   listening), Chromium with SwiftShader, the browser's clock set to that instant, 2x, encoded by sharp at WebP q80. Taken
   on 2026-11-09 from production (`--app https://nasa.universelle.io/`, the app's address before this move). Their text
   is the English interface on every locale's landing; their alt text is translated.
 
-## Landing hero film (VENT-112)
+## Landing hero film (VENT-116, rendered in VENT-112)
 
 `packages/landing/public/media/hero/`, served from `/media/hero/` (nginx's `/media/` rule: a day, then revalidate;
 `video/mp4` with byte ranges). Release **hero-film-preview-p3**, RAEA's near-final render: a later one replaces the same

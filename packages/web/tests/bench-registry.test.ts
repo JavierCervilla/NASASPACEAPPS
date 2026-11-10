@@ -51,19 +51,32 @@ function fakeRenderer(triangles: number) {
 }
 
 describe('the registry', () => {
-  it('counts each draw of an attached renderer, with its calls and triangles, until drained or detached', () => {
+  it('counts each frame of an attached renderer, with its calls and triangles, until drained or detached', async () => {
     const registry = createRegistry();
     const fake = fakeRenderer(900);
     const detach = registry.attach({ renderer: fake.renderer, kind: 'onFoot' });
     fake.renderer.render({} as never, {} as never);
+    await Promise.resolve();
     fake.renderer.render({} as never, {} as never);
+    await Promise.resolve();
     expect(fake.state.renders).toBe(2);
     expect(registry.drain()).toEqual({ draws: [{ calls: 3, triangles: 900 }, { calls: 3, triangles: 900 }], lost: 0 });
     expect(registry.drain().draws).toEqual([]);
     detach();
     fake.renderer.render({} as never, {} as never);
+    await Promise.resolve();
     expect(registry.drain().draws).toEqual([]);
     expect(registry.handles()).toEqual([]);
+  });
+
+  it('counts the split draw\'s two renders in one turn as one frame, their calls and triangles summed (VENT-118)', async () => {
+    const registry = createRegistry();
+    const fake = fakeRenderer(900);
+    registry.attach({ renderer: fake.renderer, kind: 'onFoot' });
+    fake.renderer.render({} as never, {} as never);
+    fake.renderer.render({} as never, {} as never);
+    await Promise.resolve();
+    expect(registry.drain().draws).toEqual([{ calls: 6, triangles: 1800 }]);
   });
 
   it('counts a context loss, but not the one the benchmark caused, nor a render on a lost context', () => {

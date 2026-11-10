@@ -7,6 +7,12 @@
   de Javier perdió el contexto a los 10 s de girar en un punto propio en producción. En PowerVR y en los móviles que
   ocultan su GPU la vista se dibuja otra vez sin mapa de sombras; el resto de equipos las mantiene. `?depth=linear`
   las devuelve a mano para seguir probando.
+- **Con ahorro de datos la portada descarga una sola imagen (VENT-118).** Antes pedía el primer fotograma del vídeo y
+  después el fotograma final; ahora el servidor responde al primero con el final, así que se ve el mismo fotograma de
+  siempre por 30–58 kB menos.
+- **El banco de pruebas cuenta bien los fotogramas de la vista 3D (VENT-118).** Con la profundidad partida cada
+  fotograma son dos dibujos, y el banco los contaba por separado, así que las llamadas y los triángulos «por
+  fotograma» salían a la mitad. Ahora suma los dos.
 
 ### Cambiado
 - **Las sombras vuelven a PowerVR: la vista 3D se dibuja en dos pasadas de profundidad lineal (VENT-114).** En el Pixel 10
@@ -35,7 +41,7 @@
   reducido ni ahorro de datos, y nunca en un punto propio o guardado; si el vídeo no carga, vuelve el cargador de
   siempre. Corte apaisado en escritorio y vertical en el móvil, AV1 o H.264, unos 0,3–0,7 MB por sitio, bajo demanda
   y fuera de la caché sin conexión.
-- **Vídeo del descenso en la portada (VENT-112).** La portada se abre con una película a pantalla completa: un descenso
+- **Vídeo del descenso en la portada (VENT-116; render de RAEA en VENT-112).** La portada se abre con una película a pantalla completa: un descenso
   continuo desde la órbita lunar hasta 2 m sobre IM-2 Athena, en Mons Mouton, que acaba en el horizonte con la Tierra
   alta en un cielo negro, renderizado con el relieve LOLA del LRO y la Blue Marble de la NASA. El descenso (14 s) se ve
   una vez y enlaza sin salto con un plano en bucle; hay un corte para escritorio y otro vertical para el móvil, en AV1 o

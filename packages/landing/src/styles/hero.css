@@ -24,12 +24,12 @@
  */
 
 /*
- * The hero (VENT-109; the film since VENT-112, hero «B»): the descent to
- * IM-2 full-bleed behind the question and the live answer. The film's end
- * frame decides the layout, through the few properties below, so a new
- * render only moves them: where the Earth stands, as shares of the frame
- * (render p3: desktop centre 50.6 % across, 4.6 % of the width wide; phone
- * from 35 % to 47 % down), and how far the copy keeps from it.
+ * The hero (VENT-109; the film since VENT-116, rendered in VENT-112, hero «B»):
+ * the descent to IM-2 full-bleed behind the question and the live answer. The
+ * film's end frame decides the layout, through the few properties below, so a
+ * new render only moves them: where the Earth stands, as shares of the frame
+ * (render p3: desktop centre 50.6 % across, 4.6 % of the width wide; phone from
+ * 35 % to 47 % down), and how far the copy keeps from it.
  */
 .hero {
   --film-focus: 50% 40%;

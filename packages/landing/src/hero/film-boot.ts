@@ -52,14 +52,20 @@ export function filmEnv(win: FilmWindow): FilmEnv {
 }
 
 /**
- * Starts the hero film (VENT-112) over its start frame, or shows the still
+ * Starts the hero film (VENT-116) over its start frame, or shows the still
  * under reduced motion or Save-Data, when no video is requested; a play()
- * the browser refuses shows the still too.
+ * the browser refuses shows the still too. Under Save-Data the start frame
+ * the page asked for is the still: nginx answers it so (VENT-118).
  */
 export function bootFilm(doc: Document, win: FilmWindow): void {
   const stage = doc.querySelector<HTMLElement>('[data-film]');
   if (!stage) return;
-  const cut = filmCut(filmEnv(win));
+  const env = filmEnv(win);
+  if (env.saveData) {
+    stage.dataset.film = 'still';
+    return;
+  }
+  const cut = filmCut(env);
   const videos = filmVideos(stage);
   if (!cut || !videos) {
     show(stage, 'still');

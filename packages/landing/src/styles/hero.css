@@ -23,22 +23,97 @@
  *             :::.. .  .               SPDX-License-Identifier: MIT
  */
 
-/* The hero (VENT-109, canvas option A): the question, the Moon, the answer. */
+/*
+ * The hero (VENT-109; the film since VENT-112, hero «B»): the descent to
+ * IM-2 full-bleed behind the question and the live answer. The film's end
+ * frame decides the layout, through the few properties below, so a new
+ * render only moves them: where the Earth stands, as shares of the frame
+ * (render p3: desktop centre 50.6 % across, 4.6 % of the width wide; phone
+ * from 35 % to 47 % down), and how far the copy keeps from it.
+ */
 .hero {
+  --film-focus: 50% 40%;
+  --earth-x: 0.506;
+  --earth-clear: 112px;
+  --copy-left: max(var(--gutter), (100vw - var(--max)) / 2 + var(--gutter));
+  --dur-film-in: 600ms;
+  --scrim: rgba(0, 0, 0, 0.72);
   position: relative;
+  isolation: isolate;
+  display: flex;
+  min-height: max(600px, calc(100svh - 84px));
+}
+
+.hero__film {
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  overflow: hidden;
+  background: #000;
+}
+
+.hero__poster,
+.hero__video {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  max-width: none;
+  height: 100%;
+  object-fit: cover;
+  object-position: var(--film-focus);
+}
+
+.hero__video {
+  opacity: 0;
+}
+
+/* The descent fades in over the poster; the hold appears at once, on the
+   very frame the descent ended on, which stays painted under it. */
+[data-film='descent'] .hero__video--descent,
+[data-film='hold'] .hero__video--descent {
+  opacity: 1;
+  transition: opacity var(--dur-film-in) ease;
+}
+
+[data-film='hold'] .hero__video--hold {
+  opacity: 1;
+}
+
+/* Dark only where words sit: the copy's column, the card's corner, and the
+   seams with the header above and the next section below. */
+.hero__scrim {
+  position: absolute;
+  inset: 0;
+  background:
+    linear-gradient(to bottom, var(--bg), transparent 12%),
+    linear-gradient(to top, var(--bg), transparent 18%),
+    linear-gradient(90deg, var(--scrim), rgba(0, 0, 0, 0.5) 34%,
+      transparent 54%),
+    radial-gradient(48% 62% at 96% 100%, var(--scrim), transparent);
+}
+
+.hero__inner {
+  width: 100%;
   max-width: var(--max);
   margin: 0 auto;
-  padding: 24px var(--gutter) 96px;
+  padding: 24px var(--gutter) 32px;
   display: grid;
-  grid-template-columns: minmax(0, 5fr) minmax(0, 6fr);
-  gap: 32px;
-  align-items: center;
-  min-height: min(780px, calc(100dvh - 84px));
+  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-rows: 1fr auto;
+  gap: 24px 32px;
 }
 
 .hero__copy {
-  position: relative;
-  z-index: 2;
+  grid-area: 1 / 1;
+  align-self: start;
+  max-width: min(36rem,
+    var(--earth-x) * 100vw - var(--earth-clear) - var(--copy-left));
+  padding-top: clamp(8px, 5svh, 64px);
+}
+
+.hero__copy,
+.hero__head,
+.hero__body {
   display: flex;
   flex-direction: column;
   gap: 28px;
@@ -48,7 +123,7 @@
   margin: 0;
   display: flex;
   flex-direction: column;
-  font-size: clamp(2.5rem, 4.9vw, 4.25rem);
+  font-size: clamp(2.5rem, 4.4vw, 4rem);
   font-weight: 600;
   line-height: 0.98;
   letter-spacing: -0.035em;
@@ -56,13 +131,7 @@
 }
 
 .hero__muted {
-  color: var(--text-muted);
-}
-
-@media (min-width: 821px) {
-  .hero__title span {
-    white-space: nowrap;
-  }
+  color: var(--text-secondary);
 }
 
 .hero__lede {
@@ -81,26 +150,20 @@
   align-items: center;
 }
 
-.hero__stage {
-  position: relative;
-  height: 720px;
-}
-
-.hero__moon {
-  position: absolute;
-  top: 50%;
-  right: -120px;
-  width: 820px;
-  max-width: none;
-  height: 820px;
-  translate: 0 -50%;
-  animation: moon-settle 1.8s var(--ease-out) both;
+.hero__credit {
+  grid-area: 2 / 1;
+  align-self: end;
+  margin: 0;
+  max-width: 34rem;
+  font-size: 0.75rem;
+  line-height: 1.4;
+  letter-spacing: 0;
+  color: var(--text-muted);
 }
 
 .live {
-  position: absolute;
-  left: 0;
-  bottom: 56px;
+  grid-area: 1 / 2 / 3 / 3;
+  align-self: end;
   width: 340px;
   padding: 20px;
   border-radius: 22px;
@@ -249,48 +312,90 @@
   }
 }
 
-@keyframes moon-settle {
-  from {
-    opacity: 0;
-    scale: 1.06;
-  }
-}
-
-@media (max-width: 820px) {
+/* The phone cut (720 x 1280), the same query as PHONE_QUERY in
+   src/hero/film-plan.ts: the film keeps its own proportions at the top, the
+   copy starts in the sky band under the Earth and the card stands on the
+   ground, running past the film into the page. */
+@media (max-width: 820px), (orientation: portrait) {
   .hero {
-    grid-template-columns: 1fr;
-    padding-bottom: 48px;
+    --film-h: min(177.78vw, 100svh);
+    --film-focus: 50% 40%;
+    --earth-top: 0.35;
+    --earth-bottom: 0.47;
+    display: block;
+    min-height: 0;
   }
 
-  .hero__stage {
-    height: auto;
-    display: flex;
-    flex-direction: column;
-    gap: 16px;
+  .hero__film {
+    inset: 0 0 auto;
+    height: var(--film-h);
   }
 
-  /* The lit half centred on the narrow screen; the night side runs off it. */
-  .hero__moon {
-    position: relative;
-    top: auto;
-    right: auto;
-    width: 100%;
-    height: auto;
-    translate: -21% 0;
-    margin: -8% 0 -14%;
+  .hero__scrim {
+    background:
+      linear-gradient(to bottom, var(--bg), transparent 10%),
+      linear-gradient(to bottom, transparent 12%, var(--scrim) 20%,
+        var(--scrim) 33%, transparent 36%),
+      linear-gradient(to bottom, transparent 44%, var(--scrim) 50%,
+        var(--scrim) 72%, var(--bg));
+  }
+
+  /* The headline stands in the sky over the Earth, the lede and the buttons
+     under it, and the card follows on the ground. */
+  .hero__inner {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows:
+      minmax(calc(var(--film-h) * var(--earth-top)), auto)
+      calc(var(--film-h) * (var(--earth-bottom) - var(--earth-top)))
+      auto auto auto;
+    gap: 0;
+    padding-top: 0;
+    padding-bottom: 40px;
+  }
+
+  .hero__copy {
+    display: contents;
+  }
+
+  .hero__head {
+    grid-area: 1 / 1;
+    align-self: end;
+    gap: 14px;
+    padding-bottom: 12px;
+  }
+
+  .hero__body {
+    grid-area: 3 / 1;
+    gap: 20px;
+    max-width: 36rem;
   }
 
   .live {
-    position: relative;
-    left: auto;
-    bottom: auto;
+    grid-area: 4 / 1;
     width: 100%;
+    max-width: 30rem;
+    margin-top: 28px;
+  }
+
+  .hero__credit {
+    grid-area: 5 / 1;
+    margin-top: 20px;
+  }
+
+  .hero__actions .button--large {
+    padding: 0 20px;
+  }
+}
+
+/* More contrast: the scrims go almost opaque behind the words. */
+@media (prefers-contrast: more) {
+  .hero {
+    --scrim: rgba(0, 0, 0, 0.9);
   }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .rise,
-  .hero__moon {
+  .rise {
     animation: none;
   }
 }

@@ -474,18 +474,50 @@ The landing at the domain's root (`packages/landing/public/media/`). Nothing her
 
 | File | Bytes | sha256 | Made by |
 |---|---|---|---|
-| `moon-1600.webp` | 97830 | `cadc0cbb40190594d6cd102342ea53fbe49f8daa7217a2c9cb76d1a62fd11006` | `python3 -I packages/landing/scripts/moon_hero.py` |
-| `moon-800.webp` | 33182 | `89677f88d03d9e46c5e5701ad1c0a5683c875b3003c65e3ba4e12d5f4c4cc0fa` | the same run |
 | `tour-globe.webp` | 59796 | `5d099df96bb788930d4b1c00312a0bd9ebe6b35a41dc86bfe337e2fe12b72dd4` | `node packages/landing/scripts/tour-shots.mjs` |
 | `tour-onfoot.webp` | 53002 | `a8a6aa1a7704757332ef542a16f39e5197897fd5679debf62f0f5e1f1e6d4b1a` | the same run |
 | `tour-dsn.webp` | 65174 | `a4cae807bb1f2fbc564358912a234cab50e6d0f1beab1fd1b846b57c2643053d` | the same run |
 | `tour-phone.webp` | 34718 | `f556bd0a13acd1f9011e9581f66b5dd92dd62b65c099d4b0dd3cb1ae5beffad7` | the same run |
 
-- **Hero Moon**: an orthographic view of the shipped LROC 4K colour map (`moon-lroc-4k.jpg`, above), north up, centred
-  at 52° S 15° E so the south pole sits in the lower half, lit from the east by a low Sun with Lommel-Seeliger shading
-  on the smooth sphere (no relief). Deterministic: the same map gives the same bytes. `--check-near-side out.png`
-  renders the near side face-on to check the orientation (Mare Crisium to the east, on the right).
+- **Hero Moon** (VENT-109): `moon-1600.webp`, `moon-800.webp` and their renderer `scripts/moon_hero.py` left the repo
+  with VENT-112, when the film took the hero; they stay in git history.
 - **Tour**: screenshots of the app itself at IM-2 Athena on 22 Nov 2026, 20:00 UTC (a landing window, Robledo
   listening), Chromium with SwiftShader, the browser's clock set to that instant, 2x, encoded by sharp at WebP q80. Taken
   on 2026-11-09 from production (`--app https://nasa.universelle.io/`, the app's address before this move). Their text
   is the English interface on every locale's landing; their alt text is translated.
+
+## Landing hero film (VENT-112)
+
+`packages/landing/public/media/hero/`, served from `/media/hero/` (nginx's `/media/` rule: a day, then revalidate;
+`video/mp4` with byte ranges). Release **hero-film-preview-p3**, RAEA's near-final render: a later one replaces the same
+file names, and this table with it.
+
+| File | Bytes | sha256 |
+|---|---|---|
+| `hero-desktop-descent.av1.mp4` | 2432221 | `391349d8aed2a5ef086ddee50ef2ac22d54261ce6c175c8fe1c879ade3c3840f` |
+| `hero-desktop-descent.h264.mp4` | 3121861 | `330b5eba4b11f67d8e461381441f538af504f9f36a876eb128596af483b4a864` |
+| `hero-desktop-hold.av1.mp4` | 205701 | `0f9b42dc909e6cf0ff2d7457d17f57d1fcbe07bdc5a95424c181cfa7ee7a4b46` |
+| `hero-desktop-hold.h264.mp4` | 220726 | `e44e26444cdbd268df8e55c6f054cf4156b5bb2f9ded92bbc808b130ded4faab` |
+| `hero-desktop-poster.webp` | 94222 | `a4a0675f49ccd2c55c383da14c886bcf6b2a22f97f4f73d21508ad3687163345` |
+| `hero-desktop-start.webp` | 58182 | `fdd8edccc4fcdc1d6483393d72853226083d3e57e5376905ee0040143e2e3517` |
+| `hero-phone-descent.av1.mp4` | 1468987 | `1bd5fd5d3dea3215f737ef6394b5cf26c62d2f5d6bcd4a4aa5e57889d422309d` |
+| `hero-phone-descent.h264.mp4` | 1925779 | `f664f323b8d54e2e4c8aeb6a70ec3dd541f0a3cae36bf0511114526383b009ed` |
+| `hero-phone-hold.av1.mp4` | 145217 | `9cdafa7be21375cea5898fddfb3a6e9ca8ee6ee9ff33a3ec1227288ac10a9556` |
+| `hero-phone-hold.h264.mp4` | 158675 | `5cd6036f4dad5a38c7a3f69989534ac6d10811c8534fac2feff8b962fa2db705` |
+| `hero-phone-poster.webp` | 39950 | `95090c21f60b6d41dfa16b7a8f19fdd22d505d90b7152062d9b447b2c10e47f8` |
+| `hero-phone-start.webp` | 29664 | `ff4896e90480636f5bc62ec97adef99c9b2ea1cd7988007360d483e7fd918a61` |
+
+- **What it is**: one continuous descent from lunar orbit to 2 m over IM-2 Athena (Mons Mouton, 84.79° S 29.20° E),
+  ending on the horizon with the Earth, about 70 % lit, high in a black sky: the sky of 15 Dec 2026 05:00 UTC at IM-2,
+  the Sun out of frame. Rendered with RAEA from NASA LRO LOLA terrain and the NASA Blue Marble Earth (public domain,
+  the same sources this file lists for the app); no third party's footage.
+- **Sources**: RAEA's lossless masters (`hero-{desktop,phone}-{descent,hold}.mp4` and the PNG frames
+  `hero-{desktop,phone}-{start,poster}.png`), encoded by RAEA's `encode.sh`: AV1 with SVT-AV1 preset 6 (desktop
+  descent 1400 kb/s, hold 250; phone 900 and 180) and two-pass x264 high profile (1700, 300; 1050, 220), both
+  `yuv420p`, GOP 60 for AV1, `+faststart`, no audio; the frames as WebP q78 (libwebp), scaled to the cut.
+- **Cuts**: desktop 1920 x 1080 and phone 720 x 1280, 30 fps. The descent lasts 14 s and plays once; the hold lasts 7 s
+  and loops seamlessly. `-start.webp` is the descent's first frame (frame 0 of the master), which the page paints while
+  the film comes; `-poster.webp` is the still, the descent's last frame and the hold's first.
+- **End-frame geometry** (drives `--film-focus`, `--earth-x`, `--earth-top`, `--earth-bottom` in `styles/hero.css`):
+  desktop Earth centre at 50.6 % across and 35.6 % down, 4.6 % of the width wide, horizon 58.5 to 64.4 % down; phone
+  Earth centre at 50.1 % and 40.6 %, 12.3 % of the width wide, horizon 61.9 to 64.7 %.

@@ -31,14 +31,16 @@ import { monthBars } from './month';
 import { monthWords } from './month-text';
 import { drawCard, drawMonth } from './render';
 import { appHashTarget } from './app-hash';
+import { bootFilm } from '../hero/film-boot';
 
 /** How often the card is worked out again while the page is shown. */
 const REFRESH_MS = 60_000;
 
 /**
  * The landing's only script (VENT-109): an old link to one of the app's
- * views (`/#horizon`) opens the app; otherwise the live card and the month
- * strip are worked out for the visitor's instant, and again every minute.
+ * views (`/#horizon`) opens the app; otherwise the hero film starts
+ * (VENT-112) and the live card and the month strip are worked out for the
+ * visitor's instant, and again every minute.
  */
 export function boot(doc: Document = document): void {
   const locale = pageLocale(doc);
@@ -47,6 +49,7 @@ export function boot(doc: Document = document): void {
     location.replace(target);
     return;
   }
+  bootFilm(doc, window);
   const draw = () => drawNow(doc, locale, Date.now());
   draw();
   setInterval(() => {

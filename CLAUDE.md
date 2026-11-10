@@ -16,8 +16,22 @@ epic: `VENT-1` (Dashboard project «Ventana Lunar», prefix `VENT`).
 - **Landing** (`packages/landing`, VENT-109, canvas option A with option B's month strip, the human's verdict): the
   explanatory page at the domain's root, `/`, `/es/`, `/fr/`, `/de/`, `/it/`; the app lives under `/app`. Astro static,
   no React, no Three.js: one module script (`src/live/boot.ts`) and one stylesheet per part. The hero asks the question
-  («Sun for power. Earth for a voice.») beside a Moon rendered from the shipped LROC map
-  (`scripts/moon_hero.py`) and a live card for IM-2 Athena: Sun and Earth over its LOLA horizon, the window and how long
+  («Sun for power. Earth for a voice.») over a film (VENT-112, hero «B»): a descent from orbit to 2 m over IM-2 Athena
+  that ends on the horizon with the Earth high in a black sky (RAEA render of LOLA and Blue Marble, `public/media/hero/`,
+  `ASSETS.md`), full-bleed behind the words, scrims only where they sit (held to 4.5:1 over the start frame and the still by the e2e), the layout driven by
+  where the end frame puts the Earth (`--film-focus`, `--earth-x`, `--earth-top`, `--earth-bottom` in `styles/hero.css`, render p3); on desktop the
+  copy in the left column over the sky and the card bottom right over the ground, on the phone cut (`PHONE_QUERY`, ≤ 820
+  px or portrait) the headline in the sky over the Earth, the lede and buttons under it, and the card on the ground with
+  its head above the fold at 390 x 844. It starts on the descent's first
+  frame (`-start.webp`, preloaded for the cut only under `prefers-reduced-motion: no-preference`), so the descent
+  fades in over the same picture; the still, its last frame and the hold's first (`-poster.webp`), is taken by the
+  `<picture>`'s sources under reduced motion with no script and no start frame fetched, and put in by `film-still.ts`
+  under Save-Data or a refused play(); `src/hero/` (`film-plan.ts` pure, `film-player.ts` over fakeable videos,
+  `film-dom.ts`, `film-still.ts`, `shown-watch.ts`, `film-boot.ts`) picks the cut once, gives the videos their AV1 then H.264 sources
+  only then, plays the 14 s descent muted and inline, and when it ends plays the preloaded 7 s hold on a loop, shown
+  only once it plays so the shared frame covers the swap; paused off screen or with the page hidden; a refused play()
+  shows the still. Under reduced motion or Save-Data no video is requested. A credit line at its foot names the
+  sources. The hero also holds a live card for IM-2 Athena: Sun and Earth over its LOLA horizon, the window and how long
   it lasts, and the DSN complex listening, from `computedHours`, `terrainHours` and `dsnOutlook` (`src/live/answer.ts`,
   `card-text.ts`). The page is built with the build's instant, so it reads without JavaScript, and the browser works it
   out again for the visitor's instant and every minute while shown. «How it works» ends with the month strip of the

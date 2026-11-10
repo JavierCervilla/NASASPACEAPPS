@@ -26,6 +26,13 @@
 
 import { catalogueOf, translator } from '../i18n/catalogue';
 import { appPath, type Locale } from '../i18n/locales';
+import {
+  PHONE_QUERY,
+  REDUCED_MOTION,
+  narrowed,
+  startUrl,
+  stillUrl,
+} from '../hero/film-plan';
 import LiveCard from './LiveCard.astro';
 
 interface Props {
@@ -35,39 +42,94 @@ interface Props {
 
 const { locale, atMs } = Astro.props;
 const t = translator(catalogueOf(locale));
+// The film (VENT-112) starts as the descent's first frame, so the descent
+// fades in over the same picture; under reduced motion the <picture> takes
+// the still (the end frame) instead, with no script. src/hero/film-boot.ts
+// gives the videos their sources only when they will play, and puts the
+// still in under Save-Data or a refused play().
 ---
 
-<section class="hero" id="top">
-  <div class="hero__copy">
-    <p class="eyebrow rise rise--1">{t('hero.eyebrow')}</p>
-    <h1 class="hero__title rise rise--2">
-      <span>{t('hero.titleA')}</span>
-      <span class="hero__muted">{t('hero.titleB')}</span>
-    </h1>
-    <p class="hero__lede rise rise--3">{t('hero.lede')}</p>
-    <div class="hero__actions rise rise--4">
-      <a class="button button--primary button--large" href={appPath(locale)}>
-        {t('hero.open')}
-        <svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true">
-          <path d="M3 8h10M9 4l4 4-4 4"></path>
-        </svg>
-      </a>
-      <a class="button button--secondary button--large" href="#how">
-        {t('hero.how')}
-      </a>
-    </div>
+<section class="hero" id="top" data-film="start">
+  <div class="hero__film">
+    <picture>
+      <source
+        media={narrowed(PHONE_QUERY, REDUCED_MOTION)}
+        srcset={stillUrl('phone')}
+        width="720"
+        height="1280"
+      />
+      <source
+        media={REDUCED_MOTION}
+        srcset={stillUrl('desktop')}
+        width="1920"
+        height="1080"
+      />
+      <source
+        media={PHONE_QUERY}
+        srcset={startUrl('phone')}
+        data-still={stillUrl('phone')}
+        width="720"
+        height="1280"
+      />
+      <img
+        class="hero__poster"
+        src={startUrl('desktop')}
+        data-still={stillUrl('desktop')}
+        width="1920"
+        height="1080"
+        alt={t('hero.filmAlt')}
+        fetchpriority="high"
+      />
+    </picture>
+    <video
+      class="hero__video hero__video--descent"
+      data-film-part="descent"
+      muted
+      playsinline
+      preload="none"
+      tabindex="-1"
+      aria-hidden="true"
+      disablepictureinpicture></video>
+    <video
+      class="hero__video hero__video--hold"
+      data-film-part="hold"
+      muted
+      playsinline
+      loop
+      preload="none"
+      tabindex="-1"
+      aria-hidden="true"
+      disablepictureinpicture></video>
+    <div class="hero__scrim"></div>
   </div>
-  <div class="hero__stage">
-    <img
-      class="hero__moon"
-      src="/media/moon-1600.webp"
-      srcset="/media/moon-800.webp 800w, /media/moon-1600.webp 1600w"
-      sizes="(max-width: 820px) 100vw, 56vw"
-      width="1600"
-      height="1600"
-      alt={t('hero.moonAlt')}
-      fetchpriority="high"
-    />
+  <div class="hero__inner">
+    <div class="hero__copy">
+      <div class="hero__head">
+        <p class="eyebrow rise rise--1">{t('hero.eyebrow')}</p>
+        <h1 class="hero__title rise rise--2">
+          <span>{t('hero.titleA')}</span>
+          <span class="hero__muted">{t('hero.titleB')}</span>
+        </h1>
+      </div>
+      <div class="hero__body">
+        <p class="hero__lede rise rise--3">{t('hero.lede')}</p>
+        <div class="hero__actions rise rise--4">
+          <a
+            class="button button--primary button--large"
+            href={appPath(locale)}
+          >
+            {t('hero.open')}
+            <svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true">
+              <path d="M3 8h10M9 4l4 4-4 4"></path>
+            </svg>
+          </a>
+          <a class="button button--secondary button--large" href="#how">
+            {t('hero.how')}
+          </a>
+        </div>
+      </div>
+    </div>
     <LiveCard locale={locale} atMs={atMs} />
+    <p class="hero__credit">{t('hero.credit')}</p>
   </div>
 </section>

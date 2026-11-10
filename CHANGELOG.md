@@ -33,6 +33,10 @@
   you». En escritorio, las cuatro en fila; en los cinco idiomas. El menú dice «The app» en vez de «Tour».
 
 ### Añadido
+- **El vídeo de la demo en la portada (VENT-120).** La sección del equipo muestra el vídeo de RAEA de 68 s donde antes
+  decía que llegaría con la entrega; no se descarga nada hasta pulsar play. Debajo, un enlace al corte de 30 s, el del
+  envío a Space Apps, servido desde nuestra propia web (https://nasa.universelle.io/media/demo/ventana-lunar-30s.mp4).
+  En los cinco idiomas.
 - **El descenso de cada sitio mientras carga la vista 3D (VENT-117).** En los 11 sitios curados al sur de 80° S, la
   vista «Horizon» ya no espera con el plano de teselas: reproduce un vídeo de 6 s que baja desde la órbita hasta 2 m
   sobre el sitio y termina en la misma mirada con la que abre la vista. Si la escena está lista antes, espera al final

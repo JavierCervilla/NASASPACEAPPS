@@ -265,3 +265,35 @@ test.describe('the hero film (VENT-116)', () => {
     });
   }
 });
+
+test.describe('the demo video (VENT-120)', () => {
+  const DEMO = /\/media\/demo\//;
+
+  test('asks for none of the 68 s cut with the page and links the 30 s cut, under the production CSP', async ({ page }) => {
+    const problems = await strict(page);
+    const asked: string[] = [];
+    page.on('request', (request) => {
+      if (DEMO.test(request.url())) asked.push(new URL(request.url()).pathname);
+    });
+    await page.goto('./');
+    const video = page.locator('.team__player');
+    await video.scrollIntoViewIfNeeded();
+    await expect(video).toHaveAttribute('preload', 'none');
+    await expect(video).toHaveAttribute('aria-label', 'Ventana Lunar demo video, 68 seconds');
+    expect(await video.evaluate((v: HTMLVideoElement) => v.controls)).toBe(true);
+    await page.waitForTimeout(500);
+    expect(asked.filter((path) => path.endsWith('.mp4'))).toEqual([]);
+    const short = page.getByRole('link', { name: 'Watch the 30-second cut' });
+    await expect(short).toHaveAttribute('href', '/media/demo/ventana-lunar-30s.mp4');
+    const answer = await page.request.get('/media/demo/ventana-lunar-30s.mp4', { headers: { Range: 'bytes=0-1023' } });
+    expect(answer.status()).toBe(206);
+    expect(answer.headers()['content-type']).toBe('video/mp4');
+    expect(problems).toEqual([]);
+  });
+
+  test('names the video and the link in each language', async ({ page }) => {
+    await page.goto('./es/');
+    await expect(page.locator('.team__player')).toHaveAttribute('aria-label', 'Vídeo de demostración de Ventana Lunar, 68 segundos');
+    await expect(page.getByRole('link', { name: 'Ver el corte de 30 segundos' })).toBeVisible();
+  });
+});

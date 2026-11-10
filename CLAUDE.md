@@ -37,7 +37,10 @@ epic: `VENT-1` (Dashboard project «Ventana Lunar», prefix `VENT`).
   `card-text.ts`). The page is built with the build's instant, so it reads without JavaScript, and the browser works it
   out again for the visitor's instant and every minute while shown. «How it works» ends with the month strip of the
   visitor's UTC month (`src/live/month.ts`, runs placed through the CSSOM). Then the science in four figures, a tour of
-  four of the app's own views (`scripts/tour-shots.mjs`, at 22 Nov 2026 20:00 UTC) and the team, challenge and video.
+  four of the app's own views (`scripts/tour-shots.mjs`, at 22 Nov 2026 20:00 UTC) and the team, challenge and video:
+  RAEA's demo video (VENT-110) in the team section, the 68 s cut in a `<video controls preload="none">` with its poster,
+  so nothing of it loads until it is played, and a link to the 30 s cut, the Space Apps submission's, at
+  `/media/demo/ventana-lunar-30s.mp4` (VENT-120; re-encoded, ASSETS.md).
   Every word in `src/i18n/messages/<locale>.json` (typed from `en.json`, the same lint rule as the app); its signal
   colours are the app's tokens, held equal by `tests/catalogues.test.ts`. Always dark. An old link to one of the app's
   views by hash (`/#horizon`) is sent on to `/app/#horizon` by the page (`src/live/app-hash.ts`), since the hash never

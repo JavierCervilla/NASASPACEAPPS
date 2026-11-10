@@ -943,9 +943,25 @@ Every visible change follows `.claude/skills/apple-design/SKILL.md` (vendored fr
   line goes after it; the loader unmounts after `HANDOVER_MS` (1.2 s), then the caption shows and «Far relief · n of
   18 tiles» (`FarChip.tsx`, not a live region) until «Far relief · 32 and 128 km in», and goes. Reduced motion: plain
   fades. A failure keeps the skyline and the sky dimmed under the notice, its words centred in the ground when they
-  fit (`data-words`). The loader's picture is chosen in one place by the view's tier (`loader-picture.ts`: B→A on
-  every tier today). No WebGL and no new request; every move is a transform or an opacity. Held by
-  `tests/vent-60-loader.test.ts` and `tests/e2e/vent-60-loader.spec.ts`.
+  fit (`data-words`). The loader's picture is chosen in one place (`loader-picture.ts`): B→A, or the site's **descent
+  film** (VENT-117, VENT-61 variant C, the human's call: «one video per site») for the 11 curated sites south of 80° S
+  that have one (`FILM_SITES`, `site-films.ts`; never a custom or saved point) at the high or medium tier, without
+  reduced motion, Save-Data or `?bench` (`benchAsked`). The film (`LoaderFilm.tsx`, `film-element.ts`, `use-loader-film.ts`): 6 s from orbit to
+  the eye 2 m over the point, ending on the view's opening look at 15 Dec 2026 05:00 UTC (so the live sky and heading
+  may differ; the crossfade covers it), from `public/site-films/<site>-{wide,phone}.{av1,h264}.mp4` (the phone cut
+  under the phone breakpoint, as the scene's field of view), its `-start.webp` as the poster, muted, inline, no
+  controls, `aria-hidden`, `object-fit: cover` in the loader's band, under the loader's status line; paused while the
+  page is hidden; freed (sources removed, `load()`) when it goes. The hand-over (`film-gate.ts`) waits for both the
+  scene's first frame and the film's end: a scene drawn first waits for the end, a film ended first holds its last
+  frame; then the film fades out over 600 ms as the scene shows. A film that fails (every source refused, a decode
+  error, a refused `play()`) gives way to B→A at once, and one still playing 8 s (`FILM_GIVE_UP_MS`) after the scene
+  drew is given up. The caption, the compass and the far chip wait for the hand-over (`useLoaderProps` returns the
+  gated `drawn`). A new point restarts with its own film or B→A. The films are never precached nor kept by the service
+  worker (`sw-routes.ts` leaves `site-films/` to the browser: byte ranges; the build leaves them out of its digest);
+  nginx caches them a day. The e2e stub refuses them unless a spec lets them through (`stubApi(page, { films: true
+  })`). B→A itself makes no WebGL and no new request; every move is a transform or an opacity. Held by
+  `tests/vent-60-loader.test.ts`, `tests/vent-117-loader-film.test.ts`, `tests/e2e/vent-60-loader.spec.ts` and
+  `tests/e2e/vent-117-loader-film.spec.ts`.
 - **Five interface languages** (VENT-35): English (the default and the fallback), Spanish, French, German and Italian,
   each on its own static route (`/`, `/es/`, `/fr/`, `/de/`, `/it/`; `pages/[locale]/index.astro`) with `<html lang>`,
   `hreflang` links and `x-default` → `/`. This replaces the Language rule below for the interface only: every word a

@@ -67,7 +67,7 @@ describe('nginx.conf', () => {
   });
 
   // VENT-96: without a Cache-Control the browser guessed a lifetime from Last-Modified.
-  it.each(['^/(app/)?thumbs/', '^/(app/)?icons/', '^/media/'])('caches %s for a day and then revalidates: the names carry no hash', (path) => {
+  it.each(['^/(app/)?thumbs/', '^/(app/)?icons/', '^/media/', '^/(app/)?site-films/'])('caches %s for a day and then revalidates: the names carry no hash', (path) => {
     const body = blocks.get(path) ?? '';
     expect(body).toContain('include /etc/nginx/snippets/security-headers.conf;');
     expect(body).toContain('add_header Cache-Control "public, max-age=86400";');

@@ -21,6 +21,14 @@
   you». En escritorio, las cuatro en fila; en los cinco idiomas. El menú dice «The app» en vez de «Tour».
 
 ### Añadido
+- **El descenso de cada sitio mientras carga la vista 3D (VENT-117).** En los 11 sitios curados al sur de 80° S, la
+  vista «Horizon» ya no espera con el plano de teselas: reproduce un vídeo de 6 s que baja desde la órbita hasta 2 m
+  sobre el sitio y termina en la misma mirada con la que abre la vista. Si la escena está lista antes, espera al final
+  del vídeo; si el vídeo acaba antes, se queda en su último fotograma; luego un fundido de 0,6 s da paso a la escena en
+  vivo. El texto de progreso sigue visible encima. Solo en equipos potentes (calidad alta o media), sin movimiento
+  reducido ni ahorro de datos, y nunca en un punto propio o guardado; si el vídeo no carga, vuelve el cargador de
+  siempre. Corte apaisado en escritorio y vertical en el móvil, AV1 o H.264, unos 0,3–0,7 MB por sitio, bajo demanda
+  y fuera de la caché sin conexión.
 - **Vídeo del descenso en la portada (VENT-112).** La portada se abre con una película a pantalla completa: un descenso
   continuo desde la órbita lunar hasta 2 m sobre IM-2 Athena, en Mons Mouton, que acaba en el horizonte con la Tierra
   alta en un cielo negro, renderizado con el relieve LOLA del LRO y la Blue Marble de la NASA. El descenso (14 s) se ve

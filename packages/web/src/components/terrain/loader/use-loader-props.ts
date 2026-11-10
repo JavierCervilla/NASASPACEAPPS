@@ -27,15 +27,18 @@
  * Whether the on-foot loader shows, and with what (VENT-60): while the
  * relief or the scene loads, and through the hand-over once the scene has
  * drawn, until the fades are done ({@link HANDOVER_MS}); dimmed under a
- * failure's words; nothing for a site with no coordinates.
+ * failure's words; nothing for a site with no coordinates. With the site's
+ * descent film (VENT-117) when the loader's chooser picked it.
  */
-import { useEffect, useMemo, useState, useSyncExternalStore } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { seedOf } from '../../../terrain/seeded';
 import { wordsOf } from '../OnFootStatus';
 import type { PanelProps } from '../TerrainPanel';
 import type { useOnFoot } from '../use-on-foot';
 import type { SceneStatus } from '../use-terrain-scene';
+import { handsOver } from '../../../terrain/loader/film-gate';
 import type { LoaderProps } from './OnFootLoader';
+import { useLoaderFilm } from './use-loader-film';
 
 /** The hand-over's fades, the longest included: then the loader goes. */
 export const HANDOVER_MS = 1200;
@@ -60,20 +63,28 @@ interface Parts {
   readonly scene: { readonly status: SceneStatus; readonly drawn: boolean };
 }
 
-/** The loader's props, or null when it does not show. */
-export function useLoaderProps({ panel, view, scene }: Parts):
-  LoaderProps | null {
+export interface LoaderShown {
+  /** The loader's props, or null when it does not show. */
+  readonly loader: LoaderProps | null;
+  /** The scene has drawn and the loader's film, if any, lets it through. */
+  readonly drawn: boolean;
+}
+
+/** The loader's props, and whether the scene is handed over to. */
+export function useLoaderProps({ panel, view, scene }: Parts): LoaderShown {
   const { lat, lonEast } = panel.site;
   const point = useMemo(() => ({ lat, lonEast }), [lat, lonEast]);
-  const { tier } = useSyncExternalStore(panel.viewTier.subscribe,
-    panel.viewTier.get, panel.viewTier.get);
-  const handedOver = useHandedOver(scene.drawn);
+  const film = useLoaderFilm(panel.site.id, panel.viewTier, scene.drawn);
+  const drawn = handsOver(scene.drawn, film?.state ?? null);
+  const handedOver = useHandedOver(drawn);
   const key = wordsOf({ located: view.located, tile: view.tile.state,
     scene: scene.status });
   const failed = key !== null && key !== 'onFoot.loading';
-  if (!view.sky || !view.located || (handedOver && !failed)) return null;
-  return { progress: view.tile.progress, point, sky: view.sky,
-    profile: view.profile, seed: seedOf(point), tier,
-    ready: view.tile.state.kind === 'ready', drawn: scene.drawn && !failed,
-    failed };
+  if (!view.sky || !view.located || (handedOver && !failed)) {
+    return { loader: null, drawn };
+  }
+  return { drawn, loader: { progress: view.tile.progress, point,
+    sky: view.sky, profile: view.profile, seed: seedOf(point),
+    ready: view.tile.state.kind === 'ready', drawn: drawn && !failed,
+    failed, film } };
 }

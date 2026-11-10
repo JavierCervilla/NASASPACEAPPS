@@ -365,7 +365,9 @@ describe('the skyline with the scene\'s own camera', () => {
 });
 
 describe('the loader\'s picture', () => {
-  it('is the tiles, then the skyline, on every tier today', () => {
-    for (const tier of ['low', 'medium', 'high'] as const) expect(loaderPicture(tier)).toBe('tilesThenSkyline');
+  it('is the tiles, then the skyline, on every tier for a point with no film', () => {
+    for (const tier of ['low', 'medium', 'high'] as const) {
+      expect(loaderPicture({ tier, site: '@-85.87,61.34', reducedMotion: false, saveData: false, bench: false })).toBe('tilesThenSkyline');
+    }
   });
 });

@@ -3,6 +3,9 @@
 ## [Sin publicar]
 
 ### Cambiado
+- **La app siempre en oscuro (VENT-113).** Como la portada, ya no sigue el tema claro del sistema: el fondo casi negro,
+  la Luna y los cuatro colores de señal se ven igual en cualquier equipo; las variantes de más contraste y menos
+  transparencia se mantienen. La sección del equipo de la portada dice «Team Universelle» en los cinco idiomas.
 - **El recorrido de la portada se entiende (VENT-111).** «Four ways to look at the same hour» pasa a «Inside the app»:
   «Pick a site and a moment. Every view answers for it.», una frase que explica que las cuatro vistas muestran el mismo
   sitio y el mismo momento (IM-2 Athena, 22 de noviembre de 2026 a las 20:00 UTC), y en cada tarjeta el nombre de la

@@ -36,11 +36,10 @@ const GLOBE_START_MS = 20_000;
 const SAVED = [{ id: '@-85.87,61.34', name: 'Rim camp', lat: -85.87, lonEast: 61.34, savedAt: 3 }];
 const POINT = '?lat=-85.87&lon=61.34';
 
-/** The theme's values, as tokens.css and phone.css set them. */
-const THEME = {
-  dark: { fill: 'rgba(120, 120, 128, 0.24)', text: 'rgb(242, 242, 244)', muted: 'rgb(154, 156, 166)', mark: 'rgb(99, 99, 102)' },
-  light: { fill: 'rgba(120, 120, 128, 0.12)', text: 'rgb(28, 28, 30)', muted: 'rgb(92, 92, 96)', mark: 'rgb(255, 255, 255)' },
-} as const;
+/** The dark theme's values, as tokens.css and phone.css set them. */
+const DARK = { fill: 'rgba(120, 120, 128, 0.24)', text: 'rgb(242, 242, 244)', muted: 'rgb(154, 156, 166)', mark: 'rgb(99, 99, 102)' } as const;
+/** The app is always dark (VENT-113): a light system shows the dark values. */
+const THEME = { dark: DARK, light: DARK } as const;
 type Scheme = keyof typeof THEME;
 
 interface Opened {
@@ -84,7 +83,7 @@ async function expectSecondary(button: Locator, scheme: Scheme): Promise<void> {
 }
 
 for (const scheme of ['dark', 'light'] as const) {
-  test.describe(`desktop 1440x900, ${scheme}`, () => {
+  test.describe(`desktop 1440x900, ${scheme} system`, () => {
     test.use({ viewport: { width: 1440, height: 900 } });
 
     test('the compass, the Layers key and the carried pin\'s readout wear the hint\'s frosted material, never Liquid (C-02)', async ({ page }) => {
@@ -112,7 +111,7 @@ for (const scheme of ['dark', 'light'] as const) {
       const current = await style(tabs.locator('[aria-current="page"]'));
       expect(current.background).toBe(mark);
       expect(current.radius).toBe(10);
-      expect(current.shadow === 'none').toBe(scheme === 'dark');
+      expect(current.shadow).toBe('none');
       expect((await style(tabs.locator(':not([aria-current="page"])').first())).color).toBe(text);
       const source = page.locator('.globe .globe-layers .source-switch');
       expect(await height(source)).toBe(44);

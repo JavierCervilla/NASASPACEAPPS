@@ -135,8 +135,8 @@ export function declared(body: string, property: string): string | undefined {
 const featuresOf = (prelude: string): string[] => [...prelude.matchAll(/\(([^()]+)\)/g)].map((m) => m[1]?.trim() ?? '');
 
 /**
- * The value of the custom property `name` on `:root` when the media features `active` hold (`prefers-color-scheme:
- * light`, `prefers-contrast: more`…), read from `files` in the order the page loads them: the last applicable
+ * The value of the custom property `name` on `:root` when the media features `active` hold (`prefers-contrast:
+ * more`, `prefers-reduced-transparency: reduce`…), read from `files` in the order the page loads them: the last applicable
  * declaration wins, as in the cascade.
  */
 export function rootToken(name: string, active: readonly string[], files = ['tokens.css', 'phone.css']): string {

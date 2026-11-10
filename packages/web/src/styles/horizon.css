@@ -174,16 +174,6 @@
 .horizon__compass > span:nth-child(4) { left: 75%; }
 .horizon__compass > span:nth-child(5) { right: 0; transform: none; }
 
-@media (prefers-color-scheme: light) {
-  .horizon {
-    --horizon-line: rgba(28, 28, 30, 0.7);
-    --horizon-level: rgba(0, 0, 0, 0.3);
-    --horizon-ground: rgba(120, 120, 128, 0.22);
-    --horizon-halo: rgba(255, 255, 255, 0.92);
-    --horizon-dot-edge: rgba(255, 255, 255, 0.9);
-  }
-}
-
 @media (prefers-contrast: more) {
   .horizon--sheet {
     border: 1px solid var(--surface-edge);

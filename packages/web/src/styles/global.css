@@ -64,7 +64,7 @@ textarea {
 /*
  * One focus ring for the buttons and links without their own (VENT-55):
  * zero specificity, so a control's own ring still wins, and in the text
- * colour, so it shows on the light theme's white glass too.
+ * colour, so it shows on every surface of the page.
  */
 :where(button, a):focus-visible {
   outline: 2px solid var(--focus-ring);

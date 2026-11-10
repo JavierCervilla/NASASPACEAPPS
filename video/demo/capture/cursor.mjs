@@ -53,3 +53,32 @@ export function installCursor() {
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', mount);
   else mount();
 }
+
+/**
+ * A fingertip for the phone take: a soft disc under each touch, shown while
+ * the finger is down and faded when it lifts, as screen recordings of touch
+ * devices show taps. Capture browser only.
+ */
+export function installTouchMarks() {
+  const mount = () => {
+    const el = document.createElement('div');
+    el.id = 'demo-touch';
+    Object.assign(el.style, {
+      position: 'fixed', left: '0', top: '0', width: '44px', height: '44px', marginLeft: '-22px',
+      marginTop: '-22px', borderRadius: '22px', zIndex: '2147483647', pointerEvents: 'none',
+      background: 'rgba(242, 242, 244, 0.32)', boxShadow: '0 0 0 2px rgba(242, 242, 244, 0.85)',
+      opacity: '0', transition: 'opacity 160ms ease-out, transform 160ms ease-out', transform: 'scale(0.8)',
+    });
+    document.documentElement.appendChild(el);
+    const at = (t) => { el.style.left = `${t.clientX}px`; el.style.top = `${t.clientY}px`; };
+    const down = (e) => { at(e.touches[0]); el.style.opacity = '1'; el.style.transform = 'scale(1)'; };
+    const move = (e) => { if (e.touches[0]) at(e.touches[0]); };
+    const up = () => { el.style.opacity = '0'; el.style.transform = 'scale(1.25)'; };
+    window.addEventListener('touchstart', down, { capture: true, passive: true });
+    window.addEventListener('touchmove', move, { capture: true, passive: true });
+    window.addEventListener('touchend', up, { capture: true, passive: true });
+    window.addEventListener('touchcancel', up, { capture: true, passive: true });
+  };
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', mount);
+  else mount();
+}

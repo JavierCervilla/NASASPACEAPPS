@@ -36,7 +36,7 @@ import { Camera3d } from "raea/camera";
 import { ShaderMesh } from "raea/pbr";
 import { Transform } from "raea/transform";
 import { add, frameOf, norm, scale, sub, type Frame, type Shot, type V3, type WorldFile } from "./frame.ts";
-import { SKY, TERRAIN } from "./shaders.ts";
+import { SKY, SKY_STARS, TERRAIN, TERRAIN_NIGHT } from "./shaders.ts";
 
 export interface MoonSceneProps {
   /** the JSON build.mjs wrote beside the mesh, imported by the composition */
@@ -55,8 +55,23 @@ export interface MoonSceneProps {
   readonly detail?: number;
   /** the share of the surrounding sunlit ground's light a shadow receives (0.03) */
   readonly bounce?: number;
+  /** the Earth's light on ground facing it, relative to the Sun's (0.002); not scaled by `exposure` */
+  readonly fill?: number;
+  /** a faint starfield's brightness, 0 for none (0) */
+  readonly stars?: number;
+  /** the app's lunar-night lights on the terrain (TERRAIN_NIGHT), or none */
+  readonly night?: NightLights;
   /** a diagnostic view of the surface (shaders.ts), 0 for the picture */
   readonly mode?: number;
+}
+
+/** The Ventana Lunar app's night lights, relative to the Sun's key (night-light.ts). */
+export interface NightLights {
+  /** the hemisphere floor's intensity */
+  readonly floor: number;
+  /** the reading light's intensity, and the world direction it comes from */
+  readonly reading: number;
+  readonly readingDir: V3;
 }
 
 const SKY_RADIUS_M = 1e8;
@@ -75,7 +90,7 @@ export function sceneFrame(world: WorldFile): Frame {
 }
 
 /** The camera, the sky (Sun, Earth) and the Moon for one frame. */
-export function MoonScene({ world, media = "moon/", shot, height, exposure, earthGain = 1, detail = 1, bounce = 0.03, mode = 0 }: MoonSceneProps) {
+export function MoonScene({ world, media = "moon/", shot, height, exposure, earthGain = 1, detail = 1, bounce = 0.03, fill = 0.002, stars = 0, night, mode = 0 }: MoonSceneProps) {
   const frame = sceneFrame(world);
   const earthRel = sub(frame.earth, shot.eye);
   const pixel = (2 * Math.tan(shot.fovY / 2)) / height;
@@ -83,7 +98,7 @@ export function MoonScene({ world, media = "moon/", shot, height, exposure, eart
   const terrain = {
     east: frame.east, up: frame.up, north: frame.north, centre: frame.centre,
     eye: shot.eye, sun: frame.sun, earth_dir: norm(earthRel), exposure,
-    pixel, detail, fill: 0.002, bounce, mode,
+    pixel, detail, fill, bounce, mode,
   };
   const sky = {
     eye: shot.eye, sun: frame.sun, pixel,
@@ -99,12 +114,13 @@ export function MoonScene({ world, media = "moon/", shot, height, exposure, eart
         transform={Transform.fromXyz(shot.eye[0], shot.eye[1], shot.eye[2]).lookingAt(target, shot.up)}
         projection={{ Perspective: { fov: shot.fovY, near: 0.05, far: 2e9 } }}
       />
-      <ShaderMesh name="sky" shape={{ primitive: "Sphere", radius: SKY_RADIUS_M }} position={shot.eye} doubleSided wgsl={SKY}
-        uniforms={sky} textures={{ earth: { src: staticFile(`${media}textures/on-foot-earth.webp`), sampler: MAP } }} />
+      <ShaderMesh name="sky" shape={{ primitive: "Sphere", radius: SKY_RADIUS_M }} position={shot.eye} doubleSided wgsl={stars > 0 ? SKY_STARS : SKY}
+        uniforms={stars > 0 ? { ...sky, stars } : sky} textures={{ earth: { src: staticFile(`${media}textures/on-foot-earth.webp`), sampler: MAP } }} />
       <Entity name="moon">
         <BevyComponent type="bevy_mesh::components::Mesh3d" value={`${staticFile(media + world.mesh)}#Mesh0/Primitive0`} />
         <BevyComponent type={MATERIAL} value={{
-          wgsl: TERRAIN, uniforms: terrain,
+          wgsl: night ? TERRAIN_NIGHT : TERRAIN,
+          uniforms: night ? { ...terrain, night_floor: night.floor, reading: night.reading, reading_dir: night.readingDir } : terrain,
           textures: {
             colour: { src: staticFile(`${media}textures/moon-lroc-4k.jpg`), sampler: MAP },
             relief: { src: staticFile(`${media}textures/moon-lola-normal-4k.jpg`), sampler: MAP },

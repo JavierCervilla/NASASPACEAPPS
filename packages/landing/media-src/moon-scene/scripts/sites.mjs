@@ -62,7 +62,28 @@ export const SITES = {
     /** the site's id in packages/sim/data/horizons.json (its LOLA horizon, observer 2 m), or null */
     horizonId: 'im2-athena',
   },
+  ...curated([
+    // the app's curated sites south of 80° S (packages/sim/data/horizons.json), for the per-site films (VENT-115)
+    ['im1-odysseus', -80.13, 1.44, 'malapert-a'],
+    ['change7-target', -89.67, 129.78, null],
+    ['bluemoon-mk1-pathfinder', -89.684, -163.261, 'shackleton-ridge'],
+    ['griffin1-nobile', -85.2752, 53.2725, null],
+    ['artemis-peak-near-cabeus-b', -82.2587, -54.5846, null],
+    ['artemis-haworth', -87.45, -5.17, null],
+    ['artemis-malapert-massif', -85.98, -1.67, 'malapert-massif'],
+    ['artemis-mons-mouton-plateau', -84.6, 31, null],
+    ['artemis-de-gerlache-rim-2', -88.4849, -88.3447, null],
+    ['artemis-slater-plain', -88.0792, 111.2881, null],
+  ]),
 };
+
+/** Sites keyed by their id in horizons.json, read over im2's squares, with the app's fine tile where there is one. */
+function curated(rows) {
+  return Object.fromEntries(rows.map(([id, latDeg, lonEastDeg, place]) => [
+    id,
+    { id, latDeg, lonEastDeg, radiiM: [8000, 32000, 160000, 520000], fine: place && fineTile(place), horizonId: id },
+  ]));
+}
 
 /** A CLI's `--name value`, or the fallback. */
 export function argOf(name, fallback, argv = process.argv) {

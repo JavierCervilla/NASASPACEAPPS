@@ -467,3 +467,25 @@ VENT-54 removed the on-foot astronaut and landers, the human's decision (first p
 `astronaut_meshy_model.py`, `astronaut_meshy_clean.py`, `foil_maps.py`, `test_onfoot_models.py`) are gone from the repo.
 Their sources, licences and sha256 stay in git history (the sections «On-foot view models v2 (VENT-34)» and «On-foot
 view astronaut, Meshy (VENT-34)» of this file before VENT-54).
+
+## Landing pictures (VENT-109)
+
+The landing at the domain's root (`packages/landing/public/media/`). Nothing here is downloaded from outside the repo.
+
+| File | Bytes | sha256 | Made by |
+|---|---|---|---|
+| `moon-1600.webp` | 97830 | `cadc0cbb40190594d6cd102342ea53fbe49f8daa7217a2c9cb76d1a62fd11006` | `python3 -I packages/landing/scripts/moon_hero.py` |
+| `moon-800.webp` | 33182 | `89677f88d03d9e46c5e5701ad1c0a5683c875b3003c65e3ba4e12d5f4c4cc0fa` | the same run |
+| `tour-globe.webp` | 59796 | `5d099df96bb788930d4b1c00312a0bd9ebe6b35a41dc86bfe337e2fe12b72dd4` | `node packages/landing/scripts/tour-shots.mjs` |
+| `tour-onfoot.webp` | 53002 | `a8a6aa1a7704757332ef542a16f39e5197897fd5679debf62f0f5e1f1e6d4b1a` | the same run |
+| `tour-dsn.webp` | 65174 | `a4cae807bb1f2fbc564358912a234cab50e6d0f1beab1fd1b846b57c2643053d` | the same run |
+| `tour-phone.webp` | 34718 | `f556bd0a13acd1f9011e9581f66b5dd92dd62b65c099d4b0dd3cb1ae5beffad7` | the same run |
+
+- **Hero Moon**: an orthographic view of the shipped LROC 4K colour map (`moon-lroc-4k.jpg`, above), north up, centred
+  at 52° S 15° E so the south pole sits in the lower half, lit from the east by a low Sun with Lommel-Seeliger shading
+  on the smooth sphere (no relief). Deterministic: the same map gives the same bytes. `--check-near-side out.png`
+  renders the near side face-on to check the orientation (Mare Crisium to the east, on the right).
+- **Tour**: screenshots of the app itself at IM-2 Athena on 22 Nov 2026, 20:00 UTC (a landing window, Robledo
+  listening), Chromium with SwiftShader, the browser's clock set to that instant, 2x, encoded by sharp at WebP q80. Taken
+  on 2026-11-09 from production (`--app https://nasa.universelle.io/`, the app's address before this move). Their text
+  is the English interface on every locale's landing; their alt text is translated.

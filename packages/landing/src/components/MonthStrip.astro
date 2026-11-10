@@ -1,0 +1,79 @@
+---
+/*
+ *   _   _       _                         _ _
+ *  | | | |_ __ (_)_   _____ _ __ ___  ___| | | ___
+ *  | | | | '_ \| \ \ / / _ \ '__/ __|/ _ \ | |/ _ \
+ *  | |_| | | | | |\ V /  __/ |  \__ \  __/ | |  __/
+ *   \___/|_| |_|_| \_/ \___|_|  |___/\___|_|_|\___|
+ *
+ *             =++==--::.
+ *         %%%%##**++=--:..  .
+ *      ##**#%@%%#***+=--::.   .
+ *    #**=+*#*#**#++++=-:::.. .  .
+ *   #++-====*@%+*++==--::...   .  .    Ventana Lunar
+ *  #+=-=--++==+===-+==--:..   .  .  .  Sun, Earth and landing
+ * #----====-------=-=---:..  .  .  .   windows at the lunar
+ * #+---+=====--=---==-::..     .  .  . south pole
+ * #*----==---==-=-=-:-....    .  .  .
+ * *#----===+*===--:-::...    .  .  .   Built for the NASA Space
+ *  *----=*-+*%*+=-:::....   .  .  .    Apps Challenge 2026,
+ *   *------=+*=--:::-:::.. .  .  .     Madrid. Not endorsed
+ *    %*===-=-==--==-:::.  .  .  .      by NASA.
+ *      *+:--+:--::::::.  .  .  .
+ *         -=:::...:..   .  .           (c) 2026 Universelle
+ *             :::.. .  .               SPDX-License-Identifier: MIT
+ */
+
+import { catalogueOf, translator } from '../i18n/catalogue';
+import type { Locale } from '../i18n/locales';
+import { monthBars, type Run } from '../live/month';
+import { monthWords } from '../live/month-text';
+
+interface Props {
+  readonly locale: Locale;
+  readonly atMs: number;
+}
+
+// Built at deploy time; live/boot.ts draws the visitor's month and instant.
+const { locale, atMs } = Astro.props;
+const t = translator(catalogueOf(locale));
+const bars = monthBars(atMs);
+const words = monthWords(bars, t, locale);
+const rows = [
+  ['sun', t('legend.sun'), bars.sun],
+  ['earth', t('legend.earth'), bars.earth],
+  ['window', t('month.rowWindow'), bars.window],
+] as const;
+const runStyle = (run: Run) => `--from:${run.from};--to:${run.to}`;
+---
+
+<figure class="month" data-month data-month-start={bars.monthStartMs}>
+  <figcaption class="month__head">
+    <span class="month__title" data-month-text="title">{words.title}</span>
+    <span class="month__legend" aria-hidden="true">
+      <span><span class="key key--sun"></span>{t('legend.sun')}</span>
+      <span><span class="key key--earth"></span>{t('legend.earth')}</span>
+      <span><span class="key key--window"></span>{t('legend.window')}</span>
+      <span><span class="key key--none"></span>{t('legend.neither')}</span>
+    </span>
+  </figcaption>
+  <p class="sr-only" data-month-text="alt">{words.alt}</p>
+  <div class="month__bars" aria-hidden="true">
+    {
+      rows.map(([kind, label, runs]) => (
+        <div class="month__row">
+          <span class="month__label">{label}</span>
+          <div class={`month__bar month__bar--${kind}`} data-bar={kind}>
+            {runs.map((run) => (
+              <span class="month__run" style={runStyle(run)} />
+            ))}
+          </div>
+        </div>
+      ))
+    }
+    <div class="month__now" data-month-now style={`--now:${bars.now}`}>
+      <span>{t('month.now')}</span>
+    </div>
+  </div>
+  <p class="month__caption" data-month-text="caption">{words.caption}</p>
+</figure>

@@ -34,7 +34,7 @@ import { stubApi } from './api-stub';
 import { stubTile, stubWall } from './terrain-stub';
 
 const START_MS = 30_000;
-const VARIANTS = ['log', 'reversed', 'reversed+shadows', 'linear+shadows', 'log+shadows'];
+const VARIANTS = ['split', 'log', 'reversed', 'reversed+shadows', 'linear+shadows', 'log+shadows'];
 
 const panel = (page: Page) => page.getByRole('region', { name: 'Benchmark' });
 
@@ -87,7 +87,7 @@ test.describe('on a phone, 412x915', () => {
     const body = panel(page).locator('.bench__body');
     const table = panel(page).getByRole('region', { name: 'Depth buffers, turning' });
     const rows = table.getByRole('row');
-    await expect(rows).toHaveCount(6);
+    await expect(rows).toHaveCount(VARIANTS.length + 1);
     // A finger's swipe up over the table scrolls the body, as on the phone.
     const box = (await table.boundingBox())!;
     await swipeUp(page, box.x + box.width / 2, box.y + 20);
@@ -105,7 +105,7 @@ test.describe('on a phone, 412x915', () => {
       await expect(panel(page).getByRole('button', { name })).toBeInViewport({ ratio: 1 });
     }
     await page.screenshot({ path: test.info().outputPath('depth-results-200.png') });
-    await expect(panel(page).locator('.bench__versus')).toContainText('Logarithmic vs reversed, no shadow map: 50.0 fps vs 45.0 fps · p95 20 ms vs 22 ms · worst 40 ms vs 44 ms');
+    await expect(panel(page).locator('.bench__versus')).toContainText('Logarithmic vs reversed, no shadow map: 45.0 fps vs 40.0 fps · p95 22 ms vs 25 ms · worst 44 ms vs 50 ms');
 
   });
 });

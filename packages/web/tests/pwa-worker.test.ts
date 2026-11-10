@@ -83,7 +83,15 @@ describe('routeOf', () => {
     const scope = new URL('https://host.test/ventana/');
     expect(routeOf(new URL('https://host.test/other/'), scope)).toBe('bypass');
     expect(routeOf(new URL('https://host.test/ventana/fr/'), scope)).toBe('html');
-    expect(routeOf(new URL('https://host.test/ventana/api/v1/sites'), scope)).toBe('api');
+  });
+
+  // VENT-109: the app moved under /app and the API stayed at the domain's root.
+  it('answers the API at the domain root from an app under a sub-path', () => {
+    const scope = new URL('https://host.test/app/');
+    expect(routeOf(new URL('https://host.test/api/v1/sites'), scope)).toBe('api');
+    expect(routeOf(new URL('https://host.test/api/v1/horizon?lat=-85&lon=30'), scope)).toBe('api');
+    expect(routeOf(new URL('https://other.test/api/v1/sites'), scope)).toBe('bypass');
+    expect(routeOf(new URL('https://host.test/app/_astro/a.js'), scope)).toBe('static');
   });
 });
 

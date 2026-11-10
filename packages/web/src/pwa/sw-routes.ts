@@ -30,10 +30,14 @@
  * - `html`: a page (a locale's shell), network first, the cache offline;
  * - `static`: a file of the build (scripts, styles, textures, icons),
  *   cache first;
- * - `api`: a GET of the API, network first, the last answer offline;
+ * - `api`: a GET of the API, network first, the last answer offline: the
+ *   API sits at the domain's root (`/api/`), outside the app's scope since
+ *   the app moved under /app (VENT-109);
  * - `bypass`: left to the browser: another origin, the pseudo-locale's
  *   page (never offered, never cached) and the worker's own script.
  */
+
+import { API_ROOT } from '../lib/api-path';
 
 export type SwRoute = 'html' | 'static' | 'api' | 'bypass';
 
@@ -58,12 +62,13 @@ export function underScope(url: URL, scope: URL): string | null {
 
 /** The route of a GET for `url` from a page under `scope`. */
 export function routeOf(url: URL, scope: URL, navigate = false): SwRoute {
+  const sameOrigin = url.origin === scope.origin;
+  if (sameOrigin && url.pathname.startsWith(API_ROOT)) return 'api';
   const path = underScope(url, scope);
   if (path === null) return 'bypass';
   if (NEVER_CACHED.some((p) => path === p || path.startsWith(p))) {
     return 'bypass';
   }
-  if (path.startsWith('api/')) return 'api';
   const page = path === '' || path.endsWith('/') || path.endsWith('.html');
   return navigate || page ? 'html' : 'static';
 }

@@ -37,13 +37,6 @@
   --destructive: #ff6961;
 }
 
-@media (prefers-color-scheme: light) {
-  :root {
-    --saved-silver: #8e9099;
-    --destructive: #d70015;
-  }
-}
-
 /* Each layer's own root over the canvas (src/globe/layers/bind.ts). */
 .globe-layer {
   position: absolute;

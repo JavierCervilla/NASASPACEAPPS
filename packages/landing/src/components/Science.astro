@@ -1,0 +1,60 @@
+---
+/*
+ *   _   _       _                         _ _
+ *  | | | |_ __ (_)_   _____ _ __ ___  ___| | | ___
+ *  | | | | '_ \| \ \ / / _ \ '__/ __|/ _ \ | |/ _ \
+ *  | |_| | | | | |\ V /  __/ |  \__ \  __/ | |  __/
+ *   \___/|_| |_|_| \_/ \___|_|  |___/\___|_|_|\___|
+ *
+ *             =++==--::.
+ *         %%%%##**++=--:..  .
+ *      ##**#%@%%#***+=--::.   .
+ *    #**=+*#*#**#++++=-:::.. .  .
+ *   #++-====*@%+*++==--::...   .  .    Ventana Lunar
+ *  #+=-=--++==+===-+==--:..   .  .  .  Sun, Earth and landing
+ * #----====-------=-=---:..  .  .  .   windows at the lunar
+ * #+---+=====--=---==-::..     .  .  . south pole
+ * #*----==---==-=-=-:-....    .  .  .
+ * *#----===+*===--:-::...    .  .  .   Built for the NASA Space
+ *  *----=*-+*%*+=-:::....   .  .  .    Apps Challenge 2026,
+ *   *------=+*=--:::-:::.. .  .  .     Madrid. Not endorsed
+ *    %*===-=-==--==-:::.  .  .  .      by NASA.
+ *      *+:--+:--::::::.  .  .  .
+ *         -=:::...:..   .  .           (c) 2026 Universelle
+ *             :::.. .  .               SPDX-License-Identifier: MIT
+ */
+
+import { catalogueOf, translator } from '../i18n/catalogue';
+import type { Locale } from '../i18n/locales';
+
+interface Props {
+  readonly locale: Locale;
+}
+
+const { locale } = Astro.props;
+const t = translator(catalogueOf(locale));
+const facts = [
+  [t('science.accuracyValue'), t('science.accuracyBody')],
+  [t('science.reliefValue'), t('science.reliefBody')],
+  [t('science.dsnValue'), t('science.dsnBody')],
+  [t('science.shadowValue'), t('science.shadowBody')],
+] as const;
+---
+
+<section class="band" id="science" aria-labelledby="science-title">
+  <div class="section">
+    <p class="eyebrow">{t('science.eyebrow')}</p>
+    <h2 class="section__title" id="science-title">{t('science.title')}</h2>
+    <dl class="facts">
+      {
+        facts.map(([value, body]) => (
+          <div class="fact">
+            <dt class="fact__value">{value}</dt>
+            <dd class="fact__body">{body}</dd>
+          </div>
+        ))
+      }
+    </dl>
+    <p class="sources">{t('science.sources')}</p>
+  </div>
+</section>

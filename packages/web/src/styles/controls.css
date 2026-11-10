@@ -33,8 +33,8 @@
 /*
  * The segmented control: the header's view tabs, the site picker's
  * regions and «Computed | Horizons | Compare». A grey track 2 px around a
- * 40 px mark, 44 px in all; the mark #636366 in dark, white with a
- * shadow in light (tokens.css --segment-*). The phone tab bar is its own.
+ * 40 px mark, 44 px in all; the mark #636366 (tokens.css --segment-*).
+ * The phone tab bar is its own.
  */
 .views,
 .segmented {

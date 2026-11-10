@@ -78,8 +78,15 @@ async function open(page: Page, query: string): Promise<Drawn> {
   };
 }
 
-test('the PowerVR keeps the logarithmic depth and no shadow map by default', async ({ page }) => {
+test('the PowerVR draws two linear passes with the shadow map by default (VENT-114)', async ({ page }) => {
   const drawn = await open(page, '');
+  expect(drawn).toMatchObject({ depth: 'split', errors: [] });
+  expect(drawn.shadows).toBeGreaterThan(0);
+  expect(drawn.report).toMatch(/depth split · \d+ bits · shadow map on/);
+});
+
+test('?depth=log keeps the logarithmic depth and no shadow map on the PowerVR', async ({ page }) => {
+  const drawn = await open(page, '&depth=log');
   expect(drawn).toMatchObject({ depth: 'log', shadows: 0, errors: [] });
   expect(drawn.report).toMatch(/depth log · \d+ bits · shadow map off/);
 });
@@ -91,14 +98,14 @@ test('?depth=linear&shadows=force draws a linear depth with the shadow map', asy
   expect(drawn.report).toMatch(/depth linear · \d+ bits · shadow map on \(forced\)/);
 });
 
-test('?depth=reversed reverses the depth where EXT_clip_control is, else keeps the logarithmic one', async ({ page }) => {
+test('?depth=reversed reverses the depth where EXT_clip_control is, else keeps the default split draw', async ({ page }) => {
   const drawn = await open(page, '&depth=reversed&shadows=force');
   expect(drawn.errors).toEqual([]);
   expect(drawn.shadows).toBeGreaterThan(0);
   const clip = await page.evaluate(() =>
     document.createElement('canvas').getContext('webgl2')?.getExtension('EXT_clip_control') != null);
-  expect(drawn.depth).toBe(clip ? 'reversed' : 'log');
-  expect(drawn.report).toMatch(clip ? /depth reversed · \d+ bits/ : /depth log \(asked reversed\)/);
+  expect(drawn.depth).toBe(clip ? 'reversed' : 'split');
+  expect(drawn.report).toMatch(clip ? /depth reversed · \d+ bits/ : /depth split \(asked reversed\)/);
 });
 
 /** Opens the view, turns it half a turn (5° a key) and returns every Sun and Earth mark, at opening and after. */
@@ -117,11 +124,15 @@ test.describe.serial('the reversed depth marks no body behind the eye, as the lo
   let logarithmic: (string | null)[] = [];
 
   test('the logarithmic depth leaves a body behind the eye unmarked', async ({ page }) => {
-    logarithmic = await marksAfterHalfTurn(page, '');
+    logarithmic = await marksAfterHalfTurn(page, '&depth=log');
     expect(logarithmic.slice(2)).toContain('');
   });
 
   test('the reversed depth marks the same places', async ({ page }) => {
     expect(await marksAfterHalfTurn(page, '&depth=reversed')).toEqual(logarithmic);
+  });
+
+  test('the split draw marks the same places', async ({ page }) => {
+    expect(await marksAfterHalfTurn(page, '&depth=split')).toEqual(logarithmic);
   });
 });

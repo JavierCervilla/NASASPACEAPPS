@@ -302,6 +302,20 @@
         50
       ],
       "tag": "built"
+    },
+    {
+      "id": "landing",
+      "type": "frontend",
+      "label": "Landing page",
+      "sublabel": "at /, live IM-2 answer",
+      "pos": [
+        830,
+        205
+      ],
+      "size": [
+        140,
+        60
+      ]
     }
   ],
   "boundaries": [
@@ -392,7 +406,7 @@
       "id": "serve-app",
       "from": "pages",
       "to": "store",
-      "label": "serves app"
+      "label": "serves /app"
     },
     {
       "id": "sub-calendar",
@@ -471,6 +485,17 @@
       "variant": "dashed",
       "fromSide": "bottom",
       "toSide": "top"
+    },
+    {
+      "id": "serve-landing",
+      "from": "pages",
+      "to": "landing",
+      "label": "serves /",
+      "variant": "dashed",
+      "labelAt": [
+        985,
+        279
+      ]
     }
   ],
   "cards": [
@@ -488,7 +513,8 @@
       "title": "Web delivery",
       "items": [
         "Dokploy builds the Docker image from main",
-        "nginx serves the Astro site behind Traefik"
+        "nginx serves the Astro site behind Traefik",
+        "VENT-109: the landing (packages/landing, five languages, IM-2's live answer and the month strip from @ventana/sim) at the domain's root; the app under /app; the API stays at /api; old ?site= and ?lat links redirected by nginx"
       ]
     },
     {

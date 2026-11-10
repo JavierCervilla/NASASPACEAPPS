@@ -84,7 +84,7 @@ function homeStep(view: ViewState, dt: number, hooks: SceneHooks): boolean {
  * so quiet between two slow frames is no rest.
  */
 function markFrame(world: World, host: HTMLElement, moving: boolean): void {
-  const { calls, triangles } = world.stage.renderer.info.render;
+  const { calls, triangles } = world.stage.drawing.cost();
   host.dataset['draws'] = `${calls},${triangles}`;
   host.dataset['shadows'] = String(world.stage.shadow.renders());
   host.dataset['working'] = String(moving || world.slicer.busy()
@@ -97,9 +97,7 @@ function markFrame(world: World, host: HTMLElement, moving: boolean): void {
 function drawTimed(world: World, probe: FrameProbe): number {
   const { stage } = world;
   const start = performance.now();
-  stage.shadow.beforeDraw();
-  probe.frame(() => stage.renderer.render(stage.scene, stage.camera),
-    () => world.slicer.busy());
+  probe.frame(stage.drawing.draw, () => world.slicer.busy());
   stage.shadow.afterDraw();
   return performance.now() - start;
 }

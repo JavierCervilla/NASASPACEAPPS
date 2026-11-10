@@ -34,7 +34,10 @@ const BENCH_SPECS = /(vent-81-bench|vent-104-bench-depth)\.spec\.ts$/;
  * The on-foot specs that stand IM-2's real relief at the high tier: their own
  * project, run with two workers (see below).
  */
-const ONFOOT_SPECS = /(terrain-view|vent-98-binary-tiles|vent-100-lunar-night)\.spec\.ts$/;
+const ONFOOT_SPECS = /(terrain-view|vent-98-binary-tiles|vent-100-lunar-night|vent-114-split-depth)\.spec\.ts$/;
+/** The landing's spec (VENT-109): its own preview at the domain's root, beside the app's. */
+const LANDING_SPECS = /landing\.spec\.ts$/;
+const landingPort = port + 1;
 
 export default defineConfig({
   testDir: 'tests/e2e',
@@ -60,13 +63,21 @@ export default defineConfig({
   // 172a05b and on main under the same load, none alone): `onfoot` runs them
   // with two workers between `app` and `bench`, the same specs and limits.
   projects: [
-    { name: 'app', testIgnore: [BENCH_SPECS, ONFOOT_SPECS] },
+    { name: 'app', testIgnore: [BENCH_SPECS, ONFOOT_SPECS, LANDING_SPECS] },
+    { name: 'landing', testMatch: LANDING_SPECS, use: { baseURL: `http://localhost:${landingPort}/` } },
     { name: 'onfoot', testMatch: ONFOOT_SPECS },
     { name: 'bench', testMatch: BENCH_SPECS },
   ],
-  webServer: {
-    command: `npm run preview -w @ventana/web -- --port ${port} --ignore-lock`,
-    url: `http://localhost:${port}${base}/`,
-    reuseExistingServer: !process.env.CI,
-  },
+  webServer: [
+    {
+      command: `npm run preview -w @ventana/web -- --port ${port} --ignore-lock`,
+      url: `http://localhost:${port}${base}/`,
+      reuseExistingServer: !process.env.CI,
+    },
+    {
+      command: `npm run preview -w @ventana/landing -- --port ${landingPort} --ignore-lock`,
+      url: `http://localhost:${landingPort}/`,
+      reuseExistingServer: !process.env.CI,
+    },
+  ],
 });

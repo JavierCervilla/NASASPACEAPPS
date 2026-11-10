@@ -63,15 +63,17 @@ export function stageRenderer(
   const renderer = createGlRenderer({
     antialias: quality.antialias,
     powerPreference: 'low-power',
-    // The rings reach 190 km and the sky is farther: a linear depth buffer
-    // would z-fight at 100 km with a near plane of 0.2 m. `?depth=` and
-    // `?onfoot=logdepth` change it to bisect a crash, accepting that.
+    // The rings reach 190 km and the sky is farther: one linear depth
+    // buffer would z-fight at 100 km with a near plane of 0.2 m, so the
+    // default draws two linear passes (depth-passes.ts, VENT-114). `?depth=`
+    // and `?onfoot=logdepth` draw one pass, to bisect a crash.
     logarithmicDepthBuffer: depth.mode === 'log',
     reversedDepthBuffer: depth.mode === 'reversed',
   });
   const shadows = shadowMapState({ leftOut: leave.has('shadows'),
     forced: depth.forceShadows,
-    unsafe: shadowMapUnsafe(unmaskedGpuName(renderer.getContext()), phone) });
+    unsafe: shadowMapUnsafe(unmaskedGpuName(renderer.getContext()), phone,
+      depth.mode) });
   renderer.shadowMap.enabled = shadows === 'on' || shadows === 'forced';
   setup.report.step(depthStep(depth, renderer));
   markDrawn(renderer, setup, shadows);

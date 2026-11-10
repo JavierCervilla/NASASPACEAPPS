@@ -1,0 +1,73 @@
+---
+/*
+ *   _   _       _                         _ _
+ *  | | | |_ __ (_)_   _____ _ __ ___  ___| | | ___
+ *  | | | | '_ \| \ \ / / _ \ '__/ __|/ _ \ | |/ _ \
+ *  | |_| | | | | |\ V /  __/ |  \__ \  __/ | |  __/
+ *   \___/|_| |_|_| \_/ \___|_|  |___/\___|_|_|\___|
+ *
+ *             =++==--::.
+ *         %%%%##**++=--:..  .
+ *      ##**#%@%%#***+=--::.   .
+ *    #**=+*#*#**#++++=-:::.. .  .
+ *   #++-====*@%+*++==--::...   .  .    Ventana Lunar
+ *  #+=-=--++==+===-+==--:..   .  .  .  Sun, Earth and landing
+ * #----====-------=-=---:..  .  .  .   windows at the lunar
+ * #+---+=====--=---==-::..     .  .  . south pole
+ * #*----==---==-=-=-:-....    .  .  .
+ * *#----===+*===--:-::...    .  .  .   Built for the NASA Space
+ *  *----=*-+*%*+=-:::....   .  .  .    Apps Challenge 2026,
+ *   *------=+*=--:::-:::.. .  .  .     Madrid. Not endorsed
+ *    %*===-=-==--==-:::.  .  .  .      by NASA.
+ *      *+:--+:--::::::.  .  .  .
+ *         -=:::...:..   .  .           (c) 2026 Universelle
+ *             :::.. .  .               SPDX-License-Identifier: MIT
+ */
+
+import { catalogueOf, translator } from '../i18n/catalogue';
+import { appPath, type Locale } from '../i18n/locales';
+import LiveCard from './LiveCard.astro';
+
+interface Props {
+  readonly locale: Locale;
+  readonly atMs: number;
+}
+
+const { locale, atMs } = Astro.props;
+const t = translator(catalogueOf(locale));
+---
+
+<section class="hero" id="top">
+  <div class="hero__copy">
+    <p class="eyebrow rise rise--1">{t('hero.eyebrow')}</p>
+    <h1 class="hero__title rise rise--2">
+      <span>{t('hero.titleA')}</span>
+      <span class="hero__muted">{t('hero.titleB')}</span>
+    </h1>
+    <p class="hero__lede rise rise--3">{t('hero.lede')}</p>
+    <div class="hero__actions rise rise--4">
+      <a class="button button--primary button--large" href={appPath(locale)}>
+        {t('hero.open')}
+        <svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true">
+          <path d="M3 8h10M9 4l4 4-4 4"></path>
+        </svg>
+      </a>
+      <a class="button button--secondary button--large" href="#how">
+        {t('hero.how')}
+      </a>
+    </div>
+  </div>
+  <div class="hero__stage">
+    <img
+      class="hero__moon"
+      src="/media/moon-1600.webp"
+      srcset="/media/moon-800.webp 800w, /media/moon-1600.webp 1600w"
+      sizes="(max-width: 820px) 100vw, 56vw"
+      width="1600"
+      height="1600"
+      alt={t('hero.moonAlt')}
+      fetchpriority="high"
+    />
+    <LiveCard locale={locale} atMs={atMs} />
+  </div>
+</section>

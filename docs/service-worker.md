@@ -60,3 +60,18 @@ next visit after the deploy installs the replacement.
 3. Once the fix is ready, remove the line and deploy again: the next visit registers the real worker from scratch.
 
 The kill switch keeps the same address (`sw.js` at the base), which is the only address browsers check for an update.
+
+## The move under /app (VENT-109)
+
+Since VENT-109 the app lives under `/app` and its worker is `/app/sw.js`, with the scope `/app/`. Before, it was
+`/sw.js` with the scope `/`, and returning visitors still have that one installed. The landing ships its own `/sw.js`
+(`packages/landing/public/sw.js`): the browser finds it on the next visit to any page in the old scope, installs it, and
+it unregisters itself and reloads the open pages from the network. It deletes no cache, because every worker of an
+origin shares its caches: the app's worker under `/app/` names its static cache after its build and drops the older
+ones when it activates, and keeps `ventana-api-v1`.
+
+The API answers at the domain's root (`/api/`), outside the app's scope. A worker still answers every request its
+pages make, so `routeOf` treats any same-origin `/api/` request as the API's, whatever the scope.
+
+The kill switch above still applies to the app's worker: copy `sw-kill-switch.js` to `packages/web/dist/sw.js`, which
+the image serves as `/app/sw.js`.

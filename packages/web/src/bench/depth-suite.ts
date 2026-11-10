@@ -27,12 +27,12 @@
  * The benchmark's depth suite (VENT-104), `?bench=depth`: the on-foot
  * view's depth buffers side by side, to bisect the Pixel 10's lost context
  * (VENT-75, VENT-103) on the phone itself. Its variants, in run order
- * (VENT-107): the app as it is (logarithmic depth, the shadow map as the
- * safety rules say) and the reversed buffer the same way, the two the
- * human weighs for the default on PowerVR; then the shadow map forced with
- * the reversed, the linear and last the logarithmic buffer, the known
- * losses, last because a loss can make Chrome block WebGL for the site,
- * which stops the bench. Each variant is the address's
+ * (VENT-107, VENT-114): the app as it is (`split`, two passes of linear
+ * depth with the shadow map), then the single-pass logarithmic and reversed
+ * buffers as the safety rules draw them (no shadow map on PowerVR); then the
+ * shadow map forced with the reversed, the linear and last the logarithmic
+ * buffer, the known losses, last because a loss can make Chrome block WebGL
+ * for the site, which stops the bench. Each variant is the address's
  * switches (terrain/depth-mode.ts). Pure but for the `params` it is
  * handed.
  */
@@ -40,7 +40,8 @@ import { BENCH_PARAM } from '../lib/bench-param';
 import type { RunCount, Suite } from './types';
 
 export const DEPTH_VARIANTS = [
-  'log', 'reversed', 'reversed+shadows', 'linear+shadows', 'log+shadows',
+  'split', 'log', 'reversed', 'reversed+shadows', 'linear+shadows',
+  'log+shadows',
 ] as const;
 
 export type DepthVariant = (typeof DEPTH_VARIANTS)[number];
@@ -52,11 +53,12 @@ const FORCE: readonly [string, string] = ['shadows', 'force'];
 
 const PARAMS: Readonly<Record<DepthVariant,
   readonly (readonly [string, string])[]>> = {
-  log: [],
+  split: [],
+  log: [['depth', 'log']],
   reversed: [['depth', 'reversed']],
   'reversed+shadows': [['depth', 'reversed'], FORCE],
   'linear+shadows': [['depth', 'linear'], FORCE],
-  'log+shadows': [FORCE],
+  'log+shadows': [['depth', 'log'], FORCE],
 };
 
 /** The variants in run order, the whole order once per round. */

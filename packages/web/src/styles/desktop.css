@@ -181,7 +181,7 @@
 
 .card-media__badge[data-tone='none'] { --tone: var(--signal-none); }
 
-/* On the dark image the bright signal colours read in both themes. */
+/* On the dark image the bright signal colours read. */
 .card-media__badge[data-tone='window'] {
   --tone: var(--signal-window);
   color: var(--tone);

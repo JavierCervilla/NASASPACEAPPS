@@ -102,7 +102,7 @@ describe('the depth report', () => {
     expect(report).toContain('Ventana Lunar benchmark report');
     expect(report).toContain(`GPU: ${HEADER.gpu}`);
     expect(report).toContain('View tier per run: log1 medium · reversed1 medium · reversed+shadows1 medium · linear+shadows1 medium · log+shadows1 medium');
-    expect(report).toContain('Suite: depth (script v1). Runs: 1 round, order log reversed reversed+shadows linear+shadows log+shadows (fast script)');
+    expect(report).toContain('Suite: depth (script v1). Runs: 1 round, order split log reversed reversed+shadows linear+shadows log+shadows (fast script)');
   });
 
   it('lists every run as its row says, then every step', () => {

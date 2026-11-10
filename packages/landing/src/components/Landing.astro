@@ -1,0 +1,62 @@
+---
+/*
+ *   _   _       _                         _ _
+ *  | | | |_ __ (_)_   _____ _ __ ___  ___| | | ___
+ *  | | | | '_ \| \ \ / / _ \ '__/ __|/ _ \ | |/ _ \
+ *  | |_| | | | | |\ V /  __/ |  \__ \  __/ | |  __/
+ *   \___/|_| |_|_| \_/ \___|_|  |___/\___|_|_|\___|
+ *
+ *             =++==--::.
+ *         %%%%##**++=--:..  .
+ *      ##**#%@%%#***+=--::.   .
+ *    #**=+*#*#**#++++=-:::.. .  .
+ *   #++-====*@%+*++==--::...   .  .    Ventana Lunar
+ *  #+=-=--++==+===-+==--:..   .  .  .  Sun, Earth and landing
+ * #----====-------=-=---:..  .  .  .   windows at the lunar
+ * #+---+=====--=---==-::..     .  .  . south pole
+ * #*----==---==-=-=-:-....    .  .  .
+ * *#----===+*===--:-::...    .  .  .   Built for the NASA Space
+ *  *----=*-+*%*+=-:::....   .  .  .    Apps Challenge 2026,
+ *   *------=+*=--:::-:::.. .  .  .     Madrid. Not endorsed
+ *    %*===-=-==--==-:::.  .  .  .      by NASA.
+ *      *+:--+:--::::::.  .  .  .
+ *         -=:::...:..   .  .           (c) 2026 Universelle
+ *             :::.. .  .               SPDX-License-Identifier: MIT
+ */
+
+import type { Locale } from '../i18n/locales';
+import Page from '../layouts/Page.astro';
+import Footer from './Footer.astro';
+import Header from './Header.astro';
+import Hero from './Hero.astro';
+import How from './How.astro';
+import Science from './Science.astro';
+import Team from './Team.astro';
+import Tour from './Tour.astro';
+
+interface Props {
+  readonly locale: Locale;
+}
+
+const { locale } = Astro.props;
+// The instant the page is built at; the visitor's browser moves it to now.
+const atMs = Date.now();
+---
+
+<Page locale={locale}>
+  <div class="page" data-locale={locale}>
+    <Header locale={locale} />
+    <main>
+      <Hero locale={locale} atMs={atMs} />
+      <How locale={locale} atMs={atMs} />
+      <Science locale={locale} />
+      <Tour locale={locale} />
+      <Team locale={locale} />
+    </main>
+    <Footer locale={locale} />
+  </div>
+  <script>
+    import { boot } from '../live/boot';
+    boot();
+  </script>
+</Page>

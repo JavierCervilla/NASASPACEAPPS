@@ -25,13 +25,20 @@
 
 /**
  * The call to action: the address big, a QR code to it (drawn from
- * parts/qr.ts, checked to decode), the event, the team and the disclaimer.
+ * parts/qr.ts, checked to decode), the event, the team and the disclaimer,
+ * laid out on the backdrop's sky.
  */
 import { Animate, Img, staticFile } from "raea";
 import { qrMatrix } from "./qr";
 import { C, FONT, TAGLINE, URL_QR, URL_TEXT } from "./theme";
 
 const QR = qrMatrix(URL_QR);
+/**
+ * The card sits on the sky: the type block in the upper left and the code to
+ * its right, all above 55 % of the height, so a horizon at 60 to 65 % (the
+ * hero film's hold frame) and the Earth above it stay clear.
+ */
+const LAYOUT = { left: 150, top: 120, qrLeft: 1250, qrTop: 170 };
 /** The team's wordmark, white, made by capture/logo.mjs from assets/universelle-logo.svg. */
 const LOGO = staticFile("universelle-logo.png");
 /** The wordmark's width over its height (its SVG viewBox), and the height that gives its capitals about the cap height of the 40 px «Team» (the capitals fill 72 % of the mark, the stars the rest), in the PNG's padded pixels. */
@@ -70,8 +77,8 @@ export function EndCard({ at = 0, compact = false }: { at?: number; compact?: bo
   const qr = compact ? 200 : 228;
   const k = compact ? 0 : 1;
   return (
-    <div style={{ position: "absolute", left: 0, top: 0, width: 1920, height: 1080, display: "flex", flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 110 }}>
-      <div style={{ display: "flex", flexDirection: "column", gap: 20, width: 1000 }}>
+    <div style={{ position: "absolute", left: 0, top: 0, width: 1920, height: 1080 }}>
+      <div style={{ position: "absolute", left: LAYOUT.left, top: LAYOUT.top, display: "flex", flexDirection: "column", gap: 18, width: 1000 }}>
         <Animate enter="fade" at={at} style={{ fontFamily: FONT, fontSize: 48, fontWeight: 700, letterSpacing: "-0.02em", color: C.text }}>Ventana Lunar</Animate>
         <Animate enter="fade" at={at} style={{ marginTop: -10, marginBottom: 6, fontFamily: FONT, fontSize: 36, fontWeight: 520, color: C.secondary }}>{TAGLINE}</Animate>
         <Animate enter="slam" at={at + Math.round(2 * k)} style={{ fontFamily: FONT, fontSize: 108, fontWeight: 760, letterSpacing: "-0.035em", lineHeight: 1, color: C.window, whiteSpace: "nowrap" }}>{URL_TEXT}</Animate>
@@ -82,7 +89,7 @@ export function EndCard({ at = 0, compact = false }: { at?: number; compact?: bo
         </Animate>
         <Animate enter="fade" at={at + Math.round(18 * k)} style={{ marginTop: 22, fontFamily: FONT, fontSize: 30, fontWeight: 500, color: C.muted }}>NASA open data · not endorsed by NASA</Animate>
       </div>
-      <Animate enter="pop" at={at + Math.round(6 * k)} style={{ display: "flex" }}><Qr size={qr} /></Animate>
+      <Animate enter="pop" at={at + Math.round(6 * k)} style={{ position: "absolute", left: LAYOUT.qrLeft, top: LAYOUT.qrTop, display: "flex" }}><Qr size={qr} /></Animate>
     </div>
   );
 }

@@ -226,16 +226,16 @@ export function ProofWords({ compact = false }: { compact?: boolean }) {
   );
 }
 
-/** The end card over its backdrop: the Moon, defocused and darkened, pushing in slowly. */
+/** The end card over its backdrop: the Moon, sharp, pushing in slowly, darkened only behind the type. */
 export function CtaBeat({ frames, compact = false }: { frames: number; compact?: boolean }) {
   const f = useCurrentFrame();
-  const z = interpolate(f, [0, frames], [1.04, 1.1], clamp);
+  const z = interpolate(f, [0, frames], [1, 1.04], clamp);
   return (
     <AbsoluteFill style={{ backgroundColor: C.bg }}>
       <div style={{ position: "absolute", left: 0, top: 0, width: 1920, height: 1080, overflow: "hidden" }}>
-        <Img src={staticFile(END_BACKDROP)} style={{ position: "absolute", left: 0, top: 0, width: 1920, height: 1080, objectFit: "cover", transform: `scale(${z})`, filter: "blur(28px) brightness(0.62)" }} />
+        <Img src={staticFile(END_BACKDROP)} style={{ position: "absolute", left: 0, top: 0, width: 1920, height: 1080, objectFit: "cover", transformOrigin: "50% 62%", transform: `scale(${z})` }} />
       </div>
-      <div style={{ position: "absolute", left: 0, top: 0, width: 1920, height: 1080, backgroundImage: "linear-gradient(90deg, rgba(7, 8, 11, 0.88) 0%, rgba(7, 8, 11, 0.72) 58%, rgba(7, 8, 11, 0.55) 100%)" }} />
+      <div style={{ position: "absolute", left: 0, top: 0, width: 1920, height: 1080, backgroundImage: "radial-gradient(ellipse 980px 520px at 640px 330px, rgba(7, 8, 11, 0.72) 0%, rgba(7, 8, 11, 0.45) 55%, rgba(7, 8, 11, 0) 100%)" }} />
       <EndCard at={2} compact={compact} />
     </AbsoluteFill>
   );

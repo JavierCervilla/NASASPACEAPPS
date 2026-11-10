@@ -77,7 +77,8 @@ what must be in frame, each instant chosen from `@ventana/sim` (`skyAt` and the 
 shot plays, in this order, a scene imported into `SCENES` (`scenes/opening.tsx`), its rendered plate
 (`media/plates/<file>`, named in `plate`), or the raea 3D fallback. The end card's backdrop is one still, `END_BACKDROP`
 in `scenes/plates.ts`: a frame of the raea Moon for now (`backdrop.tsx`), the hold frame of the hero film (the Mons
-Mouton horizon with the Earth, 2026-12-15 05:00 UTC) once it exists, shown defocused and darkened behind the text.
+Mouton horizon with the Earth, 2026-12-15 05:00 UTC) once it exists, shown sharp with the horizon at 60 to 65 % of the height and darkened only behind the type, which
+sits on the sky above it (`LAYOUT` in `parts/endcard.tsx`).
 
 ## Claims on screen and their sources
 

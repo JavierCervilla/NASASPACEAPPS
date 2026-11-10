@@ -24,13 +24,16 @@
  */
 
 /**
- * The opening's shots as specs for the terrain pipeline of the hero film
- * (VENT-112): for each, the instant (or the span of a time-lapse), the target
- * point, the camera's move and what must be in frame, with the sky the sim
- * computes for it (@ventana/sim skyAt and the curated sites' terrain
- * horizons, packages/sim/data/horizons.json). Until a shot's plate exists
- * (`plate`, a file in media/plates/), the cuts fall back to the raea 3D Moon
- * of scenes/shots.tsx (`fallback`).
+ * The opening's shots, rendered on the real Moon of the hero film's terrain
+ * module (packages/landing/media-src/moon-scene, VENT-112; scenes/terrain.tsx
+ * has the camera paths, plates.tsx the compositions, capture/plates.mjs the
+ * loop). The module builds one site, IM-2 on Mons Mouton, so every shot is
+ * there, at one of two instants chosen with @ventana/sim (skyAt and the
+ * site's LOLA horizon in packages/sim/data/horizons.json). Each instant is
+ * one build (about 20 s of shadows and a 180 to 370 MB mesh), so the
+ * time-lapses of the first spec became single instants with a moving camera:
+ * no shadow stepping. `plate` names the rendered file in media/plates/; a
+ * shot without one falls back to the raea 3D Moon of scenes/shots.tsx.
  */
 import type { ShotName } from "./shots";
 
@@ -61,66 +64,70 @@ export interface PlateSpec {
   fallback: ShotName;
 }
 
-const RIDGE: Target = { name: "Shackleton connecting ridge (Blue Moon MK1)", latDeg: -89.684, lonEastDeg: -163.261 };
 const IM2: Target = { name: "Mons Mouton, IM-2 landing site", latDeg: -84.7906, lonEastDeg: 29.1957 };
-const POLE: Target = { name: "the lunar south pole", latDeg: -90, lonEastDeg: 0 };
+/** The Sun's disc half on the ridge at 80°, the Earth 69 % lit 2.9° over the terrain at 328°. */
+const SKIM_INSTANT = "2026-11-15T11:00:00Z";
+/** The Earth's centre on the terrain at 338°, 30 % lit; the Sun 0.5° up at 272°. */
+const EARTHSET_INSTANT = "2027-01-27T11:40:00Z";
+const both = (id: OpeningId) => ({ hero: `${id}-hero.mp4`, submission: `${id}-submission.mp4` });
 
 export const PLATES: Record<OpeningId, PlateSpec> = {
   dive: {
-    id: "dive", instant: "2026-11-14T13:00:00Z", target: RIDGE,
-    camera: "from about 2 500 km (the whole south polar cap, south up) diving to about 3 km over the ridge, ending low and looking along azimuth 283° toward the Sun",
+    id: "dive", instant: SKIM_INSTANT, target: IM2,
+    camera: "from 1 500 km (the lit polar cap) down to 600 m, coming in from azimuth 148° and pitching up to the horizon at 328°; the arc behind the target is 30 % of the altitude near the ground",
     seconds: { hero: 4, submission: 3 },
-    mustShow: "the long polar shadows and the terminator from orbit; at the end the Sun (1.61° up, az 283.4°) low over a real horizon; dark ground in the lower half for the question",
-    plate: { hero: null, submission: null }, fallback: "dive",
+    mustShow: "the lit Moon from orbit, then the polar relief in raking light, ending on the Earth (1.43° up, 69 % lit) over the real horizon; dark ground in the lower half for the question",
+    plate: both("dive"), fallback: "dive",
   },
   artemis: {
-    id: "artemis", instant: "2026-11-20T16:00:00Z", target: POLE,
-    camera: "high orbit (about 2 500 km), a slow 50° arc around the pole, the cap in the right half of the frame",
+    id: "artemis", instant: SKIM_INSTANT, target: IM2,
+    camera: "1 400 km up, a slow 50° arc around the target, the cap in the right half",
     seconds: { hero: 4, submission: 0 },
-    mustShow: "the south polar cap with its real crater shadows (Shackleton, de Gerlache, the Artemis III regions); the left half dark for the type",
-    plate: { hero: null, submission: null }, fallback: "artemis",
+    mustShow: "the south polar cap on the terminator, with its real relief; the left half dark for the type",
+    plate: { hero: "artemis-hero.mp4", submission: null }, fallback: "artemis",
   },
   skim: {
-    id: "skim", instant: "2026-11-15T09:00:00Z", until: "2026-11-15T14:00:00Z", target: IM2,
-    camera: "2 m above the ground (eye height), looking toward azimuth 80°, a slow pan of a few degrees; time-lapse of 5 h",
+    id: "skim", instant: SKIM_INSTANT, target: IM2,
+    camera: "2 m above the ground, looking toward azimuth 76° to 82° (a slow pan), 30° of vertical field",
     seconds: { hero: 4, submission: 2.5 },
-    mustShow: "the Sun's disc sliding along the ridge line: its centre on the terrain horizon for hours (2.37° to 2.59° up, az 81.0° to 78.5°, 0.00° to 0.14° above the terrain); long shadows across the ground; the lower third dark enough for the line",
-    plate: { hero: null, submission: null }, fallback: "skim",
+    mustShow: "the Sun's disc half hidden by the ridge at 80° (its centre on the terrain, 2.46° up), the ground backlit; the sky above for the line",
+    plate: both("skim"), fallback: "skim",
   },
   earthset: {
-    id: "earthset", instant: "2026-11-01T12:00:00Z", until: "2026-11-03T12:00:00Z", target: RIDGE,
-    camera: "2 m above the ground, looking toward azimuth 168°, a long lens (about 15° of field), static or a slow push; time-lapse of 48 h",
+    id: "earthset", instant: EARTHSET_INSTANT, target: IM2,
+    camera: "2 m above the ground, looking toward azimuth 338°, 22° to 19° of vertical field (a gentle push)",
     seconds: { hero: 4, submission: 2.5 },
-    mustShow: "the Earth sinking behind the real horizon: 1.64° above the terrain at the start, setting at 2026-11-02 13:50 UTC, 1.44° below at the end (gone); it stays below the horizon until 2026-11-18 06:30 UTC (15.7 days); the Sun lights it from the left (az 82° to 58°, 1.5° up); sky above for the line",
-    plate: { hero: null, submission: null }, fallback: "earthset",
+    mustShow: "the Earth half behind the real horizon (its centre on the terrain, 0.88° below level, 30 % lit); the sky above for the line",
+    plate: both("earthset"), fallback: "earthset",
   },
   pullback: {
-    id: "pullback", instant: "2026-11-20T16:00:00Z", target: RIDGE,
-    camera: "from 2 m at the ridge straight up to about 5 000 km, accelerating, into the reveal's framing",
+    id: "pullback", instant: SKIM_INSTANT, target: IM2,
+    camera: "from 2 m, the Earth on the horizon, up to 8 000 km, the arc behind the target 30 % of the altitude near the ground, into the reveal's framing",
     seconds: { hero: 2, submission: 0 },
     mustShow: "a seamless climb from the ground to the whole Moon, under the riser",
-    plate: { hero: null, submission: null }, fallback: "pullback",
+    plate: { hero: "pullback-hero.mp4", submission: null }, fallback: "pullback",
   },
   reveal: {
-    id: "reveal", instant: "2026-11-20T16:00:00Z", target: POLE,
-    camera: "about 5 000 km, the south polar cap at the top of the frame (south up), a slow drift",
+    id: "reveal", instant: SKIM_INSTANT, target: IM2,
+    camera: "8 000 km out, the whole Moon in the upper half, a slow drift",
     seconds: { hero: 4, submission: 3 },
-    mustShow: "the Moon at the landing window of the app footage (at the ridge: Sun 1.26° at az 208.9°, Earth 3.73° at az 156.1°); the lower 45 % of the frame dark for the name and the tagline",
-    plate: { hero: null, submission: null }, fallback: "reveal",
+    mustShow: "the half-lit Moon with the polar cap on the terminator; the lower half dark for the name and the tagline",
+    plate: both("reveal"), fallback: "reveal",
   },
   drift: {
-    id: "drift", instant: "2026-11-22T20:00:00Z", target: POLE,
-    camera: "far (about 10 000 km), the Moon small in the lower right, a slow drift",
+    id: "drift", instant: SKIM_INSTANT, target: IM2,
+    camera: "9 000 km out, the Moon small in the lower right, a slow drift",
     seconds: { hero: 6, submission: 2.5 },
     mustShow: "a quiet background for the proof's type, nothing bright behind the left two thirds",
-    plate: { hero: null, submission: null }, fallback: "drift",
+    plate: both("drift"), fallback: "drift",
   },
 };
 
 /**
- * The end card's backdrop, a still in media/: the placeholder is a frame of
- * the raea 3D Moon (backdrop.tsx renders it); the final one is the hold frame
- * of the VENT-112 hero film (the Mons Mouton horizon with the Earth,
- * 2026-12-15 05:00 UTC). Change this one path to swap it.
+ * The end card's backdrop, a still in media/: the hero film's hold frame (the
+ * Mons Mouton horizon with the Earth, 2026-12-15 05:00 UTC), the poster of
+ * its pre-release hero-film-preview-p3. The Earth sits at 50.6 % x 35.6 % of
+ * the frame and the horizon at 58.5 to 64.4 %; parts/endcard.tsx keeps the
+ * type and the code clear of both. backdrop.tsx renders a raea stand-in.
  */
-export const END_BACKDROP = "plates/end-backdrop-placeholder.png";
+export const END_BACKDROP = "plates/hero-desktop-poster.png";

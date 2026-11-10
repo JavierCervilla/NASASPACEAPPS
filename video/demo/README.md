@@ -36,7 +36,7 @@ node video/demo/capture/logo.mjs               # the team's wordmark as a white 
 node video/demo/capture/capture.mjs all        # media/{desktop,onfoot,mobile}.mp4 and .json, about two minutes
 cd video/demo
 RAEA="env HOME=$HOME/.gamestudio/raea/home RAEA_OFFLINE=1 $HOME/.gamestudio/raea/raea/bin/raea"
-$RAEA render backdrop.tsx -o media/plates/end-backdrop-placeholder.png --frame 0   # end card backdrop until VENT-112
+# the opening plates and the end card backdrop first: see «The opening and the terrain pipeline» below
 $RAEA render hero.tsx -o out/ventana-lunar-hero.mp4 --manifest out/hero.json --quality 0.97
 $RAEA check out/ventana-lunar-hero.mp4 --manifest out/hero.json --shape 16:9
 # the submission cut opens on dark 3D: render PNG frames and encode them with more bits for the near-blacks
@@ -71,14 +71,41 @@ sets by a change of apparent latitude within the real libration (±6.7°). Every
 
 ## The opening and the terrain pipeline
 
-The opening's shots are specified in `scenes/plates.ts` for the terrain pipeline of the hero film (VENT-112, a real
-LOLA mesh with shadows baked for the instant): instant or time-lapse span, target, camera move, length per cut and
-what must be in frame, each instant chosen from `@ventana/sim` (`skyAt` and the curated sites' terrain horizons). Each
-shot plays, in this order, a scene imported into `SCENES` (`scenes/opening.tsx`), its rendered plate
-(`media/plates/<file>`, named in `plate`), or the raea 3D fallback. The end card's backdrop is one still, `END_BACKDROP`
-in `scenes/plates.ts`: a frame of the raea Moon for now (`backdrop.tsx`), the hold frame of the hero film (the Mons
-Mouton horizon with the Earth, 2026-12-15 05:00 UTC) once it exists, shown sharp with the horizon at 60 to 65 % of the height and darkened only behind the type, which
-sits on the sky above it (`LAYOUT` in `parts/endcard.tsx`).
+The opening's shots (dive, Artemis, the Sun on the ridge, the Earth on the horizon, the pull-back, the reveal and the
+proof's background) are rendered on the real Moon of the hero film's terrain module
+(`packages/landing/media-src/moon-scene`, VENT-112; not modified here): a LOLA mesh around IM-2's touchdown point on
+Mons Mouton with the shadows of the instant baked in, and the Sun and Earth of that instant from `@ventana/sim`.
+`scenes/plates.ts` has each shot's instant, camera and what must show; `scenes/terrain.tsx` the camera paths;
+`plates.tsx` the compositions (each at 2x for supersampling); `capture/plates.mjs` renders them, scales them down to
+`media/plates/<id>-<cut>.mp4` and scans each for frame-to-frame jumps. Two instants, chosen with the sim and the site's
+LOLA horizon, each one build (about 20 to 40 s of shadows, a 180 to 370 MB mesh, cached):
+
+- 2026-11-15 11:00 UTC: the Sun's disc half on the ridge at azimuth 80°, the Earth 69 % lit 2.9° over the terrain at
+  328°. Built twice: `media/moon/` (dense sector at 80°, for the ground shots) and `media/moon-earth/` (dense sector
+  ±75° around 328°, for the shots that fly in and out along that heading).
+- 2027-01-27 11:40 UTC: the Earth's centre on the terrain at 338°, 30 % lit, the Sun 0.5° up at 272°.
+
+The time-lapses of the first shot list became single instants with a moving camera: the module bakes shadows per
+instant, so a time-lapse would step or cost a build per few frames. IM-2 is the module's only site; the Earth hides
+there for about 5 days a month, so the «for weeks» line keeps its Shackleton ridge credit (15.7 days in Nov 2026, the
+app's data). The orbit shots keep the camera's arc behind the target at 30 % of its altitude near the ground (as the
+hero film), so the ground under it is always where the mesh is dense.
+
+```sh
+S=packages/landing/media-src/moon-scene/scripts; M=video/demo/media
+node $S/fetch-tiles.mjs && node $S/textures.mjs --out $M/moon && node $S/textures.mjs --out $M/moon-earth
+node $S/build.mjs --instant 2026-11-15T11:00:00Z --out $M/moon --sector 80,22,8192
+node $S/build.mjs --instant 2027-01-27T11:40:00Z --out $M/moon --sector 338,22,8192
+node $S/build.mjs --instant 2026-11-15T11:00:00Z --out $M/moon-earth --sector 327.6,75,8192
+node video/demo/capture/plates.mjs        # all plates, about 4 minutes
+gh release download hero-film-preview-p3 --repo JavierCervilla/NASASPACEAPPS -p hero-desktop-poster.png -D $M/plates
+```
+
+`scenes/opening.tsx` plays each shot's plate (or an imported scene, or the old raea 3D fallback of
+`scenes/shots.tsx`). The end card's backdrop is `END_BACKDROP` in `scenes/plates.ts`: the hero film's hold frame (the
+Mons Mouton horizon with the Earth, 2026-12-15 05:00 UTC), sharp, darkened only behind the type, which sits on the
+sky clear of the horizon (58.5 to 64.4 %) and the Earth (`LAYOUT` in `parts/endcard.tsx`); `backdrop.tsx` renders a
+raea stand-in.
 
 ## Claims on screen and their sources
 
@@ -119,6 +146,10 @@ sits on the sky above it (`LAYOUT` in `parts/endcard.tsx`).
     https://deepspace.jpl.nasa.gov/dsndocs/810-005/301/301N.pdf.
   - The on-foot view's fine ground grain is the app's illustrative Poly Haven «Moon 02» texture (CC0), captioned as
     illustrative in the footage.
+  - The opening's terrain and the end card's backdrop: the hero film's terrain module, whose provenance is in
+    `packages/landing/media-src/hero-film/README.md` (LOLA gridded elevation, LROC NAC DTM NOBILE03 at the site, the
+    app's LROC and LOLA maps, Blue Marble; illustrative detail below the data's resolution, captioned «detail
+    illustrative» on the ground shots).
 
 Built for the NASA Space Apps Challenge 2026, Madrid, by team Universelle (`TEAM` in `parts/theme.ts`). Not endorsed by
 NASA. The English line «Your landing window on the Moon» (`TAGLINE`) sits under the name at the reveal and on the end

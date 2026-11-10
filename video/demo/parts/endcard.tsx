@@ -34,11 +34,12 @@ import { C, FONT, TAGLINE, URL_QR, URL_TEXT } from "./theme";
 
 const QR = qrMatrix(URL_QR);
 /**
- * The card sits on the sky: the type block in the upper left and the code to
- * its right, all above 55 % of the height, so a horizon at 60 to 65 % (the
- * hero film's hold frame) and the Earth above it stay clear.
+ * The card sits on the sky: the type block in the upper left (its widest line
+ * ends before x 900) and the code at the right (x 1250 to 1478), all above
+ * 55 % of the height, so the hold frame's horizon (58.5 to 64.4 %) and its
+ * Earth (x 927 to 1017, y 340 to 430) stay clear.
  */
-const LAYOUT = { left: 150, top: 120, qrLeft: 1250, qrTop: 170 };
+const LAYOUT = { left: 120, top: 120, qrLeft: 1250, qrTop: 170 };
 /** The team's wordmark, white, made by capture/logo.mjs from assets/universelle-logo.svg. */
 const LOGO = staticFile("universelle-logo.png");
 /** The wordmark's width over its height (its SVG viewBox), and the height that gives its capitals about the cap height of the 40 px «Team» (the capitals fill 72 % of the mark, the stars the rest), in the PNG's padded pixels. */
@@ -81,7 +82,7 @@ export function EndCard({ at = 0, compact = false }: { at?: number; compact?: bo
       <div style={{ position: "absolute", left: LAYOUT.left, top: LAYOUT.top, display: "flex", flexDirection: "column", gap: 18, width: 1000 }}>
         <Animate enter="fade" at={at} style={{ fontFamily: FONT, fontSize: 48, fontWeight: 700, letterSpacing: "-0.02em", color: C.text }}>Ventana Lunar</Animate>
         <Animate enter="fade" at={at} style={{ marginTop: -10, marginBottom: 6, fontFamily: FONT, fontSize: 36, fontWeight: 520, color: C.secondary }}>{TAGLINE}</Animate>
-        <Animate enter="slam" at={at + Math.round(2 * k)} style={{ fontFamily: FONT, fontSize: 108, fontWeight: 760, letterSpacing: "-0.035em", lineHeight: 1, color: C.window, whiteSpace: "nowrap" }}>{URL_TEXT}</Animate>
+        <Animate enter="slam" at={at + Math.round(2 * k)} style={{ fontFamily: FONT, fontSize: 92, fontWeight: 760, letterSpacing: "-0.035em", lineHeight: 1, color: C.window, whiteSpace: "nowrap" }}>{URL_TEXT}</Animate>
         <Animate enter="fade" at={at + Math.round(10 * k)} style={{ marginTop: 30, fontFamily: FONT, fontSize: 40, fontWeight: 560, color: C.text }}>NASA Space Apps Challenge 2026 · Madrid</Animate>
         <Animate enter="fade" at={at + Math.round(14 * k)} style={{ display: "flex", flexDirection: "row", alignItems: "flex-end", gap: 18 }}>
           <div style={{ fontFamily: FONT, fontSize: 40, fontWeight: 560, lineHeight: 1, color: C.secondary }}>Team</div>

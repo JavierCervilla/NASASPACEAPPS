@@ -57,7 +57,17 @@ function useArrival(): React.CSSProperties {
 /** The hook: the question, over the dive. */
 export function HookWords({ second = 52 }: { second?: number }) {
   return (
-    <Block left={120} top={640} width={1300} gap={4}>
+    <>
+      <div style={{ position: "absolute", left: 0, top: 0, width: 1920, height: 1080, backgroundImage: "radial-gradient(ellipse 820px 380px at 470px 270px, rgba(7, 8, 11, 0.72) 0%, rgba(7, 8, 11, 0.4) 55%, rgba(7, 8, 11, 0) 100%)" }} />
+      <HookLines second={second} />
+    </>
+  );
+}
+
+/** The question's three lines, in the sky at the top left. */
+function HookLines({ second }: { second: number }) {
+  return (
+    <Block left={120} top={120} width={1300} gap={4}>
       <Phrase size={96} chunks={[{ text: "Where on the Moon", at: 2, move: "rise" }]} />
       <Phrase size={96} chunks={[{ text: "can you land —", at: 18, move: "rise" }]} />
       <Phrase size={96} chunks={[{ text: "and", at: second, move: "slam" }, { text: "when?", at: second + 4, move: "slam", color: C.window }]} />
@@ -82,11 +92,14 @@ export function ArtemisWords() {
 /** The Sun that skims the horizon, over the low pass. */
 export function SunWords({ kicker }: { kicker?: string }) {
   return (
-    <Block left={120} top={kicker ? 700 : 740} width={1500} gap={8}>
+    <>
+    <Block left={120} top={120} width={1500} gap={8}>
       {kicker ? <Kicker at={2}>{kicker}</Kicker> : null}
       <Phrase size={100} chunks={[{ text: "The", at: 4 }, { text: "Sun", at: 4, color: C.sun }, { text: "skims the horizon", at: 4 + BEAT }]} />
       <Phrase size={100} chunks={[{ text: "for days.", at: 4 + 2 * BEAT, move: "slam" }]} />
     </Block>
+    <Credit at={4} left={120} top={900}>Relief: NASA LOLA · detail illustrative</Credit>
+    </>
   );
 }
 
@@ -97,7 +110,7 @@ export function EarthWords({ credit = true }: { credit?: boolean }) {
       <Block left={120} top={140} width={1500}>
         <Phrase size={110} chunks={[{ text: "Earth", at: 4, color: C.earth }, { text: "hides", at: 4 + BEAT }, { text: "for weeks.", at: 4 + 2 * BEAT, move: "slam" }]} />
       </Block>
-      {credit ? <Credit at={8} left={120} top={290}>Shackleton ridge, Nov 2026: Sun 100 %, Earth 26 %</Credit> : null}
+      {credit ? <Credit at={8} left={120} top={290}>Shackleton ridge, Nov 2026: Earth hidden 15.7 days</Credit> : null}
     </>
   );
 }
@@ -235,7 +248,7 @@ export function CtaBeat({ frames, compact = false }: { frames: number; compact?:
       <div style={{ position: "absolute", left: 0, top: 0, width: 1920, height: 1080, overflow: "hidden" }}>
         <Img src={staticFile(END_BACKDROP)} style={{ position: "absolute", left: 0, top: 0, width: 1920, height: 1080, objectFit: "cover", transformOrigin: "50% 62%", transform: `scale(${z})` }} />
       </div>
-      <div style={{ position: "absolute", left: 0, top: 0, width: 1920, height: 1080, backgroundImage: "radial-gradient(ellipse 980px 520px at 640px 330px, rgba(7, 8, 11, 0.72) 0%, rgba(7, 8, 11, 0.45) 55%, rgba(7, 8, 11, 0) 100%)" }} />
+      <div style={{ position: "absolute", left: 0, top: 0, width: 1920, height: 1080, backgroundImage: "radial-gradient(ellipse 680px 470px at 440px 330px, rgba(7, 8, 11, 0.7) 0%, rgba(7, 8, 11, 0.4) 55%, rgba(7, 8, 11, 0) 100%)" }} />
       <EndCard at={2} compact={compact} />
     </AbsoluteFill>
   );

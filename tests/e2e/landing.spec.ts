@@ -25,7 +25,8 @@
 
 import { execFileSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
-import { expect, test, type Page } from '@playwright/test';
+import { expect, test, type Browser, type Page } from '@playwright/test';
+import sharp from 'sharp';
 
 // The landing at the domain's root (VENT-109), served by its own preview (playwright.config.ts, project `landing`).
 const DIST = fileURLToPath(new URL('../../packages/landing/dist', import.meta.url));
@@ -135,4 +136,126 @@ test.describe('the landing (VENT-109)', () => {
     await expect(page.locator('.hero__title')).toHaveCSS('opacity', '1');
     await context.close();
   });
+});
+
+const HERO_MEDIA = /\/media\/hero\//;
+const SIZES = [
+  ['desktop', 1440, 900],
+  ['phone', 390, 844],
+] as const;
+
+/** Every request the page makes for the hero's film and frames, by path. */
+function heroRequests(page: Page): string[] {
+  const asked: string[] = [];
+  page.on('request', (request) => {
+    if (HERO_MEDIA.test(request.url())) asked.push(new URL(request.url()).pathname);
+  });
+  return asked;
+}
+
+const videosIn = (asked: readonly string[]) => asked.filter((path) => path.endsWith('.mp4'));
+const shownFrame = (page: Page) => page.locator('.hero__poster').evaluate((img: HTMLImageElement) => img.currentSrc);
+
+async function stillPage(browser: Browser, width: number, height: number) {
+  const context = await browser.newContext({ viewport: { width, height }, reducedMotion: 'reduce' });
+  return { context, page: await context.newPage() };
+}
+
+/** WCAG relative luminance of an sRGB channel triple, 0 to 255 each. */
+function luminance(r: number, g: number, b: number): number {
+  const linear = (c: number) => {
+    const v = c / 255;
+    return v <= 0.03928 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4;
+  };
+  return 0.2126 * linear(r) + 0.7152 * linear(g) + 0.0722 * linear(b);
+}
+
+/** The 95th percentile luminance the page paints under each selector's box, the hero's words hidden. */
+async function backdropLuminance(page: Page, selectors: readonly string[]): Promise<number[]> {
+  const clips = await Promise.all(selectors.map((selector) => page.locator(selector).boundingBox()));
+  await page.addStyleTag({ content: '.hero__inner { visibility: hidden !important; }' });
+  const shots = clips.map(async (clip) => {
+    if (!clip) throw new Error('no box');
+    const { data, info } = await sharp(await page.screenshot({ clip })).removeAlpha().raw().toBuffer({ resolveWithObject: true });
+    const values: number[] = [];
+    for (let i = 0; i < info.width * info.height * 3; i += 3) values.push(luminance(data[i] ?? 0, data[i + 1] ?? 0, data[i + 2] ?? 0));
+    values.sort((a, b) => a - b);
+    return values[Math.floor(values.length * 0.95)] ?? 1;
+  });
+  return Promise.all(shots);
+}
+
+test.describe('the hero film (VENT-112)', () => {
+  test('shows the still alone under reduced motion: no start frame and no video asked', async ({ browser }) => {
+    const { context, page } = await stillPage(browser, 1440, 900);
+    const asked = heroRequests(page);
+    await page.goto('./');
+    const still = page.locator('.hero__poster');
+    await expect(still).toBeVisible();
+    await expect.poll(() => still.evaluate((img: HTMLImageElement) => img.naturalWidth)).toBe(1920);
+    await expect.poll(() => shownFrame(page)).toMatch(/hero-desktop-poster\.webp$/);
+    await expect(still).toHaveAttribute('alt', /IM-2 Athena/);
+    await expect(page.locator('.hero video source')).toHaveCount(0);
+    await expect(page.locator('.hero video[aria-hidden="true"]')).toHaveCount(2);
+    await page.waitForTimeout(500);
+    expect(asked).toEqual(['/media/hero/hero-desktop-poster.webp']);
+    await context.close();
+  });
+
+  test('shows the still under Save-Data and asks for no video', async ({ page }) => {
+    await page.addInitScript(() => {
+      Object.defineProperty(navigator, 'connection', { value: { saveData: true } });
+    });
+    const asked = heroRequests(page);
+    await page.goto('./');
+    await expect(page.locator('[data-film]')).toHaveAttribute('data-film', 'still');
+    await expect.poll(() => shownFrame(page)).toMatch(/hero-desktop-poster\.webp$/);
+    await page.waitForTimeout(500);
+    expect(videosIn(asked)).toEqual([]);
+  });
+
+  for (const [cut, width, height] of SIZES) {
+    test(`plays the ${cut} cut's descent at ${width} x ${height}, under the production CSP`, async ({ page }) => {
+      const problems = await strict(page);
+      await page.setViewportSize({ width, height });
+      const asked = heroRequests(page);
+      await page.goto('./');
+      // The page paints the descent's first frame, so the descent fades in over the same picture.
+      expect(await shownFrame(page)).toMatch(new RegExp(`hero-${cut}-start\\.webp$`));
+      await expect(page.locator('[data-film]')).toHaveAttribute('data-film', /descent|hold/, { timeout: 20_000 });
+      const playing = await page.locator('[data-film-part="descent"]').evaluate((v: HTMLVideoElement) => v.currentSrc);
+      expect(new URL(playing).pathname).toBe(`/media/hero/hero-${cut}-descent.av1.mp4`);
+      expect(asked.every((path) => path.includes(`hero-${cut}-`))).toBe(true);
+      expect(asked.filter((path) => path.endsWith('-poster.webp'))).toEqual([]);
+      expect(problems).toEqual([]);
+    });
+
+    for (const frame of ['still', 'start'] as const) test(`keeps the words clear of the live card and legible over the ${frame} frame at ${width} x ${height}`, async ({ browser }) => {
+      const context = await browser.newContext({ viewport: { width, height }, reducedMotion: frame === 'still' ? 'reduce' : 'no-preference' });
+      const page = await context.newPage();
+      // With motion the videos never answer, so the start frame stays painted.
+      await page.route('**/*.mp4', () => undefined);
+      await page.goto('./');
+      await expect.poll(() => shownFrame(page)).toMatch(frame === 'still' ? /-poster\.webp$/ : /-start\.webp$/);
+      await expect.poll(() => page.locator('.hero__poster').evaluate((img: HTMLImageElement) => (img.complete ? img.naturalWidth : 0))).toBeGreaterThan(0);
+      const box = async (selector: string) => {
+        const found = await page.locator(selector).boundingBox();
+        if (!found) throw new Error(`${selector} has no box`);
+        return found;
+      };
+      const card = await box('[data-live-card]');
+      for (const selector of ['.hero__head', '.hero__body', '.hero__credit']) {
+        const words = await box(selector);
+        const apart = words.y + words.height <= card.y || card.y + card.height <= words.y
+          || words.x + words.width <= card.x || card.x + card.width <= words.x;
+        expect(apart, selector).toBe(true);
+      }
+      // The lede's grey (#c7c8ce) keeps 4.5:1 over what the film paints under the copy.
+      const lede = luminance(0xc7, 0xc8, 0xce);
+      const selectors = ['.hero__title', '.hero__lede'] as const;
+      const under = await backdropLuminance(page, selectors);
+      under.forEach((value, i) => expect((lede + 0.05) / (value + 0.05), selectors[i]).toBeGreaterThanOrEqual(4.5));
+      await context.close();
+    });
+  }
 });

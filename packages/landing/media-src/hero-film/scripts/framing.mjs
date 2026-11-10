@@ -34,11 +34,11 @@
  *   node packages/landing/media-src/hero-film/scripts/framing.mjs
  */
 import { readFileSync } from 'node:fs';
-import { frameOf, horizontal, norm, sub } from '../scene/frame.ts';
-import { DESCENT_S, LOOKS, project, shotAt } from '../scene/path.ts';
+import { frameOf, horizontal, norm, project, sub } from '../../moon-scene/scene/frame.ts';
+import { DESCENT_S, LOOKS, shotAt } from '../scene/path.ts';
 
 const read = (p) => JSON.parse(readFileSync(new URL(p, import.meta.url), 'utf8'));
-const frame = frameOf(read('../sky.json'), read('../media/mesh/terrain.json'));
+const frame = frameOf(read('../media/moon/moon-im2-20261215T0500Z.json'));
 const km = (m) => (m >= 1000 ? `${(m / 1000).toFixed(1)} km` : `${m.toFixed(1)} m`);
 
 process.stdout.write('t (s)  altitude     behind      pitch   speed\n');

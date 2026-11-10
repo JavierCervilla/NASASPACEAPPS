@@ -26,19 +26,19 @@
 /**
  * Fetches the LOLA relief the hero film is built on into a local cache
  * (cache/tiles/, git-ignored): the levelled polar-south tiles of Ventana
- * Lunar's API (docs/terrain-api.md) in the squares `regions.mjs` names, two
+ * Lunar's API (docs/terrain-api.md) in the squares `sites.mjs` names, two
  * at a time, honouring 429 and 503 with their Retry-After. A tile already in
  * the cache under the current version token is not asked again, so a second
  * run costs one request.
  *
- *   node packages/landing/media-src/hero-film/scripts/fetch-tiles.mjs
+ *   node packages/landing/media-src/moon-scene/scripts/fetch-tiles.mjs [--site im2]
  *
  * Source: NASA LRO LOLA gridded elevation (PDS LRO-L-LOLA-4-GDR-V1.0), as the
  * API's tiers list it; public domain, credit NASA/GSFC, the LOLA team.
  */
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
-import { API, LEVELS, TARGET, tilesOf } from './regions.mjs';
+import { API, levelsOf, siteOf } from './sites.mjs';
 
 const CACHE = fileURLToPath(new URL('../cache/tiles/', import.meta.url));
 const AT_ONCE = 2;
@@ -57,8 +57,8 @@ async function getJson(url) {
   throw new Error(`gave up on ${url}`);
 }
 
-async function currentVersion() {
-  const q = `lat=${TARGET.latDeg}&lon=${TARGET.lonEastDeg}&levels=1`;
+async function currentVersion(site) {
+  const q = `lat=${site.latDeg}&lon=${site.lonEastDeg}&levels=1`;
   const ring = await getJson(`${API}/api/v1/terrain/tiles?${q}`);
   return ring.version;
 }
@@ -88,11 +88,12 @@ async function fetchAll(jobs, version) {
   return fetched;
 }
 
-const version = await currentVersion();
+const site = siteOf();
+const version = await currentVersion(site);
 const jobs = [];
-for (const lv of LEVELS) {
+for (const lv of levelsOf(site)) {
   mkdirSync(`${CACHE}${lv.level}`, { recursive: true });
-  for (const key of tilesOf(lv).keys) {
+  for (const key of lv.keys) {
     const path = pathOf(lv.level, key);
     if (!cached(path, version)) jobs.push({ level: lv.level, key, path });
   }

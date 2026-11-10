@@ -24,33 +24,40 @@
  */
 
 /**
- * The film's world: metres, origin on the ground at IM-2's touchdown point,
- * +X east, +Y up and +Z south there (Bevy's y-up, right-handed). This module
- * turns the instant's sky (sky.json, from @ventana/sim) and the terrain's
- * frame (media/mesh/terrain.json, from build-terrain.mjs) into world
- * vectors: the Moon's centre, the Sun's direction, the Earth's centre and the
- * Earth's own axes, so its face and phase are those of the instant. Pure.
+ * The scene's world: metres, origin on the ground at the site's target, +X
+ * east, +Y up and +Z south there (Bevy's y-up, right-handed). This module
+ * turns the file build.mjs writes beside the mesh (the target's frame and the
+ * instant's sky from @ventana/sim) into world vectors: the Moon's centre, the
+ * Sun's direction, the Earth's centre and the Earth's own axes, so its face
+ * and phase are those of the instant. Pure.
  */
 
 export type V3 = [number, number, number];
 
-/** What sky.json holds that the film uses. */
-export interface SkyFile {
-  readonly sun: { readonly elDeg: number; readonly azDeg: number };
-  readonly earth: { readonly elDeg: number; readonly azDeg: number; readonly distanceKm: number; readonly radiusKm: number };
-  readonly subSolar: { readonly latDeg: number; readonly lonEastDeg: number };
-  readonly subEarth: { readonly latDeg: number; readonly lonEastDeg: number };
-  readonly subLunar: { readonly latDeg: number; readonly lonEastDeg: number };
-  readonly earthPole: { readonly latDeg: number; readonly lonEastDeg: number };
+interface Point {
+  readonly latDeg: number;
+  readonly lonEastDeg: number;
 }
 
-/** What terrain.json holds: the target's ground height and local axes. */
-export interface TerrainFile {
+/** What build.mjs writes as moon-<site>-<instant>.json. */
+export interface WorldFile {
+  readonly site: string;
+  readonly instant: string;
+  /** the mesh beside it, a file name */
+  readonly mesh: string;
   readonly groundHeightM: number;
   readonly radiusM: number;
-  readonly east: V3;
-  readonly up: V3;
-  readonly north: V3;
+  readonly east: number[];
+  readonly up: number[];
+  readonly north: number[];
+  readonly sky: {
+    readonly sun: { readonly elDeg: number; readonly azDeg: number };
+    readonly earth: { readonly elDeg: number; readonly azDeg: number; readonly distanceKm: number; readonly radiusKm: number };
+    readonly subSolar: Point;
+    readonly subEarth: Point;
+    readonly subLunar: Point;
+    readonly earthPole: Point;
+  };
 }
 
 export interface Frame {
@@ -79,6 +86,7 @@ export const scale = (a: V3, k: number): V3 => [a[0] * k, a[1] * k, a[2] * k];
 export const dot = (a: V3, b: V3): number => a[0] * b[0] + a[1] * b[1] + a[2] * b[2];
 export const cross = (a: V3, b: V3): V3 => [a[1] * b[2] - a[2] * b[1], a[2] * b[0] - a[0] * b[2], a[0] * b[1] - a[1] * b[0]];
 export const norm = (a: V3): V3 => scale(a, 1 / Math.hypot(a[0], a[1], a[2]));
+const v3 = (a: readonly number[]): V3 => [a[0] ?? 0, a[1] ?? 0, a[2] ?? 0];
 
 /** The unit vector of a selenographic (or geographic) point, x to 0° E, z north. */
 export function unit(latDeg: number, lonDeg: number): V3 {
@@ -87,13 +95,14 @@ export function unit(latDeg: number, lonDeg: number): V3 {
   return [Math.cos(a) * Math.cos(o), Math.cos(a) * Math.sin(o), Math.sin(a)];
 }
 
-/** The film's world frame from the instant's sky and the terrain's frame. */
-export function frameOf(sky: SkyFile, terrain: TerrainFile): Frame {
-  const { east, up, north, radiusM, groundHeightM } = terrain;
+/** The world frame of a built Moon. */
+export function frameOf(world: WorldFile): Frame {
+  const { radiusM, groundHeightM, sky } = world;
+  const [east, up, north] = [v3(world.east), v3(world.up), v3(world.north)];
   const toWorld = (m: V3): V3 => [dot(m, east), dot(m, up), -dot(m, north)];
   const ground = scale(up, radiusM + groundHeightM);
   const earthMoon = scale(unit(sky.subEarth.latDeg, sky.subEarth.lonEastDeg), sky.earth.distanceKm * 1000);
-  // The Earth's axes: its pole from sky.json, and its longitude 0 placed so
+  // The Earth's axes: its pole from the sky, and its longitude 0 placed so
   // the Moon stands over the sub-lunar point.
   const z = toWorld(unit(sky.earthPole.latDeg, sky.earthPole.lonEastDeg));
   const toMoon = norm(toWorld(scale(earthMoon, -1)));
@@ -120,4 +129,26 @@ export function horizontal(d: V3): { elDeg: number; azDeg: number } {
   const n = norm(d);
   const az = Math.atan2(n[0], -n[2]) / DEG;
   return { elDeg: Math.asin(n[1]) / DEG, azDeg: (az + 360) % 360 };
+}
+
+/** A camera for one frame: where it is, where it looks, its up, its vertical field (radians). */
+export interface Shot {
+  readonly eye: V3;
+  readonly forward: V3;
+  readonly up: V3;
+  readonly fovY: number;
+}
+
+/**
+ * Where a world direction lands on the screen of a shot: x and y as shares
+ * of the width and height from the top left, or null behind the camera.
+ */
+export function project(shot: Shot, d: V3, aspect: number): { x: number; y: number } | null {
+  const f = shot.forward;
+  const r = norm(cross(f, shot.up));
+  const z = dot(d, f);
+  if (z <= 0) return null;
+  const ty = Math.tan(shot.fovY / 2);
+  const tx = ty * aspect;
+  return { x: 0.5 + (0.5 * dot(d, r)) / z / tx, y: 0.5 - (0.5 * dot(d, shot.up)) / z / ty };
 }

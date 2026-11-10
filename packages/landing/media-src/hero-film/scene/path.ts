@@ -24,8 +24,8 @@
  */
 
 /**
- * The camera of the hero film: ONE continuous move from 6 000 km over the
- * Moon down to 2 m over IM-2's touchdown point, then a locked hold. Pure:
+ * The camera of the hero film: ONE continuous move from thousands of km over
+ * the Moon down to 2 m over IM-2's touchdown point, then a locked hold. Pure:
  * every value is a function of the time, so a still and the film agree.
  *
  * - Altitude: its logarithm follows a monotone cubic through the brief's
@@ -42,8 +42,11 @@
  *   little above level at 2 m, on the final heading. Every blend is a
  *   smooth function of the log altitude, so the aim stops when the camera
  *   stops.
+ * - Lens: from 2 km down the focal length grows continuously (its log
+ *   follows the same smooth curve of the log altitude) to a long lens on
+ *   the Earth, at its true size; it settles with the camera.
  */
-import { add, cross, dot, norm, scale, sub, type Frame, type V3 } from './frame.ts';
+import { add, cross, dot, norm, scale, sub, type Frame, type Shot as SceneShot, type V3 } from '../../moon-scene/scene/frame.ts';
 
 export const FPS = 30;
 export const DESCENT_S = 14;
@@ -51,8 +54,10 @@ export const HOLD_S = 6;
 
 /** How the shot is framed for one screen. */
 export interface Look {
-  /** vertical field of view, degrees */
+  /** vertical field of view, degrees, before the lens narrows */
   readonly fovYDeg: number;
+  /** vertical field of view at the end, degrees */
+  readonly fovYEndDeg: number;
   /** final heading, degrees clockwise from north */
   readonly headingDeg: number;
   /** final pitch, degrees above level */
@@ -62,17 +67,13 @@ export interface Look {
 }
 
 export const LOOKS = {
-  /** 16:9: a 58° horizontal field; the Earth just right of the headline's box, the Sun at the right */
-  desktop: { fovYDeg: 34.64, headingDeg: 326, pitchEndDeg: 3.5, startAltM: 5.6e6 },
-  /** 9:16: a 23° horizontal field, the Earth upper centre; the Sun lights from the right, out of frame */
-  phone: { fovYDeg: 40, headingDeg: 325.5, pitchEndDeg: 5.0, startAltM: 9.0e6 },
+  /** 16:9: a 58° horizontal field narrowing to 27°; the Earth (1.8°) top centre, right of the headline's box */
+  desktop: { fovYDeg: 34.64, fovYEndDeg: 15.36, headingDeg: 324.5, pitchEndDeg: 0.8, startAltM: 5.6e6 },
+  /** 9:16: a 23° horizontal field narrowing to 9°; the Earth centred near the top */
+  phone: { fovYDeg: 40, fovYEndDeg: 15.9, headingDeg: 324.7, pitchEndDeg: 1.0, startAltM: 9.0e6 },
 } as const satisfies Record<string, Look>;
 
-export interface Shot {
-  readonly eye: V3;
-  readonly forward: V3;
-  readonly up: V3;
-  readonly fovY: number;
+export interface Shot extends SceneShot {
   /** metres over the target's ground */
   readonly altitude: number;
   /** the aim's elevation over the camera's local level, degrees */
@@ -152,9 +153,30 @@ function pitchAt(s: number, look: Look): number {
   return look.pitchEndDeg + (top - look.pitchEndDeg) * smoother(x ** 1.14);
 }
 
+/** The vertical field of view (radians) as a function of ln(altitude). */
+function lensAt(s: number, look: Look): number {
+  const x = clamp01((Math.log(2000) - s) / (Math.log(2000) - Math.log(END_ALT_M)));
+  const k = smoother(x);
+  const t0 = Math.log(Math.tan((look.fovYDeg * DEG) / 2));
+  const t1 = Math.log(Math.tan((look.fovYEndDeg * DEG) / 2));
+  return 2 * Math.atan(Math.exp(t0 + (t1 - t0) * k));
+}
+
+/**
+ * The last two seconds run on a warped clock, x + x^3 - x^4 of the time in
+ * them: it meets the real clock smoothly at 12 s and stops with no speed and
+ * no deceleration left at 14 s, so the hold begins without a jolt.
+ */
+function settled(t: number): number {
+  const from = DESCENT_S - 2;
+  if (t <= from) return t;
+  const x = Math.min(1, (t - from) / 2);
+  return from + 2 * (x + x ** 3 - x ** 4);
+}
+
 /** The camera at time t (seconds from the first frame) for one look. */
 export function shotAt(frame: Frame, t: number, look: Look): Shot {
-  const a = altitudeAt(t, look);
+  const a = altitudeAt(settled(t), look);
   const s = Math.log(a);
   const ground = frame.radiusM + frame.groundM;
   const h = headingVector(look.headingDeg);
@@ -176,19 +198,5 @@ export function shotAt(frame: Frame, t: number, look: Look): Shot {
   const hint = add(scale(h, -Math.sin(pitch * DEG)), scale(up, Math.cos(pitch * DEG)));
   const side = norm(cross(forward, hint));
   const aimDeg = Math.asin(dot(forward, norm(sub(eye, frame.centre)))) / DEG;
-  return { eye, forward, up: cross(side, forward), fovY: look.fovYDeg * DEG, altitude: a, pitchDeg: aimDeg };
-}
-
-/**
- * Where a world direction lands on the screen of a shot: x and y as shares
- * of the width and height from the top left, or null behind the camera.
- */
-export function project(shot: Shot, d: V3, aspect: number): { x: number; y: number } | null {
-  const f = shot.forward;
-  const r = norm(cross(f, shot.up));
-  const z = dot(d, f);
-  if (z <= 0) return null;
-  const ty = Math.tan(shot.fovY / 2);
-  const tx = ty * aspect;
-  return { x: 0.5 + (0.5 * dot(d, r)) / z / tx, y: 0.5 - (0.5 * dot(d, shot.up)) / z / ty };
+  return { eye, forward, up: cross(side, forward), fovY: lensAt(s, look), altitude: a, pitchDeg: aimDeg };
 }

@@ -30,8 +30,8 @@
  * (55-65 % desktop, 60-65 % phone), markers where the Sun and the Earth
  * project, and the camera's time, altitude and pitch.
  */
-import { norm, sub, type Frame } from "./frame.ts";
-import { project, type Shot } from "./path.ts";
+import { norm, project, sub, type Frame } from "../../moon-scene/scene/frame.ts";
+import type { Shot } from "./path.ts";
 
 const box = (left: number, top: number, width: number, height: number, colour: string) => ({
   position: "absolute" as const,

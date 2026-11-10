@@ -48,6 +48,19 @@ export interface Draw {
   readonly triangles: number;
 }
 
+/**
+ * What `renderer` draws from now on, read after the render: three resets its
+ * counts at each render, unless the dev tools turned that off to add them up.
+ */
+function countsSince(renderer: WebGLRenderer): () => Draw {
+  const { info } = renderer;
+  const was = info.autoReset === false
+    ? { calls: info.render.calls, triangles: info.render.triangles }
+    : { calls: 0, triangles: 0 };
+  return () => ({ calls: info.render.calls - was.calls,
+    triangles: info.render.triangles - was.triangles });
+}
+
 /** Calls `onDraw` after each of `renderer`'s renders; returns the undo. */
 export function wrapRender(
   renderer: WebGLRenderer,
@@ -60,10 +73,11 @@ export function wrapRender(
     frame = null;
   };
   renderer.render = (scene, camera) => {
+    const counted = countsSince(renderer);
     render.call(renderer, scene, camera);
     // A lost context draws nothing: three returns at once.
     if (renderer.getContext().isContextLost()) return;
-    const { calls, triangles } = renderer.info.render;
+    const { calls, triangles } = counted();
     if (!frame) queueMicrotask(close);
     frame = { calls: (frame?.calls ?? 0) + calls,
       triangles: (frame?.triangles ?? 0) + triangles };

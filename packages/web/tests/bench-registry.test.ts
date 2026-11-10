@@ -79,6 +79,21 @@ describe('the registry', () => {
     expect(registry.drain().draws).toEqual([{ calls: 6, triangles: 1800 }]);
   });
 
+  it('takes each render\'s own counts when the dev tools add them up across renders (VENT-118)', async () => {
+    const registry = createRegistry();
+    const fake = fakeRenderer(900);
+    const info = (fake.renderer as unknown as { info: { autoReset: boolean; render: { calls: number; triangles: number } } }).info;
+    info.autoReset = false;
+    fake.renderer.render = function render() {
+      info.render = { calls: info.render.calls + 3, triangles: info.render.triangles + 900 };
+    } as never;
+    registry.attach({ renderer: fake.renderer, kind: 'onFoot' });
+    fake.renderer.render({} as never, {} as never);
+    fake.renderer.render({} as never, {} as never);
+    await Promise.resolve();
+    expect(registry.drain().draws).toEqual([{ calls: 6, triangles: 1800 }]);
+  });
+
   it('counts a context loss, but not the one the benchmark caused, nor a render on a lost context', () => {
     const registry = createRegistry();
     const [globe, view] = [fakeRenderer(10), fakeRenderer(20)];

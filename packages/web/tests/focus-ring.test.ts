@@ -51,11 +51,9 @@ function ringColour(body: string): string | undefined {
 }
 
 describe('the focus tokens', () => {
-  it('ring in the text colour on the page and in the markers\' white on the Moon, in both themes', () => {
-    for (const theme of [[], ['prefers-color-scheme: light']]) {
-      expect(rootToken('--focus-ring', theme)).toBe('var(--text)');
-      expect(rootToken('--focus-ring-on-moon', theme)).toBe('var(--marker)');
-    }
+  it('ring in the text colour on the page and in the markers\' white on the Moon', () => {
+    expect(rootToken('--focus-ring', [])).toBe('var(--text)');
+    expect(rootToken('--focus-ring-on-moon', [])).toBe('var(--marker)');
   });
 });
 

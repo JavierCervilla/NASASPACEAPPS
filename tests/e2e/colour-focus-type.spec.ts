@@ -25,8 +25,9 @@
 
 /**
  * Colour, focus and type in the browser (VENT-55, findings C-08, C-09, C-11 and C-12 of VENT-53): the focus ring is
- * the text colour on the page's surfaces in both themes, small text tracks a little looser and large text tighter,
- * the light theme with reduced transparency keeps the pin hint readable, and more contrast makes the chrome opaque.
+ * the text colour on the page's surfaces whatever the system theme, small text tracks a little looser and large text
+ * tighter, reduced transparency keeps the pin hint readable, and more contrast makes the chrome opaque. The app is
+ * always dark (VENT-113): a light system changes nothing.
  * Screenshots go to E2E_SHOTS when it is set.
  */
 import { expect, test, type Locator, type Page } from '@playwright/test';
@@ -96,7 +97,7 @@ test.describe('desktop, 1440x900', () => {
   test.use({ viewport: { width: 1440, height: 900 } });
 
   for (const scheme of ['dark', 'light'] as const) {
-    test(`the focus ring is the text colour on the page's surfaces (${scheme})`, async ({ page }) => {
+    test(`the focus ring is the text colour on the page's surfaces (${scheme} system)`, async ({ page }) => {
       await page.emulateMedia({ colorScheme: scheme });
       await open(page, 500);
       const controls = [
@@ -126,16 +127,32 @@ test.describe('desktop, 1440x900', () => {
     }
   });
 
-  test('the light theme with reduced transparency keeps the pin hint on the opaque light surface', async ({ page }) => {
+  test('a light system leaves the app dark: the page, its colour scheme and the browser\'s theme colour', async ({ page }) => {
+    await page.emulateMedia({ colorScheme: 'light' });
+    await open(page);
+    const root = await page.evaluate(() => ({
+      scheme: getComputedStyle(document.documentElement).colorScheme,
+      bg: getComputedStyle(document.body).backgroundColor,
+      text: getComputedStyle(document.body).color,
+    }));
+    expect(root).toEqual({ scheme: 'dark', bg: 'rgb(7, 8, 11)', text: 'rgb(242, 242, 244)' });
+    const themes = page.locator('meta[name="theme-color"]');
+    await expect(themes).toHaveCount(1);
+    await expect(themes).toHaveAttribute('content', '#07080b');
+    expect(await themes.getAttribute('media')).toBeNull();
+    await shoot(page, 'light-system-stays-dark');
+  });
+
+  test('a light system with reduced transparency keeps the pin hint on the opaque dark surface', async ({ page }) => {
     await page.emulateMedia({ colorScheme: 'light' });
     await reduceTransparency(page);
     await open(page);
     const hint = page.locator('.pin-hint').first();
     await expect(hint).toBeVisible();
     const look = await hint.evaluate((el) => ({ bg: getComputedStyle(el).backgroundColor, text: getComputedStyle(el).color }));
-    expect(look.bg).toBe('rgb(255, 255, 255)');
-    expect(look.text).toBe('rgb(28, 28, 30)');
-    await shoot(page, 'light-reduced-transparency');
+    expect(look.bg).toBe('rgb(21, 22, 27)');
+    expect(look.text).toBe('rgb(242, 242, 244)');
+    await shoot(page, 'light-system-reduced-transparency');
   });
 
   test('more contrast: the header is opaque and the language menu has its border', async ({ page }) => {
@@ -162,7 +179,7 @@ test.describe('phone, 390x844', () => {
   });
 
   for (const scheme of ['dark', 'light'] as const) {
-    test(`more contrast: the bar, the sheet and the tab bar are opaque (${scheme})`, async ({ page }) => {
+    test(`more contrast: the bar, the sheet and the tab bar are opaque (${scheme} system)`, async ({ page }) => {
       await page.emulateMedia({ colorScheme: scheme, contrast: 'more' });
       await open(page);
       await expect(page.locator('.summary__name')).toBeVisible();

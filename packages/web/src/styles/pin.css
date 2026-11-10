@@ -439,12 +439,6 @@
   }
 }
 
-@media (prefers-color-scheme: light) {
-  .pin-hint__close::before {
-    background: rgba(0, 0, 0, 0.06);
-  }
-}
-
 @media (prefers-reduced-motion: no-preference) {
   .pin__mark {
     animation: pin-drop 600ms var(--spring) both;

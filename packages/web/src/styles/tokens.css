@@ -68,7 +68,7 @@
   --card-skeleton: #23252c;
   /* The polar map's panel, darker than the sky so the disk stands out. */
   --map-panel: #0c0d11;
-  /* Words beside the disk: the panel stays dark in both themes (VENT-52). */
+  /* Words beside the disk: the panel stays dark (VENT-52). */
   --polar-label: #9a9ca6;
 
   /*
@@ -92,7 +92,7 @@
   --glass-liquid-scrim-feather: 4px;
 
   /*
-   * The lunar sky stays black in both themes, and the site markers drawn on
+   * The lunar sky stays black, and the site markers drawn on
    * the Moon stay light: they sit on the globe, not on the page.
    */
   --sky: radial-gradient(120% 90% at 50% 40%, #11131a 0%, #07080b 70%);
@@ -100,7 +100,7 @@
 
   /*
    * The globe's orientation references (VENT-50): a faint grid on the Moon,
-   * never a signal colour, and the same in both themes (the globe stays
+   * never a signal colour, and fixed (the globe stays
    * dark). The line is drawn in the scene (src/globe/graticule/scene.ts reads
    * these two); the labels and the pole cross are HTML (styles/orientation.css).
    * The label is white (the human's choice over grey text on a darker chip)
@@ -120,12 +120,11 @@
   --signal-earth: #4a9cff;
   --signal-window: #3ddc84;
   --signal-none: #3a3c44;
-  /* Text on a «neither» bar, which stays dark in both themes. */
+  /* Text on a «neither» bar, which stays dark. */
   --on-signal-none: #e5e5ea;
   /*
    * The same three meanings as text on the phone's glass cards: as bright
-   * as the dots on dark, deeper on the light glass for contrast (validated
-   * canvas «Phone · globe (light)»).
+   * as the dots on the dark glass.
    */
   --signal-sun-ink: #f5c542;
   --signal-earth-ink: #4a9cff;
@@ -133,7 +132,7 @@
 
   /*
    * The DSN (VENT-7): never one of the four signal colours, so it reads as
-   * its own thing. The Earth stays dark in both themes, a body in space
+   * its own thing. The Earth stays dark, a body in space
    * like the Moon; the antenna listening is white with a soft glow.
    */
   --dsn-earth-ocean: #1a1d24;
@@ -169,9 +168,8 @@
   --dur-fade: 200ms;
 
   /*
-   * The focus ring (VENT-55): the text colour on the page's surfaces, so it
-   * is dark on light glass and light on dark; the markers' white only on
-   * the Moon and its sky, which stay dark in both themes.
+   * The focus ring (VENT-55): the text colour on the page's surfaces; the
+   * markers' white only on the Moon and its sky.
    */
   --focus-ring: var(--text);
   --focus-ring-on-moon: var(--marker);
@@ -212,51 +210,6 @@
   --radius: 1rem;
 }
 
-/* Light mode follows the device setting (validated canvas «Globe view · light»). */
-@media (prefers-color-scheme: light) {
-  :root {
-    color-scheme: light;
-
-    --bg: #f2f2f7;
-    --surface: rgba(255, 255, 255, 0.86);
-    --surface-edge: rgba(0, 0, 0, 0.08);
-    --text: #1c1c1e;
-    /* 4.9:1 on the legend glass over the darkest sky (#6c6c70 gave 3.8:1). */
-    --text-muted: #5c5c60;
-    --text-secondary: #3a3a3c;
-
-    --chrome: rgba(242, 242, 247, 0.78);
-    --fill: rgba(120, 120, 128, 0.12);
-    --segment-on: #ffffff;
-    --segment-shadow: 0 1px 3px rgba(0, 0, 0, 0.12);
-    --glass-label: rgba(255, 255, 255, 0.86);
-    --glass-label-edge: rgba(0, 0, 0, 0.08);
-    --glass-label-text: #1c1c1e;
-    --strip: #ffffff;
-    --strip-edge: 0 8px 30px rgba(0, 0, 0, 0.12);
-    --card: #ffffff;
-    --card-skeleton: #e5e5ea;
-    --glass-liquid-tint: rgba(255, 255, 255, 0.74);
-    --glass-liquid-rim: inset 0 1px 0 rgba(255, 255, 255, 0.95),
-      inset 0 0 0 1px rgba(0, 0, 0, 0.08);
-    --glass-liquid-scrim: rgba(255, 255, 255, 0.84);
-
-    --sky: radial-gradient(120% 90% at 50% 40%, #151821 0%, #07080b 70%);
-    --marker: #ffffff;
-
-    --dsn-band-track: rgba(0, 0, 0, 0.06);
-    --dsn-band-above: rgba(28, 28, 30, 0.2);
-    --dsn-band-active: #1c1c1e;
-    --dsn-playhead: #1c1c1e;
-    --dsn-on-playhead: #ffffff;
-
-    --signal-sun-ink: #9a5a00;
-    --signal-earth-ink: #0062cc;
-    /* 5.1:1 on the white card (#248a3d gave 4.4:1, QA H3). */
-    --signal-window-ink: #1f7f37;
-  }
-}
-
 /* Phones: what floats over the Moon takes the phone bar's glass (phone.css). */
 @media (max-width: 767.98px) {
   :root {
@@ -286,23 +239,5 @@
     --surface: #15161b;
     --chrome: #101116;
     --glass-label: #2e3036;
-  }
-}
-
-@media (prefers-color-scheme: light) and (prefers-contrast: more) {
-  :root {
-    --surface: #ffffff;
-    --surface-edge: rgba(0, 0, 0, 0.6);
-    --text-muted: #3a3a3c;
-    --chrome: #f2f2f7;
-    --glass-label: #ffffff;
-  }
-}
-
-@media (prefers-color-scheme: light) and (prefers-reduced-transparency: reduce) {
-  :root {
-    --surface: #ffffff;
-    --chrome: #f2f2f7;
-    --glass-label: #ffffff;
   }
 }

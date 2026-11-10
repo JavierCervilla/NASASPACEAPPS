@@ -38,38 +38,45 @@ function block(css: string, marker: string): Record<string, string> {
   return Object.fromEntries([...body.matchAll(/(--[\w-]+):\s*([^;]+);/g)].map((m) => [m[1], m[2]?.trim()]));
 }
 
-describe('light-mode label contrast on the phone cards', () => {
-  const light = block(TOKENS, '@media (prefers-color-scheme: light) {');
-  const card = block(PHONE, '@media (prefers-color-scheme: light) {')['--phone-card'] ?? '';
+/** A token's colour, following one `var(--x)` to the token it names. */
+function resolved(tokens: Record<string, string>, value: string): string {
+  const ref = /^var\((--[\w-]+)\)$/.exec(value)?.[1];
+  return ref ? tokens[ref] ?? '' : value;
+}
 
-  it('reads the card as white', () => {
-    expect(card).toBe('#ffffff');
+// VENT-113: the app is always dark, so the dark theme is the only one to hold.
+describe('label contrast on the phone cards', () => {
+  const dark = block(TOKENS, ':root {');
+  const card = block(PHONE, ':root {')['--phone-card'] ?? '';
+
+  it('reads the card as dark', () => {
+    expect(card).toBe('#1f2027');
   });
 
   // 12 px labels are small text: WCAG AA asks 4.5:1.
   it.each(['--signal-window-ink', '--signal-sun-ink', '--signal-earth-ink', '--text-muted'])('%s reaches 4.5:1 on the card', (token) => {
-    const colour = light[token] ?? '';
+    const colour = dark[token] ?? '';
     expect(colour).toMatch(/^#[0-9a-f]{6}$/i);
     expect(contrast(colour, card)).toBeGreaterThanOrEqual(4.5);
   });
 });
 
-describe('light-mode signal words on the phone top bar (VENT-33)', () => {
-  const light = block(TOKENS, '@media (prefers-color-scheme: light) {');
-  const phone = block(PHONE, '@media (prefers-color-scheme: light) {');
+describe('signal words on the phone top bar (VENT-33)', () => {
+  const dark = block(TOKENS, ':root {');
+  const phone = block(PHONE, ':root {');
   // The worst case: the bar's glass over the black sky at the screen's top, and the site pill's fill on it.
   const SKY = '#07080b';
   const bar = over(phone['--phone-bar'] ?? '', SKY);
-  const pill = over(light['--fill'] ?? '', bar);
+  const pill = over(dark['--fill'] ?? '', bar);
 
   it.each(['--bar-sun-ink', '--bar-earth-ink', '--bar-window-ink'])('%s reaches 4.5:1 on the bar and in the pill', (token) => {
-    const colour = phone[token] ?? '';
+    const colour = resolved(dark, phone[token] ?? '');
     expect(colour).toMatch(/^#[0-9a-f]{6}$/i);
     expect(contrast(colour, bar)).toBeGreaterThanOrEqual(4.5);
     expect(contrast(colour, pill)).toBeGreaterThanOrEqual(4.5);
   });
 
   it('keeps the rule\'s «+» and «=» and a plain state line, in the secondary text, at 4.5:1 in the pill', () => {
-    expect(contrast(light['--text-secondary'] ?? '', pill)).toBeGreaterThanOrEqual(4.5);
+    expect(contrast(dark['--text-secondary'] ?? '', pill)).toBeGreaterThanOrEqual(4.5);
   });
 });

@@ -25,7 +25,7 @@
 
 /*
  * The on-foot 3D view (VENT-34): loaded with its panel, never in the
- * first load. Space is dark in both themes; the controls are floating
+ * first load. Space is dark; the controls are floating
  * glass over it, 44 px targets; never a signal colour.
  */
 .on-foot {
@@ -177,7 +177,7 @@
 /*
  * The lunar night's notice (VENT-100): a row in the notices' look
  * (update.css `notice-row__*`, VENT-57) in the view's own dark material,
- * since the view is dark in both themes. On a phone it stacks over the
+ * since the view is dark. On a phone it stacks over the
  * caption in the free band (`.on-foot__top` above) and wraps rather than
  * leave the screen.
  */
@@ -261,7 +261,7 @@
 
 /*
  * «Try again» is the secondary button (controls.css, VENT-57); the view
- * is dark in both themes, so it takes the dark theme's fill.
+ * is dark, so it takes the dark fill.
  */
 .on-foot .on-foot__retry {
   background: rgba(120, 120, 128, 0.24);

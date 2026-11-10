@@ -1,9 +1,10 @@
 # Roadmap · Ventana Lunar
 
-Lienzo vivo, al día con el Dashboard: https://claude.ai/artifact/Sm8QoCwg7DqLbuCSHLPfBg
+Lienzo vivo, al día con el Dashboard: https://claude.ai/artifact/7gKDZj5noEJEHH9GR3jcZG
 
 NASA Space Apps Challenge 2026, Madrid, sábado 14 y domingo 15 de noviembre. Épica `VENT-1`. La especificación
-completa está en el documento «Ventana Lunar · Especificación y roadmap».
+completa está en el documento «Ventana Lunar · Especificación y roadmap»
+(https://claude.ai/artifact/Wpc59GLJyXQvKNgxesvfan).
 
 ## Preparación
 
@@ -13,11 +14,12 @@ completa está en el documento «Ventana Lunar · Especificación y roadmap».
 - [x] App en Dokploy con dominio y el «hola mundo» publicado en https://nasa.cervilla.es
 - [x] Dominio principal https://nasa.universelle.io; nasa.cervilla.es sigue sirviendo la misma app (VENT-76)
 - [ ] CI en el pool de runners: PAT del pool con el repo y redespliegue del compose `github-runner`
-- [ ] Registrar al equipo en spaceappschallenge.org (Madrid, reto Lunar Landing Site Navigator)
+- [x] Registrar al equipo en spaceappschallenge.org (Madrid, reto Lunar Landing Site Navigator): equipo Universelle
 - [x] Leer el enunciado oficial (29 oct): el reto es «Lunar Landing Site Navigator»
-- [ ] Pestaña Resources: vacía a 29 oct; NASA dice que añadirá recursos antes del hackathon
-- [ ] Petición de prueba a JPL Horizons (cualquier objeto) para entender el formato
-- [ ] Borrador del pitch y guion del vídeo (70 palabras)
+- [x] Pestaña Resources: cerrado; los sitios y los datos salen de fuentes publicadas, citadas en `ASSETS.md`
+- [x] Petición de prueba a JPL Horizons para entender el formato: la API lo consulta desde VENT-3
+- [x] Pitch y guion del vídeo de 30 s, con los textos del formulario, en el documento de entrega
+  (https://claude.ai/artifact/7jzMVScGpGb4FLvWBUVJ6Y)
 - [x] Textura LRO WAC 2K (y 1K para equipos modestos) en el repo, con su fuente y su sha256 en `ASSETS.md` (VENT-6)
 
 ## MVP
@@ -31,7 +33,7 @@ completa está en el documento «Ventana Lunar · Especificación y roadmap».
   (VENT-29); retirada en VENT-33: el estado va en la píldora del sitio y la vista del terreno en la hoja y en la ficha
 - [x] Web en cinco idiomas (inglés, español, francés, alemán e italiano) con su dirección cada uno, selector en la
   cabecera y en el panel de sitios, y protección para que todo texto nuevo nazca traducible (VENT-35)
-- [ ] Revisión de las traducciones por personas nativas antes del 13 de noviembre (VENT-35)
+- [x] Revisión de las traducciones: Javier da por buenas las de Claude (10 nov, VENT-35)
 - [x] Cálculo propio del Sol, la Tierra y la antena DSN en el simulador, validado contra Horizons; la web lo enseña al
   instante y un conmutador «Computed | Horizons | Compare» permite compararlos (VENT-36)
 - [x] Sitios aproximados en sombra permanente según los mapas de NASA: nota en la ficha y en la hoja, y el Sol nunca
@@ -95,8 +97,9 @@ completa está en el documento «Ventana Lunar · Especificación y roadmap».
 - [x] El color del suelo de la vista 3D también en KTX2: 44 kB más de red por 4,9 MB menos de GPU (VENT-102)
 - [ ] Probar la vista 3D en móviles reales en la nube (PowerVR, Adreno, Mali) y recuperar las sombras en PowerVR con
   reverse-Z (VENT-77, aparcado)
-- [ ] Variante C del cargador, el descenso, en equipos potentes (VENT-61)
-- [ ] Comparador de sitios o exportar a .ics (VENT-8)
+- [ ] Variante C del cargador, el descenso, en equipos potentes: un vídeo de descenso por sitio (VENT-61)
+- [ ] Comparador de sitios o exportar a .ics (VENT-8, aparcado hasta después del envío)
 - [x] Portada explicativa en la raíz, en cinco idiomas, con la respuesta en vivo de IM-2 y la franja del mes; la app
   pasa a `/app` (VENT-109)
+- [x] La app siempre oscura, como la portada, y el equipo Universelle en la portada (VENT-113)
 - [ ] Página del proyecto en spaceappschallenge.org, vídeo de 30 s y pitch; envío antes de las 20:00 (VENT-9)

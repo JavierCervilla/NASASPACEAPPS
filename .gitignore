@@ -11,3 +11,7 @@ __pycache__/
 # © MotionSites: downloaded with scripts/motionsites-library.sh, not redistributed (see .claude/skills/NOTICE.md).
 .claude/skills/motionsites-web-builder/examples/
 .claude/skills/motionsites-web-builder/media/
+
+# Demo video: footage, frames and renders, rebuilt by video/demo/README.md
+video/demo/media/
+video/demo/out/

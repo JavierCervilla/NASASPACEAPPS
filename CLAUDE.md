@@ -10,8 +10,43 @@ epic: `VENT-1` (Dashboard project «Ventana Lunar», prefix `VENT`).
 
 ## Stack
 
-- **Monorepo** (npm workspaces, layout of GAMESTUDIO's Web starter): `packages/web`, `packages/sim` and
-  `packages/server`. Web and server import the same `@ventana/sim` and its data contract types.
+- **Monorepo** (npm workspaces, layout of GAMESTUDIO's Web starter): `packages/web`, `packages/landing`,
+  `packages/sim` and `packages/server`. Web, landing and server import the same `@ventana/sim` and its data contract
+  types.
+- **Landing** (`packages/landing`, VENT-109, canvas option A with option B's month strip, the human's verdict): the
+  explanatory page at the domain's root, `/`, `/es/`, `/fr/`, `/de/`, `/it/`; the app lives under `/app`. Astro static,
+  no React, no Three.js: one module script (`src/live/boot.ts`) and one stylesheet per part. The hero asks the question
+  («Sun for power. Earth for a voice.») over a film (VENT-116; RAEA's render, VENT-112, hero «B»): a descent from orbit to 2 m over IM-2 Athena
+  that ends on the horizon with the Earth high in a black sky (RAEA render of LOLA and Blue Marble, `public/media/hero/`,
+  `ASSETS.md`), full-bleed behind the words, scrims only where they sit (held to 4.5:1 over the start frame and the still by the e2e), the layout driven by
+  where the end frame puts the Earth (`--film-focus`, `--earth-x`, `--earth-top`, `--earth-bottom` in `styles/hero.css`, render p3); on desktop the
+  copy in the left column over the sky and the card bottom right over the ground, on the phone cut (`PHONE_QUERY`, ≤ 820
+  px or portrait) the headline in the sky over the Earth, the lede and buttons under it, and the card on the ground with
+  its head above the fold at 390 x 844. It starts on the descent's first
+  frame (`-start.webp`, preloaded for the cut only under `prefers-reduced-motion: no-preference`), so the descent
+  fades in over the same picture; the still, its last frame and the hold's first (`-poster.webp`), is taken by the
+  `<picture>`'s sources under reduced motion with no script and no start frame fetched, put in by `film-still.ts`
+  after a refused play(), and under Save-Data it is what nginx answers for the start frame (`Save-Data: on`, `Vary:
+  Save-Data`), so the page asks for one picture and leaves it (VENT-118); `src/hero/` (`film-plan.ts` pure, `film-player.ts` over fakeable videos,
+  `film-dom.ts`, `film-still.ts`, `shown-watch.ts`, `film-boot.ts`) picks the cut once, gives the videos their AV1 then H.264 sources
+  only then, plays the 14 s descent muted and inline, and when it ends plays the preloaded 7 s hold on a loop, shown
+  only once it plays so the shared frame covers the swap; paused off screen or with the page hidden; a refused play()
+  shows the still. Under reduced motion or Save-Data no video is requested. A credit line at its foot names the
+  sources. The hero also holds a live card for IM-2 Athena: Sun and Earth over its LOLA horizon, the window and how long
+  it lasts, and the DSN complex listening, from `computedHours`, `terrainHours` and `dsnOutlook` (`src/live/answer.ts`,
+  `card-text.ts`). The page is built with the build's instant, so it reads without JavaScript, and the browser works it
+  out again for the visitor's instant and every minute while shown. «How it works» ends with the month strip of the
+  visitor's UTC month (`src/live/month.ts`, runs placed through the CSSOM). Then the science in four figures, a tour of
+  four of the app's own views (`scripts/tour-shots.mjs`, at 22 Nov 2026 20:00 UTC) and the team, challenge and video:
+  RAEA's demo video (VENT-110) in the team section, the 68 s cut in a `<video controls preload="none">` with its poster,
+  so nothing of it loads until it is played, and a link to the 30 s cut, the Space Apps submission's, at
+  `/media/demo/ventana-lunar-30s.mp4` (VENT-120; re-encoded, ASSETS.md).
+  Every word in `src/i18n/messages/<locale>.json` (typed from `en.json`, the same lint rule as the app); its signal
+  colours are the app's tokens, held equal by `tests/catalogues.test.ts`. Always dark. An old link to one of the app's
+  views by hash (`/#horizon`) is sent on to `/app/#horizon` by the page (`src/live/app-hash.ts`), since the hash never
+  reaches nginx. Its own `/sw.js` retires the worker the app registered at the root before the move (unregisters, deletes
+  no cache). Held by `packages/landing/tests/` and `tests/e2e/landing.spec.ts` (Playwright project `landing`, its own
+  preview one port above the app's, under the production CSP).
 - **Web** (`packages/web`): Astro 7 (static output) + React 19 islands + TypeScript (strictest). Three.js joins with
   the globe (luxury 1). No login and no user accounts.
 - **Sim** (`packages/sim`): pure TypeScript, no network, disk or DOM: the site data contract and the
@@ -79,13 +114,18 @@ epic: `VENT-1` (Dashboard project «Ventana Lunar», prefix `VENT`).
   the route answers 503 «terrain data is not installed», which the web shows as «Real terrain not installed on the
   server yet». The image's entrypoint gives the mounted volumes' top directories to `node` and drops to it with
   `su-exec`, so a root-owned volume works.
-- **Deploy**: Dokploy builds the `Dockerfile` (static build served by nginx, `nginx.conf`) from `main`, at the domain
-  root (`SITE_BASE` sets a sub-path if ever needed). The primary domain is **https://nasa.universelle.io** (VENT-76);
+- **Deploy**: Dokploy builds the `Dockerfile` (static build served by nginx, `nginx.conf`) from `main`: the landing at
+  the domain's root and the app under `/app` (`SITE_BASE=/app`, VENT-109; CI builds and runs the e2e the same way). The
+  API stays at the domain's root, `/api`, whatever the app's base: the app names it from `src/lib/api-path.ts`, and its
+  service worker treats any same-origin `/api/` request as the API's (`sw-routes.ts`). A landing page whose query
+  carries the app's place (`?site=`, `?lat`) is redirected by nginx to the same path under `/app` (302, relative:
+  `absolute_redirect off`). One CSP is computed over both builds' pages. The primary domain is **https://nasa.universelle.io** (VENT-76);
   https://nasa.cervilla.es serves the same app as a second domain. The image builds with `SITE_URL` set to the primary
   domain (`ARG` in the `Dockerfile`), so every page's `rel="canonical"` and `hreflang` links are absolute to it
   (`canonicalHref`, `alternates` in `src/i18n/routes.ts`); the API answers on both hosts under `/api`. nginx's cache
-  policy (`nginx.conf`, held by `packages/web/tests/nginx-conf.test.ts`): `/_astro/` is fingerprinted, a year and
-  `immutable`; `/textures/`, `/thumbs/` and `/icons/` (the phase frames too) are not, so a day (`max-age=86400`) and then
+  policy (`nginx.conf`, held by `packages/web/tests/nginx-conf.test.ts`; each location matches the root and `/app/`):
+  `_astro/` is fingerprinted, a year and `immutable`; `textures/`, `thumbs/`, `icons/` (the phase frames too) and the
+  landing's `/media/` are not, so a day (`max-age=86400`) and then
   revalidate, never `immutable` (VENT-96); `sw.js` and the manifests `no-cache`; every location re-includes the security
   headers, since an `add_header` in a location drops the ones above it. The API's `GET /api/v1/sites` is
   `public, max-age=300` with an ETag of the list's content and a 304 on a match (`src/sites-route.ts`, VENT-96): the
@@ -97,7 +137,8 @@ epic: `VENT-1` (Dashboard project «Ventana Lunar», prefix `VENT`).
 Every visible change follows `.claude/skills/apple-design/SKILL.md` (vendored from `emilkowalski/skills`, MIT; see
 `.claude/skills/NOTICE.md`). Load it before touching UI. Project-specific rules from the spec on top of it:
 
-- Dark by default (near-black background). One screen, no menus: the jury must understand it in five seconds.
+- Always dark (near-black background), whatever the system theme (VENT-113: the light theme was removed; the landing
+  is dark too). One screen, no menus: the jury must understand it in five seconds.
 - Four signal colours with fixed meaning, from `packages/web/src/styles/tokens.css`, and an always-visible legend: Sun
   (`--signal-sun`), Earth (`--signal-earth`), both = window (`--signal-window`), nothing (`--signal-none`). Never use
   them for decoration.
@@ -141,9 +182,9 @@ Every visible change follows `.claude/skills/apple-design/SKILL.md` (vendored fr
   below 768 px): the hint, the compass, the carried pin's readout, the desktop Layers key (which left the Liquid glass)
   and the notice rows. `styles/controls.css` holds one segmented control (the header's view tabs, the site picker's
   regions, «Computed | Horizons | Compare»: a `--fill` track 2 px around a 40 px mark, 44 px in all, radius 12/10, the
-  mark `--segment-on`, #636366 in dark and white with `--segment-shadow` in light, text in `--text`; the phone tab bar
+  mark `--segment-on`, #636366, text in `--text`; the phone tab bar
   keeps its own look) and one secondary button (`.card-retry`, the strip's and the widgets' retry,
-  `.source-note__retry`, `.on-foot__retry` with the dark theme's fill on the 3D view, `.now-button`: a grey pill fully
+  `.source-note__retry`, `.on-foot__retry` with the view's dark fill, `.now-button`: a grey pill fully
   rounded, 44 px, weight 600, no underline, dimmed text when disabled). «Saved» keeps «Save»'s grey pill, only its
   bookmark fills; Play is a grey circle like the month arrows. The notices are rows in the update row's look, sharing
   `update.css` (`.update-notice[data-shown]`, `.offline-notice[data-shown]`, `.undo-toast`, `.globe-load` and the
@@ -253,7 +294,7 @@ Every visible change follows `.claude/skills/apple-design/SKILL.md` (vendored fr
   `src/lib/view-tabs.ts`): the polar map is a south polar stereographic disk from 80° S
   (`src/lib/polar-projection.ts`, image from `scripts/moon_textures.py polar`). No card floats over the globe (VENT-33). On phones the
   top bar's subtitle is the legend's rule, «Sun + Earth = window», each word in its signal colour (`--bar-*-ink`,
-  deeper on the light bar for 4.5:1), and the site pill shows the short name over the state at the shared instant with
+  4.5:1 on the bar), and the site pill shows the short name over the state at the shared instant with
   its time left in its colour («Window · 7 d left», «Sun · …», «Earth · …», «Neither · …»; `src/phone/site-state.ts`;
   a long site name in the pill ends in an ellipsis first, since the bar keeps the pill its state's longest line
   (`--pill-need`, `src/components/phone/use-pill-room.ts`, VENT-55), then the titles wrap, then a narrow pill drops
@@ -467,7 +508,7 @@ Every visible change follows `.claude/skills/apple-design/SKILL.md` (vendored fr
   0.84 chip for grey): the least that keeps the text 4.5:1 over the brightest texel the Moon maps hold, which is white (the 2K, 4K and 8K LROC maps reach 255, 255, 255 and the Sun lights a
   texel at most 1.02 times, `tests/graticule-contrast.test.ts`). The globe's label rules in `orientation.css` are scoped under `.globe-graticule`; the bare `.graticule-label` belongs
   to the polar map (`polar.css`): unscoped, the globe's rules loaded later and piled the polar map's five labels in its
-  corner; on the panel, dark in both themes, they take `--polar-label` (4.5:1 in every theme and contrast,
+  corner; on the dark panel they take `--polar-label` (4.5:1 in either contrast setting,
   `tests/polar-label-contrast.test.ts`) (VENT-52, `tests/graticule-label-css.test.ts`, `tests/e2e/polar-graticule.spec.ts`). Held by
   `tests/globe-compass.test.ts`, `tests/globe-graticule.test.ts` and `tests/e2e/globe-orientation.spec.ts`.
 - **Sites in permanent shadow** (VENT-39, canvas option B, the human's decision). NASA's illumination maps (PGDA
@@ -518,7 +559,7 @@ Every visible change follows `.claude/skills/apple-design/SKILL.md` (vendored fr
   while a custom point's comes, «Smooth horizon» with «Real terrain unavailable here» under the compass when it cannot,
   «Smooth horizon» alone for a listed site north of 80° S. The SVG fills a box the component measures (`use-horizon.ts`), so nothing
   sets a style attribute (CSP); its text alternative says which way each body is, on eight points of the compass, and
-  whether the terrain hides it (`horizon-alt.ts`). Styles in `src/styles/horizon.css` (light theme and more contrast
+  whether the terrain hides it (`horizon-alt.ts`). Styles in `src/styles/horizon.css` (more contrast
   included). Held by `tests/e2e/horizon.spec.ts` (IM-2 on the ridge on 2026-11-30 20:00 UTC, Haworth's hidden Earth on
   2026-11-22 20:00 UTC, the pin with a stubbed `/api/v1/horizon`, the sheet's fit) and `tests/horizon-strip.test.ts`.
 - **DSN mode** (VENT-7, canvases «DsnA» and «DsnC», approved A + C, no DSN row in the calendar, «No link» first, to
@@ -555,7 +596,7 @@ Every visible change follows `.claude/skills/apple-design/SKILL.md` (vendored fr
   ring is not lost among the land dots (VENT-59), labels in HTML over it (so they follow the text size),
   each moved sideways to stay inside the picture (`src/dsn/label-shift.ts`, `components/dsn/use-label-fit.ts`, through
   a `--label-shift` property set in the CSSOM, so at 200 % text on a phone no label leaves the screen). Never the signal
-  colours: `--dsn-*` tokens; the Earth and the DSN view's panel stay dark in both themes. The month's figures add «Hours with DSN» (hours with any complex
+  colours: `--dsn-*` tokens; the Earth and the DSN view's panel are dark. The month's figures add «Hours with DSN» (hours with any complex
   listening, `card/month-facts.ts`).
 - **3D terrain view** (VENT-34, the human's verdict on the canvas): the «Horizon» header tab (`#horizon`,
   `src/lib/view-tabs.ts`) and the phone's Horizon tab (sheet at peek, the ground framed in the band between the top bar
@@ -610,8 +651,11 @@ Every visible change follows `.claude/skills/apple-design/SKILL.md` (vendored fr
   no headers or no next bytes, aborts it as a passing failure (`STALL_MS`, `ring/ring-silence.ts`, `ring-watched.ts`), and
   passing failures are tried again after 0.5, 1, 2 and 4 s, a longer Retry-After waited only up to 8 s (`TILE_RETRY`,
   `ring-http.ts`); once the tries run out a tile is a hole its parent fills; the tile route's full queue asks for 2 s
-  (`TILE_BUSY_RETRY_SEC`). Held by `tests/terrain-ring-waits.test.ts`. A depth buffer that is logarithmic (the rings reach 190 km, the sky bodies are drawn at 450 to 900 km so
-  terrain always hides them) keeps the 0.2 m near plane from z-fighting. The sky at the shared instant (`skyAt`): the Sun at its
+  (`TILE_BUSY_RETRY_SEC`). Held by `tests/terrain-ring-waits.test.ts`. The rings reach 190 km and the sky bodies are drawn at 450 to 900 km, so one linear 24-bit depth buffer cannot keep a 0.2 m
+  near plane; the view draws in **two passes of linear depth** on every GPU (VENT-114, `scene/depth-passes.ts`,
+  `scene/stage-draw.ts`; `depthChoice` in `depth-mode.ts` names it `split`, the default): the FAR pass (ring levels 2 and 3, the far horizon's wall and the sky: stars, Sun, Earth; planes 1 km to 1200 km, 2 m of depth resolution at 190 km) is drawn
+  first, then the depth buffer alone is cleared (`autoClearColor` off), then the NEAR pass (ring levels 0 and 1, the near ground, rocks, craters; planes 0.2 m to 15 km, which holds level 1's window whole, 11.3 km to its corner, with 9 km of relief to spare) is drawn over it with the Sun's shadow map, asked
+  between the passes by `stage.shadow.beforeDraw()` so only the near pass renders it (no far mesh casts or receives a shadow). Which pass an object is in is its three.js layer (`sendFar`, `farWhen`: the lights are on both, so both passes build the same programs; the camera's full 0.2 m to 1200 km planes are put back after the draw, for the labels and the bodies' marks). The near pass is painted whole over the far one, which is exact because the windows nest (a level draws where the finer one does not) and a ray leaves the nearer window once; a ring tile that failed at level 1 is a hole filled by level 2 in the far pass, which clips it under 1 km. `stage.drawing.cost()` sums both passes for `data-draws` and the crash report. The sky at the shared instant (`skyAt`): the Sun at its
   true size and direction is the key light, with hard shadows near the point (shadow map), per vertex over the near ground and, level by level, over
   each ring from a grid of its own (16, 64 and 256 km at 62.5 m to 1 km, `scene/ring-shade.ts`, in slices, no cast shadow beyond a grid's edge; distant rings are shaded by their normals, no haze: the Moon has no
   atmosphere) (`sun-shade.ts`), darkening the whole view when terrain beyond the near ground hides it (`ridge.ts` `blockerOf`,
@@ -677,12 +721,13 @@ Every visible change follows `.claude/skills/apple-design/SKILL.md` (vendored fr
   shows geometry (`shadow-jobs.ts` `castsShadow`: not the rings' `lit:` and `far` shading, nor the clod and crater bakes)),
   so turning the camera renders no shadow pass (`data-shadows` on the host counts the passes done, held by
   `tests/shadow-gate.test.ts` and `tests/e2e/vent-73-shadow-pass.spec.ts`); a path that adds a shadow caster outside the
-  slicer must call `stage.shadow.mark()`. A PowerVR GPU draws the view with no shadow map at every tier (VENT-75,
-  `src/terrain/shadow-safety.ts`, read from `unmaskedGpuName` in `stage.ts`), and so does a phone whose browser hides its GPU (no
+  slicer must call `stage.shadow.mark()`. On a PowerVR GPU the shadow map with a logarithmic or reversed single-pass depth lost the context (VENT-75), so with `?depth=log` or `?depth=reversed` the view still draws there with no shadow map at every tier
+  (`src/terrain/shadow-safety.ts`, read from `unmaskedGpuName` in `stage-renderer.ts`), and so does a phone whose browser hides its GPU (no
   `WEBGL_debug_renderer_info`: the Pixel 10 went unrecognised and lost both contexts in the bench, VENT-84; or a name
   that is no GPU's, not matching `KNOWN_GPU`: Brave answers «Brave», and the view lost its context after 9.8 s of turning
   at low, VENT-92; `tests/e2e/vent-84-hidden-gpu-shadows.spec.ts`): the human's bisect on the Pixel 10 kept the context
-  with the shadows or the logarithmic depth left out and lost it with both on, even at low; held by
+  with the shadows or the logarithmic depth left out and lost it with both on, even at low, and with a linear depth and the shadow map on it
+  ran a minute of turning at IM-2; the default split draw (linear in both passes) kept the shadow map there too (VENT-114), but in production a Pixel 10 lost its context after ten seconds of turning with it at a custom point (2026-11-10), so on PowerVR and hidden GPUs the split draw goes without the shadow map again and only an explicit `?depth=linear` keeps it; every other GPU keeps it ( `tests/e2e/vent-114-split-depth.spec.ts`: on IM-2's recorded relief at the high tier the skyline of `?depth=split` against `?depth=log` differs by a mean of under 0.2 of 255); held by
   `tests/shadow-safety.test.ts` and `tests/e2e/vent-75-powervr-shadows.spec.ts` (the GPU's name spoofed). The view's pixel ratio is `terrainPixelRatio` (`src/terrain/pixel-ratio.ts`: a phone
   at medium draws at 1.25 at most, the globe and the desktop keep the tier's cap, `tests/pixel-ratio.test.ts`). While a
   finger drags the view or its swipe coasts on a phone, frames are spaced to about 30 a second
@@ -853,8 +898,7 @@ Every visible change follows `.claude/skills/apple-design/SKILL.md` (vendored fr
   (`BenchFrame.tsx`, `BenchTable.tsx`); the first state and the results take the focus to their first button. Params: `benchRuns=1|3` presets the runs (3), `benchFast` scales the
   waits by 0.2 and the turn to 90° for software GL (the e2e). `?bench=depth` (VENT-104; any other value, or none, is
   the A/B suite above) is the depth suite, the bisect of VENT-103 played by itself on the phone (`src/bench/depth-*.ts`):
-  variants, in this order (VENT-107), `log` (the app) and `reversed` (`depth=reversed`, the shadow map as the app has
-  it), the comparison for reversed depth by default on PowerVR, then `reversed+shadows`, `linear+shadows` and
+  variants, in this order (VENT-107, VENT-114), `split` (the app: two linear passes with the shadow map), `log` (`depth=log`) and `reversed` (`depth=reversed`), both with the shadow map as the safety rules say, the comparison for the single-pass depth buffers on PowerVR, then `reversed+shadows`, `linear+shadows` and
   `log+shadows` (`shadows=force`), the known losses last, since a loss can make Chrome block WebGL for the site, each a clean page load whose
   address carries its switches (`runHref`; the results and «Close» drop them), one round by default (`benchRuns=3` for
   three); its script (`depth-script.ts`, `DEPTH_SCRIPT_VERSION`) opens `#horizon` at IM-2 and settles as step c does,
@@ -882,7 +926,7 @@ Every visible change follows `.claude/skills/apple-design/SKILL.md` (vendored fr
   a 20-minute budget (VENT-108).
   `?onfoot=shadows,far,shade,logdepth,photometry,antitile,footprint,fine,rocks` (`astronaut` and `lander` from before VENT-54 are ignored, so old links still open)
   leaves parts out to bisect a crash from a phone's address bar (`src/terrain/leave-out.ts`, unknown words ignored,
-  listed in `data-onfoot`, kept by the language switch like `?site=`). Point 8 of VENT-80 (VENT-103) adds two more for the Pixel's bisect (`src/terrain/depth-mode.ts`, applied by `scene/stage-renderer.ts`): `?depth=log|linear|reversed` picks the depth buffer (`reversed` is three's `reversedDepthBuffer`, only with `EXT_clip_control` from the page's probe, else the logarithmic one; `?onfoot=logdepth` still means linear, and `?depth=` wins), and `?shadows=force` draws the shadow map where `shadow-safety.ts` turns it off; the choice is in `data-depth` and the report notes «depth reversed · 24 bits · shadow map on (forced)», which `?debug` shows among its breadcrumbs (`tests/depth-mode.test.ts`, `tests/e2e/vent-103-depth-switch.spec.ts`). The API gzips its JSON
+  listed in `data-onfoot`, kept by the language switch like `?site=`). Point 8 of VENT-80 (VENT-103) adds two more for the Pixel's bisect (`src/terrain/depth-mode.ts`, applied by `scene/stage-renderer.ts`): `?depth=split|log|linear|reversed` picks the depth buffer (`split` is the default, two linear passes; `log`, `linear` and `reversed` draw one pass, as escape hatches; `reversed` is three's `reversedDepthBuffer`, only with `EXT_clip_control` from the page's probe, else the default split one; `?onfoot=logdepth` still means linear, and `?depth=` wins), and `?shadows=force` draws the shadow map where `shadow-safety.ts` turns it off; the choice is in `data-depth` and the report notes «depth reversed · 24 bits · shadow map on (forced)», which `?debug` shows among its breadcrumbs (`tests/depth-mode.test.ts`, `tests/e2e/vent-103-depth-switch.spec.ts`). The API gzips its JSON
   (`compress()` in `packages/server/src/app.ts`; base64 floats shrink about 26 %). Held by `tests/terrain-view.test.ts`,
   `tests/terrain-ring.test.ts`, `tests/view-tier.test.ts`, `tests/frame-probe.test.ts`, `tests/leave-out.test.ts`, `tests/relight.test.ts`, `tests/input-change.test.ts`, `tests/on-foot-report.test.ts`, `tests/on-foot-device.test.ts`, `tests/scene-guard.test.ts` and `tests/e2e/terrain-view.spec.ts` (the ring and tile routes answered by the simulator's own core over a synthetic polar grid, or by real LOLA tiles of IM-2 recorded from the production API at the 20 m tier (VENT-59), `fixtures/terrain-ring-im2/`: first person only, no camera switch, no `.glb` fetched, the caption naming no lander, no idle
   frames, the Sun drawn hidden behind a far wall, none of the view's files in the first load).
@@ -903,9 +947,25 @@ Every visible change follows `.claude/skills/apple-design/SKILL.md` (vendored fr
   line goes after it; the loader unmounts after `HANDOVER_MS` (1.2 s), then the caption shows and «Far relief · n of
   18 tiles» (`FarChip.tsx`, not a live region) until «Far relief · 32 and 128 km in», and goes. Reduced motion: plain
   fades. A failure keeps the skyline and the sky dimmed under the notice, its words centred in the ground when they
-  fit (`data-words`). The loader's picture is chosen in one place by the view's tier (`loader-picture.ts`: B→A on
-  every tier today). No WebGL and no new request; every move is a transform or an opacity. Held by
-  `tests/vent-60-loader.test.ts` and `tests/e2e/vent-60-loader.spec.ts`.
+  fit (`data-words`). The loader's picture is chosen in one place (`loader-picture.ts`): B→A, or the site's **descent
+  film** (VENT-117, VENT-61 variant C, the human's call: «one video per site») for the 11 curated sites south of 80° S
+  that have one (`FILM_SITES`, `site-films.ts`; never a custom or saved point) at the high or medium tier, without
+  reduced motion, Save-Data or `?bench` (`benchAsked`). The film (`LoaderFilm.tsx`, `film-element.ts`, `use-loader-film.ts`): 6 s from orbit to
+  the eye 2 m over the point, ending on the view's opening look at 15 Dec 2026 05:00 UTC (so the live sky and heading
+  may differ; the crossfade covers it), from `public/site-films/<site>-{wide,phone}.{av1,h264}.mp4` (the phone cut
+  under the phone breakpoint, as the scene's field of view), its `-start.webp` as the poster, muted, inline, no
+  controls, `aria-hidden`, `object-fit: cover` in the loader's band, under the loader's status line; paused while the
+  page is hidden; freed (sources removed, `load()`) when it goes. The hand-over (`film-gate.ts`) waits for both the
+  scene's first frame and the film's end: a scene drawn first waits for the end, a film ended first holds its last
+  frame; then the film fades out over 600 ms as the scene shows. A film that fails (every source refused, a decode
+  error, a refused `play()`) gives way to B→A at once, and one still playing 8 s (`FILM_GIVE_UP_MS`) after the scene
+  drew is given up. The caption, the compass and the far chip wait for the hand-over (`useLoaderProps` returns the
+  gated `drawn`). A new point restarts with its own film or B→A. The films are never precached nor kept by the service
+  worker (`sw-routes.ts` leaves `site-films/` to the browser: byte ranges; the build leaves them out of its digest);
+  nginx caches them a day. The e2e stub refuses them unless a spec lets them through (`stubApi(page, { films: true
+  })`). B→A itself makes no WebGL and no new request; every move is a transform or an opacity. Held by
+  `tests/vent-60-loader.test.ts`, `tests/vent-117-loader-film.test.ts`, `tests/e2e/vent-60-loader.spec.ts` and
+  `tests/e2e/vent-117-loader-film.spec.ts`.
 - **Five interface languages** (VENT-35): English (the default and the fallback), Spanish, French, German and Italian,
   each on its own static route (`/`, `/es/`, `/fr/`, `/de/`, `/it/`; `pages/[locale]/index.astro`) with `<html lang>`,
   `hreflang` links and `x-default` → `/`. This replaces the Language rule below for the interface only: every word a
@@ -1039,12 +1099,13 @@ Moon in the header is drawn by `packages/web/scripts/header_moon.py` (see `ASSET
 | Command | What |
 |---|---|
 | `npm run dev` | Web dev server at `http://localhost:4321/` |
+| `npm run dev:landing` | Landing dev server at `http://localhost:4322/` (its links to `/app/` need the app beside it) |
 | `npm run server` | API server (`packages/server`, after `npm run build`) at `http://localhost:3000/api/v1/health` |
 | `npm run lint` | ESLint + the anti-slop preset (`eslint.anti-slop.mjs`) over every package |
 | `npm run typecheck` | `astro check` for the web, `tsc` for sim, server and the root configs and e2e |
 | `npm test` | Vitest unit tests of every package (`packages/*/tests/`) |
 | `npm run build` | Static web into `packages/web/dist/`, compiled server into `packages/server/dist/` |
-| `npm run e2e` | Playwright smoke against the built web (`tests/e2e/`); in a cloud container set `PW_CHROMIUM_PATH=/opt/pw-browsers/chromium-*/chrome-linux64/chrome` |
+| `npm run e2e` | Playwright against the built web and landing (`tests/e2e/`; `SITE_BASE=/app` as in production); in a cloud container set `PW_CHROMIUM_PATH=/opt/pw-browsers/chromium-*/chrome-linux64/chrome` |
 | `npm run headers` | Adds or refreshes the file header on every code file; `npm run headers:check` is the CI check |
 | `bash .claude/skills/security-gate/scripts/security-gate.sh --strict .` | Security ladder (gitleaks, semgrep, osv-scanner, npm audit) |
 
@@ -1065,14 +1126,14 @@ milestones: the draggable pin (VENT-10), the MVP close (globe + DSN) and before 
 forward. At those milestones a break that `qa-adversario` reproduces in a red test blocks the merge until it is fixed,
 and its test then stays as a permanent gate.
 
-**Roadmap canvas** (https://claude.ai/artifact/Sm8QoCwg7DqLbuCSHLPfBg): the live, visual roadmap. It is part of the
+**Roadmap canvas** (https://claude.ai/artifact/7gKDZj5noEJEHH9GR3jcZG): the live, visual roadmap. It is part of the
 definition of done of every step, together with the Dashboard and the vault: when a trajectory or TODO changes state,
 update the canvas in the same step with the `ArtifactData` tool (`items/*` status and note, `meta/state` cards and
 `updatedAt`; `phases/*` and `milestones/*` when the plan changes). Its data lives in the artifact's database, not in
 this repo; only the owner and editors write it. Its text is Spanish (the human reads it).
 
 **Spec document** (Claude Docs «Ventana Lunar · Especificación y roadmap»,
-https://claude.ai/artifact/Pm8HcFMSZZJZGtcEjbKxNu): kept current like the canvas. When a trajectory merges or a
+https://claude.ai/artifact/Wpc59GLJyXQvKNgxesvfan): kept current like the canvas. When a trajectory merges or a
 decision changes the spec, the orchestrator updates the «Última actualización» line at the top (date chip + one line),
 the «Estado al día» table and next steps, and «Cambios de especificación». Its text is Spanish.
 

@@ -3,11 +3,13 @@
   "interface": [
     "CHANGELOG.md",
     "ROADMAP.md",
-    "packages/web/src/i18n/messages/*.json"
+    "packages/web/src/i18n/messages/*.json",
+    "packages/landing/src/i18n/messages/*.json"
   ],
   "vendored": [
     ".claude/skills/apple-design/**",
     ".claude/skills/security-gate/**",
+    ".claude/skills/motionsites-web-builder/**",
     ".claude/hooks/**",
     "eslint.anti-slop.mjs"
   ],

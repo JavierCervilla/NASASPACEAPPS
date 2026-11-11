@@ -85,16 +85,13 @@ describe('every token a stylesheet reads is set somewhere (C-08)', () => {
 
 /** The alpha of a colour token: 1 for `#rrggbb`. */
 const alphaOf = (colour: string): number => (colour.startsWith('rgba') ? Number(/([\d.]+)\)$/.exec(colour)?.[1]) : 1);
-const LIGHT = 'prefers-color-scheme: light';
 const MORE = 'prefers-contrast: more';
 
 describe('more contrast: near-opaque chrome and one border list (C-12)', () => {
   const chrome = ['--surface', '--chrome', '--glass-label', '--phone-bar', '--phone-sheet', '--phone-tabs'];
-  for (const theme of [[MORE], [LIGHT, MORE]]) {
-    it.each(chrome)(`%s is near opaque (${theme.join(' and ')})`, (name) => {
-      expect(alphaOf(rootToken(name, theme))).toBeGreaterThanOrEqual(0.94);
-    });
-  }
+  it.each(chrome)('%s is near opaque', (name) => {
+    expect(alphaOf(rootToken(name, [MORE]))).toBeGreaterThanOrEqual(0.94);
+  });
 
   const SURFACES = [
     '.globe-layers', '.polar-key', '.pin-readout', '.pin-hint', '.update-notice[data-shown]', '.strip', '.site-popover',
@@ -120,12 +117,17 @@ const GLASS_TEXT = [
 const solid = (value: string, theme: string[]) => (value.startsWith('--') ? rootToken(value, theme) : value);
 
 describe('grey text on glass keeps 4.5:1 (C-20)', () => {
-  for (const theme of [[], [LIGHT]]) {
-    it.each(GLASS_TEXT)(`$name (${theme.join() || 'dark'})`, ({ surface, under }) => {
-      const glass = over(rootToken(surface, theme), solid(under, theme));
-      expect(contrast(rootToken('--text-muted', theme), glass)).toBeGreaterThanOrEqual(4.5);
-    });
-  }
+  it.each(GLASS_TEXT)('$name', ({ surface, under }) => {
+    const glass = over(rootToken(surface, []), solid(under, []));
+    expect(contrast(rootToken('--text-muted', []), glass)).toBeGreaterThanOrEqual(4.5);
+  });
+});
+
+// VENT-113: the app is always dark, whatever the system theme.
+describe('no light theme', () => {
+  it.each([...SHEETS.keys()])('%s has no prefers-color-scheme query', (file) => {
+    expect(SHEETS.get(file)).not.toMatch(/prefers-color-scheme/);
+  });
 });
 
 describe('grey text on glass is heavier and a little looser (C-20)', () => {

@@ -24,7 +24,8 @@
  */
 
 /**
- * A phone whose GPU the browser hides draws the on-foot view without its shadow map (VENT-84): the Pixel 10's
+ * A phone whose GPU the browser hides draws the on-foot view with its shadow map in two linear passes (VENT-114);
+ * with the single-pass logarithmic depth it draws it without the shadow map (VENT-84): the Pixel 10's
  * PowerVR was not recognised, the VENT-75 guard did not apply and the benchmark lost both contexts. A browser may hide
  * it two ways: no WEBGL_debug_renderer_info, or a name that is no GPU's, as Brave's «Brave» (VENT-92: the view lost its
  * context after 9.8 s of turning at tier low). A desktop with its GPU hidden keeps its shadows.
@@ -41,7 +42,7 @@ const host = (page: Page) => page.getByRole('application', { name: 'On foot at t
 type Hiding = { readonly kind: 'absent' } | { readonly kind: 'named'; readonly name: string };
 
 /** Opens the view with the GPU hidden as `hiding` says; returns the shadow passes drawn. */
-async function openHidden(page: Page, hiding: Hiding = { kind: 'absent' }): Promise<number> {
+async function openHidden(page: Page, hiding: Hiding = { kind: 'absent' }, query = ''): Promise<number> {
   await page.clock.setFixedTime(new Date('2026-11-30T20:00:00Z'));
   await page.addInitScript((how: Hiding) => {
     localStorage.setItem('ventana.dataSource', 'computed');
@@ -62,7 +63,7 @@ async function openHidden(page: Page, hiding: Hiding = { kind: 'absent' }): Prom
   await stubApi(page);
   await stubTile(page);
   await stubWall(page, 100, 140);
-  await page.goto('./?site=im2-athena&quality=low&onfoot=far#horizon');
+  await page.goto('./?site=im2-athena&quality=low&onfoot=far' + query + '#horizon');
   await expect(host(page)).toHaveAttribute('data-ready', 'true', { timeout: START_MS });
   await expect.poll(async () => Number(await host(page).getAttribute('data-frames')), { timeout: START_MS })
     .toBeGreaterThan(0);
@@ -73,11 +74,20 @@ async function openHidden(page: Page, hiding: Hiding = { kind: 'absent' }): Prom
 test.describe('on a phone, 390x844', () => {
   test.use({ viewport: { width: 390, height: 844 }, hasTouch: true, isMobile: true });
 
-  test('with its GPU hidden it renders the shadow map none of the times', async ({ page }) => {
+  test('with its GPU hidden it draws two linear passes without the shadow map', async ({ page }) => {
     expect(await openHidden(page)).toBe(0);
+    await expect(host(page)).toHaveAttribute('data-depth', 'split');
   });
 
-  test('with its GPU named «Brave» it renders the shadow map none of the times (VENT-92)', async ({ page }) => {
+  test('with its GPU hidden and the logarithmic depth asked for it renders the shadow map none of the times', async ({ page }) => {
+    expect(await openHidden(page, { kind: 'absent' }, '&depth=log')).toBe(0);
+  });
+
+  test('with its GPU named «Brave» and the logarithmic depth asked for it renders it none of the times (VENT-92)', async ({ page }) => {
+    expect(await openHidden(page, { kind: 'named', name: 'Brave' }, '&depth=log')).toBe(0);
+  });
+
+  test('with its GPU named «Brave» it draws two linear passes without the shadow map', async ({ page }) => {
     expect(await openHidden(page, { kind: 'named', name: 'Brave' })).toBe(0);
   });
 });

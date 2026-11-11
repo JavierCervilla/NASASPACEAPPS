@@ -7,15 +7,20 @@ WORKDIR /app
 COPY package.json package-lock.json ./
 COPY packages/sim/package.json packages/sim/
 COPY packages/web/package.json packages/web/
+COPY packages/landing/package.json packages/landing/
 COPY packages/server/package.json packages/server/
 RUN npm ci
 COPY . .
 # The primary domain: the hreflang and canonical links are absolute to it, so the page served from another host
 # (nasa.cervilla.es is kept as a second domain) points search engines here.
 ARG SITE_URL=https://nasa.universelle.io
-# PSEUDO_LOCALE=0: the pseudo-locale page (/en-xa/) is for the e2e overflow tests, never for visitors.
-RUN SITE_URL="$SITE_URL" PSEUDO_LOCALE=0 npm run build -w @ventana/web \
-  && node packages/web/scripts/csp-header.mjs packages/web/dist > /app/csp.conf \
+# The landing at the domain's root, the app under /app (VENT-109): SITE_BASE=/app gives the app its routes, its manifests'
+# scope and its service worker's. PSEUDO_LOCALE=0: the pseudo-locale page (/en-xa/) is for the e2e overflow tests,
+# never for visitors. One policy covers both: it hashes every inline script and style of both builds' pages.
+RUN SITE_URL="$SITE_URL" SITE_BASE=/app PSEUDO_LOCALE=0 npm run build -w @ventana/web \
+  && SITE_URL="$SITE_URL" npm run build -w @ventana/landing \
+  && mkdir -p /site && cp -R packages/landing/dist/. /site/ && cp -R packages/web/dist /site/app \
+  && node packages/web/scripts/csp-header.mjs /site > /app/csp.conf \
   && grep -q 'Content-Security-Policy' /app/csp.conf
 
 # Same nginx release as before, built to run as an unprivileged user (uid 101) on port 8080.
@@ -24,7 +29,7 @@ COPY nginx.conf /etc/nginx/conf.d/default.conf
 COPY nginx-security-headers.conf /etc/nginx/snippets/security-headers.conf
 COPY nginx-basis-worker-headers.conf /etc/nginx/snippets/basis-worker-headers.conf
 COPY --from=build /app/csp.conf /etc/nginx/snippets/csp.conf
-COPY --from=build /app/packages/web/dist /usr/share/nginx/html
+COPY --from=build /site /usr/share/nginx/html
 EXPOSE 8080
 HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
   CMD wget -q -O /dev/null http://127.0.0.1:8080/ || exit 1

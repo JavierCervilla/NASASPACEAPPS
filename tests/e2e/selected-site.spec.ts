@@ -32,6 +32,9 @@
 import { expect, test, type Page } from '@playwright/test';
 import { SITES, stubApi } from './api-stub';
 
+/** The app's base without its last slash: '' at the root, '/app' as production serves it (VENT-109). */
+const BASE = (process.env.SITE_BASE ?? '/').replace(/\/$/, '');
+
 const NOW = new Date('2026-11-23T18:00:00Z');
 const IM1 = '[data-site-id="im1-odysseus"]';
 const IM2 = '[data-site-id="im2-athena"]';
@@ -76,7 +79,7 @@ test.describe('desktop, 1440x900', () => {
     await open(page);
     await expect(page.locator('.globe-callout')).toHaveCount(0);
     const image = media(page).getByRole('img', { name: 'Mons Mouton from orbit, LOLA relief' });
-    await expect(image).toHaveAttribute('src', '/thumbs/im2-athena.jpg');
+    await expect(image).toHaveAttribute('src', `${BASE}/thumbs/im2-athena.jpg`);
     await expect(image).toHaveAttribute('decoding', 'async');
     // A 1x screen picks the 320 px file from the srcset.
     await expect.poll(() => image.evaluate((img) => (img as HTMLImageElement).complete && (img as HTMLImageElement).currentSrc)).toMatch(/\/thumbs\/im2-athena\.jpg$/);
@@ -120,7 +123,7 @@ test.describe('desktop, 1440x900', () => {
     const image = page.locator('.card-media__image');
     await expect(image).toHaveAttribute('data-ready', 'true');
     await page.getByRole('button', { name: /^Malapert A region \(IM-1 Odysseus\)/ }).press('Enter');
-    await expect(image).toHaveAttribute('src', '/thumbs/im1-odysseus.jpg');
+    await expect(image).toHaveAttribute('src', `${BASE}/thumbs/im1-odysseus.jpg`);
     await expect(image).toHaveAttribute('data-ready', 'false');
     await expect(image).toHaveCSS('visibility', 'hidden');
     release();

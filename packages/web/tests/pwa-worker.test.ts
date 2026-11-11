@@ -70,6 +70,7 @@ describe('routeOf', () => {
     ['/en-xa/', 'bypass'],
     ['/en-xa/index.html', 'bypass'],
     ['/sw.js', 'bypass'],
+    ['/site-films/im2-athena-wide.av1.mp4', 'bypass'],
     ['https://ssd.jpl.nasa.gov/api/horizons.api', 'bypass'],
   ])('%s is %s', (path, expected) => {
     expect(route(path)).toBe(expected);
@@ -83,7 +84,15 @@ describe('routeOf', () => {
     const scope = new URL('https://host.test/ventana/');
     expect(routeOf(new URL('https://host.test/other/'), scope)).toBe('bypass');
     expect(routeOf(new URL('https://host.test/ventana/fr/'), scope)).toBe('html');
-    expect(routeOf(new URL('https://host.test/ventana/api/v1/sites'), scope)).toBe('api');
+  });
+
+  // VENT-109: the app moved under /app and the API stayed at the domain's root.
+  it('answers the API at the domain root from an app under a sub-path', () => {
+    const scope = new URL('https://host.test/app/');
+    expect(routeOf(new URL('https://host.test/api/v1/sites'), scope)).toBe('api');
+    expect(routeOf(new URL('https://host.test/api/v1/horizon?lat=-85&lon=30'), scope)).toBe('api');
+    expect(routeOf(new URL('https://other.test/api/v1/sites'), scope)).toBe('bypass');
+    expect(routeOf(new URL('https://host.test/app/_astro/a.js'), scope)).toBe('static');
   });
 });
 
@@ -142,6 +151,16 @@ describe('precache', () => {
     for (const file of ['fine-tiles/mons-mouton/heights.png', 'fine-tiles/mons-mouton/mask.png', 'fine-tiles/malapert-a/tile.json']) {
       expect(precached(file)).toBe(false);
     }
+  });
+
+  it('never keeps the loader\'s descent films, nor counts them in the digest (VENT-117)', () => {
+    for (const file of ['site-films/im2-athena-wide.av1.mp4', 'site-films/im2-athena-phone-start.webp']) {
+      expect(precached(file)).toBe(false);
+    }
+    const before = precacheOf(dist(BUILD));
+    const withFilm = precacheOf(dist({ ...BUILD, 'site-films/im2-athena-wide.av1.mp4': 'film' }));
+    expect(withFilm.digest).toBe(before.digest);
+    expect(Object.keys(withFilm.hashes).some((path) => path.startsWith('site-films/'))).toBe(false);
   });
 
   it('leaves the dev tools that ?debug loads to the runtime cache (VENT-49)', () => {

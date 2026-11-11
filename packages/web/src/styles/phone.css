@@ -24,11 +24,11 @@
  */
 
 /*
- * The phone layout (VENT-23, validated canvas «Phone · globe + widgets»,
- * «Phone · site picker sheet» and «Phone · globe (light)»): the globe fills
- * the screen, with a glass top bar, a draggable bottom sheet and a floating
- * tab bar over it. The sky stays black in both themes; the glass follows
- * the theme. Below 768px only (PHONE_QUERY in src/lib/viewport.ts).
+ * The phone layout (VENT-23, validated canvas «Phone · globe + widgets»
+ * and «Phone · site picker sheet»): the globe fills the screen, with a
+ * glass top bar, a draggable bottom sheet and a floating tab bar over it.
+ * The app is always dark. Below 768px only (PHONE_QUERY in
+ * src/lib/viewport.ts).
  */
 :root {
   --phone-bar: rgba(28, 30, 36, 0.62);
@@ -45,28 +45,6 @@
   --bar-sun-ink: var(--signal-sun-ink);
   --bar-earth-ink: var(--signal-earth-ink);
   --bar-window-ink: var(--signal-window-ink);
-}
-
-@media (prefers-color-scheme: light) {
-  :root {
-    --phone-bar: rgba(255, 255, 255, 0.82);
-    --phone-bar-edge: 0 1px 3px rgba(0, 0, 0, 0.12);
-    --phone-sheet: rgba(242, 242, 247, 0.92);
-    --phone-sheet-edge: 0 -10px 40px rgba(0, 0, 0, 0.35);
-    --phone-card: #ffffff;
-    --phone-tabs: rgba(255, 255, 255, 0.86);
-    --phone-tab-current: rgba(120, 120, 128, 0.16);
-    --phone-grabber: rgba(60, 60, 67, 0.3);
-    --phone-field: rgba(118, 118, 128, 0.12);
-    /*
-     * Deeper than the cards' inks: the light bar over the black sky, and
-     * the pill's fill on it, is greyer than a white card. 4.5:1 there
-     * (tests/contrast.test.ts).
-     */
-    --bar-sun-ink: #7a4600;
-    --bar-earth-ink: #0050a8;
-    --bar-window-ink: #0f5c27;
-  }
 }
 
 @media (max-width: 767.98px) {
@@ -975,28 +953,12 @@
   }
 }
 
-@media (prefers-color-scheme: light) and (prefers-reduced-transparency: reduce) {
-  :root {
-    --phone-bar: #ffffff;
-    --phone-sheet: #f2f2f7;
-    --phone-tabs: #ffffff;
-  }
-}
-
 /* Near-solid chrome under more contrast (apple-design §14). */
 @media (prefers-contrast: more) {
   :root {
     --phone-bar: #1c1e24;
     --phone-sheet: #16171c;
     --phone-tabs: #2c2e36;
-  }
-}
-
-@media (prefers-color-scheme: light) and (prefers-contrast: more) {
-  :root {
-    --phone-bar: #ffffff;
-    --phone-sheet: #f2f2f7;
-    --phone-tabs: #ffffff;
   }
 }
 

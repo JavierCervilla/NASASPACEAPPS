@@ -267,7 +267,7 @@
   color: var(--dsn-label);
   overflow: auto;
   container-type: size;
-  /* The panel is space, dark in both themes: its words and band are too. */
+  /* The panel is space, dark: its words and band are too. */
   --text: #f2f2f4;
   --text-muted: #9a9ca6;
   --text-secondary: #c7c8ce;

@@ -30,10 +30,16 @@
  * - `html`: a page (a locale's shell), network first, the cache offline;
  * - `static`: a file of the build (scripts, styles, textures, icons),
  *   cache first;
- * - `api`: a GET of the API, network first, the last answer offline;
+ * - `api`: a GET of the API, network first, the last answer offline: the
+ *   API sits at the domain's root (`/api/`), outside the app's scope since
+ *   the app moved under /app (VENT-109);
  * - `bypass`: left to the browser: another origin, the pseudo-locale's
- *   page (never offered, never cached) and the worker's own script.
+ *   page (never offered, never cached), the worker's own script and the
+ *   loader's descent films (VENT-117), which a video asks in byte ranges
+ *   the Cache API cannot keep.
  */
+
+import { API_ROOT } from '../lib/api-path';
 
 export type SwRoute = 'html' | 'static' | 'api' | 'bypass';
 
@@ -46,8 +52,11 @@ export const SYNC_ENTRY = '__ventana-synced-at';
 /** The header the worker stamps on each answer it keeps. */
 export const FETCHED_AT_HEADER = 'x-ventana-fetched-at';
 
-/** The pseudo-locale's folder (i18n/locales.ts), lower-cased as routed. */
-const NEVER_CACHED = ['en-xa/', 'sw.js'];
+/**
+ * The pseudo-locale's folder (i18n/locales.ts), lower-cased as routed, the
+ * worker itself and the loader's films.
+ */
+const NEVER_CACHED = ['en-xa/', 'sw.js', 'site-films/'];
 
 /** The path of `url` under `scope`, or null outside it. */
 export function underScope(url: URL, scope: URL): string | null {
@@ -58,12 +67,13 @@ export function underScope(url: URL, scope: URL): string | null {
 
 /** The route of a GET for `url` from a page under `scope`. */
 export function routeOf(url: URL, scope: URL, navigate = false): SwRoute {
+  const sameOrigin = url.origin === scope.origin;
+  if (sameOrigin && url.pathname.startsWith(API_ROOT)) return 'api';
   const path = underScope(url, scope);
   if (path === null) return 'bypass';
   if (NEVER_CACHED.some((p) => path === p || path.startsWith(p))) {
     return 'bypass';
   }
-  if (path.startsWith('api/')) return 'api';
   const page = path === '' || path.endsWith('/') || path.endsWith('.html');
   return navigate || page ? 'html' : 'static';
 }

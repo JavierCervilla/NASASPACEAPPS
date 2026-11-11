@@ -655,7 +655,8 @@ test.describe('desktop, 1440x900', () => {
     expect(report).toMatch(/Last frames: seconds, draw calls, triangles, draw ms\n {2}[\d.]+ \d+ \d+ [\d.]+/);
     expect(report).toMatch(/GPU memory: \d+ geometries, \d+ textures/);
     // The report is a log of this device, not of the interface: English whatever the page's language.
-    expect(report).toMatch(/^Page: \/\?.*lat=-85\.50.*#horizon$/m);
+    // The app's own page under its base: `/` at the root, `/app/` as production serves it (VENT-109).
+    expect(report).toMatch(/^Page: \/(app\/)?\?.*lat=-85\.50.*#horizon$/m);
     // A reload keeps the run: the session's storage holds it for the next page.
     const kept = await page.evaluate(() => sessionStorage.getItem('ventana.onFootReport'));
     expect(kept).toContain('context lost');

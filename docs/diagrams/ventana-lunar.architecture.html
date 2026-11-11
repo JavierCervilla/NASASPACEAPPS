@@ -5043,7 +5043,7 @@
         <path data-edge-from="pipeline" data-edge-to="data" data-edge-label="computes" data-edge-key="3" data-edge-id="compute-data" data-composition-points="420,330;520,330" d="M 420 330 L 520 330" class="a-emphasis" stroke-width="1.8" marker-end="url(#arrowhead-emphasis)"/>
         <path data-edge-from="data" data-edge-to="store" data-edge-label="fetch" data-edge-key="4" data-edge-id="fetch-data" data-composition-points="590,360;590,490" d="M 590 360 L 590 490" class="a-emphasis" stroke-width="1.8" marker-end="url(#arrowhead-emphasis)"/>
         <path data-edge-from="actions" data-edge-to="pages" data-edge-label="deploys" data-edge-key="5" data-edge-id="deploy-pages" data-composition-points="900,323;1000,323" d="M 900 323 L 1000 323" class="a-emphasis" stroke-width="1.8" marker-end="url(#arrowhead-emphasis)"/>
-        <path data-edge-from="pages" data-edge-to="store" data-edge-label="serves app" data-edge-key="6" data-edge-id="serve-app" data-composition-points="1000,337;976,337;976,527;660,527" d="M 1000 337 L 984 337 Q 976 337 976 345 L 976 519 Q 976 527 968 527 L 660 527" class="a-default" stroke-width="1.5" marker-end="url(#arrowhead)"/>
+        <path data-edge-from="pages" data-edge-to="store" data-edge-label="serves /app" data-edge-key="6" data-edge-id="serve-app" data-composition-points="1000,337;976,337;976,527;660,527" d="M 1000 337 L 984 337 Q 976 337 976 345 L 976 519 Q 976 527 968 527 L 660 527" class="a-default" stroke-width="1.5" marker-end="url(#arrowhead)"/>
         <path data-edge-from="store" data-edge-to="calendar" data-edge-key="7" data-edge-id="sub-calendar" data-composition-points="555,550;555,615;110,615;110,680" d="M 555 550 L 555 607 Q 555 615 547 615 L 118 615 Q 110 615 110 623 L 110 680" class="a-default" stroke-width="1.5" marker-end="url(#arrowhead)"/>
         <path data-edge-from="store" data-edge-to="polar" data-edge-key="8" data-edge-id="sub-polar" data-composition-points="569,550;569,615;295,615;295,680" d="M 569 550 L 569 607 Q 569 615 561 615 L 303 615 Q 295 615 295 623 L 295 680" class="a-default" stroke-width="1.5" marker-end="url(#arrowhead)"/>
         <path data-edge-from="store" data-edge-to="sitecard" data-edge-key="9" data-edge-id="sub-sitecard" data-composition-points="583,550;583,615;480,615;480,680" d="M 583 550 L 583 607 Q 583 615 575 615 L 488 615 Q 480 615 480 623 L 480 680" class="a-default" stroke-width="1.5" marker-end="url(#arrowhead)"/>
@@ -5055,6 +5055,7 @@
         <path data-edge-from="pin" data-edge-to="layers" data-edge-label="saves" data-edge-key="15" data-edge-id="save-point" data-composition-points="760,133;660,133" d="M 760 133 L 660 133" class="a-dashed" stroke-width="1.5" marker-end="url(#arrowhead-dashed)"/>
         <path data-edge-from="store" data-edge-to="onfoot" data-edge-key="16" data-edge-id="sub-onfoot" data-composition-points="625,550;625,656;1028,656;1028,680" d="M 625 550 L 625 648 Q 625 656 633 656 L 1020 656 Q 1028 656 1028 664 L 1028 680" class="a-default" stroke-width="1.5" marker-end="url(#arrowhead)"/>
         <path data-edge-from="ktx2worker" data-edge-to="onfoot" data-edge-key="17" data-edge-id="ktx2-maps" data-composition-points="1042,648;1042,680" d="M 1042 648 L 1042 680" class="a-dashed" stroke-width="1.5" marker-end="url(#arrowhead-dashed)"/>
+        <path data-edge-from="pages" data-edge-to="landing" data-edge-label="serves /" data-edge-key="18" data-edge-id="serve-landing" data-composition-points="1000,330;985,330;985,235;970,235" d="M 1000 330 L 992.5 330 Q 985 330 985 322.5 L 985 242.5 Q 985 235 977.5 235 L 970 235" class="a-dashed" stroke-width="1.5" marker-end="url(#arrowhead-dashed)"/>
 
         <!-- Components -->
         <g id="node-horizons" data-node-id="horizons" data-node-label="JPL Horizons API" tabindex="0" role="button" aria-label="Focus JPL Horizons API, NASA/JPL ephemerides, Architecture component" aria-pressed="false" data-node-kind="external" data-node-sublabel="NASA/JPL ephemerides" data-node-context="Architecture component">
@@ -5332,6 +5333,20 @@
         <text data-detail="fine" x="1035" y="640" class="t-frontend" font-size="7" text-anchor="middle">built</text>
         </g>
 
+        <g id="node-landing" data-node-id="landing" data-node-label="Landing page" tabindex="0" role="button" aria-label="Focus Landing page, at /, live IM-2 answer, Architecture component" aria-pressed="false" data-node-kind="frontend" data-node-sublabel="at /, live IM-2 answer" data-node-context="Architecture component">
+          <title>Landing page · at /, live IM-2 answer · Architecture component</title>
+          <rect x="830" y="205" width="140" height="60" rx="6" class="c-mask"/>
+          <rect x="830" y="205" width="140" height="60" rx="6" class="c-frontend" stroke-width="1.5"/>
+          <g aria-hidden="true" data-semantic-sigil="frontend" class="semantic-sigil s-frontend" transform="translate(836 211) scale(0.6875)">
+            <rect x="2" y="3" width="12" height="10" rx="2"/>
+            <path d="M2 6.5h12"/>
+            <circle cx="4.1" cy="4.8" r=".7" class="sigil-fill"/>
+            <circle cx="6.3" cy="4.8" r=".7" class="sigil-fill"/>
+          </g>
+          <text data-node-label="" data-detail-anchor="" x="900" y="233" class="t-primary" font-size="11" font-weight="600" text-anchor="middle">Landing page</text>
+        <text data-detail="context" x="900" y="249" class="t-muted" font-size="9" text-anchor="middle">at /, live IM-2 answer</text>
+        </g>
+
         <!-- Connection labels -->
         <g data-detail="context" data-edge-from="horizons" data-edge-to="pipeline" data-edge-label="az/el series" data-edge-key="0" data-edge-id="query-horizons">
           <rect x="196.2" y="337" width="67.6" height="14" rx="3" class="c-mask"/>
@@ -5357,9 +5372,9 @@
           <rect x="928.2" y="303" width="43.6" height="14" rx="3" class="c-mask"/>
           <text x="950" y="313" class="t-backend" font-size="8" text-anchor="middle">deploys</text>
         </g>
-        <g data-detail="context" data-edge-from="pages" data-edge-to="store" data-edge-label="serves app" data-edge-key="6" data-edge-id="serve-app">
-          <rect x="947" y="412" width="58" height="14" rx="3" class="c-mask"/>
-          <text x="976" y="422" class="t-muted" font-size="8" text-anchor="middle">serves app</text>
+        <g data-detail="context" data-edge-from="pages" data-edge-to="store" data-edge-label="serves /app" data-edge-key="6" data-edge-id="serve-app">
+          <rect x="944.6" y="412" width="62.8" height="14" rx="3" class="c-mask"/>
+          <text x="976" y="422" class="t-muted" font-size="8" text-anchor="middle">serves /app</text>
         </g>
 
 
@@ -5384,6 +5399,10 @@
         </g>
 
 
+        <g data-detail="context" data-edge-from="pages" data-edge-to="landing" data-edge-label="serves /" data-edge-key="18" data-edge-id="serve-landing">
+          <rect x="960.8" y="269" width="48.4" height="14" rx="3" class="c-mask"/>
+          <text x="985" y="279" class="t-messagebus" font-size="8" text-anchor="middle">serves /</text>
+        </g>
 
         <!-- Boundary labels (foreground masks keep routes out of titles) -->
         <g data-graph-role="structural-frame-label" data-composition-frame-id="0" data-composition-frame-kind="region" data-composition-frame-label="Backend (Dokploy, no login)">
@@ -5609,6 +5628,7 @@
         <ul>
           <li>&bull; Dokploy builds the Docker image from main</li>
           <li>&bull; nginx serves the Astro site behind Traefik</li>
+          <li>&bull; VENT-109: the landing (packages/landing, five languages, IM-2&#39;s live answer and the month strip from @ventana/sim) at the domain&#39;s root; the app under /app; the API stays at /api; old ?site= and ?lat links redirected by nginx</li>
         </ul>
       </div>
 

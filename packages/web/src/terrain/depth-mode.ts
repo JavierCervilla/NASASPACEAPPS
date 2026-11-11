@@ -24,20 +24,22 @@
  */
 
 /**
- * The on-foot view's depth buffer and shadow map, as the address may ask for
- * them to bisect a GPU crash on a phone (VENT-103, point 8 of VENT-80): the
+ * The on-foot view's depth buffer and shadow map (VENT-103, VENT-114). The
  * Pixel 10's PowerVR loses its context when a frame samples the shadow map
- * and writes a logarithmic depth (VENT-75), so the view draws there without
- * the shadow map. `?depth=log|linear|reversed` picks the depth buffer
- * (reversed needs EXT_clip_control; without it the view keeps the
- * logarithmic one) and `?shadows=force` draws the shadow map on a GPU the
+ * and writes a logarithmic or reversed depth (VENT-75), but survives it with
+ * a linear one. A linear 24-bit buffer alone cannot span 0.2 m to the sky,
+ * so the default, `split`, draws in two passes of linear depth, far relief
+ * and sky first and the near ground over them (scene/depth-passes.ts), on
+ * every GPU. `?depth=log|linear|reversed` keeps the single-pass buffers as
+ * escape hatches (reversed needs EXT_clip_control; without it the view
+ * keeps the default) and `?shadows=force` draws the shadow map on a GPU the
  * safety rules turn it off for. Not a setting for visitors: nothing links to
  * these words and they show only in `?debug` and the crash report.
  */
 import type { WebGLRenderer } from 'three';
 import type { LeaveOut } from './leave-out';
 
-export const DEPTH_MODES = ['log', 'linear', 'reversed'] as const;
+export const DEPTH_MODES = ['split', 'log', 'linear', 'reversed'] as const;
 
 export type DepthMode = (typeof DEPTH_MODES)[number];
 
@@ -62,8 +64,8 @@ export function depthChoice(
   const params = new URLSearchParams(search);
   const named = word(params, 'depth');
   const asked = DEPTH_MODES.find((mode) => mode === named) ?? null;
-  const wanted = asked ?? (leave.has('logdepth') ? 'linear' : 'log');
-  const mode = wanted === 'reversed' && !clipControl ? 'log' : wanted;
+  const wanted = asked ?? (leave.has('logdepth') ? 'linear' : 'split');
+  const mode = wanted === 'reversed' && !clipControl ? 'split' : wanted;
   return { mode, asked, forceShadows: word(params, 'shadows') === 'force' };
 }
 
@@ -75,6 +77,9 @@ export interface DepthDrawn {
   /** Whether three's reversed depth buffer is on. */
   readonly reversed: boolean;
 }
+
+/** Whether `mode` draws the near and the far in two passes. */
+export const isSplit = (mode: DepthMode): boolean => mode === 'split';
 
 /** The depth buffer `renderer` was made with for `choice`. */
 export function depthDrawn(

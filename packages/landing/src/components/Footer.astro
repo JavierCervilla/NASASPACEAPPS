@@ -1,0 +1,66 @@
+---
+/*
+ *   _   _       _                         _ _
+ *  | | | |_ __ (_)_   _____ _ __ ___  ___| | | ___
+ *  | | | | '_ \| \ \ / / _ \ '__/ __|/ _ \ | |/ _ \
+ *  | |_| | | | | |\ V /  __/ |  \__ \  __/ | |  __/
+ *   \___/|_| |_|_| \_/ \___|_|  |___/\___|_|_|\___|
+ *
+ *             =++==--::.
+ *         %%%%##**++=--:..  .
+ *      ##**#%@%%#***+=--::.   .
+ *    #**=+*#*#**#++++=-:::.. .  .
+ *   #++-====*@%+*++==--::...   .  .    Ventana Lunar
+ *  #+=-=--++==+===-+==--:..   .  .  .  Sun, Earth and landing
+ * #----====-------=-=---:..  .  .  .   windows at the lunar
+ * #+---+=====--=---==-::..     .  .  . south pole
+ * #*----==---==-=-=-:-....    .  .  .
+ * *#----===+*===--:-::...    .  .  .   Built for the NASA Space
+ *  *----=*-+*%*+=-:::....   .  .  .    Apps Challenge 2026,
+ *   *------=+*=--:::-:::.. .  .  .     Madrid. Not endorsed
+ *    %*===-=-==--==-:::.  .  .  .      by NASA.
+ *      *+:--+:--::::::.  .  .  .
+ *         -=:::...:..   .  .           (c) 2026 Universelle
+ *             :::.. .  .               SPDX-License-Identifier: MIT
+ */
+
+import { catalogueOf, translator } from '../i18n/catalogue';
+import { LOCALES, landingPath, type Locale } from '../i18n/locales';
+
+interface Props {
+  readonly locale: Locale;
+}
+
+const { locale } = Astro.props;
+const t = translator(catalogueOf(locale));
+// Each language under its own name, so a visitor finds theirs.
+const names = new Map(
+  LOCALES.map((l) => [l, new Intl.DisplayNames([l], { type: 'language' })]),
+);
+const endonym = (l: Locale) => {
+  const name = names.get(l)?.of(l) ?? l;
+  return name.charAt(0).toLocaleUpperCase(l) + name.slice(1);
+};
+---
+
+<footer class="foot">
+  <p>{t('footer.disclaimer')} {t('footer.copyright')}</p>
+  <nav aria-label={t('footer.languages')}>
+    <ul class="foot__langs">
+      {
+        LOCALES.map((l) => (
+          <li>
+            <a
+              href={landingPath(l)}
+              hreflang={l}
+              lang={l}
+              aria-current={l === locale ? 'page' : undefined}
+            >
+              {endonym(l)}
+            </a>
+          </li>
+        ))
+      }
+    </ul>
+  </nav>
+</footer>

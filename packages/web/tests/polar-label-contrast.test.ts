@@ -25,10 +25,10 @@
 
 /**
  * The polar map's edge labels (0°, 90° E, 180°, 90° W) sit beside the disk
- * on the polar panel, which stays dark in both themes (`--map-panel`). Once
- * the globe's graticule rules stopped overriding them (VENT-52), they took
- * `--text-muted`, which the light theme darkens for light surfaces: 2.9:1
- * on the dark panel. Small text needs 4.5:1 in every theme and contrast.
+ * on the dark polar panel (`--map-panel`). Once the globe's graticule rules
+ * stopped overriding them (VENT-52), they took `--text-muted`, which the
+ * light theme (gone since VENT-113) darkened: 2.9:1 on the dark panel.
+ * Small text needs 4.5:1, with more contrast too.
  */
 import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
@@ -42,15 +42,13 @@ const AA_SMALL_TEXT = 4.5;
 /** The CSS blocks of tokens.css that set custom properties, by media query. */
 const BLOCKS: Readonly<Record<string, RegExp>> = {
   dark: /^:root\s*\{([\s\S]*?)\n\}/m,
-  light: /@media \(prefers-color-scheme: light\) \{\s*:root \{([\s\S]*?)\n {2}\}/,
   darkMore: /@media \(prefers-contrast: more\) \{\s*:root \{([\s\S]*?)\n {2}\}/,
-  lightMore: /@media \(prefers-color-scheme: light\) and \(prefers-contrast: more\) \{\s*:root \{([\s\S]*?)\n {2}\}/,
 };
 
 /** The value of `name` in a theme: its own block first, then what it builds on. */
 function tokenIn(theme: string, name: string): string {
   const order: Record<string, string[]> = {
-    dark: ['dark'], light: ['light', 'dark'], darkMore: ['darkMore', 'dark'], lightMore: ['lightMore', 'darkMore', 'light', 'dark'],
+    dark: ['dark'], darkMore: ['darkMore', 'dark'],
   };
   for (const block of order[theme] ?? []) {
     const body = BLOCKS[block]?.exec(TOKENS)?.[1] ?? '';

@@ -36,6 +36,7 @@ import { nameOf } from '../ring/ring-cells';
 import { gridPositions, facesUp } from '../ring/ring-grid';
 import { buildMesh } from '../ring/ring-mesh';
 import { gridNormals } from '../ring/ring-normals';
+import { FAR_FROM_LEVEL, sendFar } from './depth-passes';
 import { litReader, skirtOf, type Entry, type LayerState }
   from './ring-entry';
 import { litOf, ringGeometry } from './ring-geometry';
@@ -102,6 +103,7 @@ function swap(
     const near = entry.tile.key.level === 0;
     mesh.castShadow = mesh.receiveShadow = near;
     if (near && s.depth) mesh.customDepthMaterial = s.depth;
+    if (s.split && entry.tile.key.level >= FAR_FROM_LEVEL) sendFar(mesh);
     mesh.name = nameOf(entry.tile.key);
     entry.mesh = mesh;
     s.group.add(mesh);

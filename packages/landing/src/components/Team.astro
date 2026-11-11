@@ -1,0 +1,74 @@
+---
+/*
+ *   _   _       _                         _ _
+ *  | | | |_ __ (_)_   _____ _ __ ___  ___| | | ___
+ *  | | | | '_ \| \ \ / / _ \ '__/ __|/ _ \ | |/ _ \
+ *  | |_| | | | | |\ V /  __/ |  \__ \  __/ | |  __/
+ *   \___/|_| |_|_| \_/ \___|_|  |___/\___|_|_|\___|
+ *
+ *             =++==--::.
+ *         %%%%##**++=--:..  .
+ *      ##**#%@%%#***+=--::.   .
+ *    #**=+*#*#**#++++=-:::.. .  .
+ *   #++-====*@%+*++==--::...   .  .    Ventana Lunar
+ *  #+=-=--++==+===-+==--:..   .  .  .  Sun, Earth and landing
+ * #----====-------=-=---:..  .  .  .   windows at the lunar
+ * #+---+=====--=---==-::..     .  .  . south pole
+ * #*----==---==-=-=-:-....    .  .  .
+ * *#----===+*===--:-::...    .  .  .   Built for the NASA Space
+ *  *----=*-+*%*+=-:::....   .  .  .    Apps Challenge 2026,
+ *   *------=+*=--:::-:::.. .  .  .     Madrid. Not endorsed
+ *    %*===-=-==--==-:::.  .  .  .      by NASA.
+ *      *+:--+:--::::::.  .  .  .
+ *         -=:::...:..   .  .           (c) 2026 Universelle
+ *             :::.. .  .               SPDX-License-Identifier: MIT
+ */
+
+import { catalogueOf, translator } from '../i18n/catalogue';
+import { appPath, type Locale } from '../i18n/locales';
+
+interface Props {
+  readonly locale: Locale;
+}
+
+const { locale } = Astro.props;
+const t = translator(catalogueOf(locale));
+const repo = 'https://github.com/JavierCervilla/NASASPACEAPPS';
+// RAEA's demo video (VENT-110), re-encoded for the web (VENT-120): the 68 s
+// cut plays here on a press only (preload none); the 30 s cut, the one the
+// Space Apps submission links to, opens on its own.
+const DEMO_LONG = '/media/demo/ventana-lunar-68s.mp4';
+const DEMO_SHORT = '/media/demo/ventana-lunar-30s.mp4';
+const DEMO_POSTER = '/media/demo/ventana-lunar-poster.webp';
+---
+
+<section class="band" id="team" aria-labelledby="team-title">
+  <div class="section team">
+    <figure class="team__video">
+      <video
+        class="team__player"
+        src={DEMO_LONG}
+        poster={DEMO_POSTER}
+        width="1920"
+        height="1080"
+        controls
+        playsinline
+        preload="none"
+        aria-label={t('team.videoLabel')}></video>
+      <figcaption class="team__caption">
+        <a href={DEMO_SHORT}>{t('team.videoShort')}</a>
+      </figcaption>
+    </figure>
+    <div class="team__copy">
+      <p class="eyebrow">{t('team.eyebrow')}</p>
+      <h2 class="team__title" id="team-title">{t('team.title')}</h2>
+      <p class="team__body">{t('team.body')}</p>
+      <div class="hero__actions">
+        <a class="button button--primary" href={appPath(locale)}>
+          {t('nav.open')}
+        </a>
+        <a class="button button--secondary" href={repo}>{t('team.source')}</a>
+      </div>
+    </div>
+  </div>
+</section>

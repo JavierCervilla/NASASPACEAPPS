@@ -101,6 +101,11 @@ interface StubOptions {
   readonly pointHold?: Promise<void> | undefined;
   /** Answers `/api/v1/horizon` (VENT-40); without it the route is left alone, as before. */
   readonly horizon?: HorizonStub | undefined;
+  /**
+   * Lets the 3D view's loader films through (VENT-117). Without it they are refused, so the loader falls back to its
+   * plan and skyline at once and the other specs' timings stand as they were.
+   */
+  readonly films?: boolean;
 }
 
 /** How the stub answers a point's terrain horizon. */
@@ -179,8 +184,9 @@ function pointBody(url: URL): unknown {
  */
 export async function stubApi(
   page: Page | BrowserContext,
-  { status = 200, hold, pointHold, horizon }: StubOptions = {},
+  { status = 200, hold, pointHold, horizon, films = false }: StubOptions = {},
 ): Promise<void> {
+  if (!films) await page.route(/\/site-films\//, (route) => route.abort());
   await page.route('**/api/v1/sites', (route) => route.fulfill({ json: { sites: SITES } }));
   if (horizon) await stubHorizon(page, horizon);
   await page.route(/\/api\/v1\/ephemeris\?/, async (route: Route) => {

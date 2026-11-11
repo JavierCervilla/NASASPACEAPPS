@@ -2,7 +2,69 @@
 
 ## [Sin publicar]
 
+### Arreglado
+- **En el Pixel 10 la vista 3D vuelve a ir sin sombras.** Con la profundidad partida y el mapa de sombras, el Pixel 10
+  de Javier perdió el contexto a los 10 s de girar en un punto propio en producción. En PowerVR y en los móviles que
+  ocultan su GPU la vista se dibuja otra vez sin mapa de sombras; el resto de equipos las mantiene. `?depth=linear`
+  las devuelve a mano para seguir probando.
+- **Con ahorro de datos la portada descarga una sola imagen (VENT-118).** Antes pedía el primer fotograma del vídeo y
+  después el fotograma final; ahora el servidor responde al primero con el final, así que se ve el mismo fotograma de
+  siempre por 30–58 kB menos.
+- **El banco de pruebas cuenta bien los fotogramas de la vista 3D (VENT-118).** Con la profundidad partida cada
+  fotograma son dos dibujos, y el banco los contaba por separado, así que las llamadas y los triángulos «por
+  fotograma» salían a la mitad. Ahora suma los dos.
+
+### Cambiado
+- **Las sombras vuelven a PowerVR: la vista 3D se dibuja en dos pasadas de profundidad lineal (VENT-114).** En el Pixel 10
+  el mapa de sombras con profundidad logarítmica o invertida tumbaba el contexto de la GPU, y con profundidad lineal sola
+  las crestas lejanas salían en escalones. Ahora, en todas las GPU, primero se dibuja lo lejano (anillos 2 y 3, el muro del
+  horizonte y el cielo, con planos de 1 km a 1200 km), se borra solo la profundidad y encima lo cercano (anillos 0 y 1,
+  suelo, rocas y cráteres, planos de 0,2 m a 15 km) con el mapa de sombras. La imagen es la misma que con la
+  profundidad logarítmica (diferencia media de la línea del horizonte por debajo de 0,2 sobre 255 en el relieve grabado
+  de IM-2). `?depth=log|linear|reversed` siguen como salidas de emergencia (en PowerVR `log` y `reversed` siguen sin
+  mapa de sombras) y `?depth=split` fuerza la nueva. El banco `?bench=depth` suma la variante `split`, que es la app.
+- **La app siempre en oscuro (VENT-113).** Como la portada, ya no sigue el tema claro del sistema: el fondo casi negro,
+  la Luna y los cuatro colores de señal se ven igual en cualquier equipo; las variantes de más contraste y menos
+  transparencia se mantienen. La sección del equipo de la portada dice «Team Universelle» en los cinco idiomas.
+- **El recorrido de la portada se entiende (VENT-111).** «Four ways to look at the same hour» pasa a «Inside the app»:
+  «Pick a site and a moment. Every view answers for it.», una frase que explica que las cuatro vistas muestran el mismo
+  sitio y el mismo momento (IM-2 Athena, 22 de noviembre de 2026 a las 20:00 UTC), y en cada tarjeta el nombre de la
+  vista y lo que haces con ella: «See where the light is», «Stand on the site», «Know who is listening», «Take it with
+  you». En escritorio, las cuatro en fila; en los cinco idiomas. El menú dice «The app» en vez de «Tour».
+
 ### Añadido
+- **El vídeo de la demo en la portada (VENT-120).** La sección del equipo muestra el vídeo de RAEA de 68 s donde antes
+  decía que llegaría con la entrega; no se descarga nada hasta pulsar play. Debajo, un enlace al corte de 30 s, el del
+  envío a Space Apps, servido desde nuestra propia web (https://nasa.universelle.io/media/demo/ventana-lunar-30s.mp4).
+  En los cinco idiomas.
+- **El descenso de cada sitio mientras carga la vista 3D (VENT-117).** En los 11 sitios curados al sur de 80° S, la
+  vista «Horizon» ya no espera con el plano de teselas: reproduce un vídeo de 6 s que baja desde la órbita hasta 2 m
+  sobre el sitio y termina en la misma mirada con la que abre la vista. Si la escena está lista antes, espera al final
+  del vídeo; si el vídeo acaba antes, se queda en su último fotograma; luego un fundido de 0,6 s da paso a la escena en
+  vivo. El texto de progreso sigue visible encima. Solo en equipos potentes (calidad alta o media), sin movimiento
+  reducido ni ahorro de datos, y nunca en un punto propio o guardado; si el vídeo no carga, vuelve el cargador de
+  siempre. Corte apaisado en escritorio y vertical en el móvil, AV1 o H.264, unos 0,3–0,7 MB por sitio, bajo demanda
+  y fuera de la caché sin conexión.
+- **Vídeo del descenso en la portada (VENT-116; render de RAEA en VENT-112).** La portada se abre con una película a pantalla completa: un descenso
+  continuo desde la órbita lunar hasta 2 m sobre IM-2 Athena, en Mons Mouton, que acaba en el horizonte con la Tierra
+  alta en un cielo negro, renderizado con el relieve LOLA del LRO y la Blue Marble de la NASA. El descenso (14 s) se ve
+  una vez y enlaza sin salto con un plano en bucle; hay un corte para escritorio y otro vertical para el móvil, en AV1 o
+  H.264. La pregunta va sobre el cielo: a la izquierda en escritorio; en el móvil, el titular sobre la Tierra y el texto y los
+  botones debajo. La tarjeta en vivo, sobre el suelo. Mientras llega el vídeo se ve su primer fotograma, así que el descenso arranca sobre
+  la misma imagen, sin salto. Con «reducir movimiento» o el ahorro de datos se ve solo el fotograma final, sin
+  descargar vídeo; se pausa cuando la portada no está a la vista. Una línea al pie cita de dónde sale, en los cinco
+  idiomas. Sustituye a la Luna renderizada de VENT-109. Es el render casi definitivo (p3): el final llegará con los
+  mismos nombres de fichero.
+- **Una portada que explica el proyecto, y la app en `/app` (VENT-109, la opción A del lienzo con la franja del mes de
+  la B).** https://nasa.universelle.io abre ahora una página que plantea la pregunta del reto («Sun for power. Earth for
+  a voice.») junto a una Luna renderizada con el mapa LROC y una tarjeta en vivo de IM-2 Athena: si tiene Sol y Tierra
+  sobre su horizonte LOLA, si hay ventana y cuánto dura o cuándo se abre, y qué antena de la DSN escucha, calculado en
+  tu navegador con el cielo propio de Ventana Lunar y actualizado cada minuto. Debajo, «cómo funciona» en tres pasos con
+  la franja del mes (Sol, Tierra, ventana) y la línea de ahora, la ciencia en cuatro cifras con sus fuentes, un recorrido
+  por cuatro vistas de la app y el equipo, el reto y el hueco del vídeo. En los cinco idiomas, en `/`, `/es/`, `/fr/`,
+  `/de/` e `/it/`, siempre oscura, y se lee sin JavaScript. La app se mueve a `/app/` (`/app/es/`…); los enlaces viejos
+  con `?site=` o `?lat` abren la app en el mismo sitio, los de una vista (`/#horizon`) también, y quien la tenía
+  instalada en la raíz pierde el service worker viejo sin perder la caché. La API sigue en `/api`.
 - **El lector `?debug` dice en qué condiciones mide (VENT-105).** Desplegado, sobre el rastro, muestra los interruptores
   de diagnóstico de la dirección («switches: depth=linear shadows=force»), con qué dibuja la vista 3D según la propia
   escena (búfer de profundidad, bits, invertido, mapa de sombras y por qué está apagado, nivel), el instante (en vivo o

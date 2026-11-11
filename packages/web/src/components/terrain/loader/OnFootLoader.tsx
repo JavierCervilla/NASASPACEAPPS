@@ -27,20 +27,21 @@
  * The on-foot view's loader (VENT-60): what the view shows from the tile
  * list to the scene's first frame, in the band the scene frames (the
  * phone's free band, the whole stage on a desktop). How the tiles come
- * (ring-progress.ts) drives its phase and words; its picture is chosen by
- * the view's tier (loader-picture.ts: B→A on every tier today). Covering
- * the scene until it has drawn, then fading off it (on-foot-loader.css).
+ * (ring-progress.ts) drives its phase and words; its picture is the one
+ * the loader's chooser picked (loader-picture.ts): the site's descent film
+ * (VENT-117) while it shows, else the plan and the skyline (B→A), which a
+ * failure always keeps, dimmed. Covering the scene until it has drawn,
+ * then fading off it (on-foot-loader.css).
  */
 import type { HorizonProfile } from '@ventana/sim';
 import {
   useLayoutEffect, useMemo, useSyncExternalStore, type CSSProperties,
   type RefObject,
 } from 'react';
-import type { Tier } from '../../../lib/quality';
 import type { LatLon } from '../../../lib/polar-projection';
 import { isPhoneViewport } from '../../../lib/viewport';
 import { loaderPhase } from '../../../terrain/loader/loader-phase';
-import { loaderPicture } from '../../../terrain/loader/loader-picture';
+import { filmShows } from '../../../terrain/loader/film-gate';
 import { loaderWords } from '../../../terrain/loader/loader-words';
 import { planLayout } from '../../../terrain/loader/plan-geometry';
 import {
@@ -53,10 +54,10 @@ import { startLook } from '../../../terrain/view-camera';
 import { VIEW_FOV } from '../../../terrain/view-fov';
 import { useBoxSize } from '../../horizon/use-horizon';
 import { useI18n } from '../../i18n-context';
+import { LoaderFilm as Film } from './LoaderFilm';
 import { LoaderStatus } from './LoaderStatus';
 import { TilesThenSkyline } from './TilesThenSkyline';
-
-const PICTURES = { tilesThenSkyline: TilesThenSkyline } as const;
+import type { LoaderFilm } from './use-loader-film';
 
 export interface LoaderProps {
   readonly progress: ProgressStore;
@@ -64,13 +65,14 @@ export interface LoaderProps {
   readonly sky: SkyDirs;
   readonly profile: HorizonProfile | null;
   readonly seed: number;
-  readonly tier: Tier;
   /** The near ground stands. */
   readonly ready: boolean;
   /** The scene has drawn its first frame. */
   readonly drawn: boolean;
   /** A failure is said over it: only the skyline stays, dimmed. */
   readonly failed: boolean;
+  /** The site's descent film (VENT-117), or null. */
+  readonly film: LoaderFilm | null;
 }
 
 /** The scene's camera on the measured band, at the opening look. */
@@ -116,6 +118,11 @@ function useGroundWords(ref: RefObject<HTMLDivElement | null>,
   });
 }
 
+/** The film to show: not under a failure's words, nor once it failed. */
+function filmOf({ film, failed }: LoaderProps): LoaderFilm | null {
+  return !failed && filmShows(film?.state ?? null) ? film : null;
+}
+
 export function OnFootLoader(props: LoaderProps) {
   const i18n = useI18n();
   const { progress: store, failed } = props;
@@ -125,14 +132,15 @@ export function OnFootLoader(props: LoaderProps) {
   const [ref, box] = useBoxSize<HTMLDivElement>();
   const { cam, phone } = useCamera(props.sky, box.width, box.height);
   useGroundWords(ref, cam, failed);
-  const Picture = PICTURES[loaderPicture(props.tier)];
+  const film = filmOf(props);
   const top: CSSProperties = { '--loader-status-top':
     `${planLayout({ w: box.width, h: box.height }, phone).statusTop}px` } as CSSProperties;
   const words = phase === 'handover' ? 'shaping' : phase;
   return (
-    <div ref={ref} className="on-foot-loader" data-phase={failed ? 'failed' : phase} style={top}>
-      {box.width > 0 ? (
-        <Picture phase={failed ? 'failed' : phase} progress={progress} cam={cam} phone={phone} point={props.point} sky={props.sky} profile={props.profile} seed={props.seed} />
+    <div ref={ref} className="on-foot-loader" data-phase={failed ? 'failed' : phase} data-picture={film ? 'film' : 'tiles'} style={top}>
+      {film ? <Film key={film.film.poster} {...film} /> : null}
+      {!film && box.width > 0 ? (
+        <TilesThenSkyline phase={failed ? 'failed' : phase} progress={progress} cam={cam} phone={phone} point={props.point} sky={props.sky} profile={props.profile} seed={props.seed} />
       ) : null}
       {failed ? null : (
         <LoaderStatus words={loaderWords(i18n, words, progress)} leaving={phase === 'handover'} />

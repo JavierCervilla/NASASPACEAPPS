@@ -32,7 +32,8 @@ function build() {
   const view = { told: true, home: {}, coast: null, homing: null } as unknown as ViewState;
   const loop = { invalidate: vi.fn() };
   const update = vi.fn();
-  const scene = withNewPoints({ update } as never, { view, loop, set: vi.fn(), seed: 1 });
+  const scene = withNewPoints({ update } as never, { view, loop, set: vi.fn(), seed: 1,
+    resetEye: vi.fn() });
   return { view, loop, scene };
 }
 

@@ -72,9 +72,16 @@ export interface Pose {
   readonly target: Vec3;
 }
 
-/** Where the eye stands over a ground `groundY` high, and what it aims at. */
-export function cameraPose(look: Look, groundY: number): Pose {
-  const eye: Vec3 = [0, groundY + EYE_M, 0];
+/**
+ * Where the eye stands over a ground `groundY` high, `at` metres east and
+ * north of the point (VENT-121: it walks), and what it aims at.
+ */
+export function cameraPose(
+  look: Look,
+  groundY: number,
+  at: readonly [number, number] = [0, 0],
+): Pose {
+  const eye: Vec3 = [at[0], groundY + EYE_M, 0 - at[1]];
   const [dx, dy, dz] = direction(look.yawDeg, look.pitchDeg);
-  return { position: eye, target: [dx, eye[1] + dy, dz] };
+  return { position: eye, target: [eye[0] + dx, eye[1] + dy, eye[2] + dz] };
 }

@@ -194,7 +194,8 @@ describe('the drag handlers', () => {
     const log: string[] = [];
     const target = { look: () => ({ yawDeg: 0, pitchDeg: 0 }), goHome: () => log.push('home'),
       set: () => log.push('set'), scale: () => dragScale(400, 800, 50),
-      fling: (vx: number) => log.push(`fling ${Math.round(vx)}`), halt: () => log.push('halt'), drag: () => undefined };
+      fling: (vx: number) => log.push(`fling ${Math.round(vx)}`), halt: () => log.push('halt'), drag: () => undefined,
+      walker: { tap: () => log.push('tap'), hover: () => undefined, step: () => log.push('step') } };
     bindLook(el, target);
     return { el, log };
   }

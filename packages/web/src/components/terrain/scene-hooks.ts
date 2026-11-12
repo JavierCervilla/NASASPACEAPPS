@@ -35,7 +35,7 @@ import type { SceneHooks } from '../../terrain/scene/scene-types';
 import type { ViewTier } from '../../terrain/view-tier';
 
 /** The hooks the panel itself gives the scene. */
-export type PanelHooks = Pick<SceneHooks, 'onLook' | 'band'>;
+export type PanelHooks = Pick<SceneHooks, 'onLook' | 'band' | 'onEye'>;
 
 export interface HookParts {
   readonly panel: RefObject<PanelHooks>;
@@ -53,6 +53,7 @@ export function sceneHooks(parts: HookParts): SceneHooks {
   return {
     onLook: (look) => panel.current.onLook(look),
     band: () => panel.current.band?.() ?? null,
+    onEye: (eye) => panel.current.onEye?.(eye),
     onLost: () => {
       tier.afterLoss();
       report.step(`tier dropped to ${tier.get().tier} for the next mount`);

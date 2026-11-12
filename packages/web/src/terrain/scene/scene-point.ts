@@ -39,6 +39,8 @@ interface Parts {
   readonly set: (look: Look) => void;
   /** The seed of the point the scene opened on. */
   readonly seed: number;
+  /** A new point stands the eye back on the point (VENT-121). */
+  readonly resetEye: () => void;
 }
 
 /** The look a point opens at: the view goes home, any coast stops. */
@@ -47,6 +49,7 @@ const openAt = (parts: Parts, input: SceneInput): void => {
   view.home = startLook(input.startYawDeg);
   view.coast = null;
   view.homing = null;
+  parts.resetEye();
   parts.set(view.home);
 };
 

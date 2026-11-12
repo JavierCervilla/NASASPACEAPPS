@@ -36,6 +36,7 @@ import { decideRelight } from '../relight';
 import type { SceneInput } from './scene-types';
 import { placeSky, shadeSun } from './sky-place';
 import { exposureFor } from './stage';
+import { applySight } from './walk-sight';
 import type { World } from './world';
 
 /** Lights the world for `input`'s sky. */
@@ -45,6 +46,7 @@ function lightWorld(world: World, input: SceneInput): void {
   placeSky(world.sky, input.sky, input.earthSpin,
     night ? { profile: input.profile } : null);
   const onLit = (lit: Float32Array): void => {
+    world.nearLit = lit;
     const grid = { lit, sizeM: input.tiles[0]?.tile.sizeM ?? 0 };
     world.rings?.setLit(0, grid);
     ringGrid = grid;
@@ -54,9 +56,25 @@ function lightWorld(world: World, input: SceneInput): void {
     mask: world.mask }, input.sky);
   world.farShade?.run(sun);
   world.craters?.relight(input.sky, ringGrid);
-  const reached = world.mask.near.value > 0;
-  world.shared.fill.uSunHere.value = reached ? 1 : 0;
   world.mask.night.value = night ? 1 : 0;
+  lightEye(world, input);
+}
+
+/**
+ * The Sun's reach where the eye stands (VENT-121): the point's mask, or
+ * the eye's when it walked away (walk-sight.ts), and the exposure for it.
+ * Run by each lighting and when a glide ends.
+ */
+export function lightEye(world: World, input: SceneInput): void {
+  const { mask } = world;
+  world.pointMask ??= { far: mask.far.value, near: mask.near.value };
+  if (!applySight(world, input)) {
+    mask.far.value = world.pointMask.far;
+    mask.near.value = world.pointMask.near;
+  }
+  const reached = mask.near.value > 0;
+  world.shared.fill.uSunHere.value = reached ? 1 : 0;
+  const night = mask.night.value > 0.5;
   world.stage.renderer.toneMappingExposure = exposureFor(reached && !night);
 }
 
@@ -74,6 +92,7 @@ export function relightWorld(
   world.setup.report.step(verdict.text, verdict.repeat);
   if (!verdict.relight) return false;
   world.lit = input.sky;
+  world.pointMask = null;
   world.stage.shadow.mark();
   lightWorld(world, input);
   return true;

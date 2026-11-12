@@ -398,7 +398,7 @@
   "onFoot.noPoint": "Este sitio no tiene coordenadas donde situarse",
   "onFoot.compass.heading": "Rumbo de la vista {dir}.",
   "onFoot.compass.press": "Pulsa para volver a la vista inicial.",
-  "onFoot.help": "Arrastra o usa las flechas izquierda y derecha para mirar alrededor, Re Pág y Av Pág para mirar arriba y abajo; toca el suelo, o pulsa las flechas arriba y abajo, para ir allí; Inicio vuelve a la vista inicial.",
+  "onFoot.help": "Arrastra o usa las flechas para mirar alrededor; toca el suelo para ir allí; Inicio vuelve a la vista inicial.",
   "walk.dir.n": "N",
   "walk.dir.ne": "NE",
   "walk.dir.e": "E",

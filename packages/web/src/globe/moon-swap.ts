@@ -65,11 +65,11 @@ export function ruleWatch(
   return (view) => {
     const level = wantedLevel(view, caps);
     if (level !== last) {
-      const { tier, saveData, maxTextureSize } = caps;
+      const { tier, phone, coarsePointer, saveData, maxTextureSize } = caps;
       const discPx = discPixels(view);
       const texel = pxPerTexel(level, view);
       trace?.mark({ kind: 'rule', level, discPx, pxPerTexel: texel, tier,
-        saveData, maxTextureSize });
+        phone, coarsePointer, saveData, maxTextureSize });
     }
     last = level;
     return level;

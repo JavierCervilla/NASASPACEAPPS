@@ -39,8 +39,12 @@ import { TextureSwap } from '../src/globe/texture-swap';
 
 // A GPU that takes 8K maps, as every desktop GPU of the last decade does.
 const BIG_GPU = 16384;
+// A desktop by default (a fine pointer, wide layout); `phone: true` for the phone layout, `coarsePointer: true` for
+// a touch screen.
 const caps = (tier: LodCaps['tier'], extra: Partial<LodCaps> = {}): LodCaps => ({
   tier,
+  phone: false,
+  coarsePointer: false,
   saveData: false,
   maxTextureSize: BIG_GPU,
   ...extra,
@@ -80,13 +84,13 @@ describe('texture level of detail', () => {
 
   // Literal distances: a change of the density rule must show up here.
   it('climbs a Pixel-sized phone to 2K at the opening view and to 4K once zoomed in', () => {
-    const levels = [5, 4.3, 3.5, 3, 2].map((d) => wantedLevel(view(d, PHONE), caps('medium')));
+    const levels = [5, 4.3, 3.5, 3, 2].map((d) => wantedLevel(view(d, PHONE), caps('medium', { phone: true })));
     expect(levels).toEqual([2, 4, 4, 4, 4]);
     expect(SOUTH_POLE_VIEW.distance).toBe(5);
   });
 
   it('climbs a Retina desktop at the medium tier to 2K at the opening view; at ratio 1 the 1K map is sharp there', () => {
-    expect([5, 3.5, 2.2].map((d) => wantedLevel(view(d, RETINA_MEDIUM), caps('medium')))).toEqual([2, 4, 4]);
+    expect([5, 3.5, 2.2].map((d) => wantedLevel(view(d, RETINA_MEDIUM), caps('medium')))).toEqual([2, 4, 8]);
     expect([5, 3.5, 2.2].map((d) => wantedLevel(view(d, DESKTOP), caps('medium')))).toEqual([1, 2, 4]);
   });
 
@@ -96,11 +100,28 @@ describe('texture level of detail', () => {
   });
 
   it('stops a phone (medium or low tier) at 4K when its GPU takes 4K', () => {
-    expect(wantedLevel(view(CLOSE_ZOOM, PHONE), caps('medium'))).toBe(4);
-    expect(wantedLevel(view(CLOSE_ZOOM, RETINA), caps('medium'))).toBe(4);
-    expect(wantedLevel(view(CLOSE_ZOOM, PHONE), caps('low'))).toBe(4);
-    expect(maxLevel(caps('low', { maxTextureSize: 4096 }))).toBe(4);
-    expect(maxLevel(caps('low', { maxTextureSize: 2048 }))).toBe(2);
+    const phone = { phone: true, coarsePointer: true };
+    expect(wantedLevel(view(CLOSE_ZOOM, PHONE), caps('medium', phone))).toBe(4);
+    expect(wantedLevel(view(CLOSE_ZOOM, RETINA), caps('medium', phone))).toBe(4);
+    expect(wantedLevel(view(CLOSE_ZOOM, PHONE), caps('low', phone))).toBe(4);
+    expect(maxLevel(caps('low', { ...phone, maxTextureSize: 4096 }))).toBe(4);
+    expect(maxLevel(caps('low', { ...phone, maxTextureSize: 2048 }))).toBe(2);
+  });
+
+  // VENT-122: Brave reports a random core count, so a capable desktop may read as medium and stopped at 4K.
+  it('lets a desktop at the medium tier climb to 8K where the zoom needs it, a phone and the low tier stay at 4K', () => {
+    expect(maxLevel(caps('medium'))).toBe(8);
+    expect(maxLevel(caps('medium', { phone: true }))).toBe(4);
+    expect(maxLevel(caps('low'))).toBe(4);
+    expect(maxLevel(caps('low', { phone: true }))).toBe(4);
+    expect(maxLevel(caps('medium', { saveData: true }))).toBe(1);
+    expect(maxLevel(caps('medium', { maxTextureSize: 4096 }))).toBe(4);
+    // A phone held sideways is wider than the phone layout, but its pointer is coarse: 4K, as before VENT-122.
+    expect(maxLevel(caps('medium', { coarsePointer: true }))).toBe(4);
+    expect(wantedLevel(view(CLOSE_ZOOM, RETINA), caps('medium', { coarsePointer: true }))).toBe(4);
+    // The density rule is unchanged: 8K only for a Retina desktop zoomed in, as on the high tier.
+    expect(wantedLevel(view(CLOSE_ZOOM, DESKTOP), caps('medium'))).toBe(4);
+    expect(wantedLevel(view(CLOSE_ZOOM, RETINA), caps('medium', { phone: true }))).toBe(4);
   });
 
   it('never asks below the start map, however small the disc', () => {

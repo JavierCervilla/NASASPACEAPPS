@@ -164,7 +164,11 @@ Every visible change follows `.claude/skills/apple-design/SKILL.md` (vendored fr
   200 ms) under reduced motion, VENT-57); a plain fade under reduced motion. The globe's pole tilt and zoom stretch
   past their limits on the sheet's rubber band under a drag, a pinch or the wheel (`GIVE`: at most 3° of tilt, and 0.25
   or 1.5 of camera distance near or far) and settle back on the orbit's springs on release, at the pinch's end, after 150 ms of wheel rest or on a
-  press that stops a flick (`src/globe/orbit-band.ts`); the keys and the framer still stop at the limit. Moving lines
+  press that stops a flick (`src/globe/orbit-band.ts`); the keys and the framer still stop at the limit. A mouse lets
+  the globe go where it is, with no coast, when it leaves the globe's view while dragging (its box read on each move,
+  since capture keeps the moves coming), when it moves with no button down (a lost `pointerup`) or when the capture is
+  lost (VENT-122, `src/globe/drag-exit.ts`, `drag.ts`; a finger and a pen keep their drag; `tests/globe-drag-exit.test.ts`,
+  `tests/e2e/vent-122-globe-drag-exit.spec.ts`). Moving lines
   (the strip's instant line, the phone calendar's line, the DSN playhead) ride `.rail--x|--y` translated by their share
   (`styles/rail.css`), and the phone compass moves by `translate`. Held by `tests/press-motion-css.test.ts`,
   `tests/globe-rubber.test.ts` and `tests/e2e/press-motion.spec.ts`.
@@ -209,7 +213,10 @@ Every visible change follows `.claude/skills/apple-design/SKILL.md` (vendored fr
   Moon while a finger is down on it (`src/pin/place-gesture.ts`). Held by `tests/e2e/app-feel.spec.ts`.
 - Must run on a laptop without a dedicated GPU (globe: 64-segment sphere, the start map (2K on the high tier, 1K
   below; the 1K maps and the 2K relief are precached), LOLA relief as a normal map; then the smallest map sharp enough for the disc on screen, up to 4K, 8K
-  on the high tier (VENT-97, `src/globe/texture-lod.ts`, `disc-density.ts`): a texel covers at most 1.15 drawing-buffer
+  on the high tier and on a desktop at the medium tier (VENT-122: Brave reports a random core count, so a capable
+  desktop may read as medium; a desktop is what the tier detection calls one, a fine pointer, and out of the phone
+  layout, so a phone held sideways, wider than that layout, still stops at 4K: `phone` and `coarsePointer` in
+  `LodCaps`, both read once at mount; the low tier stops at 4K) (VENT-97, `src/globe/texture-lod.ts`, `disc-density.ts`): a texel covers at most 1.15 drawing-buffer
   px at the disc's centre, the disc measured from the camera distance, the 35° field of view and the framed band's
   height times the pixel ratio (`frameBufferPx`, `src/globe/frame.ts`); levels only climb, so no threshold flips).
   The device's tier is read once per page (VENT-91): `pickQuality` (`src/globe/quality-pick.ts`, built by
@@ -603,7 +610,8 @@ Every visible change follows `.claude/skills/apple-design/SKILL.md` (vendored fr
   and the sheet's edge) show the selected site or point from the ground, opening in **first person**, the eye 2 m over
   the point, facing the Sun when it is near the sky, else the Earth (VENT-54, the human's decision: no astronaut, no
   lander and no camera switch; `view-camera.ts` has one pose); drag (Pointer Events
-  with capture) or ← and → (and Page Up and Page Down for the pitch, VENT-121) on the focused view turn it
+  with capture) or the arrows on the focused view turn it (← and → turn, ↑ and ↓ tilt: VENT-122 took the walking off
+  ↑ and ↓, the human's decision, so walking is by click or tap alone)
   (`src/terrain/look-input.ts`, `view-camera.ts`), and Home turns it back to where it opened, as the compass's press
   does (below).
   **Walking** (VENT-121, Street View's moves, the human's variant 3A on the canvas; pure parts in `src/terrain/walk/`,
@@ -615,8 +623,7 @@ Every visible change follows `.claude/skills/apple-design/SKILL.md` (vendored fr
   15.625 m on its near side, less `BLEND_CELLS` and a 20-cell margin), so it always stands on relief already loaded; a
   tap beyond goes to the reach's edge along that line. It glides on a critically damped curve over 0.6 s to 2 s by
   distance (`walk/glide.ts`), 2 m over the ground at every frame, the heading kept; a new tap retargets from where it
-  is; frames are drawn only while it moves, and under reduced motion it moves in one frame. ↑ and ↓ glide 10 m along
-  the heading (`walk/walk-keys.ts`). The host says where the eye is in `data-eye` («east,north» metres). What follows
+  is; frames are drawn only while it moves, and under reduced motion it moves in one frame. The host says where the eye is in `data-eye` («east,north» metres). What follows
   the eye: the camera (`cameraPose(look, groundY, at)`), and the sky group, so the bodies keep their true directions
   and the Sun's ±60 m shadow box is centred on it (`scene/walk-move.ts` `followEye`, which marks a shadow pass only when
   the eye moved). When it arrives: the rocks are seeded around it (at the point the point's own scatter, byte for byte;
@@ -878,7 +885,7 @@ Every visible change follows `.claude/skills/apple-design/SKILL.md` (vendored fr
   precache (`ON_DEMAND`), and Spector.js only in the dev server or a `PUBLIC_PERF_HUD=1` build. The globe's Moon maps
   are marked there too as «globe: …» lines (VENT-99, `src/globe/map-crumbs.ts`, built in `moon-swap.ts` only when
   `devToolsModule()` is not null, the lines told before the tools came kept and marked when they come,
-  an event seen among the last 12, whatever its seconds, not marked again): «rule wants 4K: disc 854 px, 0.65 px/texel; medium, max 8192» when the density
+  an event seen among the last 12, whatever its seconds, not marked again): «rule wants 4K: disc 854 px, 0.65 px/texel; medium, max 8192» (with «, phone» after the tier in the phone layout and «, coarse pointer» on a touch screen) when the density
   rule's answer changes, «4K wanted (2K shown)», «4K maps asked», «4K colour loading: moon-lroc-4k.jpg», «4K colour
   landed in 1.4 s (4096x2048)», «4K colour failed: moon-lroc-4k.jpg (error event, no details)», «4K colour timed out
   after 60 s: …», «4K colour uploaded, gl NO_ERROR» (`gl.getError()` read after each upload, under `?debug` only),

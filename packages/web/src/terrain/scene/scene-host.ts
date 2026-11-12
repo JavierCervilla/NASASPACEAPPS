@@ -34,6 +34,7 @@ import { dragScale } from '../look-input';
 import type { Look } from '../view-camera';
 import { bindLook } from './controls';
 import type { ViewState } from './scene-frame';
+import type { Walker } from './walk';
 import type { World } from './world';
 
 /** Whether the person asked for less motion. */
@@ -56,11 +57,13 @@ function flingOf(host: HTMLElement, world: World, view: ViewState) {
 export interface LookActions {
   readonly set: (look: Look) => void;
   readonly goHome: () => void;
+  /** Where a tap, a hover and the walking keys go (VENT-121). */
+  readonly walker: Walker;
 }
 
 /** Binds the controls and the host's size; returns the unbind. */
 export function bindHost(host: HTMLElement, world: World, view: ViewState,
-  { set, goHome }: LookActions): () => void {
+  { set, goHome, walker }: LookActions): () => void {
   const { camera } = world.stage;
   const unbind = bindLook(host, {
     set: (look) => {
@@ -68,7 +71,7 @@ export function bindHost(host: HTMLElement, world: World, view: ViewState,
       view.homing = null;
       set(look);
     },
-    look: () => view.look, goHome,
+    look: () => view.look, goHome, walker,
     scale: () => dragScale(host.clientWidth, host.clientHeight, camera.fov),
     fling: flingOf(host, world, view),
     drag: (down) => void (view.dragging = down),

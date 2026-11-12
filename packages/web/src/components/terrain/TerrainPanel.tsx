@@ -51,6 +51,7 @@ import { useOnFoot, type OnFootParts } from './use-on-foot';
 import { useReportRun } from './use-report-run';
 import { useStatusBand } from './use-status-band';
 import { useTerrainScene, type BandMoves } from './use-terrain-scene';
+import { useWalk } from './walk/use-walk';
 
 export interface PanelProps extends OnFootParts {
   readonly layout: 'desktop' | 'phone';
@@ -65,6 +66,17 @@ export interface PanelProps extends OnFootParts {
 /** No sheet: the desktop's edge, never set. */
 const NO_SHEET = createWatchedValue<number | null>(null);
 
+/** «Try again»: the scene's, and the relief's when it was unavailable. */
+const retryOf = (
+  report: { step: (text: string) => void },
+  scene: { retry: () => void },
+  view: ReturnType<typeof useOnFoot>,
+) => (): void => {
+  report.step('«Try again» pressed');
+  scene.retry();
+  if (view.tile.state.kind === 'unavailable') view.tile.retry();
+};
+
 /**
  * The view's state, its scene, the heading its text alternative says and
  * what its compass shows (VENT-63).
@@ -76,33 +88,30 @@ function usePanel(props: PanelProps) {
   const host = useRef<HTMLDivElement>(null);
   const [yaw, setYaw] = useState<number | null>(null);
   const { band, bandMoves, makeRoom } = props;
+  const walking = useWalk(props.site, view.sky);
   const hooks = { onLook: (look: { yawDeg: number }) => setYaw(look.yawDeg),
-    band, bandMoves, report };
+    band, bandMoves, report, onEye: walking.onEye };
   const scene = useTerrainScene(host, view.input, hooks, props.viewTier);
   useStatusBand({ host, status: scene.status, band, bandMoves, makeRoom });
-  const onRetry = (): void => {
-    report.step('«Try again» pressed');
-    scene.retry();
-    if (view.tile.state.kind === 'unavailable') view.tile.retry();
-  };
+  const onRetry = retryOf(report, scene, view);
   const onCopyReport = (): Promise<boolean> => copyReport(report);
   const yawDeg = yaw ?? view.startYawDeg;
   const { loader, drawn } = useLoaderProps({ panel: props, view, scene });
   const compass = { yawDeg, onHome: scene.home, sheetEdge: props.sheetEdge
     ?? NO_SHEET, earth: view.bodies.find((body) => body.id === 'earth') };
   return { view, host, status: scene.status, drawn, loader,
-    onRetry, onCopyReport, yawDeg, compass };
+    onRetry, onCopyReport, yawDeg, compass, walk: walking.walk(scene.back) };
 }
 
 export default function TerrainPanel(props: PanelProps) {
   const i18n = useI18n();
   const { view, host, status, drawn, loader, onRetry, onCopyReport,
-    yawDeg, compass } = usePanel(props);
+    yawDeg, compass, walk } = usePanel(props);
   const altId = useId();
-  const alt = view.input
-    ? viewAlt(i18n, { yawDeg, bodies: view.bodies }) : '';
+  const alt = view.input ? viewAlt(i18n, { yawDeg, bodies: view.bodies,
+    where: walk.eye, site: walk.site }) : '';
   const area = { view, host, status, drawn, loader, onRetry, onCopyReport,
-    altId, compass };
+    altId, compass, walk };
   const { layout, hours } = props;
   return (
     <section className={`on-foot on-foot--${layout}`} aria-label={i18n.t('onFoot.view')}>

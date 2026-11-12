@@ -28,7 +28,8 @@
  * in (React renders nothing inside it: the scene owns its canvas and
  * labels), the loader over it until it has drawn (VENT-60), the caption,
  * the night's notice (VENT-100), the far relief's chip and the compass
- * (VENT-63) once it has, and what it says when it cannot draw.
+ * (VENT-63) and the walk's chip, edge card and hint (VENT-121) once it
+ * has, and what it says when it cannot draw.
  */
 import type { ComponentProps, RefObject } from 'react';
 import { HeadingCompass } from '../compass/HeadingCompass';
@@ -40,6 +41,7 @@ import { OnFootNight } from './OnFootNight';
 import { OnFootStatus } from './OnFootStatus';
 import type { useOnFoot } from './use-on-foot';
 import type { SceneStatus } from './use-terrain-scene';
+import { WalkLayer, type WalkProps } from './walk/WalkLayer';
 
 interface Props {
   readonly view: ReturnType<typeof useOnFoot>;
@@ -57,6 +59,8 @@ interface Props {
   readonly altId: string;
   /** The compass in the corner, shown once the view stands (VENT-63). */
   readonly compass: ComponentProps<typeof HeadingCompass>;
+  /** The walk's chip, edge card and hint (VENT-121). */
+  readonly walk: WalkProps;
 }
 
 interface TopProps {
@@ -95,7 +99,12 @@ export function OnFootStageArea(props: Props) {
       {props.loader ? <OnFootLoader {...props.loader} /> : null}
       <StageTop view={view} resolution={resolution} drawn={props.drawn} />
       {props.drawn && status === 'ready'
-        ? <HeadingCompass {...props.compass} /> : null}
+        ? (
+          <>
+            <HeadingCompass {...props.compass} />
+            <WalkLayer {...props.walk} />
+          </>
+        ) : null}
       <OnFootStatus located={view.located} tile={tile} scene={status}
         onRetry={onRetry} onCopyReport={onCopyReport} />
     </div>

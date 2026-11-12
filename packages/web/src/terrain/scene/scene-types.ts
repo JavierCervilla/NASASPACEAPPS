@@ -58,6 +58,19 @@ export interface SceneWords {
   /** The ridge that hides a body, at its azimuth; null: none in reach. */
   readonly ridge: { readonly text: string; readonly azDeg: number;
     readonly distanceM: number } | null;
+  /** «180 m»: the walk marker's distance (VENT-121, walk-words.ts). */
+  readonly distance?: ((metres: number) => string) | undefined;
+}
+
+/** Where the eye stands and what it sees there (VENT-121). */
+export interface EyeReport {
+  /** Metres east and north of the point. */
+  readonly at: readonly [number, number];
+  /** It was held to the reach's edge. */
+  readonly edge: boolean;
+  /** The bodies from there; null at the point (the point's own answer). */
+  readonly sight: { readonly sunClear: boolean;
+    readonly earthClear: boolean } | null;
 }
 
 export interface SceneInput {
@@ -109,6 +122,11 @@ export interface SceneHooks {
    * between its top bar and sheet), px from the host's top; none: whole.
    */
   readonly band?: (() => { top: number; bottom: number } | null) | undefined;
+  /**
+   * The eye arrived somewhere, or the sky moved while it stands away
+   * (VENT-121): the chip, the edge card and the live region hear it.
+   */
+  readonly onEye?: ((eye: EyeReport) => void) | undefined;
 }
 
 export interface TerrainScene {
@@ -118,6 +136,8 @@ export interface TerrainScene {
    * reduced motion): the compass's press and Home (VENT-63).
    */
   readonly home: () => void;
+  /** Glides the eye back to the point (VENT-121, «Back to …»). */
+  readonly back: () => void;
   /** Draws once more (the band moved). */
   readonly invalidate: () => void;
   /**

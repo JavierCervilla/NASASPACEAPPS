@@ -53,6 +53,8 @@ import { withNewPoints } from './scene-point';
 import { gateLoop } from './loop-gate';
 import { createStage, disposeStage } from './stage';
 import { applyInput, createWorld, type World } from './world';
+import { createWalker } from './walk';
+import { followEye, resetEye } from './walk-move';
 
 /** The world on a new stage in `host`; throws without WebGL. */
 function stageWorld(host: HTMLElement, seed: number, setup: SceneSetup) {
@@ -67,15 +69,21 @@ function openScene(host: HTMLElement, input: SceneInput, hooks: SceneHooks,
   reportStage(world);
   const home = startLook(input.startYawDeg);
   const view: ViewState = { look: home, home, coast: null, homing: null,
-    dragging: false, told: false };
-  const { labels, frame } = framer(world, host, hooks, view);
+    dragging: false, told: false, eye: [0, 0], glide: null, edge: false,
+    fading: false };
+  const walking = { world, view, host, reducedMotion };
+  const walker = createWalker(walking);
+  world.tellEye = () => hooks.onEye?.({ at: world.eye, edge: view.edge,
+    sight: world.sight });
+  const { labels, frame } = framer({ ...walking, hooks,
+    marker: walker.marker });
   const pace = pacedSchedule({ raf: requestAnimationFrame,
     cancel: cancelAnimationFrame,
     turning: () => isPhoneViewport() && !reducedMotion() &&
       (view.dragging || view.coast !== null) });
   const loop = gateLoop(createLoop(frame, pace.schedule, pace.cancel));
   world.invalidate = () => loop.invalidate();
-  return { world, view, labels, loop };
+  return { world, view, labels, loop, walker, walking };
 }
 
 /** What undoes a mounted scene, in order, and frees its GPU last. */
@@ -103,18 +111,22 @@ export function mountTerrainScene(
   hooks: SceneHooks,
   setup: SceneSetup,
 ): TerrainScene {
-  const { world, view, labels, loop } = openScene(host, input, hooks, setup);
+  const { world, view, labels, loop, walker, walking } =
+    openScene(host, input, hooks, setup);
   const set = turner(view, hooks, () => loop);
   const goHome = homer(view, set, () => loop);
   applyInput(world, input);
-  const unbind = bindHost(host, world, view, { set, goHome });
+  followEye(walking);
+  const unbind = bindHost(host, world, view, { set, goHome, walker });
   markSetup(host, setup);
   const unmark = startLoading(host, world, loop, hooks);
   const unwatch = guardLost({ canvas: world.stage.renderer.domElement,
     labels, loop, report: setup.report, onLost: hooks.onLost });
   const tools = attachDevTools(world.stage.renderer, 'onFoot');
   const teardown = freeScene({ world, labels, loop,
-    steps: [tools, unwatch, unmark, unbind] });
-  const scene = controller({ world, loop, home: goHome, teardown });
-  return withNewPoints(scene, { view, loop, set, seed: input.seed });
+    steps: [tools, unwatch, unmark, unbind, walker.dispose] });
+  const scene = controller({ world, loop, home: goHome, teardown,
+    back: walker.back });
+  return withNewPoints(scene, { view, loop, set, seed: input.seed,
+    resetEye: () => resetEye(walking) });
 }

@@ -40,6 +40,7 @@ import { RING_DISTANCES_M, type PlacedTile, type SceneWords,
 import type { SeenBody } from './view-alt';
 import { direction } from './view-camera';
 import { ridgeLabel, ringLabel } from './view-text';
+import { distanceText } from './walk/walk-words';
 
 /** A body this far under the level still opens the view, degrees. */
 const NEAR_SKY_DEG = -2;
@@ -67,11 +68,13 @@ export function sceneWords(
   bodies: readonly SeenBody[],
 ): SceneWords {
   const rings = RING_DISTANCES_M.map((m) => ringLabel(i18n, m));
+  const distance = (m: number): string => distanceText(i18n, m);
   const hider = bodies.find((b) => b.blocker.kind === 'ridge');
-  if (hider?.blocker.kind !== 'ridge') return { rings, ridge: null };
+  if (hider?.blocker.kind !== 'ridge') return { rings, ridge: null, distance };
   const { blocker } = hider;
   return {
     rings,
+    distance,
     ridge: { text: ridgeLabel(i18n, blocker), azDeg: hider.azDeg,
       distanceM: blocker.distanceM },
   };

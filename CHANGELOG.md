@@ -33,6 +33,16 @@
   you». En escritorio, las cuatro en fila; en los cinco idiomas. El menú dice «The app» en vez de «Tour».
 
 ### Añadido
+- **Caminar por la vista 3D, como en Street View (VENT-121, la variante 3A del lienzo).** Un toque o un clic en el suelo
+  lleva la vista allí con un deslizamiento suave (de 0,6 s a 2 s según la distancia; al instante con movimiento
+  reducido); arrastrar sigue girando como antes. Con ratón, un anillo sobre el suelo sigue al puntero con la distancia;
+  con el dedo aparece donde tocas y se desvanece al salir. En el teclado, ↑ y ↓ avanzan y retroceden 10 m, ← y → giran
+  y Re Pág y Av Pág miran arriba y abajo. Se puede llegar hasta 1,5 km del punto, donde ya está cargado el relieve de
+  15,6 m, sin pedir nada nuevo. Lejos del punto, una ficha de cristal dice dónde estás, «180 m NE of IM-2», y el estado
+  allí con su color («Window here»), calculado desde tus ojos: el Sol y la Tierra se miran sobre el relieve desde donde
+  estás, y la sombra del Sol, el cielo y las rocas te siguen. Su botón redondo vuelve al punto. Al llegar al borde,
+  una tarjeta lo explica y ofrece «Drop a pin here», que convierte ese lugar en el punto propio y abre la vista a tu
+  alrededor. La primera vez, «Tap the ground to go there». En los cinco idiomas.
 - **El vídeo de la demo en la portada (VENT-120).** La sección del equipo muestra el vídeo de RAEA de 68 s donde antes
   decía que llegaría con la entrega; no se descarga nada hasta pulsar play. Debajo, un enlace al corte de 30 s, el del
   envío a Space Apps, servido desde nuestra propia web (https://nasa.universelle.io/media/demo/ventana-lunar-30s.mp4).

@@ -27,13 +27,23 @@
  * How the on-foot view is turned (VENT-34): a drag with Pointer Events
  * and capture (mouse, pen or one finger; a swipe across the view turns it
  * 180°), a release that carries the finger's speed on (look-coast.ts), a
- * press that stops the coast, the arrows on the focused view
- * (look-input.ts), and Home, which turns it back to where it opened as the
+ * press that stops the coast, ← and → and Page Up and Page Down on the
+ * focused view (look-input.ts), a tap on the ground and ↑ and ↓, which walk
+ * (VENT-121, walk.ts), and Home, which turns it back to where it opened as the
  * compass does (VENT-63). A key the view does not use is left to the page.
  */
 import { VelocityTracker } from '../../globe/velocity';
 import { keyLook, type DragScale } from '../look-input';
-import { press, release, turn } from './drag-steps';
+import { keyStep } from '../walk/walk-keys';
+import {
+  hoverAt,
+  press,
+  pressOf,
+  release,
+  turn,
+  type Press,
+} from './drag-steps';
+import type { Walker } from './walk';
 import type { Look } from '../view-camera';
 
 export interface LookTarget {
@@ -49,41 +59,53 @@ export interface LookTarget {
   readonly halt: () => void;
   /** The pointer went down (true) or up or was cancelled (false). */
   readonly drag: (down: boolean) => void;
+  /** Taps, a fine pointer's hover and the walking keys (VENT-121). */
+  readonly walker: Pick<Walker, 'tap' | 'hover' | 'step'>;
 }
 
 type Handlers = readonly (readonly [string, EventListener])[];
 
 const listener = (fn: (e: PointerEvent) => void) => fn as EventListener;
 
-/** The drag's handlers on `el`, one pointer at a time. */
+/**
+ * The drag's handlers on `el`, one pointer at a time. A drag turns the view
+ * as it always did; a press that never travels the globe's slop
+ * (lib/press-slop.ts) is a tap, which walks (VENT-121); a fine pointer with
+ * no button down hovers.
+ */
 function dragHandlers(el: HTMLElement, target: LookTarget): Handlers {
-  let last: { x: number; y: number; id: number } | null = null;
+  let last: Press | null = null;
   let tracker = new VelocityTracker();
   const down = (e: PointerEvent): void => {
     if (e.button !== 0) return;
     el.setPointerCapture(e.pointerId);
-    last = { x: e.clientX, y: e.clientY, id: e.pointerId };
+    last = pressOf(e);
     tracker = press(target, e);
   };
   const move = (e: PointerEvent): void => {
-    if (!last || e.pointerId !== last.id) return;
-    const delta = [e.clientX - last.x, e.clientY - last.y] as const;
-    last = { ...last, x: e.clientX, y: e.clientY };
+    if (!last) return void hoverAt(target, e);
+    if (e.pointerId !== last.id) return;
     tracker.add(e.clientX, e.clientY, e.timeStamp);
-    turn(target, delta);
+    last = turn(target, last, e);
   };
   const up = (e: PointerEvent): void => {
     if (last?.id !== e.pointerId) return;
+    release(target, tracker, e, !last.travelled);
     last = null;
-    release(target, tracker, e);
   };
   return [['pointerdown', listener(down)], ['pointermove', listener(move)],
-    ['pointerup', listener(up)], ['pointercancel', listener(up)]];
+    ['pointerup', listener(up)], ['pointercancel', listener(up)],
+    ['pointerleave', () => target.walker.hover(null)]];
 }
 
 /** Binds drag and keys on `el`; returns the unbind. */
 export function bindLook(el: HTMLElement, target: LookTarget): () => void {
   const key = (e: KeyboardEvent): void => {
+    const step = keyStep(target.look(), e.key);
+    if (step) {
+      e.preventDefault();
+      return target.walker.step(step);
+    }
     const next = keyLook(target.look(), e);
     if (!next && e.key !== 'Home') return;
     e.preventDefault();

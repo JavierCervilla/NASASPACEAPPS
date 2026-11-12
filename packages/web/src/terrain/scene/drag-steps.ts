@@ -29,8 +29,24 @@
  * what a release does with it, and one turn of the look.
  */
 import { VelocityTracker } from '../../globe/velocity';
+import { pastSlop } from '../../lib/press-slop';
 import { dragLook } from '../look-input';
 import type { LookTarget } from './controls';
+
+/** Where a press started and whether it travelled past the slop. */
+export interface Press {
+  readonly x: number;
+  readonly y: number;
+  readonly id: number;
+  readonly start: { readonly x: number; readonly y: number };
+  readonly travelled: boolean;
+}
+
+/** A press of `e`, where it starts, not travelled yet. */
+export function pressOf(e: PointerEvent): Press {
+  const start = { x: e.clientX, y: e.clientY };
+  return { ...start, id: e.pointerId, start, travelled: false };
+}
 
 /** A press stops any coast, marks the drag and starts the tracker. */
 export function press(target: LookTarget, e: PointerEvent): VelocityTracker {
@@ -41,21 +57,38 @@ export function press(target: LookTarget, e: PointerEvent): VelocityTracker {
   return tracker;
 }
 
-/** A release carries the finger's speed on; a cancel carries nothing. */
+/**
+ * A release carries the finger's speed on; a cancel carries nothing; the
+ * release of a press that stayed `still` (never past the slop) is a tap,
+ * which walks there instead (VENT-121).
+ */
 export function release(
   target: LookTarget,
   tracker: VelocityTracker,
   e: PointerEvent,
+  still: boolean,
 ): void {
   target.drag(false);
+  if (still && e.type === 'pointerup') {
+    target.walker.tap(e.clientX, e.clientY, e.pointerType === 'touch');
+    return;
+  }
   const v = tracker.velocity(e.timeStamp);
   if (e.type === 'pointerup') target.fling(v.x, v.y);
 }
 
-export function turn(
-  target: LookTarget,
-  delta: readonly [number, number],
-): void {
+/** A fine pointer moving with no button down: the marker follows it. */
+export function hoverAt(target: LookTarget, e: PointerEvent): void {
+  if (e.pointerType === 'touch') return;
+  target.walker.hover({ x: e.clientX, y: e.clientY });
+}
+
+/** Turns the look by the pointer's move; the press, moved on. */
+export function turn(target: LookTarget, last: Press, e: PointerEvent): Press {
   const { look, scale } = target;
+  const delta = [e.clientX - last.x, e.clientY - last.y] as const;
   target.set(dragLook(look(), delta, scale()));
+  return { ...last, x: e.clientX, y: e.clientY,
+    travelled: last.travelled ||
+      pastSlop(last.start, { x: e.clientX, y: e.clientY }) };
 }

@@ -35,6 +35,7 @@ import { MarkerLayer } from './marker-layer';
 import { addMoon } from './moon';
 import { globeQuality } from './globe-quality';
 import type { Stage } from './stage';
+import { deviceHints } from '../lib/quality';
 import { isPhoneViewport } from '../lib/viewport';
 
 /**
@@ -60,9 +61,11 @@ export function addContents(
   const text = options.graticuleText;
   const graticule = mountGraticule({ host, scene: stage.scene, text });
   const markers = new MarkerLayer(host, store.get().id, invalidate, pick);
-  // The Moon takes its tier from the quality settings, its cap the layout.
+  // The Moon takes its tier from the quality settings; its cap, the layout
+  // and the pointer the tier detection reads.
   const quality = globeQuality(options.early);
-  const moon = addMoon(stage, { ...options, ...quality,
+  const { coarsePointer } = deviceHints(null);
+  const moon = addMoon(stage, { ...options, ...quality, coarsePointer,
     phone: isPhoneViewport(), onChange: invalidate, shown, compile });
   const layers = mountGlobeLayers(
     { host, scene: stage.scene, invalidate, markers }, options.layers);

@@ -103,14 +103,16 @@ describe('a mouse that leaves the globe', () => {
     expect(vx).toBeGreaterThan(0);
   });
 
-  it('a finger or a pen keeps its drag outside the view and with no buttons reported', () => {
+  it('a finger or a pen keeps its drag outside the view, with no buttons reported and after a lost capture', () => {
     for (const type of ['touch', 'pen']) {
       const { host, turn } = setUp();
       dragFast(host, type);
       const drags = turn.drag.mock.calls.length;
       fire(host, 'pointermove', 340, { type, t: 60 });
       fire(host, 'pointermove', 360, { type, buttons: 0, t: 70 });
-      expect(turn.drag).toHaveBeenCalledTimes(drags + 2);
+      fire(host, 'lostpointercapture', 360, { type, t: 75 });
+      fire(host, 'pointermove', 380, { type, t: 80 });
+      expect(turn.drag).toHaveBeenCalledTimes(drags + 3);
       expect(turn.release).not.toHaveBeenCalled();
     }
   });

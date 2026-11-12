@@ -57,7 +57,7 @@ test.describe('the globe map trace, a Pixel-sized phone 412x880 at pixel ratio 1
     await page.getByRole('application', { name: 'The Moon, seen over its south pole' }).focus();
     await page.keyboard.press('+');
     await expect.poll(() => globeLines(page), { timeout: MAP_MS }).toEqual(expect.arrayContaining([
-      expect.stringMatching(/^globe: rule wants 4K: disc \d+ px, \d\.\d\d px\/texel; medium, phone, max \d+$/),
+      expect.stringMatching(/^globe: rule wants 4K: disc \d+ px, \d\.\d\d px\/texel; medium, phone, coarse pointer, max \d+$/),
       'globe: 4K wanted (2K shown)',
       'globe: 4K colour loading: moon-lroc-4k.jpg',
       'globe: 4K colour failed: moon-lroc-4k.jpg (error event, no details)',

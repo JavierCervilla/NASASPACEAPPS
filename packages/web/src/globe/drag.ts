@@ -121,7 +121,9 @@ export function bindDrag(el: HTMLElement, target: DragTarget): () => void {
     ['pointermove', (e) => gesture.move(e)],
     ['pointerup', (e) => gesture.up(e)],
     ['pointercancel', (e) => gesture.up(e)],
-    ['lostpointercapture', (e) => gesture.up(e, false)],
+    ['lostpointercapture', (e) => {
+      if (e.pointerType === 'mouse') gesture.up(e, false);
+    }],
   ];
   for (const [type, fn] of listeners) el.addEventListener(type, fn);
   return () => {

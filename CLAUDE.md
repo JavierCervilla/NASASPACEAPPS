@@ -214,7 +214,9 @@ Every visible change follows `.claude/skills/apple-design/SKILL.md` (vendored fr
 - Must run on a laptop without a dedicated GPU (globe: 64-segment sphere, the start map (2K on the high tier, 1K
   below; the 1K maps and the 2K relief are precached), LOLA relief as a normal map; then the smallest map sharp enough for the disc on screen, up to 4K, 8K
   on the high tier and on a desktop at the medium tier (VENT-122: Brave reports a random core count, so a capable
-  desktop may read as medium; the phone layout and the low tier stop at 4K, `phone` in `LodCaps`) (VENT-97, `src/globe/texture-lod.ts`, `disc-density.ts`): a texel covers at most 1.15 drawing-buffer
+  desktop may read as medium; a desktop is what the tier detection calls one, a fine pointer, and out of the phone
+  layout, so a phone held sideways, wider than that layout, still stops at 4K: `phone` and `coarsePointer` in
+  `LodCaps`, both read once at mount; the low tier stops at 4K) (VENT-97, `src/globe/texture-lod.ts`, `disc-density.ts`): a texel covers at most 1.15 drawing-buffer
   px at the disc's centre, the disc measured from the camera distance, the 35° field of view and the framed band's
   height times the pixel ratio (`frameBufferPx`, `src/globe/frame.ts`); levels only climb, so no threshold flips).
   The device's tier is read once per page (VENT-91): `pickQuality` (`src/globe/quality-pick.ts`, built by
@@ -883,7 +885,7 @@ Every visible change follows `.claude/skills/apple-design/SKILL.md` (vendored fr
   precache (`ON_DEMAND`), and Spector.js only in the dev server or a `PUBLIC_PERF_HUD=1` build. The globe's Moon maps
   are marked there too as «globe: …» lines (VENT-99, `src/globe/map-crumbs.ts`, built in `moon-swap.ts` only when
   `devToolsModule()` is not null, the lines told before the tools came kept and marked when they come,
-  an event seen among the last 12, whatever its seconds, not marked again): «rule wants 4K: disc 854 px, 0.65 px/texel; medium, max 8192» (with «, phone» after the tier in the phone layout) when the density
+  an event seen among the last 12, whatever its seconds, not marked again): «rule wants 4K: disc 854 px, 0.65 px/texel; medium, max 8192» (with «, phone» after the tier in the phone layout and «, coarse pointer» on a touch screen) when the density
   rule's answer changes, «4K wanted (2K shown)», «4K maps asked», «4K colour loading: moon-lroc-4k.jpg», «4K colour
   landed in 1.4 s (4096x2048)», «4K colour failed: moon-lroc-4k.jpg (error event, no details)», «4K colour timed out
   after 60 s: …», «4K colour uploaded, gl NO_ERROR» (`gl.getError()` read after each upload, under `?debug` only),

@@ -52,7 +52,7 @@ describe('script v1', () => {
   it('zooms the globe from its opening view close enough for the 4K map on a 1440 x 900 desktop', () => {
     const zooms = keysOf(script[1]?.actions ?? [], 'globe').filter((k) => k === '+').length;
     const distance = zoomedDistance(SOUTH_POLE_VIEW.distance, -2 * zooms);
-    const caps = { tier: 'medium', phone: false, saveData: false, maxTextureSize: 16384 } as const;
+    const caps = { tier: 'medium', phone: false, coarsePointer: false, saveData: false, maxTextureSize: 16384 } as const;
     // The globe of a 1440 x 900 window is 547 px tall, beside the site card.
     expect(wantedLevel({ distance, frameBufferPx: 547 }, caps)).toBe(4);
   });

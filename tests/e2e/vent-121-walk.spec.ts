@@ -164,19 +164,23 @@ test.describe('desktop, 1280x800', () => {
   });
 
   // VENT-122: the arrows no longer walk (the human: walking is by click, as on touch); ↑ and ↓ tilt the view again.
+  // Each key is checked alone, since a step forward and one back would end on the point too; the tilt shows in the
+  // 25 m ring's label, which lies on the ground: a look up moves it down the screen, a look down moves it up.
   test('↑ and ↓ tilt the view and never move the eye', async ({ page }) => {
     await page.emulateMedia({ reducedMotion: 'reduce' });
     await open(page, './?site=im2-athena&onfoot=far#horizon', true);
     await settled(page);
     await host(page).focus();
-    for (const key of ['ArrowUp', 'ArrowDown']) {
-      const before = await frames(page);
+    const ringY = async (): Promise<number> =>
+      (await view(page).locator('.on-foot__label--ring:not([hidden])').first().boundingBox())!.y;
+    for (const [key, sign] of [['ArrowUp', 1], ['ArrowDown', -1]] as const) {
+      const before = await ringY();
       await page.keyboard.press(key);
-      await expect.poll(() => frames(page)).toBeGreaterThan(before);
+      await expect.poll(async () => sign * ((await ringY()) - before)).toBeGreaterThan(5);
+      await page.waitForTimeout(600);
+      expect(await eye(page)).toEqual([0, 0]);
+      await expect(chip(page)).toHaveCount(0);
     }
-    await page.waitForTimeout(600);
-    expect(await eye(page)).toEqual([0, 0]);
-    await expect(chip(page)).toHaveCount(0);
   });
 
   test('under reduced motion a click moves the eye at once, in one frame', async ({ page }) => {

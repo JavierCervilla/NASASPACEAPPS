@@ -23,8 +23,9 @@
 - **En escritorio el globo carga el mapa de 8K al acercarte, también en calidad media (VENT-122).** Hasta ahora el 8K
   era solo de la calidad alta, y un escritorio solo es alta si el navegador dice que tiene 4 núcleos o más; Brave se
   inventa ese número para proteger la privacidad, así que el escritorio de Javier se quedaba en 4K. Ahora un equipo
-  que no está en el diseño de móvil y cuya GPU admite 8192 px sube a 8K en calidad media cuando el zoom lo pide. Los
-  móviles y la calidad baja siguen en 4K y el ahorro de datos en el mapa inicial.
+  con ratón o trackpad, fuera del diseño de móvil y cuya GPU admite 8192 px sube a 8K en calidad media cuando el zoom
+  lo pide. Los móviles (también en horizontal, que son más anchos que el diseño de móvil pero táctiles) y la calidad
+  baja siguen en 4K, y el ahorro de datos en el mapa inicial.
 - **En la vista 3D se camina solo con clic o toque (VENT-122).** Las flechas ↑ y ↓ ya no avanzan ni retroceden 10 m:
   vuelven a inclinar la vista arriba y abajo, como antes de VENT-121, y Re Pág y Av Pág dejan de hacerlo. Para ir a un
   sitio, haz clic en el suelo y la vista se desliza hasta allí. La ayuda lo dice así en los cinco idiomas.

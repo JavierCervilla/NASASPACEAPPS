@@ -39,10 +39,12 @@ import { TextureSwap } from '../src/globe/texture-swap';
 
 // A GPU that takes 8K maps, as every desktop GPU of the last decade does.
 const BIG_GPU = 16384;
-// A desktop by default; `phone: true` for the phone layout.
+// A desktop by default (a fine pointer, wide layout); `phone: true` for the phone layout, `coarsePointer: true` for
+// a touch screen.
 const caps = (tier: LodCaps['tier'], extra: Partial<LodCaps> = {}): LodCaps => ({
   tier,
   phone: false,
+  coarsePointer: false,
   saveData: false,
   maxTextureSize: BIG_GPU,
   ...extra,
@@ -98,7 +100,7 @@ describe('texture level of detail', () => {
   });
 
   it('stops a phone (medium or low tier) at 4K when its GPU takes 4K', () => {
-    const phone = { phone: true };
+    const phone = { phone: true, coarsePointer: true };
     expect(wantedLevel(view(CLOSE_ZOOM, PHONE), caps('medium', phone))).toBe(4);
     expect(wantedLevel(view(CLOSE_ZOOM, RETINA), caps('medium', phone))).toBe(4);
     expect(wantedLevel(view(CLOSE_ZOOM, PHONE), caps('low', phone))).toBe(4);
@@ -114,6 +116,9 @@ describe('texture level of detail', () => {
     expect(maxLevel(caps('low', { phone: true }))).toBe(4);
     expect(maxLevel(caps('medium', { saveData: true }))).toBe(1);
     expect(maxLevel(caps('medium', { maxTextureSize: 4096 }))).toBe(4);
+    // A phone held sideways is wider than the phone layout, but its pointer is coarse: 4K, as before VENT-122.
+    expect(maxLevel(caps('medium', { coarsePointer: true }))).toBe(4);
+    expect(wantedLevel(view(CLOSE_ZOOM, RETINA), caps('medium', { coarsePointer: true }))).toBe(4);
     // The density rule is unchanged: 8K only for a Retina desktop zoomed in, as on the high tier.
     expect(wantedLevel(view(CLOSE_ZOOM, DESKTOP), caps('medium'))).toBe(4);
     expect(wantedLevel(view(CLOSE_ZOOM, RETINA), caps('medium', { phone: true }))).toBe(4);

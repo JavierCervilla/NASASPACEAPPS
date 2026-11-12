@@ -71,6 +71,8 @@ export interface MoonOptions {
   readonly tier: Tier;
   /** The phone layout, which keeps the Moon's maps to 4K (texture-lod.ts). */
   readonly phone: boolean;
+  /** A coarse pointer, which also keeps them to 4K (texture-lod.ts). */
+  readonly coarsePointer: boolean;
   /** Under Save-Data the start map is the only one. */
   readonly saveData: boolean;
   readonly onChange: () => void;

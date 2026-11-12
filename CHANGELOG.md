@@ -3,6 +3,11 @@
 ## [Sin publicar]
 
 ### Arreglado
+- **El globo deja de moverse al sacar el ratón de su vista (VENT-122).** Si arrastrabas el globo y el ratón salía de
+  su vista, el globo seguía girando con el ratón por encima de la tarjeta y, al soltar fuera, seguía de inercia. Ahora,
+  con ratón, el globo se queda donde está en cuanto el puntero sale de su vista, como si lo soltaras en el borde, sin
+  inercia; y tampoco gira si el ratón se mueve sin botón pulsado porque el navegador perdió la suelta (soltar fuera de
+  la ventana, un menú contextual). Con el dedo y el lápiz no cambia nada.
 - **En el Pixel 10 la vista 3D vuelve a ir sin sombras.** Con la profundidad partida y el mapa de sombras, el Pixel 10
   de Javier perdió el contexto a los 10 s de girar en un punto propio en producción. En PowerVR y en los móviles que
   ocultan su GPU la vista se dibuja otra vez sin mapa de sombras; el resto de equipos las mantiene. `?depth=linear`
@@ -15,6 +20,15 @@
   fotograma» salían a la mitad. Ahora suma los dos.
 
 ### Cambiado
+- **En escritorio el globo carga el mapa de 8K al acercarte, también en calidad media (VENT-122).** Hasta ahora el 8K
+  era solo de la calidad alta, y un escritorio solo es alta si el navegador dice que tiene 4 núcleos o más; Brave se
+  inventa ese número para proteger la privacidad, así que el escritorio de Javier se quedaba en 4K. Ahora un equipo
+  con ratón o trackpad, fuera del diseño de móvil y cuya GPU admite 8192 px sube a 8K en calidad media cuando el zoom
+  lo pide. Los móviles (también en horizontal, que son más anchos que el diseño de móvil pero táctiles) y la calidad
+  baja siguen en 4K, y el ahorro de datos en el mapa inicial.
+- **En la vista 3D se camina solo con clic o toque (VENT-122).** Las flechas ↑ y ↓ ya no avanzan ni retroceden 10 m:
+  vuelven a inclinar la vista arriba y abajo, como antes de VENT-121, y Re Pág y Av Pág dejan de hacerlo. Para ir a un
+  sitio, haz clic en el suelo y la vista se desliza hasta allí. La ayuda lo dice así en los cinco idiomas.
 - **Las sombras vuelven a PowerVR: la vista 3D se dibuja en dos pasadas de profundidad lineal (VENT-114).** En el Pixel 10
   el mapa de sombras con profundidad logarítmica o invertida tumbaba el contexto de la GPU, y con profundidad lineal sola
   las crestas lejanas salían en escalones. Ahora, en todas las GPU, primero se dibuja lo lejano (anillos 2 y 3, el muro del

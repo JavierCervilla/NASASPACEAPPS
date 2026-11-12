@@ -24,26 +24,18 @@
  */
 
 /**
- * The keys that walk (VENT-121): on the focused view ↑ glides 10 m forward
- * along the heading and ↓ 10 m back, as Street View's arrows do; ← and →
- * still turn, and Page Up and Page Down took the pitch over from ↑ and ↓
- * (look-input.ts). Pure.
+ * When a mouse lets the globe go (VENT-122): a move with no button down
+ * (its `pointerup` was lost) or outside the globe's view. Pure.
  */
-import type { Look } from '../view-camera';
-import type { EastNorth } from './walk-reach';
 
-/** One key's step, metres. */
-export const WALK_STEP_M = 10;
-
-const STEPS: Readonly<Record<string, number>> = {
-  ArrowUp: WALK_STEP_M,
-  ArrowDown: -WALK_STEP_M,
-};
-
-/** The step east and north of `key` along `look`'s heading; null: none. */
-export function keyStep(look: Look, key: string): EastNorth | null {
-  const metres = STEPS[key];
-  if (metres === undefined) return null;
-  const yaw = (look.yawDeg * Math.PI) / 180;
-  return [Math.sin(yaw) * metres, Math.cos(yaw) * metres];
+/** A mouse with no button down, or outside `el`'s box: the drag ends. */
+export function mouseLetGo(
+  el: Pick<HTMLElement, 'getBoundingClientRect'>,
+  event: Pick<PointerEvent, 'pointerType' | 'buttons' | 'clientX' | 'clientY'>,
+): boolean {
+  if (event.pointerType !== 'mouse') return false;
+  if (event.buttons === 0) return true;
+  const box = el.getBoundingClientRect();
+  const { clientX: x, clientY: y } = event;
+  return x < box.left || x > box.right || y < box.top || y > box.bottom;
 }

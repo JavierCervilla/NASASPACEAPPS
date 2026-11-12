@@ -37,7 +37,6 @@ import { eyeState } from '../src/terrain/walk/eye-state';
 import { FAR_MARGIN_DEG, clearFromEye, marchElevation } from '../src/terrain/walk/eye-sight';
 import { eyeLatLon } from '../src/terrain/walk/eye-point';
 import { ROCK_CELL_M, cellBands } from '../src/terrain/walk/rock-cells';
-import { keyStep, WALK_STEP_M } from '../src/terrain/walk/walk-keys';
 import { MEASURED } from '../src/terrain/rock-law';
 import { localSize } from '../src/terrain/ring/ring-local';
 import { BLEND_CELLS } from '../src/terrain/ring/ring-window';
@@ -242,23 +241,13 @@ describe('the rocks around the eye', () => {
   });
 });
 
-describe('the keys that walk', () => {
-  it('step 10 m along the heading with ↑ and back with ↓', () => {
-    expect(WALK_STEP_M).toBe(10);
-    const ahead = keyStep({ yawDeg: 90, pitchDeg: 0 }, 'ArrowUp');
-    expect(ahead?.[0]).toBeCloseTo(10, 9);
-    expect(ahead?.[1]).toBeCloseTo(0, 9);
-    const back = keyStep({ yawDeg: 0, pitchDeg: 0 }, 'ArrowDown');
-    expect(back?.[1]).toBeCloseTo(-10, 9);
-    expect(keyStep({ yawDeg: 0, pitchDeg: 0 }, 'ArrowLeft')).toBeNull();
-  });
-
-  it('leave the pitch to Page Up and Page Down, and the turn to ← and →', () => {
+describe('the keys never walk (VENT-122)', () => {
+  it('give the pitch back to ↑ and ↓, and the turn to ← and →', () => {
     const look = { yawDeg: 0, pitchDeg: 0 };
-    expect(keyLook(look, { key: 'ArrowUp', shiftKey: false })).toBeNull();
-    expect(keyLook(look, { key: 'PageUp', shiftKey: false })).toEqual({ yawDeg: 0, pitchDeg: 3 });
-    expect(keyLook(look, { key: 'PageDown', shiftKey: false })).toEqual({ yawDeg: 0, pitchDeg: -3 });
+    expect(keyLook(look, { key: 'ArrowUp', shiftKey: false })).toEqual({ yawDeg: 0, pitchDeg: 3 });
+    expect(keyLook(look, { key: 'ArrowDown', shiftKey: false })).toEqual({ yawDeg: 0, pitchDeg: -3 });
     expect(keyLook(look, { key: 'ArrowRight', shiftKey: false })).toEqual({ yawDeg: 5, pitchDeg: 0 });
+    expect(keyLook(look, { key: 'PageUp', shiftKey: false })).toBeNull();
   });
 });
 
@@ -280,7 +269,6 @@ describe('the view’s pointer and keys', () => {
       walker: {
         tap: (x: number, _y: number, touch: boolean) => log.push(`tap ${x}${touch ? ' touch' : ''}`),
         hover: (at: { x: number } | null) => log.push(at ? `hover ${at.x}` : 'hover off'),
-        step: (d: readonly [number, number]) => log.push(`step ${Math.round(d[0])},${Math.round(d[1])}`),
       } };
     bindLook(el, target);
     return { el, log };
@@ -314,14 +302,14 @@ describe('the view’s pointer and keys', () => {
     expect(log).toEqual(['hover 50', 'hover off']);
   });
 
-  it('steps 10 m along the heading on ↑ and ↓, and tilts on Page Up', () => {
+  it('tilts on ↑ and ↓ and never steps the eye', () => {
     const { el, log } = rig();
-    const keys = ['ArrowUp', 'ArrowDown', 'PageUp'].map((key) => {
+    const keys = ['ArrowUp', 'ArrowDown'].map((key) => {
       const e = new Event('keydown', { cancelable: true });
       return Object.defineProperties(e, { key: { value: key }, shiftKey: { value: false } });
     });
     for (const key of keys) el.dispatchEvent(key);
-    expect(log).toEqual(['step 10,0', 'step -10,0', 'set']);
+    expect(log).toEqual(['set', 'set']);
     expect(keys.every((key) => key.defaultPrevented)).toBe(true);
   });
 });

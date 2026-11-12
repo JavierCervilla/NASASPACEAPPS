@@ -67,6 +67,10 @@ export interface RuleEvent {
   discPx: number;
   pxPerTexel: number;
   tier: Tier;
+  /** The phone layout, which caps the maps at 4K at the medium tier. */
+  phone: boolean;
+  /** A coarse pointer, which does the same. */
+  coarsePointer: boolean;
   saveData: boolean;
   maxTextureSize: number;
 }
@@ -111,12 +115,18 @@ function stepLine(event: MapStepEvent): string {
   }
 }
 
-/** «rule wants 4K: disc 1180 px, 0.91 px/texel; medium, max 8192». */
+/**
+ * «rule wants 4K: disc 1180 px, 0.91 px/texel; medium, phone, coarse
+ * pointer, max 8192»: «phone» in the phone layout and «coarse pointer» on a
+ * touch screen, each of which stops the medium tier at 4K.
+ */
 function ruleLine(event: RuleEvent): string {
+  const phone = (event.phone ? ', phone' : '') +
+    (event.coarsePointer ? ', coarse pointer' : '');
   const save = event.saveData ? ', save-data on' : '';
   return `rule wants ${named(event.level)}: disc ` +
     `${Math.round(event.discPx)} px, ${event.pxPerTexel.toFixed(2)} ` +
-    `px/texel; ${event.tier}${save}, max ${event.maxTextureSize}`;
+    `px/texel; ${event.tier}${phone}${save}, max ${event.maxTextureSize}`;
 }
 
 /** «4K on the Moon» and the like. */

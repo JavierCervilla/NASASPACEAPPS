@@ -163,19 +163,24 @@ test.describe('desktop, 1280x800', () => {
     await expect(chip(page)).toHaveCount(0);
   });
 
-  test('↑ steps 10 m along the heading and ↓ steps back; Page Up tilts the view instead of ↑', async ({ page }) => {
+  // VENT-122: the arrows no longer walk (the human: walking is by click, as on touch); ↑ and ↓ tilt the view again.
+  // Each key is checked alone, since a step forward and one back would end on the point too; the tilt shows in the
+  // 25 m ring's label, which lies on the ground: a look up moves it down the screen, a look down moves it up.
+  test('↑ and ↓ tilt the view and never move the eye', async ({ page }) => {
     await page.emulateMedia({ reducedMotion: 'reduce' });
     await open(page, './?site=im2-athena&onfoot=far#horizon', true);
     await settled(page);
     await host(page).focus();
-    await page.keyboard.press('ArrowUp');
-    await expect.poll(() => away(page)).toBeCloseTo(10, 0);
-    await page.keyboard.press('ArrowDown');
-    await expect.poll(() => away(page)).toBeCloseTo(0, 0);
-    const before = await frames(page);
-    await page.keyboard.press('PageUp');
-    await expect.poll(() => frames(page)).toBeGreaterThan(before);
-    expect(await eye(page)).toEqual([0, 0]);
+    const ringY = async (): Promise<number> =>
+      (await view(page).locator('.on-foot__label--ring:not([hidden])').first().boundingBox())!.y;
+    for (const [key, sign] of [['ArrowUp', 1], ['ArrowDown', -1]] as const) {
+      const before = await ringY();
+      await page.keyboard.press(key);
+      await expect.poll(async () => sign * ((await ringY()) - before)).toBeGreaterThan(5);
+      await page.waitForTimeout(600);
+      expect(await eye(page)).toEqual([0, 0]);
+      await expect(chip(page)).toHaveCount(0);
+    }
   });
 
   test('under reduced motion a click moves the eye at once, in one frame', async ({ page }) => {
@@ -254,9 +259,12 @@ test.describe('phone, 360x740, pseudo-locale', () => {
     // The tab bar's fourth tab, «Horizon» (its name is accented here): the sheet goes to peek.
     await page.locator('.tab-bar').getByRole('button').nth(3).click();
     await settled(page);
-    await host(page).focus();
-    await page.keyboard.press('ArrowUp');
-    await expect.poll(() => away(page)).toBeCloseTo(10, 0);
+    // A tap on the ground walks (the arrows no longer do, VENT-122): the middle of the free band, under the level.
+    const box = (await host(page).boundingBox())!;
+    const bar = (await page.locator('.phone-bar').boundingBox())!;
+    const edge = await page.evaluate(() => document.querySelector('.sheet')?.getBoundingClientRect().top ?? innerHeight);
+    await page.touchscreen.tap(box.x + box.width / 2, (bar.y + bar.height + edge) / 2 + 60);
+    await expect.poll(() => away(page), { timeout: 15_000 }).toBeGreaterThan(5);
     await expect(chip(page)).toBeVisible();
     const chipBox = (await chip(page).boundingBox())!;
     const back = (await chip(page).getByRole('button').boundingBox())!;

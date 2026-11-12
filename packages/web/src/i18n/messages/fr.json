@@ -398,7 +398,7 @@
   "onFoot.noPoint": "Ce site n'a pas de coordonnées où se placer",
   "onFoot.compass.heading": "Cap de la vue {dir}.",
   "onFoot.compass.press": "Appuie pour revenir à la vue initiale.",
-  "onFoot.help": "Faites glisser ou utilisez les flèches gauche et droite pour regarder autour, Page préc. et Page suiv. pour regarder en haut et en bas ; touchez le sol, ou appuyez sur les flèches haut et bas, pour y aller ; Début revient à la vue initiale.",
+  "onFoot.help": "Faites glisser ou utilisez les flèches pour regarder autour ; touchez le sol pour y aller ; Début revient à la vue initiale.",
   "walk.dir.n": "N",
   "walk.dir.ne": "NE",
   "walk.dir.e": "E",

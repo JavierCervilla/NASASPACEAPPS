@@ -50,8 +50,8 @@ completa está en el documento «Ventana Lunar · Especificación y roadmap»
   instante elegido, detalle fino ilustrativo marcado y anillos de distancia; se carga solo al abrirla
 - [ ] Relieve en streaming para caminar (VENT-34 C a E): teselas alineadas con LOD en el servidor, un Web Worker que
   las sirve y el movimiento a pie o en vehículo
-- [x] Caminar en la vista 3D como en Street View (VENT-121, variante 3A): toca o haz clic en el suelo para ir allí,
-  ↑ y ↓ avanzan 10 m, hasta 1,5 km del punto sobre el relieve ya cargado; la ficha dice dónde estás y el estado allí,
+- [x] Caminar en la vista 3D como en Street View (VENT-121, variante 3A): toca o haz clic en el suelo para ir allí
+  (las flechas ya no caminan, VENT-122), hasta 1,5 km del punto sobre el relieve ya cargado; la ficha dice dónde estás y el estado allí,
   «Volver» regresa y en el borde se puede poner un pin para seguir
 - [x] Globo lunar 3D con el terminador del Sol real y los sitios de la API (VENT-6); la luz sigue al instante elegido
   en la cinta de calendario (VENT-4)

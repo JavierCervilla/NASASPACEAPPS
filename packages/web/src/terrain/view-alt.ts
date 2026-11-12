@@ -27,7 +27,8 @@
  * The on-foot view's text alternative (VENT-34): which way the view
  * faces, where the Sun and the Earth are (horizon-alt.ts's sentences) and
  * what hides them: a ridge in reach, with its height and distance, or the
- * terrain beyond the tile. Pure.
+ * terrain beyond the tile; and, once the eye walked away from the point,
+ * where it stands from it (VENT-121). Pure.
  */
 import type { I18n } from '../i18n/translate';
 import { bodySentence, directionOf } from '../horizon/horizon-alt';
@@ -35,6 +36,9 @@ import type { BodyAt } from '../horizon/strip-marks';
 import type { Blocker } from './ridge';
 import { localSize } from './ring/ring-local';
 import { ridgeParams } from './view-text';
+import type { EyeReport } from './scene/scene-types';
+import { isAway } from './walk/walk-reach';
+import { whereText } from './walk/walk-words';
 
 export interface SeenBody extends BodyAt {
   readonly blocker: Blocker;
@@ -59,6 +63,17 @@ function hiderSentence(i18n: I18n, body: SeenBody): string | null {
 export interface ViewWords {
   readonly yawDeg: number;
   readonly bodies: readonly SeenBody[];
+  /** Where the eye stands (VENT-121); absent or at the point: nothing. */
+  readonly where?: EyeReport | null | undefined;
+  /** The site's short name, which the place is read from. */
+  readonly site?: string | undefined;
+}
+
+/** «You stand 180 m NE of IM-2.» once the eye walked away. */
+function whereSentence(i18n: I18n, view: ViewWords): string[] {
+  const at = view.where?.at;
+  if (!at || !isAway(at)) return [];
+  return [i18n.t('walk.alt', { where: whereText(i18n, at, view.site ?? '') })];
 }
 
 /** The view's text alternative. */
@@ -71,5 +86,5 @@ export function viewAlt(i18n: I18n, view: ViewWords): string {
     const seen = bodySentence(i18n, body, true);
     return hider ? [seen, hider] : [seen];
   });
-  return [head, ...lines].join(' ');
+  return [head, ...whereSentence(i18n, view), ...lines].join(' ');
 }

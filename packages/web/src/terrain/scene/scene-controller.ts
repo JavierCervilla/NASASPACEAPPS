@@ -61,14 +61,16 @@ interface Parts {
   readonly world: World;
   readonly loop: Loop;
   readonly home: () => void;
+  readonly back: () => void;
   readonly teardown: () => void;
 }
 
 /** What the panel holds: update, go home, draw again, free. */
 export const controller = (
-  { world, loop, home, teardown }: Parts,
+  { world, loop, home, back, teardown }: Parts,
 ): Omit<TerrainScene, 'rearm'> => ({
   home,
+  back,
   update: (next: SceneInput): void => {
     if (applyInput(world, next)) loop.invalidate();
   },

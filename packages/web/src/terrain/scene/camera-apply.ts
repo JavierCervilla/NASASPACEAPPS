@@ -33,9 +33,13 @@ import { cameraPose, type Look } from '../view-camera';
 import { inFront } from './in-front';
 import type { World } from './world';
 
-/** Aims the camera from the eye over the point. */
-export function aimCamera(world: World, look: Look): void {
-  const pose = cameraPose(look, world.ground(0, 0));
+/** Aims the camera from the eye, `at` metres east and north of the point. */
+export function aimCamera(
+  world: World,
+  look: Look,
+  at: readonly [number, number] = [0, 0],
+): void {
+  const pose = cameraPose(look, world.ground(at[0], at[1]), at);
   const { camera } = world.stage;
   camera.position.set(...pose.position);
   camera.lookAt(new Vector3(...pose.target));
@@ -54,6 +58,10 @@ function onHost(world: World, point: Vector3, host: HTMLElement): string {
 
 /** Writes where the Sun and the Earth fall on the host. */
 export function markBodies(world: World, host: HTMLElement): void {
-  host.dataset['sunAt'] = onHost(world, world.sky.sun.position, host);
-  host.dataset['earthAt'] = onHost(world, world.sky.earth.position, host);
+  // The sky follows the eye (VENT-121): the bodies' places in the world.
+  const { sun, earth } = world.sky;
+  host.dataset['sunAt'] = onHost(world, sun.getWorldPosition(new Vector3()),
+    host);
+  host.dataset['earthAt'] = onHost(world,
+    earth.getWorldPosition(new Vector3()), host);
 }

@@ -46,8 +46,9 @@ import type { RingSource } from '../../terrain/ring/ring-source';
 import type { ViewTier } from '../../terrain/view-tier';
 import { useNight } from './use-night';
 import { useRing } from './use-ring';
+import type { WalkSite } from './walk/use-walk';
 
-export interface OnFootSite {
+export interface OnFootSite extends WalkSite {
   readonly id: string;
   readonly lat: number;
   readonly lonEast: number;

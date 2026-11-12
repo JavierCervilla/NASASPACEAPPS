@@ -41,6 +41,10 @@ import { stageProbe } from './scene-guard';
 import { reportFrame } from './scene-report';
 import type { SceneHooks } from './scene-types';
 import { fitStage } from './stage';
+import type { Glide } from '../walk/glide';
+import type { EastNorth } from '../walk/walk-reach';
+import type { WalkMarker } from './walk-marker';
+import { glideFrame, type WalkParts } from './walk-move';
 import type { World } from './world';
 
 /** The camera's state, changed by the controls. */
@@ -55,6 +59,14 @@ export interface ViewState {
   dragging: boolean;
   /** The panel was told this point's first frame (re-armed on a new point). */
   told: boolean;
+  /** Where the eye is, metres east and north of the point (VENT-121). */
+  eye: EastNorth;
+  /** The eye gliding to a place (walk/glide.ts), or none. */
+  glide: Glide | null;
+  /** The last place asked for was held to the reach's edge. */
+  edge: boolean;
+  /** The touch marker is fading as the glide starts. */
+  fading: boolean;
 }
 
 /** Carries the look on by `dt` seconds of the coast; true while it lasts. */
@@ -102,23 +114,29 @@ function drawTimed(world: World, probe: FrameProbe): number {
   return performance.now() - start;
 }
 
+/** What a frame moves and draws: the walk's parts, hooks and marker. */
+export interface FrameParts extends WalkParts {
+  readonly hooks: SceneHooks;
+  readonly marker: WalkMarker;
+}
+
 /** The labels' layer and the frame function for the scene's loop. */
 export function framer(
-  world: World,
-  host: HTMLElement,
-  hooks: SceneHooks,
-  view: ViewState,
+  parts: FrameParts,
 ): { labels: LabelLayer; frame: (dt: number) => boolean } {
+  const { world, host, hooks, view } = parts;
   const labels = labelLayer(host, world.stage.camera, () => world.ground);
   const { renderer } = world.stage;
   const probe = stageProbe(renderer, world.setup.quality, hooks.onSlowFrame);
   const frame = (dt: number): boolean => {
-    const moving = coast(view, dt, hooks) || homeStep(view, dt, hooks);
+    const turning = coast(view, dt, hooks) || homeStep(view, dt, hooks);
+    const moving = glideFrame(parts, parts.marker, dt) || turning;
     fitStage(world.stage, host, hooks.band?.() ?? null);
-    aimCamera(world, view.look);
+    aimCamera(world, view.look, view.eye);
     const drawMs = drawTimed(world, probe);
     if (world.input) labels.draw(world.input.words, view.look.yawDeg);
     markBodies(world, host);
+    parts.marker.place(world.stage.camera, host);
     markFrame(world, host, moving);
     reportFrame(world, drawMs);
     if (!view.told) hooks.onDrawn?.();

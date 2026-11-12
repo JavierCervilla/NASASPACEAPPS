@@ -63,6 +63,8 @@ import type { Stage } from './stage';
 import { createSunMask, type SunMask } from './sun-mask';
 import { relightWorld } from './world-light';
 import { groundOf, type Ground } from './world-ground';
+import type { EyeSight } from '../walk/eye-sight';
+import type { EastNorth } from '../walk/walk-reach';
 
 export interface World {
   readonly stage: Stage;
@@ -100,7 +102,24 @@ export interface World {
   invalidate: () => void;
   /** The surface maps gave up on the first frame and are still coming. */
   mapsPending: boolean;
+  /**
+   * Where the eye stands, metres east and north of the point (VENT-121):
+   * the place the rocks and the Sun's mask are for (the glide's end).
+   */
+  eye: EastNorth;
+  /** The bodies as the eye sees them there; null at the point. */
+  sight: EyeSight | null;
+  /** The point's own Sun mask factors, from the last lighting. */
+  pointMask: { far: number; near: number } | null;
+  /** The near ground's Sun mask per node, from the last lighting. */
+  nearLit: Float32Array | null;
+  /** Tells the panel where the eye stands: bound by the scene. */
+  tellEye: () => void;
 }
+
+/** The eye on the point, before any walk (VENT-121). */
+const AT_POINT = { eye: [0, 0] as EastNorth, sight: null, pointMask: null,
+  nearLit: null };
 
 /** An empty world on `stage`. */
 export function createWorld(stage: Stage, seed: number, setup: SceneSetup) {
@@ -121,9 +140,9 @@ export function createWorld(stage: Stage, seed: number, setup: SceneSetup) {
     ...craterParts(seed, setup, parts),
     clods: clodLayer(seed, setup, parts),
     material: groundMaterial(mask, shared, policy), backdrop: null,
-    input: null,
-    lit: null, rings: null, farShade: null, slicer,
-    invalidate: () => undefined, mapsPending: false };
+    input: null, lit: null, rings: null, farShade: null, slicer,
+    invalidate: () => undefined, mapsPending: false,
+    ...AT_POINT, tellEye: () => undefined };
   stage.scene.add(farWhen(stage.drawing.split, world.sky.group), world.near);
   if (world.craters) stage.scene.add(world.craters.group);
   return world;
@@ -136,8 +155,8 @@ function applyTiles(world: World, input: SceneInput): void {
   rebuildNear(world, input);
 }
 
-/** The rocks and the rings over the new ground. */
-function rebuildNear(world: World, input: SceneInput): void {
+/** The rocks around the eye and the rings over the new ground. */
+export function rebuildNear(world: World, input: SceneInput): void {
   world.stage.scene.remove(world.near);
   world.near.traverse((o) => (o as Partial<Mesh>).geometry?.dispose());
   world.near = new Group();
@@ -146,7 +165,8 @@ function rebuildNear(world: World, input: SceneInput): void {
     const stand = world.craters?.groundFor(world.ground) ?? world.ground;
     world.near.add(rocksMesh(input.seed, stand, world.mask,
       { slicer: world.slicer,
-        law: { ...world.policy.rockLaw, cap: world.policy.rocksCap } }));
+        law: { ...world.policy.rockLaw, cap: world.policy.rocksCap },
+        eye: world.eye }));
   }
   world.stage.scene.add(world.near);
   world.setup.report.step('near ground placed');

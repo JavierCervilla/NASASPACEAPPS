@@ -603,8 +603,50 @@ Every visible change follows `.claude/skills/apple-design/SKILL.md` (vendored fr
   and the sheet's edge) show the selected site or point from the ground, opening in **first person**, the eye 2 m over
   the point, facing the Sun when it is near the sky, else the Earth (VENT-54, the human's decision: no astronaut, no
   lander and no camera switch; `view-camera.ts` has one pose); drag (Pointer Events
-  with capture) or the arrows on the focused view turn it (`src/terrain/look-input.ts`, `view-camera.ts`), and Home
-  turns it back to where it opened, as the compass's press does (below).
+  with capture) or ← and → (and Page Up and Page Down for the pitch, VENT-121) on the focused view turn it
+  (`src/terrain/look-input.ts`, `view-camera.ts`), and Home turns it back to where it opened, as the compass's press
+  does (below).
+  **Walking** (VENT-121, Street View's moves, the human's variant 3A on the canvas; pure parts in `src/terrain/walk/`,
+  scene parts `scene/walk*.ts`): a press that ends without travelling `PRESS_SLOP_PX` (the globe's rule) is a tap,
+  and a tap on the ground sends the eye there; a drag still turns and a press still stops a coast. The ground under
+  the pointer is a ray from the camera marched over the loaded heights (`walk/ground-pick.ts`: the near grid inside
+  its 4 km, the rings' `surfaceY` beyond, out to 20 km; no Raycaster), and a ray that meets none is the sky, which does
+  nothing. The eye stays within `REACH_M`, 1500 m (`walk/walk-reach.ts`, derived from level 0's window: 124 cells of
+  15.625 m on its near side, less `BLEND_CELLS` and a 20-cell margin), so it always stands on relief already loaded; a
+  tap beyond goes to the reach's edge along that line. It glides on a critically damped curve over 0.6 s to 2 s by
+  distance (`walk/glide.ts`), 2 m over the ground at every frame, the heading kept; a new tap retargets from where it
+  is; frames are drawn only while it moves, and under reduced motion it moves in one frame. ↑ and ↓ glide 10 m along
+  the heading (`walk/walk-keys.ts`). The host says where the eye is in `data-eye` («east,north» metres). What follows
+  the eye: the camera (`cameraPose(look, groundY, at)`), and the sky group, so the bodies keep their true directions
+  and the Sun's ±60 m shadow box is centred on it (`scene/walk-move.ts` `followEye`, which marks a shadow pass only when
+  the eye moved). When it arrives: the rocks are seeded around it (at the point the point's own scatter, byte for byte;
+  away from it the same measured law seeded per 40 m cell of the frame and diameter step, `walk/rock-cells.ts`, so a
+  place shows the same rocks when the eye comes back), and whether the Sun and the Earth show is marched from the eye
+  over the loaded relief along each body's azimuth out to 128 km (`walk/eye-sight.ts`, `scene/walk-sight.ts`); the
+  point's horizon profile still counts only where it stands more than 0.3° over the same march from the point, which
+  is terrain beyond the rings, read as the point sees it (the small error: within about 0.1° for an eye 1.5 km away
+  from a skyline past 128 km). That answer sets the Sun's mask (the near ground's at the eye's node; the far factor
+  off when the eye's ground is lit and the Sun still does not show) and the exposure (`lightEye` in
+  `scene/world-light.ts`, run by every lighting and every arrival); at the point the profile decides as before
+  (VENT-59). What stays around the point: the distance rings and their labels (they mark where you came from), the
+  ridge label, the far horizon's wall, the crater patch of the high tier (a 48 m mesh baked once per point), and the
+  text alternative's body sentences and the compass's Earth, which speak for the point. Chip 3A
+  (`components/terrain/walk/WalkChip.tsx`, while the eye is more than `AWAY_M`, 5 m, from the point): a glass chip
+  at the view's top left on desktop and under the phone's top bar on the left, clear of the compass; «180 m NE of
+  IM-2» (10 m steps under 1 km, «1.2 km» above, eight points of the compass, the pill's short name or the custom
+  point's, `walk/walk-words.ts`) over the state there, the pill's dot and word in its signal colour («Window here»,
+  `walk/eye-state.ts`: the pill's `nowState` fed the eye's sight, so the Earth also needs 3°), and a 44 px round
+  «Back to IM-2» that glides back. A polite live region says each arrival («180 m NE of IM-2 · Window here»), and the
+  text alternative adds «You stand 180 m NE of IM-2.». At the reach's edge a card (`WalkEdge.tsx`) says «End of the
+  detailed ground» and offers «Drop a pin here», which drops the pin at the eye's latitude and longitude
+  (`walk/eye-point.ts`, exact through the frame) through the pin's places, so the address, the widgets and the view
+  move there and the view opens again with its loader, and «Back to IM-2». The first-time hint, «Click the ground to
+  go there» or «Tap the ground to go there» under `(pointer: coarse)`, with a ✕, is gone after the first move, kept
+  in `localStorage` (`ventana.walkHint`, `walk/walk-hint.ts`). On a fine pointer a ring lying on the ground follows the
+  pointer with its distance (`scene/walk-marker.ts`, Street View's ellipse); on touch it shows at the tap and fades as
+  the glide starts. A new point stands the eye back on the point. Held by `tests/walk.test.ts` and
+  `tests/e2e/vent-121-walk.spec.ts` (IM-2's recorded relief; the reach's edge and «Drop a pin here» on the synthetic
+  relief's mountain).
   Turning it: a swipe across the whole width turns 180° (a full turn in two swipes, on a phone and a desktop alike;
   the pitch by the field of view over the height, held to its range, `dragScale`, `look-input.ts`), and on release the
   finger's velocity goes on into the yaw and decays as the globe's flick does (`look-coast.ts`: 0.995 per ms, stops

@@ -34,6 +34,8 @@
 import { BufferAttribute, BufferGeometry, Mesh, MeshStandardMaterial } from 'three';
 import type { MeasuredScatter } from '../rock-law';
 import { measuredBands } from '../rocks-measured';
+import { cellBands } from '../walk/rock-cells';
+import { isAway, type EastNorth } from '../walk/walk-reach';
 import { merge, type MeshBuffers } from '../shapes';
 import { contactAo, stonesBuffers, type GroundAt } from '../stones';
 import { geometryOf } from './mesh-of';
@@ -71,23 +73,36 @@ function finished(parts: readonly Part[]): BufferGeometry {
   return geometry;
 }
 
+interface Scatter {
+  readonly slicer: Slicer;
+  readonly law: MeasuredScatter;
+  /** Where the eye stands (VENT-121): away, the rocks of its cells. */
+  readonly eye?: EastNorth | undefined;
+}
+
+/** The point's own bands at the point, the eye's cells' away from it. */
+const bandsAround = (seed: number, ground: GroundAt, law: MeasuredScatter,
+  eye: EastNorth) => (isAway(eye)
+  ? cellBands(seed, ground, law, eye) : measuredBands(seed, ground, law));
+
 /**
  * The scatter of stones of `seed` on `ground`: an empty hidden mesh now,
  * filled and shown when the slicer has run every band; `law` is the tier's
- * size law and cap (ground-policy.ts).
+ * size law and cap (ground-policy.ts). At the point the point's own
+ * scatter; away from it, the cells' around the eye (walk/rock-cells.ts).
  */
 export function rocksMesh(
   seed: number,
   ground: GroundAt,
   mask: SunMask,
-  { slicer, law }: { readonly slicer: Slicer; readonly law: MeasuredScatter },
+  { slicer, law, eye = [0, 0] }: Scatter,
 ): Mesh {
   const material = masked(0xb4b1ab, mask);
   material.vertexColors = true;
   const mesh = new Mesh(new BufferGeometry(), material);
   mesh.castShadow = mesh.receiveShadow = true;
   mesh.visible = false;
-  const bands = measuredBands(seed, ground, law);
+  const bands = bandsAround(seed, ground, law, eye);
   const parts: Part[] = [];
   for (let i = 0; i < bands.count; i++) {
     slicer.add(`rocks:${i}`, PRIORITY + i, () => {

@@ -165,7 +165,8 @@ function useMountedScene(parts: MountParts): boolean {
 /**
  * The scene in `host` for `input` (null: not yet) at `tier`; its status,
  * whether it has drawn, `retry`, which mounts it again after a loss, and
- * `home`, which turns it back to where it opened (the compass, VENT-63).
+ * `home`, which turns it back to where it opened (the compass, VENT-63),
+ * and `back`, which glides the eye back to the point (VENT-121).
  */
 export function useTerrainScene(
   host: RefObject<HTMLDivElement | null>,
@@ -184,5 +185,6 @@ export function useTerrainScene(
     if (input) scene.current?.update(input);
   }, [input]);
   const home = (): void => scene.current?.home();
-  return { status, drawn, retry: () => setStatus('loading'), home };
+  const back = (): void => scene.current?.back();
+  return { status, drawn, retry: () => setStatus('loading'), home, back };
 }

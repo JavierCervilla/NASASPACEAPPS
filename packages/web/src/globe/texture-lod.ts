@@ -52,18 +52,20 @@ const LEVELS: readonly LodLevel[] = [1, 2, 4, 8];
 export const MAX_PX_PER_TEXEL = 1.15;
 
 /**
- * The most each tier may load: 4K on the low and medium tiers (phones
- * never run the high tier), so a close look is sharp on every device whose
- * GPU takes 4K; 8K on the high tier only.
+ * The most each tier may load: 4K on the low tier and on a phone, so a
+ * close look is sharp on every device whose GPU takes 4K; 8K on the high
+ * tier, and on a desktop at the medium tier too (VENT-122: Brave reports a
+ * random core count, so a capable desktop may read as medium).
  */
-const TIER_MAX: Readonly<Record<Tier, LodLevel>> = {
-  low: 4,
-  medium: 4,
-  high: 8,
-};
+function tierMax(tier: Tier, phone: boolean): LodLevel {
+  if (tier === 'low') return 4;
+  return tier === 'medium' && phone ? 4 : 8;
+}
 
 export interface LodCaps {
   readonly tier: Tier;
+  /** The phone layout: its cap stays 4K at any tier. */
+  readonly phone: boolean;
   /** The browser asks to save data: nothing beyond the start map. */
   readonly saveData: boolean;
   /** The GPU's largest texture side, in pixels. */
@@ -82,7 +84,8 @@ export function maxLevel(caps: LodCaps): LodLevel {
   const fits = ([8, 4, 2, 1] as const).find(
     (level) => level * 1024 <= caps.maxTextureSize,
   );
-  return Math.max(start, Math.min(TIER_MAX[caps.tier], fits ?? 1)) as LodLevel;
+  const cap = tierMax(caps.tier, caps.phone);
+  return Math.max(start, Math.min(cap, fits ?? 1)) as LodLevel;
 }
 
 /**

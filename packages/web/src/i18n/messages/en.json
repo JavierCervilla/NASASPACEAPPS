@@ -390,7 +390,7 @@
   "onFoot.noPoint": "This site has no coordinates to stand on",
   "onFoot.compass.heading": "View heading {dir}.",
   "onFoot.compass.press": "Press to look back where the view opened.",
-  "onFoot.help": "Drag or use the left and right arrow keys to look around, Page Up and Page Down to look up and down; tap the ground, or press the up and down arrow keys, to walk there; Home looks back where it opened.",
+  "onFoot.help": "Drag or use the arrow keys to look around; tap the ground to walk there; Home looks back where it opened.",
   "walk.dir.n": "N",
   "walk.dir.ne": "NE",
   "walk.dir.e": "E",

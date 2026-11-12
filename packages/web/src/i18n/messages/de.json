@@ -390,7 +390,7 @@
   "onFoot.noPoint": "Dieser Ort hat keine Koordinaten zum Stehen",
   "onFoot.compass.heading": "Blickrichtung {dir}.",
   "onFoot.compass.press": "Drücke, um zur Anfangsansicht zurückzukehren.",
-  "onFoot.help": "Ziehen oder Pfeiltasten links und rechts zum Umsehen, Bild auf und Bild ab zum Auf- und Abblicken; tippe auf den Boden oder drücke die Pfeiltasten hoch und runter, um dorthin zu gehen; Pos1 kehrt zur Anfangsansicht zurück.",
+  "onFoot.help": "Ziehen oder Pfeiltasten zum Umsehen; tippe auf den Boden, um dorthin zu gehen; Pos1 kehrt zur Anfangsansicht zurück.",
   "walk.dir.n": "N",
   "walk.dir.ne": "NO",
   "walk.dir.e": "O",

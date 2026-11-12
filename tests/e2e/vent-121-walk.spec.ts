@@ -163,19 +163,20 @@ test.describe('desktop, 1280x800', () => {
     await expect(chip(page)).toHaveCount(0);
   });
 
-  test('↑ steps 10 m along the heading and ↓ steps back; Page Up tilts the view instead of ↑', async ({ page }) => {
+  // VENT-122: the arrows no longer walk (the human: walking is by click, as on touch); ↑ and ↓ tilt the view again.
+  test('↑ and ↓ tilt the view and never move the eye', async ({ page }) => {
     await page.emulateMedia({ reducedMotion: 'reduce' });
     await open(page, './?site=im2-athena&onfoot=far#horizon', true);
     await settled(page);
     await host(page).focus();
-    await page.keyboard.press('ArrowUp');
-    await expect.poll(() => away(page)).toBeCloseTo(10, 0);
-    await page.keyboard.press('ArrowDown');
-    await expect.poll(() => away(page)).toBeCloseTo(0, 0);
-    const before = await frames(page);
-    await page.keyboard.press('PageUp');
-    await expect.poll(() => frames(page)).toBeGreaterThan(before);
+    for (const key of ['ArrowUp', 'ArrowDown']) {
+      const before = await frames(page);
+      await page.keyboard.press(key);
+      await expect.poll(() => frames(page)).toBeGreaterThan(before);
+    }
+    await page.waitForTimeout(600);
     expect(await eye(page)).toEqual([0, 0]);
+    await expect(chip(page)).toHaveCount(0);
   });
 
   test('under reduced motion a click moves the eye at once, in one frame', async ({ page }) => {
@@ -254,9 +255,12 @@ test.describe('phone, 360x740, pseudo-locale', () => {
     // The tab bar's fourth tab, «Horizon» (its name is accented here): the sheet goes to peek.
     await page.locator('.tab-bar').getByRole('button').nth(3).click();
     await settled(page);
-    await host(page).focus();
-    await page.keyboard.press('ArrowUp');
-    await expect.poll(() => away(page)).toBeCloseTo(10, 0);
+    // A tap on the ground walks (the arrows no longer do, VENT-122): the middle of the free band, under the level.
+    const box = (await host(page).boundingBox())!;
+    const bar = (await page.locator('.phone-bar').boundingBox())!;
+    const edge = await page.evaluate(() => document.querySelector('.sheet')?.getBoundingClientRect().top ?? innerHeight);
+    await page.touchscreen.tap(box.x + box.width / 2, (bar.y + bar.height + edge) / 2 + 60);
+    await expect.poll(() => away(page), { timeout: 15_000 }).toBeGreaterThan(5);
     await expect(chip(page)).toBeVisible();
     const chipBox = (await chip(page).boundingBox())!;
     const back = (await chip(page).getByRole('button').boundingBox())!;

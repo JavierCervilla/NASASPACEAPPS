@@ -398,7 +398,7 @@
   "onFoot.noPoint": "Questo sito non ha coordinate su cui stare",
   "onFoot.compass.heading": "Direzione della vista {dir}.",
   "onFoot.compass.press": "Premi per tornare alla vista iniziale.",
-  "onFoot.help": "Trascina o usa le frecce sinistra e destra per guardarti intorno, Pag su e Pag giù per guardare in alto e in basso; tocca il suolo, o premi le frecce su e giù, per andarci; Inizio torna alla vista iniziale.",
+  "onFoot.help": "Trascina o usa le frecce per guardarti intorno; tocca il suolo per andarci; Inizio torna alla vista iniziale.",
   "walk.dir.n": "N",
   "walk.dir.ne": "NE",
   "walk.dir.e": "E",

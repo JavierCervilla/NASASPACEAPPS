@@ -348,7 +348,7 @@ describe('a map load that never settles', () => {
 
 describe('the density rule in the trace', () => {
   const PHONE_PX = 590 * 1.75;
-  const caps = { tier: 'medium', saveData: false, maxTextureSize: 8192 } as const;
+  const caps = { tier: 'medium', phone: true, saveData: false, maxTextureSize: 8192 } as const;
 
   it('tells the level it wants with what it read, only when its answer changes', () => {
     const lines: string[] = [];
@@ -357,15 +357,15 @@ describe('the density rule in the trace', () => {
     want({ distance: 4.4, frameBufferPx: PHONE_PX });
     expect(want({ distance: 1.6, frameBufferPx: PHONE_PX })).toBe(4);
     expect(lines).toHaveLength(2);
-    expect(lines[0]).toMatch(/^rule wants 2K: disc \d+ px, \d\.\d\d px\/texel; medium, max 8192$/);
-    expect(lines[1]).toMatch(/^rule wants 4K: disc \d+ px, \d\.\d\d px\/texel; medium, max 8192$/);
+    expect(lines[0]).toMatch(/^rule wants 2K: disc \d+ px, \d\.\d\d px\/texel; medium, phone, max 8192$/);
+    expect(lines[1]).toMatch(/^rule wants 4K: disc \d+ px, \d\.\d\d px\/texel; medium, phone, max 8192$/);
   });
 
   it('says when Save-Data holds it at the start map', () => {
     const lines: string[] = [];
     const want = ruleWatch({ ...caps, saveData: true }, { mark: (event) => void lines.push(mapLine(event)) });
     expect(want({ distance: 1.6, frameBufferPx: PHONE_PX })).toBe(1);
-    expect(lines[0]).toMatch(/^rule wants 1K: .*; medium, save-data on, max 8192$/);
+    expect(lines[0]).toMatch(/^rule wants 1K: .*; medium, phone, save-data on, max 8192$/);
   });
 
   it('names the GL errors an upload can leave', () => {

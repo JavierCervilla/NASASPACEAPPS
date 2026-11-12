@@ -25,7 +25,7 @@
 
 /**
  * Walking in the on-foot view (VENT-121, the human's variant 3A): a tap on
- * the ground, an arrow key or «Back» sends the eye there (walk-move.ts); on
+ * the ground or «Back» sends the eye there (walk-move.ts); on
  * a fine pointer a ring on the ground under it says where a click goes, and
  * on touch it shows at the tap and fades as the glide starts.
  */
@@ -40,8 +40,6 @@ export interface Walker {
   readonly tap: (x: number, y: number, touch: boolean) => void;
   /** A fine pointer over the view; null: it left. */
   readonly hover: (at: { x: number; y: number } | null) => void;
-  /** Glides `delta` metres east and north on from where it goes. */
-  readonly step: (delta: EastNorth) => void;
   /** Glides back to the point. */
   readonly back: () => void;
   /** Takes the marker's label out of the host and frees its ring. */
@@ -66,10 +64,6 @@ export function createWalker(parts: WalkParts): Walker {
       goTo(parts, at);
     },
     hover: (p) => show(p ? groundAt(world, p.x, p.y) : null),
-    step: (delta) => {
-      const from = view.glide?.to ?? view.eye;
-      goTo(parts, [from[0] + delta[0], from[1] + delta[1]]);
-    },
     back: () => goTo(parts, [0, 0]),
     dispose: marker.dispose };
 }

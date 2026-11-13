@@ -182,7 +182,8 @@ async function firstPersonOnly(page: Page): Promise<void> {
   await expect(view(page).getByRole('radiogroup')).toHaveCount(0);
   await expect(view(page).getByRole('radio')).toHaveCount(0);
   await expect(view(page)).not.toContainText(/Third person/);
-  await expect(view(page).locator('.on-foot__caption')).not.toContainText(/lander|Apollo|astronaut/i);
+  // VENT-124: the caption now credits the rocks' Apollo 17 samples; what must not come back is the lander («Apollo LM»).
+  await expect(view(page).locator('.on-foot__caption')).not.toContainText(/lander|Apollo LM|astronaut/i);
 }
 
 const frames = async (page: Page): Promise<number> => Number(await host(page).getAttribute('data-frames'));

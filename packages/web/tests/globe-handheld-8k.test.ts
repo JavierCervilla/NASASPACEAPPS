@@ -32,7 +32,7 @@
  * session instead of tried again.
  */
 import { describe, expect, it } from 'vitest';
-import { handheldJpeg } from '../src/globe/handheld-8k';
+import { eightKGate, giveUpOnContextLoss, handheldJpeg } from '../src/globe/handheld-8k';
 import { ktx2OrJpeg } from '../src/globe/ktx2-map';
 import { mapLine, type MapEvent } from '../src/globe/map-trace';
 import { ruleWatch } from '../src/globe/moon-swap';
@@ -55,10 +55,12 @@ function colourLoader(session: Ktx2Switch, handheld: boolean, ktx2Fails: boolean
   const asked: string[] = [];
   const lines: string[] = [];
   const mark = (event: MapEvent) => void lines.push(mapLine(event));
-  const jpeg = handheldJpeg((url: string) => {
+  const gate = eightKGate(mark);
+  const plain = (url: string) => {
     asked.push(url);
     return Promise.resolve(url);
-  }, { handheld, mark });
+  };
+  const jpeg = handheld ? handheldJpeg(plain, gate) : plain;
   const load = ktx2OrJpeg<string>({
     ktx2: (url) => {
       asked.push(url);
@@ -67,7 +69,7 @@ function colourLoader(session: Ktx2Switch, handheld: boolean, ktx2Fails: boolean
     },
     jpeg, session, mark,
   });
-  return { load, asked, lines };
+  return { load, asked, lines, gate };
 }
 
 const etc2 = () => ktx2Switch(() => ({ target: 'etc2' }));
@@ -79,7 +81,7 @@ describe('the 8K JPEG on a phone or touch screen', () => {
     const jpeg = handheldJpeg((url: string) => {
       asked.push(url);
       return Promise.resolve(url);
-    }, { handheld: true, mark: (event) => void lines.push(mapLine(event)) });
+    }, eightKGate((event) => void lines.push(mapLine(event))));
     await expect(jpeg(JPEG_8K)).rejects.toThrow(/8K JPEG/);
     await expect(jpeg(JPEG_8K)).rejects.toThrow(/8K JPEG/);
     await expect(jpeg('/textures/moon-lroc-4k.jpg')).resolves.toBe('/textures/moon-lroc-4k.jpg');
@@ -121,14 +123,26 @@ function phoneGlobe(session: Ktx2Switch, ktx2Fails: boolean) {
     clock: { now: () => now, after: () => () => undefined },
   };
   const swap = new TextureSwap(deps);
-  const rule = ruleWatch(() => ({ ...PIXEL, ktx2: session.choice().target !== null }), undefined);
-  const frame = async (ms: number): Promise<void> => {
-    now += ms;
-    swap.want(rule(CLOSE));
+  const rule = ruleWatch(() => ({
+    ...PIXEL, ktx2: session.choice().target !== null, eightKGivenUp: h.gate.givenUp(),
+  }), undefined);
+  const canvas = new EventTarget();
+  const unbind = giveUpOnContextLoss(canvas, h.gate, { capAt4: () => swap.lower(4, 'capped') });
+  const settle = async (): Promise<void> => {
     for (let i = 0; i < 5; i += 1) await new Promise((done) => setTimeout(done, 0));
   };
-  return { swap, frame, asked: h.asked };
+  const frame = async (ms: number, view = CLOSE): Promise<void> => {
+    now += ms;
+    swap.want(rule(view));
+    await settle();
+  };
+  const loseContext = () => canvas.dispatchEvent(new Event('webglcontextlost'));
+  const givenUp = () => h.lines.filter((line) => line.includes('given up'));
+  return { swap, frame, settle, loseContext, unbind, givenUp, asked: h.asked };
 }
+
+// Far enough out that the Pixel's disc wants the 4K, not the 8K.
+const MID = { distance: 3, frameBufferPx: 590 * 1.75 };
 
 describe('a phone zoomed in', () => {
   it('climbs to the 8K as KTX2', async () => {
@@ -163,5 +177,57 @@ describe('a phone zoomed in', () => {
     for (let frame = 0; frame < 10; frame += 1) await globe.frame(100);
     expect(globe.asked).toEqual(['/textures/moon-lroc-4k.jpg']);
     expect(globe.swap.shown()).toBe(4);
+  });
+});
+
+// VENT-123 round 2: three swallows an upload's out-of-memory, and a restored context uploads the same 8K again, so a
+// lost context with the 8K in play is the Pixel's known way to fail: the 8K is given up as when its KTX2 fails.
+describe('a phone that loses its GPU context', () => {
+  it('with the 8K on the Moon gives the 8K up for the session and goes back to the 4K', async () => {
+    const globe = phoneGlobe(etc2(), false);
+    await globe.frame(16);
+    expect(globe.swap.shown()).toBe(8);
+    globe.loseContext();
+    await globe.settle();
+    expect(globe.swap.shown()).toBe(4);
+    for (let frame = 0; frame < 300; frame += 1) await globe.frame(100);
+    expect(globe.asked).toEqual([KTX2_8K, '/textures/moon-lroc-4k.ktx2']);
+    expect(globe.swap.shown()).toBe(4);
+    expect(globe.givenUp()).toEqual(['8K given up on this device: GPU context lost, 4K at most']);
+  });
+
+  it('with the 8K still coming frees it on landing and shows the 4K', async () => {
+    const globe = phoneGlobe(etc2(), false);
+    globe.swap.want(8);
+    globe.loseContext();
+    for (let frame = 0; frame < 50; frame += 1) await globe.frame(100);
+    expect(globe.swap.shown()).toBe(4);
+    expect(globe.asked.filter((url) => url === KTX2_8K)).toHaveLength(1);
+    expect(globe.givenUp()).toEqual(['8K given up on this device: GPU context lost, 4K at most']);
+  });
+
+  it('with only the 4K in play gives nothing up: the 8K comes later', async () => {
+    const globe = phoneGlobe(etc2(), false);
+    await globe.frame(16, MID);
+    expect(globe.swap.shown()).toBe(4);
+    globe.loseContext();
+    await globe.frame(16);
+    expect(globe.swap.shown()).toBe(8);
+    expect(globe.givenUp()).toEqual([]);
+  });
+
+  it('tells the give-up once, and stops listening once unbound', async () => {
+    const globe = phoneGlobe(etc2(), false);
+    await globe.frame(16);
+    globe.unbind();
+    globe.loseContext();
+    await globe.settle();
+    expect(globe.swap.shown()).toBe(8);
+    const lines: string[] = [];
+    const gate = eightKGate((event) => void lines.push(mapLine(event)));
+    gate.giveUp('GPU context lost');
+    gate.giveUp('KTX2 failed');
+    expect(lines).toEqual(['8K given up on this device: GPU context lost, 4K at most']);
+    expect(gate.givenUp()).toBe(true);
   });
 });

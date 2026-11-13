@@ -36,14 +36,12 @@ import { underPolicies, workerPolicy } from './prod-csp';
 
 /** The breadcrumbs' storage key (src/devtools/breadcrumbs.ts). */
 const CRUMBS_KEY = 'ventana.devtools.breadcrumbs';
-// Software GL: the 8K transcodes and uploads slowly, and the tools come after start.
-const MAP_MS = 60_000;
+// Each wait's own bound, under the test's 30 s: the 8K lands in about 1 to 2 s on SwiftShader.
+const MAP_MS = 20_000;
 // Presses of «+» that take the camera to its closest zoom, where the phone's disc wants 8K.
 const ZOOM_PRESSES = 12;
 const JPEG_8K = 'moon-lroc-8k.jpg';
 const KTX2_8K = 'moon-lroc-8k.ktx2';
-// A second ask of a failed level comes 2 s later at the earliest (level-backoff.ts): wait well past it.
-const NO_RETRY_MS = 6000;
 
 const globeLines = (page: Page): Promise<string[]> =>
   page.evaluate((key) => (JSON.parse(localStorage.getItem(key) ?? '[]') as string[])
@@ -68,15 +66,24 @@ async function openMedium(page: Page, extra = ''): Promise<{ errors: string[]; a
   const errors = await underPolicies(page, workerPolicy());
   await stubApi(page);
   await page.goto(`./?quality=medium&debug${extra}`);
-  await expect.poll(() => globeLines(page), { timeout: MAP_MS }).toContain('globe: 1K on the Moon');
   return { errors, asked };
 }
 
-/** Zooms the globe all the way in from the keyboard. */
+const globe = (page: Page) => page.getByRole('application', { name: 'The Moon, seen over its south pole' });
+
+/** Zooms the globe all the way in from the keyboard, once the Moon has its start map (its keys are bound). */
 async function zoomIn(page: Page): Promise<void> {
-  await page.getByRole('application', { name: 'The Moon, seen over its south pole' }).focus();
+  await expect.poll(() => globeLines(page), { timeout: MAP_MS }).toContain('globe: 1K on the Moon');
+  await globe(page).focus();
   for (let i = 0; i < ZOOM_PRESSES; i++) await page.keyboard.press('+');
 }
+
+/** The last line of the density rule. */
+const lastRule = async (page: Page): Promise<string | undefined> =>
+  (await globeLines(page)).filter((line) => line.startsWith('globe: rule wants ')).at(-1);
+
+// The rule capped at 4K for the session: what keeps the 8K from being asked again (texture-lod.ts).
+const CAPPED = /^globe: rule wants 4K: .*; medium(, phone)?, coarse pointer(, KTX2)?, max \d+$/;
 
 /** The readout's texture memory once the 8K is on the Moon, and how long its colour took to land. */
 async function eightK(page: Page): Promise<{ mb: number; landed: string }> {
@@ -134,15 +141,47 @@ test.describe('a Pixel at the medium tier, 412x915 portrait, touch (VENT-123)', 
     await page.route(new RegExp(`/textures/${KTX2_8K.replace('.', '\\.')}$`), (route) => route.abort());
     const { errors, asked } = await openMedium(page);
     await zoomIn(page);
+    // The swapper's own give-up follows the session's; then the rule is capped at 4K and the 4K is asked, which is
+    // where the 8K would be asked again if it were not given up (landing the 4K costs seconds of software GL).
     await expect.poll(() => globeLines(page), { timeout: MAP_MS }).toEqual(expect.arrayContaining([
       expect.stringMatching(/^globe: KTX2 off: /),
       'globe: 8K given up on this device: KTX2 failed, 4K at most',
-      'globe: 4K on the Moon',
+      expect.stringMatching(/^globe: 8K given up, \dK stays$/),
     ]));
-    await page.waitForTimeout(NO_RETRY_MS);
+    // A turn draws frames at the same distance, so the rule reads its caps again even if the zoom had settled.
+    await page.keyboard.press('ArrowLeft');
+    await expect.poll(() => lastRule(page), { timeout: MAP_MS }).toMatch(CAPPED);
+    await expect.poll(() => asked.filter((name) => name.startsWith('moon-lroc-4k.')), { timeout: MAP_MS })
+      .not.toEqual([]);
     expect(asked.filter((name) => name === KTX2_8K)).toHaveLength(1);
     expect(asked).not.toContain(JPEG_8K);
     expect(await globeLines(page)).not.toContain('globe: 8K on the Moon');
+    expect(errors).toEqual([]);
+  });
+
+  // VENT-123 round 2: a lost GPU context with the 8K on the Moon is the Pixel's known way to fail; the 8K is given up
+  // for the session and the 4K comes back after the restore.
+  test('when the GPU context is lost with the 8K on the Moon it goes back to 4K for the session', async ({ page }) => {
+    const { errors, asked } = await openMedium(page);
+    await zoomIn(page);
+    await expect.poll(() => globeLines(page), { timeout: MAP_MS }).toContain('globe: 8K on the Moon');
+    await globe(page).locator('canvas').first().evaluate((canvas) => {
+      const lose = (canvas as HTMLCanvasElement).getContext('webgl2')?.getExtension('WEBGL_lose_context');
+      lose?.loseContext();
+      setTimeout(() => lose?.restoreContext(), 200);
+    });
+    await expect.poll(() => globeLines(page), { timeout: MAP_MS }).toEqual(expect.arrayContaining([
+      'globe: 8K given up on this device: GPU context lost, 4K at most',
+      'globe: lowered to 4K, 8K given up (8K shown)',
+    ]));
+    const afterLoss = async (): Promise<string[]> => {
+      const lines = await globeLines(page);
+      return lines.slice(lines.indexOf('globe: lowered to 4K, 8K given up (8K shown)'));
+    };
+    await expect.poll(afterLoss, { timeout: MAP_MS }).toContain('globe: 4K on the Moon');
+    await expect.poll(() => lastRule(page), { timeout: MAP_MS }).toMatch(CAPPED);
+    expect(asked.filter((name) => name === KTX2_8K)).toHaveLength(1);
+    expect(asked).not.toContain(JPEG_8K);
     expect(errors).toEqual([]);
   });
 });

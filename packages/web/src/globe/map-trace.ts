@@ -61,11 +61,13 @@ export interface Ktx2OffEvent {
 }
 
 /**
- * A phone or touch screen gave the 8K up for the session: its KTX2 failed,
- * and its JPEG is never asked there (handheld-8k.ts, VENT-123).
+ * A phone or touch screen gave the 8K up for the session, and why: its
+ * KTX2 failed (its JPEG is never asked there) or the GPU context was lost
+ * with the 8K on the Moon or coming (handheld-8k.ts, VENT-123).
  */
 export interface EightKGivenUpEvent {
   kind: 'eightKGivenUp';
+  reason: string;
 }
 
 /** The density rule's answer and what it read (texture-lod.ts). */
@@ -87,7 +89,7 @@ export interface RuleEvent {
 
 /** A step of a whole level in the swapper. */
 export type LevelEvent = { level: LodLevel } & (
-  | { kind: 'wanted' | 'lowered' | 'gaveUp'; shown: LodLevel | 0 }
+  | { kind: 'wanted' | 'lowered' | 'capped' | 'gaveUp'; shown: LodLevel | 0 }
   | { kind: 'asked' | 'applied' | 'freed' }
   | { kind: 'threw'; message: string }
 );
@@ -150,6 +152,8 @@ function levelLine(event: LevelEvent): string {
       return `${at} wanted (${named(event.shown)} shown)`;
     case 'lowered':
       return `lowered to ${at}, globe hidden (${named(event.shown)} shown)`;
+    case 'capped':
+      return `lowered to ${at}, 8K given up (${named(event.shown)} shown)`;
     case 'gaveUp':
       return `${at} given up, ${named(event.shown)} stays`;
     case 'asked':
@@ -168,7 +172,7 @@ export function mapLine(event: MapEvent): string {
   if (event.kind === 'rule') return ruleLine(event);
   if (event.kind === 'ktx2Off') return `KTX2 off: ${event.reason}`;
   if (event.kind === 'eightKGivenUp') {
-    return '8K given up on this device: KTX2 failed, 4K at most';
+    return `8K given up on this device: ${event.reason}, 4K at most`;
   }
   return 'map' in event ? stepLine(event) : levelLine(event);
 }

@@ -71,7 +71,8 @@ const KTX2_LEVELS: ReadonlySet<LodLevel> = new Set([2, 4, 8]);
 function tierMax(caps: LodCaps): LodLevel {
   if (caps.tier === 'low') return 4;
   const handheld = caps.phone || caps.coarsePointer;
-  return handheld && !(caps.ktx2 && KTX2_LEVELS.has(8)) ? 4 : 8;
+  const asKtx2 = caps.ktx2 && KTX2_LEVELS.has(8) && !caps.eightKGivenUp;
+  return handheld && !asKtx2 ? 4 : 8;
 }
 
 export interface LodCaps {
@@ -85,6 +86,11 @@ export interface LodCaps {
    * only way a phone or a coarse pointer climbs to 8K. Off when absent.
    */
   readonly ktx2?: boolean | undefined;
+  /**
+   * A phone or a coarse pointer gave the 8K up for the session
+   * (handheld-8k.ts): 4K from then on, whatever KTX2 says.
+   */
+  readonly eightKGivenUp?: boolean | undefined;
   /** The browser asks to save data: nothing beyond the start map. */
   readonly saveData: boolean;
   /** The GPU's largest texture side, in pixels. */

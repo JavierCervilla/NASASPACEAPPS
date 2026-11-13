@@ -222,7 +222,11 @@ Every visible change follows `.claude/skills/apple-design/SKILL.md` (vendored fr
   (`src/globe/handheld-8k.ts` refuses it where every JPEG colour load passes, `moon-textures.ts`): when the 8K KTX2
   fails there (fetch, transcode, timeout, the worker) KTX2 turns off for the session, the rule caps it at 4K and the
   8K is given up for the session, «8K given up on this device: KTX2 failed, 4K at most» under `?debug`, never asked
-  again. The way back without a deploy: `?ktx2=0` keeps a phone at 4K; a full revert is one constant, 8 out of
+  again. A lost GPU context (`webglcontextlost`) while the 8K is on the Moon or coming gives it up the same way
+  («… GPU context lost …», `giveUpOnContextLoss`, the 8K gate's `eightKGivenUp` in `LodCaps`): three swallows an
+  upload's out-of-memory and a restored context would upload the same 8K again, so the swapper goes down to the 4K
+  («lowered to 4K, 8K given up»), which the frame after the restore draws. A gl error read after the upload is not
+  used: it is read only under `?debug`, since `getError` waits for the GPU. Desktops keep the 8K either way. The way back without a deploy: `?ktx2=0` keeps a phone at 4K; a full revert is one constant, 8 out of
   `KTX2_LEVELS` (`texture-lod.ts`: phones at 4K again, desktops on the 8K JPEG). Held by
   `tests/e2e/vent-123-globe-8k-ktx2.spec.ts` (VENT-97, `src/globe/texture-lod.ts`, `disc-density.ts`): a texel covers at most 1.15 drawing-buffer
   px at the disc's centre, the disc measured from the camera distance, the 35° field of view and the framed band's

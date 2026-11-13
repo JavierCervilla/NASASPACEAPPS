@@ -28,34 +28,76 @@
  * as a JPEG it is 179 MB of GPU memory, decoded and uploaded on the main
  * thread, which has cost a phone its GPU context; as KTX2 about 22 MB,
  * transcoded in the worker. The density rule asks a handheld's 8K only
- * while the session takes KTX2 (texture-lod.ts); this guard sits where
- * every JPEG colour load passes (moon-textures.ts), so no order of events
- * (the 8K KTX2 failing over to its sibling, or KTX2 turned off between the
- * rule and the fetch) asks the 8K JPEG there. Pure.
+ * while the session takes KTX2 and has not given the 8K up
+ * (texture-lod.ts). The 8K is given up for the session, once, through the
+ * gate: when its JPEG is asked (the 8K KTX2 failed over to its sibling, or
+ * KTX2 turned off between the rule and the fetch: the guard sits where
+ * every JPEG colour load passes, moon-textures.ts, so that JPEG is never
+ * fetched there), and when the GPU context is lost while the 8K is on the
+ * Moon or coming (three swallows an upload's out-of-memory, and a restored
+ * context would upload the same 8K again). Pure: the canvas and the
+ * swapper come in.
  */
 import type { MapEvent } from './map-trace';
 
 const EIGHT_K_JPEG = /moon-lroc-8k\.jpg$/;
 
-export interface HandheldJpegOptions {
-  /** The phone layout or a coarse pointer. */
-  readonly handheld: boolean;
-  /** Where the 8K given up is told under `?debug`, once. */
-  readonly mark?: ((event: MapEvent) => void) | undefined;
+/** Whether the 8K is given up for the session, and how it is. */
+export interface EightKGate {
+  readonly givenUp: () => boolean;
+  /** Gives the 8K up, told once under `?debug` with `reason`. */
+  readonly giveUp: (reason: string) => void;
 }
 
-/** `jpeg`, refusing the 8K colour on a handheld. */
+/** A gate that tells its give-up to `mark`, if anywhere. */
+export function eightKGate(
+  mark?: ((event: MapEvent) => void) | undefined,
+): EightKGate {
+  let given = false;
+  return {
+    givenUp: () => given,
+    giveUp: (reason) => {
+      if (!given) mark?.({ kind: 'eightKGivenUp', reason });
+      given = true;
+    },
+  };
+}
+
+/** A handheld's `jpeg`, refusing the 8K colour and giving the 8K up. */
 export function handheldJpeg<T>(
   jpeg: (url: string) => Promise<T>,
-  options: HandheldJpegOptions,
+  gate: EightKGate,
 ): (url: string) => Promise<T> {
-  if (!options.handheld) return jpeg;
-  let told = false;
   return (url) => {
     if (!EIGHT_K_JPEG.test(url)) return jpeg(url);
-    if (!told) options.mark?.({ kind: 'eightKGivenUp' });
-    told = true;
+    gate.giveUp('KTX2 failed');
     return Promise.reject(
       new Error('the 8K JPEG is never asked on a phone or touch screen'));
   };
+}
+
+/** The part of the swapper a lost context moves. */
+export interface EightKSwap {
+  /**
+   * Goes down to the 4K when the 8K is on the Moon or coming; false when
+   * it is neither.
+   */
+  readonly capAt4: () => boolean;
+}
+
+/**
+ * Gives the 8K up when `canvas` loses its GPU context while the 8K is on
+ * the Moon or coming, moving the swapper to the 4K, which the frame after
+ * the restore draws. Returns what unbinds it.
+ */
+export function giveUpOnContextLoss(
+  canvas: EventTarget,
+  gate: EightKGate,
+  swap: EightKSwap,
+): () => void {
+  const lost = (): void => {
+    if (!gate.givenUp() && swap.capAt4()) gate.giveUp('GPU context lost');
+  };
+  canvas.addEventListener('webglcontextlost', lost);
+  return () => canvas.removeEventListener('webglcontextlost', lost);
 }

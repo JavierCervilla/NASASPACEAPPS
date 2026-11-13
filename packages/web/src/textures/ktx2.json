@@ -46,6 +46,14 @@
       "sourceSha256": "4099871d4733a4477e625175d713fbd34e2f6c3dcf7dc8c689ca1f2de3300316",
       "outputSha256": "5ce7f0b9db3d592ae9822e07eaddfa60f6f244a7896d9f713b094b2a6baec6f1",
       "bytes": 28666
+    },
+    {
+      "source": "public/textures/moon-lroc-8k.jpg",
+      "output": "public/textures/moon-lroc-8k.ktx2",
+      "encoder": "basisu 2.50.0 native (BinomialLLC/basis_universal 1b33fd5)",
+      "sourceSha256": "20616e5267a6b159141c2278cef1e09b293a4cd69a216ae3b7e13750a06d69ff",
+      "outputSha256": "183fe70b950c9f480c6dea576c24d3bd7de56090ea2d78e7e60047e404c40207",
+      "bytes": 4771824
     }
   ]
 }

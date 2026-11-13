@@ -2,6 +2,12 @@
 
 ## [Sin publicar]
 
+### Seguridad
+- **La API sube a hono 4.13.16 y @hono/node-server 2.1.6.** Cinco avisos nuevos de hono 4.13.14
+  (GHSA-3gg2-335m-rxc6, GHSA-46wx-v44x-9hh2, GHSA-4h7h-rv7c-7m2v, GHSA-4m76-xfj5-7975, GHSA-h7mg-cq63-vhpq) y dos de
+  @hono/node-server 2.1.5 (GHSA-jpvv-r467-5p4w, GHSA-qv5m-9pm6-hqp3) ponían en rojo la escalera de seguridad del CI;
+  las dos versiones los cierran y los 333 tests del servidor siguen pasando.
+
 ### Arreglado
 - **El globo deja de moverse al sacar el ratón de su vista (VENT-122).** Si arrastrabas el globo y el ratón salía de
   su vista, el globo seguía girando con el ratón por encima de la tarjeta y, al soltar fuera, seguía de inercia. Ahora,
@@ -20,6 +26,16 @@
   fotograma» salían a la mitad. Ahora suma los dos.
 
 ### Cambiado
+- **El móvil también llega al mapa de 8K, pero solo comprimido para la GPU (VENT-123).** El 8K en JPEG le cuesta a un
+  móvil 179 MB de memoria de GPU, descomprimido y subido en el hilo principal; ahora el 8K viaja también como KTX2
+  (4,8 MB de descarga) y se transcodifica en el worker a unos 22 MB. Un móvil o una pantalla táctil en calidad media
+  sube a 8K al acercarte solo si la sesión usa KTX2 y su GPU admite 8192 px; si no, se queda en 4K como antes. Nunca
+  pide el 8K en JPEG: si el KTX2 del 8K falla, o si la GPU pierde el contexto con el 8K puesto o llegando (lo que le
+  pasaba al Pixel 10 por falta de memoria), el globo vuelve a 4K el resto de la sesión y no lo vuelve a intentar.
+  Los escritorios también reciben el 8K como KTX2 (de 179 MB a unos 22 MB), con el JPEG de respaldo si falla. Para
+  volver atrás sin desplegar, `?ktx2=0` deja el móvil en 4K; la marcha atrás completa es una constante. El 8K se
+  codifica con el `basisu` nativo, compilado del mismo código de Basis Universal que el codificador wasm (que no admite
+  imágenes de más de 12 Mpx).
 - **En escritorio el globo carga el mapa de 8K al acercarte, también en calidad media (VENT-122).** Hasta ahora el 8K
   era solo de la calidad alta, y un escritorio solo es alta si el navegador dice que tiene 4 núcleos o más; Brave se
   inventa ese número para proteger la privacidad, así que el escritorio de Javier se quedaba en 4K. Ahora un equipo

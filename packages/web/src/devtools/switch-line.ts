@@ -36,6 +36,7 @@ import { benchAsked } from '../lib/bench-param';
 import { forcedTier } from '../lib/quality';
 import { depthChoice } from '../terrain/depth-mode';
 import { parseLeaveOut } from '../terrain/leave-out';
+import { parseRockLook } from '../terrain/rock-look';
 
 type SwitchWord = (search: string) => string | null;
 
@@ -54,6 +55,7 @@ const SWITCHES: readonly SwitchWord[] = [
     const parts = [...parseLeaveOut(search)];
     return parts.length > 0 ? `onfoot=${parts.join(',')}` : null;
   },
+  (search) => (parseRockLook(search) === 'stones' ? 'rocks=stones' : null),
   (search) => {
     const tier = forcedTier(search);
     return tier && `quality=${tier}`;

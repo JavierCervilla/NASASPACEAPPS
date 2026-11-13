@@ -33,6 +33,7 @@
  */
 import { BufferAttribute, BufferGeometry, Mesh, MeshStandardMaterial } from 'three';
 import type { MeasuredScatter } from '../rock-law';
+import type { Rock } from '../rocks';
 import { measuredBands } from '../rocks-measured';
 import { cellBands } from '../walk/rock-cells';
 import { isAway, type EastNorth } from '../walk/walk-reach';
@@ -41,15 +42,20 @@ import { contactAo, stonesBuffers, type GroundAt } from '../stones';
 import { geometryOf } from './mesh-of';
 import type { Slicer } from './slicer';
 import { maskSun, type SunMask } from './sun-mask';
+import { scanSorter, type ScanRequest } from './rock-scans';
 
 /** Behind the ring's tiles in the slicer's queue (lowest runs first). */
 const PRIORITY = 100;
 
-function masked(color: number, mask: SunMask, roughness = 0.92) {
-  const material = new MeshStandardMaterial({ color, roughness,
-    metalness: 0 });
+/** The stones' mesh, empty and hidden until its bands are in. */
+function hiddenStones(mask: SunMask): Mesh {
+  const material = new MeshStandardMaterial({ color: 0xb4b1ab,
+    roughness: 0.92, metalness: 0, vertexColors: true });
   maskSun(material, mask, false);
-  return material;
+  const mesh = new Mesh(new BufferGeometry(), material);
+  mesh.castShadow = mesh.receiveShadow = true;
+  mesh.visible = false;
+  return mesh;
 }
 
 interface Part {
@@ -57,17 +63,18 @@ interface Part {
   readonly ao: Float32Array;
 }
 
-/** The parts' contact occlusion, one array. */
-function joined(parts: readonly Part[]): Float32Array {
-  const out = new Float32Array(parts.reduce((n, p) => n + p.ao.length, 0));
-  parts.reduce((at, p) => (out.set(p.ao, at), at + p.ao.length), 0);
-  return out;
+/** The stones of `rocks` and their contact occlusion. */
+function part(rocks: readonly Rock[], ground: GroundAt): Part {
+  const buffers = stonesBuffers(rocks, ground);
+  return { buffers, ao: contactAo(buffers.positions, ground) };
 }
 
 /** The stones' geometry once every band is in. */
 function finished(parts: readonly Part[]): BufferGeometry {
   const geometry = geometryOf(merge(parts.map((p) => p.buffers)));
-  geometry.setAttribute('color', new BufferAttribute(joined(parts), 3));
+  const ao = new Float32Array(parts.reduce((n, p) => n + p.ao.length, 0));
+  parts.reduce((at, p) => (ao.set(p.ao, at), at + p.ao.length), 0);
+  geometry.setAttribute('color', new BufferAttribute(ao, 3));
   // The lumps move the vertices: the sphere's own normals no longer hold.
   geometry.computeVertexNormals();
   return geometry;
@@ -78,6 +85,13 @@ interface Scatter {
   readonly law: MeasuredScatter;
   /** Where the eye stands (VENT-121): away, the rocks of its cells. */
   readonly eye?: EastNorth | undefined;
+  /** The nearest rocks as scans (VENT-124); null for today's stones. */
+  readonly scan?: ScanRequest | null | undefined;
+  /**
+   * What each rock stands on (rock-ground.ts, VENT-124): the drawn ground;
+   * absent, `ground`, which the scatter always reads.
+   */
+  readonly stand?: GroundAt | undefined;
 }
 
 /** The point's own bands at the point, the eye's cells' away from it. */
@@ -90,25 +104,26 @@ const bandsAround = (seed: number, ground: GroundAt, law: MeasuredScatter,
  * filled and shown when the slicer has run every band; `law` is the tier's
  * size law and cap (ground-policy.ts). At the point the point's own
  * scatter; away from it, the cells' around the eye (walk/rock-cells.ts).
+ * With `scan` (VENT-124) the rocks nearest the eye are drawn as scanned
+ * samples instead, a group under the stones' mesh (scene/rock-scans.ts).
  */
 export function rocksMesh(
   seed: number,
   ground: GroundAt,
   mask: SunMask,
-  { slicer, law, eye = [0, 0] }: Scatter,
+  { slicer, law, eye = [0, 0], scan, stand = ground }: Scatter,
 ): Mesh {
-  const material = masked(0xb4b1ab, mask);
-  material.vertexColors = true;
-  const mesh = new Mesh(new BufferGeometry(), material);
-  mesh.castShadow = mesh.receiveShadow = true;
-  mesh.visible = false;
+  const mesh = hiddenStones(mask);
   const bands = bandsAround(seed, ground, law, eye);
+  const scans = scan
+    ? scanSorter(eye, { request: scan, ground: stand, slicer }) : null;
   const parts: Part[] = [];
   for (let i = 0; i < bands.count; i++) {
     slicer.add(`rocks:${i}`, PRIORITY + i, () => {
-      const buffers = stonesBuffers(bands.band(i), ground);
-      parts.push({ buffers, ao: contactAo(buffers.positions, ground) });
+      const band = bands.band(i);
+      parts.push(part(scans ? scans.take(band) : band, stand));
       if (i < bands.count - 1) return;
+      if (scans) parts.push(part(scans.finish(mesh), stand));
       mesh.geometry.dispose();
       mesh.geometry = finished(parts);
       mesh.visible = true;

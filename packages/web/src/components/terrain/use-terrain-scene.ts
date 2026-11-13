@@ -45,6 +45,7 @@ import { settingsFor } from '../../lib/quality';
 import { pickQuality } from '../../globe/quality-pick';
 import { depthChoice } from '../../terrain/depth-mode';
 import { parseLeaveOut } from '../../terrain/leave-out';
+import { parseRockLook } from '../../terrain/rock-look';
 import type { Recorder } from '../../terrain/report/recorder';
 import type { SceneInput, SceneSetup, TerrainScene }
   from '../../terrain/scene/scene-types';
@@ -91,6 +92,7 @@ function setupOf(m: Mount): SceneSetup {
   const leave = parseLeaveOut(search);
   const { clipControl } = pickQuality.gpuProfile();
   return { quality: settingsFor(tier), leave, report,
+    rocks: parseRockLook(search),
     depth: depthChoice(search, leave, clipControl) };
 }
 

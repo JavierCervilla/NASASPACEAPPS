@@ -459,6 +459,39 @@ All load on demand with the 3D view (file names `on-foot-*`, left out of the pre
   on the products or the LROC site; **the human accepted using them with that credit** (2026-11-01 for Mooner, 2026-11-03
   for VENT-62). The caption says «relief LROC NAC DTM 4 m · LOLA 20 m beyond» (or «PGDA 5 m»).
 
+## On-foot scanned rocks (VENT-124)
+
+Apollo 17 samples scanned by **NASA Astromaterials 3D** (https://ares.jsc.nasa.gov/astromaterials3d/), public domain,
+NASA acknowledged as source. Each sample's web-resolution textured OBJ («SFM Web-Resolution Model, Coordinate
+Registered», a ZIP with the OBJ, its MTL, one JPEG and a parameters PDF) was downloaded on 2026-11-13:
+
+| Sample | Page | ZIP | ZIP sha256 |
+|---|---|---|---|
+| 70175-0 | https://ares.jsc.nasa.gov/astromaterials3d/sample-details.htm?sample=70175-0 | https://ares-a3d.s3.us-gov-east-1.amazonaws.com/samples/70175-0/2b_70175-0_SFM_Web-Resolution-Model_Coordinate-Registered/70175-0_SFM_Web-Resolution-Model_Coordinate-Registered.zip | `3f7dd0242430ebe36493bcae579c11f00162144354b637e3bed0d334697ee8f8` |
+| 70295-0 | https://ares.jsc.nasa.gov/astromaterials3d/sample-details.htm?sample=70295-0 | https://ares-a3d.s3.us-gov-east-1.amazonaws.com/samples/70295-0/2b_70295-0_SFM_Web-Resolution-Model_Coordinate-Registered/70295-0_SFM_Web-Resolution-Model_Coordinate-Registered.zip | `4f5d9d4cf944b25843b478801e29baa9f7508ee28634c8d50433e9732c70c92c` |
+| 76535-0 | https://ares.jsc.nasa.gov/astromaterials3d/sample-details.htm?sample=76535-0 | https://ares-a3d.s3.us-gov-east-1.amazonaws.com/samples/76535-0/2b_76535-0_SFM_Web-Resolution-Model_Coordinate-Registered/76535-0_SFM_Web-Resolution-Model_Coordinate-Registered.zip | `ae487719ac8c5ec761f65e0e45ef531b6d29d75b99fabef8da92709bf7756ae4` |
+| 79115-0 | https://ares.jsc.nasa.gov/astromaterials3d/sample-details.htm?sample=79115-0 | https://ares-a3d.s3.us-gov-east-1.amazonaws.com/samples/79115-0/2b_79115-0_SFM_Web-Resolution-Model_Coordinate-Registered/79115-0_SFM_Web-Resolution-Model_Coordinate-Registered.zip | `b9a45a579a1299422a1d69a66e8df7b1b5c6df35afc8de3da2fd5766b24f9602` |
+
+Chosen among the six whole Apollo 17 masses offered (70017-8, 70175-0, 70295-0, 76535-0, 78236-0, 79115-0) by
+rendering each from six sides: 70017-8 is a subsample (`,8`) with a sawn face (10 % of its area within 8° of one
+plane), 78236-0 a thin slab; the four kept have none over 4 % of their area. Made by
+`node packages/web/scripts/scan-rocks.mjs <folder with the four <id>.zip>` (deterministic: the same zips give the
+same bytes): the ZIP read as data, the OBJ cut to 1 500 triangles by meshoptimizer's `simplifyWithAttributes` (npm
+`meshoptimizer` 1.1.1, pinned, UVs weighed 0.5, `Permissive`), turned onto its principal axes (shortest up), centred
+on its box and scaled so its longest half-extent is 1, normals over welded positions; the JPEG resized to 512 px by
+sharp 0.35.5 (Lanczos 3) and scaled uniformly so its 99th-percentile texel per channel is at most #C9C5BE.
+Loaded on demand with the 3D view at the medium and high tiers (none at low, under `?onfoot=rocks` or under the
+diagnostic `?rocks=stones`); file names `on-foot-*`, left out of the precache by `ON_DEMAND`. Credited in the view's
+caption as «Rocks: NASA Astromaterials 3D (Apollo 17)» while they are drawn.
+
+| File | What | sha256 |
+|---|---|---|
+| `packages/web/src/terrain/maps/on-foot-rock-70175-0.webp` | sample 70175-0 (whole mass  rounded dark rock): 512 px colour map  WebP q72  32 278 bytes | `3179b2c1dda39a377a8c0cc0af1787f09bed7c098ff9c89a833f5dd236906c57` |
+| `packages/web/src/terrain/maps/on-foot-rock-70295-0.webp` | sample 70295-0 (whole mass  blocky): 512 px colour map  WebP q72  27 404 bytes | `2a5734c435671e018465b1321f39f8102a9ecc479fbf7bb1e10ded9353dea762` |
+| `packages/web/src/terrain/maps/on-foot-rock-76535-0.webp` | sample 76535-0 (whole mass  troctolite  knobby and light (its texture scaled by 0.974 to the albedo cap)): 512 px colour map  WebP q72  28 358 bytes | `520779636d92921afd300b3a187e0bf8756dadac6ea0aeee42d6820e93edc76e` |
+| `packages/web/src/terrain/maps/on-foot-rock-79115-0.webp` | sample 79115-0 (whole mass  wedge-shaped breccia): 512 px colour map  WebP q72  33 502 bytes | `70c3eae9e4563264991814bbba8abfc708e01bbf3a62283b50caba1bba2d60d2` |
+| `packages/web/src/terrain/maps/on-foot-rocks.bin` | the four shapes  1 500 triangles each  quantised (`scan-rocks-pack.mjs`)  91 252 bytes | `1911e2cac9a680713366e5630eef94787c75afbedc8053500d595ca30109d965` |
+
 ## On-foot view models removed (VENT-54)
 
 VENT-54 removed the on-foot astronaut and landers, the human's decision (first person only): `astronaut-meshy*`,

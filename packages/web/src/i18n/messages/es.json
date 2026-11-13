@@ -384,6 +384,7 @@
   "onFoot.captionFine": "Detalle fino ilustrativo · relieve {source} {res} m · LOLA {lola} m más allá",
   "onFoot.captionNote": "Tierra: NASA Blue Marble · sombras aclaradas y exposición subida un 20 % para leerse",
   "onFoot.captionNoteNight": "Tierra: NASA Blue Marble · luz añadida para leerse",
+  "onFoot.captionRocks": "Rocas: NASA Astromaterials 3D (Apolo 17) · {note}",
   "onFoot.nightTitle": "Noche lunar aquí",
   "onFoot.nightRise": "El Sol sale en {span}",
   "onFoot.ring": "{distance} m",

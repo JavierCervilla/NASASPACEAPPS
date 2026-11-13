@@ -35,11 +35,14 @@ export const detailCaption = (i18n: I18n, resolutionM: number): string =>
   i18n.t('onFoot.caption', { res: i18n.number(resolutionM) });
 
 /**
- * The caption's second line: the Earth's map, and the lifted shadows by
- * day, or the light added at night (VENT-100).
+ * The caption's second line: the scanned rocks' source when they are drawn
+ * (VENT-124), the Earth's map, and the lifted shadows by day, or the light
+ * added at night (VENT-100).
  */
-export const captionNote = (i18n: I18n, night = false): string =>
-  i18n.t(night ? 'onFoot.captionNoteNight' : 'onFoot.captionNote');
+export function captionNote(i18n: I18n, night = false, rocks = false) {
+  const note = i18n.t(night ? 'onFoot.captionNoteNight' : 'onFoot.captionNote');
+  return rocks ? i18n.t('onFoot.captionRocks', { note }) : note;
+}
 
 /** «100 m», a distance ring's label. */
 export const ringLabel = (i18n: I18n, metres: number): string =>

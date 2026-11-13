@@ -3,6 +3,10 @@
 ## [Sin publicar]
 
 ### Arreglado
+- **En calidad media (la del móvil) vuelven a verse las rocas cercanas (VENT-124).** Las rocas se colocaban sobre una
+  rejilla del suelo de 15,6 m, pero la calidad media dibuja el suelo con celdas de 31 m: en el relieve convexo de IM-2
+  el suelo dibujado quedaba hasta 25 cm por encima y enterraba las rocas de 5 a 15 cm. Ahora cada roca se apoya en el
+  suelo que de verdad se dibuja en cada calidad; siguen siendo las mismas rocas, en el mismo sitio.
 - **El globo deja de moverse al sacar el ratón de su vista (VENT-122).** Si arrastrabas el globo y el ratón salía de
   su vista, el globo seguía girando con el ratón por encima de la tarjeta y, al soltar fuera, seguía de inercia. Ahora,
   con ratón, el globo se queda donde está en cuanto el puntero sale de su vista, como si lo soltaras en el borde, sin
@@ -47,6 +51,12 @@
   you». En escritorio, las cuatro en fila; en los cinco idiomas. El menú dice «The app» en vez de «Tour».
 
 ### Añadido
+- **Rocas reales de Apolo 17 en la vista 3D (VENT-124, variante B del lienzo).** Las rocas más cercanas a ti (hasta
+  40 a menos de 15 m) son ahora escaneos de muestras traídas por Apolo 17 (70175, 70295, 76535 y 79115, de NASA
+  Astromaterials 3D, dominio público), con su propio color, su sombra y su oscurecimiento al tocar el suelo; las más
+  lejanas siguen siendo las piedras de siempre. Pesan 213 kB que solo se descargan al abrir la vista 3D en calidad media
+  o alta, y el pie de la vista lo dice: «Rocks: NASA Astromaterials 3D (Apollo 17)». `?rocks=stones` devuelve las
+  piedras de antes para comparar.
 - **Caminar por la vista 3D, como en Street View (VENT-121, la variante 3A del lienzo).** Un toque o un clic en el suelo
   lleva la vista allí con un deslizamiento suave (de 0,6 s a 2 s según la distancia; al instante con movimiento
   reducido); arrastrar sigue girando como antes. Con ratón, un anillo sobre el suelo sigue al puntero con la distancia;

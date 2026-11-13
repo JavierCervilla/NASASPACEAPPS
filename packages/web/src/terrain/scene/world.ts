@@ -56,7 +56,11 @@ import { applyRings } from './world-rings';
 import { castsShadow } from './shadow-jobs';
 import { createSlicer, type Slicer } from './slicer';
 import { ringsMesh } from './rings';
+import { freeMesh } from './free-mesh';
 import { rocksMesh } from './props';
+import { rockGrounds } from './rock-ground';
+import { PATCH_SPECS } from './crater-spec';
+import { scanRequest, type ScanRequest } from './rock-scans';
 import type { SceneInput, SceneSetup, SkyDirs } from './scene-types';
 import { createSky, type SkyParts } from './sky';
 import type { Stage } from './stage';
@@ -113,6 +117,8 @@ export interface World {
   pointMask: { far: number; near: number } | null;
   /** The near ground's Sun mask per node, from the last lighting. */
   nearLit: Float32Array | null;
+  /** The scanned rocks (VENT-124); null for `?rocks=stones` or no rocks. */
+  readonly scans: ScanRequest | null;
   /** Tells the panel where the eye stands: bound by the scene. */
   tellEye: () => void;
 }
@@ -135,7 +141,7 @@ export function createWorld(stage: Stage, seed: number, setup: SceneSetup) {
     fill: createFillUniforms(), clods: createClodUniforms() };
   const parts = { mask, shared, slicer, policy };
   const world: World = { stage, setup, policy, mask,
-    sky: createSky(seed, shadowPx),
+    sky: createSky(seed, shadowPx), scans: scanRequest(setup.rocks, parts),
     near: new Group(), ground: () => 0, fine, shared,
     ...craterParts(seed, setup, parts),
     clods: clodLayer(seed, setup, parts),
@@ -158,15 +164,17 @@ function applyTiles(world: World, input: SceneInput): void {
 /** The rocks around the eye and the rings over the new ground. */
 export function rebuildNear(world: World, input: SceneInput): void {
   world.stage.scene.remove(world.near);
-  world.near.traverse((o) => (o as Partial<Mesh>).geometry?.dispose());
+  world.near.traverse(freeMesh);
   world.near = new Group();
   world.near.add(ringsMesh(world.ground));
   if (world.policy.rocksCap > 0) {
-    const stand = world.craters?.groundFor(world.ground) ?? world.ground;
-    world.near.add(rocksMesh(input.seed, stand, world.mask,
+    const { scatter, stand } = rockGrounds(input.ring, { ground: world.ground,
+      craters: world.craters,
+      patchM: PATCH_SPECS[world.setup.quality.tier]?.r ?? 0 });
+    world.near.add(rocksMesh(input.seed, scatter, world.mask,
       { slicer: world.slicer,
         law: { ...world.policy.rockLaw, cap: world.policy.rocksCap },
-        eye: world.eye }));
+        eye: world.eye, scan: world.scans, stand }));
   }
   world.stage.scene.add(world.near);
   world.setup.report.step('near ground placed');

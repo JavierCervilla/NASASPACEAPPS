@@ -34,6 +34,7 @@ import type { HorizonProfile } from '@ventana/sim';
 import type { QualitySettings } from '../../lib/quality';
 import type { DepthChoice } from '../depth-mode';
 import type { LeaveOut } from '../leave-out';
+import type { RockLook } from '../rock-look';
 import type { ReportSink } from '../report/sink';
 import type { RingView } from '../ring/ring-session';
 import type { HeightTile } from '../tile';
@@ -99,6 +100,8 @@ export interface SceneSetup {
   readonly leave: ReadonlySet<LeaveOut>;
   /** The `?depth=` and `?shadows=` bisection switches (depth-mode.ts). */
   readonly depth: DepthChoice;
+  /** The rocks: scanned, or `?rocks=stones` (rock-look.ts, VENT-124). */
+  readonly rocks: RockLook;
   readonly report: ReportSink;
 }
 

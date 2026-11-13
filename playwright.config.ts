@@ -34,7 +34,7 @@ const BENCH_SPECS = /(vent-81-bench|vent-104-bench-depth)\.spec\.ts$/;
  * The on-foot specs that stand IM-2's real relief at the high tier: their own
  * project, run with two workers (see below).
  */
-const ONFOOT_SPECS = /(terrain-view|vent-98-binary-tiles|vent-100-lunar-night|vent-114-split-depth|vent-117-loader-film|vent-121-walk)\.spec\.ts$/;
+const ONFOOT_SPECS = /(terrain-view|vent-98-binary-tiles|vent-100-lunar-night|vent-114-split-depth|vent-117-loader-film|vent-121-walk|vent-124-scan-rocks)\.spec\.ts$/;
 /** The landing's spec (VENT-109): its own preview at the domain's root, beside the app's. */
 const LANDING_SPECS = /landing\.spec\.ts$/;
 const landingPort = port + 1;

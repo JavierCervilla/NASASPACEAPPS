@@ -81,7 +81,7 @@ function StageTop({ view, resolution, drawn }: TopProps) {
       {resolution === null
         ? null
         : <OnFootCaption resolutionM={resolution} night={view.night.night}
-          fine={fine} />}
+          fine={fine} rocks={view.scans} />}
       <FarChip progress={view.tile.progress} drawn={drawn} />
     </div>
   );

@@ -40,6 +40,7 @@ import { releaseRenderer } from '../../lib/gl-renderer';
 import { terrainPixelRatio } from '../pixel-ratio';
 import { VIEW_FOV } from '../view-fov';
 import { FULL_PLANES } from './depth-passes';
+import { freeMesh } from './free-mesh';
 import { createShadowGate, type ShadowGate } from './shadow-gate';
 import { stageDraw, type StageDraw } from './stage-draw';
 import { stageRenderer } from './stage-renderer';
@@ -116,9 +117,9 @@ export function fitStage(
 /** Frees every geometry, material and texture, then the GPU context. */
 export function disposeStage(stage: Stage): void {
   stage.scene.traverse((object) => {
-    const mesh = object as { geometry?: { dispose(): void };
+    const mesh = object as {
       material?: { dispose(): void } | { dispose(): void }[] };
-    mesh.geometry?.dispose();
+    freeMesh(object);
     const materials = [mesh.material ?? []].flat();
     for (const material of materials) disposeMaterial(material);
   });

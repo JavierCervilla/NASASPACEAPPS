@@ -53,6 +53,8 @@ completa está en el documento «Ventana Lunar · Especificación y roadmap»
 - [x] Caminar en la vista 3D como en Street View (VENT-121, variante 3A): toca o haz clic en el suelo para ir allí
   (las flechas ya no caminan, VENT-122), hasta 1,5 km del punto sobre el relieve ya cargado; la ficha dice dónde estás y el estado allí,
   «Volver» regresa y en el borde se puede poner un pin para seguir
+- [x] Rocas escaneadas de Apolo 17 en la vista 3D (VENT-124, variante B): las rocas cercanas son muestras reales de
+  NASA Astromaterials 3D con su color, apoyadas en el suelo que se dibuja (también en el móvil), con el crédito en el pie
 - [x] Globo lunar 3D con el terminador del Sol real y los sitios de la API (VENT-6); la luz sigue al instante elegido
   en la cinta de calendario (VENT-4)
 - [x] Referencias de orientación en el globo (VENT-50): brújula con el norte fijo y la marca de la Tierra, que al

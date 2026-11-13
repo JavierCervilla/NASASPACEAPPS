@@ -25,8 +25,9 @@
 
 /**
  * The on-foot view's caption (VENT-34): what is measured and what is not.
- * «Fine detail illustrative · relief LOLA 20 m», then the Earth's map and
- * what was done for legibility, by day or at night.
+ * «Fine detail illustrative · relief LOLA 20 m», then the rocks' source
+ * when they are scans, the Earth's map and what was done for legibility, by
+ * day or at night.
  */
 import type { FineSite } from '../../terrain/fine/fine-catalog';
 import { fineCaption } from '../../terrain/fine/fine-caption';
@@ -39,14 +40,16 @@ interface Props {
   readonly fine: FineSite | null;
   /** The Sun is under the point's horizon: the light is added (VENT-100). */
   readonly night: boolean;
+  /** The scanned rocks are drawn: their source is credited (VENT-124). */
+  readonly rocks: boolean;
 }
 
-export function OnFootCaption({ resolutionM, fine, night }: Props) {
+export function OnFootCaption({ resolutionM, fine, night, rocks }: Props) {
   const i18n = useI18n();
   return (
     <p className="on-foot__caption">
       <span className="on-foot__caption-main">{fine ? fineCaption(i18n, fine, resolutionM) : detailCaption(i18n, resolutionM)}</span>
-      <span className="on-foot__caption-note">{captionNote(i18n, night)}</span>
+      <span className="on-foot__caption-note">{captionNote(i18n, night, rocks)}</span>
     </p>
   );
 }

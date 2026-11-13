@@ -376,6 +376,7 @@
   "onFoot.captionFine": "Fine detail illustrative · relief {source} {res} m · LOLA {lola} m beyond",
   "onFoot.captionNote": "Earth: NASA Blue Marble · shadows lifted and exposure raised 20 % for legibility",
   "onFoot.captionNoteNight": "Earth: NASA Blue Marble · light added for legibility",
+  "onFoot.captionRocks": "Rocks: NASA Astromaterials 3D (Apollo 17) · {note}",
   "onFoot.nightTitle": "Lunar night here",
   "onFoot.nightRise": "The Sun rises in {span}",
   "onFoot.ring": "{distance} m",

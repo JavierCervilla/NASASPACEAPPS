@@ -44,6 +44,7 @@ import { seedOf } from '../../terrain/seeded';
 import type { Recorder } from '../../terrain/report/recorder';
 import type { RingSource } from '../../terrain/ring/ring-source';
 import type { ViewTier } from '../../terrain/view-tier';
+import { useScansDrawn } from './use-scans';
 import { useNight } from './use-night';
 import { useRing } from './use-ring';
 import type { WalkSite } from './walk/use-walk';
@@ -119,5 +120,6 @@ export function useOnFoot(parts: OnFootParts, report: Recorder) {
     parts.site.lat, ground.atMs]);
   const night = useNight(parts.site, sky, profile,
     { atMs: ground.atMs, hours: parts.hours });
-  return { ...ground, input, bodies, startYawDeg, profile, night };
+  const scans = useScansDrawn(parts.viewTier);
+  return { ...ground, input, bodies, startYawDeg, profile, night, scans };
 }

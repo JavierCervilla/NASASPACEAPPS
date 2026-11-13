@@ -77,7 +77,9 @@ export const stonesBuffers = (
 ): MeshBuffers => merge(rocks.map((rock) => stone(rock, ground)));
 
 /** Where a surface at `y` over the ground is shut in: 0.3 at the contact. */
-const OPEN_M = 0.45;
+export const OPEN_M = 0.45;
+/** The light a surface keeps at the contact (VENT-124: the scans' too). */
+export const SHUT_AO = 0.3;
 
 /**
  * Baked ambient occlusion of `positions` (stones.ts' frame: x east, z
@@ -93,7 +95,8 @@ export function contactAo(
     const [x, y, z] = [positions[i] ?? 0, positions[i + 1] ?? 0,
       positions[i + 2] ?? 0];
     const open = Math.min(Math.max((y - ground(x, -z)) / OPEN_M, 0), 1);
-    colors.fill(0.3 + 0.7 * open * open * (3 - 2 * open), i, i + 3);
+    colors.fill(SHUT_AO + (1 - SHUT_AO) * open * open * (3 - 2 * open), i,
+      i + 3);
   }
   return colors;
 }

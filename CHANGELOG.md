@@ -20,6 +20,16 @@
   fotograma» salían a la mitad. Ahora suma los dos.
 
 ### Cambiado
+- **El móvil también llega al mapa de 8K, pero solo comprimido para la GPU (VENT-123).** El 8K en JPEG le cuesta a un
+  móvil 179 MB de memoria de GPU, descomprimido y subido en el hilo principal; ahora el 8K viaja también como KTX2
+  (4,8 MB de descarga) y se transcodifica en el worker a unos 22 MB. Un móvil o una pantalla táctil en calidad media
+  sube a 8K al acercarte solo si la sesión usa KTX2 y su GPU admite 8192 px; si no, se queda en 4K como antes. Nunca
+  pide el 8K en JPEG: si el KTX2 del 8K falla, o si la GPU pierde el contexto con el 8K puesto o llegando (lo que le
+  pasaba al Pixel 10 por falta de memoria), el globo vuelve a 4K el resto de la sesión y no lo vuelve a intentar.
+  Los escritorios también reciben el 8K como KTX2 (de 179 MB a unos 22 MB), con el JPEG de respaldo si falla. Para
+  volver atrás sin desplegar, `?ktx2=0` deja el móvil en 4K; la marcha atrás completa es una constante. El 8K se
+  codifica con el `basisu` nativo, compilado del mismo código de Basis Universal que el codificador wasm (que no admite
+  imágenes de más de 12 Mpx).
 - **En escritorio el globo carga el mapa de 8K al acercarte, también en calidad media (VENT-122).** Hasta ahora el 8K
   era solo de la calidad alta, y un escritorio solo es alta si el navegador dice que tiene 4 núcleos o más; Brave se
   inventa ese número para proteger la privacidad, así que el escritorio de Javier se quedaba en 4K. Ahora un equipo

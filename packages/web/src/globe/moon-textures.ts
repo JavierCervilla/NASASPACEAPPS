@@ -46,6 +46,7 @@ import {
 import type { Tier } from '../lib/quality';
 import type { Ktx2Switch } from '../textures/ktx2-session';
 import { textureAt } from './early-texture';
+import { handheldJpeg, type EightKGate } from './handheld-8k';
 import { ktx2OrJpeg } from './ktx2-map';
 import type { Ktx2Target } from './ktx2-target';
 import type { MapTrace } from './map-trace';
@@ -92,6 +93,11 @@ export interface MoonTextureOptions {
   } | undefined;
   /** Where a KTX2 map or its fallback is told under `?debug`. */
   readonly trace?: Pick<MapTrace<Texture>, 'mark'> | undefined;
+  /**
+   * A phone or a coarse pointer, where the 8K colour comes only as KTX2,
+   * and the gate its JPEG gives the 8K up through (handheld-8k.ts, VENT-123).
+   */
+  readonly handheld?: { readonly gate: EightKGate } | undefined;
 }
 
 type GpuDeps = Pick<SwapDeps<Texture>, 'load' | 'upload' | 'apply' | 'dispose'>;
@@ -117,13 +123,18 @@ function mapLoader(options: MoonTextureOptions): GpuDeps['load'] {
         colorSpace: kind === 'colour' ? SRGBColorSpace : NoColorSpace,
       }));
   const { ktx2 } = options;
+  const mark = options.trace?.mark;
+  const { handheld } = options;
+  const colourJpeg = handheld
+    ? handheldJpeg((url) => jpeg(url, 'colour'), handheld.gate)
+    : (url: string) => jpeg(url, 'colour');
   const colour = ktx2 ? ktx2OrJpeg<Texture>({
     ktx2: (url, target) => ktx2.load(url, target)
       .then((texture) => Object.assign(texture, { anisotropy })),
-    jpeg: (url) => jpeg(url, 'colour'),
+    jpeg: colourJpeg,
     session: ktx2.session,
-    mark: options.trace?.mark,
-  }) : (url: string) => jpeg(url, 'colour');
+    mark,
+  }) : colourJpeg;
   return (url, kind) => (kind === 'colour' ? colour(url) : jpeg(url, kind));
 }
 

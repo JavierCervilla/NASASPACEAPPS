@@ -352,7 +352,7 @@ describe('the density rule in the trace', () => {
 
   it('tells the level it wants with what it read, only when its answer changes', () => {
     const lines: string[] = [];
-    const want = ruleWatch(caps, { mark: (event) => void lines.push(mapLine(event)) });
+    const want = ruleWatch(() => caps, { mark: (event) => void lines.push(mapLine(event)) });
     expect(want({ distance: 4.5, frameBufferPx: PHONE_PX })).toBe(2);
     want({ distance: 4.4, frameBufferPx: PHONE_PX });
     expect(want({ distance: 1.6, frameBufferPx: PHONE_PX })).toBe(4);
@@ -363,7 +363,7 @@ describe('the density rule in the trace', () => {
 
   it('says when Save-Data holds it at the start map', () => {
     const lines: string[] = [];
-    const want = ruleWatch({ ...caps, saveData: true }, { mark: (event) => void lines.push(mapLine(event)) });
+    const want = ruleWatch(() => ({ ...caps, saveData: true }), { mark: (event) => void lines.push(mapLine(event)) });
     expect(want({ distance: 1.6, frameBufferPx: PHONE_PX })).toBe(1);
     expect(lines[0]).toMatch(/^rule wants 1K: .*; medium, phone, coarse pointer, save-data on, max 8192$/);
   });
@@ -371,11 +371,25 @@ describe('the density rule in the trace', () => {
   it('names the signal that stops the medium tier at 4K: the layout, the pointer, or neither on a desktop', () => {
     const line = (extra: Partial<LodCaps>) => {
       const lines: string[] = [];
-      ruleWatch({ ...caps, ...extra }, { mark: (event) => void lines.push(mapLine(event)) })({ distance: 1.6, frameBufferPx: 547 * 2 });
+      ruleWatch(() => ({ ...caps, ...extra }), { mark: (event) => void lines.push(mapLine(event)) })({ distance: 1.6, frameBufferPx: 547 * 2 });
       return lines[0];
     };
     expect(line({ phone: false, coarsePointer: true })).toMatch(/^rule wants 4K: .*; medium, coarse pointer, max 8192$/);
     expect(line({ phone: false, coarsePointer: false })).toMatch(/^rule wants 8K: .*; medium, max 8192$/);
+  });
+
+  // VENT-123: with KTX2 on a phone climbs to 8K, and the line says why.
+  it('names KTX2 when it lets a phone climb to 8K', () => {
+    const lines: string[] = [];
+    let ktx2 = true;
+    const want = ruleWatch(() => ({ ...caps, ktx2 }), { mark: (event) => void lines.push(mapLine(event)) });
+    expect(want({ distance: 1.6, frameBufferPx: 547 * 2 })).toBe(8);
+    ktx2 = false;
+    expect(want({ distance: 1.6, frameBufferPx: 547 * 2 })).toBe(4);
+    expect(lines).toEqual([
+      expect.stringMatching(/^rule wants 8K: .*; medium, phone, coarse pointer, KTX2, max 8192$/),
+      expect.stringMatching(/^rule wants 4K: .*; medium, phone, coarse pointer, max 8192$/),
+    ]);
   });
 
   it('names the GL errors an upload can leave', () => {

@@ -28,11 +28,20 @@
 //   node packages/web/scripts/moon-ktx2.mjs           encode, write the maps and the manifest
 //   node packages/web/scripts/moon-ktx2.mjs --verify  the committed maps and sources match the manifest (CI, cheap)
 //   node packages/web/scripts/moon-ktx2.mjs --check   re-encode in memory and compare with the committed maps (~75 s)
-// The encoding is deterministic: two runs give the same bytes.
+// The encoding is deterministic: two runs give the same bytes. The 8K colour (VENT-123) is past the wasm encoder's
+// 12 Mpx cap: it is encoded by the native basisu (ASSETS.md has the command), and here only its sha256 is checked.
 import { readFileSync, writeFileSync } from 'node:fs';
 import sharp from 'sharp';
 import { encodeToKTX2 } from 'ktx2-encoder';
-import { KTX2_JOBS, KTX2_SETTINGS, MANIFEST, manifestOf, manifestProblems, sha256 } from './ktx2-manifest.mjs';
+import {
+  KTX2_JOBS,
+  KTX2_SETTINGS,
+  MANIFEST,
+  NATIVE_NOTE,
+  manifestOf,
+  manifestProblems,
+  sha256,
+} from './ktx2-manifest.mjs';
 
 const ROOT = new URL('../', import.meta.url).pathname;
 const read = (path) => readFileSync(`${ROOT}${path}`);
@@ -48,7 +57,11 @@ const encode = (source) => encodeToKTX2(read(source), { ...KTX2_SETTINGS, imageD
 /** Encodes every map; writes them and the manifest, or compares them with the committed ones. */
 async function run(write) {
   const problems = [];
-  for (const { source, output } of KTX2_JOBS) {
+  for (const { source, output, encoder } of KTX2_JOBS) {
+    if (encoder) {
+      console.log(`${output}: ${NATIVE_NOTE}`);
+      continue;
+    }
     const bytes = await encode(source);
     if (write) writeFileSync(`${ROOT}${output}`, bytes);
     else if (sha256(bytes) !== sha256(read(output))) problems.push(`${output}: re-encoded bytes differ`);
@@ -58,8 +71,19 @@ async function run(write) {
   return problems;
 }
 
+/** What the manifest says differs for the natively encoded maps, which no mode here re-encodes. */
+function nativeProblems() {
+  const outputs = KTX2_JOBS.filter((job) => job.encoder).map((job) => `${job.output}:`);
+  const all = manifestProblems(JSON.parse(read(MANIFEST)), read);
+  return all.filter((line) => outputs.some((output) => line.startsWith(output)));
+}
+
 const mode = process.argv[2];
-const problems = mode === '--verify' ? manifestProblems(JSON.parse(read(MANIFEST)), read) : await run(!mode);
+const problems = mode === '--verify' ? manifestProblems(JSON.parse(read(MANIFEST)), read)
+  : [...(mode ? nativeProblems() : []), ...(await run(!mode))];
+if (mode === '--verify') {
+  for (const { output, encoder } of KTX2_JOBS) if (encoder) console.log(`${output}: ${NATIVE_NOTE}`);
+}
 for (const problem of problems) console.error(`moon-ktx2: ${problem}`);
 if (problems.length > 0) process.exit(1);
 console.log(`moon-ktx2: ${mode ?? 'written'}: ok`);

@@ -93,7 +93,7 @@ export function addMoon(stage: Stage, options: MoonOptions): Moon {
   const material = new MeshLambertMaterial(BARE_MOON);
   keepNightDark(material);
   samplePolesExactly(material);
-  const { swap, want } = moonSwap(stage.renderer, material, options);
+  const { swap, want, unbind } = moonSwap(stage.renderer, material, options);
   swap.want(startLevel(options.tier));
   stage.scene.add(new Mesh(geometry, material));
   return {
@@ -101,6 +101,7 @@ export function addMoon(stage: Stage, options: MoonOptions): Moon {
     track: (view) => swap.want(want(view)),
     rest: () => swap.lower(startLevel(options.tier)),
     dispose: () => {
+      unbind();
       swap.dispose();
       geometry.dispose();
       material.dispose();

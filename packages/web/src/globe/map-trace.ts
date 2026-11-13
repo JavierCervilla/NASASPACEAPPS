@@ -60,6 +60,16 @@ export interface Ktx2OffEvent {
   reason: string;
 }
 
+/**
+ * A phone or touch screen gave the 8K up for the session, and why: its
+ * KTX2 failed (its JPEG is never asked there) or the GPU context was lost
+ * with the 8K on the Moon or coming (handheld-8k.ts, VENT-123).
+ */
+export interface EightKGivenUpEvent {
+  kind: 'eightKGivenUp';
+  reason: string;
+}
+
 /** The density rule's answer and what it read (texture-lod.ts). */
 export interface RuleEvent {
   kind: 'rule';
@@ -71,18 +81,21 @@ export interface RuleEvent {
   phone: boolean;
   /** A coarse pointer, which does the same. */
   coarsePointer: boolean;
+  /** KTX2 on with a target: what lets those two reach 8K (VENT-123). */
+  ktx2: boolean;
   saveData: boolean;
   maxTextureSize: number;
 }
 
 /** A step of a whole level in the swapper. */
 export type LevelEvent = { level: LodLevel } & (
-  | { kind: 'wanted' | 'lowered' | 'gaveUp'; shown: LodLevel | 0 }
+  | { kind: 'wanted' | 'lowered' | 'capped' | 'gaveUp'; shown: LodLevel | 0 }
   | { kind: 'asked' | 'applied' | 'freed' }
   | { kind: 'threw'; message: string }
 );
 
-export type MapEvent = MapStepEvent | RuleEvent | LevelEvent | Ktx2OffEvent;
+export type MapEvent =
+  | MapStepEvent | RuleEvent | LevelEvent | Ktx2OffEvent | EightKGivenUpEvent;
 
 /** Where the globe tells its events. */
 export interface MapTrace<T> {
@@ -118,11 +131,13 @@ function stepLine(event: MapStepEvent): string {
 /**
  * «rule wants 4K: disc 1180 px, 0.91 px/texel; medium, phone, coarse
  * pointer, max 8192»: «phone» in the phone layout and «coarse pointer» on a
- * touch screen, each of which stops the medium tier at 4K.
+ * touch screen, each of which stops the medium tier at 4K unless «KTX2»
+ * follows them (VENT-123).
  */
 function ruleLine(event: RuleEvent): string {
   const phone = (event.phone ? ', phone' : '') +
-    (event.coarsePointer ? ', coarse pointer' : '');
+    (event.coarsePointer ? ', coarse pointer' : '') +
+    (event.ktx2 ? ', KTX2' : '');
   const save = event.saveData ? ', save-data on' : '';
   return `rule wants ${named(event.level)}: disc ` +
     `${Math.round(event.discPx)} px, ${event.pxPerTexel.toFixed(2)} ` +
@@ -137,6 +152,8 @@ function levelLine(event: LevelEvent): string {
       return `${at} wanted (${named(event.shown)} shown)`;
     case 'lowered':
       return `lowered to ${at}, globe hidden (${named(event.shown)} shown)`;
+    case 'capped':
+      return `lowered to ${at}, 8K given up (${named(event.shown)} shown)`;
     case 'gaveUp':
       return `${at} given up, ${named(event.shown)} stays`;
     case 'asked':
@@ -154,5 +171,8 @@ function levelLine(event: LevelEvent): string {
 export function mapLine(event: MapEvent): string {
   if (event.kind === 'rule') return ruleLine(event);
   if (event.kind === 'ktx2Off') return `KTX2 off: ${event.reason}`;
+  if (event.kind === 'eightKGivenUp') {
+    return `8K given up on this device: ${event.reason}, 4K at most`;
+  }
   return 'map' in event ? stepLine(event) : levelLine(event);
 }

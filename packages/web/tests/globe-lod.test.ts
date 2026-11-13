@@ -124,6 +124,38 @@ describe('texture level of detail', () => {
     expect(wantedLevel(view(CLOSE_ZOOM, RETINA), caps('medium', { phone: true }))).toBe(4);
   });
 
+  // VENT-123: the 8K colour as KTX2 costs a phone about 22 MB of GPU memory instead of the JPEG's 179 MB, so a phone
+  // or a coarse pointer at the medium tier climbs to 8K only through it, and only on a GPU that takes 8192.
+  it('lets a phone or coarse pointer at the medium tier reach 8K only with KTX2 on and a GPU that takes 8192', () => {
+    const phone = { phone: true, coarsePointer: true, maxTextureSize: 8192 };
+    expect(maxLevel(caps('medium', { ...phone, ktx2: true }))).toBe(8);
+    expect(maxLevel(caps('medium', { coarsePointer: true, ktx2: true }))).toBe(8);
+    expect(maxLevel(caps('medium', { phone: true, ktx2: true }))).toBe(8);
+    expect(wantedLevel(view(CLOSE_ZOOM, PHONE), caps('medium', { ...phone, ktx2: true }))).toBe(8);
+    expect(maxLevel(caps('medium', { ...phone, ktx2: false }))).toBe(4);
+    expect(maxLevel(caps('medium', phone))).toBe(4);
+    expect(maxLevel(caps('medium', { ...phone, ktx2: true, maxTextureSize: 4096 }))).toBe(4);
+    expect(maxLevel(caps('low', { ...phone, ktx2: true }))).toBe(4);
+    expect(maxLevel(caps('low', { ktx2: true }))).toBe(4);
+    expect(maxLevel(caps('medium', { ...phone, ktx2: true, saveData: true }))).toBe(1);
+    expect(maxLevel(caps('high', { ...phone, ktx2: true, saveData: true }))).toBe(2);
+  });
+
+  it('keeps a desktop at the medium and high tiers at 8K with KTX2 on or off', () => {
+    for (const ktx2 of [true, false]) {
+      expect(maxLevel(caps('medium', { ktx2 }))).toBe(8);
+      expect(maxLevel(caps('high', { ktx2 }))).toBe(8);
+    }
+  });
+
+  // Detection never calls a coarse pointer high (lib/quality.ts), but `?quality=high` can, and the phone layout may be a
+  // narrow desktop window: there too the 8K comes only as KTX2, since the 8K JPEG is never asked on them.
+  it('holds a phone or coarse pointer forced to the high tier at 4K without KTX2', () => {
+    expect(maxLevel(caps('high', { coarsePointer: true, ktx2: true }))).toBe(8);
+    expect(maxLevel(caps('high', { coarsePointer: true, ktx2: false }))).toBe(4);
+    expect(maxLevel(caps('high', { phone: true }))).toBe(4);
+  });
+
   it('never asks below the start map, however small the disc', () => {
     expect(wantedLevel(view(LIMITS.maxDistance, 300), caps('high'))).toBe(2);
     expect(wantedLevel(view(LIMITS.maxDistance, 300), caps('medium'))).toBe(1);
@@ -150,14 +182,19 @@ describe('texture level of detail', () => {
     });
   });
 
-  it('asks the 2K and 4K colour as KTX2 when the GPU takes it, the 1K, 8K and reliefs as JPEG (VENT-101)', () => {
+  it('asks the 2K, 4K and 8K colour as KTX2 when the GPU takes it, the 1K and reliefs as JPEG (VENT-101, VENT-123)', () => {
     const colours = ([1, 2, 4, 8] as const).map((level) => levelUrls(level, '/', 'etc2').colour);
     expect(colours).toEqual([
       '/textures/moon-lroc-1k.jpg',
       '/textures/moon-lroc-2k.ktx2',
       '/textures/moon-lroc-4k.ktx2',
-      '/textures/moon-lroc-8k.jpg',
+      '/textures/moon-lroc-8k.ktx2',
     ]);
+    expect(levelUrls(8, '/', 'bc1')).toEqual({
+      colour: '/textures/moon-lroc-8k.ktx2',
+      normal: '/textures/moon-lola-normal-4k.jpg',
+    });
+    expect(levelUrls(8, '/', null).colour).toBe('/textures/moon-lroc-8k.jpg');
     expect(levelUrls(4, '/', 'bc1').normal).toBe('/textures/moon-lola-normal-4k.jpg');
     expect(levelUrls(2, '/', null).colour).toBe('/textures/moon-lroc-2k.jpg');
   });

@@ -219,6 +219,14 @@ describe('precache', () => {
     expect(precached('_astro/basis-ish.Ab1.js')).toBe(true);
   });
 
+  it('leaves the 8K colour as KTX2 to the runtime cache, as its JPEG: never in the install set (VENT-123)', () => {
+    expect(levelUrls(8, '/', 'etc2').colour).toBe('/textures/moon-lroc-8k.ktx2');
+    expect(precached('textures/moon-lroc-8k.ktx2')).toBe(false);
+    const big = 'x'.repeat(4096);
+    const built = precacheOf(dist(BUILD)).bytes;
+    expect(precacheOf(dist({ ...BUILD, 'textures/moon-lroc-8k.ktx2': big })).bytes).toBe(built);
+  });
+
   it('names the desktop extras in one place: the polar map alone (VENT-95)', () => {
     expect(DEVICE_EXTRAS).toEqual({ desktop: ['textures/moon-south-polar-2k.jpg'] });
     const polar = readFileSync(new URL('../src/components/polar/PolarMap.tsx', import.meta.url), 'utf8');

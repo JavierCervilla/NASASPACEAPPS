@@ -332,11 +332,11 @@ No elevation grid ships: only the profiles, and the catalogue of what the server
 
 ## KTX2 maps (VENT-101)
 
-The globe's 2K and 4K colour maps and the on-foot view's regolith albedo and Earths also ship as KTX2 (Basis Universal
-ETC1S), which the page transcodes to ETC2 or BC1 on the GPU: 4 bits per texel instead of 32, with mipmaps. Each is
-made from the committed file named on its row, so its source and licence are that file's (above and below). The 1K
-and 8K colour maps and every relief map stay JPEG or WebP; every KTX2 map keeps its JPEG or WebP sibling as the
-fallback.
+The globe's 2K, 4K and 8K colour maps (the 8K since VENT-123) and the on-foot view's regolith albedo and Earths also
+ship as KTX2 (Basis Universal ETC1S), which the page transcodes to ETC2 or BC1 on the GPU: 4 bits per texel instead of
+32, with mipmaps. Each is made from the committed file named on its row, so its source and licence are that file's
+(above and below). The 1K colour map and every relief map stay JPEG or WebP; every KTX2 map keeps its JPEG or WebP
+sibling as the fallback (on a phone or touch screen the 8K's is never asked: VENT-123).
 
 | File | What | sha256 |
 |---|---|---|
@@ -345,6 +345,7 @@ fallback.
 | `packages/web/src/terrain/maps/on-foot-regolith-albedo.ktx2` | 1024 x 1024, 11 mip levels, from `on-foot-regolith-albedo.webp`, 58 594 bytes | `6aa23971e7563b624819f217564b4be1bd56471129677749d4ba46deac48bca4` |
 | `packages/web/src/terrain/maps/on-foot-earth.ktx2` | 1024 x 512, 11 mip levels, from `on-foot-earth.webp`, 83 126 bytes | `2abe00070a841231991b9af78eceb236637ba4e662eac128618dd259d85d0761` |
 | `packages/web/src/terrain/maps/on-foot-earth-512.ktx2` | 512 x 256, 10 mip levels, from `on-foot-earth-512.webp`, 28 666 bytes | `5ce7f0b9db3d592ae9822e07eaddfa60f6f244a7896d9f713b094b2a6baec6f1` |
+| `packages/web/public/textures/moon-lroc-8k.ktx2` | 8192 x 4096, 14 mip levels, from `moon-lroc-8k.jpg`, 4 771 824 bytes; native `basisu` (below) | `183fe70b950c9f480c6dea576c24d3bd7de56090ea2d78e7e60047e404c40207` |
 
 - **How they were made**: `node packages/web/scripts/moon-ktx2.mjs`, with `ktx2-encoder` 0.6.0 (pinned devDependency,
   MIT, Basis Universal v2.5 compiled to wasm, https://github.com/gz65555/ktx2-encoder) and sharp to decode the source:
@@ -355,7 +356,23 @@ fallback.
   sha256 of both, encoder and settings).
 - **Quality** (VENT-101 plan, measured against the JPEG): 34.4 to 35.4 dB PSNR on the map itself, 42.5 dB and SSIM
   0.993 on the globe's render at 2.2 radii with the 4K, 46 dB at the start view; no banding at the terminator.
-- **8K**: the wasm encoder stops at 12 Mpx, so the 8K stays JPEG until a native `basisu` encodes it.
+- **8K** (VENT-123): the wasm encoder refuses sources over 12 Mpx («Total source texels 33554432 exceed the encoder
+  limit of 12582912»), so the 8K is encoded by the native `basisu` command-line tool built from the same Basis
+  Universal source as the wasm: https://github.com/BinomialLLC/basis_universal at commit
+  `1b33fd5098c6e7b58324146b8f5518cbb4cdfb72` (2026-07-05, library version 2.50; the commit `ktx2-encoder` 0.6.0's
+  THIRD_PARTY_NOTICES.md names for its wasm, no release tag), Apache-2.0. Built with
+  `cmake -S basis_universal -B build -DCMAKE_BUILD_TYPE=Release -DBASISU_SSE=OFF -DBASISU_EXAMPLES=OFF
+  -DBASISU_OPENCL=OFF && cmake --build build --target basisu` (g++, Linux x86-64; SSE off like the non-SIMD wasm). The
+  pixels are fed as `moon-ktx2.mjs` feeds the wasm: sharp decodes the JPEG to RGBA (`.ensureAlpha().raw()`), written
+  losslessly as `8k.png`, then
+  `basisu -ktx2 -etc1s -q 128 -comp_level 2 -mipmap -y_flip -srgb -no_multithreading -file 8k.png -output_file
+  moon-lroc-8k.ktx2` (about 70 s). The same build and command re-encode `moon-lroc-4k.jpg` to the wasm's bytes exactly
+  (sha256 `e89f71eb…6eff5`), and two runs of the 8K give the same bytes. Its manifest row names this encoder, and
+  `moon-ktx2.mjs` (`--verify` and `--check`) checks only its sha256. Read by three r186's transcoder (the copy the
+  build puts in `dist/basis/0.186.1/`): ETC1S, 14 levels down to 1 x 1, flipped in Y like the 4K (its level 1 against
+  the 4K KTX2: 35.1 dB, against the unflipped JPEG: 17.5 dB). Against its JPEG, level 0: 36.4 dB PSNR, mean error 2.81
+  of 255 (the 4K KTX2 against its JPEG: 35.3 dB, 3.13). As BC1 with its mipmaps it takes 22.4 MB of GPU memory, where
+  the 8K JPEG as RGBA with mipmaps takes 179 MB.
 
 ## On-foot view surfaces (VENT-34 quality pass)
 

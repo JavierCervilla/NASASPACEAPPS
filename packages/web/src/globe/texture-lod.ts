@@ -52,25 +52,45 @@ const LEVELS: readonly LodLevel[] = [1, 2, 4, 8];
 export const MAX_PX_PER_TEXEL = 1.15;
 
 /**
+ * The levels whose colour also ships as KTX2 (VENT-101): the 1K stays JPEG
+ * (the start, offline and the fallback). The 8K is encoded natively
+ * (VENT-123), past the wasm encoder's 12 Mpx cap; taking 8 out of this
+ * set is the whole way back: phones stop at 4K, desktops ask the JPEG.
+ */
+const KTX2_LEVELS: ReadonlySet<LodLevel> = new Set([2, 4, 8]);
+
+/**
  * The most each tier may load: 4K on the low tier, so a close look is
- * sharp on every device whose GPU takes 4K; 8K on the high tier, and at
- * the medium tier on a desktop (VENT-122: Brave reports a random core
- * count, so a capable desktop may read as medium). A desktop is what the
- * tier detection calls one, a fine pointer, out of the phone layout: a
- * phone held sideways is wider than that layout but keeps its 4K.
+ * sharp on every device whose GPU takes 4K; 8K on the high and medium
+ * tiers (VENT-122: Brave reports a random core count, so a capable
+ * desktop may read as medium). A phone or a coarse pointer (a phone held
+ * sideways is wider than the phone layout) reaches 8K only as KTX2
+ * (VENT-123): about 22 MB of GPU memory transcoded in the worker, where
+ * the JPEG is 179 MB decoded on the main thread.
  */
 function tierMax(caps: LodCaps): LodLevel {
   if (caps.tier === 'low') return 4;
-  if (caps.tier === 'high') return 8;
-  return caps.phone || caps.coarsePointer ? 4 : 8;
+  const handheld = caps.phone || caps.coarsePointer;
+  const asKtx2 = caps.ktx2 && KTX2_LEVELS.has(8) && !caps.eightKGivenUp;
+  return handheld && !asKtx2 ? 4 : 8;
 }
 
 export interface LodCaps {
   readonly tier: Tier;
-  /** The phone layout: 4K at the medium tier. */
+  /** The phone layout: 4K unless the 8K comes as KTX2. */
   readonly phone: boolean;
-  /** A coarse pointer, `(pointer: coarse)`: 4K at the medium tier. */
+  /** A coarse pointer, `(pointer: coarse)`: as the phone layout. */
   readonly coarsePointer: boolean;
+  /**
+   * The session takes the colour as KTX2, with a target (VENT-123): the
+   * only way a phone or a coarse pointer climbs to 8K. Off when absent.
+   */
+  readonly ktx2?: boolean | undefined;
+  /**
+   * A phone or a coarse pointer gave the 8K up for the session
+   * (handheld-8k.ts): 4K from then on, whatever KTX2 says.
+   */
+  readonly eightKGivenUp?: boolean | undefined;
   /** The browser asks to save data: nothing beyond the start map. */
   readonly saveData: boolean;
   /** The GPU's largest texture side, in pixels. */
@@ -102,13 +122,6 @@ export function wantedLevel(view: LodView, caps: LodCaps): LodLevel {
   const wanted = Math.max(sharp ?? 8, startLevel(caps.tier));
   return Math.min(wanted, maxLevel(caps)) as LodLevel;
 }
-
-/**
- * The levels whose colour also ships as KTX2 (VENT-101): the 1K stays JPEG
- * (the start, offline and the fallback), and the 8K is past the wasm
- * encoder's reach.
- */
-const KTX2_LEVELS: ReadonlySet<LodLevel> = new Set([2, 4]);
 
 /**
  * The colour and relief maps of a level, under the site's base path; the

@@ -70,17 +70,20 @@ export class TextureSwap<T> {
   /**
    * Goes down to `level` when more is shown or coming: `level` is fetched
    * and shown first, then the bigger maps are freed; a bigger level still
-   * in flight is freed when it lands, never shown.
+   * in flight is freed when it lands, never shown. `why` names it under
+   * `?debug`: the globe hidden, or the 8K given up (VENT-123). Says
+   * whether it went down.
    */
-  lower(level: LodLevel): void {
+  lower(level: LodLevel, why: 'lowered' | 'capped' = 'lowered'): boolean {
     const { state } = this;
     if (state.disposed || level >= Math.max(state.target, state.held.level)) {
-      return;
+      return false;
     }
     const shown = state.held.level;
-    this.deps.trace?.mark({ kind: 'lowered', level, shown });
+    this.deps.trace?.mark({ kind: why, level, shown });
     state.target = level;
     if (!state.busy) void climb(state, this.deps);
+    return true;
   }
 
   /** The level on screen; 0 until the first map arrives. */

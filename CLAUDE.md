@@ -213,10 +213,18 @@ Every visible change follows `.claude/skills/apple-design/SKILL.md` (vendored fr
   Moon while a finger is down on it (`src/pin/place-gesture.ts`). Held by `tests/e2e/app-feel.spec.ts`.
 - Must run on a laptop without a dedicated GPU (globe: 64-segment sphere, the start map (2K on the high tier, 1K
   below; the 1K maps and the 2K relief are precached), LOLA relief as a normal map; then the smallest map sharp enough for the disc on screen, up to 4K, 8K
-  on the high tier and on a desktop at the medium tier (VENT-122: Brave reports a random core count, so a capable
-  desktop may read as medium; a desktop is what the tier detection calls one, a fine pointer, and out of the phone
-  layout, so a phone held sideways, wider than that layout, still stops at 4K: `phone` and `coarsePointer` in
-  `LodCaps`, both read once at mount; the low tier stops at 4K) (VENT-97, `src/globe/texture-lod.ts`, `disc-density.ts`): a texel covers at most 1.15 drawing-buffer
+  on the high and medium tiers (VENT-122: Brave reports a random core count, so a capable desktop may read as medium;
+  the low tier stops at 4K). A phone or a coarse pointer (a phone held sideways is wider than the phone layout:
+  `phone` and `coarsePointer` in `LodCaps`, both read once at mount) reaches 8K only as KTX2 (VENT-123, the human's
+  decision: the 8K JPEG costs a phone 179 MB of GPU memory, decoded and uploaded on the main thread; the 8K KTX2 about
+  22 MB, transcoded in the worker): only while the session's KTX2 is on with a target (`ktx2` in `LodCaps`, read live
+  from `pageKtx2` on every rule call) and the GPU takes 8192, else 4K, at any tier. It never asks the 8K JPEG
+  (`src/globe/handheld-8k.ts` refuses it where every JPEG colour load passes, `moon-textures.ts`): when the 8K KTX2
+  fails there (fetch, transcode, timeout, the worker) KTX2 turns off for the session, the rule caps it at 4K and the
+  8K is given up for the session, «8K given up on this device: KTX2 failed, 4K at most» under `?debug`, never asked
+  again. The way back without a deploy: `?ktx2=0` keeps a phone at 4K; a full revert is one constant, 8 out of
+  `KTX2_LEVELS` (`texture-lod.ts`: phones at 4K again, desktops on the 8K JPEG). Held by
+  `tests/e2e/vent-123-globe-8k-ktx2.spec.ts` (VENT-97, `src/globe/texture-lod.ts`, `disc-density.ts`): a texel covers at most 1.15 drawing-buffer
   px at the disc's centre, the disc measured from the camera distance, the 35° field of view and the framed band's
   height times the pixel ratio (`frameBufferPx`, `src/globe/frame.ts`); levels only climb, so no threshold flips).
   The device's tier is read once per page (VENT-91): `pickQuality` (`src/globe/quality-pick.ts`, built by
@@ -230,14 +238,16 @@ Every visible change follows `.claude/skills/apple-design/SKILL.md` (vendored fr
   float buffers), kept by the picker (`pickQuality.gpuProfile()`); the dev tools read it too instead of a context of
   their own. Capability is not safety: what is safe on a device is still the verdicts' (the bench, the crash marks,
   `terrain/shadow-safety.ts`).
-  GPU-compressed maps (VENT-101): the globe's 2K and 4K colour maps and the on-foot view's regolith albedo (VENT-102,
+  GPU-compressed maps (VENT-101): the globe's 2K, 4K and 8K colour maps and the on-foot view's regolith albedo (VENT-102,
   the human's decision: 44 kB more on the network, 4.9 MB less on the GPU) and Earths also ship as KTX2 (Basis ETC1S q128, `packages/web/scripts/moon-ktx2.mjs` with the pinned `ktx2-encoder` 0.6.0,
-  deterministic, manifest `src/textures/ktx2.json` held by `npm run ktx2:check` in CI; ASSETS.md), transcoded to ETC2 RGB
-  or BC1 RGB, 4 bits per texel on the GPU instead of 32 (2K colour 1.4 MB instead of 11.2, 4K 5.6 instead of 44.7), with
+  deterministic, manifest `src/textures/ktx2.json` held by `npm run ktx2:check` in CI; ASSETS.md; the 8K, 4.8 MB, past
+  the wasm encoder's 12 Mpx cap, by the native `basisu` built from the wasm's own upstream commit, VENT-123, its sha256
+  checked), transcoded to ETC2 RGB
+  or BC1 RGB, 4 bits per texel on the GPU instead of 32 (2K colour 1.4 MB instead of 11.2, 4K 5.6 instead of 44.7, 8K 22.4 instead of 179), with
   their levels made at encode, so nothing is decoded, uploaded as RGBA or mipmapped on the main thread (2K colour upload
   about 1 ms instead of 62 to 217 ms). `ktx2Target` (`src/globe/ktx2-target.ts`) picks ETC2, else BC1 with S3TC in sRGB,
   else none, from the probe's profile alone, so the early start knows it; on desktop Linux exposing every family it
-  skips ETC (three's rule against Mesa's emulated formats). The 1K and 8K colour and every relief stay JPEG or WebP.
+  skips ETC (three's rule against Mesa's emulated formats). The 1K colour and every relief stay JPEG or WebP.
   three's `KTX2Loader` cannot run under the page's CSP (its workers come from a `blob:` and its transcoder's embind glue
   calls `new Function`), so the page has a transcoder worker of its own (`src/textures/basis-worker.ts`, a classic
   worker Vite emits as `_astro/basis-worker-<hash>.js`; `basis-transcode.ts`, after the KTX2Loader's BasisWorker) that

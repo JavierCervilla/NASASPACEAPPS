@@ -30,50 +30,14 @@
  * and the readout's texture memory drops; a worker whose response lacks 'unsafe-eval' cannot load the transcoder, and
  * the globe falls back to the JPEG with no page error; `?ktx2=0` never asks for KTX2 or the worker.
  */
-import { execFileSync } from 'node:child_process';
-import { readFileSync } from 'node:fs';
-import { fileURLToPath } from 'node:url';
 import { expect, test, type Page } from '@playwright/test';
 import { stubApi } from './api-stub';
+import { underPolicies, workerPolicy } from './prod-csp';
 
-const CSP_SCRIPT = fileURLToPath(new URL('../../packages/web/scripts/csp-header.mjs', import.meta.url));
-const DIST = fileURLToPath(new URL('../../packages/web/dist', import.meta.url));
-const WORKER_HEADERS = readFileSync(new URL('../../nginx-basis-worker-headers.conf', import.meta.url), 'utf8');
 /** The breadcrumbs' storage key (src/devtools/breadcrumbs.ts). */
 const CRUMBS_KEY = 'ventana.devtools.breadcrumbs';
 // Software GL: a map takes a while to decode, and the tools come after start.
 const MAP_MS = 30_000;
-const WORKER = /\/_astro\/basis-worker[.-][^/]*\.js$/;
-
-/** The page's CSP as nginx sends it for this build. */
-function pagePolicy(): string {
-  const line = execFileSync(process.execPath, [CSP_SCRIPT, DIST], { encoding: 'utf8' });
-  return /Content-Security-Policy "([^"]+)"/.exec(line)![1]!;
-}
-
-/** The worker's CSP, read from its nginx snippet. */
-const workerPolicy = (): string => /Content-Security-Policy "([^"]+)"/.exec(WORKER_HEADERS)![1]!;
-
-/** Serves the page and the worker with these policies, recording violations and page errors. */
-async function underPolicies(page: Page, worker: string): Promise<string[]> {
-  const page_ = pagePolicy();
-  const errors: string[] = [];
-  page.on('pageerror', (error) => errors.push(error.message));
-  await page.route(/\/(\?.*)?(#.*)?$/, async (route) => {
-    const response = await route.fetch();
-    await route.fulfill({ response, headers: { ...response.headers(), 'content-security-policy': page_ } });
-  });
-  await page.route(WORKER, async (route) => {
-    const response = await route.fetch();
-    await route.fulfill({ response, headers: { ...response.headers(), 'content-security-policy': worker } });
-  });
-  await page.addInitScript(() => {
-    const seen: string[] = [];
-    (window as unknown as { violations: string[] }).violations = seen;
-    document.addEventListener('securitypolicyviolation', (e) => seen.push(`${e.violatedDirective} ${e.blockedURI}`));
-  });
-  return errors;
-}
 
 const globeLines = (page: Page): Promise<string[]> =>
   page.evaluate((key) => (JSON.parse(localStorage.getItem(key) ?? '[]') as string[])

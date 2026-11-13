@@ -56,20 +56,25 @@ export interface MoonSwap {
   readonly want: (view: LodView) => LodLevel;
 }
 
-/** The density rule (texture-lod.ts), telling what it read on a change. */
+/**
+ * The density rule (texture-lod.ts) over the caps as they are now (KTX2 may
+ * turn off mid-session: VENT-123), telling what it read on a change.
+ */
 export function ruleWatch(
-  caps: LodCaps,
+  capsNow: () => LodCaps,
   trace: Pick<MapTrace<unknown>, 'mark'> | undefined,
 ): (view: LodView) => LodLevel {
   let last: LodLevel | 0 = 0;
   return (view) => {
+    const caps = capsNow();
     const level = wantedLevel(view, caps);
     if (level !== last) {
       const { tier, phone, coarsePointer, saveData, maxTextureSize } = caps;
       const discPx = discPixels(view);
       const texel = pxPerTexel(level, view);
       trace?.mark({ kind: 'rule', level, discPx, pxPerTexel: texel, tier,
-        phone, coarsePointer, saveData, maxTextureSize });
+        phone, coarsePointer, ktx2: caps.ktx2 ?? false, saveData,
+        maxTextureSize });
     }
     last = level;
     return level;
@@ -92,11 +97,14 @@ export function moonSwap(
     load: (url: string, target: Ktx2Target) => loadKtx2(url, target, deps),
   };
   const swap = new TextureSwap<Texture>({
-    ...moonTextureDeps({ ...options, renderer, material, ktx2, trace }),
+    ...moonTextureDeps({ ...options, renderer, material, ktx2, trace,
+      handheld: options.phone || options.coarsePointer }),
     urls: (level) => levelUrls(level, options.base, pageKtx2.choice().target),
     warn: options.warn,
     trace,
   });
   const { maxTextureSize } = renderer.capabilities;
-  return { swap, want: ruleWatch({ ...options, maxTextureSize }, trace) };
+  const caps = (): LodCaps => ({ ...options, maxTextureSize,
+    ktx2: pageKtx2.choice().target !== null });
+  return { swap, want: ruleWatch(caps, trace) };
 }

@@ -36,6 +36,7 @@ import {
   ENCODER,
   KTX2_JOBS,
   KTX2_SETTINGS,
+  NATIVE_ENCODER,
   manifestProblems,
 } from '../scripts/ktx2-manifest.mjs';
 
@@ -50,13 +51,33 @@ describe('the KTX2 manifest', () => {
     expect(manifestProblems(manifest, read)).toEqual([]);
   });
 
-  it('covers the 2K and 4K colour maps and the on-foot albedo and Earths', () => {
+  it('covers the 2K, 4K and 8K colour maps and the on-foot albedo and Earths', () => {
     expect(KTX2_JOBS.map((job) => job.output)).toEqual([
       'public/textures/moon-lroc-2k.ktx2',
       'public/textures/moon-lroc-4k.ktx2',
       'src/terrain/maps/on-foot-regolith-albedo.ktx2',
       'src/terrain/maps/on-foot-earth.ktx2',
       'src/terrain/maps/on-foot-earth-512.ktx2',
+      'public/textures/moon-lroc-8k.ktx2',
+    ]);
+  });
+
+  // VENT-123: the wasm encoder refuses sources over 12 Mpx, so the 8K is encoded by the native basisu built from the
+  // wasm's own upstream commit, recorded per map; the others keep the wasm.
+  it('records the native encoder of the 8K colour, and only of it', () => {
+    const { maps } = manifest as { maps: { output: string; encoder?: string }[] };
+    expect(maps.filter((map) => map.encoder)).toEqual([
+      expect.objectContaining({ output: 'public/textures/moon-lroc-8k.ktx2', encoder: NATIVE_ENCODER }),
+    ]);
+    expect(NATIVE_ENCODER).toBe('basisu 2.50.0 native (BinomialLLC/basis_universal 1b33fd5)');
+  });
+
+  it('names a native map whose encoder changed', () => {
+    const other = structuredClone(manifest) as { maps: { encoder?: string }[] };
+    const last = other.maps.at(-1);
+    if (last) last.encoder = 'something else';
+    expect(manifestProblems(other, read)).toEqual([
+      expect.stringMatching(/^public\/textures\/moon-lroc-8k\.ktx2: encoder /),
     ]);
   });
 

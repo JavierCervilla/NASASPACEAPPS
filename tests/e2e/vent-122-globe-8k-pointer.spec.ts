@@ -24,9 +24,10 @@
  */
 
 /**
- * A phone held sideways keeps the 4K cap (VENT-122, verificador round 2). The 8K Moon map at the medium tier is for a
- * desktop, told by the signal the tier detection reads, a fine pointer: a Pixel in landscape is wider than the phone
- * layout, but its pointer is coarse, so zoomed all the way in it asks no 8K map, and the `?debug` rule line says why.
+ * A phone held sideways keeps the 4K cap without KTX2 (VENT-122, verificador round 2; VENT-123). The 8K Moon map at the
+ * medium tier is for a desktop, told by the signal the tier detection reads, a fine pointer, or for a touch screen only
+ * as KTX2 (vent-123-globe-8k-ktx2.spec.ts): a Pixel in landscape is wider than the phone layout, but its pointer is
+ * coarse, so with `?ktx2=0` zoomed all the way in it asks no 8K map, and the `?debug` rule line says why (no «KTX2»).
  */
 import { expect, test, type Page } from '@playwright/test';
 import { stubApi } from './api-stub';

@@ -85,7 +85,8 @@
 .source-note__retry,
 .on-foot__retry,
 .now-button,
-.bench__button {
+.bench__button,
+.quickmap-link {
   min-height: 44px;
   padding: 0 16px;
   border: 0;

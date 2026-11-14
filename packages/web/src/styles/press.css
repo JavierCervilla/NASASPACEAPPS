@@ -39,7 +39,8 @@
 .source-note__retry:active,
 .undo-toast__undo:active,
 .lang-page__back:active,
-.pin-hint__close:active {
+.pin-hint__close:active,
+.quickmap-link:active {
   transform: scale(0.97);
   transition: transform var(--dur-press) ease-out;
 }

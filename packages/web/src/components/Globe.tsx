@@ -23,7 +23,7 @@
  *             :::.. .  .               SPDX-License-Identifier: MIT
  */
 
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, type RefObject } from 'react';
 import type { TimeStore } from '../calendar/time-store';
 import { startGlobe, type GlobeStatus } from '../globe/boot';
 import { describeSun } from '../globe/describe';
@@ -62,6 +62,26 @@ interface Props {
   readonly layers: LayerRegistry;
 }
 
+interface BandRefs {
+  readonly help: RefObject<HTMLElement | null>;
+  readonly row: RefObject<HTMLElement | null>;
+  readonly host: RefObject<HTMLElement | null>;
+}
+
+/**
+ * On a phone the words that stand in for the globe keep to the free band,
+ * and so does the Save-Data row, clear of a half sheet that rises for its
+ * content (VENT-125).
+ */
+function useBands(props: Props, refs: BandRefs, kind?: string): void {
+  const { sheetEdge, roomAsk } = props;
+  const { help, row, host } = refs;
+  const on = kind === 'blocked' || kind === 'unavailable';
+  useHelpBand({ help, host, sheetEdge, roomAsk, on });
+  const deferred = kind === 'deferred';
+  useHelpBand({ help: row, host, sheetEdge, roomAsk, on: deferred });
+}
+
 /**
  * Starts the scene in the viewport after hydration (or waits for the
  * visitor under Save-Data); its status, and how to load it on request.
@@ -70,6 +90,7 @@ function useGlobe(props: Props, i18n: I18n) {
   const { sitesUrl, base, store, sheetEdge, time, state, layers } = props;
   const host = useRef<HTMLDivElement>(null);
   const help = useRef<HTMLParagraphElement>(null);
+  const row = useRef<HTMLButtonElement>(null);
   const loader = useRef<() => void>(() => undefined);
   const [status, setStatus] = useState<GlobeStatus | null>(null);
   const { textured, view, compass, signals } = useGlobeSignals();
@@ -85,9 +106,8 @@ function useGlobe(props: Props, i18n: I18n) {
     return start.dispose;
   }, [sitesUrl, base, store, sheetEdge, time, state, layers, i18n, signals]);
   const load = (): void => loader.current();
-  const on = status?.kind === 'blocked' || status?.kind === 'unavailable';
-  useHelpBand({ help, host, sheetEdge, roomAsk: props.roomAsk, on });
-  return { host, help, status, load, textured, view, compass };
+  useBands(props, { help, row, host }, status?.kind);
+  return { host, help, row, status, load, textured, view, compass };
 }
 
 /**
@@ -114,7 +134,7 @@ function helpText(
  */
 export default function Globe(props: Props) {
   const i18n = useI18n();
-  const { host, help, status, load, textured, view, compass } =
+  const { host, help, row, status, load, textured, view, compass } =
     useGlobe(props, i18n);
   const atMs = useTime(props.time)?.atMs ?? null;
   const kind = status?.kind ?? 'idle';
@@ -132,7 +152,7 @@ export default function Globe(props: Props) {
       <p id={HELP_ID} ref={help} className="globe-help" data-status={kind}>
         {helpText(i18n, status, atMs)}
       </p>
-      {kind === 'deferred' ? <LoadButton onLoad={load} /> : null}
+      {kind === 'deferred' ? <LoadButton ref={row} onLoad={load} /> : null}
       <GlobeSplash {...props} textured={textured} status={kind} />
       <GlobeOverlays {...{ host, view, compass }} {...props} />
     </>

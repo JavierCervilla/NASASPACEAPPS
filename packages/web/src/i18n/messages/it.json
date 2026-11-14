@@ -226,6 +226,8 @@
   "card.source": "{month} · JPL Horizons, passo di 1 h · Sole sopra {sun}°, Terra sopra {earth}°",
   "card.sourceComputed": "{month} · calcolato qui, passo di 1 h · Sole sopra {sun}°, Terra sopra {earth}°",
   "card.noCoords": "Coordinate non incluse in questa versione",
+  "card.quickmap": "Apri in LROC QuickMap",
+  "card.quickmapName": "Apri in LROC QuickMap, in una nuova scheda",
   "facts.sun": "Ore con Sole",
   "facts.earth": "Ore con Terra",
   "facts.window": "Finestra di atterraggio",

@@ -48,6 +48,7 @@ const BUTTONS = [
   '.lang-page__back',
   '.pin-hint__close',
   '.picker__gear',
+  '.quickmap-link',
 ];
 
 /** Rows and segments light up under the finger, as in iOS. */

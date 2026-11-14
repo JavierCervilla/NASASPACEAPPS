@@ -67,6 +67,13 @@
   you». En escritorio, las cuatro en fila; en los cinco idiomas. El menú dice «The app» en vez de «Tour».
 
 ### Añadido
+- **«Open in LROC QuickMap» en la tarjeta del sitio y en la hoja del móvil (VENT-125, opción A del lienzo).** Un botón
+  gris bajo las coordenadas abre LROC QuickMap en una pestaña nueva, centrado en el sitio, el punto propio o el sitio
+  guardado elegido, con una vista de 40 × 25 km en la proyección que QuickMap usa para esa latitud (estereográfica polar
+  al sur de 60° S o al norte de 60° N, cilíndrica entre medias). En el móvil aparece a partir de media hoja, fuera de la
+  cabecera que mide el modo «asomada», que no crece. Un sitio sin coordenadas no lo muestra. Con ahorro de datos, el
+  botón «Load the 3D globe» se coloca ahora en el hueco libre entre la barra superior y la hoja, para que la media hoja,
+  algo más alta, no lo tape.
 - **Rocas reales de Apolo 17 en la vista 3D (VENT-124, variante B del lienzo).** Las rocas más cercanas a ti (hasta
   40 a menos de 15 m) son ahora escaneos de muestras traídas por Apolo 17 (70175, 70295, 76535 y 79115, de NASA
   Astromaterials 3D, dominio público), con su propio color, su sombra y su oscurecimiento al tocar el suelo; las más

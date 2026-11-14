@@ -461,6 +461,17 @@
 }
 
 /* The update button's inner room (update.css `.update-notice__update`). */
+/*
+ * On a phone the row stands in the middle of the free band, as
+ * use-help-band.ts writes it, so a half sheet that rises for its content
+ * (VENT-125) never covers it.
+ */
+@media (max-width: 767.98px) {
+  .globe-load {
+    top: calc(var(--help-band-top, 40%) + var(--help-band-height, 0px) / 2);
+  }
+}
+
 .globe-load .notice-row__mark {
   width: 22px;
   height: 22px;

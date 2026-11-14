@@ -28,7 +28,8 @@
  * site's LOLA relief image south of 80° S, with the state at the selected
  * instant and the ground it spans (VENT-33, canvas «DeskThumbH1440»); the
  * mission, its agency and date, the site, its point and how exact it is,
- * and whether NASA's maps put it in shadow (VENT-39);
+ * with «Open in LROC QuickMap» under it (VENT-125), and whether NASA's
+ * maps put it in shadow (VENT-39);
  * «Sunset in» and «Earthset in» (or «…rise in») for the selected instant with
  * each body's elevation and where the terrain decides; when Horizons
  * failed, the note that says so, in view (VENT-57); the horizon strip
@@ -53,6 +54,7 @@ import {
 import type { CardModel } from '../../card/site-card';
 import type { Dsn } from '../dsn/use-dsn';
 import { useI18n } from '../i18n-context';
+import { QuickMapLink } from '../quickmap/QuickMapLink';
 import { SaveButton, SaveName } from '../saved/SaveControl';
 import { ShadowNote } from '../shadow/ShadowNote';
 import { SiteThumb } from '../SiteThumb';
@@ -136,6 +138,7 @@ function CardHead(props: HeadProps) {
         <p className="card-head__place">{place}</p>
       )}
       <CardPoint {...pointLine(i18n, site)} />
+      <QuickMapLink point={site} className="card-head__quickmap" />
       <ShadowNote shadow={site.shadow} short className="card-head__shadow" />
       <SaveName site={site} />
     </div>

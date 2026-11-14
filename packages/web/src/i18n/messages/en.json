@@ -221,6 +221,8 @@
   "card.source": "{month} · JPL Horizons, 1 h step · Sun above {sun}°, Earth above {earth}°",
   "card.sourceComputed": "{month} · computed here, 1 h step · Sun above {sun}°, Earth above {earth}°",
   "card.noCoords": "Coordinates not in this build",
+  "card.quickmap": "Open in LROC QuickMap",
+  "card.quickmapName": "Open in LROC QuickMap, in a new tab",
   "facts.sun": "Hours with Sun",
   "facts.earth": "Hours with Earth",
   "facts.window": "Landing window",

@@ -198,7 +198,14 @@ Every visible change follows `.claude/skills/apple-design/SKILL.md` (vendored fr
   (`components/desktop/CardSky.tsx`): the strip, a hairline, then the small Earth beside «Listening on Earth» and one
   flowing row (complex · place and Moon · time left), with «Next: …» under it; in the Horizon view the block holds the
   DSN alone. «Horizons unavailable: showing the computed sky · Try again» sits under the Sunset/Earthset tiles as a row
-  of its own (`SourceDown`), and the computed caption stays at the card's end (`SourceCaption`). The phone's Sites
+  of its own (`SourceDown`), and the computed caption stays at the card's end (`SourceCaption`). Under the card's point line and right after the phone sheet's head
+  (outside `data-sheet-peek`, so the peek detent does not grow; it shows from half up), «Open in LROC QuickMap»
+  (VENT-125, `components/quickmap/QuickMapLink.tsx`: a link in the secondary button's pill, new tab,
+  `rel="noopener noreferrer"`, nothing for a site without coordinates) opens QuickMap centred on the selected site or
+  point, a 40 x 25 km extent in whole metres on QuickMap's south polar stereographic (proj 27) at or south of 60° S,
+  its north polar one (26) at or north of 60° N, else its equidistant cylindrical (16) (`src/lib/quickmap-link.ts`);
+  under Save-Data the «Load the 3D globe» row keeps to the phone's free band (`useHelpBand`), so that taller half sheet
+  never covers it. The phone's Sites
   sheet starts with «Drop a pin», the search, the regions and the list; a gear beside «Done» (`.picker__gear`, 44 px,
   named «Settings») pushes the «Settings» page (`components/phone/SettingsPage.tsx`): «‹ Landing sites», «Settings»,
   «Done», then the «Layers» group (with the empty «Saved sites» hint) and the «Language» row grouped with the «Data

@@ -221,6 +221,8 @@
   "card.source": "{month} · JPL Horizons, 1-Std.-Schritte · Sonne über {sun}°, Erde über {earth}°",
   "card.sourceComputed": "{month} · hier berechnet, 1-Std.-Schritte · Sonne über {sun}°, Erde über {earth}°",
   "card.noCoords": "Koordinaten nicht in dieser Version",
+  "card.quickmap": "In LROC QuickMap öffnen",
+  "card.quickmapName": "In LROC QuickMap öffnen, in einem neuen Tab",
   "facts.sun": "Stunden mit Sonne",
   "facts.earth": "Stunden mit Erde",
   "facts.window": "Landefenster",

@@ -1,0 +1,51 @@
+/*
+ *   _   _       _                         _ _
+ *  | | | |_ __ (_)_   _____ _ __ ___  ___| | | ___
+ *  | | | | '_ \| \ \ / / _ \ '__/ __|/ _ \ | |/ _ \
+ *  | |_| | | | | |\ V /  __/ |  \__ \  __/ | |  __/
+ *   \___/|_| |_|_| \_/ \___|_|  |___/\___|_|_|\___|
+ *
+ *             =++==--::.
+ *         %%%%##**++=--:..  .
+ *      ##**#%@%%#***+=--::.   .
+ *    #**=+*#*#**#++++=-:::.. .  .
+ *   #++-====*@%+*++==--::...   .  .    Ventana Lunar
+ *  #+=-=--++==+===-+==--:..   .  .  .  Sun, Earth and landing
+ * #----====-------=-=---:..  .  .  .   windows at the lunar
+ * #+---+=====--=---==-::..     .  .  . south pole
+ * #*----==---==-=-=-:-....    .  .  .
+ * *#----===+*===--:-::...    .  .  .   Built for the NASA Space
+ *  *----=*-+*%*+=-:::....   .  .  .    Apps Challenge 2026,
+ *   *------=+*=--:::-:::.. .  .  .     Madrid. Not endorsed
+ *    %*===-=-==--==-:::.  .  .  .      by NASA.
+ *      *+:--+:--::::::.  .  .  .
+ *         -=:::...:..   .  .           (c) 2026 Universelle
+ *             :::.. .  .               SPDX-License-Identifier: MIT
+ */
+
+/*
+ * «Open in LROC QuickMap» (VENT-125): the secondary button's grey pill
+ * (controls.css) on a link, its label and the arrow side by side; at large
+ * text the label wraps inside the pill instead of leaving it, and the pill
+ * never shrinks in a summary that scrolls. Under the
+ * desktop card's point line and after the phone sheet's head.
+ */
+.quickmap-link {
+  display: inline-flex;
+  align-items: center;
+  flex: none;
+  align-self: flex-start;
+  gap: 6px;
+  max-width: 100%;
+  padding-block: 6px;
+  box-sizing: border-box;
+  line-height: 1.25;
+}
+
+.quickmap-link__icon {
+  flex: none;
+}
+
+.card-head__quickmap {
+  margin-top: 8px;
+}

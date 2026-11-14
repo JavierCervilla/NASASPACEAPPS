@@ -30,15 +30,22 @@
  * whole row is the one button, as the update row is. Its name is the
  * title; the second line describes it.
  */
-import { useId } from 'react';
+import { useId, type Ref } from 'react';
 import { useI18n } from './i18n-context';
 import { Icon } from './phone/Icon';
 
-export function LoadButton({ onLoad }: { readonly onLoad: () => void }) {
+interface Props {
+  readonly onLoad: () => void;
+  /** On a phone the row is placed in the free band (use-help-band.ts). */
+  readonly ref?: Ref<HTMLButtonElement>;
+}
+
+export function LoadButton({ onLoad, ref }: Props) {
   const { t } = useI18n();
   const how = useId();
   return (
     <button
+      ref={ref}
       type="button"
       className="globe-load"
       aria-label={t('globe.load')}

@@ -74,7 +74,8 @@ export function SitesPanel(props: PanelProps) {
   return (
     <div ref={stack} className="push" data-pushed={pushed} data-at={at}>
       <div className="push__root" inert={pushed}>
-        <SitePicker {...picker} lead={<PinLead />} gear={head} withSave />
+        <SitePicker {...picker} lead={<PinLead />} gear={head}
+          withSave withQuickmap />
       </div>
       <div className="push__page" inert={!pushed}>
         {pushed || at !== 'root'

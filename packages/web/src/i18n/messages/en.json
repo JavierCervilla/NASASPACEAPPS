@@ -156,6 +156,8 @@
   "region.other": "Other",
   "picker.title": "Landing sites",
   "picker.done": "Done",
+  "picker.quickmap": "QuickMap",
+  "picker.quickmapName": "Open {site} in LROC QuickMap, in a new tab",
   "picker.search": "Search a site or mission",
   "picker.placeholder": "Search sites",
   "picker.region": "Region",

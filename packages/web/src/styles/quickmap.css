@@ -27,8 +27,7 @@
  * «Open in LROC QuickMap» (VENT-125): the secondary button's grey pill
  * (controls.css) on a link, its label and the arrow side by side; at large
  * text the label wraps inside the pill instead of leaving it, and the pill
- * never shrinks in a summary that scrolls. Under the
- * desktop card's point line and after the phone sheet's head.
+ * never shrinks. The desktop card's last item.
  */
 .quickmap-link {
   display: inline-flex;
@@ -46,6 +45,22 @@
   flex: none;
 }
 
-.card-head__quickmap {
-  margin-top: 8px;
+/*
+ * The phone's «QuickMap ↗» pill in the Sites sheet's head, before the
+ * gear: the secondary button's grey pill, 44 px tall, its padding tighter
+ * so the head keeps the title, the bookmark, the gear and «Done» whole on
+ * a narrow phone at 200 % text; its words never wrap.
+ */
+.quickmap-pill {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  gap: 4px;
+  padding: 0 12px;
+  white-space: nowrap;
+}
+
+.quickmap-pill:active {
+  transform: scale(0.97);
+  transition: transform var(--dur-press) ease-out;
 }

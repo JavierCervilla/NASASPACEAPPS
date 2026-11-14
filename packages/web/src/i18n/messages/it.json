@@ -160,6 +160,8 @@
   "region.other": "Altri",
   "picker.title": "Siti di atterraggio",
   "picker.done": "Fine",
+  "picker.quickmap": "QuickMap",
+  "picker.quickmapName": "Apri {site} in LROC QuickMap, in una nuova scheda",
   "picker.search": "Cerca un sito o una missione",
   "picker.placeholder": "Cerca",
   "picker.region": "Regione",

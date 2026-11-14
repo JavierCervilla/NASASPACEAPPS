@@ -86,7 +86,8 @@
 .on-foot__retry,
 .now-button,
 .bench__button,
-.quickmap-link {
+.quickmap-link,
+.quickmap-pill {
   min-height: 44px;
   padding: 0 16px;
   border: 0;

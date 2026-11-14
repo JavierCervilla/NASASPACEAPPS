@@ -3,6 +3,9 @@
 ## [Sin publicar]
 
 ### Seguridad
+- **La web y la portada suben a astro 7.4.7.** Dos avisos nuevos de astro 7.4.1 (GHSA-mh32-jxcr-mh9f,
+  GHSA-r3h5-4585-7x3w) ponían en rojo la escalera de seguridad del CI; 7.4.7 los cierra. El lockfile queda
+  deduplicado, con astro instalado una sola vez para los dos paquetes.
 - **La API sube a hono 4.13.16 y @hono/node-server 2.1.6.** Cinco avisos nuevos de hono 4.13.14
   (GHSA-3gg2-335m-rxc6, GHSA-46wx-v44x-9hh2, GHSA-4h7h-rv7c-7m2v, GHSA-4m76-xfj5-7975, GHSA-h7mg-cq63-vhpq) y dos de
   @hono/node-server 2.1.5 (GHSA-jpvv-r467-5p4w, GHSA-qv5m-9pm6-hqp3) ponían en rojo la escalera de seguridad del CI;

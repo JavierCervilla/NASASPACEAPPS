@@ -29,7 +29,7 @@
  * VENT-37: a ring with its centre dot, canvas «Pin C»; the bookmark of
  * «Save» and the saved site's menu, canvases «Save A» and «Saved list»;
  * the crossed-out cloud of «Offline» and the gear of the Sites sheet's
- * «Settings», VENT-57). They
+ * «Settings», VENT-57; the arrow of «Open in LROC QuickMap», VENT-125). They
  * take the text colour (`currentColor`) and are hidden from assistive
  * technology: the control around them carries the name.
  */
@@ -53,7 +53,8 @@ export type IconName =
   | 'delete'
   | 'cloudOff'
   | 'gear'
-  | 'back';
+  | 'back'
+  | 'external';
 
 const STROKE = {
   fill: 'none',
@@ -81,6 +82,7 @@ const SHAPES: Readonly<Record<IconName, [number, ReactElement]>> = {
   gear: [22, <g {...STROKE} transform="scale(0.9167)" strokeWidth="1.75"><circle cx="12" cy="12" r="3" /><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z" /></g>],
   delete: [18, <path {...STROKE} d="M3.5 5h11M7 5V3.5h4V5M5 5l.8 10h6.4L13 5" />],
   back: [22, <path {...STROKE} d="M8 5L3.5 9.5 8 14M3.5 9.5H13a5.5 5.5 0 0 1 0 11h-3" />],
+  external: [14, <path {...STROKE} d="M4 10l6-6M5.5 4H10v4.5" />],
   cloudOff: [24, <g {...STROKE} strokeWidth="1.7"><path d="M8.5 18H17a4 4 0 0 0 1.6-7.67M15.3 7.1A6 6 0 0 0 6.1 9.6 4.2 4.2 0 0 0 6 18" /><path d="M3.5 3.5l17 17" /></g>],
 };
 

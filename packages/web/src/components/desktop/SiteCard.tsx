@@ -38,7 +38,8 @@
  * from. Grey blocks while the month loads, an honest error with «Try
  * again», and an honest state outside the data window. On a short screen
  * the card scrolls, focusable only then, and fades at each edge that hides
- * more.
+ * more. Last, whatever the card ends with, «Open in LROC QuickMap»
+ * (VENT-125).
  */
 import type { ReactNode } from 'react';
 import { siteLabels } from '../../phone/phone-site';
@@ -53,6 +54,7 @@ import {
 import type { CardModel } from '../../card/site-card';
 import type { Dsn } from '../dsn/use-dsn';
 import { useI18n } from '../i18n-context';
+import { QuickMapLink } from '../quickmap/QuickMapLink';
 import { SaveButton, SaveName } from '../saved/SaveControl';
 import { ShadowNote } from '../shadow/ShadowNote';
 import { SiteThumb } from '../SiteThumb';
@@ -202,6 +204,7 @@ export function SiteCard(props: Props) {
         <Figures model={model} dsn={dsn} horizon={horizon} down={down} />
         {model.kind === 'ready' ? caption : null}
         <CardStatus kind={model.kind} onRetry={onRetry} />
+        <QuickMapLink point={head.site} className="card-quickmap" />
       </div>
     </aside>
   );

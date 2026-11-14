@@ -16,7 +16,11 @@ completa está en el documento «Ventana Lunar · Especificación y roadmap»
 - [ ] CI en el pool de runners: PAT del pool con el repo y redespliegue del compose `github-runner`
 - [x] Registrar al equipo en spaceappschallenge.org (Madrid, reto Lunar Landing Site Navigator): equipo Universelle
 - [x] Leer el enunciado oficial (29 oct): el reto es «Lunar Landing Site Navigator»
-- [x] Pestaña Resources: cerrado; los sitios y los datos salen de fuentes publicadas, citadas en `ASSETS.md`
+- [x] Pestaña Resources: JPL Horizons es la fuente de datos de la app (la API lo consulta y guarda las respuestas en
+  caché, VENT-3); LROC QuickMap se abre centrado en el sitio o el punto elegido desde el final de la tarjeta
+  («Open in LROC QuickMap») y, en el móvil, desde la píldora «QuickMap» de la lista de sitios (VENT-125); Moon Trek no
+  se enlaza porque su dirección no se puede centrar en un sitio (siempre abre el polo entero); el portal Moon
+  Exploration de la CSA no se usa. El resto de datos sale de fuentes publicadas, citadas en `ASSETS.md`
 - [x] Petición de prueba a JPL Horizons para entender el formato: la API lo consulta desde VENT-3
 - [x] Pitch y guion del vídeo de 30 s, con los textos del formulario, en el documento de entrega
   (https://claude.ai/artifact/7jzMVScGpGb4FLvWBUVJ6Y)

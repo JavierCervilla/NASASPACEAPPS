@@ -3,6 +3,9 @@
 ## [Sin publicar]
 
 ### Seguridad
+- **La web y la portada suben a astro 7.4.7.** Dos avisos nuevos de astro 7.4.1 (GHSA-mh32-jxcr-mh9f,
+  GHSA-r3h5-4585-7x3w) ponían en rojo la escalera de seguridad del CI; 7.4.7 los cierra. El lockfile queda
+  deduplicado, con astro instalado una sola vez para los dos paquetes.
 - **La API sube a hono 4.13.16 y @hono/node-server 2.1.6.** Cinco avisos nuevos de hono 4.13.14
   (GHSA-3gg2-335m-rxc6, GHSA-46wx-v44x-9hh2, GHSA-4h7h-rv7c-7m2v, GHSA-4m76-xfj5-7975, GHSA-h7mg-cq63-vhpq) y dos de
   @hono/node-server 2.1.5 (GHSA-jpvv-r467-5p4w, GHSA-qv5m-9pm6-hqp3) ponían en rojo la escalera de seguridad del CI;
@@ -67,6 +70,13 @@
   you». En escritorio, las cuatro en fila; en los cinco idiomas. El menú dice «The app» en vez de «Tour».
 
 ### Añadido
+- **LROC QuickMap a un toque desde la tarjeta y desde la lista de sitios (VENT-125).** En el escritorio, al final de
+  la tarjeta del sitio, «Open in LROC QuickMap» abre LROC QuickMap en una pestaña nueva, centrado en el sitio, el punto
+  propio o el sitio guardado elegido, con una vista de 40 × 25 km en la proyección que QuickMap usa para esa latitud
+  (estereográfica polar al sur de 60° S o al norte de 60° N, cilíndrica entre medias). En el móvil es una píldora
+  «QuickMap» en la cabecera de la hoja de sitios, antes del engranaje y de «Done», así que la media hoja no crece. Un
+  sitio sin coordenadas no lo muestra. Con poco sitio (textos grandes, idiomas largos) los botones de esa cabecera
+  bajan a una línea propia bajo el título en vez de salirse de la pantalla.
 - **Rocas reales de Apolo 17 en la vista 3D (VENT-124, variante B del lienzo).** Las rocas más cercanas a ti (hasta
   40 a menos de 15 m) son ahora escaneos de muestras traídas por Apolo 17 (70175, 70295, 76535 y 79115, de NASA
   Astromaterials 3D, dominio público), con su propio color, su sombra y su oscurecimiento al tocar el suelo; las más

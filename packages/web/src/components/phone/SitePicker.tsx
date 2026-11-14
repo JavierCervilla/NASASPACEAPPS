@@ -38,6 +38,7 @@ import type { PhoneSite } from '../../phone/phone-site';
 import { filterSites, foldText } from '../../phone/site-search';
 import type { NowState } from '../../phone/widget-types';
 import { useI18n } from '../i18n-context';
+import { QuickMapPill } from '../quickmap/QuickMapLink';
 import { SavedList } from '../saved/SavedList';
 import { SaveIcon } from '../saved/SaveIcon';
 import { useScrollFade } from '../use-scroll-fade';
@@ -61,6 +62,12 @@ export interface PickerProps {
    * keeps its own beside the popover.
    */
   readonly withSave?: boolean;
+  /**
+   * First of the head's controls, the «QuickMap ↗» pill that opens the
+   * selected site in LROC QuickMap (VENT-125); the desktop card keeps
+   * its own link.
+   */
+  readonly withQuickmap?: boolean;
 }
 
 function Search(props: { value: string; onChange: (v: string) => void }) {
@@ -81,17 +88,21 @@ function Search(props: { value: string; onChange: (v: string) => void }) {
 
 type HeadProps = Pick<
   PickerProps,
-  'selected' | 'onDone' | 'withSave' | 'gear'
+  'selected' | 'onDone' | 'withSave' | 'withQuickmap' | 'gear'
 >;
 
-function PickerHead({ selected, onDone, withSave, gear }: HeadProps) {
+function PickerHead(props: HeadProps) {
+  const { selected, onDone, withSave, withQuickmap, gear } = props;
   const { t } = useI18n();
   return (
     <div className="picker__head">
       <h2 className="picker__title">{t('picker.title')}</h2>
-      {withSave ? <SaveIcon site={selected} /> : null}
-      {gear}
-      <button type="button" className="picker__done" onClick={onDone}>{t('picker.done')}</button>
+      <div className="picker__actions">
+        {withQuickmap ? <QuickMapPill site={selected} /> : null}
+        {withSave ? <SaveIcon site={selected} /> : null}
+        {gear}
+        <button type="button" className="picker__done" onClick={onDone}>{t('picker.done')}</button>
+      </div>
     </div>
   );
 }
@@ -139,6 +150,7 @@ export function SitePicker(props: PickerProps) {
         selected={selected}
         onDone={onDone}
         withSave={props.withSave === true}
+        withQuickmap={props.withQuickmap === true}
         gear={props.gear}
       />
       <PickerScroll>

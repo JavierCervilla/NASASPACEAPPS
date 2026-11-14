@@ -638,16 +638,18 @@
 
 .picker__head {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   justify-content: space-between;
   gap: 8px;
 }
 
 /* The title gives way first (wraps, then breaks a long word), so «Done» and
-   the save icon stay whole at 200 % text in long languages (QA VENT-42). */
+   the save icon stay whole at 200 % text in long languages (QA VENT-42);
+   below 5.5em it keeps its row and the controls go to the next one. */
 .picker__title {
   flex: 1 1 auto;
-  min-width: 0;
+  min-width: min(100%, 5.5em);
   overflow-wrap: anywhere;
   margin: 0;
   font-size: 1.375rem;
@@ -667,6 +669,21 @@
   font-size: 1rem;
   font-weight: 600;
   cursor: pointer;
+}
+
+/*
+ * The head's controls («QuickMap», the bookmark, the gear, «Done»;
+ * VENT-125) stay together at the right; when the title leaves them no
+ * room they wrap under it, and among themselves at 200 % text, each whole.
+ */
+.picker__actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+  max-width: 100%;
+  margin-left: auto;
 }
 
 /*

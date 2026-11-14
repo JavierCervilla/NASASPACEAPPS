@@ -26,12 +26,11 @@
 /**
  * The sheet at peek and half: the site's LOLA relief thumbnail (south of
  * 80° S), its name with what tells it apart (IM-2 and the Mons Mouton
- * zone share a place), its coordinates, «Open in LROC QuickMap» from
- * half up (VENT-125, outside the peek head), the note when NASA's maps
- * put it in shadow (VENT-39), the horizon strip (VENT-40) and the
- * widgets; the half sheet rises to fit it all (`data-sheet-fit`) and
- * the peek sheet to show the head (`data-sheet-peek`). For the custom
- * point, «Save» and, once saved, its name field (VENT-37).
+ * zone share a place), its coordinates, the note when NASA's maps put it
+ * in shadow (VENT-39), the horizon strip (VENT-40) and the widgets; the
+ * half sheet rises to fit it all (`data-sheet-fit`) and the peek sheet
+ * to show the head (`data-sheet-peek`). For the custom point, «Save»
+ * and, once saved, its name field (VENT-37).
  */
 import type { ReactNode } from 'react';
 import { formatCoords } from '../../i18n/format';
@@ -40,7 +39,6 @@ import type { WidgetsResult } from '../../phone/widgets-loader';
 import type { Dsn } from '../dsn/use-dsn';
 import { thumbOf } from '../../thumbs/thumbs';
 import { useI18n } from '../i18n-context';
-import { QuickMapLink } from '../quickmap/QuickMapLink';
 import { SaveButton, SaveName } from '../saved/SaveControl';
 import { ShadowNote } from '../shadow/ShadowNote';
 import { SiteThumb } from '../SiteThumb';
@@ -108,7 +106,6 @@ export function SiteSummary(props: Props) {
   return (
     <div className="summary scroll-fade" data-sheet-fit="" {...fade}>
       <SummaryHead site={site} base={base} />
-      <QuickMapLink point={site} className="summary__quickmap" />
       <ShadowNote shadow={site.shadow} className="summary__shadow" />
       <SaveName site={site} />
       {ready ? status : null}

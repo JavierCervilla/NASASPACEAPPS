@@ -28,8 +28,7 @@
  * site's LOLA relief image south of 80° S, with the state at the selected
  * instant and the ground it spans (VENT-33, canvas «DeskThumbH1440»); the
  * mission, its agency and date, the site, its point and how exact it is,
- * with «Open in LROC QuickMap» under it (VENT-125), and whether NASA's
- * maps put it in shadow (VENT-39);
+ * and whether NASA's maps put it in shadow (VENT-39);
  * «Sunset in» and «Earthset in» (or «…rise in») for the selected instant with
  * each body's elevation and where the terrain decides; when Horizons
  * failed, the note that says so, in view (VENT-57); the horizon strip
@@ -39,7 +38,8 @@
  * from. Grey blocks while the month loads, an honest error with «Try
  * again», and an honest state outside the data window. On a short screen
  * the card scrolls, focusable only then, and fades at each edge that hides
- * more.
+ * more. Last, whatever the card ends with, «Open in LROC QuickMap»
+ * (VENT-125).
  */
 import type { ReactNode } from 'react';
 import { siteLabels } from '../../phone/phone-site';
@@ -138,7 +138,6 @@ function CardHead(props: HeadProps) {
         <p className="card-head__place">{place}</p>
       )}
       <CardPoint {...pointLine(i18n, site)} />
-      <QuickMapLink point={site} className="card-head__quickmap" />
       <ShadowNote shadow={site.shadow} short className="card-head__shadow" />
       <SaveName site={site} />
     </div>
@@ -205,6 +204,7 @@ export function SiteCard(props: Props) {
         <Figures model={model} dsn={dsn} horizon={horizon} down={down} />
         {model.kind === 'ready' ? caption : null}
         <CardStatus kind={model.kind} onRetry={onRetry} />
+        <QuickMapLink point={head.site} className="card-quickmap" />
       </div>
     </aside>
   );

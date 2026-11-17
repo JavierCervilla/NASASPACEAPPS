@@ -90,7 +90,7 @@ function usePanel(props: PanelProps) {
   const { band, bandMoves, makeRoom } = props;
   const walking = useWalk(props.site, view.sky);
   const hooks = { onLook: (look: { yawDeg: number }) => setYaw(look.yawDeg),
-    band, bandMoves, report, onEye: walking.onEye };
+    band, bandMoves, report, onEye: walking.onEye, onScans: view.onScans };
   const scene = useTerrainScene(host, view.input, hooks, props.viewTier);
   useStatusBand({ host, status: scene.status, band, bandMoves, makeRoom });
   const onRetry = retryOf(report, scene, view);

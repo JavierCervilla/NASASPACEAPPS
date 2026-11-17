@@ -130,6 +130,11 @@ export interface SceneHooks {
    * (VENT-121): the chip, the edge card and the live region hear it.
    */
   readonly onEye?: ((eye: EyeReport) => void) | undefined;
+  /**
+   * Whether the scanned rocks' files loaded (VENT-124): on false the near
+   * rocks are stones and the caption stops crediting the scans.
+   */
+  readonly onScans?: ((loaded: boolean) => void) | undefined;
 }
 
 export interface TerrainScene {

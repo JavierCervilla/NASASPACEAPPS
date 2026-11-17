@@ -63,9 +63,9 @@ export interface PickerProps {
    */
   readonly withSave?: boolean;
   /**
-   * First of the head's controls, the «QuickMap ↗» pill that opens the
-   * selected site in LROC QuickMap (VENT-125); the desktop card keeps
-   * its own link.
+   * First of the head's controls, the «QuickMap» pill with the SVG arrow
+   * that opens the selected site in LROC QuickMap (VENT-125); the desktop
+   * card keeps its own link.
    */
   readonly withQuickmap?: boolean;
 }

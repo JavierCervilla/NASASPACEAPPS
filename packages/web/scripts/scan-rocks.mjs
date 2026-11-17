@@ -29,8 +29,9 @@
 // unit radius, and packed with their UVs and normals into one small binary the scene reads without a loader; each
 // colour texture becomes a 512 px WebP. Deterministic: the same zips give the same bytes.
 //   node packages/web/scripts/scan-rocks.mjs <folder with the downloaded <id>.zip> [--obj-out <folder>]
-// The zips are read as data (their own central directory, inflated here); nothing in them is run. `--obj-out` also
-// writes each result as an OBJ, to look at it.
+// The zips are read as data (their own central directory, inflated here); nothing in them is run. Each zip must
+// match the sha256 ASSETS.md records for it, and what it inflates to is capped (`MAX_INFLATED_BYTES`), so a swapped
+// or hostile download stops the script before it is read. `--obj-out` also writes each result as an OBJ, to look at it.
 import { createHash } from 'node:crypto';
 import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
@@ -41,6 +42,15 @@ import { packShapes } from './scan-rocks-pack.mjs';
 
 /** The samples, in the order the binary holds them. */
 export const SAMPLES = ['70175-0', '70295-0', '76535-0', '79115-0'];
+/** Each sample's downloaded zip, as ASSETS.md records it (downloaded 2026-11-13). */
+export const ZIP_SHA256 = {
+  '70175-0': '3f7dd0242430ebe36493bcae579c11f00162144354b637e3bed0d334697ee8f8',
+  '70295-0': '4f5d9d4cf944b25843b478801e29baa9f7508ee28634c8d50433e9732c70c92c',
+  '76535-0': 'ae487719ac8c5ec761f65e0e45ef531b6d29d75b99fabef8da92709bf7756ae4',
+  '79115-0': 'b9a45a579a1299422a1d69a66e8df7b1b5c6df35afc8de3da2fd5766b24f9602',
+};
+/** The most a zip may inflate to, all its files together: the largest of the four is 24.4 MB. */
+export const MAX_INFLATED_BYTES = 64 * 1024 * 1024;
 const TARGET_TRIANGLES = 1500;
 const TEXTURE_PX = 512;
 const WEBP = { quality: 72, effort: 6 };
@@ -49,11 +59,17 @@ const WEBP = { quality: 72, effort: 6 };
 const ALBEDO_P99_CAP = [0xc9, 0xc5, 0xbe];
 const OUT = new URL('../src/terrain/maps/', import.meta.url).pathname;
 
-/** The files of a zip, by name, from its central directory (stored or deflated only). */
-export function unzip(bytes) {
+const sha256 = (bytes) => createHash('sha256').update(bytes).digest('hex');
+
+/**
+ * The files of a zip, by name, from its central directory (stored or deflated only); throws once they would add up
+ * to more than `maxBytes`, whatever sizes the directory declares (the inflater itself is bounded).
+ */
+export function unzip(bytes, maxBytes = MAX_INFLATED_BYTES) {
   const eocd = bytes.lastIndexOf(Buffer.from([0x50, 0x4b, 0x05, 0x06]));
   const count = bytes.readUInt16LE(eocd + 10);
   const files = new Map();
+  let left = maxBytes;
   for (let i = 0, at = bytes.readUInt32LE(eocd + 16); i < count; i++) {
     const [method, size, nameLen, extraLen, commentLen] = [bytes.readUInt16LE(at + 10), bytes.readUInt32LE(at + 20),
       bytes.readUInt16LE(at + 28), bytes.readUInt16LE(at + 30), bytes.readUInt16LE(at + 32)];
@@ -61,10 +77,25 @@ export function unzip(bytes) {
     const local = bytes.readUInt32LE(at + 42);
     const start = local + 30 + bytes.readUInt16LE(local + 26) + bytes.readUInt16LE(local + 28);
     const raw = bytes.subarray(start, start + size);
-    files.set(name, method === 0 ? raw : inflateRawSync(raw));
+    if (bytes.readUInt32LE(at + 24) > left || raw.length > left) throw new Error(`zip inflates past ${maxBytes} B`);
+    let file;
+    try {
+      file = method === 0 ? raw : inflateRawSync(raw, { maxOutputLength: left });
+    } catch (error) {
+      throw new Error(`zip inflates past ${maxBytes} B (${error.code ?? error.message})`);
+    }
+    left -= file.length;
+    files.set(name, file);
     at += 46 + nameLen + extraLen + commentLen;
   }
   return files;
+}
+
+/** `zip`'s bytes, after checking them against the sha256 recorded for sample `id`. */
+export function checkedZip(id, zip) {
+  const got = sha256(zip);
+  if (got !== ZIP_SHA256[id]) throw new Error(`${id}.zip: sha256 ${got}, expected ${ZIP_SHA256[id]} (ASSETS.md)`);
+  return zip;
 }
 
 /** An OBJ's triangles as one vertex per distinct position and UV pair. */
@@ -127,13 +158,11 @@ function writeObj(path, mesh) {
   writeFileSync(path, `${lines.join('\n')}\n`);
 }
 
-const sha256 = (bytes) => createHash('sha256').update(bytes).digest('hex');
-
 async function main([zips, flag, objOut]) {
   await MeshoptSimplifier.ready;
   const meshes = [];
   for (const id of SAMPLES) {
-    const zip = readFileSync(join(zips, `${id}.zip`));
+    const zip = checkedZip(id, readFileSync(join(zips, `${id}.zip`)));
     const files = unzip(zip);
     const base = `${id}_SFM_Web-Resolution-Model_Coordinate-Registered`;
     meshes.push(simplified(parseObj(files.get(`${base}.obj`).toString('utf8'))));

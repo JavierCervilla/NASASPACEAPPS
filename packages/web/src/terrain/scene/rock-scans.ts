@@ -28,7 +28,10 @@
  * bands are built, the rocks within reach of the eye are held back; when
  * the last band is in, the nearest of them become scans (rock-look.ts) and
  * the others go back to the stones. The scans show once their files have
- * loaded, in a slicer job, so the Sun's shadow is drawn again with them.
+ * loaded, in a slicer job, so the Sun's shadow is drawn again with them;
+ * when the files fail (or hold no shape) the held rocks are built as the
+ * stones instead, in a slicer job too, and the panel hears it (the scene's
+ * `onScans` hook) so the caption stops crediting the scans.
  */
 import { Group, type Object3D } from 'three';
 import type { Rock } from '../rocks';
@@ -74,9 +77,15 @@ export interface ScanShow {
   readonly request: ScanRequest;
   readonly ground: GroundAt;
   readonly slicer: Slicer;
+  /** `rocks` as the usual stones, for when the scans' files fail. */
+  readonly asStones: (rocks: readonly Rock[]) => Object3D;
 }
 
-/** A group that takes the scans of `rocks` once their files are in. */
+/**
+ * A group that takes the scans of `rocks` once their files are in, or the
+ * same rocks as stones when they fail: the ground near the eye never goes
+ * empty.
+ */
 function scansWhenLoaded(rocks: readonly Rock[], s: ScanShow): Group {
   const group = new Group();
   if (rocks.length === 0) return group;
@@ -86,6 +95,9 @@ function scansWhenLoaded(rocks: readonly Rock[], s: ScanShow): Group {
     });
   }, (error: unknown) => {
     console.warn(`Ventana Lunar: scanned rocks missing (${String(error)}).`);
+    s.slicer.add('rocks:stones', PRIORITY, () => {
+      group.add(s.asStones(rocks));
+    });
   });
   return group;
 }

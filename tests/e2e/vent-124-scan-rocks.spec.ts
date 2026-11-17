@@ -48,6 +48,8 @@ const PITCH_DOWN = 16;
 const PIXEL_JUMP = 40;
 /** Pixels of the free band that must differ: the near rocks; before the fix, 0. */
 const NEAR_ROCK_PIXELS = 150;
+/** Pixels that may differ between the stones and the scans' fallback stones: the same rocks, drawn in two meshes. */
+const STONES_ALIKE = 50;
 
 const PHONE = { viewport: { width: 412, height: 915 }, hasTouch: true, isMobile: true };
 
@@ -144,6 +146,23 @@ test.describe('on a phone at medium', () => {
     const frames = await idleCount(host(page));
     await page.waitForTimeout(1500);
     expect(Number(await host(page).getAttribute('data-frames')), 'an idle view draws no frames').toBe(frames);
+  });
+
+  // VENT-127: refused rock files used to drop the held nearest rocks (the ground near the eye went bare) and the
+  // caption still credited the scans. Now the held rocks are built as stones and the credit goes.
+  test('when the rock files are refused the near rocks are stones and the caption credits none', async ({ page }) => {
+    test.setTimeout(240_000);
+    const bare = await nearGroundOf(page, '&onfoot=rocks');
+    const stones = await nearGroundOf(page, '&rocks=stones');
+    let refused = 0;
+    await page.route(ROCK_FILES, (route) => (refused++, route.abort()));
+    const fallback = await nearGroundOf(page, '');
+    expect(refused, 'the rock files were asked and refused').toBeGreaterThan(0);
+    expect(differing(fallback, bare), 'the near rocks are drawn').toBeGreaterThan(NEAR_ROCK_PIXELS);
+    expect(differing(fallback, stones), 'drawn as the stones').toBeLessThan(STONES_ALIKE);
+    // nearGround hid the overlays for its picture: the caption is read, not seen.
+    await expect(page.locator('.on-foot__caption-note')).toContainText('Earth: NASA Blue Marble');
+    await expect(page.locator('.on-foot__caption-note')).not.toContainText('Rocks:');
   });
 
   for (const query of ['&rocks=stones', '&onfoot=rocks']) {

@@ -12,6 +12,10 @@
   las dos versiones los cierran y los 333 tests del servidor siguen pasando.
 
 ### Arreglado
+- **Si las rocas escaneadas no cargan, las rocas cercanas siguen ahí (VENT-127).** Cuando los ficheros de las rocas
+  de Apolo 17 fallaban (sin red, un fichero vacío), las rocas más cercanas al ojo desaparecían y el suelo de alrededor
+  quedaba vacío, y el pie de la vista seguía atribuyéndolas a NASA Astromaterials 3D. Ahora esas rocas se dibujan como
+  las piedras de siempre, con su sombra, y el pie deja de citar los escaneos.
 - **La página «Settings» del móvil vuelve a caber con textos al 200 % en un móvil estrecho (VENT-126).** Con un
   idioma largo y textos al 200 % en 360 px, la etiqueta «‹ Landing sites» se partía en una letra por línea, la
   cabecera crecía más que la hoja y las capas, el idioma y la fuente de datos quedaban fuera de alcance. Ahora esa

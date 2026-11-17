@@ -55,8 +55,8 @@ export interface LookTarget {
   readonly scale: () => DragScale;
   /** A release at this speed, px per second, may coast. */
   readonly fling: (vx: number, vy: number) => void;
-  /** A press: any coast stops where it is. */
-  readonly halt: () => void;
+  /** A press: any coast stops where it is; true when one was moving. */
+  readonly halt: () => boolean;
   /** The pointer went down (true) or up or was cancelled (false). */
   readonly drag: (down: boolean) => void;
   /** Taps and a fine pointer's hover (VENT-121). */
@@ -79,8 +79,9 @@ function dragHandlers(el: HTMLElement, target: LookTarget): Handlers {
   const down = (e: PointerEvent): void => {
     if (e.button !== 0) return;
     el.setPointerCapture(e.pointerId);
-    last = pressOf(e);
-    tracker = press(target, e);
+    const pressed = press(target, e);
+    tracker = pressed.tracker;
+    last = pressOf(e, pressed.halted);
   };
   const move = (e: PointerEvent): void => {
     if (!last) return void hoverAt(target, e);
@@ -90,7 +91,7 @@ function dragHandlers(el: HTMLElement, target: LookTarget): Handlers {
   };
   const up = (e: PointerEvent): void => {
     if (last?.id !== e.pointerId) return;
-    release(target, tracker, e, !last.travelled);
+    release(target, tracker, e, last);
     last = null;
   };
   return [['pointerdown', listener(down)], ['pointermove', listener(move)],

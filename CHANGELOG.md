@@ -12,6 +12,14 @@
   las dos versiones los cierran y los 333 tests del servidor siguen pasando.
 
 ### Arreglado
+- **Seis arreglos del paseo por el terreno (VENT-128).** El anillo que sigue al ratón por el suelo calcula una sola
+  vez por fotograma, y nada si el puntero apenas se ha movido o está sobre el cielo: 60 movimientos sobre el cielo
+  pasan de 91 ms de cálculo y un fotograma a 1 ms y ninguno. En los sitios que los mapas de NASA ponen en sombra
+  permanente (Shackleton, Haworth, de Gerlache Rim 2, Slater Plain) la etiqueta ya no dice «Sol aquí» ni «Ventana
+  aquí»: el punto donde estás hereda la sombra del sitio, como la píldora. Un toque que solo frena la vista mientras
+  gira de inercia ya no te lleva andando, como en el globo. En el móvil con el texto al 200 % la etiqueta del paseo ya
+  no tapa el pie de la vista: el pie se aparta mientras la etiqueta lo cubriría. Cada llegada libera el material de
+  las piedras que deja atrás, y la tarjeta «Fin del terreno detallado» se va en cuanto empiezas a volver.
 - **En calidad media (la del móvil) vuelven a verse las rocas cercanas (VENT-124).** Las rocas se colocaban sobre una
   rejilla del suelo de 15,6 m, pero la calidad media dibuja el suelo con celdas de 31 m: en el relieve convexo de IM-2
   el suelo dibujado quedaba hasta 25 cm por encima y enterraba las rocas de 5 a 15 cm. Ahora cada roca se apoya en el

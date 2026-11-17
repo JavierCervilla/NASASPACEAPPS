@@ -36,6 +36,13 @@ import { eyeState } from './eye-state';
 import { isAway } from './walk-reach';
 import { distanceText, hereText, whereText } from './walk-words';
 
+/**
+ * The sky at the instant, and whether the site is in permanent shadow
+ * (VENT-128): the eye inherits the point's flag, since NASA's map marks a
+ * crater floor kilometres across and the eye stays within 1.5 km.
+ */
+export type WalkSky = SkyDirs & { readonly sunHidden?: boolean | undefined };
+
 export interface WalkView {
   readonly where: string;
   readonly state: NowState;
@@ -50,12 +57,12 @@ export interface WalkView {
 export function walkView(
   i18n: I18n,
   eye: EyeReport | null,
-  sky: SkyDirs | null,
+  sky: WalkSky | null,
   site: string,
 ): WalkView | null {
   if (!eye?.sight || !sky || !isAway(eye.at)) return null;
   const state = eyeState({ sunEl: sky.sunEl, earthEl: sky.earthEl,
-    ...eye.sight });
+    ...eye.sight, sunHidden: sky.sunHidden });
   const where = whereText(i18n, eye.at, site);
   const here = hereText(i18n, state);
   const distance = distanceText(i18n, Math.hypot(eye.at[0], eye.at[1]));

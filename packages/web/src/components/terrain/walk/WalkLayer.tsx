@@ -29,9 +29,9 @@
  * point, the edge card once it was held to the reach, and a polite live
  * region that says each arrival («180 m NE of IM-2 · Window here»).
  */
-import type { EyeReport, SkyDirs } from '../../../terrain/scene/scene-types';
+import type { EyeReport } from '../../../terrain/scene/scene-types';
 import { isAway } from '../../../terrain/walk/walk-reach';
-import { walkView } from '../../../terrain/walk/walk-view';
+import { walkView, type WalkSky } from '../../../terrain/walk/walk-view';
 import { useI18n } from '../../i18n-context';
 import { WalkChip } from './WalkChip';
 import { WalkEdge } from './WalkEdge';
@@ -39,7 +39,8 @@ import { WalkHint } from './WalkHint';
 
 export interface WalkProps {
   readonly eye: EyeReport | null;
-  readonly sky: SkyDirs | null;
+  /** The sky, the Sun hidden at a site in permanent shadow (VENT-128). */
+  readonly sky: WalkSky | null;
   /** The site's short name, or the custom point's. */
   readonly site: string;
   readonly onBack: () => void;

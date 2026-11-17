@@ -45,6 +45,10 @@ import { createSunMask } from '../src/terrain/scene/sun-mask';
 import type { Slicer } from '../src/terrain/scene/slicer';
 import { MEASURED } from '../src/terrain/rock-law';
 import { EN } from './i18n-factories';
+import { createElement } from 'react';
+import { renderToString } from 'react-dom/server';
+import { useWalk, type WalkSite } from '../src/components/terrain/walk/use-walk';
+import type { WalkProps } from '../src/components/terrain/walk/WalkLayer';
 
 vi.mock('../src/terrain/scene/rock-ground', () => ({
   rockGrounds: () => ({ scatter: () => 0, stand: () => 0 }),
@@ -137,6 +141,39 @@ describe('the chip at a site in permanent shadow', () => {
   });
 });
 
+describe('the walk’s sky from the site', () => {
+  const sky = { sunAz: 0, sunEl: 2, earthAz: 90, earthEl: 6 };
+  const PGDA = { label: 'PGDA product 69', url: 'https://pgda.gsfc.nasa.gov/products/69' };
+  const SHACKLETON: WalkSite = { lat: -89.67, lonEast: 129.78, name: 'Chang\'e-7 target', mission: 'Chang\'e-7',
+    shadow: { kind: 'psr', avgSun: 0, source: PGDA } };
+
+  /** The walk's props `useWalk` hands the stage for `site`, rendered once on the server renderer. */
+  function walkOf(site: WalkSite): WalkProps {
+    let props: WalkProps | null = null;
+    function Probe() {
+      props = useWalk(site, sky).walk(() => undefined);
+      return null;
+    }
+    renderToString(createElement(Probe));
+    return props!;
+  }
+
+  it('hides the Sun at a site in permanent shadow, so the chip never says it is there', () => {
+    const { sky: walkSky } = walkOf(SHACKLETON);
+    expect(walkSky?.sunHidden).toBe(true);
+    const view = walkView(EN, { at: [130, 130], edge: false, sight: { sunClear: true, earthClear: true } }, walkSky,
+      'Chang\'e-7');
+    expect(view?.here).toBe('Earth here');
+  });
+
+  it('leaves the Sun alone elsewhere, a crater floor with little Sun included', () => {
+    const im2: WalkSite = { ...SHACKLETON, shadow: undefined };
+    expect(walkOf(im2).sky?.sunHidden).toBeUndefined();
+    expect(walkOf({ ...im2, shadow: { kind: 'dimFloor', avgSun: 0.11, source: PGDA } }).sky?.sunHidden)
+      .toBeUndefined();
+  });
+});
+
 describe('a press that stops a coast', () => {
   const pointer = (type: string, x: number) => {
     const e = new Event(type);
@@ -207,6 +244,8 @@ describe('the stones on every arrival', () => {
     const slicer = recording();
     const scene = new Scene();
     const shared = new MeshBasicMaterial();
+    let sharedFreed = 0;
+    shared.addEventListener('dispose', () => void sharedFreed++);
     const world = { stage: { scene }, near: new Group(), ground: () => 0, policy: { rocksCap: 40, rockLaw: MEASURED },
       craters: null, mask: createSunMask(), slicer, eye: [0, 0], scans: null,
       setup: { quality: { tier: 'low' }, report: { step: () => undefined } } } as unknown as World;
@@ -230,6 +269,8 @@ describe('the stones on every arrival', () => {
     }
     expect(live.size).toBe(3);
     expect(live.has(shared)).toBe(true);
+    // The shared material was never freed, not even once and tracked again since.
+    expect(sharedFreed).toBe(0);
   });
 });
 

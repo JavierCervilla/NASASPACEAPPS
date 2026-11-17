@@ -244,8 +244,9 @@ test.describe('phone, 360x780, pseudo-locale at 200 % text', () => {
       document.documentElement.style.fontSize = '200%';
     });
     const scroll = settings.locator('.picker__scroll');
-    await scroll.evaluate((el) => el.scrollTo(0, el.scrollHeight));
+    // The scroll box keeps resizing for a moment after the text grows, so every look scrolls to its end again first.
     const problems = () => scroll.evaluate((box) => {
+      box.scrollTop = box.scrollHeight;
       const out: string[] = [];
       const block = box.querySelector<HTMLElement>('.credits');
       if (!block) return ['no block'];

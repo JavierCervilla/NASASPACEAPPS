@@ -209,7 +209,14 @@ Every visible change follows `.claude/skills/apple-design/SKILL.md` (vendored fr
   sheet starts with «Drop a pin», the search, the regions and the list; a gear beside «Done» (`.picker__gear`, 44 px,
   named «Settings») pushes the «Settings» page (`components/phone/SettingsPage.tsx`): «‹ Landing sites», «Settings»,
   «Done», then the «Layers» group (with the empty «Saved sites» hint) and the «Language» row grouped with the «Data
-  source» switch. The Language row pushes the language list over it (`lang.css` uses child combinators, so each push
+  source» switch, and last the credits (VENT-126, `components/credits/Credits.tsx`, `styles/credits.css`): «Source code
+  on GitHub» (`src/lib/source-code.ts`; new tab, `rel="noopener noreferrer"`, the arrow an SVG, named «…, in a new
+  tab», 44 px through its `::after`), «Built with Claude (AI) as a coding assistant» and «Built for the NASA Space Apps
+  Challenge. Not endorsed by NASA.», in the caption step and `--text-secondary`; the same block ends the desktop Layers
+  key under a hairline, inside its scroll, so at 1280 x 720, where the key already scrolls, nothing in it moves; the
+  landing's footer carries the link and the AI line beside its disclaimer. The page's Back label takes two lines at
+  most, so a squeezed head (the pseudo-locale at 200 % text on a 360 px phone) leaves the groups their room. Held by
+  `tests/vent-126-credits.test.ts` and `tests/e2e/vent-126-credits.spec.ts`. The Language row pushes the language list over it (`lang.css` uses child combinators, so each push
   hides only its own pages); Back or Escape goes back one page and returns the focus to the gear or the row
   (`useFocusOnReturn`, `escapeTo` in `use-push.ts`). Held by `tests/e2e/vent-57-layout.spec.ts`.
 - It feels like an app, not a document (VENT-38): `body` sets `user-select: none`, `-webkit-touch-callout: none` and

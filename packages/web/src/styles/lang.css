@@ -361,6 +361,21 @@
   text-align: start;
 }
 
+/*
+ * At most two lines (VENT-126): squeezed to a letter's width (the
+ * pseudo-locale at 200 % text on a 360 px phone), Back's words broke into
+ * a letter per line, the head outgrew the page and the groups under it
+ * had no room left at all.
+ */
+.settings-page__back-label {
+  display: -webkit-box;
+  min-width: 0;
+  overflow: hidden;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+}
+
 .settings-page__head .picker__done {
   grid-column: 3;
   justify-self: end;

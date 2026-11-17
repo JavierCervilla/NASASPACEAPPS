@@ -382,6 +382,35 @@
   margin: 0;
 }
 
+/*
+ * The disclaimer, the AI credit and the source link (VENT-126), stacked.
+ * The link is 44 px tall like the languages, its arrow an SVG, never the
+ * arrow character a phone may draw as an emoji.
+ */
+.foot__about {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
+}
+
+.foot__source {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 44px;
+  text-underline-offset: 4px;
+}
+
+.foot__source svg {
+  flex: none;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.6;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
 .foot__langs {
   margin: 0;
   padding: 0;

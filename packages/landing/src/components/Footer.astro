@@ -33,6 +33,8 @@ interface Props {
 
 const { locale } = Astro.props;
 const t = translator(catalogueOf(locale));
+// The project's public source (VENT-126), opened in a new tab.
+const source = 'https://github.com/JavierCervilla/NASASPACEAPPS';
 // Each language under its own name, so a visitor finds theirs.
 const names = new Map(
   LOCALES.map((l) => [l, new Intl.DisplayNames([l], { type: 'language' })]),
@@ -44,7 +46,22 @@ const endonym = (l: Locale) => {
 ---
 
 <footer class="foot">
-  <p>{t('footer.disclaimer')} {t('footer.copyright')}</p>
+  <div class="foot__about">
+    <p>{t('footer.disclaimer')} {t('footer.copyright')}</p>
+    <p>{t('footer.ai')}</p>
+    <a
+      class="foot__source"
+      href={source}
+      target="_blank"
+      rel="noopener noreferrer"
+      aria-label={t('footer.sourceName')}
+    >
+      {t('footer.source')}
+      <svg width="14" height="14" viewBox="0 0 14 14" aria-hidden="true">
+        <path d="M4 10l6-6M5.5 4H10v4.5"></path>
+      </svg>
+    </a>
+  </div>
   <nav aria-label={t('footer.languages')}>
     <ul class="foot__langs">
       {

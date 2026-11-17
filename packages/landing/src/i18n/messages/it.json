@@ -104,5 +104,8 @@
   "team.source": "Codice sorgente · MIT",
   "footer.disclaimer": "Realizzato per il NASA Space Apps Challenge. Non approvato dalla NASA.",
   "footer.copyright": "© 2026 Universelle",
+  "footer.source": "Codice sorgente su GitHub",
+  "footer.sourceName": "Codice sorgente su GitHub, in una nuova scheda",
+  "footer.ai": "Realizzato con Claude (IA) come assistente di programmazione",
   "footer.languages": "Lingue"
 }

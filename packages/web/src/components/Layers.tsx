@@ -24,6 +24,7 @@
  */
 
 import type { SourceStore } from '../source/data-source';
+import { Credits } from './credits/Credits';
 import { DropPin } from './pin/DropPin';
 import { LayerToggles } from './saved/LayerToggles';
 import { useI18n } from './i18n-context';
@@ -35,7 +36,8 @@ import { SourceRow } from './source/SourceSwitch';
  * mark (VENT-37): a solid dot is an exact touchdown, a dashed ring an
  * approximate zone, a silver pin a site saved on this device. Under a
  * hairline, the data source switch (VENT-36), and under another «Drop a
- * pin» (VENT-37).
+ * pin» (VENT-37). Last, under a hairline, the credits (VENT-126), inside
+ * the key's scroll, so the key never grows past its view.
  */
 export function Layers({ source }: { readonly source: SourceStore }) {
   const { t } = useI18n();
@@ -47,6 +49,7 @@ export function Layers({ source }: { readonly source: SourceStore }) {
         <LayerToggles />
         <SourceRow source={source} />
         <DropPin variant="key" />
+        <Credits />
       </div>
     </aside>
   );

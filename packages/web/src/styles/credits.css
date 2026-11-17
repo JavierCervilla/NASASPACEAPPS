@@ -1,0 +1,83 @@
+/*
+ *   _   _       _                         _ _
+ *  | | | |_ __ (_)_   _____ _ __ ___  ___| | | ___
+ *  | | | | '_ \| \ \ / / _ \ '__/ __|/ _ \ | |/ _ \
+ *  | |_| | | | | |\ V /  __/ |  \__ \  __/ | |  __/
+ *   \___/|_| |_|_| \_/ \___|_|  |___/\___|_|_|\___|
+ *
+ *             =++==--::.
+ *         %%%%##**++=--:..  .
+ *      ##**#%@%%#***+=--::.   .
+ *    #**=+*#*#**#++++=-:::.. .  .
+ *   #++-====*@%+*++==--::...   .  .    Ventana Lunar
+ *  #+=-=--++==+===-+==--:..   .  .  .  Sun, Earth and landing
+ * #----====-------=-=---:..  .  .  .   windows at the lunar
+ * #+---+=====--=---==-::..     .  .  . south pole
+ * #*----==---==-=-=-:-....    .  .  .
+ * *#----===+*===--:-::...    .  .  .   Built for the NASA Space
+ *  *----=*-+*%*+=-:::....   .  .  .    Apps Challenge 2026,
+ *   *------=+*=--:::-:::.. .  .  .     Madrid. Not endorsed
+ *    %*===-=-==--==-:::.  .  .  .      by NASA.
+ *      *+:--+:--::::::.  .  .  .
+ *         -=:::...:..   .  .           (c) 2026 Universelle
+ *             :::.. .  .               SPDX-License-Identifier: MIT
+ */
+
+/*
+ * The credits (VENT-126, components/credits/Credits.tsx): the source
+ * link, the AI credit and the Space Apps disclaimer in the caption step
+ * and the secondary text colour, never a signal colour.
+ */
+.credits {
+  display: flex;
+  flex: none;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+  font-size: var(--type-caption-size);
+  line-height: var(--type-caption-leading);
+  letter-spacing: var(--type-caption-tracking);
+  color: var(--text-secondary);
+}
+
+.credits p {
+  margin: 0;
+}
+
+/*
+ * Drawn at the caption's size, the link takes 44 px through its ::after
+ * without changing its drawing; the key lets clicks through to the globe,
+ * the link takes them.
+ */
+.credits__source {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding-block: 4px;
+  color: inherit;
+  text-underline-offset: 3px;
+  pointer-events: auto;
+}
+
+.credits__source::after {
+  content: '';
+  position: absolute;
+  inset: calc(50% - 22px) 0;
+}
+
+.credits__icon {
+  flex: none;
+}
+
+/* Desktop: the Layers key's last block, under a hairline. */
+.globe-layers .credits {
+  margin-top: 4px;
+  padding-top: 6px;
+  border-top: 1px solid var(--surface-edge);
+}
+
+/* Phone: under the Settings page's groups, as a section footer. */
+.picker__scroll .credits {
+  padding: 0 16px 12px;
+}

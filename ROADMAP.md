@@ -113,4 +113,6 @@ completa está en el documento «Ventana Lunar · Especificación y roadmap»
 - [x] Portada explicativa en la raíz, en cinco idiomas, con la respuesta en vivo de IM-2 y la franja del mes; la app
   pasa a `/app` (VENT-109)
 - [x] La app siempre oscura, como la portada, y el equipo Universelle en la portada (VENT-113)
-- [ ] Página del proyecto en spaceappschallenge.org, vídeo de 30 s y pitch; envío antes de las 20:00 (VENT-9)
+- [x] Página del proyecto en spaceappschallenge.org, vídeo de 30 s y pitch; envío antes de las 20:00 (VENT-9)
+- [x] Créditos en la portada y en la app: enlace al código fuente en GitHub (MIT), «Built with Claude (AI) as a coding
+  assistant» como piden las normas de Space Apps, y «Not endorsed by NASA» también en la app (VENT-126)

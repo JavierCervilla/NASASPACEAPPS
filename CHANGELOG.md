@@ -12,6 +12,10 @@
   las dos versiones los cierran y los 333 tests del servidor siguen pasando.
 
 ### Arreglado
+- **La página «Settings» del móvil vuelve a caber con textos al 200 % en un móvil estrecho (VENT-126).** Con un
+  idioma largo y textos al 200 % en 360 px, la etiqueta «‹ Landing sites» se partía en una letra por línea, la
+  cabecera crecía más que la hoja y las capas, el idioma y la fuente de datos quedaban fuera de alcance. Ahora esa
+  etiqueta ocupa dos líneas como mucho.
 - **En calidad media (la del móvil) vuelven a verse las rocas cercanas (VENT-124).** Las rocas se colocaban sobre una
   rejilla del suelo de 15,6 m, pero la calidad media dibuja el suelo con celdas de 31 m: en el relieve convexo de IM-2
   el suelo dibujado quedaba hasta 25 cm por encima y enterraba las rocas de 5 a 15 cm. Ahora cada roca se apoya en el
@@ -70,6 +74,14 @@
   you». En escritorio, las cuatro en fila; en los cinco idiomas. El menú dice «The app» en vez de «Tour».
 
 ### Añadido
+- **Créditos: el código fuente, la IA y el aviso de la NASA (VENT-126).** Al pie de la portada, junto a «Built for the
+  NASA Space Apps Challenge. Not endorsed by NASA.», hay ahora un enlace «Source code on GitHub» al repositorio público
+  (MIT), que se abre en una pestaña nueva, y la línea «Built with Claude (AI) as a coding assistant», porque las normas
+  de Space Apps piden decir en texto qué IA se usó. La app dice lo mismo en un bloque pequeño: en el escritorio al
+  final de la leyenda de capas, bajo «Drop a pin» y tras una línea fina (a 1280 × 720 la leyenda ya se desplazaba, así
+  que nada de ella se mueve: el bloque aparece al desplazarla); en el móvil al final de la página «Settings» de la hoja
+  de sitios. En los cinco idiomas; la flecha del enlace es un dibujo, nunca el carácter ↗, que un móvil puede pintar
+  como emoji.
 - **LROC QuickMap a un toque desde la tarjeta y desde la lista de sitios (VENT-125).** En el escritorio, al final de
   la tarjeta del sitio, «Open in LROC QuickMap» abre LROC QuickMap en una pestaña nueva, centrado en el sitio, el punto
   propio o el sitio guardado elegido, con una vista de 40 × 25 km en la proyección que QuickMap usa para esa latitud

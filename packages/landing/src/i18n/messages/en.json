@@ -104,5 +104,8 @@
   "team.source": "Source code · MIT",
   "footer.disclaimer": "Built for the NASA Space Apps Challenge. Not endorsed by NASA.",
   "footer.copyright": "© 2026 Universelle",
+  "footer.source": "Source code on GitHub",
+  "footer.sourceName": "Source code on GitHub, in a new tab",
+  "footer.ai": "Built with Claude (AI) as a coding assistant",
   "footer.languages": "Languages"
 }

@@ -31,6 +31,7 @@ import {
 } from 'react';
 import { AUTONYMS, isLocale } from '../../i18n/locales';
 import type { SourceStore } from '../../source/data-source';
+import { Credits } from '../credits/Credits';
 import { useI18n } from '../i18n-context';
 import { LanguageList } from '../lang/LanguageList';
 import { LayersGroup } from '../saved/LayerToggles';
@@ -89,7 +90,7 @@ function SettingsHead({ onBack, onDone }: HeadProps) {
       <button ref={back} type="button" className="lang-page__back"
         onClick={onBack}>
         <span className="lang-page__back-chevron" aria-hidden="true" />
-        {t('picker.title')}
+        <span className="settings-page__back-label">{t('picker.title')}</span>
       </button>
       <h2 className="lang-page__title">{t('settings.title')}</h2>
       <button type="button" className="picker__done" onClick={onDone}>
@@ -105,7 +106,10 @@ interface ListProps {
   readonly onLanguage: () => void;
 }
 
-/** The layers, then the language and the data source, scrolling as one. */
+/**
+ * The layers, then the language and the data source, then the credits
+ * (VENT-126), scrolling as one.
+ */
 function SettingsList({ source, row, onLanguage }: ListProps) {
   const fade = useScrollFade<HTMLDivElement>();
   return (
@@ -115,6 +119,7 @@ function SettingsList({ source, row, onLanguage }: ListProps) {
         <LanguageRow ref={row} onOpen={onLanguage} />
         <SourceRow source={source} icon={<Icon name="database" />} />
       </div>
+      <Credits />
     </div>
   );
 }

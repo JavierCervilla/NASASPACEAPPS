@@ -47,6 +47,9 @@ import { scanSorter, type ScanRequest } from './rock-scans';
 /** Behind the ring's tiles in the slicer's queue (lowest runs first). */
 const PRIORITY = 100;
 
+/** The stones cast the Sun's shadow and take it. */
+const SHADOWED = { castShadow: true, receiveShadow: true };
+
 /** The stones' mesh, empty and hidden until its bands are in. */
 function hiddenStones(mask: SunMask): Mesh {
   const material = new MeshStandardMaterial({ color: 0xb4b1ab,
@@ -105,7 +108,8 @@ const bandsAround = (seed: number, ground: GroundAt, law: MeasuredScatter,
  * size law and cap (ground-policy.ts). At the point the point's own
  * scatter; away from it, the cells' around the eye (walk/rock-cells.ts).
  * With `scan` (VENT-124) the rocks nearest the eye are drawn as scanned
- * samples instead, a group under the stones' mesh (scene/rock-scans.ts).
+ * samples instead, a group under the stones' mesh (scene/rock-scans.ts),
+ * or as stones there when the scans' files fail.
  */
 export function rocksMesh(
   seed: number,
@@ -115,8 +119,10 @@ export function rocksMesh(
 ): Mesh {
   const mesh = hiddenStones(mask);
   const bands = bandsAround(seed, ground, law, eye);
-  const scans = scan
-    ? scanSorter(eye, { request: scan, ground: stand, slicer }) : null;
+  // Held rocks whose scans failed: stones, shadowed and lit as the others.
+  const scans = scan ? scanSorter(eye, { request: scan, ground: stand, slicer,
+    asStones: (rocks) => Object.assign(new Mesh(finished([part(rocks, stand)]),
+      mesh.material), SHADOWED) }) : null;
   const parts: Part[] = [];
   for (let i = 0; i < bands.count; i++) {
     slicer.add(`rocks:${i}`, PRIORITY + i, () => {

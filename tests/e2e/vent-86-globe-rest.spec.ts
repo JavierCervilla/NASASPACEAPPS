@@ -29,6 +29,13 @@
  * Moon goes back to its start map and frees the bigger ones; shown again, the zoom climbs back. Each map three loads
  * sets an image's `src`, which the page records: the document's list of available images answers a second load of the
  * same URL without a request, so the network alone would not see it.
+ *
+ * VENT-127: the test used to hide the globe once the 4K colour's response came, while its relief could still be in
+ * flight; the swapper fetches one level at a time, so the start map came only after the 4K landed, past the poll's
+ * bound on a loaded runner. Each case now says which it means: hidden with the 4K on the Moon (both 4K maps given GPU
+ * storage), or hidden with the 2K on the Moon and the 4K relief held back on purpose, when the 4K is freed on landing
+ * and the start map follows. That case holds the start map too, so the globe shown again draws while the late 4K would
+ * still be on the Moon if it had been taken in: it must not reach the GPU.
  */
 import { expect, test, type Page } from '@playwright/test';
 import { stubApi } from './api-stub';
@@ -36,15 +43,28 @@ import { stubApi } from './api-stub';
 const MAP_1K = /\/textures\/moon-lroc-1k\.jpg$/;
 // The 4K colour comes as KTX2 where the GPU takes it (VENT-101; SwiftShader: BC1), fetched rather than an image.
 const MAP_4K = /\/textures\/moon-lroc-4k\.(jpg|ktx2)$/;
+const MAP_2K = /\/textures\/moon-lroc-2k\.(jpg|ktx2)$/;
+const MAP_4K_RELIEF = /\/textures\/moon-lola-normal-4k\.jpg$/;
 
 /** The Moon maps the page has loaded so far, in order. */
 const loaded = (page: Page): Promise<string[]> =>
   page.evaluate(() => (window as unknown as { mapLoads: string[] }).mapLoads.filter((url) => /moon-lroc-/.test(url)));
 
-/** Records every image `src` the page sets, and every map it fetches (a KTX2 map, VENT-101). */
+/**
+ * Records every image `src` the page sets, and every map it fetches (a KTX2 map, VENT-101). While `holdStartMap` is
+ * set, the start maps' `src` (the 1K colour and relief) is recorded but set only by `releaseStartMap()`: a second load
+ * of a URL the document already has makes no request, so the network cannot hold it.
+ */
 function recordImageLoads(): void {
   const loads: string[] = [];
-  (window as unknown as { mapLoads: string[] }).mapLoads = loads;
+  const held: (() => void)[] = [];
+  const page = window as unknown as { mapLoads: string[]; holdStartMap: boolean; releaseStartMap: () => void };
+  page.mapLoads = loads;
+  page.holdStartMap = false;
+  page.releaseStartMap = () => {
+    page.holdStartMap = false;
+    for (const set of held.splice(0)) set();
+  };
   const fetchOf = window.fetch.bind(window);
   window.fetch = (input: RequestInfo | URL, init?: RequestInit) => {
     loads.push(input instanceof Request ? input.url : String(input));
@@ -55,15 +75,47 @@ function recordImageLoads(): void {
     ...src,
     set(this: HTMLImageElement, url: string) {
       loads.push(url);
-      src?.set?.call(this, url);
+      const set = () => src?.set?.call(this, url);
+      if (page.holdStartMap && /\/textures\/moon-(lroc|lola-normal)-1k\.jpg$/.test(url)) held.push(set);
+      else set();
     },
   });
 }
 
+/**
+ * Records the width of every 2D texture storage WebGL2 makes (three allocates each map with `texStorage2D`), and counts
+ * the draw calls, to know that a frame was drawn.
+ */
+function recordTextureStorage(): void {
+  const widths: number[] = [];
+  const page = window as unknown as { storageWidths: number[]; draws: number };
+  page.storageWidths = widths;
+  page.draws = 0;
+  const proto = WebGL2RenderingContext.prototype;
+  const drawElements = proto.drawElements;
+  proto.drawElements = function (this: WebGL2RenderingContext, ...args: Parameters<typeof drawElements>) {
+    page.draws += 1;
+    return drawElements.apply(this, args);
+  };
+  const storage = proto.texStorage2D;
+  proto.texStorage2D = function (this: WebGL2RenderingContext, ...args: Parameters<typeof storage>) {
+    widths.push(args[3]);
+    return storage.apply(this, args);
+  };
+}
+
+/** How many 4K maps (4096 texels wide) have GPU storage so far. */
+const stored4k = (page: Page): Promise<number> =>
+  page.evaluate(() => (window as unknown as { storageWidths: number[] }).storageWidths.filter((w) => w === 4096).length);
+
 const tabs = (page: Page) => page.getByRole('navigation', { name: 'Views' });
 
-/** Zooms in with the keyboard until the 4K map is asked for. */
+/**
+ * Zooms in with the keyboard until the 4K map is asked for, once the globe is mounted: the start map's response can
+ * come from the early start (VENT-93) before the globe's chunk has bound its keys, and keys pressed then zoom nothing.
+ */
 async function zoomTo4k(page: Page): Promise<void> {
+  await page.locator('.globe-viewport[data-status="ready"]').waitFor();
   const map4k = page.waitForResponse(MAP_4K);
   await page.getByRole('application', { name: 'The Moon, seen over its south pole' }).focus();
   for (let step = 0; step < 4; step++) await page.keyboard.press('+');
@@ -75,11 +127,16 @@ test.describe('globe maps while the globe is hidden, phone 390x844', () => {
 
   test('hidden, the globe goes back to its start map; shown, it climbs to 4K again', async ({ page }) => {
     await page.addInitScript(recordImageLoads);
+    await page.addInitScript(recordTextureStorage);
     await stubApi(page);
     const start = page.waitForResponse(MAP_1K);
     await page.goto('./?quality=medium');
     await start;
     await zoomTo4k(page);
+    // The 4K colour and relief both on the GPU: the 4K is on the Moon, nothing of it in flight. Waited for as an event,
+    // under the test's own bound: how long the relief takes to land depends on the runner's load.
+    await page.waitForFunction(() => (window as unknown as { storageWidths: number[] }).storageWidths
+      .filter((w) => w === 4096).length === 2);
     const before = (await loaded(page)).length;
     const since = async (): Promise<string[]> => (await loaded(page)).slice(before);
     await tabs(page).getByRole('button', { name: 'DSN', exact: true }).click();
@@ -87,5 +144,56 @@ test.describe('globe maps while the globe is hidden, phone 390x844', () => {
     expect((await since()).filter((url) => MAP_4K.test(url))).toEqual([]);
     await tabs(page).getByRole('button', { name: 'Globe', exact: true }).click();
     await expect.poll(async () => (await since()).filter((url) => MAP_4K.test(url)).length).toBe(1);
+  });
+
+  test('hidden with the 2K shown and the 4K in flight, the 4K is freed when it lands, never drawn, and the start map follows', async ({ page }) => {
+    await page.addInitScript(recordImageLoads);
+    await page.addInitScript(recordTextureStorage);
+    await stubApi(page);
+    let releaseRelief = (): void => undefined;
+    const heldRelief = new Promise<void>((resolve) => { releaseRelief = resolve; });
+    await page.route(MAP_4K_RELIEF, async (route) => {
+      await heldRelief;
+      await route.continue();
+    });
+    await page.goto('./?quality=medium');
+    // A level above the start map on the Moon first: one «+» asks the 2K, which is on the Moon once its colour and
+    // relief have GPU storage; then the rest of the zoom asks the 4K. Zoomed in one go, the 4K could be asked while
+    // the 1K still showed, and lowering to the 1K would then be no change at all.
+    await page.locator('.globe-viewport[data-status="ready"]').waitFor();
+    await page.getByRole('application', { name: 'The Moon, seen over its south pole' }).focus();
+    const map2k = page.waitForResponse(MAP_2K);
+    await page.keyboard.press('+');
+    await map2k;
+    await page.waitForFunction(() => (window as unknown as { storageWidths: number[] }).storageWidths
+      .filter((w) => w === 2048).length === 2);
+    const map4k = page.waitForResponse(MAP_4K);
+    for (let step = 1; step < 4; step++) await page.keyboard.press('+');
+    await map4k;
+    const before = (await loaded(page)).length;
+    const since = async (): Promise<string[]> => (await loaded(page)).slice(before);
+    await tabs(page).getByRole('button', { name: 'DSN', exact: true }).click();
+    // One fetch at a time: while the 4K is in flight the start map waits for it.
+    await page.waitForTimeout(1000);
+    expect((await since()).filter((url) => MAP_1K.test(url)), 'no start map before the 4K lands').toEqual([]);
+    await page.evaluate(() => { (window as unknown as { holdStartMap: boolean }).holdStartMap = true; });
+    const relief = page.waitForResponse(MAP_4K_RELIEF);
+    releaseRelief();
+    await relief;
+    // The 4K lands (its relief decodes first) and the start map is asked: an event, under the test's own bound.
+    await page.waitForFunction((from) => (window as unknown as { mapLoads: string[] }).mapLoads.slice(from)
+      .some((url) => /\/textures\/moon-lroc-1k\.jpg$/.test(url)), before);
+    expect((await since()).filter((url) => MAP_1K.test(url))).toHaveLength(1);
+    // Shown again with the start map still held: the frame draws the 2K. A 4K taken in while lowered would be on the
+    // Moon now, and this frame would upload it.
+    const draws = await page.evaluate(() => (window as unknown as { draws: number }).draws);
+    await tabs(page).getByRole('button', { name: 'Globe', exact: true }).click();
+    await page.waitForFunction((was) => (window as unknown as { draws: number }).draws > was, draws);
+    expect(await stored4k(page), 'the 4K that landed while lowered is never drawn').toBe(0);
+    // Let the start map through: the globe then climbs to the 4K the zoom wants, asked again.
+    await page.evaluate(() => (window as unknown as { releaseStartMap: () => void }).releaseStartMap());
+    await page.waitForFunction(() => (window as unknown as { storageWidths: number[] }).storageWidths
+      .filter((w) => w === 4096).length === 2);
+    expect((await since()).filter((url) => MAP_4K.test(url))).toHaveLength(1);
   });
 });

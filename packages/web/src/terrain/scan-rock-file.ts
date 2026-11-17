@@ -72,11 +72,17 @@ function shapeAt(buffer: ArrayBuffer, at: number) {
   return { shape, next };
 }
 
-/** Every shape in `buffer`; throws when it is not the scans' file. */
+/**
+ * Every shape in `buffer`; throws when it is not the scans' file or holds
+ * no shape, which the view takes as a failed load (the stones stand in).
+ */
 export function readScanShapes(buffer: ArrayBuffer): ScanShape[] {
   const view = new DataView(buffer);
   if (buffer.byteLength < 8 || view.getUint32(0, true) !== SCAN_MAGIC) {
     throw new Error('not a scanned rocks file');
+  }
+  if (view.getUint32(4, true) === 0) {
+    throw new Error('the scanned rocks file holds no shape');
   }
   const shapes: ScanShape[] = [];
   for (let i = 0, at = 8; i < view.getUint32(4, true); i++) {

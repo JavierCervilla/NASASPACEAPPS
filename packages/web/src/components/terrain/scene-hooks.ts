@@ -27,7 +27,8 @@
  * What the on-foot scene tells the panel (VENT-49): the look and the band
  * (the panel's own), a lost GPU context (the tier drops to low, then the
  * panel frees the scene and says so), a slow load (a tier down, when the
- * tier may step down at all) and the first frame drawn.
+ * tier may step down at all), the first frame drawn and whether the
+ * scanned rocks' files loaded (VENT-127).
  */
 import type { RefObject } from 'react';
 import type { ReportSink } from '../../terrain/report/sink';
@@ -35,7 +36,8 @@ import type { SceneHooks } from '../../terrain/scene/scene-types';
 import type { ViewTier } from '../../terrain/view-tier';
 
 /** The hooks the panel itself gives the scene. */
-export type PanelHooks = Pick<SceneHooks, 'onLook' | 'band' | 'onEye'>;
+export type PanelHooks =
+  Pick<SceneHooks, 'onLook' | 'band' | 'onEye' | 'onScans'>;
 
 export interface HookParts {
   readonly panel: RefObject<PanelHooks>;
@@ -60,6 +62,8 @@ export function sceneHooks(parts: HookParts): SceneHooks {
       onLost();
     },
     onDrawn,
+    // A state setter (use-scans.ts): stable, so read once at the mount.
+    onScans: panel.current.onScans,
     onSlowFrame: tier.get().steppable ? () => {
       report.step(`frame probe: slow frame at ${tier.get().tier}, stepping down`);
       tier.stepDown();

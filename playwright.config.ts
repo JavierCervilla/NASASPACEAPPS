@@ -35,6 +35,12 @@ const BENCH_SPECS = /(vent-81-bench|vent-104-bench-depth)\.spec\.ts$/;
  * project, run with two workers (see below).
  */
 const ONFOOT_SPECS = /(terrain-view|vent-98-binary-tiles|vent-100-lunar-night|vent-114-split-depth|vent-117-loader-film|vent-121-walk|vent-124-scan-rocks|vent-128-walk-fixes)\.spec\.ts$/;
+/**
+ * The globe specs that wait on software GL frames (the 8K map landing, the
+ * first frame after the splash) and the benchmark's layout spec, which runs a
+ * bench: their own project, run with two workers (see below).
+ */
+const QUIET_SPECS = /(vent-93-globe-start|vent-99-globe-map-trace|vent-107-bench-layout|vent-123-globe-8k-ktx2)\.spec\.ts$/;
 /** The landing's spec (VENT-109): its own preview at the domain's root, beside the app's. */
 const LANDING_SPECS = /landing\.spec\.ts$/;
 const landingPort = port + 1;
@@ -62,9 +68,17 @@ export default defineConfig({
   // failed it in about half the CI runs of 6 Nov (VENT-108: the same rate on
   // 172a05b and on main under the same load, none alone): `onfoot` runs them
   // with two workers between `app` and `bench`, the same specs and limits.
+  // On a 4-vCPU GitHub-hosted runner three globe and bench specs missed their
+  // waits among four app workers (VENT-129: the 8K never landed in 20 s, the
+  // splash left at its 6 s cap before the first frame drew, a screenshot of a
+  // running bench passed the test's 3 min), and the map trace saw 2K wanted
+  // before the 1K had landed: `quiet` runs them with two workers, the same
+  // specs and limits. `npm run e2e` (scripts/e2e.mjs) runs
+  // every project even when one fails, and fails if any did.
   projects: [
-    { name: 'app', testIgnore: [BENCH_SPECS, ONFOOT_SPECS, LANDING_SPECS] },
+    { name: 'app', testIgnore: [BENCH_SPECS, ONFOOT_SPECS, QUIET_SPECS, LANDING_SPECS] },
     { name: 'landing', testMatch: LANDING_SPECS, use: { baseURL: `http://localhost:${landingPort}/` } },
+    { name: 'quiet', testMatch: QUIET_SPECS },
     { name: 'onfoot', testMatch: ONFOOT_SPECS },
     { name: 'bench', testMatch: BENCH_SPECS },
   ],

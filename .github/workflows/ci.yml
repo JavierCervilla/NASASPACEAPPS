@@ -45,6 +45,20 @@ jobs:
           SITE_BASE: /app
       # The runner pool's image already ships Chromium's system deps and forbids sudo; GitHub-hosted runners need them.
       - run: npx playwright install ${{ !vars.CI_RUNNER && '--with-deps' || '' }} chromium
+      # The specs that measure text were written where system-ui and sans-serif are Inter (the dev container, the
+      # self-hosted image). A GitHub-hosted runner falls back to DejaVu Sans, which is wider: lines wrap and 14 specs
+      # fail (VENT-129). Hosted only: the pool already has it and forbids sudo. The package lists are fresh from the
+      # step above, which ran apt-get update for Chromium's deps.
+      - name: Inter as the system font (GitHub-hosted runners)
+        if: ${{ !vars.CI_RUNNER }}
+        run: |
+          sudo apt-get install -y --no-install-recommends fonts-inter
+          sudo install -m 644 .github/fontconfig/56-prefer-inter.conf /etc/fonts/conf.d/
+          fc-cache -f
+          fc-match system-ui
+          fc-match sans-serif
+          fc-match -f '%{family}' system-ui | grep -q Inter
+          fc-match -f '%{family}' sans-serif | grep -q Inter
       - run: npm run e2e
         env:
           CI: "true"

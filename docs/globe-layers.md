@@ -3,7 +3,8 @@
 The globe draws through a **layer registry**: every set of things on the Moon (Ventana's landing sites, approximate
 zones and saved sites, or another team's rovers, tracks or areas) is a layer with an id, a stacking order and a
 visible flag. The registry holds no Ventana interface: the Layers key and the phone's «Layers» group are only one
-reader of it. Code: `packages/web/src/globe/layers/`.
+reader of it (the desktop key also ends with the project's credits, VENT-126, which are no layer). Code:
+`packages/web/src/globe/layers/`.
 
 ## The pieces
 

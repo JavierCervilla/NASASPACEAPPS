@@ -12,6 +12,14 @@
   las dos versiones los cierran y los 333 tests del servidor siguen pasando.
 
 ### Arreglado
+- **Seis arreglos del paseo por el terreno (VENT-128).** El anillo que sigue al ratón por el suelo calcula una sola
+  vez por fotograma, y nada si el puntero apenas se ha movido o está sobre el cielo: 60 movimientos sobre el cielo
+  pasan de 91 ms de cálculo y un fotograma a 1 ms y ninguno. En los sitios que los mapas de NASA ponen en sombra
+  permanente (Shackleton, Haworth, de Gerlache Rim 2, Slater Plain) la etiqueta ya no dice «Sol aquí» ni «Ventana
+  aquí»: el punto donde estás hereda la sombra del sitio, como la píldora. Un toque que solo frena la vista mientras
+  gira de inercia ya no te lleva andando, como en el globo. En el móvil con el texto al 200 % la etiqueta del paseo ya
+  no tapa el pie de la vista: el pie se aparta mientras la etiqueta lo cubriría. Cada llegada libera el material de
+  las piedras que deja atrás, y la tarjeta «Fin del terreno detallado» se va en cuanto empiezas a volver.
 - **Si las rocas escaneadas no cargan, las rocas cercanas siguen ahí (VENT-127).** Cuando los ficheros de las rocas
   de Apolo 17 fallaban (sin red, un fichero vacío), las rocas más cercanas al ojo desaparecían y el suelo de alrededor
   quedaba vacío, y el pie de la vista seguía atribuyéndolas a NASA Astromaterials 3D. Ahora esas rocas se dibujan como

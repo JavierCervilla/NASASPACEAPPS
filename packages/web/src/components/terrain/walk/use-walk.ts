@@ -30,6 +30,7 @@
  * and longitude (walk/eye-point.ts).
  */
 import { useState } from 'react';
+import { inPermanentShadow, type SiteShadow } from '@ventana/sim';
 import type { CustomFacts } from '../../../phone/phone-site';
 import { siteLabels } from '../../../phone/phone-site';
 import type { EyeReport, SkyDirs } from '../../../terrain/scene/scene-types';
@@ -44,6 +45,8 @@ export interface WalkSite {
   readonly name?: string | undefined;
   readonly mission?: string | undefined;
   readonly custom?: CustomFacts | undefined;
+  /** NASA's shadow at the site (VENT-39), which the eye inherits. */
+  readonly shadow?: SiteShadow | undefined;
 }
 
 /** The chip's name of `site`: the pill's («IM-2»), or the custom point's. */
@@ -63,7 +66,9 @@ export function useWalk(site: WalkSite, sky: SkyDirs | null) {
   const onPin = kit && eye
     ? () => kit.places.drop(eyeLatLon(site, eye.at)) : null;
   const name = chipName(site);
+  const walkSky = sky && inPermanentShadow(site.shadow)
+    ? { ...sky, sunHidden: true } : sky;
   return { onEye: setEye,
     walk: (onBack: () => void): WalkProps =>
-      ({ eye, sky, site: name, onBack, onPin }) };
+      ({ eye, sky: walkSky, site: name, onBack, onPin }) };
 }

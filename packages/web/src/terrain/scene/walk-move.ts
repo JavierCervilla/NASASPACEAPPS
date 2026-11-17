@@ -35,6 +35,7 @@
 import { startGlide, stepGlide } from '../walk/glide';
 import { clampReach, type EastNorth } from '../walk/walk-reach';
 import type { ViewState } from './scene-frame';
+import { edgeShown } from './walk-edge';
 import type { WalkMarker } from './walk-marker';
 import { lightEye } from './world-light';
 import { rebuildNear, type World } from './world';
@@ -84,6 +85,7 @@ function arrive(parts: WalkParts): void {
 export function goTo(parts: WalkParts, target: EastNorth): void {
   const { view, world } = parts;
   const { at, edge } = clampReach(target);
+  const carded = edgeShown(view);
   view.edge = edge;
   if (parts.reducedMotion()) {
     view.glide = null;
@@ -92,6 +94,8 @@ export function goTo(parts: WalkParts, target: EastNorth): void {
     arrive(parts);
   } else {
     view.glide = startGlide(view.eye, at);
+    // The card goes now, not when the eye arrives (VENT-128).
+    if (carded) world.tellEye();
   }
   world.invalidate();
 }

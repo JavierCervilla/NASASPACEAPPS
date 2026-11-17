@@ -53,6 +53,17 @@ function flingOf(host: HTMLElement, world: World, view: ViewState) {
   };
 }
 
+/**
+ * A press stops any coast or way home where it is; true when a coast was
+ * moving, so the press does not also walk (VENT-128).
+ */
+function halt(view: ViewState): boolean {
+  const coasting = view.coast !== null;
+  view.coast = null;
+  view.homing = null;
+  return coasting;
+}
+
 /** What the controls do with the look: turn it, or send it home. */
 export interface LookActions {
   readonly set: (look: Look) => void;
@@ -75,10 +86,7 @@ export function bindHost(host: HTMLElement, world: World, view: ViewState,
     scale: () => dragScale(host.clientWidth, host.clientHeight, camera.fov),
     fling: flingOf(host, world, view),
     drag: (down) => void (view.dragging = down),
-    halt: () => {
-      view.coast = null;
-      view.homing = null;
-    } });
+    halt: () => halt(view) });
   const observer = new ResizeObserver(() => set(view.look));
   observer.observe(host);
   return () => {

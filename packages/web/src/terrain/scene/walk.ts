@@ -27,10 +27,13 @@
  * Walking in the on-foot view (VENT-121, the human's variant 3A): a tap on
  * the ground or «Back» sends the eye there (walk-move.ts); on
  * a fine pointer a ring on the ground under it says where a click goes, and
- * on touch it shows at the tap and fades as the glide starts.
+ * on touch it shows at the tap and fades as the glide starts. The hover
+ * picks at most once a display frame (walk-hover.ts, VENT-128), each pick
+ * counted in the host's `data-picks`.
  */
 import type { EastNorth } from '../walk/walk-reach';
 import { groundAt } from './walk-pick';
+import { createHover } from './walk-hover';
 import { createWalkMarker, type WalkMarker } from './walk-marker';
 import { goTo, type WalkParts } from './walk-move';
 
@@ -46,6 +49,19 @@ export interface Walker {
   readonly dispose: () => void;
 }
 
+/** The hover of `parts`, which shows the ring through `show`. */
+function hoverOf(parts: WalkParts, show: (at: EastNorth | null) => void) {
+  const { world, host } = parts;
+  // Called bare: the browser's raf throws on any receiver but the window.
+  return createHover({ raf: (fn) => requestAnimationFrame(fn),
+    cancel: (id) => cancelAnimationFrame(id), show,
+    pose: () => world.stage.camera.matrixWorld.elements.join(),
+    pick: (x, y) => {
+      host.dataset['picks'] = String(Number(host.dataset['picks'] ?? 0) + 1);
+      return groundAt(world, x, y);
+    } });
+}
+
 /** The walker of `parts`, its marker in the scene. */
 export function createWalker(parts: WalkParts): Walker {
   const { world, view } = parts;
@@ -55,6 +71,7 @@ export function createWalker(parts: WalkParts): Walker {
   world.stage.scene.add(marker.mesh);
   const show = (at: EastNorth | null): void =>
     void (marker.show(at), world.invalidate());
+  const hover = hoverOf(parts, show);
   return { marker,
     tap: (x, y, touch) => {
       const at = groundAt(world, x, y);
@@ -63,8 +80,11 @@ export function createWalker(parts: WalkParts): Walker {
       view.fading = touch;
       goTo(parts, at);
     },
-    hover: (p) => show(p ? groundAt(world, p.x, p.y) : null),
+    hover: hover.hover,
     back: () => goTo(parts, [0, 0]),
-    dispose: marker.dispose };
+    dispose: () => {
+      hover.dispose();
+      marker.dispose();
+    } };
 }
 

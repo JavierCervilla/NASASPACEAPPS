@@ -39,6 +39,7 @@ import { rocksMesh } from '../src/terrain/scene/props';
 import type { ScanAssets } from '../src/terrain/scene/scan-rocks';
 import type { Slicer } from '../src/terrain/scene/slicer';
 import { createSunMask } from '../src/terrain/scene/sun-mask';
+import { tellScans } from '../src/terrain/scene/terrain-scene';
 import type { ViewTier } from '../src/terrain/view-tier';
 
 /** A slicer that runs nothing until asked, and the keys it was given. */
@@ -112,5 +113,28 @@ describe('the scans\' load reaches the panel', () => {
       report: { step: () => undefined }, onLost: () => undefined, onDrawn: () => undefined });
     hooks.onScans?.(false);
     expect(heard).toEqual([false]);
+  });
+});
+
+describe('a scene freed before its scans answer', () => {
+  it('stays silent, so a late failure does not overwrite the next scene\'s answer', async () => {
+    const heard: boolean[] = [];
+    const onScans = (loaded: boolean) => void heard.push(loaded);
+    let failOld = (): void => undefined;
+    const old = new Promise<ScanAssets>((_ok, fail) => { failOld = () => fail(new Error('late')); });
+    const untellOld = tellScans({ look: 'scan', assets: old }, onScans);
+    untellOld();
+    tellScans({ look: 'scan', assets: Promise.resolve({} as ScanAssets) }, onScans);
+    await new Promise((settled) => setTimeout(settled, 0));
+    failOld();
+    await new Promise((settled) => setTimeout(settled, 0));
+    expect(heard).toEqual([true]);
+  });
+
+  it('tells nothing for the stones', async () => {
+    const heard: boolean[] = [];
+    tellScans(null, (loaded) => void heard.push(loaded));
+    await new Promise((settled) => setTimeout(settled, 0));
+    expect(heard).toEqual([]);
   });
 });

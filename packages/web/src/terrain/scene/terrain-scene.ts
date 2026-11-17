@@ -63,12 +63,23 @@ function stageWorld(host: HTMLElement, seed: number, setup: SceneSetup) {
 }
 
 /**
- * Tells the panel whether the scanned rocks' files loaded (VENT-124), so the
+ * Tells the panel whether the scanned rocks' files loaded (VENT-127), so the
  * caption credits them only when they are drawn; nothing for the stones.
+ * Returns what silences it: a scene freed (a retry, a tier change) before
+ * its files answer must not overwrite what the next scene says.
  */
-function tellScans(world: World, hooks: SceneHooks): void {
-  world.scans?.assets.then(() => hooks.onScans?.(true),
-    () => hooks.onScans?.(false));
+export function tellScans(
+  scans: World['scans'],
+  onScans: SceneHooks['onScans'],
+): () => void {
+  let live = true;
+  const tell = (loaded: boolean) => () => {
+    if (live) onScans?.(loaded);
+  };
+  scans?.assets.then(tell(true), tell(false));
+  return () => {
+    live = false;
+  };
 }
 
 /** The world, the view's state and the loop that draws them. */
@@ -76,7 +87,7 @@ function openScene(host: HTMLElement, input: SceneInput, hooks: SceneHooks,
   setup: SceneSetup) {
   const world = stageWorld(host, input.seed, setup);
   reportStage(world);
-  tellScans(world, hooks);
+  const untell = tellScans(world.scans, hooks.onScans);
   const home = startLook(input.startYawDeg);
   const view: ViewState = { look: home, home, coast: null, homing: null,
     dragging: false, told: false, eye: [0, 0], glide: null, edge: false,
@@ -93,7 +104,7 @@ function openScene(host: HTMLElement, input: SceneInput, hooks: SceneHooks,
       (view.dragging || view.coast !== null) });
   const loop = gateLoop(createLoop(frame, pace.schedule, pace.cancel));
   world.invalidate = () => loop.invalidate();
-  return { world, view, labels, loop, walker, walking };
+  return { world, view, labels, loop, walker, walking, untell };
 }
 
 /** What undoes a mounted scene, in order, and frees its GPU last. */
@@ -121,7 +132,7 @@ export function mountTerrainScene(
   hooks: SceneHooks,
   setup: SceneSetup,
 ): TerrainScene {
-  const { world, view, labels, loop, walker, walking } =
+  const { world, view, labels, loop, walker, walking, untell } =
     openScene(host, input, hooks, setup);
   const set = turner(view, hooks, () => loop);
   const goHome = homer(view, set, () => loop);
@@ -134,7 +145,7 @@ export function mountTerrainScene(
     labels, loop, report: setup.report, onLost: hooks.onLost });
   const tools = attachDevTools(world.stage.renderer, 'onFoot');
   const teardown = freeScene({ world, labels, loop,
-    steps: [tools, unwatch, unmark, unbind, walker.dispose] });
+    steps: [untell, tools, unwatch, unmark, unbind, walker.dispose] });
   const scene = controller({ world, loop, home: goHome, teardown,
     back: walker.back });
   return withNewPoints(scene, { view, loop, set, seed: input.seed,

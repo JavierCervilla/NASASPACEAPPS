@@ -27,9 +27,9 @@
  * «Open in LROC QuickMap» (VENT-125): links that open QuickMap in a new
  * tab, centred on the selected site or point; nothing for a site without
  * coordinates. On desktop a link dressed as the secondary button, the
- * site card's last item; on a phone a «QuickMap ↗» pill beside the Sites
- * sheet's «Done», named for the site, since the half sheet has no room
- * for it.
+ * site card's last item; on a phone a «QuickMap» pill with the SVG arrow
+ * beside the Sites sheet's «Done», named for the site, since the half
+ * sheet has no room for it.
  */
 import { quickmapUrl, type MapPoint } from '../../lib/quickmap-link';
 import { siteLabels, type PhoneSite } from '../../phone/phone-site';
@@ -68,8 +68,8 @@ export function QuickMapLink({ point, className }: Props) {
 }
 
 /**
- * The phone's «QuickMap ↗» pill in the Sites sheet's head, its name
- * saying which site it opens.
+ * The phone's «QuickMap» pill with the SVG arrow in the Sites sheet's
+ * head, its name saying which site it opens.
  */
 export function QuickMapPill({ site }: { readonly site: PhoneSite }) {
   const { t } = useI18n();

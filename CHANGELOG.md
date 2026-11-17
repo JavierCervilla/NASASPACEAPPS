@@ -12,6 +12,10 @@
   las dos versiones los cierran y los 333 tests del servidor siguen pasando.
 
 ### Arreglado
+- **Si las rocas escaneadas no cargan, las rocas cercanas siguen ahí (VENT-127).** Cuando los ficheros de las rocas
+  de Apolo 17 fallaban (sin red, un fichero vacío), las rocas más cercanas al ojo desaparecían y el suelo de alrededor
+  quedaba vacío, y el pie de la vista seguía atribuyéndolas a NASA Astromaterials 3D. Ahora esas rocas se dibujan como
+  las piedras de siempre, con su sombra, y el pie deja de citar los escaneos.
 - **En calidad media (la del móvil) vuelven a verse las rocas cercanas (VENT-124).** Las rocas se colocaban sobre una
   rejilla del suelo de 15,6 m, pero la calidad media dibuja el suelo con celdas de 31 m: en el relieve convexo de IM-2
   el suelo dibujado quedaba hasta 25 cm por encima y enterraba las rocas de 5 a 15 cm. Ahora cada roca se apoya en el

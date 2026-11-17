@@ -24,12 +24,13 @@
  */
 
 /**
- * The scanned rocks of the prototype (VENT-124): NASA Astromaterials 3D's
- * Apollo 17 samples (public domain, ASSETS.md), loaded with the view only
- * when `?rocks=` asks for them (their files carry `on-foot`, so the service
- * worker leaves them out of the precache), and drawn as one InstancedMesh
- * per shape over the rocks nearest the eye (rock-look.ts). They cast and
- * take the Sun's shadow and its mask like the stones.
+ * The scanned rocks (VENT-124): NASA Astromaterials 3D's Apollo 17 samples
+ * (public domain, ASSETS.md), the default rocks near the eye unless
+ * `?rocks=stones` asks for the stones, loaded only when the view opens
+ * (their files carry `on-foot`, so the service worker leaves them out of
+ * the precache), and drawn as one InstancedMesh per shape over the rocks
+ * nearest the eye (rock-look.ts). They cast and take the Sun's shadow and
+ * its mask like the stones.
  */
 import {
   BufferAttribute,
@@ -109,8 +110,10 @@ export async function loadScanAssets(
 
 /**
  * The InstancedMesh of shape `i` over `rocks`: a geometry of its own over
- * the shape's attributes (uploaded once, shared; a rebuild frees it and
- * leaves the shape) with each instance's ground for the contact occlusion.
+ * the shape's attributes, with each instance's ground for the contact
+ * occlusion. The arrays are shared and kept; their GPU buffers are not:
+ * a rebuild's dispose deletes them with its geometry (three frees every
+ * attribute of a disposed geometry) and the next build uploads them again.
  */
 function scanMesh(i: number, rocks: readonly Rock[], assets: ScanAssets,
   ground: GroundAt): InstancedMesh {

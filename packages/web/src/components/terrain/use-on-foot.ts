@@ -120,6 +120,7 @@ export function useOnFoot(parts: OnFootParts, report: Recorder) {
     parts.site.lat, ground.atMs]);
   const night = useNight(parts.site, sky, profile,
     { atMs: ground.atMs, hours: parts.hours });
-  const scans = useScansDrawn(parts.viewTier);
-  return { ...ground, input, bodies, startYawDeg, profile, night, scans };
+  const { drawn: scans, onScans } = useScansDrawn(parts.viewTier);
+  return { ...ground, input, bodies, startYawDeg, profile, night, scans,
+    onScans };
 }

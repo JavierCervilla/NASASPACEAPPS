@@ -62,11 +62,21 @@ function stageWorld(host: HTMLElement, seed: number, setup: SceneSetup) {
   return createWorld(stage, seed, setup);
 }
 
+/**
+ * Tells the panel whether the scanned rocks' files loaded (VENT-124), so the
+ * caption credits them only when they are drawn; nothing for the stones.
+ */
+function tellScans(world: World, hooks: SceneHooks): void {
+  world.scans?.assets.then(() => hooks.onScans?.(true),
+    () => hooks.onScans?.(false));
+}
+
 /** The world, the view's state and the loop that draws them. */
 function openScene(host: HTMLElement, input: SceneInput, hooks: SceneHooks,
   setup: SceneSetup) {
   const world = stageWorld(host, input.seed, setup);
   reportStage(world);
+  tellScans(world, hooks);
   const home = startLook(input.startYawDeg);
   const view: ViewState = { look: home, home, coast: null, homing: null,
     dragging: false, told: false, eye: [0, 0], glide: null, edge: false,

@@ -46,10 +46,11 @@
 }
 
 /*
- * The phone's «QuickMap ↗» pill in the Sites sheet's head, before the
- * gear: the secondary button's grey pill, 44 px tall, its padding tighter
- * so the head keeps the title, the bookmark, the gear and «Done» whole on
- * a narrow phone at 200 % text; its words never wrap.
+ * The phone's «QuickMap» pill with the SVG arrow in the Sites sheet's
+ * head, before the gear: the secondary button's grey pill, 44 px tall,
+ * its padding tighter so the head keeps the title, the bookmark, the gear
+ * and «Done» whole on a narrow phone at 200 % text; its words never wrap.
+ * Its press lives in press.css with every other control's.
  */
 .quickmap-pill {
   display: inline-flex;
@@ -58,9 +59,4 @@
   gap: 4px;
   padding: 0 12px;
   white-space: nowrap;
-}
-
-.quickmap-pill:active {
-  transform: scale(0.97);
-  transition: transform var(--dur-press) ease-out;
 }

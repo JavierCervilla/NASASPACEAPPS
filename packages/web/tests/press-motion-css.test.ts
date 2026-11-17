@@ -84,6 +84,12 @@ describe('C-03: every control answers the press', () => {
   });
 });
 
+describe('C-03: the QuickMap controls press where every other control does (VENT-127)', () => {
+  it.each(['.quickmap-link', '.quickmap-pill'])('%s:active lives in press.css', (selector) => {
+    expect(ruleFor(`${selector}:active`).map((rule) => rule.file)).toEqual(['press.css']);
+  });
+});
+
 describe('C-04: reduced motion keeps the same press response', () => {
   it('no :active rule sits inside a prefers-reduced-motion query, on any stylesheet', () => {
     const split = rules.filter((rule) => rule.selectors.some((s) => s.includes(':active')) && inMotionQuery(rule));

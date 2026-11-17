@@ -29,11 +29,14 @@
  * word in its signal colour as the phone pill writes them («Window here»),
  * and beside it a 44 px round «Back to IM-2» that glides back to the point.
  * Glass in the floating surfaces' recipe; under the phone's top bar on the
- * left, clear of the compass; on desktop at the view's top left.
+ * left, clear of the compass; on desktop at the view's top left. Where it
+ * would cover the caption, the caption steps aside (use-chip-clear.ts).
  */
+import { useRef } from 'react';
 import type { WalkView } from '../../../terrain/walk/walk-view';
 import { useI18n } from '../../i18n-context';
 import { Icon } from '../../phone/Icon';
+import { useChipClear } from './use-chip-clear';
 
 interface Props {
   readonly view: WalkView;
@@ -43,8 +46,10 @@ interface Props {
 
 export function WalkChip({ view, site, onBack }: Props) {
   const { t } = useI18n();
+  const ref = useRef<HTMLDivElement>(null);
+  useChipClear(ref);
   return (
-    <div className="walk-chip" data-state={view.state}>
+    <div ref={ref} className="walk-chip" data-state={view.state}>
       <p className="walk-chip__lines">
         <span className="walk-chip__where">{view.where}</span>
         <span className="walk-chip__here" data-tone={view.state}>

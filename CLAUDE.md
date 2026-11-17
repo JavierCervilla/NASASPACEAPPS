@@ -681,7 +681,15 @@ Every visible change follows `.claude/skills/apple-design/SKILL.md` (vendored fr
   go there» or «Tap the ground to go there» under `(pointer: coarse)`, with a ✕, is gone after the first move, kept
   in `localStorage` (`ventana.walkHint`, `walk/walk-hint.ts`). On a fine pointer a ring lying on the ground follows the
   pointer with its distance (`scene/walk-marker.ts`, Street View's ellipse); on touch it shows at the tap and fades as
-  the glide starts. A new point stands the eye back on the point. Held by `tests/walk.test.ts` and
+  the glide starts. The hover picks at most once a display frame, the latest pointer, and neither picks nor draws for
+  a pointer that stayed within 0.2 px under the same camera or a pick that lands where the ring already is, such as
+  the sky (`scene/walk-hover.ts`, each pick counted in `data-picks`; VENT-128). At a `psr` site the eye inherits the
+  point's permanent shadow, so the chip and the live region never say the Sun is there (`sunHidden`, as the pill); a
+  press that stops a coast only stops it and does not walk, as on the globe; where the chip would cover the caption (a
+  phone at 200 % text) the caption steps aside (`use-chip-clear.ts`, `data-chip-over`); each arrival frees the
+  materials of the near ground it rebuilds (`freeOwnMaterials`); and the edge card goes as soon as a glide starts
+  (`scene/walk-edge.ts`). A new point stands the eye back on the point. Held by `tests/walk.test.ts`,
+  `tests/vent-128-walk-fixes.test.ts`, `tests/e2e/vent-128-walk-fixes.spec.ts` and
   `tests/e2e/vent-121-walk.spec.ts` (IM-2's recorded relief; the reach's edge and «Drop a pin here» on the synthetic
   relief's mountain).
   Turning it: a swipe across the whole width turns 180° (a full turn in two swipes, on a phone and a desktop alike;

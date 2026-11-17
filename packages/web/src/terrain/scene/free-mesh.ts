@@ -26,7 +26,8 @@
 /**
  * Freeing a mesh's GPU buffers: its geometry, and an instanced mesh's
  * instance matrices (the scanned rocks, VENT-124), which belong to the mesh
- * and not to its geometry, so a geometry's dispose leaves them behind.
+ * and not to its geometry, so a geometry's dispose leaves them behind. And
+ * the materials a group's own meshes made for themselves (VENT-128).
  */
 import { InstancedMesh, type Mesh, type Object3D } from 'three';
 
@@ -34,4 +35,17 @@ import { InstancedMesh, type Mesh, type Object3D } from 'three';
 export function freeMesh(object: Object3D): void {
   (object as Partial<Mesh>).geometry?.dispose();
   if (object instanceof InstancedMesh) object.dispose();
+}
+
+/**
+ * Frees the materials of `group`'s direct children, which each made its
+ * own (the near ground's distance rings and stones, rebuilt on every
+ * arrival, VENT-128); what hangs deeper (the scanned rocks under the
+ * stones) wears the view's shared materials and is left alone.
+ */
+export function freeOwnMaterials(group: Object3D): void {
+  for (const child of group.children) {
+    const { material } = child as Partial<Mesh>;
+    for (const own of [material ?? []].flat()) own.dispose();
+  }
 }

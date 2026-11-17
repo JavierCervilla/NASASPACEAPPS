@@ -33,43 +33,52 @@ import { pastSlop } from '../../lib/press-slop';
 import { dragLook } from '../look-input';
 import type { LookTarget } from './controls';
 
-/** Where a press started and whether it travelled past the slop. */
+/**
+ * Where a press started, whether it travelled past the slop, and whether
+ * it stopped a coast (VENT-128).
+ */
 export interface Press {
   readonly x: number;
   readonly y: number;
   readonly id: number;
   readonly start: { readonly x: number; readonly y: number };
   readonly travelled: boolean;
+  readonly halted: boolean;
 }
 
 /** A press of `e`, where it starts, not travelled yet. */
-export function pressOf(e: PointerEvent): Press {
+export function pressOf(e: PointerEvent, halted: boolean): Press {
   const start = { x: e.clientX, y: e.clientY };
-  return { ...start, id: e.pointerId, start, travelled: false };
+  return { ...start, id: e.pointerId, start, travelled: false, halted };
 }
 
-/** A press stops any coast, marks the drag and starts the tracker. */
-export function press(target: LookTarget, e: PointerEvent): VelocityTracker {
-  target.halt();
+/**
+ * A press stops any coast, marks the drag and starts the tracker; `halted`
+ * when it stopped a coast.
+ */
+export function press(target: LookTarget, e: PointerEvent) {
+  const halted = target.halt();
   target.drag(true);
   const tracker = new VelocityTracker();
   tracker.add(e.clientX, e.clientY, e.timeStamp);
-  return tracker;
+  return { tracker, halted };
 }
 
 /**
  * A release carries the finger's speed on; a cancel carries nothing; the
- * release of a press that stayed `still` (never past the slop) is a tap,
- * which walks there instead (VENT-121).
+ * release of a press that never travelled the slop is a tap, which walks
+ * there instead (VENT-121), unless the press stopped a coast: then, as on
+ * the globe, it only stopped the view where it was (VENT-128).
  */
 export function release(
   target: LookTarget,
   tracker: VelocityTracker,
   e: PointerEvent,
-  still: boolean,
+  last: Press,
 ): void {
   target.drag(false);
-  if (still && e.type === 'pointerup') {
+  if (!last.travelled && e.type === 'pointerup') {
+    if (last.halted) return;
     target.walker.tap(e.clientX, e.clientY, e.pointerType === 'touch');
     return;
   }

@@ -404,6 +404,13 @@
   max-width: calc(100% - 24px - var(--compass-size) - 12px);
 }
 
+/*
+ * Where the chip would cover the caption (a phone at 200 % text, VENT-128),
+ * the caption steps aside while the chip shows (use-chip-clear.ts); it
+ * keeps its place, so the measure holds and it comes back with the room.
+ */
+.on-foot__stage[data-chip-over='true'] .on-foot__caption { visibility: hidden; }
+
 .walk-chip__lines {
   display: flex;
   flex-direction: column;

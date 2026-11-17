@@ -56,7 +56,7 @@ import { applyRings } from './world-rings';
 import { castsShadow } from './shadow-jobs';
 import { createSlicer, type Slicer } from './slicer';
 import { ringsMesh } from './rings';
-import { freeMesh } from './free-mesh';
+import { freeMesh, freeOwnMaterials } from './free-mesh';
 import { rocksMesh } from './props';
 import { rockGrounds } from './rock-ground';
 import { PATCH_SPECS } from './crater-spec';
@@ -165,6 +165,7 @@ function applyTiles(world: World, input: SceneInput): void {
 export function rebuildNear(world: World, input: SceneInput): void {
   world.stage.scene.remove(world.near);
   world.near.traverse(freeMesh);
+  freeOwnMaterials(world.near);
   world.near = new Group();
   world.near.add(ringsMesh(world.ground));
   if (world.policy.rocksCap > 0) {

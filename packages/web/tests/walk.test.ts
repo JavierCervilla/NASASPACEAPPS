@@ -265,7 +265,7 @@ describe('the view’s pointer and keys', () => {
     const log: string[] = [];
     const target = { look: () => ({ yawDeg: 90, pitchDeg: 0 }), goHome: () => log.push('home'),
       set: () => log.push('set'), scale: () => dragScale(400, 800, 50),
-      fling: () => log.push('fling'), halt: () => log.push('halt'), drag: () => undefined,
+      fling: () => log.push('fling'), halt: () => (log.push('halt'), false), drag: () => undefined,
       walker: {
         tap: (x: number, _y: number, touch: boolean) => log.push(`tap ${x}${touch ? ' touch' : ''}`),
         hover: (at: { x: number } | null) => log.push(at ? `hover ${at.x}` : 'hover off'),

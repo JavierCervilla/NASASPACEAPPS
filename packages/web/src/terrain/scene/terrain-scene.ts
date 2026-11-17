@@ -54,6 +54,7 @@ import { gateLoop } from './loop-gate';
 import { createStage, disposeStage } from './stage';
 import { applyInput, createWorld, type World } from './world';
 import { createWalker } from './walk';
+import { edgeShown } from './walk-edge';
 import { followEye, resetEye } from './walk-move';
 
 /** The world on a new stage in `host`; throws without WebGL. */
@@ -94,8 +95,8 @@ function openScene(host: HTMLElement, input: SceneInput, hooks: SceneHooks,
     fading: false };
   const walking = { world, view, host, reducedMotion };
   const walker = createWalker(walking);
-  world.tellEye = () => hooks.onEye?.({ at: world.eye, edge: view.edge,
-    sight: world.sight });
+  world.tellEye = () => hooks.onEye?.({ at: world.eye,
+    edge: edgeShown(view), sight: world.sight });
   const { labels, frame } = framer({ ...walking, hooks,
     marker: walker.marker });
   const pace = pacedSchedule({ raf: requestAnimationFrame,

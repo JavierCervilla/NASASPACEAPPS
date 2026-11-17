@@ -1005,12 +1005,18 @@ Every visible change follows `.claude/skills/apple-design/SKILL.md` (vendored fr
   `tests/e2e/vent-104-bench-depth.spec.ts` (in the `bench` project; SwiftShader draws
   `reversed` reversed, and the last run's context is lost on purpose while it turns). Its chunk and `bench.css` are out of the precache
   (`ON_DEMAND`) and `devtools-guard.mjs` keeps its markers out of the first load. Held by `tests/bench-*.test.ts` and
-  `tests/e2e/vent-81-bench.spec.ts`, which is its own Playwright project (`bench`, with the depth suite's spec): `npm run e2e` runs the `app`
-  project, then `onfoot` with two workers (`terrain-view`, `vent-98-binary-tiles` and `vent-100-lunar-night`, which stand
+  `tests/e2e/vent-81-bench.spec.ts`, which is its own Playwright project (`bench`, with the depth suite's spec): `npm run e2e`
+  (`scripts/e2e.mjs`, which runs every project even when one fails and fails if any did, VENT-129) runs the `app`
+  project, then `landing`, then `quiet` with two workers (`vent-93-globe-start`, `vent-99-globe-map-trace`,
+  `vent-107-bench-layout` and `vent-123-globe-8k-ktx2`, which wait on software GL frames and missed those waits among four workers on a GitHub-hosted
+  runner, VENT-129), then `onfoot` with two workers (`terrain-view`, `vent-98-binary-tiles` and `vent-100-lunar-night`, which stand
   IM-2's real relief at the high tier and need about 12 s of a loaded runner to reach rest against `idleCount`'s 15 s,
   VENT-108), then `bench` alone (`playwright.config.ts`: its full runs would slow other specs' bounded waits); alone:
   `npx playwright test --project=bench`. In CI the web job runs one at a time across branches (a concurrency group) on
-  a 20-minute budget (VENT-108).
+  a 20-minute budget (VENT-108). On GitHub-hosted runners (`CI_RUNNER` unset) it first installs `fonts-inter` and
+  `.github/fontconfig/56-prefer-inter.conf`, which make Inter the `system-ui` and `sans-serif` font as in the dev
+  container and the self-hosted image: the specs that measure text were written against Inter, and the hosted
+  fallback, DejaVu Sans, is wider, so lines wrap and they fail (VENT-129).
   `?onfoot=shadows,far,shade,logdepth,photometry,antitile,footprint,fine,rocks` (`astronaut` and `lander` from before VENT-54 are ignored, so old links still open)
   leaves parts out to bisect a crash from a phone's address bar (`src/terrain/leave-out.ts`, unknown words ignored,
   listed in `data-onfoot`, kept by the language switch like `?site=`; `rocks` leaves the scanned rocks out too). Point 8 of VENT-80 (VENT-103) adds two more for the Pixel's bisect (`src/terrain/depth-mode.ts`, applied by `scene/stage-renderer.ts`): `?depth=split|log|linear|reversed` picks the depth buffer (`split` is the default, two linear passes; `log`, `linear` and `reversed` draw one pass, as escape hatches; `reversed` is three's `reversedDepthBuffer`, only with `EXT_clip_control` from the page's probe, else the default split one; `?onfoot=logdepth` still means linear, and `?depth=` wins), and `?shadows=force` draws the shadow map where `shadow-safety.ts` turns it off; the choice is in `data-depth` and the report notes «depth reversed · 24 bits · shadow map on (forced)», which `?debug` shows among its breadcrumbs (`tests/depth-mode.test.ts`, `tests/e2e/vent-103-depth-switch.spec.ts`). The API gzips its JSON

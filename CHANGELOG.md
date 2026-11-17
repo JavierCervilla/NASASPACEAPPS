@@ -12,6 +12,12 @@
   las dos versiones los cierran y los 333 tests del servidor siguen pasando.
 
 ### Arreglado
+- **El CI vuelve a pasar en los runners de GitHub (VENT-129).** Desde que el CI corre en los runners de GitHub y no en
+  el pool propio, 14 pruebas que miden texto fallaban: allí la fuente del sistema era DejaVu Sans, más ancha que Inter,
+  y las líneas se partían. El job instala ahora Inter y la misma preferencia de fuentes que el contenedor de desarrollo.
+  Las pruebas del navegador corren todas aunque falle un grupo, y el CI falla si falló alguno: antes un fallo en el
+  primer grupo dejaba sin correr las de la vista 3D y del benchmark. Cuatro pruebas del globo y del benchmark que esperan
+  fotogramas de GL por software corren aparte, con dos procesos, como las de la vista 3D.
 - **Seis arreglos del paseo por el terreno (VENT-128).** El anillo que sigue al ratón por el suelo calcula una sola
   vez por fotograma, y nada si el puntero apenas se ha movido o está sobre el cielo: 60 movimientos sobre el cielo
   pasan de 91 ms de cálculo y un fotograma a 1 ms y ninguno. En los sitios que los mapas de NASA ponen en sombra
